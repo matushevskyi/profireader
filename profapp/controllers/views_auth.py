@@ -104,6 +104,13 @@ def login():
     return render_template('login.html', user=g.user_dict)
 
 
+@user_bp.route('/signup/profireader/validate/', methods=['POST'])
+def signup_profireader_validate():
+    user = User(PROFIREADER_ALL={'email': '11', 'password': '22'})
+    a = 1
+    return jsonify({'ok': False, 'errors': {'email': 'wrong email'}})
+
+
 @user_bp.route('/login/profireader/', methods=['POST'])
 def login_profireader():
     if g.user_init and g.user_init.is_authenticated():

@@ -5,11 +5,10 @@
     }
     </style>
 <script>
-    module = angular.module('Profireader', ['ui.bootstrap']);
-    module.controller('filemanagerCtrl', ['$scope', '$modal',  function($scope, $modal) {
+    app.controller('filemanagerCtrl', ['$scope', '$modal',  function($scope, $modal) {
     }]);
 
-    module.controller('UserLoginController', ['$scope', '$modal',  function($scope, $modal) {
+    app.controller('UserLoginController', ['$scope', '$modal',  function($scope, $modal) {
         $scope.user = {{ user|tojson|safe }};
 
         $scope.open_filemanager = function() {

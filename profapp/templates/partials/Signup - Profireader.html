@@ -1,10 +1,28 @@
-<form action="{{ url_for('user.signup') }}" method="POST">
-    <!-- <input name="fkey" value="b6c073e106f31992a787241e77fa80f1" type="hidden"> -->
-    <h2>Sign up using Profireader</h2>
-    <input id="display-name" name="display-name" placeholder="Name (your public display name)" size="30" maxlength="100" type="text"><br/>
-    <input name="email" placeholder="Email (required, but never shown)" size="30" maxlength="100" type="email"><br/>
-    <input name="password" placeholder="Password" value="" type="password"><br/>
-    <input name="password2" placeholder="Confirm password" value="" type="password"><br/>
-    <input id="submit-button" name="submit-button" value="Sign Up" type="submit">
-</form>
+<script>
+    app.controller('signup_form', ['$scope', function($scope) {
 
+
+    }]);
+</script>
+
+<form  ng-controller="signup_form" action="{{ url_for('user.signup') }}" method="POST" ng-validate-url="{{ url_for('user.signup_profireader_validate') }}">
+    {% raw %}
+    <h2>Sign up using Profireader</h2>
+    <input name="email" placeholder="Email (required, but never shown)" size="30" maxlength="100">
+    <span ng-hide="checking.email === undefined || changed.email === undefined">checking...</span>
+    <span ng-hide="checking.email !== undefined || changed.email === undefined">changed</span>
+    <span ng-hide="changed.email !== undefined">{{ errors.email }}</span>
+    <br/>
+    <input name="password" placeholder="Password" value="" type="password">
+    <span ng-hide="checking.password === undefined">checking...</span>
+    <span ng-hide="checking.password !== undefined || changed.password === undefined">changed</span>
+    <span ng-hide="changed.password !== undefined">{{ errors.password }}</span>
+    <br/>
+    <input name="password2" placeholder="Confirm password" value="" type="password">
+    <span ng-hide="checking.password2 === undefined">checking...</span>
+    <span ng-hide="checking.password2 !== undefined || changed.password2 === undefined">changed</span>
+    <span ng-hide="changed.password2 !== undefined">{{ errors.password2 }}</span>
+    <br/>
+    <input id="submit-button" value="Sign Up" type="submit">
+    {% endraw %}
+</form>

@@ -1,5 +1,5 @@
 from flask import request
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, event
 from db_init import Base
 from os import urandom
 
@@ -244,3 +244,5 @@ class User(Base, UserMixin):
 
     def __repr__(self):
         return "<User(id = %r)>" % self.id
+
+
