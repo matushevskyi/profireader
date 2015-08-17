@@ -10,12 +10,13 @@ image_editor_bp = Blueprint('image_editor', __name__)
 company_bp = Blueprint('company', __name__)
 error_bp = Blueprint('error', __name__)
 
+
 def register(app):
     from . import views_index
 
     app.register_blueprint(general_bp, url_prefix='/')
 
-    from . import views_auth
+    from . import views_auth, views_user
     # we can not change this url_prefix due to soc-network authentication
     app.register_blueprint(user_bp, url_prefix='/users')
 

@@ -9,6 +9,9 @@ from flask.ext.login import LoginManager, \
     login_user, logout_user, current_user, \
     login_required
 
+from flask.ext.mail import Mail
+
+
 def setup_authomatic(app):
     authomatic = Authomatic(app.config['OAUTH_CONFIG'],
                             app.config['SECRET_KEY'],
@@ -47,8 +50,8 @@ def load_user():
 def user_confirmed():
     if current_user.is_authenticated() \
         and not current_user.confirmed \
-            and request.endpoint[:5] != 'auth.':
-        return redirect(url_for('auth.unconfirmed'))
+            and request.endpoint[:5] != 'user.':
+        return redirect(url_for('user.unconfirmed'))
 
 
 def flask_endpoint_to_angular(endpoint, **kwargs):
@@ -62,6 +65,14 @@ def flask_endpoint_to_angular(endpoint, **kwargs):
     return url
 
 
+mail = Mail()
+login_manager = LoginManager()
+login_manager.session_protection = 'strong'
+#  The login_view attribute sets the endpoint for the login page.
+#  I am not sure that it is necessary
+login_manager.login_view = 'user.login'
+
+
 def create_app(config='config.ProductionDevelopmentConfig'):
     app = Flask(__name__)
     app.config.from_object(config)
@@ -70,17 +81,16 @@ def create_app(config='config.ProductionDevelopmentConfig'):
     app.before_request(load_user)
     register_blueprints(app)
 
-    login_manager = LoginManager()
+    mail.init_app(app)
     login_manager.init_app(app)
-    login_manager.session_protection = 'strong'
-    #  The login_view attribute sets the endpoint for the login page.
-    #  I am not sure that it is necessary
-    login_manager.login_view = 'user.login'
+
+    #if not app.debug and not app.testing and not app.config['SSL_DISABLE']:
+    #    from flask.ext.sslify import SSLify
+    #    sslify = SSLify(app)
 
     @login_manager.user_loader
     def load_user_manager(id):
         return User.query.get(id)
-        #return User.query.get(id)
 
     csrf.init_app(app)
 

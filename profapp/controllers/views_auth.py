@@ -12,6 +12,10 @@ import sqlalchemy.exc as sqlalchemy_exc
 
 from urllib.parse import quote
 from ..models.users import User
+from ..forms.user import LoginForm, RegistrationForm, ChangePasswordForm, \
+    PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm
+from .errors import BadDataProvided
+from ..utils.email import send_email
 #from ..utils import login_required
 import json
 
@@ -41,57 +45,31 @@ EMAIL_REGEX = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
 @user_bp.route('/signup/', methods=['GET', 'POST'])
 def signup():
+    # (Andriy) I suppose it is not necessary
     if g.user_init and g.user_init.is_authenticated():
-        if request.url:
-            return redirect(request.url)
-        return redirect(url_for('general.index'))
+        raise BadDataProvided
 
-    if request.method == 'GET':
-        return render_template('signup.html', user=g.user_dict)
-    else:
-        user_name = request.form['display-name']
-        user_email = request.form['email']
-        user_password = request.form['password']
-        user_password2 = request.form['password2']
-        if user_password != user_password2:
-            flash('your password confirmation doesnt match the password',
-                  'error')
-            return redirect(url_for('user.signup'))
-        user = db_session.query(User).\
-                    filter(User.profireader_email == user_email).first()
-        if user:
-            flash('such user is already registered')
-            return redirect(url_for('user.signup'))
-
-        profireader_all = SOC_NET_NONE['PROFIREADER']
-        profireader_all['EMAIL'] = user_email
-        profireader_all['NAME'] = user_name
+    form = RegistrationForm()
+    if form.validate_on_submit():  # # pass1 == pass2
+        profireader_all = SOC_NET_NONE['PROFIREADER'].copy()
+        profireader_all['EMAIL'] = form.email.data
+        profireader_all['NAME'] = form.displayname.data
         user = User(
-            PROFIREADER_ALL=profireader_all,
+            PROFIREADER_ALL=profireader_all
         )
-        user.password = user_password  # pass here is authomatically hashed
+        user.password = form.password.data  # pass is automatically hashed
+
         db_session.add(user)
         db_session.commit()
-        session['user_id'] = user.id
-
-        return redirect('/')  # #  http://aprofi.d.ntaxa.com/
-
-
-
-@user_bp.route('/profile/<user_id>', methods=['GET', 'POST'])
-def profile(user_id):
-    user_subject = db_session.query(User).filter(User.id == user_id).first()
-    name = user_subject.user_name()
-    user = {'id': user_id, 'name': name}
-    return render_template('index.html', user=user)
-
-# @user_bp.route('/delete/<int:x>', methods=['GET', 'POST'])
-# def delete(x):
-#     return render_template('profile.html', x=x)
+        token = user.generate_confirmation_token()
+        send_email(user.profireader_email, 'Confirm Your Account',
+                   'auth/email/confirm', user=user, token=token)
+        flash('A confirmation email has been sent to you by email.')
+        return redirect(url_for('user.login'))
+    return render_template('auth/signup.html', form=form, user=g.user_dict)
 
 
 # read: flask.ext.login
-# TODO: make a logic when login is possible only if user is NOT logged
 # On a production server, the login route must be made available over
 # secure HTTP so that the form data transmitted to the server is en‐
 # crypted. Without secure HTTP, the login credentials can be intercep‐
@@ -99,74 +77,43 @@ def profile(user_id):
 # in the server.
 #
 # read this before push!!!: http://flask.pocoo.org/snippets/62/
-@user_bp.route('/login/', methods=['GET'])
+@user_bp.route('/login/', methods=['GET', 'POST'])
 def login():
     return render_template('login.html', user=g.user_dict)
 
 
 @user_bp.route('/signup/profireader/validate/', methods=['POST'])
 def signup_profireader_validate():
-    user = User(PROFIREADER_ALL={'email': '11', 'password': '22'})
+    user = User(PROFIREADER_ALL=SOC_NET_NONE['PROFIREADER'])
     a = 1
     return jsonify({'ok': False, 'errors': {'email': 'wrong email'}})
 
 
 @user_bp.route('/login/profireader/', methods=['POST'])
 def login_profireader():
+    # (Andriy) I suppose it is not necessary
     if g.user_init and g.user_init.is_authenticated():
-        if request.url:
-            return redirect(request.url)
-        return redirect(url_for('general.index'))
+        flash('You are already logged in.')
 
-    if request.method == 'GET':
-        return render_template('login.html', user=g.user_dict)
-    else:
-        # add code here to validate input data
-        user_email = request.form['email']
-        user_password = request.form['password']
+    form = LoginForm()
 
+    if form.validate_on_submit():
         user = db_session.query(User).\
-            filter(User.profireader_email == user_email).first()
+            filter(User.profireader_email == form.email.data).first()
 
-        if user:
-            if user.verify_password(user_password):
-                session['user_id'] = user.id
-
-                #  the code below should be tuned.
-                return redirect(request.args.get('next') or
-                                url_for('general.index'))
-
+        if user and user.verify_password(form.password.data):
+            login_user(user)
+            return redirect(request.args.get('next') or
+                            url_for('general.index'))
         flash('Invalid username or password.')
         return redirect(url_for('user.login'))
+    return render_template('auth/login.html', form=form, user=g.user_dict)
 
-
-# TODO: just complete this
-# TODO: if registration was via email
-# TODO: we should make validation!
-
-# TODO: consider the situation when
-# TODO: we have really profile_completed = True
-# TODO: it is only possible when user was registered
-# TODO: via email
-# email_conf_key=None, email_conf_tm=None, pass_reset_key=None,
-# pass_reset_conf_tm=None, registered_via=None, ):
-# important: http://flask.pocoo.org/snippets/62/
-#@user_bp.route('/login/profireader', methods=['GET', 'POST'])
-#def login_profireader():
-#    email = .....email
-#    if email and EMAIL_REGEX.match(email):
-#          user = User.query.filter_by(email=email).first()
-#          if user:
-#              login_user(user)
-#              return redirect(url_for('general.index'))
-#    #      return redirect(url_for('general.index'))  #  delete this redirect
-#    user.pass_salt_generation
-#    return render_template(url_for('general.index'))
-
-
-# it is valid only if registration was via soc network
 @user_bp.route('/login/<soc_network_name>', methods=['GET', 'POST'])
 def login_soc_network(soc_network_name):
+    if g.user_init and g.user_init.is_authenticated():
+        raise BadDataProvided
+
     response = make_response()
     try:
         result = g.authomatic.login(WerkzeugAdapter(request, response),
@@ -201,53 +148,113 @@ def login_soc_network(soc_network_name):
     return response
 
 
-#@user_bp.route('/login/fb/', methods=['GET', 'POST'])
-#def login_fb():
-#    response = make_response()
-#    result = g.authomatic.login(WerkzeugAdapter(request, response), 'fb',
-#                                session=session,
-#                                session_saver=_session_saver)
-#    if result:
-#        if result.user:
-#            result.user.update()
-#            user = User.query.filter_by(fb_id=result.user.id).first()
-#            if not user:
-#                user = User(result.user.first_name,
-#                            result.user.last_name,
-#                            result.user.id,
-#                            result.user.email)
-#                #db.session.add(user)
-#                #db.session.commit()
-#            session['user_id'] = user.id
-#            return redirect('/')
-#
-#        elif result.error:
-#            redirect_path = '#/?msg={}'.format(quote('Facebook login failed.'))
-#            return redirect(redirect_path)
-#    return response
-
-
-#
-#
-#@user_bp.route('/user-info/', methods=['GET'])  # user profile
-#def user_info():
-#    res = {}
-#    if g.user:
-#        res = (
-#            {'id': g.user.id, 'first_name': g.user.fb_first_name,
-#             'last_name': g.user.fb_last_name,
-#             'fb_id': g.user.fb_id,
-#             'email': g.user.email})
-#    return jsonify(res)
-#
-
-
 @user_bp.route('/logout/', methods=['GET'])
 @login_required   # Only logged in user can be logged out
 def logout():
-    # session.pop('user_id', None)
-
-    # from flask.ext.login import logout_user, login_required
     logout_user()
     flash('You have been logged out.')
+    return redirect(url_for('general.index'))
+
+# ************************************************************************
+
+
+@user_bp.route('/confirm/<token>')
+@login_required
+def confirm(token):
+    if current_user.confirmed:
+        return redirect(url_for('general.index'))
+    if current_user.confirm(token):
+        flash('You have confirmed your account. Thanks!')
+    else:
+        flash('The confirmation link is invalid or has expired.')
+    return redirect(url_for('general.index'))
+
+
+@user_bp.route('/confirm')
+@login_required
+def resend_confirmation():
+    token = current_user.generate_confirmation_token()
+    send_email(current_user.email, 'Confirm Your Account',
+               'auth/email/confirm', user=current_user, token=token)
+    flash('A new confirmation email has been sent to you by email.')
+    return redirect(url_for('general.index'))
+
+
+@user_bp.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        if current_user.verify_password(form.old_password.data):
+            current_user.password = form.password.data
+            db_session.add(current_user)
+            flash('Your password has been updated.')
+            return redirect(url_for('general.index'))
+        else:
+            flash('Invalid password.')
+    return render_template("auth/change_password.html", form=form)
+
+
+@user_bp.route('/reset', methods=['GET', 'POST'])
+def password_reset_request():
+    if not current_user.is_anonymous():
+        return redirect(url_for('general.index'))
+    form = PasswordResetRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            token = user.generate_reset_token()
+            send_email(user.email, 'Reset Your Password',
+                       'auth/email/reset_password',
+                       user=user, token=token,
+                       next=request.args.get('next'))
+        flash('An email with instructions to reset your password has been '
+              'sent to you.')
+        return redirect(url_for('user.login'))
+    return render_template('auth/reset_password.html', form=form)
+
+
+@user_bp.route('/reset/<token>', methods=['GET', 'POST'])
+def password_reset(token):
+    if not current_user.is_anonymous():
+        return redirect(url_for('general.index'))
+    form = PasswordResetForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user is None:
+            return redirect(url_for('general.index'))
+        if user.reset_password(token, form.password.data):
+            flash('Your password has been updated.')
+            return redirect(url_for('user.login'))
+        else:
+            return redirect(url_for('general.index'))
+    return render_template('auth/reset_password.html', form=form)
+
+
+@user_bp.route('/change-email', methods=['GET', 'POST'])
+@login_required
+def change_email_request():
+    form = ChangeEmailForm()
+    if form.validate_on_submit():
+        if current_user.verify_password(form.password.data):
+            new_email = form.email.data
+            token = current_user.generate_email_change_token(new_email)
+            send_email(new_email, 'Confirm your email address',
+                       'auth/email/change_email',
+                       user=current_user, token=token)
+            flash('An email with instructions to confirm your new email '
+                  'address has been sent to you.')
+            return redirect(url_for('general.index'))
+        else:
+            flash('Invalid email or password.')
+    return render_template("auth/change_email.html", form=form)
+
+
+@user_bp.route('/change-email/<token>')
+@login_required
+def change_email(token):
+    if current_user.change_email(token):
+        flash('Your email address has been updated.')
+    else:
+        flash('Invalid request.')
     return redirect(url_for('general.index'))

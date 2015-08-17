@@ -1,0 +1,13 @@
+Dear {{ user.profireader_name }},
+
+Welcome to Profireader!
+
+To confirm your account please click on the following link:
+
+{{ url_for('user.confirm', token=token, _external=True) }}
+
+Sincerely,
+
+The Profireader Team
+
+Note: replies to this email address are not monitored.

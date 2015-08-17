@@ -1,12 +1,9 @@
 from sqlalchemy import Integer, String, TIMESTAMP, SMALLINT, BOOLEAN, Column, ForeignKey, UnicodeText
 from sqlalchemy_utils.types.phone_number import PhoneNumberType
 from sqlalchemy_utils import URLType
-
-
 # read this about UUID:
 # http://stackoverflow.com/questions/183042/how-can-i-use-uuids-in-sqlalchemy
 # http://stackoverflow.com/questions/20532531/how-to-set-a-column-default-to-a-postgresql-function-using-sqlalchemy
-
 TABLE_TYPES = {
     'id_profireader': String(36),
     # 'file_column': Column(String(36), ForeignKey('file.id')),
@@ -15,7 +12,7 @@ TABLE_TYPES = {
     # 'company_column': Column(String(36), ForeignKey('company.id'), nullable=False),
 
 
-    'password_hash': String(128),
+    'password_hash': String(128),  # String(128) SHA-256
     'token': String(128),
     'timestamp': TIMESTAMP,
     'id_soc_net': String(50),

@@ -1,5 +1,5 @@
 from flask import render_template, redirect, url_for, request
-from profapp.controllers.forms import ArticleForm
+from profapp.forms.article import ArticleForm
 from profapp.models.articles import Article, ArticleHistory
 from profapp.models.users import User
 from profapp.models.company import Company

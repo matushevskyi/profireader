@@ -1,0 +1,36 @@
+{% extends "index_layout.html" %}
+{% block title %}Profireader - Confirm your accont{% endblock title %}
+{% block head %}
+    {{ super() }}
+{% endblock head %}
+
+{% block portal_base %}
+    {% include 'partials/portal_base_Profireader.html' %}
+{% endblock portal_base %}
+
+{% block content %}
+<div>
+    <h1>Hello, {{ current_user.username }}!</h1>
+    <h3>You have not confirmed your account yet.</h3>
+    <p>
+        Before you can access this site you need to confirm your account.
+        Check your inbox, you should have received an email with a confirmation link.
+    </p>
+    <p>
+        Need another confirmation email?
+        <a href="{{ url_for('user.resend_confirmation') }}">Click here</a>
+    </p>
+</div>
+<form action="{{ url_for('user.reset_password') }}" method="POST">
+    {{ form.email(placeholder='yourname@email.com', value="", type="email") }} <br/>
+    {{ form.password(placeholder="Password", value="", type="password") }} <br/>
+    {{ form.password2(placeholder="Confirm password", value="", type="password") }} <br/>
+    {{ form.submit(type="submit") }}
+    {{ form.csrf_token }}
+</form>
+other content
+{% endblock content %}
+
+{% block footer %}
+    {% include 'partials/portal_footer_Profireader.html' %}
+{% endblock footer %}

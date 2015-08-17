@@ -1,5 +1,5 @@
 {% extends "index_layout.html" %}
-{% block title %}Profireader{% endblock title %}
+{% block title %}Profireader - Login{% endblock title %}
 {% block head %}
     {{ super() }}
 {% endblock head %}
@@ -10,6 +10,8 @@
 
 {% block content %}
     {% include 'partials/Log in - All.html' %}
+    <p>Forgot your password? <a href="{{ url_for('user.password_reset_request') }}">Click here to reset it</a>.</p>
+    <p>New user? <a href="{{ url_for('user.signup') }}">Click here to register</a>.</p>
 {% endblock content %}
 
 {% block footer %}

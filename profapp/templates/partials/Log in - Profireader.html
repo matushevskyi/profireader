@@ -1,9 +1,19 @@
 <h2>Log in using Profireader</h2>
-<form id="se-login-form" action="{{ url_for('user.login_profireader') }}" method="POST">
-    <!-- <input name="fkey" value="b6c073e106f31992a787241e77fa80f1" type="hidden"><br/> -->
-    <input name="email" placeholder="Email"  maxlength="100" type="email"><br/>
+
+<form action="{{ url_for('user.login', next=request.args.get('next')) }}" method="POST" >
+    {{ form.email(placeholder='yourname@email.com') }} <br/>
+    {{ form.password(placeholder='Password') }} <br/>
+    {{ form.submit(type="submit", value="Sign Up") }}<br/>
+    <!-- <input name="submit" type="submit" /> <br> -->
+    {{ form.csrf_token }}
+</form>
+
+<a href={{ url_for('user.password_reset_request') }}>forgot password</a><br/>
+
+
+<!--<form id="se-login-form" action="url_for('user.login_profireader')" method="POST">
+    <input name="email" placeholder="Email" maxlength="100" type="email"><br/>
     <input name="password" placeholder="Password"  value="" type="password"><br/>
     <input id="submit-button" name="submit-button" value="Log In" type="submit"><br/>
 </form>
-<br/>
-<a href="/users/account-recovery" id="forgot-password">forgot password</a><br/>
+<br/> -->
