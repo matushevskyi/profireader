@@ -1,11 +1,9 @@
 <script>
     app.controller('signup_form', ['$scope', function($scope) {
-
-
     }]);
 </script>
 
-<form  ng-controller="signup_form" action="{{ url_for('user.signup') }}" method="POST" ng-validate-url="{{ url_for('user.signup_profireader_validate') }}">
+<form  ng-controller="signup_form" action="{{ url_for('auth.signup') }}" method="POST" ng-validate-url="{{ url_for('auth.signup_validate') }}">
     {% raw %}
     <h2>Sign up using Profireader</h2>
     <input name="email" placeholder="Email (required, but never shown)" size="30" maxlength="100">

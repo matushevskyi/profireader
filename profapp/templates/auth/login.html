@@ -8,12 +8,12 @@
     {% include 'partials/portal_base_Profireader.html' %}
 {% endblock portal_base %}
 
-{% block content %}
+{% block portal_content %}
     {% include 'partials/Log in - All.html' %}
-    <p>Forgot your password? <a href="{{ url_for('user.password_reset_request') }}">Click here to reset it</a>.</p>
-    <p>New user? <a href="{{ url_for('user.signup') }}">Click here to register</a>.</p>
-{% endblock content %}
+    <p>Forgot your password? <a href="{{ url_for('auth.password_reset_request') }}">Click here to reset it</a>.</p>
+    <p>New user? <a href="{{ url_for('auth.signup') }}">Click here to register</a>.</p>
+{% endblock portal_content %}
 
-{% block footer %}
+{% block portal_footer %}
     {% include 'partials/portal_footer_Profireader.html' %}
-{% endblock footer %}
+{% endblock portal_footer %}

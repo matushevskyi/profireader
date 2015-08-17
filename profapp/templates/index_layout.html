@@ -10,25 +10,18 @@
     {% endblock head %}
 </head>
 <body ng-app="Profireader" >
-
-<script>
-app = angular.module('Profireader', ['ui.bootstrap', 'profireaderdirectives']);
-</script>
-
-        {% include 'partials/base_profireader.html' %}
-
-        <header>
-            {% block portal_base %}{% endblock portal_base %}
-        </header>
-
-        {% block content %}<form method="post" action="/">
-
-</form>
-        {% endblock content %}
+      {% include 'partials/base_profireader.html' %}
 
 
-{% block footer %}
-{% endblock footer %}
+      <header>
+          {% block portal_base %}{% endblock portal_base %}
+      </header>
 
+      {% block portal_content %}
+      {% endblock portal_content %}
+
+
+      {% block portal_footer %}
+      {% endblock portal_footer %}
 </body>
 </html>

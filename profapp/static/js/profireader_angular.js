@@ -171,7 +171,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         if (!scope.areAllEmpty(scope.changed)) {
                             scope.checking = scope['data'];
                             $http.post(scope.url, scope.checking)
-                                .then(function (resp) {
+                                .then(function (fromserver) {
+                                    var resp = fromserver['data'];
                                     if (scope.areAllEmpty(getObjectsDifference(scope.checking, scope['data']))) {
                                         scope.errors = $.extend(true, {}, resp['errors']);
                                         scope.warnings = $.extend(true, {}, resp['warnings']);

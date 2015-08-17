@@ -1,7 +1,7 @@
 from flask import Flask, session, g, request, redirect
 from authomatic.providers import oauth2
 from authomatic import Authomatic
-from profapp.models.users import User
+from profapp.models.user_model import User
 from profapp.controllers.blueprints import register as register_blueprints
 from flask import url_for
 from profapp.controllers.errors import csrf
@@ -47,13 +47,6 @@ def load_user():
 #        g.user = User.query.filter_by(id=session['user_id']).first()
 
 
-def user_confirmed():
-    if current_user.is_authenticated() \
-        and not current_user.confirmed \
-            and request.endpoint[:5] != 'user.':
-        return redirect(url_for('user.unconfirmed'))
-
-
 def flask_endpoint_to_angular(endpoint, **kwargs):
     options = {}
     for kw in kwargs:
@@ -70,7 +63,7 @@ login_manager = LoginManager()
 login_manager.session_protection = 'strong'
 #  The login_view attribute sets the endpoint for the login page.
 #  I am not sure that it is necessary
-login_manager.login_view = 'user.login'
+login_manager.login_view = 'auth.login'
 
 
 def create_app(config='config.ProductionDevelopmentConfig'):

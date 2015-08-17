@@ -1,7 +1,7 @@
 from .blueprints import user_bp
 from flask import url_for, render_template
 from db_init import db_session
-from ..models.users import User
+from ..models.user_model import User
 
 
 @user_bp.route('/profile/<user_id>', methods=['GET', 'POST'])

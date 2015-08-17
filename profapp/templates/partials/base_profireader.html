@@ -5,6 +5,11 @@
     }
     </style>
 <script>
+
+
+    app = angular.module('Profireader', ['ui.bootstrap', 'profireaderdirectives']);
+
+
     app.controller('filemanagerCtrl', ['$scope', '$modal',  function($scope, $modal) {
     }]);
 
@@ -36,12 +41,12 @@ var modalInstance = $modal.open({
                 </script>
                     <!-- ng-cloak: https://docs.angularjs.org/api/ng/directive/ngCloak-->
                     <span ng-cloak ng-hide="{{ '{{' }}user.id{{ '}}' }}">
-                        <a href="{{ url_for('user.login') }}">log in</a>
-                        <a href="{{ url_for('user.signup') }}">signup</a>
+                        <a href="{{ url_for('auth.login') }}">log in</a>
+                        <a href="{{ url_for('auth.signup') }}">signup</a>
                     </span>
                     <span ng-cloak ng-show="{{ '{{' }}user.id{{ '}}' }}">
                         <a href="{{ flask_endpoint_to_angular('user.profile', user_id='user.id') }}">{{ '{{' }} user.name {{ '}}' }}</a>
-                        <a href="{{ url_for('user.logout') }}">logout</a>
+                        <a href="{{ url_for('auth.logout') }}">logout</a>
                     </span>
                     <a href="">tour</a>
                     <a href="">about us</a>

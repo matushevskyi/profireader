@@ -4,7 +4,7 @@ from ..constants.TABLE_TYPES import TABLE_TYPES
 from flask import g
 from ..constants.USER_ROLES import ROLES
 from ..constants.STATUS import STATUS
-from .users import User
+from .user_model import User
 statuses = STATUS()
 
 class UserCompanyRole(Base):

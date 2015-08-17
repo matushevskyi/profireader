@@ -8,9 +8,9 @@
     {% include 'partials/portal_base_Profireader.html' %}
 {% endblock portal_base %}
 
-{% block content %}
+{% block portal_content %}
 <div>
-    <h1>Hello, {{ current_user.username }}!</h1>
+    <h1>Hello, {{ current_user.profireader_name }}!</h1>
     <h3>You have not confirmed your account yet.</h3>
     <p>
         Before you can access this site you need to confirm your account.
@@ -18,19 +18,11 @@
     </p>
     <p>
         Need another confirmation email?
-        <a href="{{ url_for('user.resend_confirmation') }}">Click here</a>
+        <a href="{{ url_for('auth.resend_confirmation') }}">Click here</a>
     </p>
 </div>
-<form action="{{ url_for('user.reset_password') }}" method="POST">
-    {{ form.email(placeholder='yourname@email.com', value="", type="email") }} <br/>
-    {{ form.password(placeholder="Password", value="", type="password") }} <br/>
-    {{ form.password2(placeholder="Confirm password", value="", type="password") }} <br/>
-    {{ form.submit(type="submit") }}
-    {{ form.csrf_token }}
-</form>
-other content
-{% endblock content %}
+{% endblock portal_content %}
 
-{% block footer %}
+{% block portal_footer %}
     {% include 'partials/portal_footer_Profireader.html' %}
-{% endblock footer %}
+{% endblock portal_footer %}

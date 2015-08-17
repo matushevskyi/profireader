@@ -1,6 +1,7 @@
 from flask import request, current_app
 from sqlalchemy import Column, ForeignKey, event
 from db_init import Base, db_session
+from sqlalchemy.orm import validates
 
 
 from ..constants.TABLE_TYPES import TABLE_TYPES
@@ -16,17 +17,65 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from sqlalchemy import String
 
 
-class User(Base, UserMixin):
+
+class PRColumn(Column):
+
+    regexp = None;
+
+    def __init__(self, *args, **kwargs):
+
+        if 'regexp' in kwargs:
+            self.regexp = kwargs.pop('regexp');
+
+        super(PRColumn, self).__init__(*args, **kwargs)
+
+        #
+        #
+        # def validate_address(self, key, address):
+        #     assert '@' in address.email
+        #     return address
+
+
+
+
+class PRBase(Base):
+
+    errors = {}
+    warnings = {}
+    notices = {}
+
+    def __init__(self, *args, **kwargs):
+
+
+        @validates('addresses', include_backrefs=False)
+
+        def validate_address(self, key, address):
+            assert '@' in address.email
+            return address
+
+        super(Base, self).__init__(*args, **kwargs)
+
+class User(PRBase, UserMixin):
     __tablename__ = 'user'
 
     # PROFIREADER REGISTRATION DATA
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
-    profireader_email = Column(TABLE_TYPES['email'], unique=True)
+
+    profireader_email = PRColumn(TABLE_TYPES['email'], unique=True)
+
+    @validates('addresses', include_backrefs=False)
+    def validate_address(self, key, address):
+        assert '@' in address.email
+        return address
+
+
     profireader_first_name = Column(TABLE_TYPES['name'])
     profireader_last_name = Column(TABLE_TYPES['name'])
     profireader_name = Column(TABLE_TYPES['name'])
     profireader_gender = Column(TABLE_TYPES['gender'])
     profireader_link = Column(TABLE_TYPES['link'])
+
+
     profireader_phone = Column(TABLE_TYPES['phone'])
     profireader_avatar_file_id = Column(String(36), ForeignKey('file.id'))
 
@@ -38,6 +87,8 @@ class User(Base, UserMixin):
 
     registered_tm = Column(TABLE_TYPES['timestamp'],
                            default=datetime.datetime.utcnow)
+    last_seen = Column(TABLE_TYPES['timestamp'],
+                       default=datetime.datetime.utcnow)
     #status_id = Column(Integer, db.ForeignKey('status.id'))
 
     email_conf_token = Column(TABLE_TYPES['token'])
@@ -202,6 +253,11 @@ class User(Base, UserMixin):
         self.yahoo_link = YAHOO_ALL['LINK']
         self.yahoo_phone = YAHOO_ALL['PHONE']
 
+    def ping(self):
+        self.last_seen = datetime.datetime.utcnow()
+        db_session.add(self)
+        db_session.commit()
+
     def logged_in_via(self):
         via = None
         if self.profireader_email:
@@ -234,11 +290,10 @@ class User(Base, UserMixin):
     # https://pythonhosted.org/passlib/lib/passlib.context-tutorial.html#full-integration-example
     @password.setter
     def password(self, password):
-        if request.endpoint == 'user.signup':
-            self.password_hash = \
-                generate_password_hash(password,
-                                       method='pbkdf2:sha256',
-                                       salt_length=32)  # salt_length=8
+        self.password_hash = \
+            generate_password_hash(password,
+                                   method='pbkdf2:sha256',
+                                   salt_length=32)  # salt_length=8
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
@@ -274,6 +329,7 @@ class User(Base, UserMixin):
             return False
         self.password = new_password
         db_session.add(self)
+        db_session.commit()
         return True
 
     def generate_email_change_token(self, new_email, expiration=3600):
@@ -302,11 +358,18 @@ class User(Base, UserMixin):
         return "<User(id = %r)>" % self.id
 
 
-# def validation_listener(eventname, event):
-#     print()
 
 @event.listens_for(User, 'init')
 def validate_new_object(target, args, kwargs):
+    errors = {}
+    varnings = {}
+    noteces = {}
+    if target.email:
+        errors['email']= 'wrong email'
+    if target.password:
+        errors['password'] = 'wrong email'
+    if target.password2 != target.password:
+        errors['password2'] = 'password confirmation mismatch'
     print(target)
     print(args)
     print(kwargs)
