@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+
+<h2>Article history</h2>
+
+{% for version in article_versions %}
+    {{ version['name'] }} <a href="{{ url_for('article.update', article_version_id=version['id']) }}">Edit this version</a><br/>
+{% endfor %}
+
+</body>
+</html>

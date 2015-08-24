@@ -1,0 +1,67 @@
+{% extends "index_layout.html" %}
+{% block title %}Profireader - Create article{% endblock title %}
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename = 'tinymce/tinymce.min.js') }}"></script>
+    <script>
+        tinymce.init({
+            image_advtab: true,
+            width: 500,
+            selector: "#full",
+            plugins: [
+                "advlist autolink autosave link image lists charmap print preview hr anchor pagebreak spellchecker",
+                "searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media nonbreaking",
+                "table contextmenu directionality emoticons template textcolor paste fullpage textcolor"
+            ],
+            toolbar1: "bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | styleselect formatselect fontselect fontsizeselect",
+            toolbar2: "cut copy paste | searchreplace | bullist numlist | outdent indent blockquote | undo redo | link unlink anchor image media code | inserttime preview | forecolor backcolor",
+            file_browser_callback: function (field_name, url, type, win) {
+                var cmsURL = '/filemanager/';
+                tinymce.activeEditor.windowManager.open({
+                    file: cmsURL,
+                    title: 'Select an File',
+                    width: 1000,  // Your dimensions may differ - toy around with them!
+                    height: 700,
+                    resizable: "yes",
+                    inline: "yes",  // This parameter only has an effect if you use the inlinepopups plugin!
+                    close_previous: "yes"
+                }, {
+                    window: win,
+                    input: field_name
+                });
+            }
+        });
+    </script>
+{% endblock scripts %}
+{% block styles %}
+    {{ super() }}
+    {#    <style src="{{bootstrap_find_resource('tin.css', cdn='jquery')}}"></style>#}
+{% endblock styles %}
+
+
+{% block portal_base %}
+    {% include 'partials/portal_base_Profireader.html' %}
+{% endblock portal_base %}
+
+{% block portal_content %}
+
+    <form class="send coordinates" action="{% if article_version.id %}{{ url_for('article.update', article_version_id = article_version.id) }}{% else %}{{ url_for('article.create') }}{% endif %}"
+          onsubmit="return AjaxPost()" id="edit" method="post">
+
+        <h3><p>{% if article_version.id %}update{% else %}create{% endif %} article</p></h3>
+
+        <p>Article name<br/><input type="text" id="name" placeholder="name" name="name"
+                                   value="{{ article_version.name }}"></p>
+
+        <p>Short Description<br/><textarea id="short" placeholder="short"
+                                           name="short">{{ article_version.short }}</textarea></p>
+
+        <p>Full text<br/><textarea id="full" placeholder="text" name="long">{{ article_version.long }}</textarea></p>
+
+        <input type="submit" value="{% if article_version.id %}save{% else %}create{% endif %}">
+    </form>
+{% endblock portal_content %}
+
+{% block portal_footer %}
+    {% include 'partials/portal_footer_Profireader.html' %}
+{% endblock portal_footer %}

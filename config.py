@@ -54,6 +54,9 @@ class Config(object):
     ALLOWED_IMAGE_FORMATS = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'JPEG2000',
                              'MSP', 'PCX', 'PNG', 'PPM', 'SPIDER',
                              'TIFF', 'WebP', 'XBM', 'XV Thumbnails']
+
+    #Base rights will added when user is confirmed in company
+    BASE_RIGHT_IN_COMPANY = ['comment']
     # Define the application directory
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     # UPLOAD_FOLDER = os.path.join(BASE_DIR, 'media')
@@ -69,9 +72,10 @@ class Config(object):
     WTF_CSRF_ENABLED = True
     WTF_CSRF_SECRET_KEY = secret_data.WTF_CSRF_SECRET_KEY
 
-    host = 'db.prof'
-    username = 'pfuser'
-    password = secret_data.DEV_DB_PASSWORD
+    host =     secret_data.DB_HOST
+    username = secret_data.DB_USER
+    password = secret_data.DB_PASSWORD
+    database = secret_data.DB_NAME
 
     # Secret key for signing cookies
     SECRET_KEY = secret_data.SECRET_KEY
@@ -85,7 +89,7 @@ class ProductionDevelopmentConfig(Config):
     host = os.getenv('PRODUCTION_SERVER_DB_HOST', Config.host)
     username = os.getenv('PRODUCTION_SERVER_DB_USERNAME', Config.username)
     password = os.getenv('PRODUCTION_SERVER_DB_PASSWORD', Config.password)
-    db_name = os.getenv('PRODUCTION_SERVER_DB_NAME', 'profireader')
+    db_name = os.getenv('PRODUCTION_SERVER_DB_NAME', Config.database)
 
     #SERVER_NAME = os.getenv('PRODUCTION_SERVER_NAME', Config.SERVER_NAME)
 

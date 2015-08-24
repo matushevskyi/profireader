@@ -13,7 +13,8 @@
   <script src="/static/angular/angular-translate.min.js"></script>
   <script src="/static/angular/angular-cookies.min.js"></script>
   <script src="/static/jquery/jquery.min.js"></script>
-  <script src="/static/bootstrap/bootstrap.min.js"></script>
+{#  <script src="/static/bootstrap/bootstrap.min.js"></script>#}
+  <script src="{{bootstrap_find_resource('js/bootstrap.js', cdn='bootstrap')}}"></script>
   <!-- Uncomment if you need to use raw source code
     <script src="assets/js/app.js"></script>
     <script src="assets/js/config.js"></script>
@@ -34,6 +35,8 @@
 
 <body>
 <script>
+
+var library = {{ library|safe }}
 
 </script><!-- Comment if you need to use raw source code -->
     <angular-file-manager></angular-file-manager>

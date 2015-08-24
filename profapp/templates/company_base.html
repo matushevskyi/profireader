@@ -1,0 +1,20 @@
+            <span ng-controller="UserLoginController" class="topbar-menu-links">
+                    <span ng-cloak ng-show="{{ '{{' }}user.id{{ '}}' }}">
+                       <a href="{{ url_for('company.show') }}">Meterials</a>
+                    </span>
+                                    <span ng-cloak ng-show="{{ '{{' }}user.id{{ '}}' }}">
+                       <a href="{{ url_for('company.show') }}">Publications</a>
+                    </span>
+                                    <span ng-cloak ng-show="{{ '{{' }}user.id{{ '}}' }}">
+                       <a href="{{ url_for('company.show') }}">Readers</a>
+                    </span>
+                                    <span ng-cloak ng-show="{{ '{{' }}user.id{{ '}}' }}">
+                       <a href="{{ url_for('company.show') }}">Subscribers</a>
+                    </span>
+                                    <span ng-cloak ng-show="{{ '{{' }}user.id{{ '}}' }}">
+                       <a href="{{ url_for('company.employees', comp_id=comp.id) }}">Employees</a>
+                    </span>
+                                                    <span ng-cloak ng-show="{{ '{{' }}user.id{{ '}}' }}">
+                       <a href="{{ url_for('company.profile', company_id=comp.id)}}">Profile</a>
+                    </span>
+                </span>

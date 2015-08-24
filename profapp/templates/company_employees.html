@@ -1,0 +1,153 @@
+{% extends "index_layout.html" %}
+{% block title %}Profireader{% endblock title %}
+{% block head %}
+    {{ super() }}
+{% endblock head %}
+
+{% block portal_base %}
+    {% include 'partials/portal_base_Profireader.html' %}
+{% endblock portal_base %}
+{% block content %}
+    {% block company_base %}
+{% include 'company_base.html' %}
+{% endblock company_base %}
+    <span ng-cloak ng-show="{{ g.user_dict['id'] }}">
+
+        {% for key in company_user_rights %}
+
+            {% if not curr_user %}
+
+                <a href="{{ url_for('company.subscribe', company_id=comp.id)}}">Subscribe to this company</a>
+
+            {% elif curr_user %}
+
+                <span></span>
+
+            {% endif %}
+
+    {% endfor %}
+    </span>
+      <form class="add_rights" action="{{ url_for('company.employees', comp_id=comp.id) }}" onsubmit="return AjaxPost()" id="rights" method="post">
+    {% for key in company_user_rights %}
+        {% if company_user_rights[key]['status'] == 'active' %}
+            <dt><img src="{{ company_user_rights[key]['user'].gravatar() }}">{{ company_user_rights[key]['name'] }}<br>
+            Phone number : {{ company_user_rights[key]['user'].phone_number }}<br>
+            Email : {{ company_user_rights[key]['user'].show_email }}
+            </dt>
+             {% for company in company_user_rights[key]['companies'] %}
+                <dt> ALL COMPANIES :
+                {% for c in company %}
+                <a href="{{ url_for('company.profile', company_id=c.id)}}">{{ c.name }}</a>
+                {% endfor %}</dt><br>
+                 {% if curr_user %}
+                        {% for c_user in curr_user %}
+                            {% if curr_user[c_user]['status']=='active' %}
+                            <dt> Rights in this company: </dt>
+                            {% for r in curr_user[c_user]['rights'] %}
+                                {% if r == 'manage_members' %}
+                                    {% for right in company_user_rights[key]['rights'] %}
+                                        <input type="checkbox" id="right" name="right" value="{{ right }}" checked="checked">{{ right }}<br>
+                                        {% for all_right in all_rights %}
+                                            {% if all_right not in company_user_rights[key]['rights'] %}
+                                            <input type="checkbox" id="right" name="right" value="{{ all_right }}">{{ all_right }}<br>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                    <input type="submit" id="apply" value="Apply rights">
+                                {% elif not 'manage_members' in curr_user[c_user]['rights'] %}
+                                    {% for right in company_user_rights[key]['rights'] %}
+                                        <input type="checkbox" id="right" name="right" value="{{ right }}" disabled="disabled" checked="checked">{{ right }}<br>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                 {% endif %}
+             {% endfor %}
+        {% endif %}
+        </form>
+    {% endfor %}<br>
+      <script type="text/javascript">
+
+ function AjaxPost() {
+  $.post('', {
+             'right': $("#right").val(),
+      'name': $("#name").val(),
+              'id': $("#id").val(),
+             'req': $("#req").val()
+
+ }, function (resp) {
+             console.log(resp);
+           },
+   'json');
+   return true;
+ };
+</script>
+
+    {% if curr_user %}
+
+        {% for c_user in curr_user %}
+
+            {% for r in curr_user[c_user]['rights'] %}
+
+
+                {% if r == 'manage_members' %}
+
+                    {% for key in company_user_rights %}
+
+                        {% if company_user_rights[key]['status'] != 'active' %}
+
+                            User {{ company_user_rights[key]['name'] }} send query to your company
+
+                            <form class="add_subscriber" action="{{ url_for('company.confirm_subscriber') }}" onsubmit="return AjaxPost2()" id="subscribe" method="post">
+
+                                <input type="hidden" id="comp_id" name="comp_id" value="{{ comp.id }}">
+
+                                <input type="hidden" id="user_id" name="user_id" value="{{ key }}">
+
+                                <input type="hidden" id="req1" name="req" value="True">
+
+                                <input type="submit" id="apply" value="Add {{ company_user_rights[key]['name'] }} to your company">
+
+                            </form>
+
+
+
+                            <form class="add_subscriber" action="{{ url_for('company.confirm_subscriber') }}" onsubmit="return AjaxPost2()" id="subscribe" method="post">
+
+                                <input type="hidden" id="comp_id" name="comp_id" value="{{ comp.id }}">
+
+                                <input type="hidden" id="user_id" name="user_id" value="{{ key }}">
+
+                                <input type="hidden" id="req1" name="req" value='False'>
+
+                                <input type="submit" id="reject" value="Don't add {{ company_user_rights[key]['name'] }} to your company">
+
+                            </form>{% endif %}{% endfor %}{% endif %}{% endfor %}{% endfor %}
+
+    {% else %}<span></span>
+
+    {% endif %}
+
+    <script type="text/javascript">
+ function AjaxPost2() {
+  $.post('', {
+             'comp_id': $("#comp_id").val(),
+      'user_id': $("#user_id").val(),
+             'req': $("#req1").val()
+
+ }, function (resp) {
+             console.log(resp);
+           },
+   'json');
+   return true;
+ };
+
+    </script>
+
+    <br>
+{% endblock content %}
+
+{% block footer %}
+    {% include 'partials/portal_footer_Profireader.html' %}
+{% endblock footer %}

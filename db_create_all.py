@@ -1,4 +1,6 @@
 from db_init import Base, engine
+from profapp.models.files import File
+from profapp.constants.FILES_FOLDERS import FOLDER_AND_FILE
 
 def create_all_tables():
     # import all modules here that might define models so that
@@ -6,5 +8,3 @@ def create_all_tables():
     # you will have to import them first before calling init_db()
     import all_models
     Base.metadata.create_all(bind=engine)
-
-create_all_tables()

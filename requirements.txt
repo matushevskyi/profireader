@@ -17,3 +17,5 @@ SQLAlchemy-Utils==0.30.16
 furl==0.4.7
 phonenumbers==7.0.8
 Flask-Mail==0.9.1
+Flask-Moment==0.5.1
+Flask-Bootstrap==3.3.5.6

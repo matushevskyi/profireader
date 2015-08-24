@@ -1,27 +1,66 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    {% block head %}
-        <meta http-equiv="Content-type" content="text/html; charset=UTF-8">
-        <title>
-            {% block title %}{% endblock %}
-        </title>
-        {% include 'partials/imports_profireader.html' %}
-    {% endblock head %}
-</head>
-<body ng-app="Profireader" >
-      {% include 'partials/base_profireader.html' %}
+{# see: https://github.com/mbr/flask-bootstrap/blob/master/flask_bootstrap/templates/bootstrap/base.html #}
+{% extends "bootstrap/base.html" %}
 
+{% block html_attribs %} lang="en"{% endblock %}
+{% block title %}Profireader{% endblock %}
 
-      <header>
-          {% block portal_base %}{% endblock portal_base %}
-      </header>
+{% block metas %}
+    {{ super() }}
+    <meta http-equiv="Content-type" content="text/html; charset=UTF-8">
+{% endblock metas %}
 
-      {% block portal_content %}
-      {% endblock portal_content %}
+{% block styles %}
+    {{ super() }}
+{#    <link rel="stylesheet" type="text/css" href="/static/filemanager/angular-filemanager.css">#}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename = 'image_editor/dist/cropper.css') }}">
+    {#<link href="{{ url_for('static', filename = 'image_editor/assets/css/bootstrap.min.css') }}" rel="stylesheet">#}
+    {#<link href="{{ url_for('static', filename = 'image_editor/demo/css/main.css') }}" rel="stylesheet">#}
+    {#
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    #}
+{%- endblock styles %}
 
+{%- block head %}
+    {{ super() }}
 
-      {% block portal_footer %}
-      {% endblock portal_footer %}
-</body>
-</html>
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon" />
+    <link rel="icon" href="/static/favicon.gif" type="image/gif" />
+
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.js"></script>
+    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.13.2.js"></script>
+{#    <script src="{{ url_for('static', filename = 'image_editor/dist/cropper.js') }}"></script>#}
+    {#<script src="{{ url_for('static', filename = 'image_editor/demo/js/main.js') }}"></script>#}
+{#    <script src="/static/filemanager/angular-filemanager.min.js"></script><!-- Comment if you need to use raw source code -->#}
+{#    <script src="/static/filemanager/cached-templates.js"></script><!-- Comment if you need to use raw source code -->#}
+    <script src="{{bootstrap_find_resource('jquery.js', cdn='jquery')}}"></script>
+    <script src="{{bootstrap_find_resource('js/bootstrap.js', cdn='bootstrap')}}"></script>
+{%- endblock head %}
+
+{% block body_attribs %} ng-app="Profireader"{% endblock body_attribs %}
+
+{% block navbar %}
+    {% include 'partials/base_profireader.html' %}
+{% endblock navbar %}
+
+{% block content %}
+    <div class="container">
+        {% for message in get_flashed_messages() %}
+        <div class="alert alert-warning">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            {{ message }}
+        </div>
+        {% endfor %}
+
+        {% block portal_content %}
+            Portal Content
+        {% endblock portal_content %}
+        <br/>
+        {% block portal_footer %}
+        {% endblock portal_footer %}
+    </div>
+{% endblock content %}
+
+{% block scripts %}
+{%- endblock scripts %}

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+        <meta http-equiv="Content-type" content="text/html; charset=UTF-8">
+        <title>
+            {% block title %}{% endblock %}
+        </title>
+        {% include 'partials/imports_profireader.html' %}
+    {% endblock head %}
+</head>
+<body ng-app="Profireader" >
+    {% include 'partials/base_profireader.html' %}
+
+    <header>
+        {% block portal_base %}{% endblock portal_base %}
+    </header>
+
+    {% block portal_content %}
+    {% endblock portal_content %}
+<br/>
+    {% block portal_footer %}
+    {% endblock portal_footer %}
+</body>
+</html>

@@ -22,6 +22,7 @@ def configure_listener(class_, key, inst):
         return
     # this event is called whenever a "set"
     # occurs on that instrumented attribute
+
     @event.listens_for(inst, "set", retval=True)
     def set_(instance, value, oldvalue, initiator):
         validator = validators.get(inst.property.columns[0].type.__class__)

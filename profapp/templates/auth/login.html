@@ -10,8 +10,6 @@
 
 {% block portal_content %}
     {% include 'partials/Log in - All.html' %}
-    <p>Forgot your password? <a href="{{ url_for('auth.password_reset_request') }}">Click here to reset it</a>.</p>
-    <p>New user? <a href="{{ url_for('auth.signup') }}">Click here to register</a>.</p>
 {% endblock portal_content %}
 
 {% block portal_footer %}

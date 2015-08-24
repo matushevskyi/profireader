@@ -1,27 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head lang="en">
-    <meta charset="UTF-8">
-    <title></title>
-      <script src="{{ url_for('static', filename = 'image_editor/assets/js/jquery.min.js') }}"></script>
-    <script src="{{ url_for('static', filename = 'image_editor/assets/js/bootstrap.min.js') }}"></script>
-</head>
-<body>
+{% extends "index_layout.html" %}
+{% block title %}Profireader{% endblock title %}
+{% block head %}
+    {{ super() }}
+{% endblock head %}
 
-  <form class="send coordinates" action="{{ flask_endpoint_to_angular('company.edit', id=comp.id) }}" onsubmit="return AjaxPost()" id="edit" method="post">
+{% block portal_base %}
+    {% include 'partials/portal_base_Profireader.html' %}
+{% endblock portal_base %}
+
+
+
+
+{% block content %}
+{% block company_base %}
+{% include 'company_base.html' %}
+{% endblock company_base %}
+  <form class="edit" enctype="multipart/form-data" action="{{ url_for('company.confirm_edit', company_id=comp.id) }}" onsubmit="return AjaxPost()" id="edit" method="post">
 <h3><p>Edit Company</p></h3>
-<p>Logo<input type="text" id="logo" placeholder="logo" value="{{ comp.logo }}"></p>
+<p>Logo <input name="logo_file" type="file" id="logo_file"></p>
 <p>Company name<input type="text" id="name" placeholder="name" name="name" value="{{ comp.name }}"></p>
 <p>Country<input type="text" id="country" placeholder="country" name="country" value="{{ comp.country }}"></p>
 <p>Region<input type="text" id="region" placeholder="region" name="region" value="{{ comp.region }}"></p>
 <p>Adress<input type="text" id="address" placeholder="address" name="address" value="{{ comp.address }}"></p>
 <p>Phone<input type="text" id="phone" placeholder="phone" name="phone" value="{{ comp.phone }}"></p>
-      <p>Phone2<input type="text" id="phone2" placeholder="phone2" name="phone2" value="{{ comp.phone2 }}"></p>
+      <p>Fax<input type="text" id="phone2" placeholder="fax" name="phone2" value="{{ comp.phone2 }}"></p>
 <p>Email<input type="text" id="email" placeholder="email" name="email" value="{{ comp.email }}"></p>
 <p>Short Description<input type="text" id="short_description" placeholder="text" name="short_description" value="{{ comp.short_description }}"></p>
 <input type="submit" value="submit">
       </form>
-  <form action="{{ flask_endpoint_to_angular('company.company_profile', id=comp.id) }}" id="cancel">
+  <form action="{{ url_for('company.profile', company_id=comp.id) }}" id="cancel">
   <input type="submit" name="cancel" value="cancel">
       </form>
       <script type="text/javascript">
@@ -29,7 +36,7 @@
 
  function AjaxPost() {
   $.post('', {
-             'logo': $("#logo").val(),
+             'logo_file': $("#logo_file").val(),
       'name': $("#name").val(),
              'country': $("#country").val(),
              'region': $("#region").val(),
@@ -47,5 +54,9 @@
 
 </script>
 
-</body>
-</html>
+
+{% endblock content %}
+
+{% block footer %}
+    {% include 'partials/portal_footer_Profireader.html' %}
+{% endblock footer %}

@@ -1,0 +1,27 @@
+{% extends "index_layout.html" %}
+   {% block title %}Profireader - Create article{% endblock title %}
+{% block scripts %}
+    {{ super() }}
+{#    <script src="{{bootstrap_find_resource('tin.js', cdn='jquery')}}"></script>#}
+  {% endblock scripts %}
+  {% block styles %}
+    {{ super() }}
+{#    <style src="{{bootstrap_find_resource('tin.css', cdn='jquery')}}"></style>#}
+{% endblock styles %}
+
+
+{% block portal_base %}
+    {% include 'partials/portal_base_Profireader.html' %}
+{% endblock portal_base %}
+
+  {% block portal_content %}
+<h2><a href="{{ url_for('article.show_form_create') }}">Create article</a></h2>
+
+{% for article in articles %}
+    <a href="{{ url_for('article.my_versions', article_id=article.id) }}">{{ article.versions[0]['name'] }}</a><br/>
+{% endfor %}
+{% endblock portal_content %}
+
+{% block portal_footer %}
+    {% include 'partials/portal_footer_Profireader.html' %}
+{% endblock portal_footer %}

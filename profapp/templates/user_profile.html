@@ -1,0 +1,42 @@
+{% extends "index_layout.html" %}
+{% block title %}Profireader - {{ current_user.profireader_name }}{% endblock title %}
+{% block head %}
+    {{ super() }}
+{% endblock head %}
+
+{% block portal_base %}
+    {% include 'partials/portal_base_Profireader.html' %}
+{% endblock portal_base %}
+
+{% block portal_content %}
+<h1>User Profile</h1>
+<a href="{{ url_for('user.edit_profile', user_id=g.user.id) }}">[edit]</a>
+
+<div ng-controller="UserLoginController">
+    <div>
+        <h2>{{ g.user.profireader_name }}</h2>
+        <img class="img-rounded profile-thumbnail" src="{{ g.user.gravatar(size=256) }}"><br>
+        Your email: {{ g.user.profireader_email }} <br>
+        Your display name: {{ g.user.profireader_name }} <br>
+        Your first name: {{ g.user.profireader_first_name or ''}} <br>
+        Your last name: {{ g.user.profireader_last_name or ''}} <br>
+        Gender: {{ g.user.profireader_gender or ''}} <br>
+        Your web-page: {{ g.user.profireader_link or ''}} <br>
+        Phone:  {{ g.user.profireader_phone.national or ''}} <br>
+        Your location: {{ g.user.location or ''}} <br>
+        About: {{ g.user.about_me or ''}} <br>
+{#        <p>Member since {{ '{{' }} user.registered_tm {{ '}}' }}.</p>#}
+        <p>Member since {{ moment(g.user.registered_tm).format('L') }}.</p>
+    </div>
+</div>
+
+{% endblock portal_content %}
+
+{% block portal_footer %}
+    {% include 'partials/portal_footer_Profireader.html' %}
+{% endblock portal_footer %}
+
+{% block scripts %}
+    {{ super() }}
+    {{ moment.include_moment() }}
+{% endblock %}

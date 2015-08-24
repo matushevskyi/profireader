@@ -3,13 +3,13 @@
 <form action="{{ url_for('auth.login', next=request.args.get('next')) }}" method="POST" >
     {{ form.email(placeholder='yourname@email.com') }} <br/>
     {{ form.password(placeholder='Password') }} <br/>
-    {{ form.submit(type="submit", value="Sign Up") }}<br/>
+    {{ form.submit(type="submit", value="login") }}<br/>
     <!-- <input name="submit" type="submit" /> <br> -->
     {{ form.csrf_token }}
 </form>
 
-<a href={{ url_for('auth.password_reset_request') }}>forgot password</a><br/>
-
+<p>Forgot your password? <a href="{{ url_for('auth.password_reset_request') }}">Click here to reset it</a>.</p>
+<p>New user? <a href="{{ url_for('auth.signup') }}">Click here to register</a>.</p>
 
 <!--<form id="se-login-form" action="url_for('user.login_profireader')" method="POST">
     <input name="email" placeholder="Email" maxlength="100" type="email"><br/>

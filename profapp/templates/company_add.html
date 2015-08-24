@@ -1,0 +1,86 @@
+{% extends "index_layout.html" %}
+{% block title %}Profireader{% endblock title %}
+{% block head %}
+    {{ super() }}
+{% endblock head %}
+
+{% block portal_base %}
+    {% include 'partials/portal_base_Profireader.html' %}
+{% endblock portal_base %}
+
+
+
+
+{% block content %}
+<form class="add" enctype="multipart/form-data" action="{{ flask_endpoint_to_angular('company.confirm_add') }}" onsubmit="return AjaxPost()" id="add" method="post">
+
+<h3><p>New company Account</p></h3>
+<p>Logo <input name="logo_file" type="file" id="logo_file"></p>
+<p>Company name<input type="text" id="name" placeholder="name" name="name"></p>
+<p>Country<input type="text" id="country" placeholder="country" name="country"></p>
+<p>Region<input type="text" id="region" placeholder="region" name="region"></p>
+<p>Adress<input type="text" id="address" placeholder="address" name="address"></p>
+<p>Phone<input type="text" id="phone" placeholder="phone" name="phone"></p>
+      <p>Fax<input type="text" id="phone2" placeholder="fax" name="phone2"></p>
+<p>Email<input type="text" id="email" placeholder="email" name="email"></p>
+<p>Short Description<input type="text" id="short_description" placeholder="text" name="short_description"></p>
+
+
+ <!--   <div class="docs-data">
+          <div class="input-group">
+            <input class="form-control" id="dataX" type="hidden" name="x" value="" placeholder="x">
+          </div>
+          <div class="input-group">
+            <input class="form-control" id="dataY" type="hidden" name="y" value="" placeholder="y">
+          </div>
+          <div class="input-group">
+            <input class="form-control" id="dataWidth" type="hidden" name="width" value="" placeholder="width">
+          </div>
+          <div class="input-group">
+            <input class="form-control" id="dataHeight" type="hidden" name="height" value="" placeholder="height">
+          </div>
+          <div class="input-group">
+            <input class="form-control" id="dataRotate" type="hidden" name="rotate" value="0" placeholder="rotate">
+          </div>
+    </div> -->
+
+    <input type="hidden" id>
+<input type="submit" value="submit">
+      </form>
+        </form>
+  <form action="{{ url_for('company.show') }}" id="cancel">
+  <input type="submit" name="cancel" value="cancel">
+      </form>
+      <script type="text/javascript">
+
+
+ function AjaxPost() {
+  $.post('', {
+             'logo_file': $("#logo_file").val(),
+      'name': $("#name").val(),
+             'country': $("#country").val(),
+             'region': $("#region").val(),
+             'address': $("#address").val(),
+            'phone': $("#phone").val(),
+              'phone2': $("#phone2").val(),
+              'email': $("#email").val(),
+              'short_description': $("#short_description").val(),
+              'dataX': $("#dataX").val(),
+              'dataY': $("#dataY").val(),
+              'dataWidth': $("#dataWidth").val(),
+              'dataHeight': $("#dataHeight").val(),
+              'dataRotate': $("#dataRotate").val(),
+ }, function (resp) {
+             console.log(resp);
+           },
+   'json');
+   return true;
+ };
+
+</script>
+
+{% endblock content %}
+
+{% block footer %}
+    {% include 'partials/portal_footer_Profireader.html' %}
+{% endblock footer %}

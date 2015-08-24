@@ -67,5 +67,6 @@ target/
 *~
 
 # secret data
-secret_data.py
+secret_data.*
+database_*.bak
 .venv/
