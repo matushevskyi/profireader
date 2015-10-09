@@ -1,5 +1,5 @@
 from .blueprints import portal_bp
-from flask import render_template, g
+from flask import render_template, g, jsonify
 from ..models.company import Company
 from flask.ext.login import current_user, login_required
 from ..models.portal import PortalDivisionType
@@ -64,10 +64,6 @@ def confirm_create(json, company_id):
         return {'company_id': company_id}
 
 
-
-
-
-
 @portal_bp.route('/', methods=['POST'])
 @login_required
 # @check_rights(simple_permissions([]))
@@ -80,14 +76,48 @@ def apply_company(json):
         'name, company_owner_id,id') for portal in CompanyPortal.get_portals(json['company_id'])],
         'company_id': json['company_id']}
 
+# TODO ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+@portal_bp.route('/profile/<string:portal_id>/', methods=['GET'])
+@login_required
+# @check_rights(simple_permissions([]))
+def profile(portal_id):
+    portal = db(Portal, id=portal_id).one()
+    tags = set(tag_portal_division.tag for tag_portal_division in portal.portal_tags)
+    tags_dict = {tag.id: tag.name for tag in tags}
+
+    # portal_tags = portal.to_dict('portal_tags.*')
+    # for tag in portal_tags['portal_tags']:
+    #     tag['tag_name'] = tags_dict[tag['tag_id']]
+    #
+
+    return render_template('company/portal_profile.html',
+                           portal=portal.to_dict('*, divisions.*, own_company.*, portal_tags.*'),
+                           tag=tags_dict,
+                           portal_id=portal_id
+                           )
+
+
+@portal_bp.route('/profile/<string:portal_id>/', methods=['POST'])
+@login_required
+# @check_rights(simple_permissions([]))
+@ok
+def profile_load(json, portal_id):
+    portal = db(Portal, id=portal_id).one()
+
+    tags = set(tag_portal_division.tag for tag_portal_division in portal.portal_tags)
+    tags_dict = {tag.id: tag.name for tag in tags}
+    return {'portal': portal.to_dict('*, divisions.*, own_company.*, portal_tags.*'),
+            'portal_id': portal_id,
+            'tag': tags_dict}
+
 
 @portal_bp.route('/partners/<string:company_id>/', methods=['GET'])
 @login_required
 # @check_rights(simple_permissions([]))
 def partners(company_id):
-    return render_template('company/company_partners.html',
-                           company_id=company_id
-                           )
+    return render_template('company/company_partners.html', company_id=company_id)
 
 
 @portal_bp.route('/partners/<string:company_id>/', methods=['POST'])
@@ -124,9 +154,7 @@ def search_for_portal_to_join(json):
 @login_required
 # @check_rights(simple_permissions([]))
 def publications(company_id):
-
-    return render_template('company/portal_publications.html',
-                           company_id=company_id)
+    return render_template('company/portal_publications.html', company_id=company_id)
 
 
 @portal_bp.route('/publications/<string:company_id>/', methods=['POST'])

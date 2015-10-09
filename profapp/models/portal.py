@@ -1,15 +1,13 @@
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, remote
 from ..controllers import errors
 from flask import g
 from utils.db_utils import db
 from .company import Company
 from .pr_base import PRBase, Base
 import re
-import itertools
-
-import itertools
+from .tag import TagPortalDivision
 
 
 class Portal(Base, PRBase):
@@ -18,22 +16,46 @@ class Portal(Base, PRBase):
                 primary_key=True)
     name = Column(TABLE_TYPES['name'])
     host = Column(TABLE_TYPES['short_name'])
-    company_owner_id = Column(TABLE_TYPES['id_profireader'],
-                              ForeignKey('company.id'),
-                              unique=True)
-    portal_plan_id = Column(TABLE_TYPES['id_profireader'],
-                            ForeignKey('portal_plan.id'))
-
-    portal_layout_id = Column(TABLE_TYPES['id_profireader'],
-                              ForeignKey('portal_layout.id'))
+    company_owner_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), unique=True)
+    portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_plan.id'))
+    portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_layout.id'))
 
     layout = relationship('PortalLayout')
     divisions = relationship('PortalDivision',
                              backref='portal',
                              primaryjoin='Portal.id==PortalDivision.portal_id')
+    own_company = relationship('Company', back_populates='own_portal', uselist=False)
     article = relationship('ArticlePortal', backref='portal', uselist=False)
+    companies = relationship('Company',
+                             secondary='company_portal',
+                             back_populates='portal',
+                             lazy='dynamic')
+    # see: http://docs.sqlalchemy.org/en/rel_0_9/orm/join_conditions.html#composite-secondary-joins
+    # see: http://docs.sqlalchemy.org/en/rel_0_9/orm/join_conditions.html#creating-custom-foreign-conditions
+    # see!!!: http://docs.sqlalchemy.org/en/rel_0_8/orm/relationships.html#association-object
+    # see comment: http://stackoverflow.com/questions/17473117/sqlalchemy-relationship-error-object-has-no-attribute-c
+    portal_tags = relationship('TagPortalDivision',
+                               secondary='tag_portal_division',
+                               # secondary='join(Portal, PortalDivision, Portal.id == PortalDivision.portal_id).'
+                               # 'join(TagPortalDivision, TagPortalDivision.id == PortalDivision.portal_id)',
+                               primaryjoin='Portal.id == remote(PortalDivision.portal_id)',
+                               secondaryjoin='PortalDivision.id == remote(TagPortalDivision.portal_division_id)',
+                               # secondaryjoin='PortalDivision.tags_assoc == TagPortalDivision.id',
+                               # secondaryjoin='PortalDivision.portal_division_tags == TagPortalDivision.id',
+                               viewonly=True)
 
-    # companies = relationship('Company', secondary='company_portal')
+    # d = relationship("D",
+    #             secondary="join(B, D, B.d_id == D.id)."
+    #                         "join(C, C.d_id == D.id)",
+    #             primaryjoin="and_(A.b_id == B.id, A.id == C.a_id)",
+    #             secondaryjoin="D.id == B.d_id")
+
+    # tags_assoc = relationship('TagPortalDivision', back_populates='portal_division')
+
+    # company = relationship(Company, secondary='article_company',
+    #                        primaryjoin="ArticlePortal.article_company_id == ArticleCompany.id",
+    #                        secondaryjoin="ArticleCompany.company_id == Company.id",
+    #                        viewonly=True, uselist=False)
 
     def __init__(self, name=None,
                  portal_plan_id=None,
@@ -95,7 +117,7 @@ class Portal(Base, PRBase):
                     ret['errors']['add_division'] = 'add at least one `%s`' % (check_division.id,)
             if check_division.max < grouped[check_division.id]:
                 ret['errors'][
-                    'division_%s' % (check_division.id,)] = 'you you can have only %s `%s`' % (
+                    'division_%s' % (check_division.id,)] = 'you can have only %s `%s`' % (
                 check_division.max, check_division.id)
 
         return ret
@@ -187,6 +209,10 @@ class PortalDivision(Base, PRBase):
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
     name = Column(TABLE_TYPES['short_name'], default='')
 
+    portal_division_tags = relationship('Tag', secondary='tag_portal_division')
+
+    tags_assoc = relationship('TagPortalDivision', back_populates='portal_division')
+
     def __init__(self, portal_division_type_id=None, name=None, portal_id=None):
         self.portal_division_type_id = portal_division_type_id
         self.name = name
@@ -217,7 +243,6 @@ class PortalDivisionSettings_company_subportal(Base, PRBase):
     company_portal = relationship(CompanyPortal)
 
     portal_division = relationship(PortalDivision)
-
 
 class PortalDivisionType(Base, PRBase):
     __tablename__ = 'portal_division_type'

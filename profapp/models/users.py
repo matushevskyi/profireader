@@ -47,17 +47,6 @@ class User(Base, UserMixin, PRBase):
     confirmed = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
     _banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
 
-    # _rights = (0, 0)  # (0, GOD_RIGHTS)
-    # rights_defined_int = \
-    #     Column(TABLE_TYPES['bigint'],
-    #            CheckConstraint('rights >= 0', name='unsigned_profireader_rights_def'),
-    #            default=0, nullable=False)
-    #
-    # rights_undefined_int = \
-    #     Column(TABLE_TYPES['bigint'],
-    #            CheckConstraint('rights >= 0', name='unsigned_profireader_rights_undef'),
-    #            default=0, nullable=False)  # default=GOD_RIGHTS
-
     registered_tm = Column(TABLE_TYPES['timestamp'],
                            default=datetime.datetime.utcnow)
     last_seen = Column(TABLE_TYPES['timestamp'],
@@ -75,8 +64,12 @@ class User(Base, UserMixin, PRBase):
     pass_reset_conf_tm = Column(TABLE_TYPES['timestamp'])
 
     # registered_via = Column(_T['REGISTERED_VIA'])
-    employers = relationship('Company', secondary='user_company',
-                             backref=backref("employees", lazy='dynamic'))  # Correct
+    # employers = relationship('Company', secondary='user_company',
+    #                          backref=backref("employees", lazy='dynamic'))  # Correct
+
+    employers = relationship('Company', secondary='user_company', back_populates='employees')
+    companies = relationship('Company', back_populates='user_owner')
+
 
 # FB_NET_FIELD_NAMES = ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
 # SOCIAL_NETWORKS = ['profireader', 'google', 'facebook', 'linkedin', 'twitter', 'microsoft', 'yahoo']
@@ -168,9 +161,6 @@ class User(Base, UserMixin, PRBase):
                  pass_reset_key=None,
                  pass_reset_conf_tm=None,
                  ):
-
-        # self.user_rights_in_profireader_def = user_rights_in_profireader_def
-        # self.user_rights_in_profireader_undef = user_rights_in_profireader_undef
 
         self.employers = employers
 
@@ -469,7 +459,7 @@ class User(Base, UserMixin, PRBase):
     def get_client_side_dict(self, fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url'):
         return self.to_dict(fields)
 
-class Group(Base, PRBase):
 
+class Group(Base, PRBase):
     __tablename__ = 'group'
     id = Column(TABLE_TYPES['string_30'], primary_key=True)

@@ -4,7 +4,9 @@
     {% include 'front/bird/head.html' %}
 </head>
 
-<body>
+<body {% if member_company %}
+    class="member-company"
+{% endif %}>
 {% include 'front/bird/nav.html' %}
 <br/>
 <br/>
@@ -12,6 +14,13 @@
 <div class="container">
 
     <div class="row site-content">
+
+        {% if member_company %}
+            {% include 'front/bird/subportal_nav.html' %}
+        {% endif %}
+
+
+
         <!-- Blog Entries Column -->
         <div class="col-md-9">
 
@@ -28,10 +37,8 @@
   *
   */-->
 
-<ins data-revive-zoneid="3" data-revive-id="f76734462838a80d480b0a681f019555"></ins>
-<script async src="//ban.prominfo.com.ua/delivery/asyncjs.php"></script>
-
-
+            <ins data-revive-zoneid="3" data-revive-id="f76734462838a80d480b0a681f019555"></ins>
+            <script async src="//ban.prominfo.com.ua/delivery/asyncjs.php"></script>
 
 
             <a href="#" class="right-banner"></a>
@@ -42,22 +49,26 @@
   *
   */-->
 
-<ins data-revive-zoneid="3" data-revive-id="f76734462838a80d480b0a681f019555"></ins>
-<script async src="//ban.prominfo.com.ua/delivery/asyncjs.php"></script></a>
+                <ins data-revive-zoneid="3" data-revive-id="f76734462838a80d480b0a681f019555"></ins>
+                <script async src="//ban.prominfo.com.ua/delivery/asyncjs.php"></script>
+            </a>
             <a href="#" class="right-banner"></a>
             <a href="#" class="right-banner"></a>
 
 
             {% if articles_related %}
-                {% for article_related_id  in articles_related %}
-                    <div>
-                    {{ articles_related[article_related_id]['title'] }}<br/>
-                    {{ articles_related[article_related_id]['company']['name'] }}<br/>
-                    {{ articles_related[article_related_id]['cr_tm'] }}<br/>
-                    <hr/>
-                    </div>
-                {% endfor %}
+                <div class="right-list-container">
+                    {% for article_related_id  in articles_related %}
+                        <div class="list-elements right-sidebar">
+                            <h2 class="item-title">{{ articles_related[article_related_id]['title'] }}</h2>
 
+                            <div class="item-additional-info">
+                                <div class="item-company">{{ articles_related[article_related_id]['company']['name'] }}</div>
+                                <div class="item-publication-date">{{ articles_related[article_related_id]['cr_tm'] }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
             {% endif %}
 
         </div>

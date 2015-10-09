@@ -39,22 +39,19 @@ def confirm_create(json):
     return Article.save_new_article(g.user_dict['id'], **json).save().get_client_side_dict()
 
 
-@article_bp.route('/update/<string:article_company_id>/',
-                  methods=['GET'])
+@article_bp.route('/update/<string:article_company_id>/', methods=['GET'])
 def show_form_update(article_company_id):
     return render_template('article/update.html',
                            article_company_id=article_company_id)
 
 
-@article_bp.route('/update/<string:article_company_id>/',
-                  methods=['POST'])
+@article_bp.route('/update/<string:article_company_id>/', methods=['POST'])
 @ok
 def load_form_update(json, article_company_id):
     return ArticleCompany.get(article_company_id).get_client_side_dict()
 
 
-@article_bp.route('/save/<string:article_company_id>/',
-                  methods=['POST'])
+@article_bp.route('/save/<string:article_company_id>/', methods=['POST'])
 @ok
 def save(json, article_company_id):
     json.pop('company')
@@ -82,8 +79,7 @@ def search_for_company_to_submit(json):
     return companies
 
 
-@article_bp.route('/submit_to_company/<string:article_id>/',
-                  methods=['POST'])
+@article_bp.route('/submit_to_company/<string:article_id>/', methods=['POST'])
 @ok
 def submit_to_company(json, article_id):
     a = Article.get(article_id)
@@ -91,12 +87,13 @@ def submit_to_company(json, article_id):
     return {'article': a.get(article_id).get_client_side_dict(),
             'company_id': json['company_id']}
 
-@article_bp.route('/resubmit_to_company/<string:article_company_id>/',
-                  methods=['POST'])
+
+@article_bp.route('/resubmit_to_company/<string:article_company_id>/', methods=['POST'])
 @ok
 def resubmit_to_company(json, article_company_id):
     a = ArticleCompany.get(article_company_id)
     if not a.status == ARTICLE_STATUS_IN_COMPANY.declined:
-        raise Exception('article should have %s to be resubmited' % ARTICLE_STATUS_IN_COMPANY.declined)
+        raise Exception('article should have %s to be resubmited' %
+                        ARTICLE_STATUS_IN_COMPANY.declined)
     a.status = ARTICLE_STATUS_IN_COMPANY.submitted
     return {'article': a.save().get_client_side_dict()}

@@ -42,15 +42,18 @@ class Company(Base, PRBase):
     phone2 = Column(TABLE_TYPES['phone'])
     email = Column(TABLE_TYPES['email'])
     short_description = Column(TABLE_TYPES['text'])
-    portal = relationship('Portal', secondary='company_portal', backref=backref('companies',
-                                                                                lazy='dynamic'))
-    own_portal = relationship('Portal',
-                              backref="own_company", uselist=False,
-                              foreign_keys='Portal.company_owner_id')
+    portal = relationship('Portal', secondary='company_portal', back_populates='companies')
 
-    user_owner = relationship('User', backref='companies')
-    # employees = relationship('User', secondary='user_company',
-    #                          lazy='dynamic')
+    own_portal = relationship('Portal',
+                              back_populates='own_company', uselist=False,
+                              foreign_keys='Portal.company_owner_id',
+                              )
+    user_owner = relationship('User', back_populates='companies')
+    employees = relationship('User',
+                             secondary='user_company',
+                             back_populates='employers',
+                             lazy='dynamic')
+
     # todo: add company time creation
     logo_file_relationship = relationship('File',
                                           uselist=False,
@@ -67,9 +70,7 @@ class Company(Base, PRBase):
                 'message': 'Company name %(name)s already exist. Please choose another name',
                 'data': self.get_client_side_dict()})
 
-        user_company = UserCompany(status=STATUS.ACTIVE(),
-                                   rights_int=COMPANY_OWNER_RIGHTS
-                                   )
+        user_company = UserCompany(status=STATUS.ACTIVE(), rights_int=COMPANY_OWNER_RIGHTS)
         user_company.employer = self
         g.user.employer_assoc.append(user_company)
         g.user.companies.append(self)
@@ -151,6 +152,7 @@ def forbidden_for_current_user(**kwargs):
 # TODO: see the function params_for_user_company_business_rules.
 def simple_permissions(rights):
     def business_rule(**kwargs):
+        # TODO (AA to AA): Implement json handling when json is available among other parameters.
         params = kwargs['json'] if 'json' in kwargs.keys() else kwargs
 
         keys = params.keys()

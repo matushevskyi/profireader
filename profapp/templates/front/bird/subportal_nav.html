@@ -1,10 +1,10 @@
-<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+<div class="collapse navbar-collapse subportal" id="bs-example-navbar-collapse-1">
 
     <div class="centred">
         <a class="" href="{{ url_for('front.subportal',
                                    member_company_id = member_company['id'] ,
-                                   member_company_name = member_company['name']) }}"><img
-                style="width: 50px; height: 40px; background-size: cover; background-image: url({{ file_url(member_company['logo_file_id']) }})"/></a>
+                                   member_company_name = member_company['name']) }}"><img class="subportal-cover"
+                style="background-image: url({{ file_url(member_company['logo_file_id']) }})"/></a>
     </div>
 
 

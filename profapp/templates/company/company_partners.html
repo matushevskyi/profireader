@@ -14,7 +14,7 @@
 
     <script>
         module.controller('portal_list', ['$scope', '$ok', function ($scope, $ok) {
-            $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
+            $scope.url_portal_profile = {{ raw_url_for('portal.profile')|safe }};
             $scope.url_search_for_portal = function () { return( '/portal/search_for_portal_to_join/' ); };
 {#            {{ raw_url_for('portal.search_for_portal_to_join')|safe }};#}
             $scope.url_join = {{ raw_url_for('portal.apply_company')|safe }};
@@ -126,8 +126,8 @@
 
         <div ng-if="data.portals_partners!=''">
             This company portals-partners:
-            <span ng-repeat="portals in data.portals_partners">
-                <a href="{{ url_company_profile({company_id: portals.company_owner_id}) }}">"{{ portals.name }}" </a>
+            <span ng-repeat="portal in data.portals_partners">
+                <a href="{{ url_portal_profile({portal_id: portal.id}) }}">"{{ portal.name }}" </a>
             </span>
         </div>
     </h3>

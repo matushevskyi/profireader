@@ -24,16 +24,17 @@ import jinja2
 from .models.users import User
 
 
-def load_database():
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import scoped_session, sessionmaker
-    from config import ProductionDevelopmentConfig
+def load_database(db_config):
+    def load_db():
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import scoped_session, sessionmaker
 
-    engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
-    db_session = scoped_session(sessionmaker(autocommit=False,
-                                             autoflush=False,
-                                             bind=engine))
-    g.db = db_session
+        engine = create_engine(db_config)
+        db_session = scoped_session(sessionmaker(autocommit=False,
+                                                 autoflush=False,
+                                                 bind=engine))
+        g.db = db_session
+    return load_db
 
 
 def close_database(exception):
@@ -201,15 +202,16 @@ def create_app(config='config.ProductionDevelopmentConfig',
 
     app.config.from_object(config)
     app.config['SERVER_NAME'] = host
+    # x = app.config['SQLALCHEMY_DATABASE_URI']
 
     babel = Babel(app)
 
     app.teardown_request(close_database)
-    app.before_request(load_database)
+    app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))
+    app.config['DEBUG'] = True
 
     app.before_request(load_user)
     app.before_request(setup_authomatic(app))
-
 
     if front == 'y':
         register_blueprints_front(app)
@@ -243,9 +245,6 @@ def create_app(config='config.ProductionDevelopmentConfig',
     app.jinja_env.globals.update(raw_url_for=raw_url_for)
     app.jinja_env.globals.update(pre=pre)
     app.jinja_env.globals.update(file_url=file_url)
-
-
-
 
     # see: http://flask.pocoo.org/docs/0.10/patterns/sqlalchemy/
     # Flask will automatically remove database sessions at the end of the

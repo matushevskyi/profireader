@@ -3,7 +3,7 @@ import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", help="host", default='aprofi.d.ntaxa.com')
+    parser.add_argument("--host", help="host", default='profi.ntaxa.com')
     parser.add_argument("--port", help="port", default='8080', type=int)
     parser.add_argument("--front", help="frontend", default='n')
     args = parser.parse_args()

@@ -22,7 +22,8 @@ class Config(object):
     # to /etc/hosts
 
     #SERVER_NAME = 'aprofi.a.ntaxa.com'
-    SERVER_NAME = 'aprofi.d.ntaxa.com'
+    SERVER_NAME = 'profi.ntaxa.com'
+    #SERVER_NAME = 'aprofi.d.ntaxa.com'
     #SERVER_NAME = 'profireader.a:8080'
     #SERVER_NAME = 'profireader.net:8080'
 
@@ -155,8 +156,8 @@ class ProductionDevelopmentConfig(Config):
         # Statement for enabling the development environment
         DEBUG = True
 
-class FrontConfig(Config):
 
+class FrontConfig(Config):
     SERVER_NAME = 'companyportal.d.ntaxa.com'
     host = os.getenv('PRODUCTION_SERVER_DB_HOST', 'companyportal.d.ntaxa.com')
     username = os.getenv('PRODUCTION_SERVER_DB_USERNAME', Config.username)
@@ -200,10 +201,11 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False
 
     # Define database connection parameters
-    db_name = 'profireader_test'
+    host = secret_data.DB_HOST
+    database = secret_data.DB_NAME_UNITTEST
 
     # Define the database - we are working with
     SQLALCHEMY_DATABASE_URI = \
-        database_uri(Config.host, Config.username, Config.password, db_name)
+        database_uri(host, Config.username, Config.password, database)
 
     SITE_TITLE = "TEST"

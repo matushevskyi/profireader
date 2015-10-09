@@ -86,8 +86,7 @@ class PRBase:
                             '.'.join(columnsdevided))
 
         columns = class_mapper(self.__class__).columns
-        realations = {a: b for (a, b) in class_mapper(self.__class__).
-            relationships.items()}
+        relations = {a: b for (a, b) in class_mapper(self.__class__).relationships.items()}
 
         get_key_value = lambda o: o.strftime('%c') if isinstance(
             o, datetime.datetime) else o
@@ -100,8 +99,7 @@ class PRBase:
             del req_columns['*']
 
         if len(req_columns) > 0:
-            columns_not_in_relations = list(set(req_columns.keys()) -
-                                            set(realations.keys()))
+            columns_not_in_relations = list(set(req_columns.keys()) - set(relations.keys()))
             if len(columns_not_in_relations) > 0:
                 raise ValueError(
                     "you requested not existing attribute(s) `%s%s`" % (
@@ -109,11 +107,11 @@ class PRBase:
             else:
                 raise ValueError("you requested for attribute(s) but "
                                  "relationships found `%s%s`" % (
-                    prefix, '`, `'.join(set(realations.keys()).
+                    prefix, '`, `'.join(set(relations.keys()).
                                         intersection(
                             req_columns.keys())),))
 
-        for relationname, relation in realations.items():
+        for relationname, relation in relations.items():
             if relationname in req_relationships or '*' in \
                     req_relationships:
                 if relationname in req_relationships:

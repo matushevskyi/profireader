@@ -35,7 +35,6 @@ def get_params(**argv):
     return search_text, portal, sub_query
 
 
-
 def portal_and_settings(portal):
     ret = portal.get_client_side_dict()
     newd = []

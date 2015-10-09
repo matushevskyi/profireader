@@ -67,6 +67,7 @@ def material_details(company_id, article_id):
 @company_bp.route('/material_details/<string:company_id>/<string:article_id>/', methods=['POST'])
 @login_required
 @ok
+#@check_rights(simple_permissions([]))
 def load_material_details(json, company_id, article_id):
     article = Article.get_one_article(article_id)
     portals = {port.portal_id: port.portal.get_client_side_dict() for port in
@@ -149,7 +150,6 @@ def confirm_create(json):
 @company_bp.route('/profile/<string:company_id>/')
 @login_required
 @check_rights(simple_permissions(['manage_rights_company']))
-
 def profile(company_id):
     company = db(Company, id=company_id).one()
     user_rights = list(g.user.user_rights_in_company(company_id))
@@ -247,8 +247,8 @@ def subscribe(company_id):
 
 @company_bp.route('/search_for_company_to_join/', methods=['POST'])
 @login_required
-# @check_rights(simple_permissions([]))
 @ok
+# @check_rights(simple_permissions([]))
 def search_for_company_to_join(json):
     companies = Company().search_for_company_to_join(g.user_dict['id'], json['search'])
     return companies
@@ -256,18 +256,17 @@ def search_for_company_to_join(json):
 
 @company_bp.route('/search_for_user/<string:company_id>', methods=['POST'])
 @login_required
-# @check_rights(simple_permissions([]))
 @ok
+# @check_rights(simple_permissions([]))
 def search_for_user(json, company_id):
-
     users = UserCompany().search_for_user_to_join(company_id, json['search'])
     return users
 
 
 @company_bp.route('/send_article_to_user/', methods=['POST'])
 @login_required
-# @check_rights(simple_permissions([]))
 @ok
+# @check_rights(simple_permissions([]))
 def send_article_to_user(json):
 
     return {'user': json['send_to_user']}
@@ -275,8 +274,8 @@ def send_article_to_user(json):
 
 @company_bp.route('/join_to_company/<string:company_id>/', methods=['POST'])
 @login_required
-# @check_rights(simple_permissions([]))
 @ok
+#@check_rights(simple_permissions([]))
 def join_to_company(json, company_id):
     company_role = UserCompany(user_id=g.user_dict['id'],
                                company_id=json['company_id'],

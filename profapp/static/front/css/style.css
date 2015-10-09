@@ -5,6 +5,10 @@ body {
 
 }
 
+/*body.member-company{*/
+    /*padding-top: 169px;*/
+/*}*/
+
 h1, h2, h3, h4, h5, h6{
     font-family: 'Droid Serif', serif!important;
 }
@@ -204,18 +208,42 @@ position: relative;
     z-index: 998;
 }
 
-.block-item .item-additional-info .item-company {
+.right-list-container{
+    background: #fff;
+    padding: 10px;
+}
+
+.list-elements.right-sidebar{
+    margin-bottom: 15px;
+    border-bottom: 1px #ccc solid;
+}
+
+.list-elements.right-sidebar .item-title{
+    font-size: 18px;
+}
+
+.block-item .item-additional-info .item-company,
+.list-elements.right-sidebar .item-additional-info .item-company {
     float: left;
     position: relative;
     padding-left: 18px;
     background: transparent url("../img/article/icons/company.png") no-repeat left center;
 }
 
-.block-item .item-additional-info .item-publication-date {
+.list-elements.right-sidebar .item-additional-info .item-company{
+    float: none;
+}
+
+.block-item .item-additional-info .item-publication-date
+.list-elements.right-sidebar .item-publication-date {
     float: right;
     padding-left: 18px;
     background: transparent url("../img/article/icons/calendar.png") no-repeat left center;
 
+}
+
+.list-elements.right-sidebar .item-publication-date{
+    float: none;
 }
 
 .block-item .item-type,
@@ -522,3 +550,37 @@ footer .row {
     padding-right: 0;
 }
 
+.col-md-3{
+    /*width: 215px;*/
+    padding-left: 17.5px;
+}
+
+
+/* --------------------------------------------------- */
+
+.subportal.collapse.navbar-collapse{
+    margin: 30px 0px 15px 0px;
+}
+
+.subportal.collapse.navbar-collapse ul{
+    width: 100%;
+    background: #F5F5F5;
+}
+
+.subportal.collapse.navbar-collapse ul #navigation_selected_division{
+ color: #fff;
+    background: #32b264;
+}
+
+.subportal.collapse.navbar-collapse ul li {
+    border-right: rgba(255, 255, 255, 0.2);
+}
+
+.subportal-cover{
+    width: 100%;
+    height: 100px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-color: #fff;
+    background-position: center;
+}

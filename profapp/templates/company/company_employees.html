@@ -13,7 +13,7 @@
 {% endblock company_base %}
     <span ng-cloak ng-show="{{ g.user_dict['id'] }}">
 
-        {% for key in company_user_rights %}
+        {% for user_id in company_user_rights %}
             {% if not curr_user %}
                 <a href="{{ url_for('company.subscribe', company_id=company.id)}}">Subscribe to this company</a>
             {% endif %}
@@ -27,7 +27,7 @@
         <input type="hidden" name="company_id" id="company_id" value="{{ company.id }}">
               <dt>
                 <img src="{{ company_user_rights[user_id]['user'].profireader_small_avatar_url }}" style="width:100px;height:100px;border:0">
-                {{ company_user_rights[user_id]['name'] }} {% if g.user_dict['id']==user_id %} YOU!!! {% endif %}{% if company_user_rights[user_id]['status']=='suspended' %} - Suspended<br>{% for c_user in curr_user %}{% if curr_user[c_user]['rights'][Right['suspend_employee']] %}<a href="{{ url_for('company.unsuspend', user_id=user_id, company_id=company_id) }}">Unsuspend</a>{% endif %}{% endfor %}{% endif %}<br>
+                {{ company_user_rights[user_id]['name'] }} {% if g.user_dict['id']==user_id %} (you) {% endif %}{% if company_user_rights[user_id]['status']=='suspended' %} - Suspended<br>{% for c_user in curr_user %}{% if curr_user[c_user]['rights'][Right['suspend_employee']] %}<a href="{{ url_for('company.unsuspend', user_id=user_id, company_id=company_id) }}">Unsuspend</a>{% endif %}{% endfor %}{% endif %}<br>
                 Phone number : {{ company_user_rights[user_id]['user'].phone_number }}<br>
                 Email : {{ company_user_rights[user_id]['user'].show_email }}
                 Subscribed : {{ company_user_rights[user_id]['date'] }}
@@ -75,7 +75,7 @@
         {% endif %}
     {% endfor %}
 
-            {% for c_user in curr_user %}
+    {% for c_user in curr_user %}
         {% if curr_user[c_user]['rights'][Right['suspend_employee']]==true and company_user_rights[user_id]['status']=='active' and c_user != user_id and curr_user[c_user]['status']=='active' %}
         <form class="suspend_employee" action="{{ url_for('company.fire_employee') }}" onsubmit="return AjaxPost()" method="post">
         <input type="hidden" id='company_id' name="company_id" value="{{ company.id }}">
@@ -100,23 +100,23 @@
  };
 </script>
 
-{% for key in company_user_rights %}
+{% for user_id in company_user_rights %}
     {% if curr_user %}
         {% for c_user in curr_user %}
             {% if curr_user[c_user]['rights'][Right['manage_rights_company']]==true or company.author_user_id==g.user_dict['id'] %}
-                {% if company_user_rights[key]['status'] == 'nonactive' %}
-                    User {{ company_user_rights[key]['name'] }} send query to your company<br>
+                {% if company_user_rights[user_id]['status'] == 'nonactive' %}
+                    User {{ company_user_rights[user_id]['name'] }} send query to your company<br>
                     <form class="add_subscriber" action="{{ url_for('company.confirm_subscriber') }}" onsubmit="return AjaxPost2()" id="subscribe" method="post">
                         <input type="hidden" id="company_id" name="company_id" value="{{ company.id }}">
-                        <input type="hidden" id="user_id" name="user_id" value="{{ key }}">
+                        <input type="hidden" id="user_id" name="user_id" value="{{ user_id }}">
                         <input type="hidden" id="req1" name="req" value="True">
-                        <input type="submit" id="apply" value="Add {{ company_user_rights[key]['name'] }} to your company">
+                        <input type="submit" id="apply" value="Add {{ company_user_rights[user_id]['name'] }} to your company">
                     </form>
                     <form class="add_subscriber" action="{{ url_for('company.confirm_subscriber') }}" onsubmit="return AjaxPost2()" id="subscribe" method="post">
                         <input type="hidden" id="company_id" name="company_id" value="{{ company.id }}">
-                        <input type="hidden" id="user_id" name="user_id" value="{{ key }}">
+                        <input type="hidden" id="user_id" name="user_id" value="{{ user_id }}">
                         <input type="hidden" id="req1" name="req" value='False'>
-                        <input type="submit" id="reject" value="Don't add {{ company_user_rights[key]['name'] }} to your company">
+                        <input type="submit" id="reject" value="Don't add {{ company_user_rights[user_id]['name'] }} to your company">
                     </form>
                 {% endif %}
             {% endif %}
