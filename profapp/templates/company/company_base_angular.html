@@ -1,11 +1,11 @@
 <span ng-controller="UserLoginController" class="topbar-menu-links">
     <span ng-cloak ng-show="user.id">
-        <a href="{{ url_for('company.materials', company_id = company_id) }}">Materials</a>
-        <a href="{{ url_for('portal.publications', company_id = company_id) }}">Publications</a>
-        <a href="{{ url_for('company.show') }}">Readers</a>
-        <a href="{{ url_for('portal.partners', company_id = company_id) }}">Companies Partners</a>
-        <a href="{{ url_for('company.show') }}">Comments</a>
-        <a href="{{ url_for('company.employees', company_id = company_id) }}">Employees</a>
+        <a href="{{ url_for('company.materials', company_id = company_id) }}">Materials</a> |
+        <a href="{{ url_for('portal.publications', company_id = company_id) }}">Publications</a> |
+        Readers |
+        <a href="{{ url_for('portal.partners', company_id = company_id) }}">Companies Partners</a> |
+        Comments |
+        <a href="{{ url_for('company.employees', company_id = company_id) }}">Employees</a> |
         <a href="{{ url_for('company.profile', company_id = company_id) }}">Profile</a>
     </span>
 </span>

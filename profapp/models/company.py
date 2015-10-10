@@ -42,6 +42,7 @@ class Company(Base, PRBase):
     phone2 = Column(TABLE_TYPES['phone'])
     email = Column(TABLE_TYPES['email'])
     short_description = Column(TABLE_TYPES['text'])
+    about = Column(TABLE_TYPES['text'])
     portal = relationship('Portal', secondary='company_portal', back_populates='companies')
 
     own_portal = relationship('Portal',
@@ -131,7 +132,7 @@ class Company(Base, PRBase):
                 filter(Company.name.ilike("%" + searchtext + "%")
                        ).all()]
 
-    def get_client_side_dict(self, fields='id,name,country,region,address,phone,phone2,email,short_description,logo_file_id'):
+    def get_client_side_dict(self, fields='id,name,country,region,address,phone,phone2,email,short_description,logo_file_id,about'):
         """This method make dictionary from portal object with fields have written above"""
         return self.to_dict(fields)
 

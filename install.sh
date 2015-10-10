@@ -164,9 +164,9 @@ function menu_hosts {
 sed -i '/\(companyportal\|aprofi\).d.ntaxa.com/d' /etc/hosts
 sed -i '/profi.ntaxa.com/d' /etc/hosts
 echo '' >> /etc/hosts
-echo '127.0.0.1 aprofi.d.ntaxa.com companyportal.d.ntaxa.com file001.profi.ntaxa.com' >> /etc/hosts
 echo '127.0.0.1 db.profi web.profi mail.profi' >> /etc/hosts
-echo '127.0.0.1 profi.ntaxa.com oles.profi.ntaxa.com rodynnifirmy.profi.ntaxa.com derevoobrobka.profi.ntaxa.com viktor.profi.ntaxa.com aa.profi.ntaxa.com md.profi.ntaxa.com oleh.profi.ntaxa.com file001.profi.ntaxa.com' >> /etc/hosts
+echo '127.0.0.1 profi.ntaxa.com oles.profi.ntaxa.com rodynnifirmy.profi.ntaxa.com derevoobrobka.profi.ntaxa.com viktor.profi.ntaxa.com aa.profi.ntaxa.com md.profi.ntaxa.com oleh.profi.ntaxa.com file001.profi.ntaxa.com fsm.profi.ntaxa.com' >> /etc/hosts
+echo '127.0.0.1 test.profi.ntaxa.com test1.profi.ntaxa.com test2.profi.ntaxa.com test3.profi.ntaxa.com test4.profi.ntaxa.com test5.profi.ntaxa.com test6.profi.ntaxa.com test7.profi.ntaxa.com test8.profi.ntaxa.com test9.profi.ntaxa.com' >> /etc/hosts
 cat /etc/hosts" sudo haproxy
     }
 

@@ -30,8 +30,8 @@ class TestCase(Base):
 
     @classmethod
     def tearDownClass(cls):
-        g.db.close()
-        g.db.remove()
+        # g.db.close()
+        # g.db.remove()
         message = 'All tests has been run. '
         print(message)
 
@@ -40,8 +40,8 @@ class TestCase(Base):
         self._ctx.push()
 
     def tearDown(self):
-        g.db.rollback()
-        g.db.close()
+        # g.db.rollback()
+        # g.db.close()
         self._ctx.pop()
 
 

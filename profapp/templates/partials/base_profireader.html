@@ -1,18 +1,9 @@
 <script>
     module.controller('UserLoginController', ['$scope', '$modal', function ($scope, $modal) {
         $scope.user = {{ g.user_dict|tojson|safe }};
-        $scope.open_filemanager = function () {
-            console.log('dialog opened');
-            var modalInstance = $modal.open({
-                templateUrl: 'filemanager.html',
-                controller: 'filemanagerCtrl',
-                size: 'filemanager-fullscreen'
-            });
 
-            modalInstance.result.then(function () {
-            }, function () {
-                console.log('Modal dismissed at: ' + new Date());
-            });
+        $scope.open_filemanager = function () {
+            window.location.href = '/filemanager/';
         };
     }]);
 
@@ -25,7 +16,8 @@
     <div class="container">
         {% raw %}
         <script type="text/ng-template" id="filemanager.html">
-            <iframe src="{{ src }}" style="border: none; margin: 0px; padding: 0px; width: 100%; height: 100%"></iframe>
+            <iframe src="{{ src }}"
+                    style="border: none; margin: 0px; padding: 0px; width: 100%; height: 100%"></iframe>
         </script>
         {% endraw %}
         <div class="container-fluid">

@@ -8,14 +8,15 @@
     <h2>{{ member_company['name'] }}</h2>
 
     {% for user_id in company_users  %}
-        <div>
+        <div style="margin: 2px; clear: both">
         <img width="50" height="50" style="
+                float: left;
+                margin-right: 1em;
                 background-size: cover;
-                background-image: url({{ company_users[user_id]['profireader_small_avatar_url'] }})"
-
-                />
-        {{ company_users[user_id]['profireader_name'] }}
-        </div>
+                background-image: url({{ company_users[user_id]['profireader_small_avatar_url'] }})"/>
+        {{ company_users[user_id]['profireader_name'] }}<br/>
+        <a style="clear: both" href="#">sent message</a>
+        </div><br/>
     {% endfor %}
 
     <br/>

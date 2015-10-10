@@ -9,7 +9,7 @@
 {% endblock portal_base %}
 
 
-{% block content %}
+{% block portal_content %}
 
     <script>
         module.controller('companies_list', ['$scope', '$ok', function ($scope, $ok) {
@@ -104,8 +104,7 @@
 
     {% endraw %}
 
-    {% include 'partials/portal_footer_Profireader.html' %}
 
-{% endblock content %}
+{% endblock portal_content %}
 
 

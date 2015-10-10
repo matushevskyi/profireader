@@ -32,11 +32,8 @@ h1, h2, h3, h4, h5, h6{
 .logo {
     display: block;
     position: absolute;
-    top: -50px;
     left: 20px;
-    width: 149px;
-    height: 96px;
-    background: url('../img/big-logo.png') no-repeat;
+    height: 100px;
 }
 
 .fixed .logo {
@@ -579,8 +576,13 @@ footer .row {
 .subportal-cover{
     width: 100%;
     height: 100px;
-    background-size: contain;
-    background-repeat: no-repeat;
     background-color: #fff;
-    background-position: center;
+    overflow: hidden;
+}
+
+.subportal-cover img{
+    height: 100px;
+    background-color: #fff;
+    float: left;
+    margin-right: 1em;
 }

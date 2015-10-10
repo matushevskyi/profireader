@@ -7,7 +7,7 @@
 {% block portal_base %}
     {% include 'partials/portal_base_Profireader.html' %}
 {% endblock portal_base %}
-{% block content %}
+{% block portal_content %}
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
@@ -80,8 +80,4 @@
     </div>
     {% endraw %}
 
-{% endblock content %}
-
-{% block footer %}
-    {% include 'partials/portal_footer_Profireader.html' %}
-{% endblock footer %}
+{% endblock portal_content %}

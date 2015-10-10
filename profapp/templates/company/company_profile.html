@@ -8,31 +8,33 @@
     {% include 'partials/portal_base_Profireader.html' %}
 {% endblock portal_base %}
 
-{% block content %}
+{% block portal_content %}
     {% block company_base %}
-{% include 'company/company_base.html' %}
-{% endblock company_base %}
+        {% include 'company/company_base.html' %}
+    {% endblock company_base %}
 
-    <h2><img  src="{{ image }}" height="100" width="100"> {{ company.name }}
+    <h2><img src="{{ image }}" height="100" width="100"> {{ company.name }}
 
 
-            {% if 'manage_rights_company' in user_rights %}
-                <a href="{{ url_for('company.edit', company_id=company.id) }}">Edit company</a>
-            {% endif %}
+        {% if 'manage_rights_company' in user_rights %}
+            <a href="{{ url_for('company.edit', company_id=company.id) }}">Edit company</a>
+        {% endif %}
     </h2>
-    <h3>{{ company.country }}, {{ company.region }}, {{ company.address }} </h3>
-    <h5>Phone: {{ company.phone }} |  Fax:  {{ company.phone2 }}  |  {{ company.email }}
-            {% if 'manage_rights_company' in user_rights and not company.own_portal %}
-                <a href="{{ url_for('portal.create', company_id=company.id) }}">Create Portal</a>
-            {% endif %}
 
-    </h5>
-    <p><h4> Short description </h4></p>
-    <h5>{{ company.short_description }}</h5>
+    {% if 'manage_rights_company' in user_rights and not company.own_portal %}
+        <a href="{{ url_for('portal.create', company_id=company.id) }}">Create Portal</a>
+    {% else %}
+        portal:
+        <a href="http://{{ company.own_portal.host }}">http://{{ company.own_portal.host }}</a>
+    {% endif %}
 
 
 
-{% endblock content %}
+    {{ company.short_description|safe }}
+
+
+
+{% endblock portal_content %}
 
 {% block footer %}
     {% include 'partials/portal_footer_Profireader.html' %}

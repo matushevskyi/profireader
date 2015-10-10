@@ -7,7 +7,7 @@
 {% block portal_base %}
     {% include 'partials/portal_base_Profireader.html' %}
 {% endblock portal_base %}
-{% block content %}
+{% block portal_content %}
     {% block company_base %}
 {% include 'company/company_base.html' %}
 {% endblock company_base %}
@@ -141,8 +141,5 @@
     <br>
     <a href="{{ url_for('company.suspended_employees', company_id=company.id) }}">FIRED EMPLOYEES</a>
 
-{% endblock content %}
+{% endblock portal_content %}
 
-{% block footer %}
-    {% include 'partials/portal_footer_Profireader.html' %}
-{% endblock footer %}

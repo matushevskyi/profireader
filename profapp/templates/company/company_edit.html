@@ -9,7 +9,7 @@
 {% endblock portal_base %}
 
 
-{% block content %}
+{% block portal_content %}
     <script>
         module.controller('company_create', ['$scope', '$modal', '$ok', function ($scope, $modal, $ok) {
 
@@ -29,8 +29,10 @@
                 return $scope.data;
             };
 
-            $scope.afterSave = function () {
-
+            $scope.afterSave = function (resp) {
+                if (resp && !$scope.data.id) {
+                    window.location.href = '{{ url_for('company.show') |safe }}';
+                }
             };
 
             $scope.articleImageSelected = function (item) {
@@ -78,7 +80,6 @@
                 <h3>{{ data.id ? 'Edit company profile' : 'New company Account' }}</h3>
 
                 <div style="width: 400px;">
-                    Logo<br/>
                     <div ng-click="chooseImage()"
                          style="float: left; margin-left: 50px; width: 300px; height: 240px; border: 1px solid #aaa;
                         background-size: cover; background-image:url({{ logo_file_url }});">
@@ -87,19 +88,25 @@
                 </div>
 
                 <div style="width: 500px; margin-left: 450px;">
-                    Company name <input ng-model="data.name"><br/>
-                    Country <input type="text" ng-model="data.country"><br/>
-                    Region <input type="text" ng-model="data.region"><br/>
-                    Adress <input type="text" ng-model="data.address"><br/>
-                    Phone <input type="text" ng-model="data.phone"><br/>
-                    Fax <input type="text" ng-model="data.phone2"><br/>
-                    Email <input type="text" ng-model="data.email"><br/>
+                    <div class="item"><span class="input_label">Company name</span><input ng-model="data.name"></div>
+                    <div class="item"><span class="input_label">Country</span><input type="text" ng-model="data.country"></div>
+                    <div class="item"><span class="input_label">Region</span><input type="text" ng-model="data.region"></div>
+                    <div class="item"><span class="input_label">Adress</span><input type="text" ng-model="data.address"></div>
+                    <div class="item"><span class="input_label">Phone</span><input type="text" ng-model="data.phone"></div>
+                    <div class="item"><span class="input_label">Fax</span><input type="text" ng-model="data.phone2"></div>
+                    <div class="item"><span class="input_label">Email</span><input type="text" ng-model="data.email"></div>
+                </div>
+
+                <div style="width: 1000px; margin-left: 0px;">
+                    Short description
+                <textarea ui-tinymce="tinymceImageOptions" placeholder=""
+                          ng-model="data.short_description"></textarea><br/>
                 </div>
 
                 <div style="width: 1000px; margin-left: 0px;">
                     About company
-                <textarea ui-tinymce="tinymceImageOptions" placeholder="text"
-                          ng-model="data.short_description"></textarea><br/>
+                <textarea ui-tinymce="tinymceImageOptions" placeholder=""
+                          ng-model="data.about"></textarea><br/>
                 </div>
 
 
@@ -112,7 +119,7 @@
 
 
     {% endraw %}
-{% endblock content %}
+{% endblock portal_content %}
 
 {% block footer %}
     {% include 'partials/portal_footer_Profireader.html' %}
