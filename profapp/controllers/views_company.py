@@ -253,7 +253,7 @@ def update_rights():
 @company_bp.route('/create/', methods=['GET'])
 @tos_required
 @login_required
-# @check_rights(simple_permissions([]))
+# @check_rights()
 def update(company_id=None):
     user_companies = [user_comp for user_comp in current_user.employer_assoc]
     user_have_comp = True if len(user_companies) > 0 else False

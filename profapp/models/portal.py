@@ -621,6 +621,22 @@ class UserPortalReader(Base, PRBase):
                        portal_divisions=[{division.name: division.id}
                                          for division in upr.portal.divisions])
 
+    @staticmethod
+    def get_filter_for_portals_and_plans(portal_name=None, start_end_tm=None, package_name=None):
+        filter_params = []
+        if portal_name:
+            filter_params.append(UserPortalReader.portal_id.in_(db(Portal.id).filter(
+                    Portal.name.ilike('%' + portal_name + '%'))))
+        if start_end_tm:
+            from_tm = datetime.datetime.utcfromtimestamp(int(start_end_tm['from'] + 1) / 1000)
+            to_tm = datetime.datetime.utcfromtimestamp(int(start_end_tm['to'] + 86399999) / 1000)
+            filter_params.extend([UserPortalReader.start_tm >= from_tm,
+                                  UserPortalReader.start_tm <= to_tm])
+        if package_name:
+            filter_params.append(UserPortalReader.portal_plan_id == db(ReaderUserPortalPlan.id).filter(
+                ReaderUserPortalPlan.name.ilike('%' + package_name + '%')))
+        return filter_params
+
 
 class ReaderDivision(Base, PRBase):
     __tablename__ = 'reader_division'

@@ -67,6 +67,11 @@ def portal_and_settings(portal):
 @front_bp.route('<int:page>/', methods=['GET'])
 def index(page=1):
     search_text, portal, _ = get_params()
+    portal = None
+    if not portal:
+        return render_template('front/bird/error.html',
+                           message="No portal found {}".format(request.host),
+                           )
 
     division = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
                                                       portal_division_type_id='index').one()
@@ -206,7 +211,7 @@ def subportal_division(division_name, member_company_id, member_company_name, pa
 
     # articles, pages, page = pagination(query=sub_query, page=page)
 
-    def url_page_division(page=1, search_text=''):
+    def url_page_division(page=1, search_text='', **kwargs):
         return url_for('front.subportal_division', division_name=division_name,
                        member_company_id=member_company_id, member_company_name=member_company_name,
                        page=page, search_text=search_text)

@@ -1,10 +1,5 @@
 {#TODO AA by OZ: pls remove explicit url. use url_for#}
 {% include '_ruslan/reader/_reader_nav.html' %}
-<script>
-    $(document).ready(function(){
-        add('list')
-    });
-</script>
 {% for article_id, article in articles.items() %}
     <div class="block-item list-elements">
         <div class="item-type article">

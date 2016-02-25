@@ -19,6 +19,7 @@
                         data: {'subject': subject, 'text': text},
                         success: function (e) {
                             add_message('message was sent');
+                            window.location.href = '{{ url_for('general.index') }}';
                         }
                     })
         };

@@ -1,51 +1,78 @@
-{#TODO AA by OZ: pls remove explicit url. use url_for#}
+{% extends "_ruslan/_index_layout.html" %}
+{% block title %}{{ _('Profireader reader list') }}{% endblock title %}
+
+{% block portal_content %}
+    {% include '_ruslan/reader/_reader_nav.html' %}
 <script>
-    var favorite = {{ favorite }}
-            favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list')
+    module.controller('list_reader', function ($scope, $ok, $timeout) {
+            $scope.page = 1;
+            $scope.article_details = {{ raw_url_for('article.details_reader') |safe}}
+            $scope.favorite = {{ favorite }}
+            $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
+            $scope.getNextListOfArticles = function() {
+                if($scope.data['pages'] !== 1){
+                    $scope.loading = true;
+                    $scope.page += 1;
+                    $scope.data['next_page'] = $scope.page;
+                    return $ok('', $scope.data, function (resp) {
+                        $scope.data = resp;
+                    }).finally(
+                            $timeout(function(){
+                                $scope.loading = false
+                            }, 2000)
+
+                    )
+                }
+
+            };
+            $(window).scroll(function () {
+                if($scope.loading === false){
+                    if ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
+                      $scope.getNextListOfArticles($scope.page)
+                   }
+                }
+            });
+
+        });
+
 </script>
-{% for article_id, article in articles.items() %}
-
-    <div class="container">
-        <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-7 reader-content">
-
+{% raw %}
+    <div ng-init="loadData()" class="container" ng-controller="list_reader">
+        <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-7 reader-content" ng-repeat="article in data.articles">
             <div class="block-item list-elements">
                 <div class="item-type article">
                     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
-                        <img class="logo-portal-news" src="{{ article['portal']['logo']|safe }}">
+                        <img class="logo-portal-news" ng-src="{{ article.portal.logo }}">
                     </div>
                     <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
 
                         <span class="label label-success"><a target="_blank"
-                                                             href="//{{ article['portal']['host']|safe }}/{{ article['division']['name'] }}/1/?search_text=">{{ article['division']['name']|safe }}</a></span>
+                                                             href="//{{ article.portal.host }}/{{ article.division.name}}/1/?search_text=">{{ article.division.name}}</a></span>
                         <a target="_blank"
-                           href="//{{ article['portal']['host']|safe }}/"
-                           class="item-company">{{ article['company']['name']|safe }}</a>
+                           href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
+                           class="item-company">{{ article.portal.name}}</a>
 
-{#                        <a target="_blank" href="">{{ article['portal']['name']|safe }}</a>#}
-                        <div class="item-read_count">Read: {{ article['read_count'] }}
+                        <a target="_blank" href="">{{ article.company.name }}</a>
+                        <div class="item-read_count">Read: {{ article.read_count }}
                             <div style="display: inline;"
-                                 class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
+                                 class="item-publication-date">{{ article.publishing_tm }}</div>
                         </div>
                     </div>
                 </div>
-                <img class="list-reader-image" src="{{ fileUrl(article['image_file_id']) }}" alt="img">
+                <img class="list-reader-image" pr-image="article.image_file_id" }} alt="img">
                 <h3 class="item-title">
                     <a target="_blank"
-                       href="{{ url_for('article.details_reader', article_portal_division_id=article_id) }}">{{ article['title']|safe }}</a>
-                    {% if article['tags'] %}
-                        <span class="tag-in-article">
-                            {% for tag in article['tags'] %}
-                                <a target="_blank" href="#">{{ tag }}</a>
-                            {% endfor %}
+                       href="{{ article_details({article_portal_division_id: article.id}) }}">{{ article.title}}</a>
+                        <span ng-if="article.tags" class="tag-in-article">
+                                <a target="_blank" href="#" ng-repeat="tag in article.tags">{{ tag }}</a>
                         </span>
-                    {% endif %}
                 </h3>
                 <div class="item-short-content">
-                    <p>{{ article['short']|safe }}</p>
+                    <p>{{ article.short}}</p>
                 </div>
                 <div class="row">
                     <div class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5">
-                        <i class="fa fa-heart-o"></i> Favorite
+                        <i ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i ng-if="article.is_favorite" class="fa fa-heart"></i> Favorite
                     </div>
                     <div class="col-lg-5 col-md-5 col-sm-5 col-xs-5">
                         <span class="pull-right"><i class="fa fa-share"></i> Share</span>
@@ -54,13 +81,10 @@
                 <div class="item-additional-info">
                 </div>
                 <div class="bottom-hide"></div>
-                <img src="//static.profireader.com/static/images/0.gif" class="block-item-img"
-                     style="background-image: url({{ fileUrl(article['image_file_id']) }})"/>
+                <img pr-image="article.image_file_id" src="//static.profireader.com/static/images/0.gif" class="block-item-img"/>
             </div>
         </div>
+    <h3 ng-if="!data.articles && !loading" style="text-align: center">{{ __('Your portals does"t have articles') }}</h3>
     </div>
-{% else %}
-    <h3 style="text-align: center">{{ __('Your portals does"t have articles') }}</h3>
-{% endfor %}
-<br/>
-{% include 'partials/pager.html' %}
+{% endraw %}
+{% endblock portal_content %}

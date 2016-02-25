@@ -899,6 +899,11 @@ class ReaderArticlePortalDivision(Base, PRBase):
         article.favorite = True if favorite else False
 
     @staticmethod
+    def article_is_favorite(user_id, article_portal_division_id):
+        reader_article = db(ReaderArticlePortalDivision, user_id=user_id, article_portal_division_id=article_portal_division_id).first()
+        return reader_article.favorite if reader_article else False
+
+    @staticmethod
     def add_to_table_if_not_exists(article_portal_division_id):
         if not db(ReaderArticlePortalDivision,
                   user_id=g.user_id, article_portal_division_id=article_portal_division_id).count():
