@@ -37,9 +37,6 @@ to recover db from dump:
 virtual environment (on Python 3) with all necessary packages have to be created:
 # pyvenv env && source env/bin/activate && pip3 install -r requirements.txt
 
-(if you want to create a virtual environment on Python 2 run the following:
-# virtualenv env2 && . env2/bin/activate && pip install -r requirements.txt )
-
 to work with our DB you should install VPN. see instructions:
 http://jira.ntaxa.com/browse/NTAXA-6
 
@@ -55,3 +52,5 @@ mkdir /usr/java
 ln -s /usr/lib/jvm/java-7-openjdk-amd64 /usr/java/default
 wget http://download.nextag.com/apache/lucene/solr/5.3.0/solr-5.3.0.tgz
 tar -zxvf solr-5.3.0.tgz
+
+
