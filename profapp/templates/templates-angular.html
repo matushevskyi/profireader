@@ -37,11 +37,11 @@
             portal: {id: portal_id},
             company: {id: company_id}
         };
-        $scope.data[(action === 'SUBMIT') ? 'material' : 'publication'] = {id: material_or_publication_id}
+        $scope.data[(action === 'SUBMIT') ? 'material' : 'publication'] = {id: material_or_publication_id};
 
         $scope.afterSave = function (resp, defcallback) {
             $uibModalInstance.close(resp)
-        }
+        };
 
         $scope.amidLoad = function (resp, defaultcallback) {
             if (resp.publication.publishing_tm)

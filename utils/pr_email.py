@@ -50,6 +50,6 @@ class SendEmail:
         return decorator
 
 
-@SendEmail.send_email_decorator(subject='Profireader', text='Text', send_to=('spaun1002@gmail.com', ), template=None)
+@SendEmail.send_email_decorator(subject='Profireader', text='Text', send_to=('profireader.service@gmail.com', ), template=None)
 def email_send(subject=None, text=None, send_to=(), template=None):
     return jsonify(dict(message='Email was successfully sent'))

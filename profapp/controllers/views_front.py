@@ -67,7 +67,6 @@ def portal_and_settings(portal):
 @front_bp.route('<int:page>/', methods=['GET'])
 def index(page=1):
     search_text, portal, _ = get_params()
-    portal = None
     if not portal:
         return render_template('front/bird/error.html',
                            message="No portal found {}".format(request.host),

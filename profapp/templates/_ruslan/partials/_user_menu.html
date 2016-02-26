@@ -58,23 +58,23 @@
 
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <ul>
-                        <li><a href="{{ url_list_reader() }}" title="Стрічка читача"
+                        <li><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="Стрічка читача"
                                ng-class="{'selected': selected_user_menu == 'line_readers'}"><i
                                 class="fa fa-newspaper-o"></i></a></li>
-                        <li><a href="#" title="Всі повідомлення"
+                        <li><a pr_test="UserMassages" href="#" title="Всі повідомлення"
                                ng-class="{'selected': selected_user_menu == 'messages'}"><i
                                 class="fa fa-envelope-o"></i></a></li>
-                        <li><a href="{{ url_company_show() }}" title="Компанії"
+                        <li><a pr_test="CompaniesList" href="{{ url_company_show() }}" title="Компанії"
                                ng-class="{'selected': selected_user_menu == 'companies_list'}"><i
                                 class="fa fa-building-o"></i></a></li>
-                        <li><a href="#" ng-click="open_filemanager()" title="Менеджер файлів"
+                        <li><a pr_test="FileManeger" href="#" ng-click="open_filemanager()" title="Менеджер файлів"
                                ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
                                 class="fa fa-folder-open-o"></i></a></li>
-                        <li><a href="{{ url_general_help() }}" title="Інформація"
+                        <li><a pr_test="UserInfo" href="{{ url_general_help() }}" title="Інформація"
                                ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-info"></i></a></li>
 
                         <li ng-show="user.id" role="presentation" class="menu-profile">
-                            <a href="{{ url_user_profile({user_id:user.id}) }}" role="button" aria-haspopup="true"
+                            <a pr_test="UserProfile"  href="{{ url_user_profile({user_id:user.id}) }}" role="button" aria-haspopup="true"
                                aria-expanded="false">
                                 <img class="person-small-cover" pr-image="" pr-no-image="{{ user_avatar_url }}">
                                 {{user.name}}

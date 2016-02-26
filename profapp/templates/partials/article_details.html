@@ -6,9 +6,10 @@
 
         <div class="item-additional-info-top"
              style="display: block; width: 100%; padding-bottom: 5px; border-bottom: 1px #ccc solid; margin-bottom: 15px;">
-            <div class="item-company"><a
-                    href="{{ url_for('front.subportal', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}">{{ article['company']['name']|safe }}</a>
+            <div class="item-company"><a href="//profireader.com/company/profile/{{ article['company']['id'] }}">
+                {{ article['company']['name']|safe }}</a>
             </div>
+
             <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
             <div class="item-comments">{{_('Comments')}} 0</div>
         </div>

@@ -31,7 +31,7 @@
 {% block portal_content %}
 <div ng-controller="UserLoginController" >
 <h1 class="nice-title">{{ '{{' }}_('User Profile'){{ '}}' }}<span></span></h1>
-    <a class="h1-btn" href="{{ url_for('user.edit_profile', user_id=user.id) }}">{{ '{{' }}_('Edit profile'){{ '}}' }}</a>
+    <a pr_test="EditProfile" class="h1-btn" href="{{ url_for('user.edit_profile', user_id=user.id) }}">{{ '{{' }}_('Edit profile'){{ '}}' }}</a>
     </div>
 <div class="form info" style="padding-left: 10px" ng-controller="UserLoginController">
     <div ng-controller="UserLoginController" class="user-profile">

@@ -6,7 +6,7 @@
     {#{% include 'partials/reader/head.html' %}#}
 
     <script>
-        var favorite = {{ favorite|tojson }};
+        var favorite = {{ favorite|tojson}};
         function add_delete_favorite(boolean) {
             var article_portal_division_id = {{ article['id']|tojson }};
             $.ajax({
@@ -16,7 +16,7 @@
                 success: function () {
                     var text = document.getElementById('favorite');
                     favorite = boolean;
-                    text.innerHTML = favorite ? 'Delete from favorite' : 'Add to favorite'
+                    text.innerHTML = favorite ? '<i class="fa fa-heart"></i>Delete from favorite' : '<i class="fa fa-heart-o"></i>Add to favorite';
                 }
             })
         }
@@ -27,7 +27,7 @@
             <div class="col-lg-offset-2 col-lg-8 col-md-offset-2 col-md-8 col-sm-offset-2 col-sm-8">
                 <div class="row name-news-details">
                     <h2>{{ article['title']|safe }}
-                        <br><small>Покроковий план досягнення успіху</small>
+                        <br><small>{{ article['subtitle']|safe }}</small>
                     </h2>
                 </div>
                 <div class="row reader-short-info">
@@ -39,9 +39,13 @@
                         <i class="fa fa-calendar"></i>
                         {{ article['publishing_tm']|safe }}
                     </div>
-                    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3" id='favorite'
+                    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3" id='favorite' style="cursor: pointer"
                          onclick="favorite?add_delete_favorite(false):add_delete_favorite(true);">
-                        <i class="fa fa-heart-o"></i>
+                        {% if favorite %}
+                            <i class="fa fa-heart"></i>
+                        {% else %}
+                            <i class="fa fa-heart-o"></i>
+                        {% endif %}
                         <script>document.write(favorite ? 'Delete from favorite' : 'Add to favorite')</script>
                     </div>
                     <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3">

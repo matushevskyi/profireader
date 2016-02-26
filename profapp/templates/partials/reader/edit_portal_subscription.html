@@ -19,6 +19,7 @@
                     url: $scope.reader_edit_url({reader_portal_id: $scope.data.reader_portal_id}),
                     data: $scope.data
                     }).success(function (resp) {
+                            add_message('Configuration successfully saved', null, 1000);
                             $scope.data = resp.data}
             )}}]);
     </script>

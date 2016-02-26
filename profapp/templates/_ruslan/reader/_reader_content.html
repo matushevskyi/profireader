@@ -20,10 +20,8 @@
                             $timeout(function(){
                                 $scope.loading = false
                             }, 2000)
-
                     )
                 }
-
             };
             $(window).scroll(function () {
                 if($scope.loading === false){
@@ -42,7 +40,7 @@
             <div class="block-item list-elements">
                 <div class="item-type article">
                     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
-                        <img class="logo-portal-news" ng-src="{{ article.portal.logo }}">
+                            <img class="logo-portal-news" ng-src="{{ article.portal.logo }}">
                     </div>
                     <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
 
@@ -51,15 +49,17 @@
                         <a target="_blank"
                            href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
                            class="item-company">{{ article.portal.name}}</a>
-
-                        <a target="_blank" href="">{{ article.company.name }}</a>
+                         <!--TODO OZ by SS we need this link?
+                        <!---<a target="_blank" href="">{{ article.company.name }}</a>-->
                         <div class="item-read_count">Read: {{ article.read_count }}
                             <div style="display: inline;"
                                  class="item-publication-date">{{ article.publishing_tm }}</div>
                         </div>
                     </div>
                 </div>
-                <img class="list-reader-image" pr-image="article.image_file_id" }} alt="img">
+                <a type="link" href="{{ article_details({article_portal_division_id: article.id}) }}">
+                    <img class="list-reader-image" pr-image="article.image_file_id" }} alt="img">
+                </a>
                 <h3 class="item-title">
                     <a target="_blank"
                        href="{{ article_details({article_portal_division_id: article.id}) }}">{{ article.title}}</a>

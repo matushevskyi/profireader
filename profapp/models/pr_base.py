@@ -458,7 +458,7 @@ class PRBase:
 
         return self
 
-    def validate(self, is_new):
+    def validate(self, is_new=False):
         return {'errors': {}, 'warnings': {}, 'notices': {}}
 
     def delfile(self):

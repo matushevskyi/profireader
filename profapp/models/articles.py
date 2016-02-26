@@ -390,6 +390,11 @@ class ArticlePortalDivision(Base, PRBase):
                 elif self.event_tm and datetime.now() > self.event_tm:
                     ret['warnings']['event_tm'] = 'Event time in past'
 
+        if ret['errors']:
+            ret['errors']['_'] = 'You have some error'
+        else:
+            ret['notices']['_'] = 'Ok, you can click submit'
+
         # if not self.event_tm:
         #     ret['errors']['event_tm'] = 'Please select event date'
 

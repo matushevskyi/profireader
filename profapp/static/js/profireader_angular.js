@@ -397,11 +397,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             restrict: 'AE',
             link: function (scope, element, attrs) {
                 var elementType = element.prop('nodeName');
-                scope.$watch(attrs['prUserCan'], function (val) {
-                    enable(val)
-                })
 
-                var disable = function (allow) {
+                var enable = function (allow) {
                     if (allow === true) {
                         element.removeProp('disabled');
                         element.removeClass('disabled');
@@ -419,6 +416,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     }
                 }
+
+                scope.$watch(attrs['prUserCan'], function (val) {
+                    enable(val)
+                })
+
+
             }
         };
     })
@@ -1045,6 +1048,7 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
 
                     if (!dontRemove && exists) {
                         $scope.externalEvents.onItemDeselect(findObj);
+                        $scope.isSelectAll = false;
                         index = $scope.listElemens[$scope.addData.field].indexOf(label);
                         $scope.listElemens[$scope.addData.field].splice(index, 1);
                         if ($scope.listElemens[$scope.addData.field].length > 0) {
@@ -1198,10 +1202,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             gridApi.grid.additionalDataForMS = {};
             gridApi.grid.all_grid_data.paginationOptions.pageSize = gridApi.grid.options.paginationPageSize;
             var col = gridApi.grid.options.columnDefs;
-
-            var rowClass = gridApi.grid.options.rowClass
-            gridApi.grid.options.rowTemplate = '<div ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.colDef.name" class="ui-grid-cell' + rowClass + 'ddd" ng-class="{ \'ui-grid-row-header-cell\': col.isRowHeader, \'custom\': true }" ui-grid-cell></div>'
-
             $.each(col, function (ind, c) {
                 col[ind] = $.extend({
                     enableSorting: false,
@@ -1315,6 +1315,12 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 gridApi.grid.options.columnDefs[i].cellTemplate = generateCellTemplate(col[i], i);
 
             }
+            console.log(gridApi)
+            $timeout(function(){
+               console.log($('.ui-grid-row').className)
+                $('.ui-grid-row').addClass('_ss')
+            }, 5000)
+
 
             gridApi.grid['searchItemGrid'] = function (col) {
                 //highLightSubstring(col.filter.text, 'ui-grid-canvas',col.field)
@@ -1669,7 +1675,7 @@ function highlight($el) {
     setTimeout(function () {
         $($el).removeClass('highlight');
     }, 3500);
-}
+};
 
 
 function highLightSubstring(substring, block, element) {

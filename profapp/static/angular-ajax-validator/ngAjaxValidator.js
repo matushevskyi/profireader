@@ -213,7 +213,7 @@
                                     }, 0);
                                 }
                                 catch (e) {
-                                    add_message(e, 'warning');
+                                    add_message(e.message, 'warning');
                                     if (stateonfail) setInParent('afState', stateonfail);
                                     notok(resp);
                                 }

@@ -298,6 +298,7 @@ class MemberCompanyPortal(Base, PRBase):
         PUBLICATION_UNPUBLISH = 2
         PUBLICATION_EDIT = 3
 
+
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
@@ -574,7 +575,7 @@ class UserPortalReader(Base, PRBase):
     start_tm = Column(TABLE_TYPES['timestamp'])
     end_tm = Column(TABLE_TYPES['timestamp'])
     amount = Column(TABLE_TYPES['int'], default=99999)
-    portal = relationship('Portal')
+    portal = relationship('Portal', uselist=False)
     user = relationship('User')
     show_divisions_and_comments = relationship('ReaderDivision', back_populates='user_portal_reader')
 
@@ -659,6 +660,9 @@ class ReaderDivision(Base, PRBase):
 
     @property
     def show_divisions_and_comments(self):
+        print('aaa')
+        print([[sn, True if self._show_division_and_comments & 2 ** ind else False] for ind, sn in
+                enumerate(['show_articles', 'show_comments', 'show_favorite_comments', 'show_liked_comments'])])
         return [[sn, True if self._show_division_and_comments & 2 ** ind else False] for ind, sn in
                 enumerate(['show_articles', 'show_comments', 'show_favorite_comments', 'show_liked_comments'])]
 
