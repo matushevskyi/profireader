@@ -13,7 +13,7 @@
     {% from 'macros.html' import scripts %}
     {{ scripts(names=['croper']) }}
     <script>
-        module.controller('CompanyProfile', ['$scope', function ($scope) {
+        module.controller('CompanyProfile', function ($scope, $timeout) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');
             $scope.user = {{g.user_dict | tojson | safe}};
 
@@ -50,6 +50,10 @@
             $scope.change = function () {
                 $scope.edit = $scope.rights_user_in_company['COMPANY_EDIT_PROFILE'] ? true : false;
                 $scope.save = true
+                $timeout(function () {
+                    angular.element(document.querySelector('#fileInput')).on('change', handleFileSelect);
+                });
+
             };
 
             $scope.afterSave = function (resp, deff) {
@@ -67,9 +71,26 @@
                 deff(resp);
                 $scope.logo_file_url = fileUrl(resp['logo_file_id']);
             };
+            $scope.myImage = '';
+            $scope.myCroppedImage = '';
 
-        }])
-        ;
+            $scope.cropperChanged = function () {
+                console.log($scope.$dataURI);
+            };
+
+            var handleFileSelect = function (evt) {
+                debugger;
+                var file = evt.currentTarget.files[0];
+                var reader = new FileReader();
+                reader.onload = function (evt) {
+                    $scope.$apply(function ($scope) {
+                        $scope.myImage = evt.target.result;
+                    });
+                };
+                reader.readAsDataURL(file);
+            };
+
+        });
     </script>
     {% raw %}
     <div ng-controller="CompanyProfile">
@@ -82,8 +103,25 @@
 
                     <img pr-image="company.logo_file_id" alt="image" ng-show="!edit">
 
-                    <div style="width: 400px;" ng-if="edit">
-                        <div ng-model="data.image" pr-crop pr-company-id="{{ company.id }}"></div>
+                    <div style="width: 400px; height: 400px;" ng-if="edit">
+                        <div>Select an image file: <input type="file" id="fileInput" /></div>
+                        <img-crop
+                                image="myImage"
+                                on-change="cropperChanged()"
+                                aresult-image="myCroppedImage"
+                                achange-on-fly="{boolean}"
+                                area-type="square"
+                                aarea-min-size="{number}"
+                                aresult-image-size="{number}"
+                                aresult-image-format="{string}"
+                                aresult-image-quality="{number}"
+                                on-change="{expression}"
+                                aon-load-begin="{expression}"
+                                aon-load-done="{expression}"
+                                aon-load-error="{expression}"
+                        ></img-crop>
+
+                        <!--                        <div ng-model="data.image" pr-crop pr-company-id="{{ company.id }}"></div> -->
                     </div>
                 </div>
 
