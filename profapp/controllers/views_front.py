@@ -1,6 +1,7 @@
 from .blueprints_declaration import front_bp
 from flask import render_template, request, url_for, redirect, g, current_app, session
-from ..models.articles import Article, ArticlePortalDivision
+from ..models.articles import Article, ArticlePortalDivision, ReaderArticlePortalDivision
+from flask import jsonify
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal, PortalConfig
 from ..models.company import Company
@@ -13,6 +14,7 @@ from config import Config
 from sqlalchemy import and_
 from .request_wrapers import ok
 from ..utils.pr_email import send_email
+import json
 
 
 def get_division_for_subportal(portal_id, member_company_id):
@@ -32,7 +34,6 @@ def get_division_for_subportal(portal_id, member_company_id):
 
 
 def get_params(**argv):
-    # g.portal_theme_path = portal.layout.path
     search_text = request.args.get('search_text') or ''
     app = current_app._get_current_object()
     portal = g.db().query(Portal).filter_by(host=request.host).first()
@@ -155,7 +156,8 @@ def details(article_portal_division_id):
         return redirect(url_for('front.index', search_text=search_text))
     article = ArticlePortalDivision.get(article_portal_division_id)
     article_visibility = article.article_visibility_details()
-    article_dict = article.get_client_side_dict(fields='id, title,short, cr_tm, md_tm, visibility,'
+    article_dict = article.get_client_side_dict(fields='id, title,short, like_count, read_count, cr_tm, '
+                                                       'md_tm, visibility,'
                                                        'publishing_tm, keywords, status, long, image_file_id,'
                                                        'division.name, division.portal.id,'
                                                        'company.name|id')
@@ -164,15 +166,15 @@ def details(article_portal_division_id):
     division = g.db().query(PortalDivision).filter_by(id=article.portal_division_id).one()
     if article_visibility is not True:
         back_to_url('front.details', host=portal.host, article_portal_division_id=article_portal_division_id)
-        return render_template('front/' + g.portal_layout_path + 'cant_read_article.html', redirect_info=article_visibility,
-                               portal=portal_and_settings(portal),
-                               current_division=division.get_client_side_dict())
+    else:
+        article.add_recently_read_articles_to_session()
     related_articles = g.db().query(ArticlePortalDivision).filter(
         and_(ArticlePortalDivision.id != article.id,
              ArticlePortalDivision.portal_division_id.in_(
                  db(PortalDivision.id).filter(PortalDivision.portal_id == article.division.portal_id))
              )).order_by(ArticlePortalDivision.cr_tm.desc()).limit(5).all()
-    favorite = False
+    favorite = article.check_favorite_status(user_id=g.user.id)
+    liked = article.article_is_liked(g.user.id, article_portal_division_id)
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
@@ -182,8 +184,19 @@ def details(article_portal_division_id):
                                for a
                                in related_articles},
                            article=article_dict,
-                           favorite=favorite
+                           favorite=favorite,
+                           liked=liked,
+                           article_visibility=article_visibility is True,
+                           redirect_info=article_visibility
                            )
+
+
+@front_bp.route('/add_to_favorite/', methods=['POST'])
+def add_delete_favorite():
+    favorite = json.loads(request.form.get('favorite'))
+    article_portal_division_id = request.form.get('article_portal_division_id')
+    ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, favorite)
+    return jsonify({'favorite': favorite})
 
 
 @front_bp.route('<string:division_name>/_c/<string:member_company_id>/<string:member_company_name>/')
@@ -315,6 +328,6 @@ def subportal_contacts(member_company_id, member_company_name):
 def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
     send_email(send_to.profireader_email, 'New message',
-               'messanger/email_send_message', user_to=send_to, user_from=g.user_dict,
+               'messenger/email_send_message', user_to=send_to, user_from=g.user_dict,
                in_company=Company.get(member_company_id), message=json['message'])
     return {}

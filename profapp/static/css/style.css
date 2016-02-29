@@ -486,6 +486,64 @@ body {
 .pr-validation-notice {
   border-color: #f44336;
 }
+/* ---Subscriptions--- */
+.submit-subscriptions input {
+  width: 100%;
+  background-color: #00ff00;
+  border: 0;
+  border-radius: 3px;
+  color: #fff;
+  margin-top: 10px;
+  padding: 5px;
+}
+.submit-subscriptions input:hover {
+  color: #fff;
+  background-color: #009627;
+  transition: all 0.2s ease-out;
+}
+.menu-subscriptions {
+  margin-top: 15px;
+  color: #000;
+  margin-bottom: 10px;
+}
+.line-subsc-inside {
+  border-bottom: 1px solid #A0CEC5;
+}
+.center {
+  text-align: center;
+}
+.name-subscriptions h5 {
+  background-color: #18bc9c;
+  color: #fff;
+  float: left;
+  padding: 10px;
+  border-radius: 3px;
+}
+/* ---USER--- */
+.link-page i {
+  margin-top: 7px;
+  color: #C62828;
+}
+.link-page i:hover {
+  color: #A90A0A;
+}
+.link-page h5 {
+  background-color: #18bc9c;
+  color: #fff;
+  float: left;
+  padding: 10px;
+  border-radius: 3px;
+}
+.profile-window h3 {
+  text-align: center;
+}
+.profile-window p {
+  line-height: 10px;
+}
+.profile-window span {
+  color: #000;
+  border-bottom: 1px solid #18bc9c;
+}
 /* ---MEDIA--- */
 @media screen and (max-width: 764px) {
   .menu-site ul {

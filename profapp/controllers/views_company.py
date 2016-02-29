@@ -373,8 +373,10 @@ def load(json, company_id=None):
 @ok
 # @check_rights(simple_permissions([]))
 def search_for_company_to_join(json):
-    companies = Company().search_for_company_to_join(g.user_dict['id'], json['search'])
-    return companies
+    companies, pages, page, count = pagination(query=Company().search_for_company_to_join(g.user_dict['id'], json['search']), page=1, items_per_page=5)
+    print(pages)
+    return [company.get_client_side_dict() for company in
+                          companies]
 
 
 @company_bp.route('/search_for_user/<string:company_id>', methods=['POST'])

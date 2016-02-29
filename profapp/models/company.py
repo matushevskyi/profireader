@@ -208,11 +208,9 @@ class Company(Base, PRBase):
     @staticmethod
     def search_for_company_to_join(user_id, searchtext):
         """Return all companies which are not current user employers yet"""
-        return [company.get_client_side_dict() for company in
-                db(Company).filter(~db(UserCompany, user_id=user_id,
-                                       company_id=Company.id).exists()).
-                    filter(Company.name.ilike("%" + searchtext + "%")
-                           ).all()]
+        return db(Company).filter(~db(UserCompany, user_id=user_id,
+                                       company_id=Company.id).exists()).filter(Company.name.ilike("%" + searchtext + "%")
+                           )
 
     def get_client_side_dict(self,
                              fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
@@ -340,9 +338,15 @@ class UserCompany(Base, PRBase):
 
     banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
 
+
     rights = Column(TABLE_TYPES['binary_rights'](RIGHT_AT_COMPANY),
                     default={RIGHT_AT_COMPANY.FILES_BROWSE: True, RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH: True},
                     nullable=False)
+
+    # TODO: VK by OZ: custom collumn
+    # company_logo = Column(TABLE_TYPES['image'](size=[100,200]),
+    #                 default='324235423-423423',
+    #                 nullable=False)
 
     employer = relationship('Company', backref='employee_assoc')
     employee = relationship('User', backref=backref('employer_assoc', lazy='dynamic'))

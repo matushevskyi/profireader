@@ -30,13 +30,8 @@
             {% raw %}
             $scope.noData = 'No materials';
 
-            $scope.sendData = function (grid_data, setdatafuctions) {
-                $ok($scope.url_search_article({company_id: $scope.company.id}), grid_data, setdatafuctions)
-            };
-
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                loadGridData: $scope.sendData,
-             //   rowTemplate: '<div ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.colDef.name" class="ui-grid-cell" ng-class="{ \'ui-grid-row-header-cell\': col.isRowHeader, \'custom\': true }" ui-grid-cell></div>',
+                urlLoadGridData: $scope.url_search_article({company_id: $scope.company.id}),
                 category: [{
                     name: 'searching',
                     field: 'title&editor.profireader_name',

@@ -352,7 +352,7 @@ class MemberCompanyPortal(Base, PRBase):
         'FREEZE': 'FREEZE',
     }
     ACTIONS_FOR_NONACTIVE = {
-        'REFUSE': 'REFUSE',
+        'WITHDRAW': 'WITHDRAW',
     }
     ACTIONS_FOR_FROZEN = {
         'UNSUBSCRIBE': 'UNSUBSCRIBE',
@@ -370,7 +370,7 @@ class MemberCompanyPortal(Base, PRBase):
     STATUS_FOR_ACTION = {
         'UNSUBSCRIBE': 'DELETED',
         'FREEZE': 'FROZEN',
-        'REFUSE': 'DELETED'
+        'WITHDRAW': 'DELETED'
     }
 
     def actions(self, company_id, partner):

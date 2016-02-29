@@ -6,7 +6,7 @@
             <a href="//{{ article['portal']['host']|safe }}/{{ article['division']['name'] }}/1/?search_text=">{{ article['division']['name']|safe }}</a>
         </div>
         <h2 class="item-title">
-            <a href="{{ url_for('article.details_reader', article_portal_division_id=article_id) }}">{{ article['title']|safe }}</a>
+{#            <a href="{{ url_for('article.details_reader', article_portal_division_id=article_id) }}">{{ article['title']|safe }}</a>#}
             {% if article['tags'] %}
                 <span class="tag-in-article">
                     {% for tag in article['tags'] %}

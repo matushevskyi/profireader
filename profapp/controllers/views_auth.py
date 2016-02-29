@@ -18,6 +18,7 @@ from ..constants.SOCIAL_NETWORKS import SOC_NET_NONE
 from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
 from ..utils.redirect_url import redirect_url
 from utils.pr_email import SendEmail
+from .request_wrapers import ok
 # def _session_saver():
 #    session.modified = True
 
@@ -273,13 +274,10 @@ def confirm(token):
 
 @auth_bp.route('/tos', methods=['POST'])
 @login_required
-def tos():
-    tos_accept = 'accept' in request.form
-    if tos_accept:
-        g.user.tos = True
-        return jsonify(dict(tos=True))
-    else:
-        return jsonify(dict(tos=False))
+@ok
+def tos(json):
+    g.user.tos = json['accept'] == 'accept'
+    return {'tos': g.user.tos}
 
 
 @auth_bp.route('/confirm')
