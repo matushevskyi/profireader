@@ -11,8 +11,6 @@ from utils.db_utils import db
 from flask.ext.login import login_required
 import datetime
 from ..models.files import File
-from collections import OrderedDict
-
 
 @reader_bp.route('/details_reader/<string:article_portal_division_id>')
 @tos_required

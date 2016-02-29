@@ -1,16 +1,10 @@
 from flask import request, current_app, g, flash
-# from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relationship, backref
-from flask.ext.login import logout_user
+from sqlalchemy.orm import relationship
 from flask import session, json
 from urllib import request as req
 from config import Config
 import re
-import urllib
-
-# from db_init import Base, g.db
-from authomatic.providers import oauth2
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..constants.SOCIAL_NETWORKS import SOCIAL_NETWORKS, SOC_NET_NONE
 from ..constants.USER_REGISTERED import REGISTERED_WITH_FLIPPED, \
@@ -22,18 +16,15 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from utils.db_utils import db
 from sqlalchemy import String
 import hashlib
-from flask.ext.login import UserMixin, AnonymousUserMixin
+from flask.ext.login import UserMixin
 from .files import File
 from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
-from sqlalchemy import CheckConstraint
-from sqlalchemy.ext.associationproxy import association_proxy
-from ..constants.STATUS import STATUS
+
 
 class User(Base, UserMixin, PRBase):
     __tablename__ = 'user'
 
-    # PROFIREADER REGISTRATION DATA
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     # personal_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
     system_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
@@ -56,8 +47,10 @@ class User(Base, UserMixin, PRBase):
                            default=datetime.datetime.utcnow)
     last_seen = Column(TABLE_TYPES['timestamp'],
                        default=datetime.datetime.utcnow)
-    profireader_avatar_url = Column(TABLE_TYPES['url'], nullable=False, default='//static.profireader.com/static/no_avatar.png')
-    profireader_small_avatar_url = Column(TABLE_TYPES['url'], nullable=False, default='//static.profireader.com/static/no_avatar_small.png')
+    profireader_avatar_url = Column(TABLE_TYPES['url'], nullable=False,
+                                    default='//static.profireader.com/static/no_avatar.png')
+    profireader_small_avatar_url = Column(TABLE_TYPES['url'], nullable=False,
+                                          default='//static.profireader.com/static/no_avatar_small.png')
     # status_id = Column(Integer, db.ForeignKey('status.id'))
 
     email_conf_token = Column(TABLE_TYPES['token'])
@@ -156,7 +149,6 @@ class User(Base, UserMixin, PRBase):
                  # user_rights_in_profireader_def=[],
                  # user_rights_in_profireader_undef=[],
                  employers=[],
-
                  PROFIREADER_ALL=SOC_NET_NONE['profireader'],
                  GOOGLE_ALL=SOC_NET_NONE['google'],
                  FACEBOOK_ALL=SOC_NET_NONE['facebook'],

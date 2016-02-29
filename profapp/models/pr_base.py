@@ -394,6 +394,26 @@ class PRBase:
     def __init__(self):
         self.query = g.db.query_property()
 
+
+    @staticmethod
+    def str2float(str, onfail = None):
+        try:
+            return float(str)
+        except Exception:
+            return onfail
+
+    @staticmethod
+    def str2int(str, onfail = None):
+        try:
+            return int(str)
+        except Exception:
+            return onfail
+
+    @staticmethod
+    def inRange(what, fromr, tor):
+        return True if (what>=fromr) and (what<=tor) else False
+
+
     @staticmethod
     def parseDate(str):
         try:
@@ -411,6 +431,12 @@ class PRBase:
             ret.update(d)
         return ret
 
+    @staticmethod
+    def del_attr_by_key(dict, keys):
+        for key in keys:
+            if key in dict:
+                del dict[key]
+        return dict
 
 
     # if insert_after_id == False - insert at top

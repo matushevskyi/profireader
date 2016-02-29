@@ -25,6 +25,7 @@ from .users import User
 from ..models.portal import Portal
 from ..models.portal import MemberCompanyPortal
 from ..models.portal import UserPortalReader
+import re
 
 
 class Company(Base, PRBase):
@@ -41,6 +42,8 @@ class Company(Base, PRBase):
                             nullable=False)
     country = Column(TABLE_TYPES['name'], nullable=False, default='')
     region = Column(TABLE_TYPES['name'], nullable=False, default='')
+    city = Column(TABLE_TYPES['name'], nullable=False, default='')
+    postcode = Column(TABLE_TYPES['name'], nullable=False, default='')
     address = Column(TABLE_TYPES['name'], nullable=False, default='')
     phone = Column(TABLE_TYPES['phone'], nullable=False, default='')
     phone2 = Column(TABLE_TYPES['phone'], nullable=False, default='')
@@ -51,8 +54,8 @@ class Company(Base, PRBase):
     STATUSES = {'ACTIVE': 'ACTIVE', 'SUSPENDED': 'SUSPENDED'}
     status = Column(TABLE_TYPES['status'], nullable=False, default=STATUSES['ACTIVE'])
 
-    lat = Column(TABLE_TYPES['float'], nullable=False, default=49.8418907)
-    lon = Column(TABLE_TYPES['float'], nullable=False, default=24.0316261)
+    lat = Column(TABLE_TYPES['float'], nullable=True, default=49.8418907)
+    lon = Column(TABLE_TYPES['float'], nullable=True, default=24.0316261)
 
     portal_members = relationship('MemberCompanyPortal', uselist=False)
 
@@ -95,6 +98,26 @@ class Company(Base, PRBase):
                 list_filters.append({'type': 'text', 'value': filters[filter], 'field': eval("User." + filter)})
         query = Grid.subquery_grid(query, list_filters)
         return query
+
+    def validate(self, is_new):
+        ret = super().validate(is_new)
+
+        if not re.match('[^\s]{3,}', self.name):
+            ret['notices']['name'] = 'pls enter a bit longer name'
+
+        self.lon = PRBase.str2float(self.lon)
+        self.lat = PRBase.str2float(self.lat)
+
+        if self.lon is not None and PRBase.inRange(self.lon, 180, 180):
+            ret['errors']['lon'] = 'pls longitude in range [-180,180]'
+
+        if self.lat is not None and PRBase.inRange(self.lat, 90, 90):
+            ret['errors']['lat'] = 'pls latitude in range [-90,90]'
+
+        if (self.lat is None and self.lon is not None) or (self.lat is not None and self.lon is None):
+            ret['errors']['long_lat'] = 'pls enter both lon and lat or none of them'
+
+        return ret
 
     @property
     def readers_query(self):
@@ -192,7 +215,7 @@ class Company(Base, PRBase):
                            ).all()]
 
     def get_client_side_dict(self,
-                             fields='id,name,author_user_id,country,region,address,phone,phone2,email,'
+                             fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
                                     'short_description,journalist_folder_file_id,logo_file_id,about,lat,lon,'
                                     'own_portal.id|host',
                              more_fields=None):
@@ -200,7 +223,7 @@ class Company(Base, PRBase):
 
     @staticmethod
     def subquery_company_partners(company_id, filters):
-        sub_query = db(MemberCompanyPortal, company_id=company_id)
+        sub_query = db(MemberCompanyPortal, company_id=company_id).filter(MemberCompanyPortal.status!="DELETED")
         list_filters = []
         if filters:
             sub_query = sub_query.join(MemberCompanyPortal.portal)
@@ -222,7 +245,7 @@ class UserCompany(Base, PRBase):
     user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'), nullable=False)
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), nullable=False)
 
-# TODO: OZ by OZ: remove `SUSPENDED` status from db type
+    # TODO: OZ by OZ: remove `SUSPENDED` status from db type
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED'}
     status = Column(TABLE_TYPES['status'], default=STATUSES['APPLICANT'], nullable=False)
 
@@ -289,6 +312,14 @@ class UserCompany(Base, PRBase):
             return "User need employment with status `{}` to perform action `{}`".format(
                     UserCompany.STATUSES['ACTIVE'], action_name)
 
+        if action_name == 'FIRE':
+            if self.user_id == employment_subject.employer.author_user_id:
+                return 'You can`t fire company owner'
+
+        if action_name == 'ALLOW':
+            if self.user_id == employment_subject.employer.author_user_id:
+                return 'Company owner have all permissions and you can do nothing with that'
+
         required_rights = self.ACTIONS_FOR_STATUSES[self.status][action_name]
 
         if 'employment' in required_rights:
@@ -317,7 +348,7 @@ class UserCompany(Base, PRBase):
     employee = relationship('User', backref=backref('employer_assoc', lazy='dynamic'))
 
     def __init__(self, user_id=None, company_id=None, status=STATUSES['APPLICANT'],
-                 rights = None):
+                 rights=None):
 
         super(UserCompany, self).__init__()
         self.user_id = user_id

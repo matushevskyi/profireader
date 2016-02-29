@@ -1,7 +1,6 @@
 <script>
     module.controller('PortalProfileEditController', ['$scope', '$ok', 'objectTransformation', function ($scope, $ok, objectTransformation) {
         angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');
-        $scope.url_portal_profile = {{ raw_url_for('portal.profile')|safe }};
         $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
         $scope.url_confirm_profile_edit = {{ raw_url_for('portal.profile_edit')|safe }};
         $scope.url_after_save = {{ raw_url_for('portal.profile_edit')|safe }}; // this page

@@ -20,15 +20,20 @@
                                 $scope.url_general_help = {{ raw_url_for('general.help')|safe }}
                                         $scope.url_auth_logout = {{ raw_url_for('auth.logout')|safe }}
                                                 $scope.url_user_profile = {{ raw_url_for('user.profile')|safe }}
-                                                        $scope.user_avatar_url = '{{ current_user.profireader_avatar_url }}'
-        $scope.login_url = {{ raw_url_for('auth.login_signup_endpoint')|safe }}
+                                                        $scope.user_avatar_url = '{{ current_user.profireader_avatar_url }}';
+        $scope.login_url = '{{ url_for('auth.login_signup_endpoint')|safe }}';
 
 
                 login_signup = '{{ login_signup }}';  // login_signup = 'login' or 'signup' or None
         $scope.login_signup = (login_signup === 'signup') ? 'signup' : 'login';
+        $scope.login_or_none_href = function(){
+            return $scope.user.id?'#':$scope.login_url;
+        };
         $scope.$$translate = {{ translates('UserLoginController')|safe }};
         $scope.open_filemanager = function () {
-            window.location.href = '/filemanager/';
+            if ($scope.user.id) {
+                window.location.href = '/filemanager/';
+            }
         };
 
         $scope.selected_user_menu = '';
@@ -67,7 +72,7 @@
                         <li><a pr_test="CompaniesList" href="{{ url_company_show() }}" title="Компанії"
                                ng-class="{'selected': selected_user_menu == 'companies_list'}"><i
                                 class="fa fa-building-o"></i></a></li>
-                        <li><a pr_test="FileManeger" href="#" ng-click="open_filemanager()" title="Менеджер файлів"
+                        <li><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="Менеджер файлів"
                                ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
                                 class="fa fa-folder-open-o"></i></a></li>
                         <li><a pr_test="UserInfo" href="{{ url_general_help() }}" title="Інформація"
@@ -88,7 +93,7 @@
                             </ul>-->
                         </li>
                         <li ng-show="!user.id" role="presentation" class="menu-profile">
-                            <a pr_test="LogIn" class="login-profile" href="{{ login_url() }}?login_signup=login">Login</a>
+                            <a pr_test="LogIn" class="login-profile" href="{{ login_url }}?login_signup=login">Login</a>
                         </li>
                     </ul>
                 </div>

@@ -4,6 +4,7 @@
 {% block portal_content %}
     {% include '_ruslan/reader/_reader_nav.html' %}
 <script>
+
     module.controller('list_reader', function ($scope, $ok, $timeout) {
             $scope.page = 1;
             $scope.article_details = {{ raw_url_for('article.details_reader') |safe}}
@@ -57,8 +58,8 @@
                         </div>
                     </div>
                 </div>
-                <a type="link" href="{{ article_details({article_portal_division_id: article.id}) }}">
-                    <img class="list-reader-image" pr-image="article.image_file_id" }} alt="img">
+                <a target="_blank" type="link" href="{{ article_details({article_portal_division_id: article.id}) }}">
+                    <img class="list-reader-image" src="{{ fileUrl(article.image_file_id) }}" alt="img">
                 </a>
                 <h3 class="item-title">
                     <a target="_blank"

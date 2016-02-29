@@ -476,6 +476,16 @@ body {
 .news-details {
   margin-bottom: 50px;
 }
+/*--- VALIDATION ---*/
+.pr-validation-error {
+  border-color: #f44336;
+}
+.pr-validation-warning {
+  border-color: #ffff00;
+}
+.pr-validation-notice {
+  border-color: #f44336;
+}
 /* ---MEDIA--- */
 @media screen and (max-width: 764px) {
   .menu-site ul {

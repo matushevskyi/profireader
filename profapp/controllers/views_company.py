@@ -192,7 +192,6 @@ def employee_update(company_id, user_id):
 def employee_update_load(json, company_id, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     employment = UserCompany.get(user_id=user_id, company_id=company_id)
-    print(employment.get_client_side_dict())
 
     if action == 'load':
         return {'employment': employment.get_client_side_dict(),
@@ -225,6 +224,20 @@ def employment_action(json, company_id, employment_id, action):
     elif action == UserCompany.ACTIONS['FIRE']:
         employment.status = UserCompany.STATUSES['FIRED']
 
+    employment.save()
+
+    return PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
+                              {'actions': employment.actions(
+                                  UserCompany.get(user_id=g.user_id, company_id=company_id))})
+
+@company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_position/', methods=['POST'])
+@tos_required
+@login_required
+@ok
+def employment_change_position(json, company_id, employment_id):
+    employment = db(UserCompany).filter_by(id=employment_id).one()
+
+    employment.position = json['position']
     employment.save()
 
     return PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
@@ -267,9 +280,10 @@ def update(company_id=None):
 @login_required
 # @check_rights(simple_permissions([]))
 def profile(company_id=None):
+    company=db(Company, id=company_id).first()
     return render_template('company/company_profile.html',
                            rights_user_in_company=UserCompany.get(company_id=company_id).rights,
-                           company=db(Company, id=company_id).first())
+                           company = company)
 
 
 @company_bp.route('/create/', methods=['POST'])

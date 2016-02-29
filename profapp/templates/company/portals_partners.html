@@ -20,6 +20,7 @@
         $scope.url_search_for_portal = function () {
                 return ( '/portal/search_for_portal_to_join/' );
             };
+        $scope.url_change_status = {{ raw_url_for('portal.portals_partners_change_status')|safe }};
         $scope.url_join = {{ raw_url_for('portal.apply_company')|safe }};
         $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
         $scope.selectedPortal_name = '';
@@ -63,9 +64,21 @@
                 $scope.selectedPortal_sending = false;
             }) : add_message('Sorry!!!You haven\'t got  appropriate rights!', 'danger', 8000)
         };
+
         $scope.sendData = function (grid_data, callback) {
             return $ok($scope.url_portals_partners, grid_data, callback);
             };
+
+
+        $scope.grid_action = function (id, action, row, column_name) {
+            if(row.actions[action] == true){
+                return $ok($scope.url_change_status({company_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action}, function(resp){}).finally(function () {
+                    $scope.gridApi.grid.setGridData();
+                })
+            }else{
+                add_message(row.actions[action], 'danger', 3000)
+            }
+        };
 
         $scope.portal_link = function(link){
             return 'http://' + link;
@@ -78,12 +91,14 @@
                                 name: 'portal.name', type: 'link',
                                 href: 'portal_link(row.entity.portal.host)', img:'portal.logo_file_id', link: true
                             }, {
-                                name: 'company.name', type: 'link',
-                                href: 'url_company_profile({company_id: row.entity.company.id})',img:"company.logo_file_id"
+                                name: 'portal.own_company.name', type: 'link',
+                                href: 'url_company_profile({company_id: row.entity.portal.own_company.id})',img:"portal.own_company.logo_file_id"
                             }, {
                                 name: 'status', width: '10%', afilter: {type: 'input'}
                             }, {
-                                name: 'rights', width: '300', type: 'icons', afilter: {type: 'input'}}
+                                name: 'rights', width: '300', type: 'icons', afilter: {type: 'input'}},
+                            {
+                                name:'actions', type: 'actions', onclick: 'grid_action'}
                         ]
                     });
         {% endraw %}
