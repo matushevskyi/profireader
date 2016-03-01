@@ -321,23 +321,23 @@ def details_load(json, article_id):
 #     return {'article': a.save().get_client_side_dict()}
 
 
-@article_bp.route('/details_reader/<string:article_portal_division_id>')
-@tos_required
-def details_reader(article_portal_division_id):
-    article = ArticlePortalDivision.get(article_portal_division_id)
-    article.add_recently_read_articles_to_session()
-    article_dict = article.get_client_side_dict(fields='id, title,short, cr_tm, md_tm, '
-                                                       'publishing_tm, keywords, status, long, image_file_id,'
-                                                       'division.name, division.portal.id,'
-                                                       'company.name|id')
-    article_dict['tags'] = article.tags
-    ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
-    favorite = article.check_favorite_status(user_id=g.user.id)
-
-    return render_template('partials/reader/reader_details.html',
-                           article=article_dict,
-                           favorite=favorite
-                           )
+# @article_bp.route('/details_reader/<string:article_portal_division_id>')
+# @tos_required
+# def details_reader(article_portal_division_id):
+#     article = ArticlePortalDivision.get(article_portal_division_id)
+#     article.add_recently_read_articles_to_session()
+#     article_dict = article.get_client_side_dict(fields='id, title,short, cr_tm, md_tm, '
+#                                                        'publishing_tm, keywords, status, long, image_file_id,'
+#                                                        'division.name, division.portal.id,'
+#                                                        'company.name|id')
+#     article_dict['tags'] = article.tags
+#     ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
+#     favorite = article.check_favorite_status(user_id=g.user.id)
+#
+#     return render_template('partials/reader/reader_details.html',
+#                            article=article_dict,
+#                            favorite=favorite
+#                            )
 
 
 @article_bp.route('/list_reader')
@@ -377,9 +377,9 @@ def list_reader(page=1):
                            )
 
 
-@article_bp.route('add_to_favorite/', methods=['POST'])
-def add_delete_favorite():
-    favorite = json.loads(request.form.get('favorite'))
-    article_portal_division_id = request.form.get('article_portal_division_id')
-    ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, favorite)
-    return jsonify({'favorite': favorite})
+# @article_bp.route('add_to_favorite/', methods=['POST'])
+# def add_delete_favorite():
+#     favorite = json.loads(request.form.get('favorite'))
+#     article_portal_division_id = request.form.get('article_portal_division_id')
+#     ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, favorite)
+#     return jsonify({'favorite': favorite})

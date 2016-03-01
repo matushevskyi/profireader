@@ -7,7 +7,7 @@
 
     module.controller('list_reader', function ($scope, $ok, $timeout) {
             $scope.next_page = 1;
-            $scope.article_details = {{ raw_url_for('article.details_reader') |safe}}
+{#            $scope.article_details = {{ raw_url_for('article.details_reader') |safe}}#}
             $scope.favorite = {{ favorite }}
             $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
 
@@ -40,12 +40,12 @@
                         </div>
                     </div>
                 </div>
-                <a target="_blank" type="link" href="{{ article_details({article_portal_division_id: article.id}) }}">
+                <a target="_blank" type="link" href="//{{ article.portal.host}}/details/{{ article.id }}">
                     <img class="list-reader-image" src="{{ fileUrl(article.image_file_id) }}" alt="img">
                 </a>
                 <h3 class="item-title">
                     <a target="_blank"
-                       href="{{ article_details({article_portal_division_id: article.id}) }}">{{ article.title}}</a>
+                       href="//{{ article.portal.host}}/details/{{ article.id }}">{{ article.title}}</a>
                         <span ng-if="article.tags" class="tag-in-article">
                                 <a target="_blank" href="#" ng-repeat="tag in article.tags">{{ tag }}</a>
                         </span>

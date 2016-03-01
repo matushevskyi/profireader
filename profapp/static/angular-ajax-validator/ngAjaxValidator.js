@@ -347,6 +347,7 @@
             }
         }
     }]).directive('prValidationAnswer', function ($compile) {
+        //TODO: OZ by OZ: maybe compile function is better solution (faster)
         return {
             restrict: 'A',
             replace: false,

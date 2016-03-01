@@ -1,5 +1,26 @@
-{% extends 'layout.html' %}
-{% block content %}
-<h1>{{ redirect_info['message'] }}</h1>
+
+    <div class="block-item full-block-info" style="height: auto;">
+
+        <h2 class="item-title">{{ article['title']|safe }}</h2>
+
+        <h3 class="item-subtitle">{{ article['subtitle']|safe }}</h3>
+
+        <div class="item-additional-info-top"
+             style="display: block; width: 100%; padding-bottom: 5px; border-bottom: 1px #ccc solid; margin-bottom: 15px;">
+            <div class="item-company"><a href="//profireader.com/company/profile/{{ article['company']['id'] }}">
+                {{ article['company']['name']|safe }}</a>
+            </div>
+
+            <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
+            <div class="item-comments">{{_('Comments')}} 0</div>
+        </div>
+        <div class="article-short">
+            {{ article['short']|safe }}
+        </div>
+                <div class="article-content">
+            <div class="s-cover-l" {{ prImage(article['image_file_id']) }}></div></div>
+        <h1>{{ redirect_info['message'] }}</h1>
 {{ _('Click') }} <a href="{{ redirect_info['redirect_url'] }}">{{ _('here to ') }}</a>{{ redirect_info['context'] }}
-{% endblock content %}
+
+</div>
+

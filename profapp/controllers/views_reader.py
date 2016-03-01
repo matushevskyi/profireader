@@ -12,6 +12,7 @@ from flask.ext.login import login_required
 import datetime
 from ..models.files import File
 
+
 @reader_bp.route('/details_reader/<string:article_portal_division_id>')
 @tos_required
 def details_reader(article_portal_division_id):
