@@ -18,7 +18,8 @@
             $scope.url_search_for_company = {{ raw_url_for('company.search_for_company_to_join')|safe }};
             $scope.url_join = {{ raw_url_for('company.join_to_company')|safe }};
             $scope.$$translate = {{ translates('companies_list')|safe }};
-
+            $scope.search_text = '';
+            $scope.next_page = 1;
             $scope.selectedCompany_name = '';
             $scope.selectedCompany = null;
             $scope.selectedCompany_sending = false;
@@ -40,20 +41,31 @@
                 }
             };
 
-            $scope.searchForCompanyToJoin = function (val) {
+            $scope.show_more = function(){
+                if(!$scope.data_search.end){
+                    $scope.next_page +=1;
+                    $scope.searchForCompanyToJoin($scope.search_text,$scope.next_page)
+                }
+            };
+
+            $scope.searchForCompanyToJoin = function (val, next_page) {
+                $scope.search_text = val;
                 return $ok($scope.url_search_for_company(), {
                     article_id: $scope.data.id,
-                    search: val
+                    search: val,
+                    next_page: next_page?next_page:1
                 }, function (resp) {
-                    $scope.company_list = resp?resp:[];
-
+                    $scope.data_search = resp?resp:[];
+                    if($scope.data_search.end)
+                        $scope.next_page = 1;
                     $timeout(function(){
                         highLightSubstring(val, 'list_search_company', 'com_n');
                     }, 0);
-
                     return resp.length ? resp : [{id: false, name: 'No results'}];
                 });
             };
+
+
 
             $scope.joinToCompany = function (company_id) {
                 $ok($scope.url_join({company_id: company_id}), {company_id: company_id},function (resp) {
@@ -67,7 +79,9 @@
                 }).finally(function () {
                     $scope.selectedCompany_sending = false;
                 });
-            }
+            };
+
+            $scope.loadNextPage('{{ url_for('company.load_companies')|safe }}')
 
         }]);
     </script>
@@ -99,11 +113,11 @@
             </div>
         </div>
             <div class="row not-found">
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" ng-show="company_list.length<1">
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" ng-show="data_search.company_list.length<1">
                     <h3>Oops! Nothing found!</h3>
                 </div>
             </div>
-        <div class="list_search_company" ng-repeat="company in company_list | limitTo:10" ng-if="selectedCompany_name">
+        <div class="list_search_company" ng-repeat="company in data_search.company_list" ng-if="selectedCompany_name">
             <div class="row search-result thumbnail">
                 <div class="col-lg-2 col-md-2 col-sm-12 col-xs-12 photo-search">
                     <a href="{{ url_company_profile({company_id: company.id}) }}" class="thumbnail">
@@ -122,6 +136,7 @@
                 </div>
             </div>
         </div>
+        <div ng-if="data_search.company_list.length>0 && !data_search.end" class="show-more"><h4><a class="link" ng-click="show_more()">{{ _('Show more search results') }}</a></h4></div>
         <div class="row company-list">
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12"><h3 ng-if="data.companies">Your company list:</h3><h2 ng-if="!data.companies && !loading">You haven't got any company yet!Create own or join to!</h2></div>
             <div ng-if="data.companies" class="col-lg-4 col-md-4 col-sm-6 col-xs-6" ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">

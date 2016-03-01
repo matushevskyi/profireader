@@ -165,7 +165,6 @@ def uploader(company_id=None):
 
 @filemanager_bp.route('/send/<string:parent_id>/', methods=['POST'])
 def send(parent_id):
-    file = request.files['file']
     parent = File.get(parent_id)
     root = parent.root_folder_id
     if parent.mime == 'root':
@@ -175,22 +174,23 @@ def send(parent_id):
     name = File.get_unique_name(urllib.parse.unquote(uploaded_file.filename).replace(
         '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), data.get('ftype'), parent.id)
     company = db(Company, journalist_folder_file_id=root).one()
+    data.get('ftype')
     if re.match('^video/.*', data.get('ftype')):
-        body = {'title': file.filename,
+        body = {'title': uploaded_file.filename,
                 'description': '',
                 'status': 'public'}
         youtube = YoutubeApi(body_dict=body,
-                             video_file=file.stream.read(-1),
+                             video_file=uploaded_file.stream.read(-1),
                              chunk_info=dict(chunk_size=int(data.get('chunkSize')),
                                              chunk_number=int(data.get('chunkNumber')),
                                              total_size=int(data.get('totalSize'))),
                              company_id=company.id,
                              root_folder_id=company.journalist_folder_file_id,
                              parent_folder_id=parent_id)
-        youtube.upload()
+        file = youtube.upload()
     else:
-        File.upload(name, data, parent.id, root, content=uploaded_file.stream.read(-1))
-    return jsonify({'result': {'size': 0}})
+        file = File.upload(name, data, parent.id, root, content=uploaded_file.stream.read(-1))
+    return jsonify({'result': {'size': 0}, 'error': True if file=='error' else False})
 
 
 @filemanager_bp.route('/resumeupload/', methods=['GET'])

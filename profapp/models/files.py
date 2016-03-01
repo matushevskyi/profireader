@@ -236,8 +236,8 @@ class File(Base, PRBase):
         if self.mime.split('/')[0] == 'image' and self.mime != 'image/thumbnail':
             str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
             if not self.get_thumbnail(size=str_size):
-                image_pil = Image.open(BytesIO(self.file_content.content))
                 try:
+                    image_pil = Image.open(BytesIO(self.file_content.content))
                     resized = image_pil.resize(size)
                     bytes_file = BytesIO()
                     resized.save(bytes_file, self.mime.split('/')[-1].upper())
@@ -253,9 +253,11 @@ class File(Base, PRBase):
                     g.db.add(thumbnail)
                     g.db.flush()
                 except Exception as e:  # truncated png/gif
-                    a = e
-                    print(self.id)
+                    # from ..controllers.errors import BadFormatFile
                     File.remove(self.id)
+
+            #     details = e.args[0]
+            #     print(details['message'])
                 # resized = image_pil.resize(size)
 
 
@@ -493,6 +495,7 @@ class File(Base, PRBase):
         file_cont = FileContent(file=file, content=content)
         g.db.add(file, file_cont)
         g.db.commit()
+        file.check_file_mime()
         return file.id
 
     def uploadWithoutChunk(self, user):
@@ -510,7 +513,21 @@ class File(Base, PRBase):
             file_cont = FileContent(file=file, content=self.stream.read(-1))
             g.db.add(file, file_cont)
             g.db.commit()
+            file.check_file_mime()
             return file
+
+    @staticmethod
+    def check_file_mime(file_id):
+        from PIL import Image
+        from config import Config
+        from io import BytesIO
+        file_ = db(File, id=file_id).one()
+        file_mime = re.findall(r'/(\w+)', file_.mime)[0].upper()
+        if file_mime in Config.ALLOWED_IMAGE_FORMATS:
+            try:
+                Image.open(BytesIO(file_.file_content.content))
+            except Exception as e:
+                return 'error'
 
     @staticmethod
     def upload(name, data, parent, root, content):
@@ -525,6 +542,8 @@ class File(Base, PRBase):
             g.db.add(file, file_cont)
             g.db.commit()
             session['f_id'] = file.id
+            if data.get('chunkNumber')==data.get('chunkQuantity'):
+                return File.check_file_mime(file.id)
             return file.id
         else:
             id = session['f_id']
@@ -532,6 +551,8 @@ class File(Base, PRBase):
             cont = bytes(file_cont.content)
             c = cont + bytes(content)
             file_cont.updates({'content': c})
+            if data.get('chunkNumber')==data.get('chunkQuantity'):
+                return File.check_file_mime(id)
             return id
 
     @staticmethod

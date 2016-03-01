@@ -279,7 +279,6 @@
                         $scope.f.progress = 0;
                         $scope.auto_remove($scope.uploadFileList, $scope.fileNavigator.getCurrentFolder());
                     }
-                    console.log('s')
                     $('#uploadfile').find('input[type=file], input[type=number], textarea').val('');
                 }
             };
@@ -320,15 +319,16 @@
                     });
                     $scope.f.upload.progress(function (evt) {
                         $scope.thisprogress = Math.min(100, parseInt(100.0 *
-                            evt.loaded / total))
+                            evt.loaded / total));
                         $scope.f.progress = Math.min(100, parseInt(100.0 *
                             evt.loaded / total)) + oldprogress;
                     }).success(function (data) {
+                        if(data.error){
+                            $scope.fileNavigator.refresh();
+                        }
                         count += 1;
                         oldprogress += $scope.thisprogress;
-                        console.log(oldprogress);
                         if($scope.uploadFileList[count]){
-
                             $scope.f = $scope.uploadFileList[count];
                             uploading($scope.uploadFileList[count])
 

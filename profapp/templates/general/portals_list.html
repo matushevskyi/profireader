@@ -13,7 +13,7 @@
             $scope.$$translate = {{ translates('portals_list')|safe }};
             $scope.search_text = '';
             $scope.next_page = 1;
-            $scope.old_search = '';
+            $scope.old_search = null;
             $scope.subscribe = function (portal_id) {
                 {% if g.user_id %}
                     $ok('{{ url_for('reader.reader_subscribe_registered')|safe }}', {portal_id: portal_id}, function (resp) {
@@ -32,7 +32,7 @@
 
             $scope.search_for_portal = function () {
                 $scope.loading = true;
-                $scope.send_data = {text: $scope.search_text, next_page:$scope.next_page}
+                $scope.send_data = {text: $scope.search_text, next_page:$scope.next_page};
                 if($scope.old_search !== $scope.search_text){
                     $ok('',$scope.send_data , function (resp) {
                         $scope.data = resp;
@@ -42,19 +42,21 @@
                             $scope.loading = false;
                             if($(document).height()-$(window).height() === 0){
                                 $scope.next_page +=1;
+                                $scope.old_search = null;
                                 $scope.search_for_portal()
                             }
                         }, 500)
                     });
                 }
             };
+
             $scope.loadNextPage('')
         });
 
     </script>
 
     {% raw %}
-    <div ng-controller="portals_list">
+    <div ng-controller="portals_list" ng-init="search_for_portal()">
         <h2>{{ _('Please, search and subscribe to any portal') }}</h2>
         </br>
         {{ _('Search') }} <input ng-model="search_text" ng-change="search_for_portal()" id="portal_search" type="text">

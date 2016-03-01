@@ -817,7 +817,6 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                 element.html(template);
             },
             link: function ($scope, $element, $attrs) {
-                console.log($scope)
                 var $dropdownTrigger = $element.children()[0];
 
                 $scope.toggleDropdown = function () {
@@ -1219,7 +1218,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 '<div class="ui-grid-header-cell ui-grid-clearfix" ng-if="col.colDef.category === cat.name && grid.options.category" ng-repeat="col in colContainer.renderedColumns | filter:{ colDef:{category: cat.name} }" ui-grid-header-cell col="col" render-index="$index"> <div ng-class="{ \'sortable\': sortable }" class="ng-scope sortable"> <div ui-grid-filter="" ng-show="col.colDef.category !== undefined"></div> </div> </div> </div>' +
                 '<div class="ui-grid-header-cell ui-grid-clearfix" ng-if="col.colDef.category === undefined || grid.options.category === undefined"  ng-repeat="col in colContainer.renderedColumns track by col.colDef.name" ui-grid-header-cell col="col" render-index="$index" ng-style="$index === 0 && colContainer.columnStyle($index)"></div>' +
                 '</div></div></div></div></div></div>';
-
+            $( ".ui-grid-viewport" ).append( "<p>Test</p>" );
             for (var i = 0; i < col.length; i++) {
                 if (col[i].category) {
                     gridApi.grid.options.columnDefs[i].enableFiltering = false
@@ -1367,8 +1366,8 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
             gridApi.grid['setGridData'] = function (grid_data) {
                 var all_grid_data = grid_data ? grid_data : gridApi.grid.all_grid_data
-                scope.loading = true
                 if(gridApi.grid.options.urlLoadGridData){
+                    scope.loading = true
                     $ok(gridApi.grid.options.urlLoadGridData, all_grid_data, function(grid_data){
                         gridApi.grid.set_data_function(grid_data)
                     }).finally(function(){
@@ -1567,9 +1566,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                             if(scope.send_data){
                                 scope.send_data.next_page = scope.next_page
                             }
-
                             $ok(url, scope.send_data?scope.send_data:{next_page:scope.next_page}, function (resp) {
                                 scope.data = resp;
+                                if(scope.data.end)
+                                    scope.next_page=1
                             }).finally(function () {
                                 $timeout(function(){
                                     scope.loading = false;
