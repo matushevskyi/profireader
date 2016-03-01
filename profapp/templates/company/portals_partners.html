@@ -65,11 +65,6 @@
             }) : add_message('Sorry!!!You haven\'t got  appropriate rights!', 'danger', 8000)
         };
 
-        $scope.sendData = function (grid_data, callback) {
-            return $ok($scope.url_portals_partners, grid_data, callback);
-            };
-
-
         $scope.grid_action = function (id, action, row, column_name) {
             if(row.actions[action] == true){
                 return $ok($scope.url_change_status({company_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action}, function(resp){}).finally(function () {
@@ -85,7 +80,7 @@
         };
 
         $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                        loadGridData: $scope.sendData,
+                        urlLoadGridData: $scope.url_portals_partners,
                         columnDefs: [
                             {
                                 name: 'portal.name', type: 'link',

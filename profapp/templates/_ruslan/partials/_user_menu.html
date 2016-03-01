@@ -1,26 +1,61 @@
+<script type="text/ng-template" id="tos_dialog.html">
+            <div class="modal-header">
+                <h3 class="modal-title">{{ _('Pls accept tos dialog header') }}</h3>
+            </div>
+            <div class="modal-body">
+                {{ __('Licence text') }}
+            </div>
+
+            <div class="modal-footer">
+            <button type="button" class="btn btn-default" ng-click="accept_tos('accept')">Accept</button>
+            <button type="button" class="btn btn-default" ng-click="accept_tos('decline')">Decline</button>
+            </div>
+        </div>
+    </script>
+
 <script>
+    module.controller('tos_dialog_controller', function ($scope, $uibModal, $ok, $uibModalInstance) {
+        $scope.accept_tos = function (accept_or_decline) {
+            $ok('{{ url_for('auth.tos') }}', {'accept': accept_or_decline}, function(resp) {
+                $uibModalInstance.close(resp['tos']);
+            });
+        }
+    });
 
-    module.controller('UserLoginController', ['$scope', '$uibModal', '$ok', '$timeout', function ($scope, $uibModal, $ok, $timeout) {
-
-
+    module.controller('UserLoginController', function ($scope, $uibModal, $ok, $timeout) {
         $scope.user = {{ g.user_dict|tojson|safe }};
-
         $scope.tos = function () {
-            var accepted = $scope.user.tos;
-            if (accepted != true) {
-                $('#licence').modal('show');
+            if (!$scope.user.id || $scope.user.tos) {
+                return;
+            }
+            if ($scope.user.id && $scope.user.tos != true) {
+                var modalInstance = $uibModal.open({
+                            templateUrl: 'tos_dialog.html',
+                            controller: 'tos_dialog_controller',
+                        });
+                modalInstance.result.then(function (accepted) {
+                    $scope.user.tos = accepted;
+                });
                 return true
             }
         };
 
+
         $scope.url_list_reader = {{ raw_url_for('reader.list_reader')|safe }}
-                $scope.url_general = {{ raw_url_for('general.index')|safe }}
+                $scope.url_general = function(){
+                    if ($scope.user.id){
+                        return'{{ url_for('reader.list_reader')|safe }}'
+                    }
+                    else {
+                   return '{{ url_for('general.index')|safe }}'}
+                };
 
                         $scope.url_company_show = {{ raw_url_for('company.show')|safe }}
                                 $scope.url_general_help = {{ raw_url_for('general.help')|safe }}
                                         $scope.url_auth_logout = {{ raw_url_for('auth.logout')|safe }}
                                                 $scope.url_user_profile = {{ raw_url_for('user.profile')|safe }}
                                                         $scope.user_avatar_url = '{{ current_user.profireader_avatar_url }}';
+        $scope.url_messenger = '{{ url_for('messenger.messenger'|safe) }}';
         $scope.login_url = '{{ url_for('auth.login_signup_endpoint')|safe }}';
 
 
@@ -42,13 +77,15 @@
                 $scope.selected_user_menu = menu_item;
             }, 0);
         };
-    }]);
+    });
 
 </script>
 {% raw %}
-<nav ng-controller="UserLoginController" class="navbar navbar-fixed-top nav-bg">
+<nav ng-init="tos()" ng-controller="UserLoginController" class="navbar navbar-fixed-top nav-bg">
     <div class="container">
+
         <div class="row">
+            <button type="button" ng-click="tos()" class="btn btn-info btn-lg" ng-if="user.id && !user.tos">{{ _('Accept licence') }}</button>
             <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
                         data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
@@ -59,6 +96,7 @@
                 </button>
                 <a class="navbar-brand" href="{{ url_general()}}"><img src="//static.profireader.com/static/front/img/profi.png"></a>
             </div>
+
             <div class="col-lg-offset-2 col-md-offset-1 col-lg-6 col-md-7 col-sm-8 col-xs-12 menu-site">
 
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
@@ -66,7 +104,7 @@
                         <li><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="Стрічка читача"
                                ng-class="{'selected': selected_user_menu == 'line_readers'}"><i
                                 class="fa fa-newspaper-o"></i></a></li>
-                        <li><a pr_test="UserMassages" href="#" title="Всі повідомлення"
+                        <li><a pr_test="UserMassages" href="{{ url_messenger }}" title="Всі повідомлення"
                                ng-class="{'selected': selected_user_menu == 'messages'}"><i
                                 class="fa fa-envelope-o"></i></a></li>
                         <li><a pr_test="CompaniesList" href="{{ url_company_show() }}" title="Компанії"
@@ -77,7 +115,6 @@
                                 class="fa fa-folder-open-o"></i></a></li>
                         <li><a pr_test="UserInfo" href="{{ url_general_help() }}" title="Інформація"
                                ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-info"></i></a></li>
-
                         <li ng-show="user.id" role="presentation" class="menu-profile">
                             <a pr_test="UserProfile"  href="{{ url_user_profile({user_id:user.id}) }}" role="button" aria-haspopup="true"
                                aria-expanded="false">
@@ -92,6 +129,7 @@
                                 <li ng-show="!user.id" class="dropdown-link"><a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=signup' }}">{{_('Sign Up') }}</a></li>
                             </ul>-->
                         </li>
+
                         <li ng-show="!user.id" role="presentation" class="menu-profile">
                             <a pr_test="LogIn" class="login-profile" href="{{ login_url }}?login_signup=login">Login</a>
                         </li>

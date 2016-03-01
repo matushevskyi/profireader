@@ -136,29 +136,31 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             }
         }
     }])
-    .directive('prCropper', ['$compile', '$templateCache', '$controller', '$timeout', function ($compile, $templateCache, $controller, $timeout) {
+    .directive('prCrop', ['$compile', '$templateCache', function ($compile, $templateCache) {
         return {
             restrict: 'A',
             require: 'ngModel',
 
             link: function (scope, element, attrs, model) {
+
                 element.html($templateCache.get('cropper.html'));
 
                 $compile(element.contents())(scope);
 
-                scope.ImageSelected = function (item) {
+
+                var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
+
+                window[callback_name] = function (item) {
                     model.$modelValue.coordinates = {rotate: 0};
                     model.$modelValue.image_file_id = item.id;
                     closeFileManager();
                 };
 
-                var callback_name = 'prcropper_image_selected_callback_' + scope.controllerName + '_' + randomHash();
-
-                window[callback_name] = scope.ImageSelected;
-
 
                 scope.chooseImage = function (setImage) {
                     if (setImage) {
+                        // TODO: OZ by OZ: prCompanyId -> company controller id (take company from company
+                        // controller not from element attributes)
                         scope.chooseImageinFileManager("parent." + callback_name, 'choose', '', attrs['prCompanyId']);
                         model.$modelValue.uploaded = false;
                     }
@@ -210,9 +212,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     }
                 };
+                $inputImage.change(uploadCropper);
+
 
                 var restartCropper = function () {
-
                     $image.cropper('destroy');
                     if (model.$modelValue.uploaded) {
                         $image.attr('src', model.$modelValue.image_file_id);
@@ -230,11 +233,15 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     }
                 };
 
-                if (attrs['prCropper']) {
-                    scope[attrs['prCropper']] = function () {
-                        $image.cropper.apply($image, arguments);
-                    };
-                }
+                //if (attrs['prCropper']) {
+                //    scope[attrs['prCropper']] = function () {
+                //        $image.cropper.apply($image, arguments);
+                //    };
+                //}
+                scope['cropper'] = function () {
+                    $image.cropper.apply($image, arguments);
+                };
+                //debugger;
                 //
                 scope.$watch(attrs['ngModel'] + '.image_file_id', function () {
                     if (model && model.$modelValue) {
@@ -259,7 +266,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     }
                 });
 
-                $inputImage.change(uploadCropper);
+
                 //
                 //scope.$watch(attrs['ngModel'] + '.ratio', function () {
                 //    if (model.$modelValue && model.$modelValue.ratio) {
@@ -406,10 +413,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     } else {
                         if (elementType === 'BUTTON' || elementType === 'INPUT') {
                             element.prop('disabled', true);
-                            element.prop('title', allow === false?'':allow);
+                            element.prop('title', allow === false ? '' : allow);
                         } else if (elementType === 'A') {
                             element.addClass('disabled');
-                            element.prop('title', allow === false?'':allow);
+                            element.prop('title', allow === false ? '' : allow);
                         } else {
                             element.hide()
                         }
@@ -536,126 +543,126 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
         return objectTransformation;
     })
-    .directive('ngOk', ['$http', '$compile', '$ok', function ($http, $compile, $ok) {
-        return {
-            restrict: 'A',
-            scope: {
-                ngOnsubmit: '&',
-                ngOnsuccess: '&',
-                ngOnfail: '&',
-                ngAction: '=',
-                ngWatch: '@'
-            },
-            link: function (scope, iElement, iAttrs, ngModelCtrl) {
-
-
-                if (iAttrs['ngValidationResult']) {
-                    scope[iAttrs['ngValidationResult']] = {};
-                    var s = scope[iAttrs['ngValidationResult']];
-
-                    s.checking = {};
-                    s.checked = {};
-
-                    s.errors = {};
-                    s.warnings = {};
-                    s.dirty = true;
-
-                    s.submitting = false;
-                    s.url = null;
-                    s.on_success_url = null;
-                }
-
-                iAttrs.$observe('ngAjaxAction', function (value) {
-                    s.url = value;
-                });
-
-                iAttrs.$observe('ngOnSuccess', function (value) {
-                    s.on_success_url = value;
-                });
-
-
-                $.each($('[name]', $(iElement)), function (ind, el) {
-                    $newel = $(el).clone();
-                    scope.data[$(el).attr('name')] = $(el).val();
-                    $newel.attr('ng-model', 'data.' + $newel.attr('name'));
-                    $(el).replaceWith($compile($newel)(scope))
-                });
-
-
-                s.getSignificantClass = function (index, one, onw, onn) {
-
-                    if (s.errors && !areAllEmpty(s.errors[index])) {
-                        return one;
-                    }
-                    if (s.warnings && !areAllEmpty(s.warnings[index])) {
-                        return onw;
-                    }
-                    if (s.notices && !areAllEmpty(s.notices[index])) {
-                        return onn;
-                    }
-                    return '';
-                };
-
-                s.getSignificantMessage = function (index) {
-
-                    if (s.errors && !areAllEmpty(s.errors[index])) {
-                        return s.errors[index][0];
-                    }
-                    if (s.warnings && !areAllEmpty(s.warnings[index])) {
-                        return s.warnings[index][0];
-                    }
-                    if (s.notices && !areAllEmpty(s.notices[index])) {
-                        return s.notices[index][0]
-                    }
-                    return '';
-                };
-
-
-                s.refresh = function () {
-                    s.changed = getObjectsDifference(s.checked, s['data']);
-                    s.check();
-                };
-
-                s.check = _.debounce(function (d) {
-                    if (areAllEmpty(s.checking)) {
-                        console.log('s.changed', s.changed);
-                        s.changed = getObjectsDifference(s.checked, scope['data']);
-                        if (!areAllEmpty(s.changed)) {
-                            s.checking = scope['data'];
-
-                            $http.post($(iElement).attr('njAjaxAction'), s.checking)
-                                .then(function (fromserver) {
-                                    var resp = fromserver['data'];
-                                    if (areAllEmpty(getObjectsDifference(s.checking, scope['data']))) {
-                                        s.errors = $.extend(true, {}, resp['errors']);
-                                        s.warnings = $.extend(true, {}, resp['warnings']);
-                                        s.checked = $.extend(true, {}, s.checking);
-                                        s.changed = {};
-                                        s.checking = {};
-                                    }
-                                    else {
-                                        s.checking = {};
-                                        s.refresh();
-                                    }
-                                }, function () {
-                                    s.checking = {};
-                                    s.refresh();
-                                });
-                        }
-                    }
-                    else {
-                        s.refresh();
-                    }
-                }, 500);
-                console.log(iAttrs);
-                if (iAttrs['ngAjaxFormValidate'] !== undefined) {
-                    s.$watch('data', s.refresh, true);
-                    s.refresh();
-                }
-                s.getTemp(iAttrs.ngCity);
-            }
-        }
-    }]);
+//.directive('ngOk', ['$http', '$compile', '$ok', function ($http, $compile, $ok) {
+//    return {
+//        restrict: 'A',
+//        scope: {
+//            ngOnsubmit: '&',
+//            ngOnsuccess: '&',
+//            ngOnfail: '&',
+//            ngAction: '=',
+//            ngWatch: '@'
+//        },
+//        link: function (scope, iElement, iAttrs, ngModelCtrl) {
+//
+//
+//            if (iAttrs['ngValidationResult']) {
+//                scope[iAttrs['ngValidationResult']] = {};
+//                var s = scope[iAttrs['ngValidationResult']];
+//
+//                s.checking = {};
+//                s.checked = {};
+//
+//                s.errors = {};
+//                s.warnings = {};
+//                s.dirty = true;
+//
+//                s.submitting = false;
+//                s.url = null;
+//                s.on_success_url = null;
+//            }
+//
+//            iAttrs.$observe('ngAjaxAction', function (value) {
+//                s.url = value;
+//            });
+//
+//            iAttrs.$observe('ngOnSuccess', function (value) {
+//                s.on_success_url = value;
+//            });
+//
+//
+//            $.each($('[name]', $(iElement)), function (ind, el) {
+//                $newel = $(el).clone();
+//                scope.data[$(el).attr('name')] = $(el).val();
+//                $newel.attr('ng-model', 'data.' + $newel.attr('name'));
+//                $(el).replaceWith($compile($newel)(scope))
+//            });
+//
+//
+//            s.getSignificantClass = function (index, one, onw, onn) {
+//
+//                if (s.errors && !areAllEmpty(s.errors[index])) {
+//                    return one;
+//                }
+//                if (s.warnings && !areAllEmpty(s.warnings[index])) {
+//                    return onw;
+//                }
+//                if (s.notices && !areAllEmpty(s.notices[index])) {
+//                    return onn;
+//                }
+//                return '';
+//            };
+//
+//            s.getSignificantMessage = function (index) {
+//
+//                if (s.errors && !areAllEmpty(s.errors[index])) {
+//                    return s.errors[index][0];
+//                }
+//                if (s.warnings && !areAllEmpty(s.warnings[index])) {
+//                    return s.warnings[index][0];
+//                }
+//                if (s.notices && !areAllEmpty(s.notices[index])) {
+//                    return s.notices[index][0]
+//                }
+//                return '';
+//            };
+//
+//
+//            s.refresh = function () {
+//                s.changed = getObjectsDifference(s.checked, s['data']);
+//                s.check();
+//            };
+//
+//            s.check = _.debounce(function (d) {
+//                if (areAllEmpty(s.checking)) {
+//                    console.log('s.changed', s.changed);
+//                    s.changed = getObjectsDifference(s.checked, scope['data']);
+//                    if (!areAllEmpty(s.changed)) {
+//                        s.checking = scope['data'];
+//
+//                        $http.post($(iElement).attr('njAjaxAction'), s.checking)
+//                            .then(function (fromserver) {
+//                                var resp = fromserver['data'];
+//                                if (areAllEmpty(getObjectsDifference(s.checking, scope['data']))) {
+//                                    s.errors = $.extend(true, {}, resp['errors']);
+//                                    s.warnings = $.extend(true, {}, resp['warnings']);
+//                                    s.checked = $.extend(true, {}, s.checking);
+//                                    s.changed = {};
+//                                    s.checking = {};
+//                                }
+//                                else {
+//                                    s.checking = {};
+//                                    s.refresh();
+//                                }
+//                            }, function () {
+//                                s.checking = {};
+//                                s.refresh();
+//                            });
+//                    }
+//                }
+//                else {
+//                    s.refresh();
+//                }
+//            }, 500);
+//            console.log(iAttrs);
+//            if (iAttrs['ngAjaxFormValidate'] !== undefined) {
+//                s.$watch('data', s.refresh, true);
+//                s.refresh();
+//            }
+//            s.getTemp(iAttrs.ngCity);
+//        }
+//    }
+//}]);
 
 
 areAllEmpty = function () {
@@ -790,7 +797,7 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                 var groups = attrs.groupBy ? true : false;
 
                 var template = '<div class="multiselect-parent btn-group dropdown-multiselect" style="width:100%"><div class="kk"><div>';
-                template += '<button type="button" style="width:100%"  id="t1" class="dropdown-toggle" ng-class="settings.buttonClasses" ng-click="toggleDropdown()">{{getButtonText()}}&nbsp;<span class="caret"></span></button>';
+                template += '<button type="button" style="width:100%"  id="t1" class="dropdown-toggle" ng-class="settings.buttonClasses" ng-disabled="parentScope.loading" ng-click="toggleDropdown()">{{getButtonText()}}&nbsp;<span class="caret"></span></button>';
                 template += '<ul class="dropdown-menu dropdown-menu-form ng-dr-ms" ng-style="{display: open ? \'block\' : \'none\', height : settings.scrollable ? settings.scrollableHeight : \'auto\' }" style="position: fixed; top:auto; left: auto; width: 20%;cursor: pointer" >';
                 template += '<li ng-show="settings.selectionLimit === 0"><a data-ng-click="selectAll()"><span class="glyphicon glyphicon-ok"></span>  {{texts.checkAll}}</a>';
                 template += '<li ng-show="settings.showUncheckAll"><a data-ng-click="deselectAll(true);"><span class="glyphicon glyphicon-remove"></span>   {{texts.uncheckAll}}</a></li>';
@@ -817,6 +824,7 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                 element.html(template);
             },
             link: function ($scope, $element, $attrs) {
+                console.log($scope)
                 var $dropdownTrigger = $element.children()[0];
 
                 $scope.toggleDropdown = function () {
@@ -1260,8 +1268,8 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
 
                     var attributes_for_cell = ' pr-id="{{ row.entity.id }}" ';
-                    if (col.onclick && col.type!=='actions' && col.type!=='editable') {
-                        attributes_for_cell += ' ng-click="grid.appScope.'+col.onclick+'(row.entity.id, row.entity, \'' + col['name'] + '\') "';
+                    if (col.onclick && col.type !== 'actions' && col.type !== 'editable') {
+                        attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\') "';
                     }
 
                     var prefix_img = '';
@@ -1272,30 +1280,30 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                     switch (col.type) {
                         case 'link':
-                            return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a'+attributes_for_cell+' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i> {{COL_FIELD}}</a></div>';
+                            return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a'+attributes_for_cell+' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
                         case 'img':
-                            return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="{{ COL_FIELD }}" alt="image" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
+                            return '<div  ' + attributes_for_cell + '  pr-test="Grid" class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="{{ COL_FIELD }}" alt="image" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
                         case 'show_modal':
-                            return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-click="' + col.modal + '" ng-bind="COL_FIELD"></a></div>';
+                            return '<div  ' + attributes_for_cell + '  pr-test="Grid" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-click="' + col.modal + '" ng-bind="COL_FIELD"></a></div>';
                         case 'actions':
-                            return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '">' + prefix_img + '<button ' +
+                            return '<div  ' + attributes_for_cell + '  pr-test="Grid" class="' + classes_for_row + '">' + prefix_img + '<button ' +
                                 ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
                                 ' ng-repeat="(action_name, enabled) in COL_FIELD" ng-disabled="enabled !== true" ' +
                                 ' ng-click="grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')" ' +
                                 ' title="{{ grid.appScope._((enabled === true)?(action_name + \' grid action\'):enabled) }}">{{ grid.appScope._(action_name + \' grid action\') }}</button></div>';
                         case 'icons':
-                            return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '">' + prefix_img + '<i ng-class="{disabled: !icon_enabled}" ' +
+                            return '<div  ' + attributes_for_cell + '  pr-test="Grid" class="' + classes_for_row + '">' + prefix_img + '<i ng-class="{disabled: !icon_enabled}" ' +
                                 'class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ icon_name }}" ng-repeat="(icon_name, icon_enabled) in COL_FIELD" ng-click="grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ icon_name }}\', row.entity, \'' + col['name'] + '\')" title="{{ grid.appScope._(\'grid icon \' + icon_name) }}"></i></div>';
                         case 'editable':
                             if (col.multiple === true && col.rule) {
-                                return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '" ng-if="grid.appScope.' + col.rule + '=== false" title="{{ COL_FIELD }}">' + prefix_img + '{{ COL_FIELD }}</div><div ng-if="grid.appScope.' + col.rule + '"><div ng-click="' + col.modal + '" title="{{ COL_FIELD }}" id=\'grid_{{row.entity.id}}\'>{{ COL_FIELD }}</div></div>';
+                                return '<div  ' + attributes_for_cell + '  pr-test="Grid" class="' + classes_for_row + '" ng-if="grid.appScope.' + col.rule + '=== false" title="{{ COL_FIELD }}">' + prefix_img + '{{ COL_FIELD }}</div><div ng-if="grid.appScope.' + col.rule + '"><div ng-click="' + col.modal + '" title="{{ COL_FIELD }}" id=\'grid_{{row.entity.id}}\'>{{ COL_FIELD }}</div></div>';
                             }
                             if (col.subtype && col.subtype === 'tinymce') {
-                                return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '" ng-click="' + col.modal + '" title="{{ COL_FIELD }}" id=\'grid_{{row.entity.id}}\'>' + prefix_img + '{{ COL_FIELD }}</div>';
+                                return '<div  ' + attributes_for_cell + '  pr-test="Grid" class="' + classes_for_row + '" ng-click="' + col.modal + '" title="{{ COL_FIELD }}" id=\'grid_{{row.entity.id}}\'>' + prefix_img + '{{ COL_FIELD }}</div>';
                             }
                         //TODO: SS by OZ: what is returned when neither of two above contitions is true?
                         default:
-                            return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '{{ COL_FIELD }}</div>';
+                            return '<div  ' + attributes_for_cell + '  pr-test="Grid" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '{{ COL_FIELD }}</div>';
 
                     }
                 }
@@ -1321,12 +1329,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 gridApi.grid.options.columnDefs[i].cellTemplate = generateCellTemplate(col[i], i);
 
             }
-            console.log(gridApi)
-            $timeout(function(){
-               console.log($('.ui-grid-row').className)
-                $('.ui-grid-row').addClass('_ss')
-            }, 5000)
-
 
             gridApi.grid['searchItemGrid'] = function (col) {
                 //highLightSubstring(col.filter.text, 'ui-grid-canvas',col.field)
@@ -1335,18 +1337,12 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 gridApi.grid.setGridData()
             };
 
-            gridApi.grid['setGridData'] = function (grid_data) {
-                var all_grid_data = grid_data ? grid_data : gridApi.grid.all_grid_data
-
-                gridApi.grid.options.loadGridData(all_grid_data, function (grid_data) {
-                    //scope.initGridData = grid_data;
-                    gridApi.grid.options.data = grid_data.grid_data;
+            gridApi.grid['set_data_function'] = function(grid_data){
+                gridApi.grid.options.data = grid_data.grid_data;
                     if ('grid_data' in grid_data) {
                         scope.initGridData = grid_data
                     } else {
-                        for (var z = 0; z < grid_data.length; z++) {
-
-                        }
+                        console.log('grid data doesn\'t exist')
                     }
                     gridApi.grid.listsForMS = {};
                     gridApi.grid.options.totalItems = grid_data.total;
@@ -1374,8 +1370,25 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     if (gridApi.grid.all_grid_data) {
                         gridApi.grid.all_grid_data['editItem'] = {};
                     }
-                });
+            }
+
+            gridApi.grid['setGridData'] = function (grid_data) {
+                var all_grid_data = grid_data ? grid_data : gridApi.grid.all_grid_data
+                scope.loading = true
+                if(gridApi.grid.options.urlLoadGridData){
+                    $ok(gridApi.grid.options.urlLoadGridData, all_grid_data, function(grid_data){
+                        gridApi.grid.set_data_function(grid_data)
+                    }).finally(function(){
+                        scope.loading = false
+                    })
+                }else{
+                    gridApi.grid.options.loadGridData(all_grid_data, function(grid_data){
+                        gridApi.grid.set_data_function(grid_data)
+                    })
+                }
+
             };
+
 
             if (!gridApi.grid.load_contr) {
                 gridApi.grid.load_contr = true;
@@ -1551,6 +1564,28 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 }
             });
         },
+        loadNextPage: function(url){
+            var scope = this;
+            $(window).scroll(function () {
+                    if($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
+                        if(scope.loading === false && scope.data.end !== true) {
+                            scope.loading = true;
+                            scope.next_page += 1
+                            if(scope.send_data){
+                                scope.send_data.next_page = scope.next_page
+                            }
+
+                            $ok(url, scope.send_data?scope.send_data:{next_page:scope.next_page}, function (resp) {
+                                scope.data = resp;
+                            }).finally(function () {
+                                $timeout(function(){
+                                    scope.loading = false;
+                                }, 1000)
+                            });
+                        }
+                   }
+            });
+        },
         dateOptions: {
             formatYear: 'yy',
             startingDay: 1
@@ -1697,6 +1732,14 @@ function highLightSubstring(substring, block, element) {
             $(this).html($(this).html().replace(re, '<span class="search-highlight">' + rex[0] + '</span>'));
         })
     })
+}
+
+//get next page when our scroll in bottom
+function getNextPage(func){
+    $(window).scroll(function () {
+        if ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
+        }
+    });
 }
 
 function angularControllerFunction(controller_attr, function_name) {

@@ -9,13 +9,11 @@
 
 {% block portal_content %}
     <script>
-        module.controller('portals_list', function ($scope, $ok) {
+        module.controller('portals_list', function ($scope, $ok, $timeout) {
             $scope.$$translate = {{ translates('portals_list')|safe }};
             $scope.search_text = '';
-            $scope.loading = false;
-            $scope.dirty = true;
-            $scope.data = [];
-
+            $scope.next_page = 1;
+            $scope.old_search = '';
             $scope.subscribe = function (portal_id) {
                 {% if g.user_id %}
                     $ok('{{ url_for('reader.reader_subscribe_registered')|safe }}', {portal_id: portal_id}, function (resp) {
@@ -33,38 +31,37 @@
             };
 
             $scope.search_for_portal = function () {
-                if ($scope.loading) {
-                    $scope.dirty = true;
-                    return false;
-                }
                 $scope.loading = true;
-                $scope.data = [];
-                $scope.dirty = false;
-                $ok('', {text: $scope.search_text}, function (resp) {
-                    $scope.loading = false;
-                    if ($scope.dirty) {
-                        $scope.search_for_portal();
-                    }
-                    else {
+                $scope.send_data = {text: $scope.search_text, next_page:$scope.next_page}
+                if($scope.old_search !== $scope.search_text){
+                    $ok('',$scope.send_data , function (resp) {
                         $scope.data = resp;
-
-                    }
-
-                }).finally(function () {
-                    $scope.loading = false;
-                });
-            }
+                        $scope.old_search = $scope.search_text
+                    }).finally(function () {
+                        $timeout(function(){
+                            $scope.loading = false;
+                            if($(document).height()-$(window).height() === 0){
+                                $scope.next_page +=1;
+                                $scope.search_for_portal()
+                            }
+                        }, 500)
+                    });
+                }
+            };
+            $scope.loadNextPage('')
         });
 
     </script>
 
     {% raw %}
-    <div ng-controller="portals_list" ng-init="search_for_portal()">
-        <h2>{{ _('Please, subscribe to any portal') }}</h2>
+    <div ng-controller="portals_list">
+        <h2>{{ _('Please, search and subscribe to any portal') }}</h2>
         </br>
         {{ _('Search') }} <input ng-model="search_text" ng-change="search_for_portal()" id="portal_search" type="text">
+        <h2 ng-if="search_text.length>0">{{ _('Searching results') }}</h2>
+        <h4 ng-if="data.list_portals.length==0 && search_text.length>0" style="color: red">{{ _('For your search no results!') }}</h4>
         <table>
-            <tr ng-repeat="portal in data">
+            <tr ng-repeat="portal in data.list_portals">
 
                 <td class="p4px">
                     <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
@@ -82,9 +79,6 @@
             </tr>
 
         </table>
-        <div ng-if="loading">
-            {{ _('Loading...') }}
-        </div>
     </div>
     {% endraw %}
 {% endblock portal_content %}

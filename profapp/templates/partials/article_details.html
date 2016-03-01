@@ -1,3 +1,19 @@
+    <script>
+        var favorite = {{ favorite|tojson}};
+        function add_delete_favorite(boolean) {
+            var article_portal_division_id = {{ article['id']|tojson }};
+            $.ajax({
+                type: 'post',
+                url: '{{ url_for('front.add_delete_favorite') }}',
+                data: {'favorite': boolean, 'article_portal_division_id': article_portal_division_id},
+                success: function () {
+                    var text = document.getElementById('favorite');
+                    favorite = boolean;
+                    text.innerHTML = favorite ? '<i class="fa fa-heart"></i>Delete from favorite' : '<i class="fa fa-heart-o"></i>Add to favorite';
+                }
+            })
+        }
+    </script>
 <div class="block-item full-block-info" style="height: auto;">
 
         <h2 class="item-title">{{ article['title']|safe }}</h2>
@@ -12,6 +28,19 @@
 
             <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
             <div class="item-comments">{{_('Comments')}} 0</div>
+            <div class="read_count">Read {{ article['read_count'] }}</div>
+            <div class="like_count">Likes {{ article['like_count'] }}</div>
+            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3" id='favorite' style="cursor: pointer"
+                         onclick="favorite?add_delete_favorite(false):add_delete_favorite(true);">
+                        {% if favorite %}
+                            <i class="fa fa-heart"></i>
+                        {% else %}
+                            <i class="fa fa-heart-o"></i>
+                        {% endif %}
+                        <script>document.write(favorite ? 'Delete from favorite' : 'Add to favorite')</script>
+                    </div>
+
+
         </div>
         <div class="article-short">
             {{ article['short']|safe }}

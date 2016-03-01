@@ -10,44 +10,87 @@
 {% block portal_content %}
     <script>
         module.controller('reader_edit_profile', ['$scope', '$http', function ($scope, $http) {
-            $scope.edit_data = function(data){console.log(data);};
+            $scope.edit_data = function (data) {
+                console.log(data);
+            };
             $scope.reader_edit_url = {{ raw_url_for('reader.edit_profile_submit')|safe }};
-            $scope.edit = function (){
+            $scope.edit = function () {
                 console.log($scope.data);
                 $http({
                     method: 'POST',
                     url: $scope.reader_edit_url({reader_portal_id: $scope.data.reader_portal_id}),
                     data: $scope.data
-                    }).success(function (resp) {
+                }).success(function (resp) {
                             add_message('Configuration saved successfully', null, 1000);
-                            $scope.data = resp.data}
-            )}}]);
+                            $scope.data = resp.data
+                        }
+                )
+            }
+        }]);
     </script>
-{% include 'partials/reader/reader_nav.html' %}
-{% raw %}
+    {% include '_ruslan/reader/_reader_nav.html' %}
+    {% raw %}
     <div ng-controller="reader_edit_profile" ng-model="data">
-        <div>
-            <div af
-             af-after-save="afterSave"
-             af-after-load="afterLoad"
-             ng-model="data">
-                <span style="display:block; width: 50px">
-                </span>Division name<span style="margin-left: 85px;display:inline-block;">| Show articles | Show comments | Show favorite comments | Show liked comments
-            </span><br>
-                <form >
-            <span ng-repeat="division in data.divisions"><br>
-                <span style="display:inline-block; width: 70px">{{ division.name }}</span>
-                <span style="margin-left: 130px;" ng-repeat="show in division.show_divisions_and_comments">
-                    <label style="position: absolute; width: 70px; margin-left: 5px">
-                        <input ng-model="show[1]" type="checkbox" class="show_checkbox">
-                    </label>
-                </span>
-            </span>
-                <input style="margin-left: 100px" type="submit" ng-click="edit()">
-                    </form>
+        <div class="container" af af-after-save="afterSave" af-after-load="afterLoad" ng-model="data">
+            <div class="row name-subscriptions">
+                <div class="col-lg-3 pull-left"><h5>Configure edit</h5></div>
             </div>
-
+            <div class="row menu-subscriptions">
+                <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 line-subsc">Division name</div>
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 line-subsc center">Show articles</div>
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 line-subsc center">Show comments</div>
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 line-subsc center">Show favorite comments</div>
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 center">Show liked comments</div>
+            </div>
+            <form>
+                <div class="row line-subsc-inside" ng-repeat="division in data.divisions">
+                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"><span>{{ division.name }}</span>
+                    </div>
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 center"
+                         ng-repeat="show in division.show_divisions_and_comments">
+                        <label>
+                            <input ng-model="show[1]" type="checkbox" class="show_checkbox">
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-3 pull-right submit-subscriptions">
+                        <input type="submit" ng-click="edit()">
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
-{% endraw %}
+
+
+
+
+
+
+    <!--
+        <div ng-controller="reader_edit_profile" ng-model="data">
+            <div>
+                <div af
+                     af-after-save="afterSave"
+                     af-after-load="afterLoad"
+                     ng-model="data">
+                    <span style="display:block; width: 50px">
+                    </span>Division name<span style="margin-left: 85px;display:inline-block;">| Show articles | Show comments | Show favorite comments | Show liked comments
+                </span><br>
+                    <form>
+                        <span ng-repeat="division in data.divisions"><br>
+                            <span style="display:inline-block; width: 70px">{{ division.name }}</span>
+                            <span style="margin-left: 130px;" ng-repeat="show in division.show_divisions_and_comments">
+                                <label style="position: absolute; width: 70px; margin-left: 5px">
+                                    <input ng-model="show[1]" type="checkbox" class="show_checkbox">
+                                </label>
+                            </span>
+                        </span>
+                        <input style="margin-left: 100px" type="submit" ng-click="edit()">
+                    </form>
+                </div>
+
+            </div>
+        </div>-->
+    {% endraw %}
 {% endblock portal_content %}

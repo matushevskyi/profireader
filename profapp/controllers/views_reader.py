@@ -12,6 +12,7 @@ from flask.ext.login import login_required
 import datetime
 from ..models.files import File
 
+
 @reader_bp.route('/details_reader/<string:article_portal_division_id>')
 @tos_required
 def details_reader(article_portal_division_id):
@@ -78,7 +79,9 @@ def list_reader_load(json):
             articles[article_id]['portal']['logo_file_id'] else None
         del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
         list_articles.append(article)
+
     return {
+        'end': pages == 1,
         'articles': list_articles,
         'pages': pages,
         'current_page': page,
