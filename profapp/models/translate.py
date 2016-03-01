@@ -95,13 +95,12 @@ class TranslateTemplate(Base, PRBase):
     @staticmethod
     def getTranslate(template, phrase, url=None, allow_html=''):
 
-        portal_id = g.portal_id
-
         url = TranslateTemplate.try_to_guess_url(url)
 
         (phrase, template) = (phrase[2:], '__GLOBAL') if phrase[:2] == '__' else (phrase, template)
 
-        translation = TranslateTemplate.try_to_get_phrase(template, phrase, url, portal_id=portal_id,
+        translation = TranslateTemplate.try_to_get_phrase(template, phrase, url,
+                                                          portal_id=g.portal_id,
                                                           allow_html=allow_html)
 
         if translation:

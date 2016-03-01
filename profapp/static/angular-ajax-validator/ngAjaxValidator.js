@@ -37,7 +37,7 @@
     };
 
 
-    angular.module('ajaxFormModule', []).factory('$af', ['$ok', function ($ok) {
+    angular.module('ajaxFormModule', ['ui.bootstrap']).factory('$af', ['$ok', function ($ok) {
 
         var modelsForValidation = [];
 
@@ -222,8 +222,8 @@
                                 if (stateonok) setInParent('afState', stateonfail);
                                 notok(resp, errorcode);
                             }).finally(function () {
-                                validationdict['http'] = null;
-                            });
+                            validationdict['http'] = null;
+                        });
                         if (validationdict) {
                             validationdict['http'] = promise;
                         }
@@ -278,7 +278,7 @@
 
                 $scope.isActionAllowed = function (action) {
                     if (action === 'reset') {
-                        return $scope.$af_original_model_dirty?true:false;
+                        return $scope.$af_original_model_dirty ? true : false;
                     }
 
                     var http = $af.$getValidationDict($scope['model']);
@@ -330,11 +330,13 @@
             //},
             template: function (tElement, tAttrs) {
                 var model_fields = tAttrs['afValidationAnswer'].split(':');
+                //$(tElement).attr('uib-popover', "Ops! Pls enter at least one keyword");
                 var model_name = model_fields[0];
                 var field_name = model_fields[1];
                 var erm = '' + model_name + '.errors.' + field_name;
                 var ewm = '' + model_name + '.warnings.' + field_name;
                 var enm = '' + model_name + '.notices.' + field_name;
+                //$(tElement).attr('data-toggle')
                 return '<span class="error"   ng-if="' + erm + '"><span class="icon icon-stop"></span> {{ ' + erm + ' }}</span>' +
                     '<span class="warning" ng-if="!' + erm + ' && ' + ewm + '"><span class="icon icon-warning"></span> {{ ' + ewm + ' }}</span>' +
                     '<span class="notice"  ng-if="!' + erm + ' && ! ' + ewm + ' && ' + enm + '"><span class="icon icon-check"></span> {{ ' + enm + ' }}</span>';
@@ -344,7 +346,27 @@
 
             }
         }
-    }]);
+    }]).directive('prValidationAnswer', function ($compile) {
+        //TODO: OZ by OZ: maybe compile function is better solution (faster)
+        return {
+            restrict: 'A',
+            replace: false,
+            terminal: true,
+            priority: 1000,
+            link: function link(scope, element, attrs) {
+                var model_fields = attrs['prValidationAnswer'].split(':');
+                var model_name = model_fields[0];
+                var field_name = model_fields[1];
+                element.attr('uib-popover', "{{ "+model_name+".errors."+field_name+" || "+model_name+".warnings."+field_name+"" +
+                    " || "+model_name+".notices."+field_name+" }}");
+                element.attr('ng-class', "{'pr-validation-error': "+model_name+".errors."+field_name+", 'pr-validation-warning':" +
+                    " "+model_name+".warnings."+field_name+", 'pr-validation-notice': "+model_name+".notices."+field_name+"}");
+                element.removeAttr("pr-validation-answer"); //remove the attribute to avoid indefinite loop
+                element.removeAttr("data-pr-validation-answer"); //also remove the same attribute with data- prefix in case users specify data-common-things in the html
+                $compile(element)(scope);
+            }
+        };
+    });
 
 
 })(this.angular);

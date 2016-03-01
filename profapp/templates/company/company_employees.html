@@ -66,6 +66,50 @@
         </div>
     </script>
     {% endraw %}
+    <script>
+        module.controller('employment_position_dialog', function ($scope, $ok, $uibModalInstance, position, user, company) {
+
+            $scope.$$translate = {{ translates('employment_position_dialog')|safe }};
+            $scope.url_employment_change_position = {{ raw_url_for('company.employment_change_position')|safe }};
+            {% raw %}
+
+            $scope.user = user;
+            $scope.company = company;
+            $scope.position = position;
+
+            $scope.set_position = function () {
+                $ok($scope.url_employment_change_position({
+                    employment_id: $scope.user.id,
+                    company_id: $scope.company.id,
+                }), {position: $scope.position}, $uibModalInstance.close);
+            }
+
+            $scope.cancel = $uibModalInstance.dismiss;
+
+            {% endraw %}
+
+        });
+    </script>
+
+    {% raw %}
+    <script type="text/ng-template" id="employment_position_dialog.html">
+        <div>
+            <div class="modal-header">
+                <h3 class="modal-title">{{ _('set employee position') }}</h3>
+            </div>
+
+            <div class="modal-body">
+                <input ng-model="position"/>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" type="button" ng-click="set_position()">{{ _('set position') }}
+                </button>
+                <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>
+            </div>
+        </div>
+    </script>
+    {% endraw %}
 
 
     <script>
@@ -85,6 +129,12 @@
                 });
             };
 //http://profireader.com/company/560b9f54-1727-4001-bda8-784be5762873/employment_action/5617835c-12a4-4001-b423-b7f13c696686
+
+            $scope.grid_update_row = function (updated_row) {
+                console.log($scope, updated_row);
+//                    TODO: SS by OZ: how i can access grid data without data cariable in my scope?
+                $scope.grid_change_row($scope.data, updated_row);
+            }
 
             $scope.grid_action = function (id, action, row, column_name) {
                 'use strict'
@@ -106,14 +156,27 @@
                         })
                     });
 
-
-                    modalInstance.result.then(function (updated_row) {
-                        console.log($scope, updated_row);
-//                    TODO: SS by OZ: how i can access grid data without data cariable in my scope?
-                        $scope.grid_change_row($scope.data, updated_row);
-                    });
+                    modalInstance.result.then($scope.grid_update_row);
                 }
             };
+
+            $scope.change_position = function (id, row, column_name) {
+                'use strict'
+
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'employment_position_dialog.html',
+                    controller: 'employment_position_dialog',
+                    resolve: resolveDictForAngularController({
+                        position: row['position'],
+                        company: $scope.company,
+                        user: row,
+                    })
+                });
+
+                modalInstance.result.then($scope.grid_update_row);
+
+            };
+
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
                 loadGridData: $scope.loadData,
@@ -125,7 +188,11 @@
                         afilter: {type: 'input'}
                     },
 
-                    {name: 'position', width: '20%', filter: {type: 'input'}}
+                    {
+                        name: 'position',
+                        onclick: 'change_position',
+                        width: '20%', afilter: {type: 'input'}
+                    }
                     ,
                     {name: 'status', width: '10%', afilter: {type: 'input'}},
                     {

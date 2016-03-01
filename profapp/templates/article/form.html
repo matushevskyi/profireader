@@ -258,32 +258,14 @@
 
             <div class="update_col1">
                 {{ _('Select picture') }}
-                <div ng-model="data.image" pr-cropper="cropper" pr-company-id="{{ data.article.company.id }}"></div>
+                <div ng-model="data.image" pr-cropper pr-company-id="{{ data.article.company.id }}"></div>
             </div>
-
-{% endraw %}
-{#            <div ng-if="data.article.division" class="update_col1">#}
-{#                <!-- TODO: MY BY OZ: please uncoment time (comented by ng-if=0 now), move date and time to one line, and move this layout in some angular template (e.g. 'datetimepicker.html') -->#}
-{#                {{ _('Select publication date and time') }}<br/>#}
-{#            <div pr-datepicker ng-model="material_or_publication.event_tm"></div>#}
-{#            </div>#}
-{##}
-{#            <div ng-if="data.article.division" class="update_col1">#}
-{#                {{ _('Select publication priority') }}<br/>#}
-{##}
-{#                <div style="width: 20em" ui-slider min="{{ data.portal_division.min }}"#}
-{#                     max="{{ data.portal_division.max }}" step="1" ng-model="data.portal_division.current"></div>#}
-{#                <div class="nowrap">#}
-{#                    <span>{{ ArticlePositionTitle() }}</span>#}
-{#                </div>#}
-{##}
-{#            </div>#}
-{% raw %}
 
 
             <div class="update_col1">
                 <!-- TODO: OZ by OZ move this code to one file -->
                 <link href="//static.profireader.com/static/css/article.css" rel="stylesheet">
+<!-- TODO: OZ by OZ: select css for current theme. also look for another place with same todo-->
                 <link href="//static.profireader.com/static/front/bird/css/article.css" rel="stylesheet">
 
                 {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>

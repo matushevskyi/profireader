@@ -1,0 +1,8 @@
+<p>{{ _('Hello `%(name)s`', {'name': user_to.profireader_name}) }},</p>
+{% if user_from.id %}
+    <p>{{ _('User `%(name)s` sent you email as member of company `%(company_name)s`', {'name': user_from.profireader_name, 'company_name': in_company.name}) }}</p>
+{% else %}
+    <p>{{ _('Anonymous sent you email as member of company `%(company_name)s`', {'company_name': in_company.name}) }}</p>
+{% endif %}
+<hr/>
+<p>{{ message|nl2br }}</p>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    {% include 'head.html' %}
+</head>
+
+<body {% if member_company %}
+    class="member-company"
+{% endif %}>
+{% include 'nav.html' %}
+<br/>
+<br/>
+
+<div class="container">
+
+    <div class="row site-content">
+
+        {% if member_company %}
+            {% include 'subportal_nav.html' %}
+        {% endif %}
+
+
+
+        <!-- Blog Entries Column -->
+        <div class="col-md-12">
+            <div class="full-width">
+                {% block content %}{% endblock content %}
+            </div>
+        </div>
+
+    </div>
+
+
+</div>
+
+{% include 'footer.html' %}
+
+</body>
+</html>

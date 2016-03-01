@@ -1,0 +1,80 @@
+<script>
+    var searchText = {{ search_text|tojson }};
+    var re = new RegExp(searchText, 'g');
+    var indexFound = 0;
+    function getColored(article) {
+        var text = article.short;
+        var coloredText = addColoredSpan(text);
+        document.write(coloredText);
+    }
+    function findIndex(text) {
+        var index = text.indexOf(searchText);
+        if (index > 0) {
+            indexFound = index;
+            return index
+        }
+        else {
+            indexFound = 0;
+            return false
+        }
+    }
+    function foundText(article) {
+        if (findIndex(article.title)) {
+            return article.title
+        }
+        else if (findIndex(article.short)) {
+            return article.short
+        }
+        else if (findIndex(article.long_stripped)) {
+            return article.long_stripped
+        }
+    }
+    function addColoredSpan(text) {
+        return text.replace(re, '<span style="color:#49c414">' + searchText + '</span>');
+    }
+    function getSearchBlock(article) {
+        var text = foundText(article);
+        var index = indexFound;
+        var size = 45;
+        document.write(text ? addColoredSpan((index > size ? '...' : '') +
+                text.substring(Math.max(0, index - size), Math.min(index + size, text.length))
+                + (index + size < text.length ? '...' : '')) : text);
+    }
+
+</script>
+{% for article_id, article in articles.items() %}
+    <div class="block-item list-elements">
+        <div class="item-type article">
+            <a href="{{ url_for('front.division', division_name=article['division']['name'], page=1, search_text='') }}">{{ article['division']['name']|safe }}</a>
+        </div>
+        <h2 class="item-title">
+            <a href="{{ url_for('front.details', article_portal_division_id=article['id']) }}">{{ article['title']|safe }}</a>
+            {% if article['tags'] %}
+                <span class="tag-in-article">
+                    {% for tag in article['tags'] %}
+                        <a href="#">{{ tag }}</a>
+                    {% endfor %}
+                </span>
+            {% endif %}
+        </h2>
+        <div class="item-short-content">
+            <script type="text/javascript">
+                getColored({{ article|tojson }});
+            </script>
+        </div>
+        <div class="item-additional-info">
+            <a href="{{ url_for('front.subportal', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}"
+               class="item-company">{{ article['company']['name']|safe }}</a>
+            <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
+            <div><br>
+                <script type="text/javascript">getSearchBlock({{ article|tojson }})</script>
+            </div>
+        </div>
+
+        <div class="bottom-hide"></div>
+        <img {{ prImage(article['image_file_id']) }} class="block-item-img"/>
+
+    </div>
+{% else %}
+<h1>{{ _('There are no articles in this division') }}</h1>
+{% endfor %}

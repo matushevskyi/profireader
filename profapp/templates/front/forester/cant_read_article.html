@@ -1,0 +1,5 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h1>{{ redirect_info['message'] }}</h1>
+{{ _('Click') }} <a href="{{ redirect_info['redirect_url'] }}">{{ _('here to ') }}</a>{{ redirect_info['context'] }}
+{% endblock content %}

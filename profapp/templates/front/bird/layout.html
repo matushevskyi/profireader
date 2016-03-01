@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ lang }}">
 <head>
-    {% include 'front/bird/head.html' %}
+    {% include 'head.html' %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
 
 
@@ -23,14 +23,14 @@
 
 
 
-{% include 'front/bird/nav.html' %}
+{% include 'nav.html' %}
 <br/>
 <br/>
 <div class="container">
 
     <div class="row site-content">
         {% if member_company %}
-            {% include 'front/bird/subportal_nav.html' %}
+            {% include 'subportal_nav.html' %}
         {% endif %}
 
         <!-- Blog Entries Column -->
@@ -64,7 +64,7 @@
 
 </div>
 
-{% include 'front/bird/footer.html' %}
+{% include 'footer.html' %}
 
 </body>
 </html>

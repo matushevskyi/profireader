@@ -42,6 +42,8 @@ class Company(Base, PRBase):
                             nullable=False)
     country = Column(TABLE_TYPES['name'], nullable=False, default='')
     region = Column(TABLE_TYPES['name'], nullable=False, default='')
+    city = Column(TABLE_TYPES['name'], nullable=False, default='')
+    postcode = Column(TABLE_TYPES['name'], nullable=False, default='')
     address = Column(TABLE_TYPES['name'], nullable=False, default='')
     phone = Column(TABLE_TYPES['phone'], nullable=False, default='')
     phone2 = Column(TABLE_TYPES['phone'], nullable=False, default='')
@@ -101,28 +103,7 @@ class Company(Base, PRBase):
         ret = super().validate(is_new)
 
         if not re.match('[^\s]{3,}', self.name):
-            ret['errors']['name'] = 'pls enter a bit longer name'
-
-        if not re.match('[^\s]{3,}', self.country):
-            ret['errors']['country'] = 'pls enter country'
-
-        if not re.match('[^\s]{3,}', self.address):
-            ret['errors']['address'] = 'pls enter address'
-
-        if not re.match('[^\s]{3,}', self.phone):
-            ret['errors']['phone'] = 'pls enter phone'
-
-        if not re.match('[^\s]{3,}', self.email):
-            ret['errors']['email'] = 'pls enter email'
-
-        if not re.match('[^\s]{3,}', self.email):
-            ret['errors']['email'] = 'pls enter email'
-
-        if not re.match('[^\s]{3,}', self.about):
-            ret['errors']['about'] = 'pls tell us something about your company'
-
-        if not re.match('[^\s]{3,}', self.short_description):
-            ret['errors']['short_description'] = 'pls provide short description of your tremendous company'
+            ret['notices']['name'] = 'pls enter a bit longer name'
 
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)
@@ -227,14 +208,12 @@ class Company(Base, PRBase):
     @staticmethod
     def search_for_company_to_join(user_id, searchtext):
         """Return all companies which are not current user employers yet"""
-        return [company.get_client_side_dict() for company in
-                db(Company).filter(~db(UserCompany, user_id=user_id,
-                                       company_id=Company.id).exists()).
-                    filter(Company.name.ilike("%" + searchtext + "%")
-                           ).all()]
+        return db(Company).filter(~db(UserCompany, user_id=user_id,
+                                       company_id=Company.id).exists()).filter(Company.name.ilike("%" + searchtext + "%")
+                           )
 
     def get_client_side_dict(self,
-                             fields='id,name,author_user_id,country,region,address,phone,phone2,email,'
+                             fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
                                     'short_description,journalist_folder_file_id,logo_file_id,about,lat,lon,'
                                     'own_portal.id|host',
                              more_fields=None):
@@ -331,6 +310,14 @@ class UserCompany(Base, PRBase):
             return "User need employment with status `{}` to perform action `{}`".format(
                     UserCompany.STATUSES['ACTIVE'], action_name)
 
+        if action_name == 'FIRE':
+            if self.user_id == employment_subject.employer.author_user_id:
+                return 'You can`t fire company owner'
+
+        if action_name == 'ALLOW':
+            if self.user_id == employment_subject.employer.author_user_id:
+                return 'Company owner have all permissions and you can do nothing with that'
+
         required_rights = self.ACTIONS_FOR_STATUSES[self.status][action_name]
 
         if 'employment' in required_rights:
@@ -351,9 +338,15 @@ class UserCompany(Base, PRBase):
 
     banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
 
+
     rights = Column(TABLE_TYPES['binary_rights'](RIGHT_AT_COMPANY),
                     default={RIGHT_AT_COMPANY.FILES_BROWSE: True, RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH: True},
                     nullable=False)
+
+    # TODO: VK by OZ: custom collumn
+    # company_logo = Column(TABLE_TYPES['image'](size=[100,200]),
+    #                 default='324235423-423423',
+    #                 nullable=False)
 
     employer = relationship('Company', backref='employee_assoc')
     employee = relationship('User', backref=backref('employer_assoc', lazy='dynamic'))

@@ -79,13 +79,17 @@
                 <br/>
                 {{ _('Select portal division') }}<span
                     af-validation-answer="data_validation:portal_division_id"></span><br/>
-                <div ng-repeat="division in data.portal.divisions"><label><input
-                        name="material_details_publish_dialog_division"
-                        ng-value="division.id" ng-model="data.publication.portal_division_id"
-                        type="radio"> {{ division.name }}</label></div>
-
+                <div ng-repeat="division in data.portal.divisions">
+                    <label>
+                        <input
+                                name="material_details_publish_dialog_division"
+                                ng-value="division.id" ng-model="data.publication.portal_division_id"
+                                type="radio"> {{ division.name }}
+                    </label>
+                </div>
                 {{ _('Select publication date') }}<span
                     af-validation-answer="data_validation:publishing_tm"></span><br/>
+
                 <div pr-datepicker ng-model="data.publication.publishing_tm"></div>
                 <div ng-if="is_selection_division_event()">
                     {{ _('Select event date') }}<span af-validation-answer="data_validation:event_tm"></span><br/>
