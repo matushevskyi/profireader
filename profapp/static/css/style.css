@@ -184,7 +184,6 @@ body {
   width: 100%;
 }
 .auth-window {
-  background-image: url("../images/auth.jpg");
   background-size: cover;
   min-height: 100vh;
 }
@@ -388,7 +387,6 @@ body {
 }
 .image-company-profile img {
   width: 100%;
-  height: 271px;
 }
 /* ---Reader-list--- */
 .reader-list-nav {
@@ -521,11 +519,16 @@ body {
 }
 /* ---USER--- */
 .link-page i {
-  margin-top: 7px;
-  color: #C62828;
+  margin-top: 11px;
+  color: #FFFFFF;
+  margin-left: 5px;
+  background-color: #FF8D00;
+  padding: 3px 5px;
+  border-radius: 3px;
 }
 .link-page i:hover {
-  color: #A90A0A;
+  background-color: #C62828;
+  transition: all 0.2s ease-out;
 }
 .link-page h5 {
   background-color: #18bc9c;
@@ -534,15 +537,93 @@ body {
   padding: 10px;
   border-radius: 3px;
 }
+.profile-window {
+  border-radius: 3px;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+  border: 1px solid #f5f5f5;
+  background-color: #e1f5fe;
+}
 .profile-window h3 {
   text-align: center;
+  color: #18BC9C;
 }
 .profile-window p {
   line-height: 10px;
 }
-.profile-window span {
+.profile-window .line-user-info {
   color: #000;
-  border-bottom: 1px solid #18bc9c;
+  border-bottom: 1px solid #ECF0F1;
+  word-wrap: break-word;
+}
+.profile-window span {
+  word-wrap: break-word;
+}
+.edit-grup .input-group {
+  margin-bottom: 5px;
+}
+.edit-grup .input-group-addon {
+  width: 150px;
+  text-align: left;
+  background-color: #e1f5fe;
+}
+.edit-grup input[type="radio"],
+.edit-grup input[type="checkbox"] {
+  margin-left: 15px;
+  margin-right: 5px;
+}
+.edit-grup label {
+  display: inline-block;
+  max-width: 100%;
+  font-weight: normal;
+  font-size: 13px;
+  margin-top: 8px;
+}
+.edit-grup select {
+  margin: 8px 0px 0px 15px;
+}
+.edit-grup .item input[type=submit] {
+  font-weight: normal;
+  margin: 0 auto;
+  display: block;
+  background-color: #00ff00;
+  border: none;
+  border-radius: 3px;
+  color: #fff;
+}
+.edit-grup .item input[type=submit]:hover {
+  background-color: #009627;
+  transition: all 0.2s ease-out;
+}
+.add-division-style {
+  margin-top: 15px;
+}
+.add-division-style button {
+  background-color: #C62828;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  display: inline;
+}
+.add-division-style .label-division {
+  margin-top: 23px;
+}
+.portal-division-block {
+  margin-bottom: 10px;
+}
+.portal-division-block span {
+  margin-top: 5px;
+}
+.portal-division-block .delete-division i {
+  margin-top: 12px;
+}
+.form-portal-edit label {
+  margin-right: 10px;
+}
+.form-portal-edit input {
+  margin-right: 10px;
+}
+.name-form {
+  margin-top: 12px;
 }
 /* ---MEDIA--- */
 @media screen and (max-width: 764px) {
