@@ -173,8 +173,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 var $inputImage = $('input', element);
 
                 var URL = window.URL || window.webkitURL;
-                var blobURL;
-
 
                 var options = {
                     crop: function (e) {
@@ -187,23 +185,19 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 var uploadCropper = function () {
                     var files = this.files;
-                    var file;
                     var ff = $('input#inputImage').prop('files')[0];
                     if (files && files.length) {
-                        file = files[0];
+                        var file = files[0];
                         var fr = new FileReader();
                         fr.readAsDataURL(ff);
-                        var content = '';
                         fr.onload = function (e) {
-                            content = fr.result;
                             if (/^image\/\w+$/.test(file.type)) {
                                 $inputImage.val('');
-                                blobURL = URL.createObjectURL(file);
                                 model.$modelValue.type = file.type;
                                 model.$modelValue.name = file.name;
-                                model.$modelValue.dataContent = content;
+                                model.$modelValue.dataContent = fr.result;
                                 model.$modelValue.uploaded = true;
-                                model.$modelValue.image_file_id = blobURL;
+                                model.$modelValue.image_file_id = URL.createObjectURL(file);
 
                             } else {
                                 add_message('Please choose an image file.');
@@ -233,36 +227,18 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     }
                 };
 
-                //if (attrs['prCropper']) {
-                //    scope[attrs['prCropper']] = function () {
-                //        $image.cropper.apply($image, arguments);
-                //    };
-                //}
+
                 scope['cropper'] = function () {
                     $image.cropper.apply($image, arguments);
                 };
-                //debugger;
-                //
+
                 scope.$watch(attrs['ngModel'] + '.image_file_id', function () {
                     if (model && model.$modelValue) {
-                        //var file_url = fileUrl(model.$modelValue.image_file_id);
-                        //$image.attr('src', );
-                        //$image.cropper('replace', file_url);
-
                         if (model) {
                             if (model.$modelValue && model.$modelValue.ratio) options.aspectRatio = model.$modelValue.ratio;
                             if (model.$modelValue && model.$modelValue.coordinates) options.data = model.$modelValue.coordinates;
                         }
-
                         restartCropper();
-
-                        //
-                        //if (file_url) {
-                        //
-                        //}
-                        //else {
-                        //    console.log('no image');
-                        //}
                     }
                 });
 

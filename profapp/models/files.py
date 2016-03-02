@@ -17,7 +17,7 @@ from sqlalchemy import desc
 from io import BytesIO
 from .google import GoogleAuthorize,GoogleToken
 import sys
-import os
+import os,urllib
 
 class File(Base, PRBase):
     __tablename__ = 'file'
@@ -484,40 +484,23 @@ class File(Base, PRBase):
         return old_list, new_list
 
     @staticmethod
-    def uploadForCompany(content, name, type, company):
+    def uploadLogo(content, name, type, directory, root=None):
         size = len(content)
-        file = File(parent_id=company.journalist_folder_file_id,
-                            root_folder_id=company.journalist_folder_file_id,
-                            name=name,
+        unique_name = File.get_unique_name(urllib.parse.unquote(name).replace(
+        '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), type, directory)
+        file = File(parent_id=directory,
+                            root_folder_id=root if root else directory,
+                            name=unique_name,
                             mime=type,
                             size=size
                             ).save()
         file_cont = FileContent(file=file, content=content)
         g.db.add(file, file_cont)
         g.db.commit()
-        file.check_file_mime()
-        return file.id
-
-    def uploadWithoutChunk(self, user):
-        if self:
-            old_file_position = self.tell()
-            self.seek(0, os.SEEK_END)
-            size = self.tell()
-            self.seek(old_file_position, os.SEEK_SET)
-            file = File(parent_id=user.system_folder_file_id,
-                            root_folder_id=user.system_folder_file_id,
-                            name=self.filename,
-                            mime=self.content_type,
-                            size=size
-                            ).save()
-            file_cont = FileContent(file=file, content=self.stream.read(-1))
-            g.db.add(file, file_cont)
-            g.db.commit()
-            file.check_file_mime()
-            return file
+        return file
 
     @staticmethod
-    def check_file_mime(file_id):
+    def check_image_mime(file_id):
         from PIL import Image
         from config import Config
         from io import BytesIO
@@ -526,6 +509,7 @@ class File(Base, PRBase):
         if file_mime in Config.ALLOWED_IMAGE_FORMATS:
             try:
                 Image.open(BytesIO(file_.file_content.content))
+                return ''
             except Exception as e:
                 return 'error'
 
@@ -543,7 +527,7 @@ class File(Base, PRBase):
             g.db.commit()
             session['f_id'] = file.id
             if data.get('chunkNumber')==data.get('chunkQuantity'):
-                return File.check_file_mime(file.id)
+                return File.check_image_mime(file.id)
             return file.id
         else:
             id = session['f_id']
@@ -552,7 +536,7 @@ class File(Base, PRBase):
             c = cont + bytes(content)
             file_cont.updates({'content': c})
             if data.get('chunkNumber')==data.get('chunkQuantity'):
-                return File.check_file_mime(id)
+                return File.check_image_mime(id)
             return id
 
     @staticmethod

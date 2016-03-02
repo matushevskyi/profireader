@@ -340,8 +340,8 @@ def crop_with_coordinates(image, coordinates,  ratio=Config.IMAGE_EDITOR_RATIO,
     :return: cropped bytes of file and area(coordinates)
     """
     size = (int(ratio*height), height) #size for future cropped image
-    image_pil = Image.open(BytesIO(image.file_content.content)) # create Pillow object from content of original picture
     try:
+        image_pil = Image.open(BytesIO(image.file_content.content)) # create Pillow object from content of original picture
         area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],
                                  coordinates['height'])] # convert dict of coordinates to list
         if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)): #

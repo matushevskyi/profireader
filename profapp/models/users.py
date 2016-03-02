@@ -21,7 +21,6 @@ from .files import File
 from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
 
-
 class User(Base, UserMixin, PRBase):
     __tablename__ = 'user'
 
@@ -495,8 +494,10 @@ class User(Base, UserMixin, PRBase):
 
     def avatar_update(self, passed_file):
         if passed_file:
-            list = [file for file in db(File, parent_id=self.system_folder_file_id, ) if re.search('^image/.*', file.mime)]
-            file = File.uploadWithoutChunk(passed_file, self)
+            list = [file for file in db(File, parent_id=self.system_folder_file_id, ) if re.search('^image/.*', file.mime) and file.mime != 'image/thumbnail']
+            file = File.uploadLogo(passed_file.stream.read(-1), passed_file.filename, passed_file.content_type, self.system_folder_file_id)
+            if 'error' in File.check_image_mime(file.id):
+                    return self
             self.profireader_avatar_url = file.url()
             file_thumbnail = file.get_thumbnails(size=(133,100)).thumbnail
             self.profireader_small_avatar_url = file_thumbnail[0].url()

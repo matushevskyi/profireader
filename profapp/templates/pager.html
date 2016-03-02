@@ -14,17 +14,6 @@
         <img style="width: 100%"/>
     </div>
     <div class="btn-group">
-        <button ng-disabled="!data.image.image_file_id" ng-click="cropper('zoom', 0.1)" class="btn btn-primary"
-                type="button" title="Zoom In">
-                  <span class="docs-tooltip" data-toggle="tooltip"><span
-                          class="glyphicon glyphicon-zoom-in"></span></span>
-        </button>
-        <button ng-disabled="!data.image.image_file_id" ng-click="cropper('zoom', -0.1)" class="btn btn-primary"
-                type="button"
-                title="Zoom Out">
-                 <span class="docs-tooltip" data-toggle="tooltip"><span
-                         class="glyphicon glyphicon-zoom-out"></span></span>
-        </button>
         <button ng-if="user_have_company" class="btn btn-primary" type="button" value="{{ image_file_url }}"
                 ng-click="chooseImage(true, avatar)">
                 <span class="docs-tooltip" data-toggle="tooltip" title="Chose image"><span

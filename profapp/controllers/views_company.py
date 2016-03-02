@@ -312,9 +312,10 @@ def load(json, company_id=None):
         company_dict.update(image)
         return company_dict
     else:
-        company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone',
+        company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone','city','postcode',
                                    'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
+            print(json)
             if company_id is not None and user_can_edit:
                 company.detach()
             return company.validate(company_id is None and user_can_edit)
@@ -327,9 +328,14 @@ def load(json, company_id=None):
                 image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
                 bb = base64.b64decode(image_data)
                 new_comp = db(Company, id=company.id).first()
-                file_id = File.uploadForCompany(bb, json['image']['name'], json['image']['type'], new_comp)
+                file_id = File.uploadLogo(bb, json['image']['name'], json['image']['type'], new_comp.journalist_folder_file_id).id
+                if 'error' in File.check_image_mime(file_id):
+                    resp = new_comp.get_client_side_dict()
+                    resp.update({'error':True})
+                    return resp
                 logo_id = crop_image(file_id, json['image']['coordinates'])
                 new_comp.updates({'logo_file_id': logo_id})
+                return new_comp.get_client_side_dict()
             else:
                 img = json['image']
                 img_id = img.get('image_file_id')
