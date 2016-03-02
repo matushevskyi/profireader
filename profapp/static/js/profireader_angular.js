@@ -187,13 +187,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 //};
 
                 var uploadCropper = function () {
-                    var files = this.files;
-                    var file;
-                    //var ff = $('input.inputImage', element).prop('files')[0];
-                    if (files && files.length) {
-                        //file = files[0];
-                        model.$modelValue.uploaded = true;
-                        restartCropper(files[0]);
+                    if (this.files && this.files.length) {
+                        restartCropper(this.files[0]);
                     }
                 };
 
@@ -280,7 +275,13 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                                 }
                                 else {
                                     console.log(e);
-                                    model.$modelValue.coordinates = {'width': e.width, 'height': e.height, 'y': e.y, 'x': e.x,  rotate:0};
+                                    model.$modelValue.coordinates = {
+                                        'width': e.width,
+                                        'height': e.height,
+                                        'y': e.y,
+                                        'x': e.x,
+                                        rotate: 0
+                                    };
                                 }
 
 
@@ -297,30 +298,39 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     fr.src = src;
                 }
 
-                var restartCropper = function (file) {
-                    $image.cropper('destroy');
-                    if (file) {
-                        var fr = new FileReader();
-                        if (/^image\/\w+$/.test(file.type)) {
-                            fr.readAsDataURL(file);
-                            $inputImage.val('');
-                            fr.onload = function (e) {
-                                loadImage(URL.createObjectURL(file), true);
+                var restartCropper = function (uploaded_file) {
+                        $image.cropper('destroy');
+                        if (uploaded_file) {
+                            console.log(uploaded_file);
+                            var fr = new FileReader();
+                            if (/^image\/\w+$/.test(uploaded_file.type)) {
+                                fr.readAsDataURL(uploaded_file);
+                                $inputImage.val('');
+                                fr.onload = function (e) {
+                                    model.$modelValue.uploaded = {
+                                        'dataContent': fr.result,
+                                        'type': uploaded_file.type,
+                                        'name': uploaded_file.name
+                                    }
+                                    loadImage(URL.createObjectURL(uploaded_file), true);
+                                }
+                            }
+
+                            else {
+                                add_message('Please choose an image file.');
                             }
                         }
                         else {
-                            add_message('Please choose an image file.');
+                            if (model.$modelValue.image_file_id
+                            ) {
+                                loadImage(fileUrl(model.$modelValue.image_file_id), true);
+                            }
+                            else {
+                                loadImage(model.$modelValue.no_image_url, false);
+                            }
                         }
                     }
-                    else {
-                        if (model.$modelValue.image_file_id) {
-                            loadImage(fileUrl(model.$modelValue.image_file_id), true);
-                        }
-                        else {
-                            loadImage(model.$modelValue.no_image_url, false);
-                        }
-                    }
-                };
+                    ;
 
                 scope['cropper'] = function () {
                     $image.cropper.apply($image, arguments);
@@ -340,7 +350,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
 
             }
-        };
+        }
+            ;
     }])
     .directive('dateTimestampFormat', function () {
         return {

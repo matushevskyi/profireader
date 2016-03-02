@@ -266,13 +266,12 @@ def update_rights():
 @tos_required
 @login_required
 # @check_rights()
-def update(company_id=None):
-    user_companies = [user_comp for user_comp in current_user.employer_assoc]
-    user_have_comp = True if len(user_companies) > 0 else False
-    company = db(Company, id=company_id).first()
-    return render_template('company/company_edit.html', company_id=company_id, user_comp=user_have_comp,
-                           company_name=company.name if company else '',
-                           company=company if company else {})
+def update():
+    # user_companies = [user_comp for user_comp in current_user.employer_assoc]
+    # user_have_comp = True if len(user_companies) > 0 else False
+    # company = db(Company, id=company_id).first()
+    return render_template('company/company_profile.html',rights_user_in_company={},
+                           company = Company())
 
 
 @company_bp.route('/profile/<string:company_id>/', methods=['GET'])
@@ -323,11 +322,11 @@ def load(json, company_id=None):
                 if company_id is None:
                     company.setup_new_company()
                 company.save().get_client_side_dict()
-                imgdataContent = json['image']['dataContent']
+                imgdataContent = json['image']['uploaded']['dataContent']
                 image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
                 bb = base64.b64decode(image_data)
                 new_comp = db(Company, id=company.id).first()
-                file_id = File.uploadForCompany(bb, json['image']['name'], json['image']['type'], new_comp)
+                file_id = File.uploadForCompany(bb, json['image']['uploaded']['name'], json['image']['uploaded']['type'], new_comp)
                 logo_id = crop_image(file_id, json['image']['coordinates'])
                 new_comp.updates({'logo_file_id': logo_id})
             else:

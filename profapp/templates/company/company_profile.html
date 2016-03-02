@@ -3,7 +3,7 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_articles.html' %}
-{#    {% include '_ruslan/partials/_header_files_crop.html' %}#}
+    {#    {% include '_ruslan/partials/_header_files_crop.html' %}#}
 {% endblock head %}
 
 {% block portal_content %}
@@ -27,7 +27,7 @@
             $scope.data = {};
             $scope.rights_user_in_company = {{rights_user_in_company | tojson | safe}};
 
-            $scope.edit = false;
+            $scope.edit = $scope.company.id ? false : true;
 
             $scope.go_to_portal = function (host) {
                 window.location.href = 'http://' + host;
@@ -53,7 +53,6 @@
                 $timeout(function () {
                     angular.element(document.querySelector('#fileInput')).on('change', handleFileSelect);
                 });
-
             };
 
             $scope.afterSave = function (resp, deff) {
@@ -77,6 +76,11 @@
             $scope.cropperChanged = function () {
                 console.log($scope.$dataURI);
             };
+
+            if (!$scope.company.id) {
+                $scope.change();
+                $scope.edit = true;
+            }
 
             var handleFileSelect = function (evt) {
                 debugger;
@@ -104,28 +108,35 @@
                     <img pr-image="company.logo_file_id" alt="image" ng-show="!edit">
 
                     <div style="width: 400px; height: 400px;" ng-if="edit">
-                        <div style="background-color: #1ab7ea" ng-model="data.image" pr-crop pr-company-id="{{ company.id }}"></div>
+                        <div style="background-color: #1ab7ea" ng-model="data.image" pr-crop
+                             pr-company-id="{{ company.id }}"></div>
                     </div>
                 </div>
 
                 <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12 edit-company">
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                         <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                ng-if="company.own_portal" disabled ng-click="portal_update(company.id, company.own_portal.id)
-                                ">{{_('Portal
-                            profile') }}
+                                ng-if="company.own_portal && company.id" disabled ng-click="portal_update(company.id,
+                                company.own_portal.id)
+                                ">{{_('Portal profile') }}
                         </button>
                         <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                ng-if="!company.own_portal" ng-click="portal_create(company.id)">{{ _('Launch
-                            portal') }}
+                                ng-if="!company.own_portal && company.id" ng-click="portal_create(company.id)">{{
+                            _('Launch portal') }}
                         </button>
-                        <button ng-show="save" class="btn btn-default save-profile pull-right border-radius"
+                        <button ng-if="company.id && save" class="btn btn-default save-profile pull-right border-radius"
                                 type="button" ng-click="$af.save(data)"
                                 ng-disabled="!$af.isActionAllowed(data, 'save') "
                         >{{ _('Save profile') }}
                         </button>
+                        <button ng-if="!company.id && save" class="btn btn-default save-profile pull-right
+                        border-radius"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save') "
+                        >{{ _('Create company') }}
+                        </button>
                         <button class="btn btn-default edit-profile pull-right border-radius" type="button"
-                                ng-click="change()" ng-if="edit_rights">{{ _('Edit profile') }}
+                                ng-click="change()" ng-if="edit_rights && !save">{{ _('Edit profile') }}
                         </button>
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">

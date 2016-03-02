@@ -103,7 +103,7 @@ class Company(Base, PRBase):
         ret = super().validate(is_new)
 
         if not re.match('[^\s]{3,}', self.name):
-            ret['notices']['name'] = 'pls enter a bit longer name'
+            ret['errors']['name'] = 'pls enter a bit longer name'
 
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)
