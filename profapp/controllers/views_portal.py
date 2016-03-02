@@ -426,15 +426,19 @@ def portals_partners(company_id):
 # @check_rights(simple_permissions([]))
 @ok
 def portals_partners_load(json, company_id):
-    subquery = Company.subquery_company_partners(company_id, json.get('filter'))
+    subquery = Company.subquery_company_partners(company_id, json.get('action'), json.get('filter'))
     partners_g, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     partner_list = [
         PRBase.merge_dicts(partner.get_client_side_dict(fields='id,status,portal.own_company,portal,rights'),
                            {'actions': partner.actions(company_id, partner)})
         for partner in partners_g]
+    count_of_rejected = db(MemberCompanyPortal, company_id=company_id).filter( MemberCompanyPortal.status=="REJECTED").count()
+    filter_action = 'see_another' if json.get('action')=='see_rejected' else 'see_rejected'
     return {'page': current_page,
             'grid_data': partner_list,
-            'total': count}
+            'total': count,
+            'filters_info':{'status':'Num: '+str(count_of_rejected)},
+            'filters_action': {'status':filter_action if count_of_rejected else None}}
 
 
 @portal_bp.route('/portals_partners_change_status/<string:company_id>/<string:portal_id>', methods=['POST'])
@@ -484,7 +488,8 @@ def company_update_load(json, employeer_id, member_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     member = MemberCompanyPortal.get(Company.get(employeer_id).own_portal.id, member_id)
     if action == 'load':
-        return {'member': member.get_client_side_dict(more_fields='company'),
+        return {'frozen': member.status =='FROZEN',
+                'member': member.get_client_side_dict(more_fields='company'),
                 'statuses_available': MemberCompanyPortal.get_avaliable_statuses(),
                 'employeer': Company.get(employeer_id).get_client_side_dict()}
     else:
@@ -493,7 +498,8 @@ def company_update_load(json, employeer_id, member_id):
             member.detach()
             return member.validate(False)
         else:
-            member.save()
+            if member.status !='FROZEN':
+                member.save()
     return member.get_client_side_dict()
 
 

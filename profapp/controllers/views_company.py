@@ -52,7 +52,6 @@ def show():
 def load_companies(json):
     companies, pages, page, count = pagination(query=db(Company)
         .filter(Company.id==db(UserCompany, user_id=g.user.id).subquery().c.company_id), page=1, items_per_page=6*json.get('next_page') if json.get('next_page') else 6)
-    print(pages, json)
     return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],
             'user_id': g.user_dict['id'], 'end': pages==1}
 
@@ -314,7 +313,6 @@ def load(json, company_id=None):
         company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone','city','postcode',
                                    'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
-            print(json)
             if company_id is not None and user_can_edit:
                 company.detach()
             return company.validate(company_id is None and user_can_edit)

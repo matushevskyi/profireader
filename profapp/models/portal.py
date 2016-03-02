@@ -346,25 +346,25 @@ class MemberCompanyPortal(Base, PRBase):
     plan = relationship('MemberCompanyPortalPlan'
                         # , backref='partner_portals'
                         )
-
-    ACTIONS_FOR_ACTIVE = {
+    ACTIONS = {
         'UNSUBSCRIBE': 'UNSUBSCRIBE',
         'FREEZE': 'FREEZE',
-    }
-    ACTIONS_FOR_NONACTIVE = {
         'WITHDRAW': 'WITHDRAW',
-    }
-    ACTIONS_FOR_FROZEN = {
-        'UNSUBSCRIBE': 'UNSUBSCRIBE',
         'RESTORE': 'RESTORE'
     }
 
     ACTION_FOR_STATUS = {
-        STATUSES['ACTIVE']: ACTIONS_FOR_ACTIVE,
-        STATUSES['APPLICANT']: ACTIONS_FOR_NONACTIVE,
-        STATUSES['SUSPENDED']: ACTIONS_FOR_FROZEN,
-        STATUSES['FROZEN']: ACTIONS_FOR_FROZEN,
-        STATUSES['REJECTED']: ACTIONS_FOR_NONACTIVE
+        STATUSES['ACTIVE']: {
+            'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
+            'FREEZE': ACTIONS['FREEZE'],
+        },
+        STATUSES['APPLICANT']: {'WITHDRAW': ACTIONS['WITHDRAW']},
+        STATUSES['SUSPENDED']: {'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE']},
+        STATUSES['FROZEN']: {
+            'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
+            'RESTORE': ACTIONS['RESTORE']
+        },
+        STATUSES['REJECTED']: {'WITHDRAW': ACTIONS['WITHDRAW']}
     }
 
     STATUS_FOR_ACTION = {
@@ -391,6 +391,10 @@ class MemberCompanyPortal(Base, PRBase):
         if employment.status != MemberCompanyPortal.STATUSES['ACTIVE']:
             return "User need employment with status `{}` to perform action `{}`".format(
                     MemberCompanyPortal.STATUSES['ACTIVE'], action_name)
+
+        if self.portal.own_company.status != 'ACTIVE' and action_name == MemberCompanyPortal.ACTIONS['FREEZE']:
+            return "Company `{}` with status `{}` need status ACTIVE to perform action `{}`".format(self.portal.own_company.name,
+                    self.portal.own_company.status, action_name)
 
         if not employment.has_rights(right_for_action):
             return "Employment need right `{}` to perform action `{}`".format(right_for_action, action_name)
@@ -429,9 +433,15 @@ class MemberCompanyPortal(Base, PRBase):
         return db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).one()
 
     @staticmethod
+    def get_members(company_id, *args):
+        subquery = db(MemberCompanyPortal).filter(
+            MemberCompanyPortal.portal_id == db(Portal, company_owner_id=company_id).subquery().c.id).filter(MemberCompanyPortal.status != MemberCompanyPortal.STATUSES['REJECTED'])
+        return subquery
+
+    @staticmethod
     def get_avaliable_statuses():
         return PRBase.del_attr_by_key(MemberCompanyPortal.STATUSES,
-                                      [MemberCompanyPortal.STATUSES['DELETED'], MemberCompanyPortal.STATUSES['FROZEN']])
+                                      ['DELETED', 'FROZEN'])
 
     def set_client_side_dict(self, status=None, rights=None):
         if status:

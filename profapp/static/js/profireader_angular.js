@@ -1233,6 +1233,11 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                                 '<button class="btn btn-group" ng-click="grid.filterForGridRange(col)" ng-disabled="col.filters[1].term === undefined || col.filters[0].term === undefined || col.filters[1].term === null || col.filters[1].term === \'\' || col.filters[0].term === null || col.filters[0].term === \'\'">Filter</button> ' +
                                 '<div role="button" class="ui-grid-filter-button" ng-click="grid.refreshGrid(col)" ng-if="!colFilter.disableCancelFilterButton" ng-disabled="col.filters[1].term === undefined || col.filters[0].term === undefined" ng-show="col.filters[1].term !== undefined && col.filters[1].term !== \'\' && col.filters[0].term !== undefined && col.filters[0].term !== \'\'">' +
                                 '<i class="ui-grid-icon-cancel" ui-grid-one-bind-aria-label="aria.removeFilter" style="right:0.5px;top:83%">&nbsp;</i></div></div>'
+                        case 'button':
+                            return '<div class="ui-grid-filter-container" ng-if="grid.filters_action.'+col.name+'"><button ' +
+                                ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ grid.filters_action.'+col.name+' }}" ' +
+                                ' ng-click="grid.appScope.' + col.filter.onclick + '(row.entity.id,  grid.filters_action.'+col.name+' , row.entity, \'' + col['name'] + '\')" ' +
+                                ' title="{{ grid.filters_action.'+col.name+' }}" ng-bind="grid.filters_action.'+col.name+'"></button><span class="grid-filter-info" ng-bind="grid.filters_info.'+col.name+'"></span></div>'
                     }
                 }
 
@@ -1313,14 +1318,12 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             };
 
             gridApi.grid['set_data_function'] = function(grid_data){
-                gridApi.grid.options.data = grid_data.grid_data;
-                    if ('grid_data' in grid_data) {
-                        scope.initGridData = grid_data
-                    } else {
-                        console.log('grid data doesn\'t exist')
-                    }
+
+                    gridApi.grid.options.data = grid_data.grid_data;
                     gridApi.grid.listsForMS = {};
                     gridApi.grid.options.totalItems = grid_data.total;
+                    gridApi.grid.filters_action = grid_data.filters_action
+                    gridApi.grid.filters_info = grid_data.filters_info
                     if (grid_data.page) {
                         gridApi.grid.options.pageNumber = grid_data.page;
                         gridApi.grid.options.paginationCurrentPage = grid_data.page;
