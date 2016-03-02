@@ -386,10 +386,6 @@ body {
 .about-company-text p {
   color: #555;
 }
-.image-company-profile img {
-  width: 100%;
-  height: 271px;
-}
 /* ---Reader-list--- */
 .reader-list-nav {
   border-bottom: 1px solid #212121;

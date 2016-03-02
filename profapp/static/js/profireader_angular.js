@@ -147,6 +147,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 $compile(element.contents())(scope);
 
+                model.$modelValue.uploaded = false;
+
 
                 var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
 
@@ -173,82 +175,159 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 var $inputImage = $('input', element);
 
                 var URL = window.URL || window.webkitURL;
-                var blobURL;
 
 
-                var options = {
-                    crop: function (e) {
-                        if (model.$modelValue) {
-                            //e['image_file_id'] = model.$modelValue.image_file_id;
-                        }
-                        model.$modelValue.coordinates = e;
-                    }
-                };
+                //var options = {
+                //    crop: function (e) {
+                //        if (model.$modelValue) {
+                //            //e['image_file_id'] = model.$modelValue.image_file_id;
+                //        }
+                //        //model.$modelValue.coordinates = e;
+                //    }
+                //};
 
                 var uploadCropper = function () {
                     var files = this.files;
                     var file;
-                    var ff = $('input#inputImage').prop('files')[0];
+                    //var ff = $('input.inputImage', element).prop('files')[0];
                     if (files && files.length) {
-                        file = files[0];
-                        var fr = new FileReader();
-                        fr.readAsDataURL(ff);
-                        var content = '';
-                        fr.onload = function (e) {
-                            content = fr.result;
-                            if (/^image\/\w+$/.test(file.type)) {
-                                $inputImage.val('');
-                                blobURL = URL.createObjectURL(file);
-                                model.$modelValue.type = file.type;
-                                model.$modelValue.name = file.name;
-                                model.$modelValue.dataContent = content;
-                                model.$modelValue.uploaded = true;
-                                model.$modelValue.image_file_id = blobURL;
-
-                            } else {
-                                add_message('Please choose an image file.');
-                            }
-                        };
-
+                        //file = files[0];
+                        model.$modelValue.uploaded = true;
+                        restartCropper(files[0]);
                     }
                 };
+
                 $inputImage.change(uploadCropper);
+                var options = {};
+
+                var resizeContainer = function (loadedimg) {
+                    var container = $('.img-container', element);
+                    var $containerCropper = $('.img-container-cropper', element);
+
+                    $image.attr('src', '');
+                    $image.hide();
+
+                    var image_wider = loadedimg.width * container.height() / loadedimg.height / container.width()
+                    if (image_wider > 1) {
+                        $containerCropper.css({
+                            'width': container.width() + 'px',
+                            'height': container.height() / image_wider + 'px',
+                            'top': container.height() * (1 - 1 / image_wider) / 2 + 'px',
+                            'left': '0px'
+                        });
+                        options['minContainerWidth'] = container.width();
+                        options['minContainerHeight'] = container.height() / image_wider;
+                    }
+                    else {
+                        $containerCropper.css({
+                            'width': container.width() * image_wider + 'px',
+                            'height': container.height() + 'px',
+                            'top': '0px',
+                            'left': container.width() * (1 - image_wider ) / 2 + 'px'
+
+                        });
+                        options['minContainerWidth'] = container.width() * image_wider;
+                        options['minContainerHeight'] = container.height();
 
 
-                var restartCropper = function () {
+                    }
+                    options['minCanvasWidth'] = options['minContainerWidth'];
+                    options['minContainerHeight'] = options['minContainerHeight'];
+
+
+                    $image.show();
+                }
+
+                var loadImage = function (src, loadCropper) {
+                    var fr = new Image();
+                    fr.addEventListener('load', function (e) {
+                        resizeContainer(fr);
+                        $image.attr('src', src);
+                        if (loadCropper) {
+                            options['strict'] = true;
+                            options['crop'] = function (e) {
+
+                                var canvas_data = $(this).cropper('getCanvasData');
+                                var image_data = $(this).cropper('getImageData');
+                                var stricted_canvas_data = {};
+
+                                var changed = false;
+                                //console.log('crop', canvas_data.top, canvas_data);
+
+                                if (canvas_data['left'] > 0.5) {
+                                    stricted_canvas_data['left'] = 0;
+                                    changed = true;
+                                }
+
+                                if (canvas_data['top'] > 0.5) {
+                                    stricted_canvas_data['top'] = 0;
+                                    changed = true;
+                                }
+
+                                if (canvas_data['left'] + canvas_data['width'] < image_data['width'] - 0.5) {
+                                    stricted_canvas_data['left'] = canvas_data['width'] + image_data['width'];
+                                    changed = true;
+                                }
+
+                                if (canvas_data['top'] + canvas_data['height'] < image_data['height'] - 0.5) {
+                                    stricted_canvas_data['top'] = canvas_data['height'] + image_data['height'];
+                                    changed = true;
+                                }
+                                if (changed) {
+                                    e.preventDefault();
+                                    $(this).cropper('setCanvasData', stricted_canvas_data);
+
+                                }
+                                else {
+                                    console.log(e);
+                                    model.$modelValue.coordinates = {'width': e.width, 'height': e.height, 'y': e.y, 'x': e.x,  rotate:0};
+                                }
+
+
+                            }
+
+                            $image.cropper(options);
+
+                        }
+                    }, false);
+                    fr.addEventListener('error', function (e) {
+                            add_message('Image loading error');
+                        }
+                    );
+                    fr.src = src;
+                }
+
+                var restartCropper = function (file) {
                     $image.cropper('destroy');
-                    if (model.$modelValue.uploaded) {
-                        $image.attr('src', model.$modelValue.image_file_id);
-                        $image.cropper(options);
-                        $image.cropper('replace', model.$modelValue.image_file_id);
+                    if (file) {
+                        var fr = new FileReader();
+                        if (/^image\/\w+$/.test(file.type)) {
+                            fr.readAsDataURL(file);
+                            $inputImage.val('');
+                            fr.onload = function (e) {
+                                loadImage(URL.createObjectURL(file), true);
+                            }
+                        }
+                        else {
+                            add_message('Please choose an image file.');
+                        }
                     }
                     else {
                         if (model.$modelValue.image_file_id) {
-                            $image.attr('src', fileUrl(model.$modelValue.image_file_id));
-                            $image.cropper(options);
+                            loadImage(fileUrl(model.$modelValue.image_file_id), true);
                         }
                         else {
-                            $image.attr('src', model.$modelValue.no_image_url);
+                            loadImage(model.$modelValue.no_image_url, false);
                         }
                     }
                 };
 
-                //if (attrs['prCropper']) {
-                //    scope[attrs['prCropper']] = function () {
-                //        $image.cropper.apply($image, arguments);
-                //    };
-                //}
                 scope['cropper'] = function () {
                     $image.cropper.apply($image, arguments);
                 };
-                //debugger;
-                //
+
                 scope.$watch(attrs['ngModel'] + '.image_file_id', function () {
                     if (model && model.$modelValue) {
-                        //var file_url = fileUrl(model.$modelValue.image_file_id);
-                        //$image.attr('src', );
-                        //$image.cropper('replace', file_url);
-
                         if (model) {
                             if (model.$modelValue && model.$modelValue.ratio) options.aspectRatio = model.$modelValue.ratio;
                             if (model.$modelValue && model.$modelValue.coordinates) options.data = model.$modelValue.coordinates;
@@ -256,32 +335,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                         restartCropper();
 
-                        //
-                        //if (file_url) {
-                        //
-                        //}
-                        //else {
-                        //    console.log('no image');
-                        //}
                     }
                 });
 
-
-                //
-                //scope.$watch(attrs['ngModel'] + '.ratio', function () {
-                //    if (model.$modelValue && model.$modelValue.ratio) {
-                //        $image.cropper('setAspectRatio', model.$modelValue.ratio);
-                //    }
-                //});
-                //
-                //scope.$watch(attrs['ngModel'] + '.coordinates', function () {
-                //    if (model.$modelValue) console.log(model.$modelValue.coordinates);
-                //    if (model.$modelValue && model.$modelValue.coordinates) {
-                //        options.data = model.$modelValue.coordinates;
-                //        restartCropper();
-                //        //$image.cropper('setData', model.$modelValue.coordinates);
-                //    }
-                //});
 
             }
         };
@@ -1280,7 +1336,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                     switch (col.type) {
                         case 'link':
-                            return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a'+attributes_for_cell+' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
+                            return '<div  ' + attributes_for_cell + '  pr-test="Grid" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
                         case 'img':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid" class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="{{ COL_FIELD }}" alt="image" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
                         case 'show_modal':
@@ -1337,52 +1393,52 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 gridApi.grid.setGridData()
             };
 
-            gridApi.grid['set_data_function'] = function(grid_data){
+            gridApi.grid['set_data_function'] = function (grid_data) {
                 gridApi.grid.options.data = grid_data.grid_data;
-                    if ('grid_data' in grid_data) {
-                        scope.initGridData = grid_data
-                    } else {
-                        console.log('grid data doesn\'t exist')
-                    }
-                    gridApi.grid.listsForMS = {};
-                    gridApi.grid.options.totalItems = grid_data.total;
-                    if (grid_data.page) {
-                        gridApi.grid.options.pageNumber = grid_data.page;
-                        gridApi.grid.options.paginationCurrentPage = grid_data.page;
-                    }
-                    $timeout(function () {
-                        $(".ui-grid-filter-select option[value='']").remove();
-                    }, 0);
-                    for (var i = 0; i < col.length; i++) {
-                        if (col[i].filter) {
-                            if (col[i].filter.type === 'select') {
-                                gridApi.grid.options.columnDefs[i]['filter']['selectOptions'] = grid_data.grid_filters[col[i].name]
-                            } else if (col[i].filter.type === 'multi_select') {
-                                gridApi.grid.options.columnDefs[i]['filter']['selectOptions'] = grid_data.grid_filters[col[i].name];
-                                gridApi.grid.listsForMS[col[i].name] = grid_data.grid_filters[col[i].name].slice(1);
-                            }
+                if ('grid_data' in grid_data) {
+                    scope.initGridData = grid_data
+                } else {
+                    console.log('grid data doesn\'t exist')
+                }
+                gridApi.grid.listsForMS = {};
+                gridApi.grid.options.totalItems = grid_data.total;
+                if (grid_data.page) {
+                    gridApi.grid.options.pageNumber = grid_data.page;
+                    gridApi.grid.options.paginationCurrentPage = grid_data.page;
+                }
+                $timeout(function () {
+                    $(".ui-grid-filter-select option[value='']").remove();
+                }, 0);
+                for (var i = 0; i < col.length; i++) {
+                    if (col[i].filter) {
+                        if (col[i].filter.type === 'select') {
+                            gridApi.grid.options.columnDefs[i]['filter']['selectOptions'] = grid_data.grid_filters[col[i].name]
+                        } else if (col[i].filter.type === 'multi_select') {
+                            gridApi.grid.options.columnDefs[i]['filter']['selectOptions'] = grid_data.grid_filters[col[i].name];
+                            gridApi.grid.listsForMS[col[i].name] = grid_data.grid_filters[col[i].name].slice(1);
                         }
                     }
-                    for (var m = 0; m < grid_data.grid_data.length; m++) {
-                        if (grid_data.grid_data[m]['level'])
-                            grid_data.grid_data[m].$$treeLevel = 0
-                    }
-                    if (gridApi.grid.all_grid_data) {
-                        gridApi.grid.all_grid_data['editItem'] = {};
-                    }
+                }
+                for (var m = 0; m < grid_data.grid_data.length; m++) {
+                    if (grid_data.grid_data[m]['level'])
+                        grid_data.grid_data[m].$$treeLevel = 0
+                }
+                if (gridApi.grid.all_grid_data) {
+                    gridApi.grid.all_grid_data['editItem'] = {};
+                }
             }
 
             gridApi.grid['setGridData'] = function (grid_data) {
                 var all_grid_data = grid_data ? grid_data : gridApi.grid.all_grid_data
                 scope.loading = true
-                if(gridApi.grid.options.urlLoadGridData){
-                    $ok(gridApi.grid.options.urlLoadGridData, all_grid_data, function(grid_data){
+                if (gridApi.grid.options.urlLoadGridData) {
+                    $ok(gridApi.grid.options.urlLoadGridData, all_grid_data, function (grid_data) {
                         gridApi.grid.set_data_function(grid_data)
-                    }).finally(function(){
+                    }).finally(function () {
                         scope.loading = false
                     })
-                }else{
-                    gridApi.grid.options.loadGridData(all_grid_data, function(grid_data){
+                } else {
+                    gridApi.grid.options.loadGridData(all_grid_data, function (grid_data) {
                         gridApi.grid.set_data_function(grid_data)
                     })
                 }
@@ -1564,26 +1620,26 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 }
             });
         },
-        loadNextPage: function(url){
+        loadNextPage: function (url) {
             var scope = this;
             $(window).scroll(function () {
-                    if($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
-                        if(scope.loading === false && scope.data.end !== true) {
-                            scope.loading = true;
-                            scope.next_page += 1
-                            if(scope.send_data){
-                                scope.send_data.next_page = scope.next_page
-                            }
-
-                            $ok(url, scope.send_data?scope.send_data:{next_page:scope.next_page}, function (resp) {
-                                scope.data = resp;
-                            }).finally(function () {
-                                $timeout(function(){
-                                    scope.loading = false;
-                                }, 1000)
-                            });
+                if ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
+                    if (scope.loading === false && scope.data.end !== true) {
+                        scope.loading = true;
+                        scope.next_page += 1
+                        if (scope.send_data) {
+                            scope.send_data.next_page = scope.next_page
                         }
-                   }
+
+                        $ok(url, scope.send_data ? scope.send_data : {next_page: scope.next_page}, function (resp) {
+                            scope.data = resp;
+                        }).finally(function () {
+                            $timeout(function () {
+                                scope.loading = false;
+                            }, 1000)
+                        });
+                    }
+                }
             });
         },
         dateOptions: {
@@ -1735,7 +1791,7 @@ function highLightSubstring(substring, block, element) {
 }
 
 //get next page when our scroll in bottom
-function getNextPage(func){
+function getNextPage(func) {
     $(window).scroll(function () {
         if ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
         }
