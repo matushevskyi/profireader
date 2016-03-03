@@ -14,7 +14,7 @@
         <img style="width: 100%"/>
     </div>
     <div class="btn-group">
-        <button ng-if="user_have_company || " class="btn btn-primary" type="button" value="{{ image_file_url }}"
+        <button ng-if="user_have_company || company.id" class="btn btn-primary" type="button" value="{{ image_file_url }}"
                 ng-click="chooseImage(true, avatar)">
                 <span class="docs-tooltip" data-toggle="tooltip" title="Chose image"><span
                         class="glyphicon glyphicon-folder-open"></span></span>

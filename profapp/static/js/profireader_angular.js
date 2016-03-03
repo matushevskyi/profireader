@@ -1548,11 +1548,11 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     if($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
                         if(scope.loading === false && scope.data.end !== true) {
                             scope.loading = true;
-                            scope.next_page += 1
-                            if(scope.send_data){
-                                scope.send_data.next_page = scope.next_page
+                            scope.next_page += 1;
+                            if(scope.scroll_data){
+                                scope.scroll_data.next_page = scope.next_page
                             }
-                            $ok(url, scope.send_data?scope.send_data:{next_page:scope.next_page}, function (resp) {
+                            $ok(url, scope.scroll_data?scope.scroll_data:{next_page:scope.next_page}, function (resp) {
                                 scope.data = resp;
                                 if(scope.data.end)
                                     scope.next_page=1
