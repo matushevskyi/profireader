@@ -1,54 +1,79 @@
-    <script>
-        var favorite = {{ favorite|tojson}};
-        function add_delete_favorite(boolean) {
-            var article_portal_division_id = {{ article['id']|tojson }};
-            $.ajax({
-                type: 'post',
-                url: '{{ url_for('front.add_delete_favorite') }}',
-                data: {'favorite': boolean, 'article_portal_division_id': article_portal_division_id},
-                success: function () {
-                    var text = document.getElementById('favorite');
-                    favorite = boolean;
-                    text.innerHTML = favorite ? '<i class="fa fa-heart"></i>Delete from favorite' : '<i class="fa fa-heart-o"></i>Add to favorite';
-                }
-            })
-        }
-    </script>
+<script>
+    var favorite = {{ favorite|tojson}};
+    function add_delete_favorite(boolean) {
+        var article_portal_division_id = {{ article['id']|tojson }};
+        $.ajax({
+            type: 'post',
+            url: '{{ url_for('front.add_delete_favorite') }}',
+            data: {'favorite': boolean, 'article_portal_division_id': article_portal_division_id},
+            success: function () {
+                var text = document.getElementById('favorite');
+                favorite = boolean;
+                text.innerHTML = favorite ? '<i class="fa fa-heart"></i>Delete from favorite' : '<i class="fa fa-heart-o"></i>Add to favorite';
+            }
+        })
+    }
+</script>
 <div class="block-item full-block-info" style="height: auto;">
 
-        <h2 class="item-title">{{ article['title']|safe }}</h2>
+    <h2 class="item-title">{{ article['title']|safe }}</h2>
 
-        <h3 class="item-subtitle">{{ article['subtitle']|safe }}</h3>
+    <h3 class="item-subtitle">{{ article['subtitle']|safe }}</h3>
 
-        <div class="item-additional-info-top"
-             style="display: block; width: 100%; padding-bottom: 5px; border-bottom: 1px #ccc solid; margin-bottom: 15px;">
-            <div class="item-company"><a href="//profireader.com/company/profile/{{ article['company']['id'] }}">
-                {{ article['company']['name']|safe }}</a>
-            </div>
-
-            <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
-            <div class="item-comments">{{_('Comments')}} 0</div>
-            <div class="read_count">Read {{ article['read_count'] }}</div>
-            <div class="like_count">Likes {{ article['like_count'] }}</div>
-            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3" id='favorite' style="cursor: pointer"
-                         onclick="favorite?add_delete_favorite(false):add_delete_favorite(true);">
-                        {% if favorite %}
-                            <i class="fa fa-heart"></i>
-                        {% else %}
-                            <i class="fa fa-heart-o"></i>
-                        {% endif %}
-                        <script>document.write(favorite ? 'Delete from favorite' : 'Add to favorite')</script>
-                    </div>
-
-
+    <div class="row" style="border-bottom: 1px solid #000;padding-bottom: 5px;">
+        <div class="item-company col-lg-4 col-md-4 col-sm-4 col-xs-4"><a href="//profireader.com/company/profile/{{ article['company']['id'] }}">
+            {{ article['company']['name']|safe }}</a>
         </div>
-        <div class="article-short">
-            {{ article['short']|safe }}
+
+        <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">{{ article['publishing_tm']|safe }}</div>
+
+        <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">Read {{ article['read_count'] }}</div>
+
+
+    </div>
+<div class="row" style="color: #3f4c55;margin-top: 10px;margin-bottom: 15px;">
+    <div class="item-comments col-lg-4 col-md-4 col-sm-4 col-xs-4">{{ _('Comments') }} 0</div>
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">Likes {{ article['like_count'] }}</div>
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4" id='favorite' onclick="favorite?add_delete_favorite(false):add_delete_favorite(true);">
+            {% if favorite %}
+                <i class="fa fa-heart"></i>
+            {% else %}
+                <i class="fa fa-heart-o"></i>
+            {% endif %}
+            <script>document.write(favorite ? 'Delete from favorite' : 'Add to favorite')</script>
+    </div>
+</div>
+
+
+<!--
+    <div class="item-additional-info-top"
+         style="display: block; width: 100%; padding-bottom: 5px; border-bottom: 1px #ccc solid; margin-bottom: 15px;">
+        <div class="item-company"><a href="//profireader.com/company/profile/{{ article['company']['id'] }}">
+            {{ article['company']['name']|safe }}</a>
         </div>
-        <div class="article-content">
-            <div class="s-cover-l" {{ prImage(article['image_file_id']) }}></div>
-            {{ article['long'] | safe }}
+
+        <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
+        <div class="item-comments">{{ _('Comments') }} 0</div>
+        <div class="read_count">Read {{ article['read_count'] }}</div>
+        <div class="like_count">Likes {{ article['like_count'] }}</div>
+        <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3" id='favorite' style="cursor: pointer"
+             onclick="favorite?add_delete_favorite(false):add_delete_favorite(true);">
+            {% if favorite %}
+                <i class="fa fa-heart"></i>
+            {% else %}
+                <i class="fa fa-heart-o"></i>
+            {% endif %}
+            <script>document.write(favorite ? 'Delete from favorite' : 'Add to favorite')</script>
         </div>
+    </div>
+-->
+    <div class="article-short">
+        {{ article['short']|safe }}
+    </div>
+    <div class="article-content">
+        <div class="s-cover-l" {{ prImage(article['image_file_id']) }}></div>
+        {{ article['long'] | safe }}
+    </div>
 
     {% if article['tags'] %}
         <div class="tag-list">

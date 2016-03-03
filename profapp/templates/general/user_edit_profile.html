@@ -30,14 +30,18 @@
         }])
 
     </script>
-    <div ng-controller="UserLoginController">
-        <h1 class="nice-title">{{ '{{' }}_('Your Profile'){{ '}}' }}<span></span></h1>
+    <div ng-controller="UserLoginController" class="container">
 
-        <div class="form info">
+        <div class="row link-page">
+            <h5 class="">{{ _('Edit profile') }}</h5>
+            <a title="profile" href="{{ url_for('user.profile', user_id=user.id) }}"><i class="fa fa-floppy-o fa-2x"></i></a>
+            <a title="setings" href="{{ url_for('user.profile', user_id=user.id) }}"><i class="fa fa-cog fa-2x"></i></a>
+        </div>
+
+        <div class="row">
             {#<img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}"><br>#}
 
-
-            <div class="profile-thumbnail" style="background-image: url('{{ user.profireader_small_avatar_url }}')">
+           <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 profile-thumbnail" style="background-image: url('{{ user.profireader_small_avatar_url }}')">
                 <div class="control">
                     <a ng-click="mySwitch = !mySwitch">
                         <span ng-hide="mySwitch">[{{ '{{' }}_('upload picture'){{ '}}' }}]</span><span
@@ -56,21 +60,87 @@
             {#    <span ng-hide="mySwitch">[{{ '{{' }}_('use gravatar'){{ '}}' }}]</span>#}
             {#</a>#}
 
-            <div class="img-upload-form">
-                <form id="avatar" ng-show="mySwitch" ng-init="mySwitch=false" action="{{ request.path }}" method="post"
+            <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8 img-upload-form">
+                <form  id="avatar" ng-show="mySwitch" ng-init="mySwitch=false" action="{{ request.path }}" method="post"
                       enctype="multipart/form-data">
                     {{ '{{' }}_('Select image to upload'){{ '}}' }}:
                     <input style="font-size: 12px;" type="file" name="avatar" id="fileToUpload" accept="image/*">
                     <input type="submit" name="avatar" value="{{ '{{' }}_('Upload Image'){{ '}}' }}">
                 </form>
             </div>
+
+            <form class="col-lg-9 col-md-9 col-sm-9 col-xs-9 edit-grup" action="{{ url_for('user.edit_profile', user_id=user.id) }}" onsubmit="return AjaxPost()" method="post">
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">Your display name</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="name" name="name" value="{{ user.profireader_name }}">
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">Your email</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="name" name="name" value="{{ user.profireader_email }}">
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">Your first name</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="first name" name="first_name" value="{{ user.profireader_first_name or '' }}">
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">Your last name</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="last name" name="last_name" value="{{ user.profireader_last_name or '' }}">
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
+                    <span class="input-group-addon" id="sizing-addon1">Gender</span>
+                    {% if user.profireader_gender=='female' %}
+                        <input type="radio" name="gender" id="male" value="male">
+                        <label for="male">{{ '{{' }}_('Male'){{ '}}' }}</label>
+                        <input type="radio" name="gender" id="female" value="female" checked="checked">
+                        <label for="female">{{ '{{' }}_('Female'){{ '}}' }}</label>
+                    {% else %}
+                        <input type="radio" name="gender" id="male" value="male" checked="checked">
+                        <label for="male">{{ '{{' }}_('Male'){{ '}}' }}</label>
+                        <input type="radio" name="gender" id="female" value="female">
+                        <label for="female">{{ '{{' }}_('Female'){{ '}}' }}</label>
+                    {% endif %}
+{#                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="name" name="gender" value="{{ user.profireader_name }}">#}
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">Language</span>
+                <select id="language" name="language" style="width: 100px">
+                        {% if user.lang=='en' %}
+                            <option selected="selected">en</option>
+                            <option>uk</option>
+                        {% else %}
+                            <option>en</option>
+                            <option selected="selected">uk</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">Your web-page</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="www.your.webpage.com" name="link" value="{{ user.profireader_link or '' }}">
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">Phone</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="your phone" name="phone" value="{{ user.profireader_phone or '' }}">
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">Location</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="your city" name="location" value="{{ user.location or '' }}">
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">About me</span>
+                        <textarea class="form-control" style="height: 100px;" aria-describedby="sizing-addon1" type="text" placeholder="Give us some information about you please" rows="8" cols="40" name="about_me" value="{{ user.about_me or '' }}"></textarea>
+                </div>
+                <div class="item"><span></span><input type="submit" value="Update Profile"
+                                                      name="submit"></div>
+            </form>
+
+<!--
             <form action="{{ url_for('user.edit_profile', user_id=user.id) }}" onsubmit="return AjaxPost()"
                   method="post">
-
                 <div class="item"><span>{{ '{{' }}_('Your display name'){{ '}}' }}:</span><input type="text"
                                                                                                  placeholder="name"
                                                                                                  name="name"
                                                                                                  value="{{ user.profireader_name }}">
+
                 </div>
                 <div class="item"><span>{{ '{{' }}_('Your email'){{ '}}' }}:</span>{{ user.profireader_email }} <a
                         href="{{ url_for('auth.change_email_request') }}"> [{{ '{{' }}_('change'){{ '}}' }}]</a></div>
@@ -131,6 +201,7 @@
                 <div class="item"><span></span><input type="submit" value="{{ '{{' }}_('Update Profile'){{ '}}' }}"
                                                       name="submit"></div>
             </form>
+            -->
         </div>
 
         {#<form class="send coordinates" action="{{ url_for('article.update', article_version_id = article_version.id) }}" onsubmit="return AjaxPost()" id="edit" method="post">#}

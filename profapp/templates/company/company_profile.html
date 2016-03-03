@@ -30,7 +30,7 @@
             $scope.data = {};
             $scope.rights_user_in_company = {{rights_user_in_company | tojson | safe}};
 
-            $scope.edit = false;
+            $scope.edit = $scope.company.id ? false: true;
 
             $scope.go_to_portal = function (host) {
                 window.location.href = 'http://' + host;
@@ -85,7 +85,7 @@
 
                     <img pr-image="company.logo_file_id" alt="image" ng-show="!edit">
 
-                    <div style="width: 400px;" ng-if="edit">
+                    <div ng-if="edit">
                         <div ng-model="data.image" pr-crop pr-company-id="{{ company.id }}"></div>
                     </div>
                 </div>

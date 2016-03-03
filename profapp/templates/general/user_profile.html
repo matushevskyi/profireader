@@ -30,57 +30,56 @@
 
 {% block portal_content %}
 
-    <!--
     <div class="container" ng-controller="UserLoginController">
         <div class="row link-page"><h5>User profile</h5>
-            <a pr_test="EditProfile" href="{{ url_for('user.edit_profile', user_id=user.id) }}">
-                <i class="fa fa-pencil-square fa-3x"></i>
+            <a title="edit" pr_test="EditProfile" href="{{ url_for('user.edit_profile', user_id=user.id) }}">
+                <i class="fa fa-pencil fa-2x"></i>
             </a>
         </div>
         <div class="row" ng-controller="UserLoginController">
-            <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-6 col-sm-offset-2 col-sm-8 col-xs-12 profile-window">
-                <div class="thumbnail">
+            <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-6 col-sm-offset-2 col-sm-8 col-xs-12 ">
+                <div class="thumbnail profile-window">
                     <img src="../../static/images/PZf5Q.png" class="img-circle" style="width: 50%;">
                     <div class="caption">
                         <h3>{{ user.profireader_name }}</h3>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Email:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Email:</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_email }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Display name:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Display name:</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_name }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>First name:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">First name:</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_first_name or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Last name:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Last name:</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_last_name or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Gender:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Gender:</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_gender or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Web-page:</span></div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_link or '' }}</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Web-page:</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9"><span>{{ user.profireader_link or '' }}</span></div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Phone:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Phone:</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_phone.national or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Location:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Location:</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.location or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>About:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">About:</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.about_me or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Member since:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Member since:</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ moment(user.registered_tm).format('L') }}</div>
                         </div>
                     </div>
@@ -90,9 +89,8 @@
     </div>
 
 
--->
 
-
+<!--
 
     <div ng-controller="UserLoginController">
         <h1 class="nice-title">{{ '{{' }}_('User Profile'){{ '}}' }}<span></span></h1>
@@ -131,7 +129,7 @@
             </div>
         </div>
     </div>
-
+-->
 {% endblock portal_content %}
 
 {% block scripts %}
