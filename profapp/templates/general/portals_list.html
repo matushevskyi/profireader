@@ -12,7 +12,7 @@
         module.controller('portals_list', function ($scope, $ok, $timeout) {
             $scope.$$translate = {{ translates('portals_list')|safe }};
             $scope.search_text = '';
-            $scope.next_page = 1;
+            $scope.scroll_data = {};
             $scope.subscribe = function (portal_id) {
                 {% if g.user_id %}
                     $ok('{{ url_for('reader.reader_subscribe_registered')|safe }}', {portal_id: portal_id}, function (resp) {
@@ -31,6 +31,9 @@
 
             $scope.search_for_portal = function () {
                 $scope.loading = true;
+                if('text' in $scope.scroll_data && $scope.search_text !== $scope.scroll_data.text) {
+                    $scope.next_page = 1;
+                }
                 $scope.scroll_data = {text: $scope.search_text, next_page:$scope.next_page};
                 $ok('',$scope.scroll_data , function (resp) {
                     $scope.data = resp;

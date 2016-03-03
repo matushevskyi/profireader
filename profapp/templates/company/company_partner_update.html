@@ -13,7 +13,7 @@
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_partners');
 
             $scope.url_companies_partners = {{ raw_url_for('portal.companies_partners')|safe }};
-
+            $scope.right_in = {{ rights_user_in }}
             $scope.after_save = function () {
                 window.location.href = $scope.url_companies_partners({
                     'company_id': $scope.data.employeer.id
@@ -26,7 +26,7 @@
 
     <div ng-controller="company_partner_update">
         <div af af-after-save="after_save" af-watch="data.member" ng-model="data">
-            <div class="update-company-partner" ng-if="!data.frozen">
+            <div class="update-company-partner" ng-if="!data.frozen" pr-user-rights="right_in">
                 <h2><img class="person-small-cover" pr-image="data.member.company.logo_file_id"/><img
                         class="person-small-cover" pr-image="data.employeer.logo_file_id"/>
                     {{ _('Portal partner `%(data.member.company.name)s` at company `%(data.employeer.name)s`') }}</h2>
@@ -42,7 +42,8 @@
                 </button>
                 <button class="btn fr" type="button" ng-click="$af.reset(data)">{{ _('Reset') }}</button>
             </div>
-            <div ng-if="data.frozen"><h2>This member was frozen! You can not edit it at the present time.</h2></div>
+            <div ng-if="data.member.status === 'FROZEN'"><h2>This member was frozen! You can not edit it at the present time.</h2></div>
+            <div ng-if="!right_in"><h2>You haven't got aproriate rights.</h2></div>
         </div>
     </div>
 

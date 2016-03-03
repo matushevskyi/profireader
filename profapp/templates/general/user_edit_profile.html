@@ -222,11 +222,6 @@
     {{ moment.include_moment() }}
     <script type="text/javascript">
 
-        tinymce.init({
-            image_advtab: true,
-            width: 500,
-            selector: "#full"
-        });
 
         function AjaxPost() {
             $.post('{{ request.path }}', {

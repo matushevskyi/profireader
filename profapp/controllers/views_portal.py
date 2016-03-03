@@ -474,9 +474,10 @@ def portals_partners_change_status(json, company_id, portal_id):
 def company_partner_update(employeer_id, member_id):
     return render_template('company/company_partner_update.html',
                            company=Company.get(employeer_id),
+                           rights_user_in=UserCompany.get(company_id=employeer_id).has_rights(
+                                   UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES),
                            member=MemberCompanyPortal.get(Company.get(employeer_id).own_portal.id,
-                                                          company_id=member_id).company.get_client_side_dict(
-                                   'id, status'))
+                                                          company_id=member_id).company.get_client_side_dict('id, status'))
 
 
 @portal_bp.route('/<string:employeer_id>/company_partner_update/<string:member_id>/', methods=['POST'])
@@ -488,17 +489,20 @@ def company_update_load(json, employeer_id, member_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     member = MemberCompanyPortal.get(Company.get(employeer_id).own_portal.id, member_id)
     if action == 'load':
-        return {'frozen': member.status =='FROZEN',
-                'member': member.get_client_side_dict(more_fields='company'),
+        return {'member': member.get_client_side_dict(more_fields='company'),
                 'statuses_available': MemberCompanyPortal.get_avaliable_statuses(),
                 'employeer': Company.get(employeer_id).get_client_side_dict()}
     else:
         member.set_client_side_dict(status=json['member']['status'], rights=json['member']['rights'])
+        current_user_rights = UserCompany.get(company_id=employeer_id).has_rights(UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES)
         if action == 'validate':
             member.detach()
-            return member.validate(False)
+            validate = member.validate(False)
+            if not current_user_rights:
+                validate['errors']['rights'] = 'You haven\'t got aproriate rights!'
+            return validate
         else:
-            if member.status !='FROZEN':
+            if member.status !='FROZEN' and current_user_rights:
                 member.save()
     return member.get_client_side_dict()
 
@@ -510,7 +514,7 @@ def company_update_load(json, employeer_id, member_id):
 def companies_partners(company_id):
     return render_template('company/companies_partners.html', company=Company.get(company_id),
                            rights_user_in=UserCompany.get(company_id=company_id).has_rights(
-                                   UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS))
+                                   UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES))
 
 
 @portal_bp.route('/companies_partners/<string:company_id>/', methods=['POST'])

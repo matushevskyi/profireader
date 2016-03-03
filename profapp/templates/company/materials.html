@@ -26,6 +26,14 @@
             $scope.url_material_update = {{ raw_url_for('article.article_show_form')|safe }};
             $scope.url_publication_update = {{ raw_url_for('article.article_show_form')|safe }};
 
+            $scope.getBackground = function(row){
+                if(row.entity['portal.name'] === ''){
+                    return {'background': 'white', 'color': '#18bc9c'}
+                }else{
+                    return {'background': '#18bc9c', 'color': 'white'}
+                }
+            };
+
 
             {% raw %}
             $scope.noData = 'No materials';
@@ -42,7 +50,7 @@
                 columnDefs: [
                     {
                         name: 'title', category:"searching",  width: '30%',
-                        type: 'link',
+                        type: 'link', cellStyle:"getBackground(row)",
                         href: 'url_material_details({company_id:grid.appScope.company.id,material_id:row.entity.id})'
                     },{
                         name: 'editor.profireader_name', category:"searching"

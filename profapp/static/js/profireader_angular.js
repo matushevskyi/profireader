@@ -1260,7 +1260,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                     switch (col.type) {
                         case 'link':
-                            return '<div  '+attributes_for_cell+'  pr-test="Grid" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a'+attributes_for_cell+' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
+                            return '<div  '+attributes_for_cell+' ng-style="grid.appScope.'+col.cellStyle+'"  pr-test="Grid" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a'+attributes_for_cell+' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}" ng-style="grid.appScope.'+col.cellStyle+'"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
                         case 'img':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid" class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="{{ COL_FIELD }}" alt="image" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
                         case 'show_modal':
@@ -1544,6 +1544,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
         },
         loadNextPage: function(url){
             var scope = this;
+            scope.next_page = 1;
             $(window).scroll(function () {
                     if($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
                         if(scope.loading === false && scope.data.end !== true) {
