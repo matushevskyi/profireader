@@ -64,7 +64,8 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Web-page:</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9"><span>{{ user.profireader_link or '' }}</span></div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">
+                                <span>{{ user.profireader_link or '' }}</span></div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Phone:</div>
@@ -87,10 +88,34 @@
             </div>
         </div>
     </div>
-
-
-
-<!--
+    <div class="row">
+        ТУТ ВАЛЯЕТСЯ ФЛЕШ_МЕССЕДЖ ибо места у него еще нет
+    </div>
+    <div class="row">
+        <div class="col-lg-offset-3 col-lg-6 flash-message-err">
+            <div class="col-lg-4 img-message">
+                <img src="../../static/images/error.png" alt="error">
+            </div>
+            <div class="col-lg-8">
+                <i class="fa fa-times"></i>
+                <h3>Error!</h3>
+                <p>Something went wrong.</p>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-offset-3 col-lg-6 flash-message-succsess">
+            <div class="col-lg-4 img-message">
+                <img src="../../static/images/success.png" alt="error">
+            </div>
+            <div class="col-lg-8">
+                <i class="fa fa-times"></i>
+                <h3>Success!</h3>
+                <p>All executed successful.</p>
+            </div>
+        </div>
+    </div>
+    <!--
 
     <div ng-controller="UserLoginController">
         <h1 class="nice-title">{{ '{{' }}_('User Profile'){{ '}}' }}<span></span></h1>
@@ -100,7 +125,7 @@
 
     <div class="form info" style="padding-left: 10px" ng-controller="UserLoginController">
         <div ng-controller="UserLoginController" class="user-profile">
-            <h2>{{ user.profireader_name }}</h2>
+            <h2 pr-test="UserProfiName">{{ user.profireader_name }}</h2>
             <div class="info">
                 {#        <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}"><br>#}
                 {#        <img class="img-rounded profile-thumbnail" src="{{ user.profireader_avatar_url }}" style="width:{{ avatar_size }}px;height:{{ avatar_size }}px;border:0"><br>#}

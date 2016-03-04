@@ -135,13 +135,8 @@ def login_signup_endpoint():
 
     login_signup = request.args.get('login_signup', 'login')
 
-    login_form = LoginForm()
-    signup_form = RegistrationForm()
-
     # return render_template('auth/signup.html', login_signup='signup', form=form)
     return render_template('auth/login_signup.html',
-                           login_form=login_form,
-                           signup_form=signup_form,
                            login_signup=login_signup)
 
 
@@ -152,16 +147,29 @@ def signup():
         # raise BadDataProvided
         flash('You are already logged in. To sign up Profireader with new account you should logout first')
         return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=signup')
+    email = request.form.get('email')
+    display_name = request.form.get('display_name')
+    password = request.form.get('password')
 
-    signup_form = RegistrationForm()
-    login_form = LoginForm()
-    if signup_form.validate_on_submit():  # # pass1 == pass2
+    def check_fields():
+        form = request.form
+        required_fields = ['email', 'display_name', 'password', 'password1']
+        for field in required_fields:
+            if field not in form.keys():
+                return False
+            else:
+                if not form.get(field):
+                    return False
+                elif form.get('password') != form.get('password1'):
+                    return False
+        return True
+    if check_fields():  # # pass1 == pass2
         profireader_all = SOC_NET_NONE['profireader'].copy()
-        profireader_all['email'] = signup_form.email.data
-        profireader_all['name'] = signup_form.displayname.data
+        profireader_all['email'] = email
+        profireader_all['name'] = display_name
         user = User(
             PROFIREADER_ALL=profireader_all,
-            password=signup_form.password.data  # # pass is automatically hashed
+            password=password  # # pass is automatically hashed
         )
         user.avatar('gravatar', size=AVATAR_SIZE, small_size=AVATAR_SMALL_SIZE)
         # # user.password = signup_form.password.data  # pass is automatically hashed
@@ -172,12 +180,11 @@ def signup():
         SendEmail().send_email(subject='Confirm Your Account', template='auth/email/confirm',
                                send_to=(user.profireader_email, ), user=user, token=token)
         flash('A confirmation email has been sent to you by email.')
+        print(user.profireader_email)
         # return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
         return redirect(url_for('auth.login_signup_endpoint'))
     return render_template('auth/login_signup.html',
-                           login_signup='signup',
-                           login_form=login_form,
-                           signup_form=signup_form)
+                           login_signup='signup')
 
 
 @auth_bp.route('/login_signup/<soc_network_name>', methods=['GET', 'POST'])
@@ -221,17 +228,20 @@ def login():
             return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
         flash('You are already logged in. If you want to login with another account logout first please')
         return redirect(url_for('general.index'))
+    email = request.form.get('email')
+    password = request.form.get('password')
+    print(email,    password)
 
-    login_form = LoginForm()
-    signup_form = RegistrationForm()
-
-    if login_form.validate_on_submit():
-        user = g.db.query(User).filter(User.profireader_email == login_form.email.data).first()
+    if email and password:
+        print('sss')
+        user = g.db.query(User).filter(User.profireader_email == email).first()
+        print(user.profireader_email)
 
         if user and user.is_banned():
             flash('You can not be logged in. Please contact the Profireader administration.')
             return redirect(url_for('general.index'))
-        if user and user.verify_password(login_form.password.data):
+        if user and user.verify_password(password):
+            print('ddd')
             login_user(user)
             if portal_id:
                 session.pop('portal_id')
@@ -246,9 +256,7 @@ def login():
         # redirect_url += ('&' + 'portal_id=' + portal_id) if portal_id else ''
         return redirect(redirect_url_str)
     return render_template('auth/login_signup.html',
-                           login_signup='login',
-                           login_form=login_form,
-                           signup_form=signup_form)
+                           login_signup='login')
 
 
 @auth_bp.route('/logout/', methods=['GET'])

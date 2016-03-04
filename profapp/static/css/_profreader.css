@@ -401,39 +401,26 @@
 .tab:hover{
     color: #18BCAB;
 }
-.auth-form {
-    padding-top: 30px;
-    margin: 0 auto;
-    display: block;
-    float: none;
-}
 
-.auth-form h3 {
-    margin: 15px 0 7px 0;
-}
 
-.auth-form input {
-    padding: 5px 15px;
-}
 
-.auth-form input[type="submit"] {
-    border: none;
-    background: #18BCAB;
-    color: #eee;
-    padding: 15px;
-    text-align: center;
-}
+/*.auth-form input {*/
+    /*padding: 5px 15px;*/
+/*}*/
 
-.auth-form input[type="submit"]:hover {
-    background: #119C8D;
-    color: #fff;
-}
-.content-block {
-    background: #fff;
-    border: 1px solid #ccc;
-    padding: 15px;
-    margin-top: -1px;
-}
+/*.auth-form input[type="submit"] {*/
+    /*border: none;*/
+    /*background: #18BCAB;*/
+    /*color: #eee;*/
+    /*padding: 15px;*/
+    /*text-align: center;*/
+/*}*/
+
+/*.auth-form input[type="submit"]:hover {*/
+    /*background: #119C8D;*/
+    /*color: #fff;*/
+/*}*/
+
 .highlight a{
     color: white!important;
     background: red;
