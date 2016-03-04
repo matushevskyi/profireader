@@ -707,6 +707,50 @@ body {
 .name-form {
   margin-top: 12px;
 }
+.flash-message-err {
+  box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
+  margin-bottom: 50px;
+  padding-left: 0;
+}
+.flash-message-err h3 {
+  color: #FF67A0;
+  margin-top: 30px;
+}
+.flash-message-err p {
+  color: #424242;
+}
+.flash-message-err .img-message {
+  padding-left: 0;
+}
+.flash-message-err i {
+  margin-top: 15px;
+  display: inline;
+  float: right;
+  color: #424242;
+  cursor: pointer;
+}
+.flash-message-succsess {
+  box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
+  margin-bottom: 50px;
+  padding-left: 0;
+}
+.flash-message-succsess h3 {
+  color: #A6F284;
+  margin-top: 30px;
+}
+.flash-message-succsess p {
+  color: #424242;
+}
+.flash-message-succsess .img-message {
+  padding-left: 0;
+}
+.flash-message-succsess i {
+  margin-top: 15px;
+  color: #424242;
+  display: inline;
+  float: right;
+  cursor: pointer;
+}
 /* ---MEDIA--- */
 @media screen and (max-width: 764px) {
   .menu-site ul {
