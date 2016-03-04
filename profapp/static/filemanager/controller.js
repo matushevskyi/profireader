@@ -189,6 +189,7 @@
                     $scope.fileNavigator.refresh();
                     $('#remove').modal('hide');
                 });
+
             };
 
             $scope.set_property = function (item) {
@@ -221,7 +222,7 @@
                 }
             };
 
-            $scope.take_action = function (item, actionname) {
+            $scope.take_action = function (item, actionname, permitted) {
                 $scope.modal = '';
                 if ($scope.file_manager_on_action[actionname] !== '' && actionname === 'download') {
                     try {
@@ -253,15 +254,6 @@
                     })['finally'](function() {
                         self.inprocess = false;
                     });
-            };
-
-            $scope.can_action = function (item, actionname, defaultpermited) {
-                if (actionname === 'paste') {
-                    if (defaultpermited === true) {
-                        return ($scope.copied_files.length > 0)
-                    }
-                }
-                return defaultpermited
             };
 
             $scope.showModal = function(){
@@ -379,7 +371,8 @@
                 return found;
             };
 
-            $scope.isDisable = function (actionname, len, type) {
+            $scope.isDisable = function (actionname, len, type, permited) {
+
                 var style;
                 if (actionname === 'paste' && ($scope.copy_file_id != '' || $scope.cut_file_id != '') && type === 'parent') {
                     style = ''

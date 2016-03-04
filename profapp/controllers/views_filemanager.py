@@ -81,7 +81,8 @@ def filemanager():
 # @parent_folder
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
-    list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=db(Company, journalist_folder_file_id=ancestors[0]).first().id)
+    company = company_id=db(Company, journalist_folder_file_id=ancestors[0]).first()
+    list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=company.id)
     return {'list': list, 'ancestors': ancestors}
 
 
@@ -145,9 +146,11 @@ def auto_remove(json):
 
 
 @filemanager_bp.route('/remove/<string:file_id>', methods=['POST'])
-def remove(file_id):
+@ok
+def remove(json, file_id):
     file = File.get(file_id)
-    return file.remove(db(Company, journalist_folder_file_id=file.root_folder_id).first().id)
+    ancestors = File.ancestors(file.parent_id)
+    return file.remove(db(Company, journalist_folder_file_id=ancestors[0]).first().id)
 
 
 @filemanager_bp.route('/uploader/', methods=['GET', 'POST'])
