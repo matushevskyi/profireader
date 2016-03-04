@@ -426,15 +426,19 @@ def portals_partners(company_id):
 # @check_rights(simple_permissions([]))
 @ok
 def portals_partners_load(json, company_id):
-    subquery = Company.subquery_company_partners(company_id, json.get('filter'))
+    subquery = Company.subquery_company_partners(company_id, json.get('action'), json.get('filter'))
     partners_g, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     partner_list = [
         PRBase.merge_dicts(partner.get_client_side_dict(fields='id,status,portal.own_company,portal,rights'),
                            {'actions': partner.actions(company_id, partner)})
         for partner in partners_g]
+    count_of_rejected = db(MemberCompanyPortal, company_id=company_id).filter( MemberCompanyPortal.status=="REJECTED").count()
+    filter_action = 'see_another' if json.get('action')=='see_rejected' else 'see_rejected'
     return {'page': current_page,
             'grid_data': partner_list,
-            'total': count}
+            'total': count,
+            'filters_info': {'status':'Num: '+str(count_of_rejected)}, #additional data to filter header
+            'filters_action': {'status':filter_action if count_of_rejected else None}} # this new filter with one button depends on current filter( 'see rejected' and 'see another')
 
 
 @portal_bp.route('/portals_partners_change_status/<string:company_id>/<string:portal_id>', methods=['POST'])
@@ -470,9 +474,10 @@ def portals_partners_change_status(json, company_id, portal_id):
 def company_partner_update(employeer_id, member_id):
     return render_template('company/company_partner_update.html',
                            company=Company.get(employeer_id),
+                           rights_user_in=UserCompany.get(company_id=employeer_id).has_rights(
+                                   UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES),
                            member=MemberCompanyPortal.get(Company.get(employeer_id).own_portal.id,
-                                                          company_id=member_id).company.get_client_side_dict(
-                                   'id, status'))
+                                                          company_id=member_id).company.get_client_side_dict('id, status'))
 
 
 @portal_bp.route('/<string:employeer_id>/company_partner_update/<string:member_id>/', methods=['POST'])
@@ -483,17 +488,23 @@ def company_partner_update(employeer_id, member_id):
 def company_update_load(json, employeer_id, member_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     member = MemberCompanyPortal.get(Company.get(employeer_id).own_portal.id, member_id)
+    print(member.company.name)
     if action == 'load':
         return {'member': member.get_client_side_dict(more_fields='company'),
                 'statuses_available': MemberCompanyPortal.get_avaliable_statuses(),
                 'employeer': Company.get(employeer_id).get_client_side_dict()}
     else:
         member.set_client_side_dict(status=json['member']['status'], rights=json['member']['rights'])
+        current_user_right = UserCompany.get(company_id=employeer_id).has_rights(UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES)
         if action == 'validate':
             member.detach()
-            return member.validate(False)
+            validate = member.validate(False)
+            if not current_user_right:
+                validate['errors']['rights'] = 'You haven\'t got aproriate rights!'
+            return validate
         else:
-            member.save()
+            if member.can_update(current_user_right):
+                member.save()
     return member.get_client_side_dict()
 
 
@@ -504,7 +515,7 @@ def company_update_load(json, employeer_id, member_id):
 def companies_partners(company_id):
     return render_template('company/companies_partners.html', company=Company.get(company_id),
                            rights_user_in=UserCompany.get(company_id=company_id).has_rights(
-                                   UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS))
+                                   UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES))
 
 
 @portal_bp.route('/companies_partners/<string:company_id>/', methods=['POST'])

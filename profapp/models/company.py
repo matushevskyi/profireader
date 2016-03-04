@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, ForeignKey, UniqueConstraint, Enum  # , u
 from sqlalchemy.orm import relationship, backref
 # from db_init import Base, db_session
 from flask.ext.login import current_user
-from sqlalchemy import Column, String, ForeignKey, update
+from sqlalchemy import Column, String, ForeignKey, update, and_
 from sqlalchemy.orm import relationship
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from flask import g
@@ -220,8 +220,11 @@ class Company(Base, PRBase):
         return self.to_dict(fields, more_fields)
 
     @staticmethod
-    def subquery_company_partners(company_id, filters):
-        sub_query = db(MemberCompanyPortal, company_id=company_id).filter(MemberCompanyPortal.status!="DELETED")
+    def subquery_company_partners(company_id,action, filters):
+        if action == 'see_rejected':
+            sub_query = db(MemberCompanyPortal, company_id=company_id).filter( MemberCompanyPortal.status=="REJECTED")
+        else:
+            sub_query = db(MemberCompanyPortal, company_id=company_id).filter(and_(MemberCompanyPortal.status!="DELETED", MemberCompanyPortal.status!="REJECTED"))
         list_filters = []
         if filters:
             sub_query = sub_query.join(MemberCompanyPortal.portal)
@@ -273,6 +276,13 @@ class UserCompany(Base, PRBase):
         'REJECT': 'REJECT',
         'FIRE': 'FIRE',
         'ALLOW': 'ALLOW',
+    }
+
+    ACTIONS_FOR_FILEMANAGER = {
+        'download': RIGHT_AT_COMPANY.FILES_BROWSE,
+        'remove': RIGHT_AT_COMPANY.FILES_DELETE_OTHERS,
+        'show': RIGHT_AT_COMPANY.FILES_BROWSE,
+        'upload': RIGHT_AT_COMPANY.FILES_UPLOAD
     }
 
     ACTIONS_FOR_STATUSES = {
@@ -424,8 +434,7 @@ class UserCompany(Base, PRBase):
         db(UserCompany, company_id=company_id, user_id=user_id,
            status=UserCompany.STATUSES['APPLICANT']).update({'status': stat})
 
-    def has_rights(self, rightname):
-
+    def has_rights(self, rightname, filemanager=False):
         if self.employer.user_owner.id == self.user_id:
             return True
 
@@ -434,8 +443,10 @@ class UserCompany(Base, PRBase):
 
         if rightname == '_ANY':
             return True if self.status == self.STATUSES['ACTIVE'] else False
-
-        return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else False
+        if filemanager:
+            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[UserCompany.ACTIONS_FOR_FILEMANAGER[rightname]]) else False
+        else:
+            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else False
 
     @staticmethod
     def search_for_user_to_join(company_id, searchtext):

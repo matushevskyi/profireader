@@ -18,7 +18,8 @@
             $scope.url_search_for_company = {{ raw_url_for('company.search_for_company_to_join')|safe }};
             $scope.url_join = {{ raw_url_for('company.join_to_company')|safe }};
             $scope.$$translate = {{ translates('companies_list')|safe }};
-
+            $scope.search_text = '';
+            $scope.next_page = 1;
             $scope.selectedCompany_name = '';
             $scope.selectedCompany = null;
             $scope.selectedCompany_sending = false;
@@ -40,17 +41,26 @@
                 }
             };
 
-            $scope.searchForCompanyToJoin = function (val) {
+            $scope.show_more = function(){
+                if(!$scope.data_search.end){
+                    $scope.next_page +=1;
+                    $scope.searchForCompanyToJoin($scope.search_text,$scope.next_page)
+                }
+            };
+
+            $scope.searchForCompanyToJoin = function (val, next_page) {
+                $scope.search_text = val;
                 return $ok($scope.url_search_for_company(), {
                     article_id: $scope.data.id,
-                    search: val
+                    search: val,
+                    next_page: next_page?next_page:1
                 }, function (resp) {
-                    $scope.company_list = resp?resp:[];
-
+                    $scope.data_search = resp?resp:[];
+                    if($scope.data_search.end)
+                        $scope.next_page = 1;
                     $timeout(function(){
                         highLightSubstring(val, 'list_search_company', 'com_n');
                     }, 0);
-
                     return resp.length ? resp : [{id: false, name: 'No results'}];
                 });
             };
@@ -67,7 +77,9 @@
                 }).finally(function () {
                     $scope.selectedCompany_sending = false;
                 });
-            }
+            };
+
+            $scope.loadNextPage('{{ url_for('company.load_companies')|safe }}')
 
         }]);
     </script>
@@ -76,7 +88,7 @@
     <div class="container" ng-init="loadData()" ng-controller="companies_list">
         <div class="row join-company">
             <div class="col-lg-3 create-company pull-right">
-                        <button class="btn btn-default" type="button" ng-click='createCompany()'>{{ _('Create new company') }}</button>
+                        <button pr-test="CreateNewCompany" class="btn btn-default" type="button" ng-click='createCompany()'>{{ _('Create new company') }}</button>
             </div>
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
 
@@ -86,7 +98,7 @@
                     </div>
                     <div class="col-lg-9 col-md-9 col-sm-8 col-xs-12 search-company">
                         <div class="input-group" style="width: 100%">
-                              <input type="text" class="form-control" placeholder="Search for... "
+                              <input pr-test="SearchForCompany" type="text" class="form-control" placeholder="Search for... "
                                      uib-typeahead-on-select="onSelect($item, $model, $label)"
                                      uib-typeahead-template-url="typeaheadTemplate.html"
                                      ng-model="selectedCompany_name"
@@ -103,7 +115,7 @@
                     <h3>{{ _('Oops! Nothing found!') }}</h3>
                 </div>
             </div>
-        <div class="list_search_company" ng-repeat="company in company_list | limitTo:10" ng-if="selectedCompany_name">
+        <div class="list_search_company" ng-repeat="company in data_search.company_list" ng-if="selectedCompany_name">
             <div class="row search-result thumbnail">
                 <div class="col-lg-2 col-md-2 col-sm-12 col-xs-12 photo-search">
                     <a href="{{ url_company_profile({company_id: company.id}) }}" class="thumbnail">
@@ -125,19 +137,19 @@
         <div class="row company-list">
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12"><h3 ng-if="data.companies">{{ _('Your company list:') }}</h3><h2 ng-if="!data.companies && !loading">You haven't got any company yet!Create own or join to!</h2></div>
             <div ng-if="data.companies" class="col-lg-4 col-md-4 col-sm-6 col-xs-6" ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
-                <div class="thumbnail company-thumbnail" >
+                <div pr-test="CompanyThumbnail" class="thumbnail company-thumbnail" >
                     <a href="{{ url_company_profile({company_id: my_employer.id}) }}">
                         <img pr-image="my_employer.logo_file_id" alt="image" style="width: 100%" >
                     </a>
-                  <div class="caption some-company-info">
+                  <div pr-test="SomeCompanyInfo" class="caption some-company-info">
 
-                      <h3><a href="{{ url_company_profile({company_id: my_employer.id}) }}">
+                      <h3><a pr-test="YourCompanyListTitles" href="{{ url_company_profile({company_id: my_employer.id}) }}">
                         {{ _('%(name)s' , my_employer) }}
                     </a></h3>
                       <p>{{ _((my_employer.author_user_id==data.user_id? ' Type: OWN COMPANY':'JOINED COMPANY') , my_employer) }}</p>
                       <span ng-if="!my_employer.own_portal.host"><b>{{_('Portals')}}: </b>{{_('No')}}</span>
                       <div ng-if="my_employer.own_portal.host">
-                          <button class="btn btn-default" type="button" ng-click="goToPortal(my_employer.own_portal.host)">{{ _("Go to portal") }}</button>
+                          <button pr-test="GoToPortalButton" class="btn btn-default" type="button" ng-click="goToPortal(my_employer.own_portal.host)">{{ _("Go to portal") }}</button>
                     </div>
 
                   </div>

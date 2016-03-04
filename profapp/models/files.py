@@ -17,7 +17,8 @@ from sqlalchemy import desc
 from io import BytesIO
 from .google import GoogleAuthorize,GoogleToken
 import sys
-import os
+import os,urllib
+from time import gmtime, strftime
 
 class File(Base, PRBase):
     __tablename__ = 'file'
@@ -75,9 +76,17 @@ class File(Base, PRBase):
         self.youtube_id = youtube_id
         self.image_croped = image_croped
 
+
     def __repr__(self):
         return "<File(name='%s', mime=%s', id='%s', parent_id='%s')>" % (
             self.name, self.mime, self.id, self.parent_id)
+
+    ACTIONS ={
+        'download': 'download',
+        'remove': 'remove',
+        'show': 'show',
+        'upload': 'upload'
+    }
 
     # CHECKING
 
@@ -177,13 +186,26 @@ class File(Base, PRBase):
         return ret
 
     @staticmethod
-    def list(parent_id=None, file_manager_called_for='', name=None):
-        show = lambda file: True
+    def get_action(action):
+        from ..models.company import UserCompany
+        return action
+
+    @staticmethod
+    def if_action_allowed(action, company_id):
+        from ..models.company import UserCompany
+        user_company = UserCompany.get(user_id=g.user.id, company_id=company_id)
+        if not user_company.has_rights(File.ACTIONS[action], True):
+            return False
+        return True
+
+    @staticmethod
+    def list(parent_id=None, file_manager_called_for='', name=None, company_id=None):
+        folder = File.get(parent_id)
+        show = lambda file: True if File.if_action_allowed('show',company_id) else False
         actions = {}
         default_actions = {}
-        files = [file for file in db(File, parent_id=parent_id) if show(file)]
         # default_actions['choose'] = lambda file: None
-        default_actions['download'] = lambda file: None if ((file.mime == 'directory') or (file.mime == 'root')) else True
+        default_actions['download'] = lambda file: None if ((file.mime == 'directory') or (file.mime == 'root')) else File.if_action_allowed('download', company_id)
         if file_manager_called_for == 'file_browse_image':
             default_actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
             actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
@@ -194,14 +216,14 @@ class File(Base, PRBase):
             default_actions['choose'] = lambda file: True
             actions['choose'] = lambda file: True
         actions = {act: default_actions[act] for act in default_actions}
-        actions['remove'] = lambda file: None if file.mime == "root" else True
+        actions['remove'] = lambda file: None if file.mime == "root" else File.if_action_allowed('remove', company_id)
         actions['copy'] = lambda file: None if file.mime == "root" else True
         actions['paste'] = lambda file: None if file == None else True
         actions['cut'] = lambda file: None if file.mime == "root" else True
         actions['properties'] = lambda file: None if file.mime == "root" else True
+        # actions['upload'] = lambda file: None if file.mime == "root" else File.if_action_allowed(user_company, UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD)
 
         search_files = File.search(name, parent_id, actions, file_manager_called_for)
-        parent = File.get(parent_id)
         if search_files != None:
             ret = search_files
         else:
@@ -222,13 +244,13 @@ class File(Base, PRBase):
                            for file in db(File, parent_id=parent_id)] if show(file) and
                        file.mime != 'image/thumbnail')
             # we need all records from the table "file"
-            ret.append({'id': parent.id, 'parent_id': parent.parent_id,
+            ret.append({'id': folder.id, 'parent_id': folder.parent_id,
                         'type': 'parent',
-                        'date': str(parent.md_tm).split('.')[0],
-                        'url': parent.url(),
-                        'author_name': parent.copyright_author_name,
-                        'description': parent.description,
-                        'actions': {action: actions[action](parent) for action in actions},
+                        'date': str(folder.md_tm).split('.')[0],
+                        'url': folder.url(),
+                        'author_name': folder.copyright_author_name,
+                        'description': folder.description,
+                        'actions': {action: actions[action](folder) for action in actions},
                         })
         return ret
 
@@ -236,8 +258,8 @@ class File(Base, PRBase):
         if self.mime.split('/')[0] == 'image' and self.mime != 'image/thumbnail':
             str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
             if not self.get_thumbnail(size=str_size):
-                image_pil = Image.open(BytesIO(self.file_content.content))
                 try:
+                    image_pil = Image.open(BytesIO(self.file_content.content))
                     resized = image_pil.resize(size)
                     bytes_file = BytesIO()
                     resized.save(bytes_file, self.mime.split('/')[-1].upper())
@@ -253,9 +275,11 @@ class File(Base, PRBase):
                     g.db.add(thumbnail)
                     g.db.flush()
                 except Exception as e:  # truncated png/gif
-                    a = e
-                    print(self.id)
+                    # from ..controllers.errors import BadFormatFile
                     File.remove(self.id)
+
+            #     details = e.args[0]
+            #     print(details['message'])
                 # resized = image_pil.resize(size)
 
 
@@ -420,14 +444,12 @@ class File(Base, PRBase):
     def removeAll(parent_id, mime):
         list = [FileContent.delfile(FileContent.get(file.id)) for file in db(File, parent_id=parent_id, mime=mime)]
 
-    @staticmethod
-    def remove(file_id):
-        # File.removeAll('563c8429-17a5-4001-a2c1-806bdb740b9d', 'image/thumbnail')
-        file = File.get(file_id)
-        if file == None:
-            return False
-        if file.mime == 'directory':
-            list = File.get_all_in_dir_rev(file_id)
+
+    def remove(self, company_id):
+        if self == None or not File.if_action_allowed(File.ACTIONS['remove'], company_id):
+            return "error"
+        if self.mime == 'directory':
+            list = File.get_all_in_dir_rev(self.id)
             for f in list:
                 if f.mime == 'directory':
                     File.delfile(f)
@@ -436,13 +458,13 @@ class File(Base, PRBase):
                 else:
                    g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
                              % f.id)
-            File.delfile(file)
-        elif file.mime == 'video/*':
-            YoutubeVideo.delfile(YoutubeVideo.get(file.id))
+            File.delfile(self)
+        elif self.mime == 'video/*':
+            YoutubeVideo.delfile(YoutubeVideo.get(self.id))
         else:
             # file = file.get_thumbnail(any=True) or file
             g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
-                             % file_id)
+                             % self.id)
         return 'Success'
 
     @staticmethod
@@ -482,42 +504,42 @@ class File(Base, PRBase):
         return old_list, new_list
 
     @staticmethod
-    def uploadForCompany(content, name, type, company):
+    def uploadLogo(content, name, type, directory, root=None):
         size = len(content)
-        file = File(parent_id=company.journalist_folder_file_id,
-                            root_folder_id=company.journalist_folder_file_id,
-                            name=name,
+        unique_name = File.get_unique_name(urllib.parse.unquote(name).replace(
+        '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), type, directory)
+        file = File(parent_id=directory,
+                            root_folder_id=root if root else directory,
+                            name=unique_name,
                             mime=type,
                             size=size
                             ).save()
         file_cont = FileContent(file=file, content=content)
         g.db.add(file, file_cont)
         g.db.commit()
-        return file.id
-
-    def uploadWithoutChunk(self, user):
-        if self:
-            old_file_position = self.tell()
-            self.seek(0, os.SEEK_END)
-            size = self.tell()
-            self.seek(old_file_position, os.SEEK_SET)
-            file = File(parent_id=user.system_folder_file_id,
-                            root_folder_id=user.system_folder_file_id,
-                            name=self.filename,
-                            mime=self.content_type,
-                            size=size
-                            ).save()
-            file_cont = FileContent(file=file, content=self.stream.read(-1))
-            g.db.add(file, file_cont)
-            g.db.commit()
-            return file
+        return file
 
     @staticmethod
-    def upload(name, data, parent, root, content):
+    def check_image_mime(file_id):
+        from PIL import Image
+        from config import Config
+        from io import BytesIO
+        file_ = db(File, id=file_id).one()
+        file_mime = re.findall(r'/(\w+)', file_.mime)[0].upper()
+        if file_mime in Config.ALLOWED_IMAGE_FORMATS:
+            try:
+                Image.open(BytesIO(file_.file_content.content))
+                return ''
+            except Exception as e:
+                return 'error'
+
+    @staticmethod
+    def upload(name, data, parent, root, company, content):
         if data.get('chunkNumber') == '0':
             file = File(parent_id=parent,
                         root_folder_id=root,
                         name=name,
+                        company_id=company.id,
                         mime=data.get('ftype'),
                         size=data.get('totalSize')
                         ).save()
@@ -525,6 +547,8 @@ class File(Base, PRBase):
             g.db.add(file, file_cont)
             g.db.commit()
             session['f_id'] = file.id
+            if data.get('chunkNumber')==data.get('chunkQuantity'):
+                return File.check_image_mime(file.id)
             return file.id
         else:
             id = session['f_id']
@@ -532,6 +556,8 @@ class File(Base, PRBase):
             cont = bytes(file_cont.content)
             c = cont + bytes(content)
             file_cont.updates({'content': c})
+            if data.get('chunkNumber')==data.get('chunkQuantity'):
+                return File.check_image_mime(id)
             return id
 
     @staticmethod
@@ -567,12 +593,12 @@ class File(Base, PRBase):
         files_in_parent = [file for file in db(File, parent_id = id)]
         del attr['name']
         del attr['parent_id']
-        for fil in files_in_parent:
-            if fil.mime == 'directory':
-                fil.updates(attr)
-                File.update_all_in_dir(fil.id, attr)
+        for file in files_in_parent:
+            if file.mime == 'directory':
+                file.updates(attr)
+                File.update_all_in_dir(file.id, attr)
             else:
-                fil.updates(attr)
+                file.updates(attr)
         return files_in_parent
 
     def copy_file(self, parent_id, **kwargs):
@@ -580,13 +606,9 @@ class File(Base, PRBase):
         if self == None or folder == None:
             return False
         id = self.id
-        root = folder.root_folder_id
-        if folder.root_folder_id == None:
-            root = folder.id
+        root = folder.root_folder_id if folder.root_folder_id == None else folder.id
         attr = {f: kwargs[f] for f in kwargs}
-        attr['name'] = File.get_unique_name(self.name, self.mime, parent_id)
-        attr['parent_id'] = parent_id
-        attr['root_folder_id'] = root
+        attr.update({'name': File.get_unique_name(self.name, self.mime, parent_id), 'parent_id': parent_id, 'root_folder_id': root})
         copy_file = self.detach().attr(attr)
         copy_file.save()
         if self.mime == 'directory':
@@ -608,17 +630,146 @@ class File(Base, PRBase):
             return False
         if self.parent_id == parent_id:
             return self.id
-        root = folder.root_folder_id
-        if folder.root_folder_id == None:
-            root = folder.id
+        root = folder.root_folder_id if folder.root_folder_id == None else folder.id
         attr = {f:kwargs[f] for f in kwargs}
-        attr['name'] = File.get_unique_name(self.name, self.mime, parent_id)
-        attr['parent_id'] = parent_id
-        attr['root_folder_id'] = root
+        attr.update({'name': File.get_unique_name(self.name, self.mime, parent_id), 'parent_id': parent_id, 'root_folder_id': root})
         self.updates(attr)
         if self.mime == 'directory':
             File.update_all(self.id, attr)
         return self.id
+
+    @staticmethod
+    def crop(image_id, image_query, coordinates, company_owner):
+        """
+        :param image_id: image id from table File.
+        :param coordinates: dict with following parameters: x from 0 - width image,
+        - y - from 0 - height of image ,- width- from 0 - width image, height- from 0 - height image
+        :return: croped image id from table File.
+            """
+
+        if db(ImageCroped, original_image_id=image_id).count():  # check if croped image already exists
+
+            return File.update_croped_image(image_id, coordinates)  # call function update_croped_image. see func documentation
+
+
+        bytes_file, area = File.crop_with_coordinates(image_query,
+                                                 coordinates)  # call function crop_with_coordinates. see func documentation
+
+        if bytes_file:  # if func crop_with_coordinates doesn't return False.
+
+            croped = File()  # get empty file object
+
+            croped.md_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())  # set md_tm
+
+            croped.size = sys.getsizeof(
+                bytes_file.getvalue())  # get size from bytes_file(object Image Pillow) and set it to
+            # File object
+
+            croped.name = image_query.name + '_cropped'  # set name of cropped file. File will continious as _cropped
+
+            croped.parent_id = company_owner.system_folder_file_id  # set parent folder(directory) for cropped file
+            #  from company owner system folder. System folder should present in company object.
+
+            croped.root_folder_id = company_owner.system_folder_file_id  # set root(/) folder(directory) for cropped
+            # file from company owner system folder. System folder should present in company object.
+
+            croped.mime = image_query.mime  # set file mime for cropped image (mime it's:L
+            # A media type (also MIME type and content type)[1] is a two-part identifier for file formats and format
+            # contents transmitted on the Internet. The Internet Assigned Numbers Authority (IANA) is the official
+            # authority for the standardization and publication of these classifications. Media types were first defined in
+            # Request for Comments 2045 in November 1996,[2] at which point they were named MIME
+            # (Multipurpose Internet Mail Extensions) types. From WIKI !!! )
+
+            fc = FileContent(content=bytes_file.getvalue(), file=croped)  # get FileContent object.
+            # content should contain bytes of file produced in bytes_file
+            copy_original_image_to_system_folder = \
+                File(parent_id=company_owner.system_folder_file_id, name=image_query.name + '_original',
+                     mime=image_query.mime, size=image_query.size, user_id=g.user.id,
+                     root_folder_id=company_owner.system_folder_file_id, author_user_id=g.user.id)
+            # copy original image file to system folder of company, because we save all original files of cropped image
+            cfc = FileContent(content=image_query.file_content.content,
+                              file=copy_original_image_to_system_folder)
+            # copy original image file CONTENT !!! (bytes) to system folder of company,
+            #  because we save all original files of cropped image
+            g.db.add_all([croped, fc, copy_original_image_to_system_folder, cfc])  # Add all created objects to postgresql
+            # transaction
+            g.db.flush()  # flush transaction, because then we will save id of cropped image from table file to
+            # table image_cropped and need id from our created object
+            ImageCroped(original_image_id=copy_original_image_to_system_folder.id,
+                        croped_image_id=croped.id,
+                        x=float(area[0]), y=float(area[1]),
+                        width=float(area[2]),
+                        height=float(area[3]), rotate=int(coordinates['rotate'])).save()  # save
+            return croped.id  # return cropped file id from table file
+        else:
+            return image_id  # if exception raised we return which pass to our native function
+            # (def crop_image(image_id, coordinates):
+            # )
+
+            # THE END
+
+    @staticmethod
+    def update_croped_image(original_image_id, coordinates):
+        """
+        call this function when cropped file already exists
+        :param original_image_id:  original image id of cropped file from table File.
+        :param coordinates: list with following parameters: [0] -x from 0 - width image,
+        [1] - y - from 0 - height of image , [2] - width- from 0 - width image,[3] - height- from 0 - height image
+        :return: cropped file id from table File
+        """
+        image_croped_assoc = db(ImageCroped, original_image_id=original_image_id).one() # get image_croped object from table
+        # image_croped and filter by original_image_id
+        croped = db(File, id=image_croped_assoc.croped_image_id).one()# get cropped file object from table
+        # file
+        image_query = g.db.query(File).filter_by(id=image_croped_assoc.original_image_id).first()
+        bytes_file, area = File.crop_with_coordinates(image_query, coordinates, )# call function crop_with_coordinates to get ImagePil
+        # object with cropped image and get properly coordinates
+        if bytes_file: # if not exception occured in function crop_with_coordinates do
+            croped.size = sys.getsizeof(bytes_file.getvalue())# get size from bytes_file(object Image Pillow) and set it to
+            # File object
+
+
+            croped.file_content.content = bytes_file.getvalue() # Get file content (bytes) from saved Pillow object
+            image_croped_assoc.x = float(area[0]) # set coordinates to ImageCroped object - x
+            image_croped_assoc.y = float(area[1])# set coordinates to ImageCroped object - x
+            image_croped_assoc.width = float(area[2])# set coordinates to ImageCroped object - x
+            image_croped_assoc.height = float(area[3])# set coordinates to ImageCroped object - x
+            image_croped_assoc.rotate = int(coordinates['rotate'])
+        return croped.id # cropped file id from table File
+
+    @staticmethod
+    def crop_with_coordinates(image, coordinates,  ratio=Config.IMAGE_EDITOR_RATIO,
+                              height=Config.HEIGHT_IMAGE):
+        """
+
+        :param image: File objects
+        :param coordinates: dict with following parameters: x from 0 - width image,
+        - y - from 0 - height of image ,- width- from 0 - width image, height- from 0 - height image
+        :param ratio: aspect ratio. Default aspect ratio from config
+        :param height: height for creating size (int(ratio*height), height)
+        :return: cropped bytes of file and area(coordinates)
+        """
+        size = (int(ratio*height), height) #size for future cropped image
+        try:
+            image_pil = Image.open(BytesIO(image.file_content.content)) # create Pillow object from content of original picture
+            area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],
+                                     coordinates['height'])] # convert dict of coordinates to list
+            if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)): #
+                # if coordinates are not correctly, we make coordinates the same as image coordinates
+                area[0], area[1], area[2], area[3] = 0, 0, image_pil.width, image_pil.height
+            angle = int(coordinates["rotate"])*-1
+            area[2] = (area[0]+area[2])# The crop rectangle, as a (left, upper, right, lower)-tuple.    RIGHT
+            area[3] = (area[1]+area[3])# The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
+            rotated = image_pil.rotate(angle)
+            cropped = rotated.crop(area).resize(size) # crop and resize image with area and size
+            bytes_file = BytesIO() # create BytesIO object to save cropped image to Pillow object
+            cropped.save(bytes_file, image.mime.split('/')[-1].upper()) # save cropped image to Pillow object
+            # (not to database)
+            return bytes_file, area #  cropped bytes of file and area(coordinates)
+        except ValueError: # if error occured return False
+            return False
+
+
 
 
 class FileContent(Base, PRBase):

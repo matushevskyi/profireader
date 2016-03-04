@@ -123,9 +123,12 @@
             {% raw %}
 
             $scope.loadData = function (data, callbackfunc) {
+                $scope.loading = true;
                 $ok('', data, function (resp) {
-                    callbackfunc(resp)
+                    callbackfunc(resp);
                     $scope.data = resp;
+                }).finally(function(){
+                    $scope.loading = false
                 });
             };
 //http://profireader.com/company/560b9f54-1727-4001-bda8-784be5762873/employment_action/5617835c-12a4-4001-b423-b7f13c696686
@@ -214,15 +217,19 @@
                     }
                 ]
             });
-            {% endraw %}
+
         })
-        ;
+        {% endraw %}
     </script>
 
     <div ng-controller="company_employees_controller">
         {% raw %}
         <h2>{{ _('Employees at company `%(company.name)s`') }}</h2>
-        <div class="grid" id="grid1" ui-grid-edit ui-grid="gridOptions1"></div>
+        <div class="grid" id="grid1" ui-grid-edit ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+              <i class="fa fa-spin fa-spinner"></i><div>Data Loading...</div>
+            </div>
+        </div>
         {% endraw %}
     </div>
 

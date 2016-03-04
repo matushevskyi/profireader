@@ -50,11 +50,10 @@ def show():
 # @check_rights(simple_permissions([]))
 @ok
 def load_companies(json):
-    user_companies = [user_comp for user_comp in current_user.employer_assoc]
-    return {'companies': [usr_cmp.employer.get_client_side_dict() for usr_cmp in user_companies
-                          ],
-
-            'user_id': g.user_dict['id']}
+    companies, pages, page, count = pagination(query=db(Company)
+        .filter(Company.id==db(UserCompany, user_id=g.user.id).subquery().c.company_id), page=1, items_per_page=6*json.get('next_page') if json.get('next_page') else 6)
+    return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],
+            'user_id': g.user_dict['id'], 'end': pages==1}
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
@@ -311,7 +310,7 @@ def load(json, company_id=None):
         company_dict.update(image)
         return company_dict
     else:
-        company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone',
+        company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone','city','postcode',
                                    'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
             if company_id is not None and user_can_edit:
@@ -326,9 +325,14 @@ def load(json, company_id=None):
                 image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
                 bb = base64.b64decode(image_data)
                 new_comp = db(Company, id=company.id).first()
-                file_id = File.uploadForCompany(bb, json['image']['name'], json['image']['type'], new_comp)
+                file_id = File.uploadLogo(bb, json['image']['name'], json['image']['type'], new_comp.journalist_folder_file_id).id
+                if 'error' in File.check_image_mime(file_id):
+                    resp = new_comp.get_client_side_dict()
+                    resp.update({'error':True})
+                    return resp
                 logo_id = crop_image(file_id, json['image']['coordinates'])
                 new_comp.updates({'logo_file_id': logo_id})
+                return new_comp.get_client_side_dict()
             else:
                 img = json['image']
                 img_id = img.get('image_file_id')
@@ -372,10 +376,9 @@ def load(json, company_id=None):
 @ok
 # @check_rights(simple_permissions([]))
 def search_for_company_to_join(json):
-    companies, pages, page, count = pagination(query=Company().search_for_company_to_join(g.user_dict['id'], json['search']), page=1, items_per_page=5)
-    print(pages)
-    return [company.get_client_side_dict() for company in
-                          companies]
+    companies, pages, page, count = pagination(query=Company().search_for_company_to_join(g.user_dict['id'], json['search']), page=1, items_per_page=5*json.get('next_page') if json.get('next_page') else 5)
+    return {'company_list':[company.get_client_side_dict() for company in
+                          companies], 'end': pages == 1}
 
 
 @company_bp.route('/search_for_user/<string:company_id>', methods=['POST'])

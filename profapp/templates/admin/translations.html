@@ -27,23 +27,23 @@
 
     <script>
 
-        module.controller('translation_tinymce_controller', function ($scope, $modalInstance, EdittextWithHtml) {
+        module.controller('translation_tinymce_controller', function ($scope, $uibModalInstance, EdittextWithHtml) {
               $scope.EdittextWithHtml = EdittextWithHtml;
               $scope.save = function () {
-                $modalInstance.close($scope.EdittextWithHtml);
+                $uibModalInstance.close($scope.EdittextWithHtml);
               };
               $scope.cancel = function () {
-                $modalInstance.dismiss('cancel');
+                $uibModalInstance.dismiss('cancel');
               };
         });
 
-        module.controller('delete_translation_controller', function ($scope, $modalInstance, list) {
+        module.controller('delete_translation_controller', function ($scope, $uibModalInstance, list) {
               $scope.list = list;
               $scope.deleteItems = function () {
-                $modalInstance.close($scope.list);
+                $uibModalInstance.close($scope.list);
               };
               $scope.cancel = function () {
-                $modalInstance.dismiss('cancel');
+                $uibModalInstance.dismiss('cancel');
               };
         });
 
@@ -92,7 +92,7 @@
                     $scope.deleteItems = function (list) {
                         $ok($scope.url_delete_translations(), {objects: list}, function (resp) {
                             if (resp == 'True') {
-                                $scope.sendData($scope.all_grid_data)
+                                $scope.gridApi.grid.setGridData();
                             } else {
                                 $scope.error = 'error delete'
                             }
@@ -100,7 +100,7 @@
                     };
 
                     $scope.saveTranslWithHtml = function (text, row, col) {
-                        var grid_data = $scope.all_grid_data;
+                        var grid_data = $scope.gridApi.grid.all_grid_data;
                         grid_data['editItem'] = {
                             'name': row.entity.name,
                             'newValue': text,

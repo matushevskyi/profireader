@@ -69,7 +69,7 @@ def list_reader_load(json):
                                                  'tags': True, 'return_fields': article_fields}, page=1,
                                                 items_per_page=5*next_page,
                                                 search_text=search_text)
-    portals = UserPortalReader.get_portals_for_user() if not articles else None
+    # portals = UserPortalReader.get_portals_for_user() if not articles else None
     list_articles = []
     for article_id, article in articles.items():
         article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
@@ -86,7 +86,7 @@ def list_reader_load(json):
         'pages': pages,
         'current_page': page,
         'page_buttons': Config.PAGINATION_BUTTONS,
-        'portals': portals,
+        # 'portals': portals,
         'favorite': favorite
     }
 # @reader_bp.route('/list_reader')
