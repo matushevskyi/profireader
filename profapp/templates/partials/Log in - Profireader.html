@@ -1,18 +1,42 @@
 <div ng-controller="UserLoginController">
+{# <script>#}
+{#      $(function () {#}
+{#        $('#login-form-profirider').on('submit', function (e) {#}
+{#            window.loca{{ url_for('auth.login') }}#}
+{#          e.preventDefault();#}
+{#          $.ajax({#}
+{#            type: 'post',#}
+{#            url: '{{ url_for('auth.login') }}',#}
+{#            data: $('#login-form-profirider').serialize(),#}
+{#            success: function (data) {#}
+{#                console.log(data);#}
+{#            }#}
+{#          });#}
+{#        });#}
+{#      });#}
+{#    </script>#}
 <h3>{{ '{{' }}_('Log in using Profireader'){{ '}}' }}</h3>
 
-<form action="{{ url_for('auth.login', subscribe=request.args.get('subscribe'), next=request.args.get('next')) }}" method="POST">
-    {{ login_form.email(placeholder='yourname@email.com', pr_test="EmailForm") }} <br/>
-    {{ login_form.password(placeholder="{{_('Password')}}", pr_test="PasswordForm") }} <br/>
-    {{ login_form.submit_login(type="submit", value="{{_('Login')}}", pr_test='SubmitLogin') }}{# <br/> #}
-    <!-- <input name="submit" type="submit" /> <br> -->
-    {{ login_form.csrf_token }}
-</form>
+    <form class="login-form-profirider" id="login-form-profirider" action="{{ url_for('auth.login') }}" method="post">
+        <input class="form-control" type="email" placeholder="email" required name="email">
+        <input class="form-control" type="password" placeholder="password" required name="password">
+        <input class="sabmit-form" type="submit">
+        <div class="logout-now">
+            <p>{{ '{{' }}_('Forgot your password'){{ '}}' }}? <a href="{{ url_for('auth.password_reset_request') }}">{{ '{{' }}_('Click here to Reset it'){{ '}}' }}</a>.</p>
+            <p>{{ '{{' }}_('New user'){{ '}}' }}? <a href="{{ url_for('auth.signup') }}">{{ '{{' }}_('Click here to register'){{ '}}' }}</a>.</p>
+        </div>
+    </form>
 
-<div style="font-size: 14px; text-align: center; padding-top: 25px; line-height: 16px;">
-    <p>{{ '{{' }}_('Forgot your password'){{ '}}' }}? <a href="{{ url_for('auth.password_reset_request') }}">{{ '{{' }}_('Click here to Reset it'){{ '}}' }}</a>.</p>
-    <p>{{ '{{' }}_('New user'){{ '}}' }}? <a href="{{ url_for('auth.signup') }}">{{ '{{' }}_('Click here to register'){{ '}}' }}</a>.</p>
-</div>
+
+{#<form action="{{ url_for('auth.login', subscribe=request.args.get('subscribe'), next=request.args.get('next')) }}" method="POST">#}
+{#    {{ login_form.email(placeholder='yourname@email.com', pr_test="EmailForm") }} <br/>#}
+{#    {{ login_form.password(placeholder="{{_('Password')}}", pr_test="PasswordForm") }} <br/>#}
+{#    {{ login_form.submit_login(type="submit", value="{{_('Login')}}", pr_test='SubmitLogin') }}{# <br/> #}
+{#    <!-- <input name="submit" type="submit" /> <br> -->#}
+{#    {{ login_form.csrf_token }}#}
+{#</form>#}
+{##}
+
 </div>
 <!--<form id="se-login-form" action="url_for('user.login_profireader')" method="POST">
     <input name="email" placeholder="Email" maxlength="100" type="email"><br/>
