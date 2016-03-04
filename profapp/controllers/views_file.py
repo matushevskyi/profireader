@@ -228,73 +228,10 @@ def allowed_referrers(domain):
 
 
 def crop_image(image_id, coordinates):
-    image_query = db(File, id=image_id).one()
-    if db(ImageCroped, original_image_id=image_id).count():
-        return update_croped_image(image_id, coordinates)
+    image_query = db(File, id=image_id).one()  # get file object
     company_owner = db(Company).filter(or_(
-        Company.system_folder_file_id == image_query.root_folder_id,
-        Company.journalist_folder_file_id == image_query.root_folder_id)).one()
-    bytes_file, area = crop_with_coordinates(image_query, coordinates)
-    if bytes_file:
-        croped = File()
-        croped.md_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-        croped.size = sys.getsizeof(bytes_file.getvalue())
-        croped.name = image_query.name + '_cropped'
-        croped.parent_id = company_owner.system_folder_file_id
-        croped.root_folder_id = company_owner.system_folder_file_id
-        croped.mime = image_query.mime
-        fc = FileContent(content=bytes_file.getvalue(), file=croped)
-        copy_original_image_to_system_folder = \
-            File(parent_id=company_owner.system_folder_file_id, name=image_query.name+'_original',
-                 mime=image_query.mime, size=image_query.size, user_id=g.user.id,
-                 root_folder_id=company_owner.system_folder_file_id, author_user_id=g.user.id)
-        cfc = FileContent(content=image_query.file_content.content,
-                          file=copy_original_image_to_system_folder)
-        g.db.add_all([croped, fc, copy_original_image_to_system_folder, cfc])
-        g.db.flush()
-        ImageCroped(original_image_id=copy_original_image_to_system_folder.id,
-                    croped_image_id=croped.id,
-                    x=float(area[0]), y=float(area[1]),
-                    width=float(area[2]),
-                    height=float(area[3]), rotate=int(coordinates['rotate'])).save()
-        return croped.id
-    else:
-        return image_query.id
+                Company.system_folder_file_id == image_query.root_folder_id,
+                Company.journalist_folder_file_id == image_query.root_folder_id)).one()  # get company file owner
+    return File.crop(image_id, image_query, coordinates, company_owner)
 
 
-def update_croped_image(original_image_id, coordinates):
-    image_croped_assoc = db(ImageCroped, original_image_id=original_image_id).one()
-    croped = db(File, id=image_croped_assoc.croped_image_id).one()
-
-    image_query = file_query(File, image_croped_assoc.original_image_id)
-    bytes_file, area = crop_with_coordinates(image_query, coordinates, )
-    if bytes_file:
-        croped.size = sys.getsizeof(bytes_file.getvalue())
-        croped.file_content.content = bytes_file.getvalue()
-        image_croped_assoc.x = float(area[0])
-        image_croped_assoc.y = float(area[1])
-        image_croped_assoc.width = float(area[2])
-        image_croped_assoc.height = float(area[3])
-        image_croped_assoc.rotate = int(coordinates['rotate'])
-    return croped.id
-
-
-def crop_with_coordinates(image, coordinates,  ratio=Config.IMAGE_EDITOR_RATIO,
-                          height=Config.HEIGHT_IMAGE):
-    size = (int(ratio*height), height)
-    image_pil = Image.open(BytesIO(image.file_content.content))
-    try:
-        area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],
-                                 coordinates['height'])]
-        if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)):
-            area[0], area[1], area[2], area[3] = 0, 0, image_pil.width, image_pil.height
-        angle = int(coordinates["rotate"])*-1
-        area[2] = (area[0]+area[2])
-        area[3] = (area[1]+area[3])
-        rotated = image_pil.rotate(angle)
-        cropped = rotated.crop(area).resize(size)
-        bytes_file = BytesIO()
-        cropped.save(bytes_file, image.mime.split('/')[-1].upper())
-        return bytes_file, area
-    except ValueError:
-        return False

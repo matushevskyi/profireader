@@ -173,8 +173,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 var $inputImage = $('input', element);
 
                 var URL = window.URL || window.webkitURL;
-                var blobURL;
-
 
                 var options = {
                     crop: function (e) {
@@ -187,23 +185,19 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 var uploadCropper = function () {
                     var files = this.files;
-                    var file;
                     var ff = $('input#inputImage').prop('files')[0];
                     if (files && files.length) {
-                        file = files[0];
+                        var file = files[0];
                         var fr = new FileReader();
                         fr.readAsDataURL(ff);
-                        var content = '';
                         fr.onload = function (e) {
-                            content = fr.result;
                             if (/^image\/\w+$/.test(file.type)) {
                                 $inputImage.val('');
-                                blobURL = URL.createObjectURL(file);
                                 model.$modelValue.type = file.type;
                                 model.$modelValue.name = file.name;
-                                model.$modelValue.dataContent = content;
+                                model.$modelValue.dataContent = fr.result;
                                 model.$modelValue.uploaded = true;
-                                model.$modelValue.image_file_id = blobURL;
+                                model.$modelValue.image_file_id = URL.createObjectURL(file);
 
                             } else {
                                 add_message('Please choose an image file.');
@@ -233,36 +227,18 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     }
                 };
 
-                //if (attrs['prCropper']) {
-                //    scope[attrs['prCropper']] = function () {
-                //        $image.cropper.apply($image, arguments);
-                //    };
-                //}
+
                 scope['cropper'] = function () {
                     $image.cropper.apply($image, arguments);
                 };
-                //debugger;
-                //
+
                 scope.$watch(attrs['ngModel'] + '.image_file_id', function () {
                     if (model && model.$modelValue) {
-                        //var file_url = fileUrl(model.$modelValue.image_file_id);
-                        //$image.attr('src', );
-                        //$image.cropper('replace', file_url);
-
                         if (model) {
                             if (model.$modelValue && model.$modelValue.ratio) options.aspectRatio = model.$modelValue.ratio;
                             if (model.$modelValue && model.$modelValue.coordinates) options.data = model.$modelValue.coordinates;
                         }
-
                         restartCropper();
-
-                        //
-                        //if (file_url) {
-                        //
-                        //}
-                        //else {
-                        //    console.log('no image');
-                        //}
                     }
                 });
 
@@ -824,7 +800,6 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                 element.html(template);
             },
             link: function ($scope, $element, $attrs) {
-                console.log($scope)
                 var $dropdownTrigger = $element.children()[0];
 
                 $scope.toggleDropdown = function () {
@@ -1226,7 +1201,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 '<div class="ui-grid-header-cell ui-grid-clearfix" ng-if="col.colDef.category === cat.name && grid.options.category" ng-repeat="col in colContainer.renderedColumns | filter:{ colDef:{category: cat.name} }" ui-grid-header-cell col="col" render-index="$index"> <div ng-class="{ \'sortable\': sortable }" class="ng-scope sortable"> <div ui-grid-filter="" ng-show="col.colDef.category !== undefined"></div> </div> </div> </div>' +
                 '<div class="ui-grid-header-cell ui-grid-clearfix" ng-if="col.colDef.category === undefined || grid.options.category === undefined"  ng-repeat="col in colContainer.renderedColumns track by col.colDef.name" ui-grid-header-cell col="col" render-index="$index" ng-style="$index === 0 && colContainer.columnStyle($index)"></div>' +
                 '</div></div></div></div></div></div>';
-
+            $( ".ui-grid-viewport" ).append( "<p>Test</p>" );
             for (var i = 0; i < col.length; i++) {
                 if (col[i].category) {
                     gridApi.grid.options.columnDefs[i].enableFiltering = false
@@ -1258,6 +1233,11 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                                 '<button class="btn btn-group" ng-click="grid.filterForGridRange(col)" ng-disabled="col.filters[1].term === undefined || col.filters[0].term === undefined || col.filters[1].term === null || col.filters[1].term === \'\' || col.filters[0].term === null || col.filters[0].term === \'\'">Filter</button> ' +
                                 '<div role="button" class="ui-grid-filter-button" ng-click="grid.refreshGrid(col)" ng-if="!colFilter.disableCancelFilterButton" ng-disabled="col.filters[1].term === undefined || col.filters[0].term === undefined" ng-show="col.filters[1].term !== undefined && col.filters[1].term !== \'\' && col.filters[0].term !== undefined && col.filters[0].term !== \'\'">' +
                                 '<i class="ui-grid-icon-cancel" ui-grid-one-bind-aria-label="aria.removeFilter" style="right:0.5px;top:83%">&nbsp;</i></div></div>'
+                        case 'button':
+                            return '<div class="ui-grid-filter-container" ng-if="grid.filters_action.'+col.name+'"><button ' +
+                                ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ grid.filters_action.'+col.name+' }}" ' +
+                                ' ng-click="grid.appScope.' + col.filter.onclick + '(row.entity.id,  grid.filters_action.'+col.name+' , row.entity, \'' + col['name'] + '\')" ' +
+                                ' title="{{ grid.filters_action.'+col.name+' }}" ng-bind="grid.filters_action.'+col.name+'"></button><span class="grid-filter-info" ng-bind="grid.filters_info.'+col.name+'"></span></div>'
                     }
                 }
 
@@ -1280,7 +1260,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                     switch (col.type) {
                         case 'link':
-                            return '<div  '+attributes_for_cell+'  pr-test="Grid-'+col.name+'" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a'+attributes_for_cell+' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
+                            return '<div  '+attributes_for_cell+' ng-style="grid.appScope.'+col.cellStyle+'" pr-test="Grid-'+col.name+'" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a'+attributes_for_cell+' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
                         case 'img':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-'+col.name+'" class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="{{ COL_FIELD }}" alt="image" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
                         case 'show_modal':
@@ -1338,14 +1318,12 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             };
 
             gridApi.grid['set_data_function'] = function(grid_data){
-                gridApi.grid.options.data = grid_data.grid_data;
-                    if ('grid_data' in grid_data) {
-                        scope.initGridData = grid_data
-                    } else {
-                        console.log('grid data doesn\'t exist')
-                    }
+
+                    gridApi.grid.options.data = grid_data.grid_data;
                     gridApi.grid.listsForMS = {};
                     gridApi.grid.options.totalItems = grid_data.total;
+                    gridApi.grid.filters_action = grid_data.filters_action
+                    gridApi.grid.filters_info = grid_data.filters_info
                     if (grid_data.page) {
                         gridApi.grid.options.pageNumber = grid_data.page;
                         gridApi.grid.options.paginationCurrentPage = grid_data.page;
@@ -1374,8 +1352,8 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
             gridApi.grid['setGridData'] = function (grid_data) {
                 var all_grid_data = grid_data ? grid_data : gridApi.grid.all_grid_data
-                scope.loading = true
                 if(gridApi.grid.options.urlLoadGridData){
+                    scope.loading = true
                     $ok(gridApi.grid.options.urlLoadGridData, all_grid_data, function(grid_data){
                         gridApi.grid.set_data_function(grid_data)
                     }).finally(function(){
@@ -1566,17 +1544,19 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
         },
         loadNextPage: function(url){
             var scope = this;
+            scope.next_page = 1;
             $(window).scroll(function () {
                     if($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
                         if(scope.loading === false && scope.data.end !== true) {
                             scope.loading = true;
-                            scope.next_page += 1
-                            if(scope.send_data){
-                                scope.send_data.next_page = scope.next_page
+                            scope.next_page += 1;
+                            if(scope.scroll_data){
+                                scope.scroll_data.next_page = scope.next_page
                             }
-
-                            $ok(url, scope.send_data?scope.send_data:{next_page:scope.next_page}, function (resp) {
+                            $ok(url, scope.scroll_data?scope.scroll_data:{next_page:scope.next_page}, function (resp) {
                                 scope.data = resp;
+                                if(scope.data.end)
+                                    scope.next_page=1
                             }).finally(function () {
                                 $timeout(function(){
                                     scope.loading = false;

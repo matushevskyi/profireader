@@ -7,7 +7,7 @@ from .blueprints_declaration import article_bp
 from .request_wrapers import ok, tos_required
 from .pagination import pagination
 from config import Config
-from .views_file import crop_image, update_croped_image
+from .views_file import crop_image
 from ..models.files import ImageCroped
 from ..models.company import Company, UserCompany
 
