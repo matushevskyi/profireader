@@ -180,6 +180,17 @@ body {
   margin-right: -15px;
 }
 /* ---AUTH User---*/
+.reset-pass button {
+  margin-top: 15px;
+  background-color: #24DC54;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 10px 5px;
+}
+.reset-pass button:hover {
+  background-color: #04A52E;
+}
 .logout-now {
   font-size: 13px;
   text-align: center;
