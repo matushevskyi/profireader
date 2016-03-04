@@ -76,9 +76,17 @@ class File(Base, PRBase):
         self.youtube_id = youtube_id
         self.image_croped = image_croped
 
+
     def __repr__(self):
         return "<File(name='%s', mime=%s', id='%s', parent_id='%s')>" % (
             self.name, self.mime, self.id, self.parent_id)
+
+    ACTIONS ={
+        'download': 'download',
+        'remove': 'remove',
+        'show': 'show',
+        'upload': 'upload'
+    }
 
     # CHECKING
 
@@ -178,13 +186,26 @@ class File(Base, PRBase):
         return ret
 
     @staticmethod
-    def list(parent_id=None, file_manager_called_for='', name=None):
-        show = lambda file: True
+    def get_action(action):
+        from ..models.company import UserCompany
+        return action
+
+    @staticmethod
+    def if_action_allowed(action, company_id):
+        from ..models.company import UserCompany
+        user_company = UserCompany.get(user_id=g.user.id, company_id=company_id)
+        if not user_company.has_rights(File.ACTIONS[action], True):
+            return False
+        return True
+
+    @staticmethod
+    def list(parent_id=None, file_manager_called_for='', name=None, company_id=None):
+        folder = File.get(parent_id)
+        show = lambda file: True if File.if_action_allowed('show',company_id) else False
         actions = {}
         default_actions = {}
-        files = [file for file in db(File, parent_id=parent_id) if show(file)]
         # default_actions['choose'] = lambda file: None
-        default_actions['download'] = lambda file: None if ((file.mime == 'directory') or (file.mime == 'root')) else True
+        default_actions['download'] = lambda file: None if ((file.mime == 'directory') or (file.mime == 'root')) else File.if_action_allowed('download', company_id)
         if file_manager_called_for == 'file_browse_image':
             default_actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
             actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
@@ -195,14 +216,14 @@ class File(Base, PRBase):
             default_actions['choose'] = lambda file: True
             actions['choose'] = lambda file: True
         actions = {act: default_actions[act] for act in default_actions}
-        actions['remove'] = lambda file: None if file.mime == "root" else True
+        actions['remove'] = lambda file: None if file.mime == "root" else File.if_action_allowed('remove', company_id)
         actions['copy'] = lambda file: None if file.mime == "root" else True
         actions['paste'] = lambda file: None if file == None else True
         actions['cut'] = lambda file: None if file.mime == "root" else True
         actions['properties'] = lambda file: None if file.mime == "root" else True
+        # actions['upload'] = lambda file: None if file.mime == "root" else File.if_action_allowed(user_company, UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD)
 
         search_files = File.search(name, parent_id, actions, file_manager_called_for)
-        parent = File.get(parent_id)
         if search_files != None:
             ret = search_files
         else:
@@ -223,13 +244,13 @@ class File(Base, PRBase):
                            for file in db(File, parent_id=parent_id)] if show(file) and
                        file.mime != 'image/thumbnail')
             # we need all records from the table "file"
-            ret.append({'id': parent.id, 'parent_id': parent.parent_id,
+            ret.append({'id': folder.id, 'parent_id': folder.parent_id,
                         'type': 'parent',
-                        'date': str(parent.md_tm).split('.')[0],
-                        'url': parent.url(),
-                        'author_name': parent.copyright_author_name,
-                        'description': parent.description,
-                        'actions': {action: actions[action](parent) for action in actions},
+                        'date': str(folder.md_tm).split('.')[0],
+                        'url': folder.url(),
+                        'author_name': folder.copyright_author_name,
+                        'description': folder.description,
+                        'actions': {action: actions[action](folder) for action in actions},
                         })
         return ret
 
@@ -423,14 +444,12 @@ class File(Base, PRBase):
     def removeAll(parent_id, mime):
         list = [FileContent.delfile(FileContent.get(file.id)) for file in db(File, parent_id=parent_id, mime=mime)]
 
-    @staticmethod
-    def remove(file_id):
-        # File.removeAll('563c8429-17a5-4001-a2c1-806bdb740b9d', 'image/thumbnail')
-        file = File.get(file_id)
-        if file == None:
-            return False
-        if file.mime == 'directory':
-            list = File.get_all_in_dir_rev(file_id)
+
+    def remove(self, company_id):
+        if self == None or not File.if_action_allowed(File.ACTIONS['remove'], company_id):
+            return "error"
+        if self.mime == 'directory':
+            list = File.get_all_in_dir_rev(self.id)
             for f in list:
                 if f.mime == 'directory':
                     File.delfile(f)
@@ -439,13 +458,13 @@ class File(Base, PRBase):
                 else:
                    g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
                              % f.id)
-            File.delfile(file)
-        elif file.mime == 'video/*':
-            YoutubeVideo.delfile(YoutubeVideo.get(file.id))
+            File.delfile(self)
+        elif self.mime == 'video/*':
+            YoutubeVideo.delfile(YoutubeVideo.get(self.id))
         else:
             # file = file.get_thumbnail(any=True) or file
             g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
-                             % file_id)
+                             % self.id)
         return 'Success'
 
     @staticmethod
@@ -515,11 +534,12 @@ class File(Base, PRBase):
                 return 'error'
 
     @staticmethod
-    def upload(name, data, parent, root, content):
+    def upload(name, data, parent, root, company, content):
         if data.get('chunkNumber') == '0':
             file = File(parent_id=parent,
                         root_folder_id=root,
                         name=name,
+                        company_id=company.id,
                         mime=data.get('ftype'),
                         size=data.get('totalSize')
                         ).save()
@@ -573,12 +593,12 @@ class File(Base, PRBase):
         files_in_parent = [file for file in db(File, parent_id = id)]
         del attr['name']
         del attr['parent_id']
-        for fil in files_in_parent:
-            if fil.mime == 'directory':
-                fil.updates(attr)
-                File.update_all_in_dir(fil.id, attr)
+        for file in files_in_parent:
+            if file.mime == 'directory':
+                file.updates(attr)
+                File.update_all_in_dir(file.id, attr)
             else:
-                fil.updates(attr)
+                file.updates(attr)
         return files_in_parent
 
     def copy_file(self, parent_id, **kwargs):

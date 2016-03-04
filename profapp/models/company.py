@@ -278,6 +278,13 @@ class UserCompany(Base, PRBase):
         'ALLOW': 'ALLOW',
     }
 
+    ACTIONS_FOR_FILEMANAGER = {
+        'download': RIGHT_AT_COMPANY.FILES_BROWSE,
+        'remove': RIGHT_AT_COMPANY.FILES_DELETE_OTHERS,
+        'show': RIGHT_AT_COMPANY.FILES_BROWSE,
+        'upload': RIGHT_AT_COMPANY.FILES_UPLOAD
+    }
+
     ACTIONS_FOR_STATUSES = {
         STATUSES['APPLICANT']: {
             ACTIONS['ENLIST']: {'employment': [RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
@@ -427,8 +434,7 @@ class UserCompany(Base, PRBase):
         db(UserCompany, company_id=company_id, user_id=user_id,
            status=UserCompany.STATUSES['APPLICANT']).update({'status': stat})
 
-    def has_rights(self, rightname):
-
+    def has_rights(self, rightname, filemanager=False):
         if self.employer.user_owner.id == self.user_id:
             return True
 
@@ -437,8 +443,10 @@ class UserCompany(Base, PRBase):
 
         if rightname == '_ANY':
             return True if self.status == self.STATUSES['ACTIVE'] else False
-
-        return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else False
+        if filemanager:
+            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[UserCompany.ACTIONS_FOR_FILEMANAGER[rightname]]) else False
+        else:
+            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else False
 
     @staticmethod
     def search_for_user_to_join(company_id, searchtext):

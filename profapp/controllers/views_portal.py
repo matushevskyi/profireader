@@ -437,8 +437,8 @@ def portals_partners_load(json, company_id):
     return {'page': current_page,
             'grid_data': partner_list,
             'total': count,
-            'filters_info':{'status':'Num: '+str(count_of_rejected)},
-            'filters_action': {'status':filter_action if count_of_rejected else None}}
+            'filters_info': {'status':'Num: '+str(count_of_rejected)}, #additional data to filter header
+            'filters_action': {'status':filter_action if count_of_rejected else None}} # this new filter with one button depends on current filter( 'see rejected' and 'see another')
 
 
 @portal_bp.route('/portals_partners_change_status/<string:company_id>/<string:portal_id>', methods=['POST'])
@@ -488,21 +488,22 @@ def company_partner_update(employeer_id, member_id):
 def company_update_load(json, employeer_id, member_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     member = MemberCompanyPortal.get(Company.get(employeer_id).own_portal.id, member_id)
+    print(member.company.name)
     if action == 'load':
         return {'member': member.get_client_side_dict(more_fields='company'),
                 'statuses_available': MemberCompanyPortal.get_avaliable_statuses(),
                 'employeer': Company.get(employeer_id).get_client_side_dict()}
     else:
         member.set_client_side_dict(status=json['member']['status'], rights=json['member']['rights'])
-        current_user_rights = UserCompany.get(company_id=employeer_id).has_rights(UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES)
+        current_user_right = UserCompany.get(company_id=employeer_id).has_rights(UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES)
         if action == 'validate':
             member.detach()
             validate = member.validate(False)
-            if not current_user_rights:
+            if not current_user_right:
                 validate['errors']['rights'] = 'You haven\'t got aproriate rights!'
             return validate
         else:
-            if member.status !='FROZEN' and current_user_rights:
+            if member.can_update(current_user_right):
                 member.save()
     return member.get_client_side_dict()
 

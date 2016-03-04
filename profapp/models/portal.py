@@ -401,6 +401,14 @@ class MemberCompanyPortal(Base, PRBase):
 
         return True
 
+    def can_update(self, user_right):
+        if self.status =='FROZEN' and not user_right:
+            return False
+        if self.company.status != 'ACTIVE':
+            return False
+        return True
+
+
     def get_client_side_dict(self, fields='id,status,rights', more_fields=None):
         return self.to_dict(fields, more_fields)
 
