@@ -205,7 +205,7 @@ class File(Base, PRBase):
         actions = {}
         default_actions = {}
         # default_actions['choose'] = lambda file: None
-        default_actions['download'] = lambda file: None if ((file.mime == 'directory') or (file.mime == 'root')) else File.if_action_allowed('download', company_id)
+        default_actions['download'] = lambda file: None if ((file.mime == 'directory') or (file.mime == 'root')) else True
         if file_manager_called_for == 'file_browse_image':
             default_actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
             actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
@@ -276,7 +276,7 @@ class File(Base, PRBase):
                     g.db.flush()
                 except Exception as e:  # truncated png/gif
                     # from ..controllers.errors import BadFormatFile
-                    File.remove(self.id)
+                    self.remove()
 
             #     details = e.args[0]
             #     print(details['message'])
@@ -445,9 +445,11 @@ class File(Base, PRBase):
         list = [FileContent.delfile(FileContent.get(file.id)) for file in db(File, parent_id=parent_id, mime=mime)]
 
 
-    def remove(self, company_id):
-        if self == None or not File.if_action_allowed(File.ACTIONS['remove'], company_id):
-            return "error"
+    def remove(self, company_id=None):
+        if company_id and not File.if_action_allowed(File.ACTIONS['remove'], company_id):
+            return {"error": 'You haven\'t aproriate rights!'}
+        if self == None:
+            return False
         if self.mime == 'directory':
             list = File.get_all_in_dir_rev(self.id)
             for f in list:
