@@ -9,7 +9,9 @@
             var msg = {type: atype ? atype : 'error', msg: amessage, hash: randomHash()};
 
 
+
             $scope.alerts.push(msg);
+
 
             if (atime && atime > 0) {
                 $timeout(function () {

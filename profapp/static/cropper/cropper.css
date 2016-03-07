@@ -7,33 +7,9 @@
  *
  * Date: 2015-07-05T10:44:58.203Z
  */
-.img-container,
-.img-preview {
-  background-color: #f7f7f7;
-  overflow: hidden;
-  width: 320px;
-  text-align: center;
-}
+
 .btn{
     width: 50px;  height: 50px;
-}
-.rotate{
-            margin-left: -2px;
-        }
-.img-container {
-  min-height: 250px;
-  max-height: 250px;
-  margin-bottom: 4px;
-}
-
-@media (min-width: 320px) {
-  .img-container {
-    min-height: 250px;
-  }
-}
-
-.img-container > img {
-  max-width: 320px;
 }
 
 .cropper-container {

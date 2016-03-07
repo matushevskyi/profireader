@@ -1,6 +1,7 @@
 from flask import g, request, url_for, redirect, flash
 from werkzeug.exceptions import Unauthorized
 from functools import wraps
+import re
 
 # we don't need it still
 #
@@ -29,3 +30,19 @@ from functools import wraps
 #             #return redirect(login_url)
 #             #raise Unauthorized('You must be logged in first')
 #     return decorated
+
+def fileUrl(id, down=False, if_no_file=None):
+    if not id:
+        return if_no_file if if_no_file else ''
+
+    server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', id)
+    return '//file' + server + '.profireader.com/' + id + '/' + ('?d' if down else '')
+
+
+def fileID(url):
+
+    reg = r'^https?://file(?P<server>%{3})\.profireader\.com/(?P<id>%{8}-%{4}-4(%{3})-%{4}-%{12})/.*$' % \
+          ('[0-9a-f]',) * 5
+
+    match = re.match(reg, url)
+    return match.group('id') if match else None

@@ -196,7 +196,6 @@
                     };
                     notok = notok ? notok : function () {
                     };
-                    //debugger;
                     var validationdict = $af.$getValidationDict($scope['model']);
                     try {
                         var dataToSend = callCallback('afBefore' + action, $scope['model']);
