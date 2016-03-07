@@ -180,6 +180,17 @@ body {
   margin-right: -15px;
 }
 /* ---AUTH User---*/
+.reset-pass button {
+  margin-top: 15px;
+  background-color: #24DC54;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 10px 5px;
+}
+.reset-pass button:hover {
+  background-color: #04A52E;
+}
 .logout-now {
   font-size: 13px;
   text-align: center;
@@ -617,13 +628,12 @@ body {
   color: #fff;
   float: left;
   padding: 10px;
-  border-radius: 3px;
 }
 .profile-window {
   border-radius: 3px;
   box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
   border: 1px solid #f5f5f5;
-  background-color: #e1f5fe;
+  background-color: #EAEAEA;
 }
 .profile-window h3 {
   text-align: center;
@@ -750,6 +760,26 @@ body {
   display: inline;
   float: right;
   cursor: pointer;
+}
+/* --- HELP PAGE ---*/
+.help-page h3 {
+  margin-top: 15%;
+  text-align: center;
+}
+.help-page .form-for-message {
+  padding: 5px 15px;
+  border-radius: 3px;
+}
+.help-page .form-for-message input {
+  margin-bottom: 5px;
+}
+.help-page button {
+  margin-top: 10px;
+  background-color: #2ABC18;
+  color: #fff;
+  border: 0;
+  border-radius: 3px;
+  padding: 5px 15px;
 }
 /* ---MEDIA--- */
 @media screen and (max-width: 764px) {
