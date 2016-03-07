@@ -7,12 +7,12 @@
         <h5>{{ _('Help page') }}</h5>
     </div>
     <form class="help-page">
-        <h3>{{ __('Заповніть форму та надішліть нам повідомлення') }}<br>
+        <h3>{{ __('Надішліть нам повідомлення') }}<br>
         <small>{{ __('Адміністратор сайту зв~яжеться з Вами') }}</small></h3>
         <div class="form-for-message col-lg-6 col-lg-offset-3 col-md-6 col-md-offset-3">
-            <input type="email" class="form-control" placeholder="Email">
+            <input type="email" class="form-control" placeholder="Email" value="{{ g.user.profireader_email }}">
             <textarea class="form-control" rows="4" placeholder="Питання та побажання"></textarea>
-    <button class="pull-right" type="submit">Надіслати</button>
+    <button class="pull-right" type="submit">Надіслати <i class="fa fa-paper-plane-o"></i></button>
         </div>
     </form>
 {% endblock portal_content %}
