@@ -65,7 +65,6 @@ def check_rights(*rights_business_rule):
 
     return decorator
 
-
 def convert_col_to_arrays(*args):
     pass
 

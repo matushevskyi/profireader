@@ -237,10 +237,10 @@ class ArticlePortalDivision(Base, PRBase):
         return tags
 
     def add_recently_read_articles_to_session(self):
-        if self.id not in session.get('recently_read_articles', list):
+        if self.id not in session.get('recently_read_articles', []):
             self.read_count += 1
         session['recently_read_articles'] = list(
-            filter(bool, set(session.get('recently_read_articles', list) + [self.id])))
+            filter(bool, set(session.get('recently_read_articles', []) + [self.id])))
 
     portal = relationship('Portal',
                           secondary='portal_division',

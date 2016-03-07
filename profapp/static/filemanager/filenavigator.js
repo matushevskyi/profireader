@@ -92,6 +92,7 @@
             self.error = '';
             self.list = [];
             $http.post(fileManagerConfig.listUrl, data).success(function(resp) {
+
                 self.fileList = [];
                 self.ancestors = resp.data.ancestors;
                 angular.forEach(resp.data.list, function(file) {

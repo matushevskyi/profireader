@@ -180,8 +180,90 @@ body {
   margin-right: -15px;
 }
 /* ---AUTH User---*/
-.auth-input input {
+.logout-now {
+  font-size: 13px;
+  text-align: center;
+  color: #424242;
+}
+.social-icons-style {
+  margin-top: 15px;
+  text-align: center;
+}
+.microsoft-icon {
+  display: inline;
+}
+.microsoft-icon i {
+  color: #26AAE1;
+}
+.google-icon {
+  display: inline;
+  margin-right: 10px;
+}
+.google-icon i {
+  color: #EC4638;
+}
+.linkedin-icon {
+  display: inline;
+}
+.linkedin-icon i {
+  color: #0177B5;
+  margin-right: 10px;
+}
+.facebook-icon {
+  display: inline;
+}
+.facebook-icon i {
+  color: #3B569D;
+  margin-right: 10px;
+}
+.auth-form {
+  padding-top: 31px;
+  margin: 0 auto;
+  display: block;
+  float: none;
+}
+.auth-form h3 {
+  margin: 15px 0 7px 0;
+}
+.login-form-profirider {
+  margin-top: 15px;
+}
+.login-form-profirider input {
+  margin-bottom: 10px;
+}
+.login-form-profirider .sabmit-form {
+  background-color: #24DC54;
+  border: 0;
+  color: #fff;
+  border-radius: 3px;
+  padding: 10px;
   width: 100%;
+}
+.login-form-profirider .sabmit-form:hover {
+  background-color: #04A52E;
+}
+.register-form-profirider {
+  margin-top: 15px;
+}
+.register-form-profirider input {
+  margin-bottom: 10px;
+}
+.register-form-profirider .sabmit-form {
+  background-color: #24DC54;
+  border: 0;
+  color: #fff;
+  border-radius: 3px;
+  padding: 10px;
+  width: 100%;
+}
+.register-form-profirider .sabmit-form:hover {
+  background-color: #04A52E;
+}
+.content-block {
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 30px;
+  margin-top: -1px;
 }
 .auth-window {
   background-size: cover;
@@ -624,6 +706,50 @@ body {
 }
 .name-form {
   margin-top: 12px;
+}
+.flash-message-err {
+  box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
+  margin-bottom: 50px;
+  padding-left: 0;
+}
+.flash-message-err h3 {
+  color: #FF67A0;
+  margin-top: 30px;
+}
+.flash-message-err p {
+  color: #424242;
+}
+.flash-message-err .img-message {
+  padding-left: 0;
+}
+.flash-message-err i {
+  margin-top: 15px;
+  display: inline;
+  float: right;
+  color: #424242;
+  cursor: pointer;
+}
+.flash-message-succsess {
+  box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
+  margin-bottom: 50px;
+  padding-left: 0;
+}
+.flash-message-succsess h3 {
+  color: #A6F284;
+  margin-top: 30px;
+}
+.flash-message-succsess p {
+  color: #424242;
+}
+.flash-message-succsess .img-message {
+  padding-left: 0;
+}
+.flash-message-succsess i {
+  margin-top: 15px;
+  color: #424242;
+  display: inline;
+  float: right;
+  cursor: pointer;
 }
 /* ---MEDIA--- */
 @media screen and (max-width: 764px) {
