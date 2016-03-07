@@ -274,7 +274,12 @@
             self.inprocess = true;
             self.error = '';
             return $http.post(fileManagerConfig.removeUrl+self.model.id, data).success(function(data) {
-                self.defineCallback(data, success, error);
+                if(data.data.error){
+                    self.error = data.data.error
+                }else{
+                   self.defineCallback(data, success, error);
+                }
+
             }).error(function(data) {
                 self.error = data.result && data.result.error ?
                     data.result.error:

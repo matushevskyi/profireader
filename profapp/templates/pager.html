@@ -14,23 +14,12 @@
         <img style="width: 100%"/>
     </div>
     <div class="btn-group">
-        <button ng-disabled="!data.image.image_file_id" ng-click="cropper('zoom', 0.1)" class="btn btn-primary"
-                type="button" title="Zoom In">
-                  <span class="docs-tooltip" data-toggle="tooltip"><span
-                          class="glyphicon glyphicon-zoom-in"></span></span>
-        </button>
-        <button ng-disabled="!data.image.image_file_id" ng-click="cropper('zoom', -0.1)" class="btn btn-primary"
-                type="button"
-                title="Zoom Out">
-                 <span class="docs-tooltip" data-toggle="tooltip"><span
-                         class="glyphicon glyphicon-zoom-out"></span></span>
-        </button>
-        <button ng-if="user_have_company || !cropper_for_copmany" class="btn btn-primary" type="button" value="{{ image_file_url }}"
+        <button ng-if="user_have_company || company.id" class="btn btn-primary" type="button" value="{{ image_file_url }}"
                 ng-click="chooseImage(true, avatar)">
                 <span class="docs-tooltip" data-toggle="tooltip" title="Chose image"><span
                         class="glyphicon glyphicon-folder-open"></span></span>
         </button>
-        <label ng-show="!user_have_company && cropper_for_copmany" class="btn btn-primary btn-upload" for="inputImage" title="Upload image file">
+        <label ng-show="cropper_for_copmany" class="btn btn-primary btn-upload" for="inputImage" title="Upload image file">
             <input type="file" class="sr-only" id="inputImage" name="file" accept="image/*">
             <span class="docs-tooltip" data-toggle="tooltip" title="Import image with Blob URLs">
               <span class="glyphicon glyphicon-upload" style="top:7px!important"></span>

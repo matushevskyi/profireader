@@ -42,20 +42,9 @@ th, td {
         $scope.get_readers = {{ raw_url_for('company.readers_load')|safe }};
 
         {% raw %}
-        $scope.sendData = function (data, setdatafuctions) {
-                $scope.loading = true;
-                $ok($scope.get_readers({company_id: $scope.own_company_id}), data, setdatafuctions).finally(function () {
-                    $scope.loading = false;
-                    $scope.load_contr = true;
-                });
-            };
-
 
         $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-             loadGridData: $scope.sendData,
-             onRegisterApi: function (gridApi) {
-                 $scope.setGridExtarnals(gridApi)
-             },
+             urlLoadGridData: $scope.get_readers({company_id: $scope.own_company_id}),
              columnDefs: [
                  { name: 'profireader_first_name', enableSorting: false,enableCellEdit: false, enableColumnMenu: false, displayName: 'First Name', width: '35%',
                      filter: {type:'input'}
@@ -79,7 +68,11 @@ th, td {
     <div ng-controller="CompanyReaders">
         <h3 style="text-align: center!important;">{{_('Portal readers')}}</h3>
         <div ng-if="!load_contr">{{_('Loading...')}}</div>
-        <div class="grid" id="grid1" ui-grid-edit ui-grid-pagination ui-grid="gridOptions1" ></div>
+        <div class="grid" id="grid1" ui-grid-edit ui-grid-pagination ui-grid="gridOptions1" >
+            <div class="well grid-loading" ng-show="loading">
+              <i class="fa fa-spin fa-spinner"></i><div>Data Loading...</div>
+            </div>
+        </div>
     </div>
 {% endblock portal_content %}
 

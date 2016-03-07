@@ -41,10 +41,13 @@
 
 
             $scope.loadMaterialDetails = function (data, callback) {
+                $scope.loading = true
                 $ok('', data, function (resp) {
                     callback(resp.portals);
                     $scope.data = resp;
-                }).finally();
+                }).finally(function(){
+                    $scope.loading = false
+                });
 
             };
 
@@ -156,7 +159,11 @@
         <hr/>
 
         <h2>{{ _('Material is published or can be published at portals') }}</h2>
-        <div class="grid" id="grid1" ui-grid-edit ui-grid="gridOptions1"></div>
+        <div class="grid" id="grid1" ui-grid-edit ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+              <i class="fa fa-spin fa-spinner"></i><div>Data Loading...</div>
+            </div>
+        </div>
         {% endraw %}
 
     </div>

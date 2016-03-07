@@ -1,5 +1,5 @@
 <script>
-    var favorite = {{ favorite|tojson}};
+    var favorite = {{ favorite}};
     function add_delete_favorite(boolean) {
         var article_portal_division_id = {{ article['id']|tojson }};
         $.ajax({

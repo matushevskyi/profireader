@@ -14,6 +14,8 @@
 
             $scope.url_back = {{ raw_url_for('company.show')|safe }};
             $scope.data = {};
+            $scope.user_have_company = '{{ user_comp }}'=== 'True'? true: null;
+            $scope.cropper_for_copmany = true;
 
             $scope.cancel = function () {
                 window.location.href = $scope.url_back();
