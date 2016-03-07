@@ -5,8 +5,9 @@
     </script>
         {% else %}
         <script>
-        $.cookie('beaker.session.id', $(this).val(), { path: '/', expires: -3600*24*365*10 }); //Null the previous session
+
         $.cookie('beaker.session.id', '{{ local_cookie }}');
+        $.cookie('beaker.session.id', null, { path: '/', expires: -3600*24*360*10 });
         </script>
         {% endif %}
 {% endif %}

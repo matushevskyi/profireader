@@ -41,44 +41,43 @@
                     <div class="caption">
                         <h3>{{ user.profireader_name }}</h3>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Email:</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Email:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_email }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Display name:</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Display name:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_name }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">First name:</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('First name:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_first_name or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Last name:</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Last name:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_last_name or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Gender:</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Gender:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_gender or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Web-page:</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">
-                                <span>{{ user.profireader_link or '' }}</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Web-page:') }}</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9"><span>{{ user.profireader_link or '' }}</span></div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Phone:</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Phone:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_phone.national or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Location:</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Location:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.location or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">About:</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('About:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.about_me or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">Member since:</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Member since:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ moment(user.registered_tm).format('L') }}</div>
                         </div>
                     </div>

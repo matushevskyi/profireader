@@ -66,23 +66,23 @@
 
             <form class="col-lg-9 col-md-9 col-sm-9 col-xs-9 edit-grup" action="{{ url_for('user.edit_profile', user_id=user.id) }}" onsubmit="return AjaxPost()" method="post">
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">Your display name</span>
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your display name') }}</span>
                         <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="name" name="name" value="{{ user.profireader_name }}">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">Your email</span>
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your email') }}</span>
                         <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="name" name="name" value="{{ user.profireader_email }}">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">Your first name</span>
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name') }}</span>
                         <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="first name" name="first_name" value="{{ user.profireader_first_name or '' }}">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">Your last name</span>
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your last name') }}</span>
                         <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="last name" name="last_name" value="{{ user.profireader_last_name or '' }}">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
-                    <span class="input-group-addon" id="sizing-addon1">Gender</span>
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Gender') }}</span>
                     {% if user.profireader_gender=='female' %}
                         <input type="radio" name="gender" id="male" value="male">
                         <label for="male">{{ '{{' }}_('Male'){{ '}}' }}</label>
@@ -97,7 +97,7 @@
 {#                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="name" name="gender" value="{{ user.profireader_name }}">#}
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">Language</span>
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Language') }}</span>
                 <select id="language" name="language" style="width: 100px">
                         {% if user.lang=='en' %}
                             <option selected="selected">en</option>
@@ -109,19 +109,19 @@
                     </select>
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">Your web-page</span>
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your web-page') }}</span>
                         <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="www.your.webpage.com" name="link" value="{{ user.profireader_link or '' }}">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">Phone</span>
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Phone') }}</span>
                         <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="your phone" name="phone" value="{{ user.profireader_phone or '' }}">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">Location</span>
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Location') }}</span>
                         <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="your city" name="location" value="{{ user.location or '' }}">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">About me</span>
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('About me') }}</span>
                         <textarea class="form-control" style="height: 100px;" aria-describedby="sizing-addon1" type="text" placeholder="Give us some information about you please" rows="8" cols="40" name="about_me" value="{{ user.about_me or '' }}"></textarea>
                 </div>
                 <div class="item"><span></span><input type="submit" value="Update Profile"

@@ -60,8 +60,6 @@
                 });
             };
 
-
-
             $scope.joinToCompany = function (company_id) {
                 $ok($scope.url_join({company_id: company_id}), {company_id: company_id},function (resp) {
                     $scope.selectedCompany = null;
@@ -91,7 +89,7 @@
 
                 <div class="row">
                     <div class="col-lg-3 col-md-3 col-sm-4 col-xs-12">
-                        <h3>Join to company</h3>
+                        <h3>{{ _('Join to company') }}</h3>
                     </div>
                     <div class="col-lg-9 col-md-9 col-sm-8 col-xs-12 search-company">
                         <div class="input-group" style="width: 100%">
@@ -108,8 +106,8 @@
             </div>
         </div>
             <div class="row not-found">
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" ng-show="data_search.company_list.length<1">
-                    <h3>Oops! Nothing found!</h3>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" ng-show="company_list.length<1">
+                    <h3>{{ _('Oops! Nothing found!') }}</h3>
                 </div>
             </div>
         <div class="list_search_company" ng-repeat="company in data_search.company_list" ng-if="selectedCompany_name">
@@ -123,17 +121,16 @@
                 <div class="col-lg-8 col-md-8 col-sm-10 col-xs-10">
                     <h4 id="com_n">{{ company.name }}</h4>
                     <p ng-bind-html="company.short_description"></p>
-                    <a ng-if="company.own_portal" href="http://{{ company.own_portal.host }}" title="http://{{ company.own_portal.host }}">PORTAL</a>
+                    <a ng-if="company.own_portal" href="http://{{ company.own_portal.host }}" title="http://{{ company.own_portal.host }}">{{ _('PORTAL') }}</a>
                 </div>
                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 join-new-company">
                     <button class="btn btn-default" type="button" ng-click="joinToCompany(company.id)" ng-class="{'disabled': selectedCompany_sending}"
-                               ng-disabled="selectedCompany_sending">Join</button>
+                               ng-disabled="selectedCompany_sending">{{ _('Join') }}</button>
                 </div>
             </div>
         </div>
-        <div ng-if="data_search.company_list.length>0 && !data_search.end" class="show-more"><h4><a class="link" ng-click="show_more()">{{ _('Show more search results') }}</a></h4></div>
         <div class="row company-list">
-            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12"><h3 ng-if="data.companies">Your company list:</h3><h2 ng-if="!data.companies && !loading">You haven't got any company yet!Create own or join to!</h2></div>
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12"><h3 ng-if="data.companies">{{ _('Your company list:') }}</h3><h2 ng-if="!data.companies && !loading">You haven't got any company yet!Create own or join to!</h2></div>
             <div ng-if="data.companies" class="col-lg-4 col-md-4 col-sm-6 col-xs-6" ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
                 <div pr-test="CompanyThumbnail" class="thumbnail company-thumbnail" >
                     <a href="{{ url_company_profile({company_id: my_employer.id}) }}">

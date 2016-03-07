@@ -33,14 +33,14 @@
     <div ng-controller="reader_edit_profile" ng-model="data">
         <div class="container" af af-after-save="afterSave" af-after-load="afterLoad" ng-model="data">
             <div class="row name-subscriptions">
-                <div class="col-lg-3 pull-left"><h5>Configure edit</h5></div>
+                <div class="col-lg-3 pull-left"><h5>{{ _('Configure edit') }}</h5></div>
             </div>
             <div class="row menu-subscriptions">
-                <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 line-subsc">Division name</div>
-                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 line-subsc center">Show articles</div>
-                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 line-subsc center">Show comments</div>
-                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 line-subsc center">Show favorite comments</div>
-                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 center">Show liked comments</div>
+                <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 line-subsc">{{ _('Division name') }}</div>
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 line-subsc center">{{ _('Show articles') }}</div>
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 line-subsc center">{{ _('Show comments') }}</div>
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 line-subsc center">{{ _('Show favorite comments') }}</div>
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 center">{{ _('Show liked comments') }}</div>
             </div>
             <form>
                 <div class="row line-subsc-inside" ng-repeat="division in data.divisions">

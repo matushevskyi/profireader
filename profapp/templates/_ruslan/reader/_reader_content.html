@@ -51,11 +51,11 @@
                     <p>{{ article.short}}</p>
                 </div>
                 <div class="row">
-                    <div pr-test="ArticleIsFavorite" class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5">
-                        <i ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i ng-if="article.is_favorite" class="fa fa-heart"></i> Favorite
+                    <div class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5">
+                        <i ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i ng-if="article.is_favorite" class="fa fa-heart"></i> {{ _('Favorite') }}
                     </div>
                     <div class="col-lg-5 col-md-5 col-sm-5 col-xs-5">
-                        <span pr-test="Share" class="pull-right"><i class="fa fa-share"></i> Share</span>
+                        <span class="pull-right"><i class="fa fa-share"></i>{{ _('Share') }}</span>
                     </div>
                 </div>
                 <div class="item-additional-info">
