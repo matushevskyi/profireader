@@ -628,7 +628,6 @@ body {
   color: #fff;
   float: left;
   padding: 10px;
-  border-radius: 3px;
 }
 .profile-window {
   border-radius: 3px;
@@ -761,6 +760,26 @@ body {
   display: inline;
   float: right;
   cursor: pointer;
+}
+/* --- HELP PAGE ---*/
+.help-page h3 {
+  margin-top: 15%;
+  text-align: center;
+}
+.help-page .form-for-message {
+  padding: 5px 15px;
+  border-radius: 3px;
+}
+.help-page .form-for-message input {
+  margin-bottom: 5px;
+}
+.help-page button {
+  margin-top: 10px;
+  background-color: #2ABC18;
+  color: #fff;
+  border: 0;
+  border-radius: 3px;
+  padding: 5px 15px;
 }
 /* ---MEDIA--- */
 @media screen and (max-width: 764px) {

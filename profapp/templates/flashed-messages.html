@@ -6,7 +6,7 @@
 
         $scope.add_message = function (amessage, atype, atime) {
 
-            var msg = {type: atype ? atype : 'warning', msg: amessage, hash: randomHash()};
+            var msg = {type: atype ? atype : 'error', msg: amessage, hash: randomHash()};
 
 
             $scope.alerts.push(msg);
@@ -35,9 +35,34 @@
 
     }]);
 </script>
+
 {#  TODO: MY BY OZ: #}
-<div ng-controller="message-controller" id="controller-message-controller" style="position: fixed; top: 0px;z-index: 1; width: 1000px; ">
+<div ng-controller="message-controller" id="controller-message-controller"
+     style="position: fixed; margin-top: 120px;">
     {% raw %}
-    <uib-alert ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">{{alert.msg}}</uib-alert>
+
+    <div ng-repeat="alert in alerts" class="row">
+        <div ng-if="alert.type=='success'" class="col-lg-offset-3 col-lg-6 flash-message-succsess">
+            <div class="col-lg-4 img-message">
+                <img src="../../static/images/success.png" alt="success">
+            </div>
+            <div class="col-lg-8">
+                <i class="fa fa-times"></i>
+                <h3>{{ _(alert.type + '!') }}</h3>
+                <p>{{ alert.msg }}</p>
+            </div>
+        </div>
+        <div ng-if="alert.type=='error'" class="col-lg-offset-3 col-lg-6 flash-message-err">
+            <div class="col-lg-4 img-message">
+                <img src="../../static/images/error.png" alt="error">
+            </div>
+            <div class="col-lg-8">
+                <i class="fa fa-times" ng-click="closeAlert($index)"></i>
+                <h3>{{ _(alert.type + '!') }}</h3>
+                <p>{{ alert.msg }}</p>
+            </div>
+        </div>
+
+    </div>
     {% endraw %}
 </div>
