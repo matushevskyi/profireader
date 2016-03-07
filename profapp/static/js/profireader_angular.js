@@ -1781,7 +1781,7 @@ function cleanup_html(html) {
         '^table$': {allow: '^(tr)$', attributes: {whattr: true}},
         '^tr$': {allow: '^(td|th)$', attributes: {}},
         '^td$': {allow: normaltags, attributes: {whattr: true}},
-        '^a$': {allow: '^(span)$', attributes: {'^href$': '.*'}},
+        '^a$': {allow: '^(span)$', attrсibutes: {'^href$': '.*'}},
         '^img$': {allow: false, attributes: {'^src$': '.*'}},
         '^br$': {allow: false, attributes: {}},
         '^div$': {allow: normaltags, attributes: {}}
