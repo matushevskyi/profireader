@@ -273,7 +273,7 @@ def update():
                            company = Company())
 
 
-@company_bp.route('/profile/<string:company_id>/', methods=['GET'])
+@company_bp.route('/<string:company_id>/profile/', methods=['GET'])
 @tos_required
 @login_required
 # @check_rights(simple_permissions([]))
@@ -285,7 +285,7 @@ def profile(company_id=None):
 
 
 @company_bp.route('/create/', methods=['POST'])
-@company_bp.route('/profile/<string:company_id>/', methods=['POST'])
+@company_bp.route('/<string:company_id>/profile/', methods=['POST'])
 @login_required
 @ok
 def load(json, company_id=None):
@@ -321,7 +321,7 @@ def load(json, company_id=None):
                 if company_id is None:
                     company.setup_new_company()
                 company.save().get_client_side_dict()
-                imgdataContent = json['image']['dataContent']
+                imgdataContent = json['image']['uploaded']['dataContent']
                 image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
                 bb = base64.b64decode(image_data)
                 new_comp = db(Company, id=company.id).first()

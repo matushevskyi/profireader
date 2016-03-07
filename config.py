@@ -38,6 +38,7 @@ class Config(object):
                               '<profireader.service@gmail.com>'
     PROFIREADER_ADMIN = os.environ.get('PROFIREADER_ADMIN') or 'Oles'
     PROFIREADER_ADMINS = secret_data.PROFIREADER_ADMINS
+    WTF_CSRF_ENABLED = False
 
     # Application threads. A common general assumption is
     # using 2 per available processor cores - to handle

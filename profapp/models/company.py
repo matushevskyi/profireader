@@ -32,7 +32,11 @@ class Company(Base, PRBase):
     __tablename__ = 'company'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     name = Column(TABLE_TYPES['name'], unique=True, nullable=False, default='')
+    # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
+
+
     logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
+
     journalist_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
     # corporate_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
     system_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
@@ -103,7 +107,7 @@ class Company(Base, PRBase):
         ret = super().validate(is_new)
 
         if not re.match('[^\s]{3,}', self.name):
-            ret['notices']['name'] = 'pls enter a bit longer name'
+            ret['errors']['name'] = 'pls enter a bit longer name'
 
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)

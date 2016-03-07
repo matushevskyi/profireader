@@ -3,11 +3,8 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_articles.html' %}
+    {#    {% include '_ruslan/partials/_header_files_crop.html' %}#}
 {% endblock head %}
-
-{% block portal_base %}
-    {% include 'partials/portal_base_Profireader_auth_user.html' %}
-{% endblock portal_base %}
 
 {% block portal_content %}
     {% block company_base %}
@@ -16,7 +13,7 @@
     {% from 'macros.html' import scripts %}
     {{ scripts(names=['croper']) }}
     <script>
-        module.controller('CompanyProfile', ['$scope', function ($scope) {
+        module.controller('CompanyProfile', function ($scope, $timeout) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');
             $scope.user = {{g.user_dict | tojson | safe}};
 
@@ -31,7 +28,7 @@
             $scope.data = {};
             $scope.rights_user_in_company = {{rights_user_in_company | tojson | safe}};
 
-            $scope.edit = $scope.company.id ? false: true;
+            $scope.edit = $scope.company.id ? false : true;
 
             $scope.go_to_portal = function (host) {
                 window.location.href = 'http://' + host;
@@ -54,6 +51,9 @@
             $scope.change = function () {
                 $scope.edit = $scope.rights_user_in_company['COMPANY_EDIT_PROFILE'] ? true : false;
                 $scope.save = true
+                $timeout(function () {
+                    angular.element(document.querySelector('#fileInput')).on('change', handleFileSelect);
+                });
             };
 
             $scope.afterSave = function (resp, deff) {
@@ -74,11 +74,47 @@
             $scope.afterLoad = function (resp, deff) {
                 $scope.edit_rights = $scope.rights_user_in_company['COMPANY_EDIT_PROFILE']
                 deff(resp);
-                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
+{#                $scope.logo_file_url = fileUrl(resp['logo_file_id']);#}
+                $scope.crop = {
+                    'file_id': resp['logo_file_id'],
+                    'coordinates': {
+                        'width': 100,
+                        'height': 100,
+                        'y': 10,
+                        'x': 20
+                    },
+                    'minimal': 0.1,
+                    'aspect': 0.1,
+                    'upload': true,
+                    'browse': $scope.company.id,
+                    'noImage': "//static.profireader.com/static/front/img/profi.png",
+                    'urls': {}
+                }
+            };
+            $scope.myImage = '';
+            $scope.myCroppedImage = '';
+
+            $scope.cropperChanged = function () {
+                console.log($scope.$dataURI);
             };
 
-        }])
-        ;
+            if (!$scope.company.id) {
+                $scope.change();
+                $scope.edit = true;
+            }
+
+            var handleFileSelect = function (evt) {
+                var file = evt.currentTarget.files[0];
+                var reader = new FileReader();
+                reader.onload = function (evt) {
+                    $scope.$apply(function ($scope) {
+                        $scope.myImage = evt.target.result;
+                    });
+                };
+                reader.readAsDataURL(file);
+            };
+
+        });
     </script>
     {% raw %}
     <div ng-controller="CompanyProfile">
@@ -91,26 +127,36 @@
 
                     <img pr-image="company.logo_file_id" alt="image" ng-show="!edit">
 
-                    <div ng-if="edit">
-                        <div ng-model="data.image" pr-crop pr-company-id="{{ company.id }}"></div>
+                    <div style="width: 400px; height: 400px;" ng-if="edit">
+                        <div pr-crop="crop"></div>
                     </div>
+                    {{ crop.file_id }}<br/>
+                    {{ crop.coordinates }}<br/>
+                    {{ crop.zoom }}<br/>
+
                 </div>
 
                 <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12 edit-company">
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                         <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                ng-if="company.own_portal" disabled ng-click="portal_update(company.id, company.own_portal.id)
-                                ">{{_('Portal
-                            profile') }}
+                                ng-if="company.own_portal && company.id" disabled ng-click="portal_update(company.id,
+                                company.own_portal.id)
+                                ">{{_('Portal profile') }}
                         </button>
                         <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                ng-if="!company.own_portal" ng-click="portal_create(company.id)">{{ _('Launch
-                            portal') }}
+                                ng-if="!company.own_portal && company.id" ng-click="portal_create(company.id)">{{
+                            _('Launch portal') }}
                         </button>
-                        <button ng-show="save" class="btn btn-default save-profile pull-right border-radius"
+                        <button ng-if="company.id && save" class="btn btn-default save-profile pull-right border-radius"
                                 type="button" ng-click="$af.save(data)"
                                 ng-disabled="!$af.isActionAllowed(data, 'save') "
                         >{{ _('Save profile') }}
+                        </button>
+                        <button ng-if="!company.id && save" class="btn btn-default save-profile pull-right
+                        border-radius"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save') "
+                        >{{ _('Create company') }}
                         </button>
                         <button class="btn btn-default edit-profile pull-right border-radius" type="button"
                                 ng-click="change()" ng-if="edit_rights && !save">{{ _('Edit profile') }}
