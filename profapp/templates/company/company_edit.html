@@ -51,7 +51,13 @@
             <div class="row">
                 <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12 image-company-profile create-img">
                     <div style="width: 400px;">
-                        <div ng-model="data.image" pr-crop></div>
+                        <div ng-model="data.image"
+                             pr-crop
+                             pr-crop-aspect="0.33"
+                             pr-crop-upload
+                             pr-crop-default-company-id="company_id"
+                             pr-crop-nothing-selected="//static.profireader.com/static/front/img/profi.png"
+                             pr-crop-urls="//static.profireader.com/static/front/img/profi.png"></div>
                     </div>
                 </div>
                 <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12 edit-company">

@@ -274,7 +274,7 @@ def update():
                            company = Company())
 
 
-@company_bp.route('/profile/<string:company_id>/', methods=['GET'])
+@company_bp.route('/<string:company_id>/profile/', methods=['GET'])
 @tos_required
 @login_required
 # @check_rights(simple_permissions([]))
@@ -286,7 +286,7 @@ def profile(company_id=None):
 
 
 @company_bp.route('/create/', methods=['POST'])
-@company_bp.route('/profile/<string:company_id>/', methods=['POST'])
+@company_bp.route('/<string:company_id>/profile/', methods=['POST'])
 @login_required
 @ok
 def load(json, company_id=None):

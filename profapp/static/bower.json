@@ -7,7 +7,7 @@
     "angular-ui-tinymce": "0.0.10",
     "angular-animate": "~1.4.0",
     "angular-ui-grid": "3.0.7",
-    "cropper": "~1",
+    "cropper": "~2",
     "bootstrap":"3.3.6",
     "jquery":"2.1.4", 
     "ngImgCrop": "~0.3.2",

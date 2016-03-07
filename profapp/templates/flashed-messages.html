@@ -6,10 +6,13 @@
 
         $scope.add_message = function (amessage, atype, atime) {
 
+            console.log(amessage, atype, atime)
+
             var msg = {type: atype ? atype : 'warning', msg: amessage, hash: randomHash()};
 
 
             $scope.alerts.push(msg);
+
 
             if (atime && atime > 0) {
                 $timeout(function () {
