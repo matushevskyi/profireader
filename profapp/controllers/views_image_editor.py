@@ -68,11 +68,13 @@ def image_editor(img_id):
                            image=file.url()
                            )
 
+
 @image_editor_bp.route('/cropped/<string:id>')
 def cropped(id):
     return render_template('cropped_image.html',
                            image=file_query(File, id).url()
                            )
+
 
 @image_editor_bp.route('/get_file')
 def get_file():

@@ -515,7 +515,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     def load_user_manager(user_id):
         return g.db.query(User).get(user_id)
 
-    csrf.init_app(app)
+    # csrf.init_app(app)
 
     # read this: http://stackoverflow.com/questions/6036082/call-a-python-function-from-jinja2
     # app.jinja_env.globals.update(flask_endpoint_to_angular=flask_endpoint_to_angular)

@@ -65,8 +65,6 @@ def portal_and_settings(portal):
 #                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
-
-
 # TODO OZ by OZ: portal filter, move portal filtering to decorator
 
 @front_bp.route('details/<string:article_portal_division_id>')
@@ -93,8 +91,8 @@ def details(article_portal_division_id):
              ArticlePortalDivision.portal_division_id.in_(
                  db(PortalDivision.id).filter(PortalDivision.portal_id == article.division.portal_id))
              )).order_by(ArticlePortalDivision.cr_tm.desc()).limit(5).all()
-    favorite = False; #article.check_favorite_status(user_id=g.user.id)
-    liked = 0; #article.article_is_liked(g.user.id, article_portal_division_id)
+    favorite = article.check_favorite_status(user_id=g.user.id)
+    liked = article.article_is_liked(g.user.id, article_portal_division_id)
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
