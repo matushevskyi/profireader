@@ -6,11 +6,9 @@
 <script>
 
     module.controller('list_reader', function ($scope, $ok, $timeout) {
-            $scope.next_page = 1;
-{#            $scope.article_details = {{ raw_url_for('article.details_reader') |safe}}#}
             $scope.favorite = {{ favorite }}
             $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
-
+            {#    into this function put url    #}
             $scope.loadNextPage('')
 
         });
@@ -40,7 +38,7 @@
                     </div>
                 </div>
                 <a target="_blank" type="link" href="//{{ article.portal.host}}/details/{{ article.id }}">
-                    <img class="list-reader-image" src="{{ fileUrl(article.image_file_id) }}" alt="img">
+                    <img class="list-reader-image" pr-image="article.image_file_id" alt="img">
                 </a>
                 <h3 class="item-title">
                     <a target="_blank"
@@ -53,11 +51,11 @@
                     <p>{{ article.short}}</p>
                 </div>
                 <div class="row">
-                    <div pr-test="ArticleIsFavorite" class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5">
-                        <i ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i ng-if="article.is_favorite" class="fa fa-heart"></i> Favorite
+                    <div class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5">
+                        <i ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i ng-if="article.is_favorite" class="fa fa-heart"></i> {{ _('Favorite') }}
                     </div>
                     <div class="col-lg-5 col-md-5 col-sm-5 col-xs-5">
-                        <span pr-test="Share" class="pull-right"><i class="fa fa-share"></i> Share</span>
+                        <span class="pull-right"><i class="fa fa-share"></i>{{ _('Share') }}</span>
                     </div>
                 </div>
                 <div class="item-additional-info">

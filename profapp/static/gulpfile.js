@@ -78,6 +78,11 @@ gulp.task('install_tinymce', function () {
         .pipe(gulp.dest(dst + 'tinymce/'));
 });
 
+gulp.task('install_angular_crop', function () {
+    return gulp.src([src + 'ngImgCrop/compile/minified/*'])
+        .pipe(gulp.dest(dst + 'angular-crop/'));
+});
+
 gulp.task('install_angular_xeditable', function () {
     return gulp.src([src + 'angular-xeditable/dist/css/xeditable.css', src + 'angular-xeditable/dist/js/xeditable.js'])
         .pipe(gulp.dest(dst + 'angular-xeditable/'));
@@ -105,5 +110,5 @@ gulp.task('less', ['less_compile'], function() {
 
 gulp.task('default', ['clean', 'install_fileuploader', 'install_angular', 'install_angular_translate', 'install_angular_cookies', 
 'install_angular_ui_tinymce', 'install_tinymce', 'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
-'install_slider','install_bootstrap']);
+'install_slider','install_bootstrap', 'install_angular_crop']);
 

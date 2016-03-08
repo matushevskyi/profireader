@@ -20,7 +20,7 @@
         </div>
         <div class="item-additional-info">
             <a href="//{{ article['portal']['host']|safe }}/_c/{{ article['company']['id']|safe }}/{{ article['company']['name']|safe }}" class="item-company">{{ article['company']['name']|safe }}</a>
-            <div class="item-read_count">Read: {{ article['read_count'] }}</div>
+            <div class="item-read_count">{{ _('Read:') }} {{ article['read_count'] }}</div>
             <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
         </div>
         <div class="bottom-hide"></div>
