@@ -45,11 +45,13 @@ def filemanager():
     # {'name': 'My personal files',
     # 'icon': current_user.gravatar(size=18)}}
     library = []
+    can_upload = True
     for user_company in g.user.employer_assoc:
         # TODO VK by OZ: we need function that get all emploees with specific right
         # Company.get_emploees('can_read', status = 'active')
         # Company.get_emploees(['can_read', 'can_write'], status = ['active','banned'])
         # similar function User.get_emploers ...
+        can_upload = user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE)
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE):
             library.append({'id': user_company.employer.journalist_folder_file_id,
             'name': "%s files" % (user_company.employer.name,), 'icon': ''})
@@ -81,9 +83,9 @@ def filemanager():
 # @parent_folder
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
-    company = company_id=db(Company, journalist_folder_file_id=ancestors[0]).first()
+    company = db(Company, journalist_folder_file_id=ancestors[0]).first()
     list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=company.id)
-    return {'list': list, 'ancestors': ancestors}
+    return {'list': list, 'ancestors': ancestors, 'can_upload': File.if_action_allowed('upload', company.id)}
 
 
 @filemanager_bp.route('/search/', methods=['POST'])
@@ -174,11 +176,13 @@ def send(parent_id):
     root = parent.root_folder_id
     if parent.mime == 'root':
         root = parent.id
+    company = db(Company, journalist_folder_file_id=root).one()
+    if File.if_action_allowed('upload', company.id) == False:
+        return jsonify({'error': True })
     data = request.form
     uploaded_file = request.files['file']
     name = File.get_unique_name(urllib.parse.unquote(uploaded_file.filename).replace(
         '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), data.get('ftype'), parent.id)
-    company = db(Company, journalist_folder_file_id=root).one()
     data.get('ftype')
     if re.match('^video/.*', data.get('ftype')):
         body = {'title': uploaded_file.filename,
