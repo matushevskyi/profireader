@@ -242,7 +242,7 @@ body {
 .login-form-profirider input {
   margin-bottom: 10px;
 }
-.login-form-profirider .sabmit-form {
+.login-form-profirider .submit-form {
   background-color: #24DC54;
   border: 0;
   color: #fff;
@@ -250,7 +250,7 @@ body {
   padding: 10px;
   width: 100%;
 }
-.login-form-profirider .sabmit-form:hover {
+.login-form-profirider .submit-form:hover {
   background-color: #04A52E;
 }
 .register-form-profirider {
