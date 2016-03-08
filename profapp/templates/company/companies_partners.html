@@ -7,10 +7,6 @@
     {% include '_ruslan/partials/_header_files_grid.html' %}
 {% endblock head %}
 
-{% block portal_base %}
-    {% include 'partials/portal_base_Profireader_auth_user.html' %}
-{% endblock portal_base %}
-
 {% block portal_content %}
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}
@@ -24,16 +20,13 @@
         $scope.url_company_partner_details = {{ raw_url_for('portal.company_partner_update')| safe}};
 
         {% raw %}
-        $scope.sendData = function (grid_data, callback) {
-            return $ok($scope.url_companies_partners, grid_data, callback);
-            };
 
         $scope.portal_link = function(link){
             return 'http://' + link;
         };
 
         $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                        loadGridData: $scope.sendData,
+                        urlLoadGridData: $scope.url_companies_partners,
                         columnDefs: [
                              {name: 'member.company.name', type: 'link',img:'member.company.logo_file_id', href: 'url_company_partner_details({employeer_id: row.entity.company_id,member_id:row.entity.member.company.id})'},
                              {name: 'member.status'},
@@ -47,7 +40,11 @@
     {% raw %}
 
        <div ng-controller="company_partners">
-        <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1"></div>
+        <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+              <i class="fa fa-spin fa-spinner"></i><div>Data Loading...</div>
+            </div>
+        </div>
         </div>
     {% endraw %}
 {% endblock portal_content %}

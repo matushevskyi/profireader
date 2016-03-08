@@ -14,6 +14,8 @@
 
             $scope.url_back = {{ raw_url_for('company.show')|safe }};
             $scope.data = {};
+            $scope.user_have_company = '{{ user_comp }}'=== 'True'? true: null;
+            $scope.cropper_for_copmany = true;
 
             $scope.cancel = function () {
                 window.location.href = $scope.url_back();
@@ -39,76 +41,82 @@
              af-after-save="afterSave"
              ng-model="data">
             <div class="row company">
-                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12"><h3>Create a new company</h3></div>
+                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12"><h3>{{ _('Create a new company') }}</h3></div>
                 <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 create-new-company">
-
-                    <button class="btn btn-default save-profile pull-right border-radius" type="button"
-                            ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save new
-                        profile') }}
+                    <button class="btn btn-default save-profile pull-right border-radius"
+                            type="button"
+                            ng-click="$af.save(data)"
+                            ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save new profile') }}
                     </button>
                 </div>
             </div>
             <div class="row">
                 <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12 image-company-profile create-img">
                     <div style="width: 400px;">
-                        <div ng-model="data.image" pr-crop></div>
+                        <div ng-model="data.image"
+                             pr-crop
+                             pr-crop-aspect="0.33"
+                             pr-crop-upload
+                             pr-crop-default-company-id="company_id"
+                             pr-crop-nothing-selected="//static.profireader.com/static/front/img/profi.png"
+                             pr-crop-urls="//static.profireader.com/static/front/img/profi.png"></div>
                     </div>
                 </div>
                 <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12 edit-company">
                     <div class="edit-block col-lg-12">
-                        <div class="col-lg-2">Name:</div>
+                        <div class="col-lg-2">{{ _('Name:') }}</div>
                         <div class="col-lg-10 edit-data">
                             <input type="text" class="form-control border-radius" id="basic-url"
                                    aria-describedby="basic-addon3" pr-validation-answer="data_validation:name"
                                    ng-model="data.name">
                         </div>
-                        <div class="col-lg-2">Country:</div>
+                        <div class="col-lg-2">{{ _('Country:') }}</div>
                         <div class="col-lg-10 edit-data">
                             <input type="text" class="form-control border-radius" id="basic-url"
                                    aria-describedby="basic-addon3" pr-validation-answer="data_validation:country"
                                    ng-model="data.country">
                         </div>
-                        <div class="col-lg-2">Region:</div>
+                        <div class="col-lg-2">{{ _('Region:') }}</div>
                         <div class="col-lg-10 edit-data">
                             <input type="text" class="form-control border-radius" id="basic-url"
                                    aria-describedby="basic-addon3" pr-validation-answer="data_validation:address"
                                    ng-model="data.region">
                         </div>
-                        <div class="col-lg-2">City:</div>
+                        <div class="col-lg-2">{{ _('City:') }}</div>
                         <div class="col-lg-10 edit-data">
                             <input type="text" class="form-control border-radius" value="{{ company.city }}"
                                    id="basic-url" aria-describedby="basic-addon3" ng-model="data.city">
                         </div>
-                        <div class="col-lg-2">Postcode:</div>
+                        <div class="col-lg-2">{{ _('Postcode:') }}</div>
                         <div class="col-lg-10 edit-data">
                             <input type="text" class="form-control border-radius" value="{{ company.postcode }}"
                                    id="basic-url" aria-describedby="basic-addon3" ng-model="data.postcode">
                         </div>
-                        <div class="col-lg-2">Address:</div>
+                        <div class="col-lg-2">{{ _('Address:') }}</div>
                         <div class="col-lg-10 edit-data">
                             <input type="text" class="form-control border-radius" id="basic-url"
                                    aria-describedby="basic-addon3" pr-validation-answer="data_validation:address"
                                    ng-model="data.address">
                         </div>
-                        <div class="col-lg-2">Phone:</div>
+                        <div class="col-lg-2">{{ _('Phone:') }}</div>
                         <div class="col-lg-10 edit-data">
                             <input type="text" class="form-control border-radius" id="basic-url"
                                    aria-describedby="basic-addon3" pr-validation-answer="data_validation:phone"
                                    ng-model="data.phone">
                         </div>
-                        <div class="col-lg-2">Fax:</div>
+                        <div class="col-lg-2">{{ _('Fax:') }}</div>
                         <div class="col-lg-10 edit-data">
                             <input type="text" class="form-control border-radius" id="basic-url"
                                    aria-describedby="basic-addon3" pr-validation-answer="data_validation:phone"
                                    ng-model="data.phone2">
                         </div>
-                        <div class="col-lg-2">Email:</div>
+                        <div class="col-lg-2">{{ _('Email:') }}</div>
                         <div class="col-lg-10 edit-data">
                             <input type=text class="form-control border-radius" id="basic-url"
                                    aria-describedby="basic-addon3" pr-validation-answer="data_validation:email"
                                    ng-model="data.email">
                         </div>
-                        <div class="col-lg-3">Lang and long:</div>
+                        <div class="col-lg-3">{{ _('Lang and long:') }}</div>
                         <div class="col-lg-4 edit-data">
                             <input type="text" class="form-control border-radius" id="basic-url"
                                    aria-describedby="basic-addon3" pr-validation-answer="data_validation:lon"
@@ -124,10 +132,10 @@
                 </div>
             </div>
             <div>
-                <h3>Short description:</h3>
+                <h3>{{ _('Short description:') }}</h3>
                 <textarea ui-tinymce="tinymceImageOptions" pr-validation-answer="data_validation:short_description"
                           ng-model="data.short_description"></textarea>
-                <h3>About company:</h3>
+                <h3>{{ _('About company:') }}</h3>
                 <textarea ui-tinymce="tinymceImageOptions" pr-validation-answer="data_validation:about"
                           ng-model="data.about"></textarea>
             </div>

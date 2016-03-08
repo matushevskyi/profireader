@@ -1,12 +1,6 @@
 {% extends "index_layout.html" %}
 {% block title %}Profireader{% endblock title %}
-{% block head %}
-    {{ super() }}
-{% endblock head %}
 
-{% block portal_base %}
-    {% include 'partials/portal_base_Profireader_auth_user.html' %}
-{% endblock portal_base %}
 {% block content %}
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}

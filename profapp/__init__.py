@@ -28,6 +28,7 @@ from .models.translate import TranslateTemplate
 from .models.tools import HtmlHelper
 from .models.pr_base import MLStripper
 import os.path
+from profapp.utils import fileUrl
 
 from flask.sessions import SessionInterface
 from beaker.middleware import SessionMiddleware
@@ -184,6 +185,8 @@ def load_user(apptype):
     user_dict['lang'] = 'uk'
     #  ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
 
+
+
     if user_init.is_authenticated():
         from profapp.models.users import User
 
@@ -206,6 +209,10 @@ def load_user(apptype):
         user_dict['registered_tm'] = user.registered_tm
         user_dict['lang'] = user.lang
         user_dict['tos'] = user.tos
+
+
+
+
         # name = user.user_name
 
     # user_dict = {'id': id, 'name': name, 'logged_via': logged_via}
@@ -229,14 +236,6 @@ def load_user(apptype):
             current_app.config[var_id] = False if int(variable.value) == 0 else True
         else:
             current_app.config[var_id] = '%s' % (variable.value,)
-
-
-def fileUrl(id, down=False, if_no_file=None):
-    if not id:
-        return if_no_file if if_no_file else ''
-
-    server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', id)
-    return '//file' + server + '.profireader.com/' + id + '/' + ('?d' if down else '')
 
 
 def prImage(id, if_no_image=None):
@@ -467,7 +466,6 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.before_request(lambda: load_user(apptype))
     app.before_request(setup_authomatic(app))
 
-
     def add_map_headers_to_less_files(response):
         response.headers.add('Access-Control-Allow-Origin', '*')
         if request.path and re.search(r'\.css$', request.path):
@@ -478,12 +476,12 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.after_request(add_map_headers_to_less_files)
 
-
     if apptype == 'front':
 
         # relative paths
         def join_path(template, parent):
             return os.path.join(os.path.dirname(parent), template)
+
         app.jinja_env.join_path = join_path
 
         def load_portal():
@@ -498,7 +496,6 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
             g.portal_id = portal.id
             g.portal_layout_path = portal.layout.path
             g.lang = g.portal.lang if g.portal else g.user_dict['lang']
-
 
         app.before_request(load_portal)
         from profapp.controllers.blueprints_register import register_front as register_blueprints_front
@@ -520,12 +517,11 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     login_manager.init_app(app)
     login_manager.session_protection = 'basic'
 
-
     @login_manager.user_loader
     def load_user_manager(user_id):
         return g.db.query(User).get(user_id)
 
-    csrf.init_app(app)
+    # csrf.init_app(app)
 
     # read this: http://stackoverflow.com/questions/6036082/call-a-python-function-from-jinja2
     # app.jinja_env.globals.update(flask_endpoint_to_angular=flask_endpoint_to_angular)
@@ -543,7 +539,6 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
 
     app.jinja_env.filters['nl2br'] = nl2br
-
 
     # see: http://flask.pocoo.org/docs/0.10/patterns/sqlalchemy/
     # Flask will automatically remove database sessions at the end of the

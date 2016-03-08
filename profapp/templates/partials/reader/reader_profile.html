@@ -31,30 +31,28 @@ module.controller('grid_reader', function ($scope, $uibModal, $ok, $sce, uiGridC
         $scope.url_search_translations = {{ raw_url_for('reader.profile')|safe }}
         $scope.reader_edit_profile = {{ raw_url_for('reader.edit_portal_subscription')|safe }};
         {% raw %}
-        $scope.sendData = function (grid_data, callback) {
-            return $ok($scope.url_search_translations({}), grid_data, callback);
-            };
+
         $scope.portal_link = function(link){
             return 'http://' + link;
         };
 
-$scope.showModalForEditNew = function () {
-                        var list = $scope.list_select;
-                        var modalInstance = $uibModal.open({
-                            templateUrl: 'grid_reader_modal.html',
-                           controller: 'grid_reader_modal',
-                            resolve: {
-                                'list': function () {
-                                    return list
-                                }
-                            }
-                        });
-                        modalInstance.result.then(function (list) {
-                           // $scope.deleteItems(list);
-                        });
-                    };
+        $scope.showModalForEditNew = function () {
+            var list = $scope.list_select;
+            var modalInstance = $uibModal.open({
+                templateUrl: 'grid_reader_modal.html',
+                controller: 'grid_reader_modal',
+                resolve: {
+                    'list': function () {
+                        return list
+                    }
+                }
+            });
+            modalInstance.result.then(function (list) {
+                // $scope.deleteItems(list);
+            });
+        };
         $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                        loadGridData: $scope.sendData,
+                        urlLoadGridData: $scope.url_search_translations({}),
                         columnDefs: [
                             {
                                 name: 'portal_logo', type: 'img'
@@ -83,7 +81,11 @@ $scope.showModalForEditNew = function () {
 </script>
 {% raw %}
    <div ng-controller="grid_reader">
-        <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1"></div>
+        <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+              <i class="fa fa-spin fa-spinner"></i><div>Data Loading...</div>
+            </div>
+        </div>
         <a ng-show="!areAllEmpty(datas.grid_data)" class="btn btn-danger"
            ng-class="{'disabled': ( isSelectedRows === false )}" style="text-align: center"
            ng-click="showModalDelete()">Delete selected rows</a>

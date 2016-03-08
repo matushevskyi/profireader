@@ -51,7 +51,7 @@ def edit_profile(user_id):
         avatar_methods = {'Upload Image': 'upload', 'Use Gravatar': 'gravatar', 'facebook': 'facebook',
                           'google': 'google', 'linkedin': 'linkedin', 'microsoft': 'microsoft'}
         avatar_type = avatar_methods[avatar_type]
-        if avatar_type == 'Upload Image':
+        if avatar_type == 'upload':
             user = user_query.first()
             image = request.files['avatar']
             user.avatar_update(image)

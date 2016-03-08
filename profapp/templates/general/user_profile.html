@@ -4,9 +4,7 @@
 {% block head %}
     {{ super() }}
 {% endblock head %}
-{% block portal_base %}
-    {% include 'partials/portal_base_Profireader_auth_user.html' %}
-{% endblock portal_base %}
+
 <!--<div ng-controller="UserLoginController" >-->
 <!--<h1 class="nice-title">{{ '{{' }}_('User Profile'){{ '}}' }}<span></span></h1>-->
 <!--<a class="h1-btn icon icon-edit" href="{{ url_for('user.edit_profile', user_id=user.id) }}"  title="{{ _('EDIT PROFFILE') }}"><img src="//static.profireader.com/static/front/img/ico/user.png" /></a>-->
@@ -31,57 +29,56 @@
 
 {% block portal_content %}
 
-    <!--
     <div class="container" ng-controller="UserLoginController">
         <div class="row link-page"><h5>User profile</h5>
-            <a pr_test="EditProfile" href="{{ url_for('user.edit_profile', user_id=user.id) }}">
-                <i class="fa fa-pencil-square fa-3x"></i>
+            <a title="edit" pr_test="EditProfile" href="{{ url_for('user.edit_profile', user_id=user.id) }}">
+                <i class="fa fa-pencil fa-2x"></i>
             </a>
         </div>
         <div class="row" ng-controller="UserLoginController">
-            <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-6 col-sm-offset-2 col-sm-8 col-xs-12 profile-window">
-                <div class="thumbnail">
-                    <img src="../../static/images/PZf5Q.png" class="img-circle" style="width: 50%;">
+            <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-6 col-sm-offset-2 col-sm-8 col-xs-12 ">
+                <div class="thumbnail profile-window">
+                    <img src="{{ user.profireader_small_avatar_url }}" class="img-circle" style="width: 50%;">
                     <div class="caption">
                         <h3>{{ user.profireader_name }}</h3>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Email:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Email:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_email }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Display name:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Display name:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_name }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>First name:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('First name:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_first_name or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Last name:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Last name:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_last_name or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Gender:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Gender:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_gender or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Web-page:</span></div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_link or '' }}</div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Web-page:') }}</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9"><span>{{ user.profireader_link or '' }}</span></div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Phone:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Phone:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_phone.national or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Location:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Location:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.location or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>About:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('About:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.about_me or '' }}</div>
                         </div>
                         <div class="row">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3"><span>Member since:</span></div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Member since:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ moment(user.registered_tm).format('L') }}</div>
                         </div>
                     </div>
@@ -91,9 +88,7 @@
     </div>
 
 
--->
-
-
+    <!--
 
     <div ng-controller="UserLoginController">
         <h1 class="nice-title">{{ '{{' }}_('User Profile'){{ '}}' }}<span></span></h1>
@@ -103,7 +98,7 @@
 
     <div class="form info" style="padding-left: 10px" ng-controller="UserLoginController">
         <div ng-controller="UserLoginController" class="user-profile">
-            <h2>{{ user.profireader_name }}</h2>
+            <h2 pr-test="UserProfiName">{{ user.profireader_name }}</h2>
             <div class="info">
                 {#        <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}"><br>#}
                 {#        <img class="img-rounded profile-thumbnail" src="{{ user.profireader_avatar_url }}" style="width:{{ avatar_size }}px;height:{{ avatar_size }}px;border:0"><br>#}
@@ -132,7 +127,7 @@
             </div>
         </div>
     </div>
-
+-->
 {% endblock portal_content %}
 
 {% block scripts %}

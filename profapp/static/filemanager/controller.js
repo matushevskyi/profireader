@@ -189,6 +189,7 @@
                     $scope.fileNavigator.refresh();
                     $('#remove').modal('hide');
                 });
+
             };
 
             $scope.set_property = function (item) {
@@ -221,7 +222,7 @@
                 }
             };
 
-            $scope.take_action = function (item, actionname) {
+            $scope.take_action = function (item, actionname, permitted) {
                 $scope.modal = '';
                 if ($scope.file_manager_on_action[actionname] !== '' && actionname === 'download') {
                     try {
@@ -255,15 +256,6 @@
                     });
             };
 
-            $scope.can_action = function (item, actionname, defaultpermited) {
-                if (actionname === 'paste') {
-                    if (defaultpermited === true) {
-                        return ($scope.copied_files.length > 0)
-                    }
-                }
-                return defaultpermited
-            };
-
             $scope.showModal = function(){
                 $scope.hide = false;
             };
@@ -279,7 +271,6 @@
                         $scope.f.progress = 0;
                         $scope.auto_remove($scope.uploadFileList, $scope.fileNavigator.getCurrentFolder());
                     }
-                    console.log('s')
                     $('#uploadfile').find('input[type=file], input[type=number], textarea').val('');
                 }
             };
@@ -320,15 +311,16 @@
                     });
                     $scope.f.upload.progress(function (evt) {
                         $scope.thisprogress = Math.min(100, parseInt(100.0 *
-                            evt.loaded / total))
+                            evt.loaded / total));
                         $scope.f.progress = Math.min(100, parseInt(100.0 *
                             evt.loaded / total)) + oldprogress;
                     }).success(function (data) {
+                        if(data.error){
+                            $scope.fileNavigator.refresh();
+                        }
                         count += 1;
                         oldprogress += $scope.thisprogress;
-                        console.log(oldprogress);
                         if($scope.uploadFileList[count]){
-
                             $scope.f = $scope.uploadFileList[count];
                             uploading($scope.uploadFileList[count])
 
@@ -379,7 +371,8 @@
                 return found;
             };
 
-            $scope.isDisable = function (actionname, len, type) {
+            $scope.isDisable = function (actionname, len, type, permited) {
+
                 var style;
                 if (actionname === 'paste' && ($scope.copy_file_id != '' || $scope.cut_file_id != '') && type === 'parent') {
                     style = ''
