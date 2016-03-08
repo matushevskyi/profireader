@@ -66,7 +66,7 @@
             $scope.afterLoad = function (resp, deff) {
                 $scope.edit_rights = $scope.rights_user_in_company['COMPANY_EDIT_PROFILE']
                 deff(resp);
-                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
+//                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
             };
 
         });
@@ -80,10 +80,11 @@
             <div class="row company">
                 <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12 image-company-profile">
 
-                    <img pr-image="company.logo_file_id" alt="image" ng-show="!edit">
+                    <img style="width: 400px; height: 200px; position: relative" pr-image="company.logo_file_id" alt="image"
+                         ng-show="!edit">
 
-                    <div style="width: 400px; height: 400px;" ng-if="edit">
-                        <div pr-crop="crop"></div>
+                    <div ng-if="edit">
+                        <div style="width: 400px; height: 200px; position: relative"  pr-crop="data.logo"></div>
                     </div>
                 </div>
 

@@ -2,23 +2,15 @@ from .blueprints_declaration import company_bp
 from flask.ext.login import login_required, current_user
 from flask import render_template, request, url_for, g, redirect
 from ..models.company import Company, UserCompany
-from ..models.users import User
 from ..models.translate import TranslateTemplate
-from .request_wrapers import ok, check_rights, tos_required
-from ..constants.STATUS import STATUS
+from .request_wrapers import ok, tos_required
 from flask.ext.login import login_required
 from ..models.articles import Article
 from ..models.portal import PortalDivision
 
 from ..models.articles import ArticleCompany, ArticlePortalDivision
 from utils.db_utils import db
-from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
-from collections import OrderedDict
-from ..models.tag import TagPortalDivisionArticle
-# from ..models.rights import list_of_RightAtomic_attributes
-from profapp.models.rights import RIGHTS
-from ..models.files import File, ImageCroped
-from flask import session
+from ..models.files import File
 from .pagination import pagination
 from .views_file import crop_image
 from config import Config
@@ -51,9 +43,11 @@ def show():
 @ok
 def load_companies(json):
     companies, pages, page, count = pagination(query=db(Company)
-        .filter(Company.id==db(UserCompany, user_id=g.user.id).subquery().c.company_id), page=1, items_per_page=6*json.get('next_page') if json.get('next_page') else 6)
+        .filter(
+            Company.id == db(UserCompany, user_id=g.user.id).subquery().c.company_id), page=1,
+            items_per_page=6 * json.get('next_page') if json.get('next_page') else 6)
     return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],
-            'user_id': g.user_dict['id'], 'end': pages==1}
+            'user_id': g.user_dict['id'], 'end': pages == 1}
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
@@ -227,7 +221,8 @@ def employment_action(json, company_id, employment_id, action):
 
     return PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                               {'actions': employment.actions(
-                                  UserCompany.get(user_id=g.user_id, company_id=company_id))})
+                                      UserCompany.get(user_id=g.user_id, company_id=company_id))})
+
 
 @company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_position/', methods=['POST'])
 @tos_required
@@ -241,7 +236,7 @@ def employment_change_position(json, company_id, employment_id):
 
     return PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                               {'actions': employment.actions(
-                                  UserCompany.get(user_id=g.user_id, company_id=company_id))})
+                                      UserCompany.get(user_id=g.user_id, company_id=company_id))})
 
 
 @company_bp.route('/update_rights', methods=['POST'])
@@ -269,8 +264,8 @@ def update():
     # user_companies = [user_comp for user_comp in current_user.employer_assoc]
     # user_have_comp = True if len(user_companies) > 0 else False
     # company = db(Company, id=company_id).first()
-    return render_template('company/company_profile.html',rights_user_in_company={},
-                           company = Company())
+    return render_template('company/company_profile.html', rights_user_in_company={},
+                           company=Company())
 
 
 @company_bp.route('/<string:company_id>/profile/', methods=['GET'])
@@ -278,10 +273,10 @@ def update():
 @login_required
 # @check_rights(simple_permissions([]))
 def profile(company_id=None):
-    company=db(Company, id=company_id).first()
+    company = db(Company, id=company_id).first()
     return render_template('company/company_profile.html',
                            rights_user_in_company=UserCompany.get(company_id=company_id).rights,
-                           company = company)
+                           company=company)
 
 
 @company_bp.route('/create/', methods=['POST'])
@@ -294,23 +289,10 @@ def load(json, company_id=None):
     company = Company() if company_id is None else Company.get(company_id)
     if action == 'load':
         company_dict = company.get_client_side_dict()
-        image_dict = {'ratio': Config.IMAGE_EDITOR_RATIO, 'coordinates': None,
-                      'image_file_id': company_dict.get('logo_file_id'),
-                      'no_image_url': g.fileUrl(FOLDER_AND_FILE.no_logo())
-                      }
-        try:
-            if company_dict.get('logo_file_id'):
-                image_dict['image_file_id'], image_dict['coordinates'] = ImageCroped. \
-                    get_coordinates_and_original_img(company_dict.get('logo_file_id'))
-            else:
-                image_dict['image_file_id'] = None
-        except Exception as e:
-            pass
-        image = {'image': image_dict}
-        company_dict.update(image)
+        company_dict['logo'] = company.get_image_client_dict()
         return company_dict
     else:
-        company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone','city','postcode',
+        company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
                                    'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
             if company_id is not None and user_can_edit:
@@ -325,10 +307,11 @@ def load(json, company_id=None):
                 image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
                 bb = base64.b64decode(image_data)
                 new_comp = db(Company, id=company.id).first()
-                file_id = File.uploadLogo(bb, json['image']['name'], json['image']['type'], new_comp.journalist_folder_file_id).id
+                file_id = File.uploadLogo(bb, json['image']['name'], json['image']['type'],
+                                          new_comp.journalist_folder_file_id).id
                 if 'error' in File.check_image_mime(file_id):
                     resp = new_comp.get_client_side_dict()
-                    resp.update({'error':True})
+                    resp.update({'error': True})
                     return resp
                 logo_id = crop_image(file_id, json['image']['coordinates'])
                 new_comp.updates({'logo_file_id': logo_id})
@@ -376,9 +359,11 @@ def load(json, company_id=None):
 @ok
 # @check_rights(simple_permissions([]))
 def search_for_company_to_join(json):
-    companies, pages, page, count = pagination(query=Company().search_for_company_to_join(g.user_dict['id'], json['search']), page=1, items_per_page=5*json.get('next_page') if json.get('next_page') else 5)
-    return {'company_list':[company.get_client_side_dict() for company in
-                          companies], 'end': pages == 1}
+    companies, pages, page, count = pagination(
+            query=Company().search_for_company_to_join(g.user_dict['id'], json['search']), page=1,
+            items_per_page=5 * json.get('next_page') if json.get('next_page') else 5)
+    return {'company_list': [company.get_client_side_dict() for company in
+                             companies], 'end': pages == 1}
 
 
 @company_bp.route('/search_for_user/<string:company_id>', methods=['POST'])
