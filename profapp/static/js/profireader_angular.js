@@ -1057,10 +1057,34 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                     return groupValue;
                 };
 
+                $scope.get_default_selected = function(){
+                    if($scope.addData.default_selected.select === 'all'){
+                        $scope.listElemens[$scope.addData.field] = [];
+                        $timeout(function(){
+                            for (var f = 0; f < $scope.options.length; f++) {
+                                if($scope.addData.default_selected.exception instanceof Array){
+                                    for (var n = 0; n < $scope.addData.default_selected.exception.length; n++) {
+                                        if($scope.options[f]['label'] !== $scope.addData.default_selected.exception[n]){
+                                            $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
+                                        }
+                                    }
+                                }else{
+                                   if($scope.options[f]['label'] !== $scope.addData.default_selected.exception){
+                                        $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
+                                   }
+                                }
+                            }
+                        }, 500)
+                    }
+                };
+
                 $scope.getButtonText = function () {
                     if (!$scope.listElemens) {
                         $scope.listElemens = {};
-                        $scope.listElemens[$scope.addData.field] = []
+                        $scope.listElemens[$scope.addData.field] = [];
+                        if($scope.addData.default_selected){
+                            $scope.get_default_selected()
+                        }
                     }
                     if ($scope.settings.dynamicTitle && ($scope.selectedModel.length > 0 || (angular.isObject($scope.selectedModel) && _.keys($scope.selectedModel).length > 0))) {
                         if ($scope.settings.smartButtonMaxItems > 0) {
@@ -1124,10 +1148,14 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                 $scope.deselectAll = function (sendEvent) {
                     if (sendEvent && $scope.listElemens[$scope.addData.field].length > 0) {
                         $scope.isSelectAll = false;
-                        delete $scope.data.filter[$scope.addData.field];
-                        $scope.listElemens[$scope.addData.field] = [];
+                        if($scope.addData.default_selected){
+                            $scope.get_default_selected()
+                            delete $scope.data.filter[$scope.addData.field]
+                        }else{
+                            delete $scope.data.filter[$scope.addData.field];
+                            $scope.listElemens[$scope.addData.field] = [];
+                        }
                         $scope.send($scope.data);
-                        $scope.externalEvents.onDeselectAll();
                         if ($scope.singleSelection) {
                             clearObject($scope.selectedModel);
                         } else {
@@ -1426,6 +1454,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         gridApi.grid.listOfSelectedFilterGrid = [];
                         gridApi.grid.additionalDataForMS[col[i].name] = {
                             limit: col[i].filter.limit ? col[i].filter.limit : null,
+                            default_selected: col[i].filter.default_selected,
                             type: col[i].filter.type,
                             field: col[i].name
                         };
