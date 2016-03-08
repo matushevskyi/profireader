@@ -635,6 +635,11 @@ body {
   border: 1px solid #f5f5f5;
   background-color: #EAEAEA;
 }
+.profile-window .avatar-user {
+  display: block;
+  margin: 0 auto;
+  width: 135px;
+}
 .profile-window h3 {
   text-align: center;
   color: #18BC9C;
@@ -762,8 +767,10 @@ body {
   cursor: pointer;
 }
 /* --- HELP PAGE ---*/
-.help-page h3 {
+.help-page {
   margin-top: 15%;
+}
+.help-page h3 {
   text-align: center;
 }
 .help-page .form-for-message {
