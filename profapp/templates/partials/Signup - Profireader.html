@@ -16,11 +16,11 @@
 <h3 ng-controller="UserLoginController">{{ '{{' }}_('or Simple registration'){{ '}}' }}</h3>
 
 <form class="register-form-profirider" action="{{ url_for('auth.signup') }}" method="post">
-    <input class="form-control" type="email" placeholder="email" required name="email">
-    <input class="form-control" type="text" placeholder="display name" required name="display_name">
-    <input class="form-control" type="password" placeholder="password" required name="password">
-    <input class="form-control" type="password" placeholder="repeat password" required name="password1">
-    <input class="sabmit-form" type="submit">
+    <input pr-test="RegEmail" class="form-control" type="email" placeholder="email" required name="email">
+    <input pr-test="RegName" class="form-control" type="text" placeholder="display name" required name="display_name">
+    <input pr-test="RegPass" class="form-control" type="password" placeholder="password" required name="password">
+    <input pr-test="RegRepeatPass" class="form-control" type="password" placeholder="repeat password" required name="password1">
+    <input pr-test="RegSubmit" class="sabmit-form" type="submit">
 </form>
 
 {#<div class="simple-register">#}
