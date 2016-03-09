@@ -80,11 +80,12 @@
             <div class="row company">
                 <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12 image-company-profile">
 
-                    <img style="width: 400px; height: 200px; position: relative" pr-image="company.logo_file_id" alt="image"
-                         ng-show="!edit">
+                    <!-- TODO: MY by OZ: 400x300 -> some class -->
+                    <img ng-show="!edit" style="width: 360px; height: 270px; position: relative"
+                         pr-image="company.logo_file_id" alt="image">
 
                     <div ng-if="edit">
-                        <div style="width: 400px; height: 200px; position: relative"  pr-crop="data.logo"></div>
+                        <div style="width: 360px; height: 270px; position: relative" pr-crop="data.logo"></div>
                     </div>
                 </div>
 
