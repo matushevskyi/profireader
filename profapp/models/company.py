@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, ForeignKey, UniqueConstraint, Enum  # , update
 from sqlalchemy.orm import relationship, backref
-# from db_init import Base, db_session
+from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from flask.ext.login import current_user
 from sqlalchemy import Column, String, ForeignKey, update, and_
 from sqlalchemy.orm import relationship
@@ -19,12 +19,13 @@ from ..controllers import errors
 from ..constants.STATUS import STATUS_NAME
 from .rights import get_my_attributes
 from functools import wraps
-from .files import YoutubePlaylist
+from .files import YoutubePlaylist, ImageCroped
 from ..constants.SEARCH import RELEVANCE
 from .users import User
 from ..models.portal import Portal
 from ..models.portal import MemberCompanyPortal
 from ..models.portal import UserPortalReader
+from ..utils import fileUrl
 import re
 
 
@@ -72,6 +73,7 @@ class Company(Base, PRBase):
     #                           foreign_keys='Portal.company_owner_id')
 
     user_owner = relationship('User', back_populates='companies')
+
     search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
                      'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
                      'about': {'relevance': lambda field='about': RELEVANCE.about},
@@ -213,8 +215,8 @@ class Company(Base, PRBase):
     def search_for_company_to_join(user_id, searchtext):
         """Return all companies which are not current user employers yet"""
         return db(Company).filter(~db(UserCompany, user_id=user_id,
-                                       company_id=Company.id).exists()).filter(Company.name.ilike("%" + searchtext + "%")
-                           )
+                                      company_id=Company.id).exists()).filter(Company.name.ilike("%" + searchtext + "%")
+                                                                              )
 
     def get_client_side_dict(self,
                              fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
@@ -222,6 +224,40 @@ class Company(Base, PRBase):
                                     'own_portal.id|host',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    def get_image_client_dict(self, upload=True, browse=None,
+                              crop={'coordinates': None, 'aspect': False},
+                              preset_urls={},
+                              no_selection_url=fileUrl(FOLDER_AND_FILE.no_logo())):
+
+        is_image = db(ImageCroped, croped_image_id=self.logo_file_id).one()
+        ret = {
+            'upload': upload,
+            'browse': self.id if browse is None else browse,
+            'min_size': [100, 100],
+            'crop': crop,
+            'preset_urls': preset_urls,
+            'no_selection_url': no_selection_url,
+            'selected_url': None
+        }
+
+        if is_image:
+            ret['crop']['coordinates'] = is_image.get_coordinates()
+            ret['selected_url'] = fileUrl(is_image.croped_image_id)
+
+        return ret
+        #
+        # is_image = ImageCroped.get_coordinates_and_original_img(self.logo_file_id)
+        # return {
+        #     'file_id': self.logo_file_id,
+        #     'upload': upload,
+        #     'crop': {
+        #         'ratio': Config.IMAGE_EDITOR_RATIO,
+        #         'coordinates': None,
+        #     },
+        #     'browse': self.id,
+        #     'no_image_url': g.fileUrl()
+        # }
 
     @staticmethod
     def get_allowed_statuses(company_id=None,portal_id=None):
@@ -385,7 +421,6 @@ class UserCompany(Base, PRBase):
 
     banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
 
-
     rights = Column(TABLE_TYPES['binary_rights'](RIGHT_AT_COMPANY),
                     default={RIGHT_AT_COMPANY.FILES_BROWSE: True, RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH: True},
                     nullable=False)
@@ -481,7 +516,8 @@ class UserCompany(Base, PRBase):
         if rightname == '_ANY':
             return True if self.status == self.STATUSES['ACTIVE'] else False
         if filemanager:
-            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[UserCompany.ACTIONS_FOR_FILEMANAGER[rightname]]) else False
+            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[
+                UserCompany.ACTIONS_FOR_FILEMANAGER[rightname]]) else False
         else:
             return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else False
 
