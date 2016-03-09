@@ -50,7 +50,7 @@
                 <img src="../../static/images/success.png" alt="success">
             </div>
             <div class="col-lg-8">
-                <i class="fa fa-times"></i>
+                <i class="fa fa-times" ng-click="closeAlert($index)"></i>
                 <h3>{{ _(alert.type + '!') }}</h3>
                 <p>{{ alert.msg }}</p>
             </div>
