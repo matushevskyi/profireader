@@ -260,12 +260,42 @@ class Company(Base, PRBase):
         # }
 
     @staticmethod
-    def subquery_company_partners(company_id, action, filters):
-        if action == 'see_rejected':
-            sub_query = db(MemberCompanyPortal, company_id=company_id).filter(MemberCompanyPortal.status == "REJECTED")
+    def get_allowed_statuses(company_id=None,portal_id=None):
+        if company_id:
+            sub_query = db(MemberCompanyPortal, company_id=company_id).filter(MemberCompanyPortal.status!="DELETED").all()
         else:
-            sub_query = db(MemberCompanyPortal, company_id=company_id).filter(
-                    and_(MemberCompanyPortal.status != "DELETED", MemberCompanyPortal.status != "REJECTED"))
+            sub_query = db(MemberCompanyPortal, portal_id = portal_id)
+        return sorted(list({partner.status for partner in sub_query}))
+
+    @staticmethod
+    def subquery_portal_partners(company_id, action, filters):
+        sub_query = db(MemberCompanyPortal, company_id=company_id).filter(MemberCompanyPortal.status!="DELETED")
+        list_filters = []
+        if len(filters) == 0:
+            sub_query = sub_query.filter(MemberCompanyPortal.status!="REJECTED")
+        if filters:
+            sub_query = sub_query.join(MemberCompanyPortal.portal)
+            if 'portal.name' in filters:
+                list_filters.append({'type': 'text', 'value': filters['portal.name'], 'field': Portal.name})
+            if 'link' in filters:
+                list_filters.append({'type': 'text', 'value': filters['link'], 'field': Portal.host})
+            if 'company' in filters:
+                sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
+                list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
+            if 'status' in filters:
+                    list_filters.append({'type': 'multiselect', 'value': filters['status'], 'field': MemberCompanyPortal.status})
+            sub_query = Grid.subquery_grid(sub_query, list_filters)
+        return sub_query
+
+    @staticmethod
+    def subquery_company_partners(company_id, filters):
+        # if action == 'see_rejected':
+        #     sub_query = db(MemberCompanyPortal, company_id=company_id).filter( MemberCompanyPortal.status=="REJECTED")
+        # else:
+        #     sub_query = db(MemberCompanyPortal, company_id=company_id).filter(and_(MemberCompanyPortal.status!="DELETED", MemberCompanyPortal.status!="REJECTED"))
+        sub_query = db(MemberCompanyPortal, portal_id = db(Portal, company_owner_id=company_id).subquery().c.id)
+        if len(filters) == 0:
+            sub_query = sub_query.filter(MemberCompanyPortal.status!="DELETED")
         list_filters = []
         if filters:
             sub_query = sub_query.join(MemberCompanyPortal.portal)
@@ -276,6 +306,8 @@ class Company(Base, PRBase):
             if 'company' in filters:
                 sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
                 list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
+            if 'member.status' in filters:
+                    list_filters.append({'type': 'multiselect', 'value': filters['member.status'], 'field': MemberCompanyPortal.status})
             sub_query = Grid.subquery_grid(sub_query, list_filters)
         return sub_query
 

@@ -374,6 +374,7 @@ class Grid:
                 elif filter['type'] == 'range':
                     query = query.filter(filter['field'].between(filter['value']['from'], filter['value']['to']))
                 elif filter['type'] == 'multiselect':
+                    print(filter['value'])
                     query = query.filter(or_(filter['field'] == v for v in filter['value']))
         if sorts:
             for sort in sorts:

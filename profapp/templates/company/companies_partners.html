@@ -29,7 +29,7 @@
                         urlLoadGridData: $scope.url_companies_partners,
                         columnDefs: [
                              {name: 'member.company.name', type: 'link',img:'member.company.logo_file_id', href: 'url_company_partner_details({employeer_id: row.entity.company_id,member_id:row.entity.member.company.id})'},
-                             {name: 'member.status'},
+                             {name: 'member.status', filter: {type: 'multi_select',default_selected:{select:'all', exception:'DELETED'}}},
                              {name: 'member.rights', width: '500', type: 'icons', afilter: {type: 'input'}}
                         ]
                     });

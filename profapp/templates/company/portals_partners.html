@@ -99,7 +99,7 @@
                                 name: 'portal.own_company.name', type: 'link',
                                 href: 'url_company_profile({company_id: row.entity.portal.own_company.id})',img:"portal.own_company.logo_file_id"
                             }, {
-                                name: 'status', width: '20%', filter: {type: 'button', onclick: 'grid_filter_action'}
+                                name: 'status', width: '20%', filter: {type: 'multi_select',default_selected:{select:'all', exception:'REJECTED'}} //we can default select all and deselect that we need, 'exception' can be string or array of string
                             }, {
                                 name: 'rights', width: '200', type: 'icons', afilter: {type: 'input'}},
                             {
