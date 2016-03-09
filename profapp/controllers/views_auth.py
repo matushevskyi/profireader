@@ -221,7 +221,6 @@ def login():
     # portal_id = request.args.get('subscribe', None)
     portal_id = session.get('portal_id')
     back_to = session.get('back_to')
-    print(session)
     if g.user_init.is_authenticated():
         if portal_id:
             session.pop('portal_id')
