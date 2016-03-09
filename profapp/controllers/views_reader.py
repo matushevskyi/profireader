@@ -1,5 +1,5 @@
 from .blueprints_declaration import reader_bp
-from flask import render_template, redirect, jsonify, json, request, g, url_for, flash
+from flask import render_template, redirect, jsonify, json, request, g, url_for, flash, session
 from .request_wrapers import tos_required
 from sqlalchemy import and_
 from ..models.articles import ArticlePortalDivision, ReaderArticlePortalDivision, Search

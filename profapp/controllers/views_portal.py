@@ -153,10 +153,11 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
 # @check_rights(simple_permissions([]))
 @ok
 def apply_company(json):
-    MemberCompanyPortal.apply_company_to_portal(company_id=json['company_id'],
+    if UserCompany.get(company_id=json['company_id']).has_rights(UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS):
+        MemberCompanyPortal.apply_company_to_portal(company_id=json['company_id'],
                                                 portal_id=json['portal_id'])
-    return {'portals_partners': [port.get_client_side_dict(fields='name, company_owner_id,id')
-                                 for port in Company.get(json['company_id']).get_portals_where_company_is_member()],
+    return {'portals_partners': [portal.get_client_side_dict(fields='name, company_owner_id,id')
+                                 for portal in Company.get(json['company_id']).get_portals_where_company_is_member()],
             'company_id': json['company_id']}
 
 
