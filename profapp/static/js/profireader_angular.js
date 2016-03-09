@@ -164,9 +164,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 scope.resetModel = function () {
                     scope.prCrop = $.extend(true, {}, scope.originalModel);
                     scope.setModel();
-                    restartCropper(scope.prCrop.selected_url);
+                    restartCropper(scope.prCrop.selected_url, null, function () {
+                        scope.prCrop['selected_by_user'] = {'type': 'old'};
+                    });
                 };
 
+                scope.prCrop['selected_by_user'] = {'type': 'old'};
                 scope.setModel();
 
                 element.html($templateCache.get('cropper.html'));
@@ -177,10 +180,11 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 window[callback_name] = function (item) {
                     closeFileManager();
-                    scope.prCrop['file_id'] = item.id;
                     scope.prCrop['zoom'] = 0;
                     scope.prCrop['crop']['coordinates'] = {rotate: 0};
-                    restartCropper(fileUrl(scope.prCrop['file_id']), false);
+                    restartCropper(fileUrl(item.id), false, function () {
+                        scope.prCrop['selected_by_user'] = {'type': 'browse', 'file_id': item.id};
+                    });
                 };
 
                 scope.zoom = function (ratio, only_check_posibility) {
@@ -196,7 +200,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 scope.selectPresetUrl = function (className) {
                     if (scope.prCrop['preset_urls'] && scope.prCrop['preset_urls'][className]) {
-                        restartCropper(scope.prCrop['preset_urls'][className], true);
+                        restartCropper(scope.prCrop['preset_urls'][className], true, function () {
+                            scope.prCrop['selected_by_user'] = {'type': 'preset', 'class': className};
+                        });
                     }
                 };
 
@@ -219,7 +225,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                                 fr.onload = function (e) {
                                     scope.prCrop['zoom'] = 0;
                                     scope.prCrop['crop']['coordinates'] = {rotate: 0};
-                                    restartCropper((window.URL || window.webkitURL).createObjectURL(the_file), false);
+                                    restartCropper((window.URL || window.webkitURL).createObjectURL(the_file), false, function () {
+                                        scope.prCrop['selected_by_user'] = {'type': 'upload', 'file': the_file};
+                                    });
                                 }
                                 fr.onerror = function (e) {
                                     add_message('Please choose an image file');
@@ -285,24 +293,18 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         options['minCropBoxHeight'] = $outer_container.height() * scope.minimal;
                         options['aspectRatio'] = scope.prCrop['crop']['aspect'];
                         options['data'] = scope.prCrop['crop']['coordinates'];
-                        //console.log(options);
                     }
 
                     return options;
-
                     //console.log('inner_container', $inner_container.width(), $inner_container.height(), $inner_container.width() / $inner_container.height(), $inner_container);
-
-
                 }
 
 
-                var runCropper = function (options) {
+                var runCropper = function (options, on_success) {
                     options['strict'] = true;
                     options['viewMode'] = 3;
                     options['zoomable'] = scope.zoomable;
                     //options['autoCrop'] = true;
-
-
 
                     options['zoom'] = function (e) {
                         if (e.ratio < scope.minzoom * 1.01 && e.ratio !== scope.minzoom) {
@@ -328,6 +330,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     options['built'] = function (e) {
                         scope.croper_loaded = true;
 
+                        if (on_success) {
+                            on_success();
+                        }
+
                         if (scope.zoomable) {
                             $(this).cropper('zoomTo', scope.prCrop.zoom ? scope.prCrop.zoom : scope.minzoom);
                         }
@@ -335,7 +341,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     options['crop'] = function (e) {
                         $timeout(function () {
-                            scope.prCrop.coordinates = {
+                            scope.prCrop['crop']['coordinates'] = {
                                 'width': e.width, 'height': e.height, 'y': e.y, 'x': e.x
                             };
                         })
@@ -346,7 +352,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     $image.cropper(options);
                 }
 
-                var restartCropper = function (src, sure_is_preset) {
+                var restartCropper = function (src, sure_is_preset, on_success) {
 
                     var fr = new Image();
                     fr.addEventListener('load', function (e) {
@@ -387,8 +393,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                         var options = resizeContainer(fr);
 
-
-
                         $image.attr('src', src);
                         $image.show();
 
@@ -400,7 +404,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         }
 
                         if (loadCropper) {
-                            runCropper(options);
+                            runCropper(options, on_success);
+                        }
+                        else {
+                            if (on_success) {
+                                on_success();
+                            }
                         }
                     }, false);
                     fr.addEventListener('error', function (e) {
