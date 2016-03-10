@@ -236,7 +236,7 @@ class Company(Base, PRBase):
             'browse': self.id if browse is None else browse,
             'min_size': [100, 100],
             'crop': crop,
-            'preset_urls': preset_urls,
+            'preset_urls': {'glyphicon-remove-circle': no_selection_url},
             'no_selection_url': no_selection_url,
             'selected_url': None
         }
