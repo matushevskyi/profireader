@@ -418,12 +418,6 @@ body {
   color: #18BCAB;
   text-decoration: none;
 }
-.company .edit-company button {
-  width: 115px;
-  padding: 0;
-  margin-left: 25px;
-  margin-right: -15px;
-}
 .company h3 {
   color: #e64a19;
 }

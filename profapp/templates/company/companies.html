@@ -116,26 +116,26 @@
         <div class="list_search_company" ng-repeat="company in data_search.company_list" ng-if="selectedCompany_name">
             <div class="row search-result thumbnail">
                 <div class="col-lg-2 col-md-2 col-sm-12 col-xs-12 photo-search">
-                    <a href="{{ url_company_profile({company_id: company.id}) }}" class="thumbnail">
+                    <a pr-test="CompanySearchResult" href="{{ url_company_profile({company_id: company.id}) }}" class="thumbnail">
                         <img pr-image="company.logo_file_id" alt="image" style="width: 100%">
                     </a>
                 </div>
 
                 <div class="col-lg-8 col-md-8 col-sm-10 col-xs-10">
-                    <h4 id="com_n">{{ company.name }}</h4>
+                    <h4 pr-test="SearchCompanyArticle" id="com_n">{{ company.name }}</h4>
                     <p ng-bind-html="company.short_description"></p>
-                    <a ng-if="company.own_portal" href="http://{{ company.own_portal.host }}"
+                    <a pr-test="CompanyOwnPortal" ng-if="company.own_portal" href="http://{{ company.own_portal.host }}"
                        title="http://{{ company.own_portal.host }}">{{ _('PORTAL') }}</a>
                 </div>
                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 join-new-company">
-                    <button class="btn btn-default" type="button" ng-click="joinToCompany(company.id)"
+                    <button pr-test="JoinToCompany" class="btn btn-default" type="button" ng-click="joinToCompany(company.id)"
                             ng-class="{'disabled': selectedCompany_sending}"
                             ng-disabled="selectedCompany_sending">{{ _('Join') }}
                     </button>
                 </div>
             </div>
         </div>
-        <div class="row company-list">
+        <div pr-test="CompanyList" class="row company-list">
 
 
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 link-page"><h5 ng-if="data.companies">{{ _('Your company list:')
@@ -146,7 +146,7 @@
             <div ng-if="data.companies" class="col-lg-4 col-md-4 col-sm-6 col-xs-6"
                  ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
                 <div pr-test="CompanyThumbnail" class="thumbnail company-thumbnail">
-                    <a href="{{ url_company_profile({company_id: my_employer.id}) }}">
+                    <a pr-test="CompanyUrl" href="{{ url_company_profile({company_id: my_employer.id}) }}">
                         <img pr-image="my_employer.logo_file_id" alt="image" style="width: 100%">
                     </a>
                     <div pr-test="SomeCompanyInfo" class="caption some-company-info">
@@ -155,7 +155,7 @@
                                href="{{ url_company_profile({company_id: my_employer.id}) }}">
                             {{ _('%(name)s' , my_employer) }}
                         </a></h3>
-                        <p>{{ _((my_employer.author_user_id==data.user_id? ' Type: OWN COMPANY':'JOINED COMPANY') ,
+                        <p pr-test="JoinedCompany">{{ _((my_employer.author_user_id==data.user_id? ' Type: OWN COMPANY':'JOINED COMPANY') ,
                             my_employer) }}</p>
                         <span ng-if="!my_employer.own_portal.host"><b>{{_('Portals')}}: </b>{{_('No')}}</span>
                         <div ng-if="my_employer.own_portal.host">

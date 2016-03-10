@@ -847,6 +847,11 @@ class ImageCroped(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
+    def get_coordinates(self):
+        ret = self.to_dict('x,y,width,height')
+        return ret
+        # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
+
     @staticmethod
     def get_coordinates_and_original_img(croped_image_id):
         coor_img = db(ImageCroped, croped_image_id=croped_image_id).one()
