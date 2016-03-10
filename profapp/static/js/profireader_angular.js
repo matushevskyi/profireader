@@ -75,6 +75,18 @@ function resolveDictForAngularController(dict) {
     }))
 }
 
+//angular.module('validationApp', []);
+//validationApp.controller('mainController', function($scope) {
+//
+//    $scope.submitForm = function() {
+//            if ($scope.userForm.$valid) {
+//                alert('our form is amazing');
+//            }
+//
+//        };
+//
+//});
+
 angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip'])
     .factory('$publish', ['$http', '$uibModal', function ($http, $uibModal) {
         return function (dict) {
