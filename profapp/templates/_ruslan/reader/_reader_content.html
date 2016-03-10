@@ -8,7 +8,13 @@
     module.controller('list_reader', function ($scope, $ok, $timeout) {
             $scope.favorite = {{ favorite }}
             $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
+            $scope.add_delete_favorite = '{{ url_for('reader.add_delete_favorite') }}'
             {#    into this function put url    #}
+            $scope.add_to_favorite = function(article){
+                $ok($scope.add_delete_favorite,{'article':article}, function(resp){
+                   article.is_favorite = resp
+                })
+            }
             $scope.loadNextPage('')
 
         });
@@ -51,7 +57,7 @@
                     <p>{{ article.short}}</p>
                 </div>
                 <div class="row">
-                    <div class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5">
+                    <div style="cursor: pointer" class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5" ng-click="add_to_favorite(article)">
                         <i ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i ng-if="article.is_favorite" class="fa fa-heart"></i> {{ _('Favorite') }}
                     </div>
                     <div class="col-lg-5 col-md-5 col-sm-5 col-xs-5">

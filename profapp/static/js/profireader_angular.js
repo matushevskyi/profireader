@@ -1069,19 +1069,17 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                     return groupValue;
                 };
 
-                $scope.get_default_selected = function(){
-                    if($scope.addData.default_selected.select === 'all'){
+                $scope.get_default_selected = function(exeptions){
+                    if(exeptions){
                         $scope.listElemens[$scope.addData.field] = [];
                         $timeout(function(){
                             for (var f = 0; f < $scope.options.length; f++) {
-                                if($scope.addData.default_selected.exception instanceof Array){
-                                    for (var n = 0; n < $scope.addData.default_selected.exception.length; n++) {
-                                        if($scope.options[f]['label'] !== $scope.addData.default_selected.exception[n]){
-                                            $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
-                                        }
+                                if(exeptions instanceof Array){
+                                    if(exeptions.indexOf($scope.options[f]['label']) === -1){
+                                        $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
                                     }
                                 }else{
-                                   if($scope.options[f]['label'] !== $scope.addData.default_selected.exception){
+                                   if($scope.options[f]['label'] !== exeptions){
                                         $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
                                    }
                                 }
@@ -1094,9 +1092,13 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                     if (!$scope.listElemens) {
                         $scope.listElemens = {};
                         $scope.listElemens[$scope.addData.field] = [];
-                        if($scope.addData.default_selected){
-                            $scope.get_default_selected()
-                        }
+                        $timeout(function(){
+                            $scope.filters_exception = $scope.parentScope.gridApi.grid.filters_init_exception
+                            if($scope.filters_exception){
+                                $scope.get_default_selected($scope.filters_exception)
+                            }
+                        }, 2000);
+
                     }
                     if ($scope.settings.dynamicTitle && ($scope.selectedModel.length > 0 || (angular.isObject($scope.selectedModel) && _.keys($scope.selectedModel).length > 0))) {
                         if ($scope.settings.smartButtonMaxItems > 0) {
@@ -1160,13 +1162,10 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                 $scope.deselectAll = function (sendEvent) {
                     if (sendEvent && $scope.listElemens[$scope.addData.field].length > 0) {
                         $scope.isSelectAll = false;
-                        if($scope.addData.default_selected){
-                            $scope.get_default_selected()
-                            delete $scope.data.filter[$scope.addData.field]
-                        }else{
-                            delete $scope.data.filter[$scope.addData.field];
-                            $scope.listElemens[$scope.addData.field] = [];
-                        }
+                        delete $scope.data.filter[$scope.addData.field];
+                        $scope.listElemens[$scope.addData.field] = [];
+                        if($scope.filters_exception)
+                            $scope.data.filter[$scope.addData.field] = []
                         $scope.send($scope.data);
                         if ($scope.singleSelection) {
                             clearObject($scope.selectedModel);
@@ -1466,7 +1465,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         gridApi.grid.listOfSelectedFilterGrid = [];
                         gridApi.grid.additionalDataForMS[col[i].name] = {
                             limit: col[i].filter.limit ? col[i].filter.limit : null,
-                            default_selected: col[i].filter.default_selected,
                             type: col[i].filter.type,
                             field: col[i].name
                         };
@@ -1489,12 +1487,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             };
 
             gridApi.grid['set_data_function'] = function (grid_data) {
-
                 gridApi.grid.options.data = grid_data.grid_data;
+                gridApi.grid.filters_init_exception = grid_data.grid_filters_except
                 gridApi.grid.listsForMS = {};
                 gridApi.grid.options.totalItems = grid_data.total;
-                gridApi.grid.filters_action = grid_data.filters_action
-                gridApi.grid.filters_info = grid_data.filters_info
                 if (grid_data.page) {
                     gridApi.grid.options.pageNumber = grid_data.page;
                     gridApi.grid.options.paginationCurrentPage = grid_data.page;

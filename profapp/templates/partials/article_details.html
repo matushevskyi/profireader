@@ -1,12 +1,10 @@
 <script>
-    var favorite = {{ favorite}};
+    var favorite = {{ favorite | tojson |safe}};
     function add_delete_favorite(boolean) {
         var article_portal_division_id = {{ article['id']|tojson }};
-        console.log();
         $.ajax({
-
             type: 'post',
-            url: '/add_delete_favorite/',
+            url: '{{ url_for('front.add_delete_favorite') }}',
             data: {'favorite': boolean, 'article_portal_division_id': article_portal_division_id},
             success: function () {
                 var text = document.getElementById('favorite');

@@ -8,14 +8,13 @@
 
             var msg = {type: atype ? atype : 'error', msg: amessage, hash: randomHash()};
 
-
-
             $scope.alerts.push(msg);
 
 
             if (atime && atime > 0) {
                 $timeout(function () {
                     $.each($scope.alerts, function (ind, val) {
+                        console.log(ind, val)
                         if (val['hash'] === msg['hash']) {
                             $scope.closeAlert(ind);
                             return false;
@@ -45,7 +44,7 @@
 <div ng-controller="message-controller" id="controller-message-controller">
     {% raw %}
     <div ng-repeat="alert in alerts" class="row">
-        <div ng-if="alert.type=='success' && !close_current_alert" class="col-lg-offset-3 col-lg-6 flash-message-succsess" >
+        <div ng-if="alert.type=='success'" class="col-lg-offset-3 col-lg-6 flash-message-succsess" >
             <div class="col-lg-4 img-message">
                 <img src="//static.profireader.com/static/images/success.png" alt="success">
             </div>

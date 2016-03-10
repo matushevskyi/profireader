@@ -427,7 +427,7 @@ def portals_partners(company_id):
 # @check_rights(simple_permissions([]))
 @ok
 def portals_partners_load(json, company_id):
-    subquery = Company.subquery_portal_partners(company_id, json.get('action'), json.get('filter'))
+    subquery = Company.subquery_portal_partners(company_id, json.get('filter'), filters_exсept=MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES)
     partners_g, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     partner_list = [
         PRBase.merge_dicts(partner.get_client_side_dict(fields='id,status,portal.own_company,portal,rights'),
@@ -436,7 +436,8 @@ def portals_partners_load(json, company_id):
     return {'page': current_page,
             'grid_data': partner_list,
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
-                             (k, v) in {'status': [{'value': status, 'label': status} for status in Company.get_allowed_statuses(company_id=company_id)]}.items()},
+                             (k, v) in {'status': [{'value': status, 'label': status} for status in MemberCompanyPortal.STATUSES]}.items()},
+            'grid_filters_except': list(MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES),
             'total': count}
 
 
@@ -522,20 +523,17 @@ def companies_partners(company_id):
 # @check_rights(simple_permissions([]))
 @ok
 def companies_partners_load(json, company_id):
-    subquery = Company.subquery_company_partners(company_id, json.get('filter'))
+    subquery = Company.subquery_company_partners(company_id, json.get('filter'),filters_exсept=MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES)
     members, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
-    grid_filters = {
-        'member.status': [{'value': status, 'label': status} for status in Company.get_allowed_statuses(portal_id=db(Portal, company_owner_id=company_id).subquery().c.id)]
-    }
-    print(grid_filters)
+    print(MemberCompanyPortal.STATUSES)
     return {'grid_data': [{'member': member.get_client_side_dict(more_fields='company'),
                            'company_id': company_id}
                           for member in members],
-            'grid_filters':{k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
-                             (k, v) in grid_filters.items()},
+            'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
+                             (k, v) in {'member.status': [{'value': status, 'label': status} for status in MemberCompanyPortal.STATUSES]}.items()},
+            'grid_filters_except': list(MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES),
             'total': count,
             'page': current_page}
-
 
 @portal_bp.route('/search_for_portal_to_join/', methods=['POST'])
 @ok

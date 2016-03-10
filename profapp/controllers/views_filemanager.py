@@ -36,7 +36,7 @@ json_result = {"result": {"success": True, "error": None}}
 
 @filemanager_bp.route('/')
 def filemanager():
-    last_visit_root_n = ''
+    last_visit_root_name = ''
     if 'last_root' in request.cookies:
         last_root_id = request.cookies['last_root']
     else:
@@ -45,18 +45,17 @@ def filemanager():
     # {'name': 'My personal files',
     # 'icon': current_user.gravatar(size=18)}}
     library = []
-    can_upload = True
     for user_company in g.user.employer_assoc:
         # TODO VK by OZ: we need function that get all emploees with specific right
         # Company.get_emploees('can_read', status = 'active')
         # Company.get_emploees(['can_read', 'can_write'], status = ['active','banned'])
         # similar function User.get_emploers ...
-        can_upload = user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE)
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE):
             library.append({'id': user_company.employer.journalist_folder_file_id,
-            'name': "%s files" % (user_company.employer.name,), 'icon': ''})
+            'name': "%s files" % (user_company.employer.name.replace(
+        '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),), 'icon': ''})
             if user_company.employer.journalist_folder_file_id == last_root_id:
-                last_visit_root_n = user_company.employer.name + " files"
+                last_visit_root_name = user_company.employer.name + " files"
     library.sort(key=lambda k: k['name'])
     file_manager_called_for = request.args[
         'file_manager_called_for'] if 'file_manager_called_for' in request.args else ''
@@ -68,10 +67,12 @@ def filemanager():
         'get_root'] if 'get_root' in request.args else None
     if get_root:
         root = Company.get(get_root)
-        last_visit_root_n = root.name + " files"
+        last_visit_root_name = root.name + " files"
         last_root_id = root.journalist_folder_file_id
     err = True if len(library) == 0 else False
-    return render_template('filemanager.html', library=library, err=err, last_visit_root=last_visit_root_n,
+    print(last_visit_root_name)
+    return render_template('filemanager.html', library=library, err=err, last_visit_root=last_visit_root_name.replace(
+        '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),
                            last_root_id=last_root_id,
                            file_manager_called_for=file_manager_called_for,
                            file_manager_on_action=file_manager_on_action,

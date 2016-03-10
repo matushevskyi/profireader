@@ -40,7 +40,6 @@ def portals_list_load(json):
 
 @general_bp.route('subscribe/<string:portal_id>', methods=['GET'])
 def auth_before_subscribe_to_portal(portal_id):
-    print(portal_id)
     session['portal_id'] = portal_id
     return redirect(url_for('auth.login_signup_endpoint', login_signup='login'))
 

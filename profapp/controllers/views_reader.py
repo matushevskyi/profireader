@@ -132,11 +132,9 @@ def list_reader_load(json):
 
 
 @reader_bp.route('/add_to_favorite/', methods=['POST'])
-def add_delete_favorite():
-    favorite = json.loads(request.form.get('favorite'))
-    article_portal_division_id = request.form.get('article_portal_division_id')
-    ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, favorite)
-    return jsonify({'favorite': favorite})
+@ok
+def add_delete_favorite(json):
+    return ReaderArticlePortalDivision.add_delete_favorite_user_article(json.get('article')['id'], json.get('article')['is_favorite'])
 
 
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
