@@ -132,7 +132,7 @@ body {
 }
 .menu-profile .login-profile {
   background-color: #c62828;
-  padding: 7px 15px;
+  padding: 7px 10px;
   border-radius: 3px;
   margin-top: 2px;
   margin-right: -5px;
@@ -143,6 +143,10 @@ body {
 }
 .menu-site a:hover {
   transition: all 0.2s ease-out;
+}
+.menu-site ul {
+  position: absolute;
+  right: 0px;
 }
 .hamburger-menu span {
   background-color: #fff;
@@ -865,8 +869,9 @@ body {
 /* ---MEDIA--- */
 @media screen and (max-width: 764px) {
   .menu-site ul {
-    float: none;
+    float: right;
     margin-right: 0;
+    position: static;
   }
   body {
     padding-top: 150px;
