@@ -364,7 +364,8 @@ class MemberCompanyPortal(Base, PRBase):
             'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
             'RESTORE': ACTIONS['RESTORE']
         },
-        STATUSES['REJECTED']: {'WITHDRAW': ACTIONS['WITHDRAW']}
+        STATUSES['REJECTED']: {'WITHDRAW': ACTIONS['WITHDRAW']},
+        STATUSES['DELETED']: {}
     }
 
     STATUS_FOR_ACTION = {
@@ -401,11 +402,15 @@ class MemberCompanyPortal(Base, PRBase):
 
         return True
 
-    def can_update(self, user_right):
+    def can_update_company_partner(self, user_right):
         if self.status =='FROZEN' and not user_right:
-            return False
+            return 'Sorry!You can not manage company {}!It was frozen!'.format(self.company.name)
+        if self.status =='DELETED':
+            return 'Sorry!Company {} was unsubscribed!'.format(self.company.name)
         if self.company.status != 'ACTIVE':
-            return False
+            return 'Sorry!Company {} is not active!'.format(self.company.name)
+        if not user_right:
+                return 'You haven\'t got aproriate rights!'
         return True
 
 
@@ -422,6 +427,7 @@ class MemberCompanyPortal(Base, PRBase):
         self.portal = portal
         self.plan = plan
         self.status = status
+
 
     @staticmethod
     def apply_company_to_portal(company_id, portal_id):
