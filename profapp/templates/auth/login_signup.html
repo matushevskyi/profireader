@@ -14,8 +14,8 @@
     <div class="auth-input auth-form col-lg-4 col-md-4 col-sm-5 col-xs-12" ng-controller="UserLoginController">
         <div class="tabs">
             <div ng-hide="login_signup==='signup'" class="tab-link">
-                <a class="tab actual" title="Log in to Profireader">{{ '{{' }}_('Log in'){{ '}}' }}</a>
-                <a class="tab" ng-click="login_signup='signup'" href="" title="Sign up to Profireader">{{ '{{' }}_('Sign up'){{ '}}' }}</a>
+                <a pr-test="TabLogIn" class="tab actual" title="Log in to Profireader">{{ '{{' }}_('Log in'){{ '}}' }}</a>
+                <a pr-test="TabSignUp" class="tab" ng-click="login_signup='signup'" href="" title="Sign up to Profireader">{{ '{{' }}_('Sign up'){{ '}}' }}</a>
             </div>
             <div ng-show="login_signup==='signup'" class="tab-link">
                 <a class="tab" ng-click="login_signup='login'" href="" title="Log in to Profireader">{{ '{{' }}_('Log in'){{ '}}' }}</a>
