@@ -1,4 +1,4 @@
-{% extends "index_lazy_layout.html" %}
+{% extends "_ruslan/_index_layout.html" %}
 
 {% block title %}{{ _('Portal list') }}{% endblock title %}
 
@@ -31,17 +31,17 @@
 
             $scope.search_for_portal = function () {
                 $scope.loading = true;
-                if('text' in $scope.scroll_data && $scope.search_text !== $scope.scroll_data.text) {
+                if ('text' in $scope.scroll_data && $scope.search_text !== $scope.scroll_data.text) {
                     $scope.next_page = 1;
                 }
-                $scope.scroll_data = {text: $scope.search_text, next_page:$scope.next_page};
-                $ok('',$scope.scroll_data , function (resp) {
+                $scope.scroll_data = {text: $scope.search_text, next_page: $scope.next_page};
+                $ok('', $scope.scroll_data, function (resp) {
                     $scope.data = resp;
                 }).finally(function () {
-                    $timeout(function(){
+                    $timeout(function () {
                         $scope.loading = false;
-                        if($(document).height()-$(window).height() === 0 && !$scope.data.end){
-                            $scope.next_page +=1;
+                        if ($(document).height() - $(window).height() === 0 && !$scope.data.end) {
+                            $scope.next_page += 1;
                             $scope.search_for_portal()
                         }
                     }, 500)
@@ -54,31 +54,57 @@
     </script>
 
     {% raw %}
-    <div ng-controller="portals_list" ng-init="search_for_portal()">
-        <h2>{{ _('Please, search and subscribe to any portal') }}</h2>
-        </br>
-        {{ _('Search') }} <input ng-model="search_text" ng-change="search_for_portal()" id="portal_search" type="text">
-        <h2 ng-if="search_text.length>0">{{ _('Searching results') }}</h2>
-        <h4 ng-if="data.list_portals.length==0 && search_text.length>0" style="color: red">{{ _('For your search no results!') }}</h4>
-        <table>
-            <tr ng-repeat="portal in data.list_portals">
+    <div class="container serch-portal" ng-controller="portals_list" ng-init="search_for_portal()">
+        <div class="row">
+            <h2>{{ _('Please, search and subscribe to any portal') }}</h2>
+        </div>
+        <div class="row">
+            <input placeholder="Search" class="form-control" ng-model="search_text" ng-change="search_for_portal()"
+                   id="portal_search" type="text">
+        </div>
+        <div class=" row link-page">
+            <h5 ng-if="search_text.length>0">{{ _('Searching results') }}:</h5>
+        </div>
+        <div class="row">
+            <h4 ng-if="data.list_portals.length==0 && search_text.length>0" style="color: red">{{ _('For your search no
+            results!') }}</h4>
+        </div>
+        <div ng-repeat="portal in data.list_portals" class="row block-portal">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-6">
+                <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
+            </div>
+            <div class="col-lg-7 col-md-6 col-sm-6 col-xs-6">
+                <h3><span ng-bind-html="highlight(portal.name, search_text)"></span></h3>
+                <span class="address-portal" ng-bind-html="highlight(portal.host, search_text)"></span>
+            </div>
+            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-6">
+                <button ng-disabled="portal.subscribed" class="btn-search-portal" ng-click="subscribe(portal.id)">
+                    {{ _('Subscribe') }}
+                </button>
+            </div>
+        </div>
 
-                <td class="p4px">
-                    <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
-                </td>
-                <td class="p4px">
-                    <span ng-bind-html="highlight(portal.name, search_text)"></span><br/>
-                    <span ng-bind-html="highlight(portal.host, search_text)"></span>
-                </td>
-                <td class="p4px">
-                    <button ng-disabled="portal.subscribed" class="btn" ng-click="subscribe(portal.id)">{{
-                        _('Subscribe') }}
-                    </button>
-                </td>
 
-            </tr>
+        <!--
+                <table>
+                    <tr ng-repeat="portal in data.list_portals">
 
-        </table>
+                        <td class="p4px">
+                            <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
+                        </td>
+                        <td class="p4px">
+                            <span ng-bind-html="highlight(portal.name, search_text)"></span><br/>
+                            <span ng-bind-html="highlight(portal.host, search_text)"></span>
+                        </td>
+                        <td class="p4px">
+                            <button ng-disabled="portal.subscribed" class="btn" ng-click="subscribe(portal.id)">{{
+                                _('Subscribe') }}
+                            </button>
+                        </td>
+
+                    </tr>
+
+                </table>-->
     </div>
     {% endraw %}
 {% endblock portal_content %}
