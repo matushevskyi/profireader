@@ -549,10 +549,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             restrict: 'AE',
             link: function (scope, element, attrs) {
                 var elementType = element.prop('nodeName');
-
                 var enable = function (allow) {
                     if (allow === true) {
-                        element.removeProp('disabled');
+                        element.prop('disabled', false);
                         element.removeClass('disabled');
                         element.prop('title', '');
                     } else {

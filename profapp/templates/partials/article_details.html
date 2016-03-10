@@ -1,5 +1,5 @@
 <script>
-    var favorite = {{ favorite | tojson |safe}};
+    var favorite = {{ (favorite if favorite else false) | tojson |safe}};
     function add_delete_favorite(boolean) {
         var article_portal_division_id = {{ article['id']|tojson }};
         $.ajax({
@@ -21,7 +21,8 @@
     <h3 class="item-subtitle">{{ article['subtitle']|safe }}</h3>
 
     <div class="row" style="border-bottom: 1px solid #000;padding-bottom: 5px;">
-        <div class="item-company col-lg-4 col-md-4 col-sm-4 col-xs-4"><a href="//profireader.com/company/profile/{{ article['company']['id'] }}">
+        <div class="item-company col-lg-4 col-md-4 col-sm-4 col-xs-4"><a
+                href="//profireader.com/company/profile/{{ article['company']['id'] }}">
             {{ article['company']['name']|safe }}</a>
         </div>
 
@@ -31,32 +32,10 @@
 
 
     </div>
-<div class="row" style="color: #3f4c55;margin-top: 10px;margin-bottom: 15px;">
-    <div class="item-comments col-lg-4 col-md-4 col-sm-4 col-xs-4">{{ _('Comments') }} 0</div>
-    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">Likes {{ article['like_count'] }}</div>
-    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4" id='favorite' onclick="favorite?add_delete_favorite(false):add_delete_favorite(true);">
-            {% if favorite %}
-                <i class="fa fa-heart"></i>
-            {% else %}
-                <i class="fa fa-heart-o"></i>
-            {% endif %}
-            <script>document.write(favorite ? 'Delete from favorite' : 'Add to favorite')</script>
-    </div>
-</div>
-
-
-<!--
-    <div class="item-additional-info-top"
-         style="display: block; width: 100%; padding-bottom: 5px; border-bottom: 1px #ccc solid; margin-bottom: 15px;">
-        <div class="item-company"><a href="//profireader.com/company/profile/{{ article['company']['id'] }}">
-            {{ article['company']['name']|safe }}</a>
-        </div>
-
-        <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
-        <div class="item-comments">{{ _('Comments') }} 0</div>
-        <div class="read_count">Read {{ article['read_count'] }}</div>
-        <div class="like_count">Likes {{ article['like_count'] }}</div>
-        <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3" id='favorite' style="cursor: pointer"
+    <div class="row" style="color: #3f4c55;margin-top: 10px;margin-bottom: 15px;">
+        <div class="item-comments col-lg-4 col-md-4 col-sm-4 col-xs-4">{{ _('Comments') }} 0</div>
+        <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">Likes {{ article['like_count'] }}</div>
+        <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4" id='favorite'
              onclick="favorite?add_delete_favorite(false):add_delete_favorite(true);">
             {% if favorite %}
                 <i class="fa fa-heart"></i>
@@ -66,7 +45,7 @@
             <script>document.write(favorite ? 'Delete from favorite' : 'Add to favorite')</script>
         </div>
     </div>
--->
+
     <div class="article-short">
         {{ article['short']|safe }}
     </div>
