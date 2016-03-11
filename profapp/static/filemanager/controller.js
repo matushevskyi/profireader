@@ -110,12 +110,12 @@
             };
 
             $scope.search = function (query) {
-                if(query){
+                if(query && query !== ''){
                    $scope.fileNavigator.search(query, $scope.fileNavigator.getCurrentFolder());
                 }else{
                     if($scope.fileNavigator.is_search){
                        self.search_text = '';
-                       $scope.fileNavigator.refresh();
+                       $scope.fileNavigator.goTo(-1);
                     }
                 }
             };
@@ -432,9 +432,13 @@
                     var re = new RegExp($scope.fileNavigator.search_text, "gi");
                     name = name.length <= limit ? name: $filter('limitTo')(name, limit) + '...';
                     var result = name.match(re);
-                    var res =  name.replace(re, '<span style="color:red">' + result[0] + '</span>');
-                    $('#highlightT_'+id).html(res);
-                    return name;
+                    if(result){
+                        var res =  name.replace(re, '<span style="color:red">' + result[0] + '</span>');
+                        $('#highlightT_'+id).html(res);
+                        return name;
+                    }else {
+                        return name;
+                    }
                 }else {
                     name = name.length <= limit ? name: $filter('limitTo')(name, limit) + '...';
                     return name

@@ -239,11 +239,13 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                                 //model.$modelValue.name = file.name;
                                 //model.$modelValue.dataContent = content;
                                 restartCropper(uploaded_file, false, function () {
-                                    scope.prCrop['selected_by_user'] = {'type': 'upload', 'file': {
-                                        'type': the_file.type,
-                                        'name': the_file.name,
-                                        'content': fr.result
-                                    }};
+                                    scope.prCrop['selected_by_user'] = {
+                                        'type': 'upload', 'file': {
+                                            'type': the_file.type,
+                                            'name': the_file.name,
+                                            'content': fr.result
+                                        }
+                                    };
                                 });
                             }
                             fr.onerror = function (e) {
@@ -314,6 +316,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     options['strict'] = true;
                     options['viewMode'] = 3;
                     options['zoomable'] = scope.zoomable;
+                    options['minCropBoxWidth'] = 100;
                     //options['autoCrop'] = true;
 
                     options['zoom'] = function (e) {
@@ -569,10 +572,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             restrict: 'AE',
             link: function (scope, element, attrs) {
                 var elementType = element.prop('nodeName');
-
                 var enable = function (allow) {
                     if (allow === true) {
-                        element.removeProp('disabled');
+                        element.prop('disabled', false);
                         element.removeClass('disabled');
                         element.prop('title', '');
                     } else {
@@ -708,126 +710,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
         return objectTransformation;
     })
-//.directive('ngOk', ['$http', '$compile', '$ok', function ($http, $compile, $ok) {
-//    return {
-//        restrict: 'A',
-//        scope: {
-//            ngOnsubmit: '&',
-//            ngOnsuccess: '&',
-//            ngOnfail: '&',
-//            ngAction: '=',
-//            ngWatch: '@'
-//        },
-//        link: function (scope, iElement, iAttrs, ngModelCtrl) {
-//
-//
-//            if (iAttrs['ngValidationResult']) {
-//                scope[iAttrs['ngValidationResult']] = {};
-//                var s = scope[iAttrs['ngValidationResult']];
-//
-//                s.checking = {};
-//                s.checked = {};
-//
-//                s.errors = {};
-//                s.warnings = {};
-//                s.dirty = true;
-//
-//                s.submitting = false;
-//                s.url = null;
-//                s.on_success_url = null;
-//            }
-//
-//            iAttrs.$observe('ngAjaxAction', function (value) {
-//                s.url = value;
-//            });
-//
-//            iAttrs.$observe('ngOnSuccess', function (value) {
-//                s.on_success_url = value;
-//            });
-//
-//
-//            $.each($('[name]', $(iElement)), function (ind, el) {
-//                $newel = $(el).clone();
-//                scope.data[$(el).attr('name')] = $(el).val();
-//                $newel.attr('ng-model', 'data.' + $newel.attr('name'));
-//                $(el).replaceWith($compile($newel)(scope))
-//            });
-//
-//
-//            s.getSignificantClass = function (index, one, onw, onn) {
-//
-//                if (s.errors && !areAllEmpty(s.errors[index])) {
-//                    return one;
-//                }
-//                if (s.warnings && !areAllEmpty(s.warnings[index])) {
-//                    return onw;
-//                }
-//                if (s.notices && !areAllEmpty(s.notices[index])) {
-//                    return onn;
-//                }
-//                return '';
-//            };
-//
-//            s.getSignificantMessage = function (index) {
-//
-//                if (s.errors && !areAllEmpty(s.errors[index])) {
-//                    return s.errors[index][0];
-//                }
-//                if (s.warnings && !areAllEmpty(s.warnings[index])) {
-//                    return s.warnings[index][0];
-//                }
-//                if (s.notices && !areAllEmpty(s.notices[index])) {
-//                    return s.notices[index][0]
-//                }
-//                return '';
-//            };
-//
-//
-//            s.refresh = function () {
-//                s.changed = getObjectsDifference(s.checked, s['data']);
-//                s.check();
-//            };
-//
-//            s.check = _.debounce(function (d) {
-//                if (areAllEmpty(s.checking)) {
-//                    console.log('s.changed', s.changed);
-//                    s.changed = getObjectsDifference(s.checked, scope['data']);
-//                    if (!areAllEmpty(s.changed)) {
-//                        s.checking = scope['data'];
-//
-//                        $http.post($(iElement).attr('njAjaxAction'), s.checking)
-//                            .then(function (fromserver) {
-//                                var resp = fromserver['data'];
-//                                if (areAllEmpty(getObjectsDifference(s.checking, scope['data']))) {
-//                                    s.errors = $.extend(true, {}, resp['errors']);
-//                                    s.warnings = $.extend(true, {}, resp['warnings']);
-//                                    s.checked = $.extend(true, {}, s.checking);
-//                                    s.changed = {};
-//                                    s.checking = {};
-//                                }
-//                                else {
-//                                    s.checking = {};
-//                                    s.refresh();
-//                                }
-//                            }, function () {
-//                                s.checking = {};
-//                                s.refresh();
-//                            });
-//                    }
-//                }
-//                else {
-//                    s.refresh();
-//                }
-//            }, 500);
-//            console.log(iAttrs);
-//            if (iAttrs['ngAjaxFormValidate'] !== undefined) {
-//                s.$watch('data', s.refresh, true);
-//                s.refresh();
-//            }
-//            s.getTemp(iAttrs.ngCity);
-//        }
-//    }
-//}]);
 
 
 areAllEmpty = function () {
@@ -1116,19 +998,17 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                     return groupValue;
                 };
 
-                $scope.get_default_selected = function () {
-                    if ($scope.addData.default_selected.select === 'all') {
+                $scope.get_default_selected = function (exeptions) {
+                    if (exeptions) {
                         $scope.listElemens[$scope.addData.field] = [];
                         $timeout(function () {
                             for (var f = 0; f < $scope.options.length; f++) {
-                                if ($scope.addData.default_selected.exception instanceof Array) {
-                                    for (var n = 0; n < $scope.addData.default_selected.exception.length; n++) {
-                                        if ($scope.options[f]['label'] !== $scope.addData.default_selected.exception[n]) {
-                                            $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
-                                        }
+                                if (exeptions instanceof Array) {
+                                    if (exeptions.indexOf($scope.options[f]['label']) === -1) {
+                                        $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
                                     }
                                 } else {
-                                    if ($scope.options[f]['label'] !== $scope.addData.default_selected.exception) {
+                                    if ($scope.options[f]['label'] !== exeptions) {
                                         $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
                                     }
                                 }
@@ -1141,9 +1021,13 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                     if (!$scope.listElemens) {
                         $scope.listElemens = {};
                         $scope.listElemens[$scope.addData.field] = [];
-                        if ($scope.addData.default_selected) {
-                            $scope.get_default_selected()
-                        }
+                        $timeout(function () {
+                            $scope.filters_exception = $scope.parentScope.gridApi.grid.filters_init_exception
+                            if ($scope.filters_exception) {
+                                $scope.get_default_selected($scope.filters_exception)
+                            }
+                        }, 2000);
+
                     }
                     if ($scope.settings.dynamicTitle && ($scope.selectedModel.length > 0 || (angular.isObject($scope.selectedModel) && _.keys($scope.selectedModel).length > 0))) {
                         if ($scope.settings.smartButtonMaxItems > 0) {
@@ -1207,13 +1091,10 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                 $scope.deselectAll = function (sendEvent) {
                     if (sendEvent && $scope.listElemens[$scope.addData.field].length > 0) {
                         $scope.isSelectAll = false;
-                        if ($scope.addData.default_selected) {
-                            $scope.get_default_selected()
-                            delete $scope.data.filter[$scope.addData.field]
-                        } else {
-                            delete $scope.data.filter[$scope.addData.field];
-                            $scope.listElemens[$scope.addData.field] = [];
-                        }
+                        delete $scope.data.filter[$scope.addData.field];
+                        $scope.listElemens[$scope.addData.field] = [];
+                        if ($scope.filters_exception)
+                            $scope.data.filter[$scope.addData.field] = []
                         $scope.send($scope.data);
                         if ($scope.singleSelection) {
                             clearObject($scope.selectedModel);
@@ -1477,7 +1358,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                     switch (col.type) {
                         case 'link':
-                            return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
+                            return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-style="grid.appScope.' + col.cellStyle + '"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
                         case 'img':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="{{ COL_FIELD }}" alt="image" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
                         case 'show_modal':
@@ -1513,7 +1394,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         gridApi.grid.listOfSelectedFilterGrid = [];
                         gridApi.grid.additionalDataForMS[col[i].name] = {
                             limit: col[i].filter.limit ? col[i].filter.limit : null,
-                            default_selected: col[i].filter.default_selected,
                             type: col[i].filter.type,
                             field: col[i].name
                         };
@@ -1536,12 +1416,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             };
 
             gridApi.grid['set_data_function'] = function (grid_data) {
-
                 gridApi.grid.options.data = grid_data.grid_data;
+                gridApi.grid.filters_init_exception = grid_data.grid_filters_except
                 gridApi.grid.listsForMS = {};
                 gridApi.grid.options.totalItems = grid_data.total;
-                gridApi.grid.filters_action = grid_data.filters_action
-                gridApi.grid.filters_info = grid_data.filters_info
                 if (grid_data.page) {
                     gridApi.grid.options.pageNumber = grid_data.page;
                     gridApi.grid.options.paginationCurrentPage = grid_data.page;
@@ -1971,8 +1849,8 @@ function cloneObject(o) {
     return (o === null || typeof o !== 'object') ? o : $.extend(true, {}, o);
 }
 
-function add_message(amessage, atype, atime) {
-    return angularControllerFunction('message-controller', 'add_message')(amessage, atype, atime);
+function add_message(amessage, atype, atime, aunique_id) {
+    return angularControllerFunction('message-controller', 'add_message')(amessage, atype, atime, aunique_id);
 }
 
 function randomHash() {

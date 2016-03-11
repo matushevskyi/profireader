@@ -10,7 +10,6 @@
             uploadUrl: "/filemanager/upload/",
             renameUrl: "/filemanager/rename/",
             set_properties: "/filemanager/properties/",
-            search_Url: "/filemanager/search/",
             copyUrl: "/filemanager/copy/",
             cutUrl: "/filemanager/cut/",
             removeUrl: "/filemanager/remove/",

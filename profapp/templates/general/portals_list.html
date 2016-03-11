@@ -25,7 +25,7 @@
                         }
                     });
                 {% else %}
-                    window.location.href = {{ raw_url_for('reader.reader_subscribe')|safe }}({portal_id: portal_id});
+                    window.location.href = {{ raw_url_for('general.auth_before_subscribe_to_portal')|safe }}({portal_id: portal_id});
                 {% endif %}
             };
 

@@ -65,16 +65,6 @@
             }) : add_message('Sorry!!!You haven\'t got  appropriate rights!', 'danger', 8000)
         };
 
-        $scope.grid_filter_action = function(id, action, row, column_name){
-            $scope.loading = true;
-            return $ok($scope.url_portals_partners ,{action:action}, function(resp){
-                $scope.gridApi.grid.set_data_function(resp);
-            }).finally(function () {
-                $scope.loading = false
-            })
-        };
-
-
         $scope.grid_action = function (id, action, row, column_name) {
             if(row.actions[action] == true){
                 return $ok($scope.url_change_status({company_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action}, function(resp){}).finally(function () {
@@ -99,13 +89,14 @@
                                 name: 'portal.own_company.name', type: 'link',
                                 href: 'url_company_profile({company_id: row.entity.portal.own_company.id})',img:"portal.own_company.logo_file_id"
                             }, {
-                                name: 'status', width: '20%', filter: {type: 'multi_select',default_selected:{select:'all', exception:'REJECTED'}} //we can default select all and deselect that we need, 'exception' can be string or array of string
+                                name: 'status', width: '20%', filter: {type: 'multi_select',default_selected:true} //we can default select all and deselect that we need, 'exception' can be string or array of string
                             }, {
                                 name: 'rights', width: '200', type: 'icons', afilter: {type: 'input'}},
                             {
                                 name:'actions', type: 'actions', onclick: 'grid_action'}
                         ]
                     });
+        console.log($scope)
         {% endraw %}
     })
     </script>
