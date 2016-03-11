@@ -1,4 +1,4 @@
-{% extends "index_layout.html" %}
+{% extends "_ruslan/_index_layout.html" %}
 {% block title %}Profireader - Confirm your accont{% endblock title %}
 {% block head %}
     {{ super() }}
@@ -10,7 +10,7 @@
 
 {% block portal_content %}
 
-<div ng-controller="UserLoginController">
+<div class="container" ng-controller="UserLoginController">
     <h1 class="nice-title">Hello, {{ current_user.profireader_name }}!<span></span></h1>
     <h3>{{ '{{' }}_('You have not confirmed your account yet'){{ '}}' }}.</h3>
     <p>
