@@ -357,19 +357,19 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     //}
 
                     options['crop'] = function (e) {
-                        console.log(scope.prCrop['min_size'], e.width);
-                        if ((scope.prCrop['min_size'][0] && e.width < scope.prCrop['min_size'][0])
-                            || (scope.prCrop['min_size'][1] && e.height < scope.prCrop['min_size'][1])) {
-                            console.log('too small');
-                            e.preventDefault();
-                        }
-                        else {
-                            $timeout(function () {
-                                scope.prCrop['crop']['coordinates'] = {
-                                    'width': e.width, 'height': e.height, 'y': e.y, 'x': e.x
-                                };
-                            })
-                        }
+                        //console.log(scope.prCrop['min_size'], e.width);
+                        //if ((scope.prCrop['min_size'][0] && e.width < scope.prCrop['min_size'][0])
+                        //    || (scope.prCrop['min_size'][1] && e.height < scope.prCrop['min_size'][1])) {
+                        //    console.log('too small');
+                        //    e.preventDefault();
+                        //}
+                        //else {
+                        $timeout(function () {
+                            scope.prCrop['crop']['coordinates'] = {
+                                'width': e.width, 'height': e.height, 'y': e.y, 'x': e.x
+                            };
+                        })
+                        //}
                     }
 
                     $image.cropper(options);
@@ -998,19 +998,19 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                     return groupValue;
                 };
 
-                $scope.get_default_selected = function(exeptions){
-                    if(exeptions){
+                $scope.get_default_selected = function (exeptions) {
+                    if (exeptions) {
                         $scope.listElemens[$scope.addData.field] = [];
-                        $timeout(function(){
+                        $timeout(function () {
                             for (var f = 0; f < $scope.options.length; f++) {
-                                if(exeptions instanceof Array){
-                                    if(exeptions.indexOf($scope.options[f]['label']) === -1){
+                                if (exeptions instanceof Array) {
+                                    if (exeptions.indexOf($scope.options[f]['label']) === -1) {
                                         $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
                                     }
-                                }else{
-                                   if($scope.options[f]['label'] !== exeptions){
+                                } else {
+                                    if ($scope.options[f]['label'] !== exeptions) {
                                         $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
-                                   }
+                                    }
                                 }
                             }
                         }, 500)
@@ -1021,9 +1021,9 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                     if (!$scope.listElemens) {
                         $scope.listElemens = {};
                         $scope.listElemens[$scope.addData.field] = [];
-                        $timeout(function(){
+                        $timeout(function () {
                             $scope.filters_exception = $scope.parentScope.gridApi.grid.filters_init_exception
-                            if($scope.filters_exception){
+                            if ($scope.filters_exception) {
                                 $scope.get_default_selected($scope.filters_exception)
                             }
                         }, 2000);
@@ -1093,7 +1093,7 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
                         $scope.isSelectAll = false;
                         delete $scope.data.filter[$scope.addData.field];
                         $scope.listElemens[$scope.addData.field] = [];
-                        if($scope.filters_exception)
+                        if ($scope.filters_exception)
                             $scope.data.filter[$scope.addData.field] = []
                         $scope.send($scope.data);
                         if ($scope.singleSelection) {
@@ -1358,7 +1358,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                     switch (col.type) {
                         case 'link':
-                            return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-style="grid.appScope.'+col.cellStyle+'"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
+                            return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-style="grid.appScope.' + col.cellStyle + '"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
                         case 'img':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="{{ COL_FIELD }}" alt="image" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
                         case 'show_modal':
