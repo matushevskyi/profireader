@@ -916,9 +916,12 @@ class ReaderArticlePortalDivision(Base, PRBase):
     @staticmethod
     def add_delete_favorite_user_article(article_portal_division_id, favorite):
         article = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id,
-                     user_id=g.user_id).one()
-        article.favorite = True if favorite else False
+                     user_id=g.user_id).first()
+        if not article:
+            article = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
+        article.favorite = False if favorite else True
         article.liked = True
+        return article.favorite
 
     @staticmethod
     def article_is_favorite(user_id, article_portal_division_id):
@@ -930,7 +933,7 @@ class ReaderArticlePortalDivision(Base, PRBase):
     def add_to_table_if_not_exists(article_portal_division_id):
         if not db(ReaderArticlePortalDivision,
                   user_id=g.user_id, article_portal_division_id=article_portal_division_id).count():
-            ReaderArticlePortalDivision(user_id=g.user_id,
+            return ReaderArticlePortalDivision(user_id=g.user_id,
                                         article_portal_division_id=article_portal_division_id,
                                         favorite=False).save()
 
