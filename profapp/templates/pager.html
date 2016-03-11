@@ -41,7 +41,7 @@
 
         <label ng-if="uploadable" class="btn btn-primary btn-upload"
               title="Upload image file">
-            <input type="file" class="sr-only pr-cropper-input-image"  name="file"
+            <input pr-file-change="fileUploaded" type="file" class="sr-only pr-cropper-input-image"  name="file"
                    accept="image/*">
             <span class="docs-tooltip" data-toggle="tooltip" title="Import image with Blob URLs">
               <span class="glyphicon glyphicon-upload"></span>
