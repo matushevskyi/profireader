@@ -132,20 +132,17 @@ body {
 }
 .menu-profile .login-profile {
   background-color: #c62828;
-  padding: 7px 7px;
+  padding: 7px 15px;
   border-radius: 3px;
   margin-top: 2px;
-  margin-left: 0;
+  margin-right: -5px;
+  margin-left: 10px;
 }
 .menu-site a {
   color: #fff;
 }
 .menu-site a:hover {
   transition: all 0.2s ease-out;
-}
-.menu-site ul {
-  position: absolute;
-  right: 0px;
 }
 .hamburger-menu span {
   background-color: #fff;
@@ -416,12 +413,6 @@ body {
 .some-company-info a {
   color: #18BCAB;
   text-decoration: none;
-}
-.company .edit-company button {
-  width: 115px;
-  padding: 0;
-  margin-left: 25px;
-  margin-right: -15px;
 }
 .company h3 {
   color: #e64a19;
@@ -725,90 +716,61 @@ body {
 .name-form {
   margin-top: 12px;
 }
-.flash-message-err {
+.flash-message {
+  box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
   z-index: 100;
   position: fixed;
   right: 0;
   background-color: #fff;
   bottom: -30px;
-  box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
   margin-bottom: 50px;
   padding-left: 0;
 }
-.flash-message-err h3 {
+.flash-message h3 {
+  margin-top: 30px;
+}
+.flash-message .img-message {
+  padding-left: 0;
+}
+.flash-message i {
+  margin-top: 15px;
+  display: inline;
+  float: right;
+  cursor: pointer;
+  color: #424242;
+}
+.flash-message p {
+  color: #424242;
+}
+.flash-message img {
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 128px;
+  height: 129px;
+}
+.flash-message-danger h3 {
   color: #FF67A0;
-  margin-top: 30px;
 }
-.flash-message-err p {
-  color: #424242;
+.flash-message-danger img {
+  background-image: url('//static.profireader.com/static/images/flash-message-danger.png');
 }
-.flash-message-err .img-message {
-  padding-left: 0;
-}
-.flash-message-err i {
-  margin-top: 15px;
-  display: inline;
-  float: right;
-  color: #424242;
-  cursor: pointer;
-}
-.flash-message-succsess {
-  position: fixed;
-  z-index: 90;
-  right: 0;
-  bottom: -30px;
-  background-color: #fff;
-  box-shadow: 3px 4px 7px rgba(0, 0, 0, 0.3);
-  margin-bottom: 50px;
-  padding-left: 0;
-}
-.flash-message-succsess h3 {
+.flash-message-success h3 {
   color: #A6F284;
-  margin-top: 30px;
 }
-.flash-message-succsess p {
-  color: #424242;
+.flash-message-success img {
+  background-image: url('//static.profireader.com/static/images/flash-message-success.png');
 }
-.flash-message-succsess .img-message {
-  padding-left: 0;
+.flash-message-warning h3 {
+  color: #A6F284;
 }
-.flash-message-succsess i {
-  margin-top: 15px;
-  color: #424242;
-  display: inline;
-  float: right;
-  cursor: pointer;
+.flash-message-warning img {
+  background-image: url('//static.profireader.com/static/images/flash-message-warning.png');
 }
-/*--- PORTALS LIST ---*/
-.serch-portal {
-  margin-bottom: 30px;
+.flash-message-info h3 {
+  color: #A6F284;
 }
-.serch-portal input {
-  margin-top: 15px;
-  margin-bottom: 15px;
-  border-radius: 0px;
-  border-color: #383838;
-}
-.serch-portal input:active,
-.serch-portal input:focus {
-  border-color: #18BCA2;
-}
-.serch-portal .btn-search-portal {
-  color: #fff;
-  width: 100%;
-  margin-top: 35px;
-  background-color: #18BCAB;
-  border-radius: 3px;
-  border: none;
-  padding: 10px;
-}
-.serch-portal .address-portal {
-  color: #18bc9c;
-}
-.serch-portal .block-portal {
-  margin-top: 15px;
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
-  border: 1px solid #f5f5f5;
+.flash-message-info img {
+  background-image: url('//static.profireader.com/static/images/flash-message-info.png');
 }
 /* --- HELP PAGE ---*/
 .help-page {
@@ -899,9 +861,8 @@ body {
 /* ---MEDIA--- */
 @media screen and (max-width: 764px) {
   .menu-site ul {
-    float: right;
+    float: none;
     margin-right: 0;
-    position: static;
   }
   body {
     padding-top: 150px;

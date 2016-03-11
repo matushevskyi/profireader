@@ -6,9 +6,13 @@
 
         $scope.add_message = function (amessage, atype, atime) {
 
-            var msg = {type: atype ? atype : 'error', msg: amessage, hash: randomHash()};
+            if (['danger', 'success', 'warning', 'info'].indexOf(atype) === -1) {
+                console.warn("Unknow message type `" + atype +
+                        "` passed (is restricted to 'danger', 'success', 'warning', 'info'");
+                atype = 'info';
+            }
 
-
+            var msg = {type: atype ? atype : 'info', msg: amessage, hash: randomHash()};
 
             $scope.alerts.push(msg);
 
@@ -22,8 +26,8 @@
                         }
                     });
                 }, atime)
-            };
-
+            }
+            ;
 
 
         };
@@ -45,19 +49,9 @@
 <div ng-controller="message-controller" id="controller-message-controller">
     {% raw %}
     <div ng-repeat="alert in alerts" class="row">
-        <div ng-if="alert.type=='success' && !close_current_alert" class="col-lg-offset-3 col-lg-6 flash-message-succsess" >
+        <div class="col-lg-offset-3 col-lg-6 flash-message flash-message-{{ alert.type }}">
             <div class="col-lg-4 img-message">
-                <img src="//static.profireader.com/static/images/success.png" alt="success">
-            </div>
-            <div class="col-lg-8">
-                <i class="fa fa-times" ng-click="closeAlert($index)"></i>
-                <h3>{{ _(alert.type + '!') }}</h3>
-                <p>{{ alert.msg }}</p>
-            </div>
-        </div>
-        <div ng-if="alert.type=='error'" class="col-lg-offset-3 col-lg-6 flash-message-err">
-            <div class="col-lg-4 img-message">
-                <img src="//static.profireader.com/static/images/error.png" alt="error">
+                <img src="//static.profireader.com/static/images/0.gif" width="128" height="129" alt="{{ alert.type }}">
             </div>
             <div class="col-lg-8">
                 <i class="fa fa-times" ng-click="closeAlert($index)"></i>

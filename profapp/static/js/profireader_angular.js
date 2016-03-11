@@ -136,6 +136,15 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             }
         }
     }])
+    .directive('prFileChange', function () {
+        return {
+            restrict: 'A',
+            link: function (scope, element, attrs) {
+                var onChangeHandler = scope.$eval(attrs.prFileChange);
+                element.bind('change', onChangeHandler);
+            }
+        };
+    })
     .directive('prCrop', ['$compile', '$templateCache', '$timeout', function ($compile, $templateCache, $timeout) {
         return {
             restrict: 'A',
@@ -153,7 +162,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 scope.croper_loaded = false;
                 scope.originalModel = $.extend(true, {}, scope.prCrop);
-                scope.fallback_url = '//static.profireader.com/static/images/choose_image.png'
+                scope.fallback_url = '//static.profireader.com/static/images/choose_image.png';
+
 
                 scope.setModel = function () {
                     scope.uploadable = scope.prCrop['upload'] ? true : false;
@@ -163,6 +173,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 scope.resetModel = function () {
                     scope.prCrop = $.extend(true, {}, scope.originalModel);
+                    scope.prCrop['selected_by_user'] = {'type': 'old'};
                     scope.setModel();
                     restartCropper(scope.prCrop.selected_url, null, function () {
                         scope.prCrop['selected_by_user'] = {'type': 'old'};
@@ -214,34 +225,36 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 var $image = $('img', element);
 
-                $timeout(function () {
-                    $('input.pr-cropper-input-image', element).change(function () {
-                        var the_file = (this.files && this.files.length) ? this.files[0] : false;
-                        this.files = [];
-                        if (the_file) {
-                            var fr = new FileReader();
-                            if (/^image\/\w+$/.test(the_file.type)) {
-                                fr.readAsDataURL(the_file);
-                                fr.onload = function (e) {
-                                    scope.prCrop['zoom'] = 0;
-                                    scope.prCrop['crop']['coordinates'] = {rotate: 0};
-                                    restartCropper((window.URL || window.webkitURL).createObjectURL(the_file), false, function () {
-                                        scope.prCrop['selected_by_user'] = {'type': 'upload', 'file': the_file};
-                                    });
-                                }
-                                fr.onerror = function (e) {
-                                    add_message('Please choose an image file');
-                                }
+                scope.fileUploaded = function (event) {
+                    var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
+                    if (the_file) {
+                        var fr = new FileReader();
+                        if (/^image\/\w+$/.test(the_file.type)) {
+                            fr.readAsDataURL(the_file);
+                            fr.onload = function (e) {
+                                scope.prCrop['zoom'] = 0;
+                                scope.prCrop['crop']['coordinates'] = {rotate: 0};
+                                var uploaded_file = (window.URL || window.webkitURL).createObjectURL(the_file);
+                                //model.$modelValue.type = file.type;
+                                //model.$modelValue.name = file.name;
+                                //model.$modelValue.dataContent = content;
+                                restartCropper(uploaded_file, false, function () {
+                                    scope.prCrop['selected_by_user'] = {'type': 'upload', 'file': {
+                                        'type': the_file.type,
+                                        'name': the_file.name,
+                                        'content': fr.result
+                                    }};
+                                });
                             }
-                            else {
+                            fr.onerror = function (e) {
                                 add_message('Please choose an image file');
                             }
                         }
-                    });
-                });
-
-                //$inputImage.change(uploadCropper);
-
+                        else {
+                            add_message('Please choose an image file');
+                        }
+                    }
+                };
 
                 var resizeContainer = function (loadedimg) {
 
@@ -252,9 +265,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
 
                     var image_wider = loadedimg.width * $outer_container.height() / loadedimg.height / $outer_container.width()
-                    //console.log('image', loadedimg.width, loadedimg.height, loadedimg.width / loadedimg.height);
-                    //console.log('outer_container', $outer_container.width(), $outer_container.height(), $outer_container.width() / $outer_container.height(), $outer_container);
-                    //console.log('image_wider', image_wider);
                     if (image_wider > 1) {
                         $inner_container.css({
                             'width': $outer_container.width() + 'px',
@@ -322,7 +332,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             }
                             return false;
                         }
-
                         scope.prCrop.zoom = e.ratio;
                     }
 
@@ -331,7 +340,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         scope.croper_loaded = true;
 
                         if (on_success) {
-                            on_success();
+                            on_success()
                         }
 
                         if (scope.zoomable) {
@@ -339,15 +348,26 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         }
                     }
 
+                    //TODO: OZ by OZ: control somewhere minimal size (maybe here)
+                    //options['cropstart'] = function (e) {
+                    //    console.log(e.action, e);
+                    //}
+
                     options['crop'] = function (e) {
+                        //console.log(scope.prCrop['min_size'], e.width);
+                        //if ((scope.prCrop['min_size'][0] && e.width < scope.prCrop['min_size'][0])
+                        //    || (scope.prCrop['min_size'][1] && e.height < scope.prCrop['min_size'][1])) {
+                        //    console.log('too small');
+                        //    e.preventDefault();
+                        //}
+                        //else {
                         $timeout(function () {
                             scope.prCrop['crop']['coordinates'] = {
                                 'width': e.width, 'height': e.height, 'y': e.y, 'x': e.x
                             };
                         })
+                        //}
                     }
-
-                    console.log(options);
 
                     $image.cropper(options);
                 }
@@ -408,7 +428,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         }
                         else {
                             if (on_success) {
-                                on_success();
+                                on_success()
                             }
                         }
                     }, false);
