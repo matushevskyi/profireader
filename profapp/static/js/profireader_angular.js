@@ -234,9 +234,16 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             fr.onload = function (e) {
                                 scope.prCrop['zoom'] = 0;
                                 scope.prCrop['crop']['coordinates'] = {rotate: 0};
-                                var uploaded_file = (window.URL || window.webkitURL).createObjectURL(the_file)
-                                restartCropper((window.URL || window.webkitURL).createObjectURL(the_file), false, function () {
-                                    scope.prCrop['selected_by_user'] = {'type': 'upload', 'file': the_file.type};
+                                var uploaded_file = (window.URL || window.webkitURL).createObjectURL(the_file);
+                                //model.$modelValue.type = file.type;
+                                //model.$modelValue.name = file.name;
+                                //model.$modelValue.dataContent = content;
+                                restartCropper(uploaded_file, false, function () {
+                                    scope.prCrop['selected_by_user'] = {'type': 'upload', 'file': {
+                                        'type': the_file.type,
+                                        'name': the_file.name,
+                                        'content': fr.result
+                                    }};
                                 });
                             }
                             fr.onerror = function (e) {
@@ -354,11 +361,11 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         //    e.preventDefault();
                         //}
                         //else {
-                            $timeout(function () {
-                                scope.prCrop['crop']['coordinates'] = {
-                                    'width': e.width, 'height': e.height, 'y': e.y, 'x': e.x
-                                };
-                            })
+                        $timeout(function () {
+                            scope.prCrop['crop']['coordinates'] = {
+                                'width': e.width, 'height': e.height, 'y': e.y, 'x': e.x
+                            };
+                        })
                         //}
                     }
 
