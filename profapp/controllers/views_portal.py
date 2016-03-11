@@ -525,7 +525,6 @@ def companies_partners(company_id):
 def companies_partners_load(json, company_id):
     subquery = Company.subquery_company_partners(company_id, json.get('filter'),filters_exсept=MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES)
     members, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
-    print(MemberCompanyPortal.STATUSES)
     return {'grid_data': [{'member': member.get_client_side_dict(more_fields='company'),
                            'company_id': company_id}
                           for member in members],
