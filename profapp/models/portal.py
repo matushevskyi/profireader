@@ -330,6 +330,8 @@ class MemberCompanyPortal(Base, PRBase):
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
                 'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
 
+    INITIALLY_FILTERED_OUT_STATUSES = [STATUSES['DELETED'], STATUSES['REJECTED']]
+
     status = Column(TABLE_TYPES['status'], default=STATUSES['APPLICANT'], nullable=False)
 
     portal = relationship(Portal
@@ -403,11 +405,11 @@ class MemberCompanyPortal(Base, PRBase):
         return True
 
     def can_update_company_partner(self, user_right):
-        if self.status =='FROZEN' and not user_right:
+        if self.status == MemberCompanyPortal.STATUSES['FROZEN'] and not user_right:
             return 'Sorry!You can not manage company {}!It was frozen!'.format(self.company.name)
-        if self.status =='DELETED':
+        if self.status == MemberCompanyPortal.STATUSES['DELETED']:
             return 'Sorry!Company {} was unsubscribed!'.format(self.company.name)
-        if self.company.status != 'ACTIVE':
+        if self.company.status != MemberCompanyPortal.STATUSES['ACTIVE']:
             return 'Sorry!Company {} is not active!'.format(self.company.name)
         if not user_right:
                 return 'You haven\'t got aproriate rights!'
@@ -454,7 +456,7 @@ class MemberCompanyPortal(Base, PRBase):
 
     @staticmethod
     def get_avaliable_statuses():
-        return PRBase.del_attr_by_key(MemberCompanyPortal.STATUSES,
+        return PRBase.del_attr_by_keys(MemberCompanyPortal.STATUSES,
                                       ['DELETED', 'FROZEN'])
 
     def set_client_side_dict(self, status=None, rights=None):

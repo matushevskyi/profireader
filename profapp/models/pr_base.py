@@ -374,7 +374,6 @@ class Grid:
                 elif filter['type'] == 'range':
                     query = query.filter(filter['field'].between(filter['value']['from'], filter['value']['to']))
                 elif filter['type'] == 'multiselect':
-                    print(filter['value'])
                     query = query.filter(or_(filter['field'] == v for v in filter['value']))
         if sorts:
             for sort in sorts:
@@ -433,11 +432,8 @@ class PRBase:
         return ret
 
     @staticmethod
-    def del_attr_by_key(dict, keys):
-        for key in keys:
-            if key in dict:
-                del dict[key]
-        return dict
+    def del_attr_by_keys(dict, keys):
+        return {key:dict[key] for key in dict if key not in keys}
 
 
     # if insert_after_id == False - insert at top

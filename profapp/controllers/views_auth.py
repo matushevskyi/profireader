@@ -221,7 +221,6 @@ def login():
     # portal_id = request.args.get('subscribe', None)
     portal_id = session.get('portal_id')
     back_to = session.get('back_to')
-
     if g.user_init.is_authenticated():
         if portal_id:
             session.pop('portal_id')
@@ -243,6 +242,7 @@ def login():
         if user and user.verify_password(password):
             print('ddd')
             login_user(user)
+
             if portal_id:
                 session.pop('portal_id')
                 return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
