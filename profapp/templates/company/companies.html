@@ -115,19 +115,19 @@
         </div>
         <div class="list_search_company" ng-repeat="company in data_search.company_list" ng-if="selectedCompany_name">
             <div class="row search-result thumbnail">
-                <div class="col-lg-2 col-md-2 col-sm-12 col-xs-12 photo-search">
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-4 photo-search">
                     <a pr-test="CompanySearchResult" href="{{ url_company_profile({company_id: company.id}) }}" class="thumbnail">
                         <img pr-image="company.logo_file_id" alt="image" style="width: 100%">
                     </a>
                 </div>
 
-                <div class="col-lg-8 col-md-8 col-sm-10 col-xs-10">
+                <div class="col-lg-8 col-md-8 col-sm-8 col-xs-4">
                     <h4 pr-test="SearchCompanyArticle" id="com_n">{{ company.name }}</h4>
                     <p ng-bind-html="company.short_description"></p>
                     <a pr-test="CompanyOwnPortal" ng-if="company.own_portal" href="http://{{ company.own_portal.host }}"
                        title="http://{{ company.own_portal.host }}">{{ _('PORTAL') }}</a>
                 </div>
-                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 join-new-company">
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-4 join-new-company">
                     <button pr-test="JoinToCompany" class="btn btn-default" type="button" ng-click="joinToCompany(company.id)"
                             ng-class="{'disabled': selectedCompany_sending}"
                             ng-disabled="selectedCompany_sending">{{ _('Join') }}
