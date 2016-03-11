@@ -4,7 +4,7 @@
 
         $scope.alerts = [];
 
-        $scope.add_message = function (amessage, atype, atime) {
+        $scope.add_message = function (amessage, atype, atime, aunique_id) {
 
             if (['danger', 'success', 'warning', 'info'].indexOf(atype) === -1) {
                 console.warn("Unknow message type `" + atype +
@@ -12,7 +12,17 @@
                 atype = 'info';
             }
 
-            var msg = {type: atype ? atype : 'info', msg: amessage, hash: randomHash()};
+            if (aunique_id === true) {
+                aunique_id = atype + '_' + amessage;
+            }
+
+            var msg = {type: atype ? atype : 'info', msg: amessage, hash: randomHash(), unique_id: aunique_id};
+
+            if (aunique_id) {
+                _.filter($scope.alerts, function (msg) {
+                    return msg.unique_id !== aunique_id;
+                });
+            }
 
             $scope.alerts.push(msg);
 
@@ -27,8 +37,6 @@
                     });
                 }, atime)
             }
-            ;
-
 
         };
 
