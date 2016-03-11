@@ -1971,8 +1971,8 @@ function cloneObject(o) {
     return (o === null || typeof o !== 'object') ? o : $.extend(true, {}, o);
 }
 
-function add_message(amessage, atype, atime) {
-    return angularControllerFunction('message-controller', 'add_message')(amessage, atype, atime);
+function add_message(amessage, atype, atime, aunique_id) {
+    return angularControllerFunction('message-controller', 'add_message')(amessage, atype, atime, aunique_id);
 }
 
 function randomHash() {
