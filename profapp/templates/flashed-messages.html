@@ -56,9 +56,9 @@
 {#  TODO: MY BY OZ: #}
 <div ng-controller="message-controller" id="controller-message-controller">
     {% raw %}
-    <div ng-repeat="alert in alerts" class="row">
-        <div class="col-lg-offset-3 col-lg-6 flash-message flash-message-{{ alert.type }}">
-            <div class="col-lg-4 img-message">
+    <div ng-repeat="alert in alerts" class="row" >
+        <div class="col-lg-offset-3 col-lg-6 flash-message flash-message-{{ alert.type }}" onclick="this.style.bottom='60px'">
+            <div class="col-lg-4 img-message" >
                 <img src="//static.profireader.com/static/images/0.gif" width="128" height="129" alt="{{ alert.type }}">
             </div>
             <div class="col-lg-8">
