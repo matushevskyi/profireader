@@ -12,6 +12,7 @@ from .request_wrapers import ok
 from config import Config
 from ..models.country import Country
 
+
 @user_bp.route('/profile/<user_id>')
 @tos_required
 @login_required
@@ -20,6 +21,7 @@ def profile(user_id):
     if not user:
         abort(404)
     return render_template('general/user_profile.html', user=user, avatar_size=AVATAR_SIZE)
+
 
 @user_bp.route('/avatar_update')
 @ok
@@ -38,7 +40,9 @@ def edit_profile(user_id):
         abort(403)
     user_query = db(User, id=user_id)
     user = user_query.first()
-    return render_template('general/user_edit_profile.html',  user=user, langs=Config.LANGUAGES, countries=Country.get_countries(), avatar_size=AVATAR_SIZE)
+    return render_template('general/user_edit_profile.html', user=user, langs=Config.LANGUAGES,
+                           countries=Country.get_countries(), avatar_size=AVATAR_SIZE)
+
 
 @user_bp.route('/edit-profile/<user_id>/', methods=['POST'])
 @tos_required
@@ -47,21 +51,20 @@ def edit_profile(user_id):
 def edit_profile_load(json, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
-    user = User.get(user_id)
     # user_query = db(User, id=user_id)
 
 
     # user = user_query.first()
 
     if action == 'load':
-        return user.get_client_side_dict()
+        return g.user.get_client_side_dict()
     else:
-        user.updates(json)
+        g.user.updates(json)
         if action == 'validate':
-            user.detach()
-            return user.validate(False)
+            g.user.detach()
+            return g.user.validate(False)
         else:
-            user.save()
-            return user.get_client_side_dict()
+            g.user.save()
+            return g.user.get_client_side_dict()
 
-    return {user:user}
+    return {user: user}

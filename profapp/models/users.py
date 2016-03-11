@@ -251,12 +251,15 @@ class User(Base, UserMixin, PRBase):
         self.yahoo_link = YAHOO_ALL['link']
         self.yahoo_phone = YAHOO_ALL['phone']
 
-    # валідацію докінчити, олесь
+
     def validate(self, is_new):
         ret = super().validate(is_new)
-
-        if not re.match('^[a-z0-9_-]{3,30}$', self.profireader_name):
-            ret['warnings']['name'] = 'pls enter a bit longer name'
+        if not re.match(r'[^\s]{3}', self.profireader_name):
+            ret['errors']['name'] = 'pls enter a bit longer name'
+        if not re.match(r'[^\s]{3}', self.profireader_first_name):
+            ret['errors']['name'] = 'pls enter a bit longer name'
+        if not re.match(r'[^\s]{3}', self.profireader_last_name):
+            ret['errors']['name'] = 'pls enter a bit longer name'
         return ret
 
     @staticmethod

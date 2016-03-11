@@ -15,4 +15,7 @@ class Country(Base, PRBase):
 
     @staticmethod
     def get_countries():
-        return [country.name for country in db(Country).all()]
+        return [{country.iso: country.name} for country in db(Country).all()]
+
+    # def get_countries():
+    #     return [{'value': country.iso, 'name': country.name} for country in db(Country).all()]
