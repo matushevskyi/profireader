@@ -105,10 +105,9 @@ class Config(object):
     # PRESERVE_CONTEXT_ON_EXCEPTION = False
 
     BABEL_DEFAULT_LOCALE = 'uk'
-#     LANGUAGES = {
-#     'en': 'English',
-#     'uk': 'Ukrainian'
-# }
+    LANGUAGES = [{'name':'uk', 'display':'Ukrainian'},
+                 {'name':'en', 'display':'English'}]
+
 
 
 class ProductionDevelopmentConfig(Config):

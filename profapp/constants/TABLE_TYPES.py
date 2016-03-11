@@ -147,6 +147,10 @@ TABLE_TYPES = {
     'text': UnicodeText(length=65535),
     'gender': String(6),
     'language': String(3),
+    'iso': String(2),
+    'iso3': String(3),
+    'numcode': String(6),
+    'phonecode': String(5),
     'url': String(1000),  # URLType,
     'binary': Binary,
     'json': JSON

@@ -31,6 +31,7 @@ class User(Base, UserMixin, PRBase):
     profireader_first_name = Column(TABLE_TYPES['name'])
     profireader_last_name = Column(TABLE_TYPES['name'])
     profireader_name = Column(TABLE_TYPES['name'])
+    country = Column(TABLE_TYPES['name'])
     profireader_gender = Column(TABLE_TYPES['gender'])
     profireader_link = Column(TABLE_TYPES['link'])
     profireader_phone = Column(TABLE_TYPES['phone'])
@@ -42,6 +43,7 @@ class User(Base, UserMixin, PRBase):
     confirmed = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
     _banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
 
+    birth_tm = Column(TABLE_TYPES['timestamp'])
     registered_tm = Column(TABLE_TYPES['timestamp'],
                            default=datetime.datetime.utcnow)
     last_seen = Column(TABLE_TYPES['timestamp'],
@@ -185,6 +187,7 @@ class User(Base, UserMixin, PRBase):
         self.password = password
         self.confirmed = confirmed
         self.banned = banned
+        self.birth_tm = None
         self.registered_tm = datetime.datetime.utcnow()  # here problems are possible
         self.lang = lang
         self.email_conf_key = email_conf_key
@@ -248,10 +251,19 @@ class User(Base, UserMixin, PRBase):
         self.yahoo_link = YAHOO_ALL['link']
         self.yahoo_phone = YAHOO_ALL['phone']
 
+    # валідацію докінчити, олесь
+    def validate(self, is_new):
+        ret = super().validate(is_new)
+
+        if not re.match('^[a-z0-9_-]{3,30}$', self.profireader_name):
+            ret['warnings']['name'] = 'pls enter a bit longer name'
+        return ret
+
     @staticmethod
     def user_query(user_id):
         ret = db(User, id=user_id).one()
         return ret
+
 
     @property
     def banned(self):
@@ -518,7 +530,7 @@ class User(Base, UserMixin, PRBase):
     # def is_administrator(self):
     #    return self.can(Permission.ADMINISTER)
 
-    def get_client_side_dict(self, fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url',
+    def get_client_side_dict(self, fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url|profireader_email|profireader_first_name|profireader_last_name|birth_tm|profireader_link|profireader_phone|location|profireader_gender|lang|about_me|country',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
