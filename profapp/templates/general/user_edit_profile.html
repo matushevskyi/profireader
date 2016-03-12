@@ -9,6 +9,12 @@
         module.controller('edit_user', ['$scope', function ($scope) {
 
             $scope.error = '{{ error }}';
+            $scope.url_user_profile = {{ raw_url_for('user.profile')| safe }};
+            $scope.save_user_profile = {{ raw_url_for('user.edit_profile')| safe }}
+            $scope.url_user_setings = {{ raw_url_for('user.profile')| safe}};
+            $scope.user = {{user.get_client_side_dict() | tojson | safe}};
+            $scope.languages = {{ langs | safe}}
+            $scope.countries = {{ countries | safe}}
             {#            $scope.update_url = {{ raw_url_for('user.avatar_update')|safe }};#}
 
             $scope.data = {};
@@ -19,6 +25,17 @@
                 $scope.setImageUrl(resp['logo_file_id']);
             };
 
+            $scope.amidLoad = function (data, defaultcallback) {
+                if (data.birth_tm)
+                    data.birth_tm = new Date(data.birth_tm);
+                return data;
+            };
+
+
+            $scope.save_user_changes =function(){
+                console.log($scope.data)
+            }
+
             $scope.setImageUrl = function (logo_file_id) {
                 $scope.logo_file_url = fileUrl(logo_file_id);
             };
@@ -26,203 +43,116 @@
         }])
 
     </script>
-    <div ng-controller="UserLoginController" class="container">
+{% raw %}
 
-        <div class="row link-page">
-            <h5 class="">{{ _('Edit profile') }}</h5>
-            <a title="profile" href="{{ url_for('user.profile', user_id=user.id) }}"><i
-                    class="fa fa-user fa-2x"></i></a>
-            <a title="setings" href="{{ url_for('user.profile', user_id=user.id) }}"><i class="fa fa-cog fa-2x"></i></a>
-        </div>
-
-        <div class="row">
-            {#<img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}"><br>#}
-
-            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 profile-thumbnail"
-                 style="background-image: url('{{ user.profireader_small_avatar_url }}')">
-                <div class="control">
-                    <a ng-click="mySwitch = !mySwitch">
-                        <span ng-hide="mySwitch">[{{ '{{' }}_('upload picture'){{ '}}' }}]</span><span
-                            ng-show="mySwitch">[{{ '{{' }}_('hide'){{ '}}' }}]</span>
-                    </a>
-                    <form ng-hide="mySwitch" id="myform" method="post" style="display: inline;">
-                        <input type="hidden" name="avatar" value="Use Gravatar"/><a
-                            onclick="document.getElementById('myform').submit();" style="border: none;">[{{ '{{' }}_('use
-                        gravatar'){{ '}}' }}]</a>
-                    </form>
-                    <form id="avatar" ng-show="mySwitch" ng-init="mySwitch=false" action="{{ request.path }}"
-                          method="post"
-                          enctype="multipart/form-data">
-                        {{ '{{' }}_('Select image to upload'){{ '}}' }}:
-                        <input style="font-size: 12px;" type="file" name="avatar" id="fileToUpload" accept="image/*">
-                        <input type="submit" name="avatar" value="{{ '{{' }}_('Upload Image'){{ '}}' }}">
-                    </form>
-                </div>
+    <div  ng-controller="edit_user" class="container">
+        <div af af-amid-load="amidLoad" class="edit_user_profile" ng-model="data">
+            <div class="row link-page">
+                <h5 class="">{{ _('Edit profile') }}</h5>
+                <a title="profile" href="{{ url_user_profile({'user_id':user.id}) }}"><i class="fa fa-user fa-2x"></i></a>
+                <a title="setings" href="{{ url_user_profile({'user_id':user.id}) }}"><i class="fa fa-cog fa-2x"></i></a>
             </div>
 
+          <div class="row">
+                <!--<img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}"><br>-->
 
-            {#<a>#}
-            {#    <span ng-hide="mySwitch">[{{ '{{' }}_('use gravatar'){{ '}}' }}]</span>#}
-            {#</a>#}
-
-
-            <form class="col-lg-9 col-md-9 col-sm-9 col-xs-9 edit-grup"
-                  action="{{ url_for('user.edit_profile', user_id=user.id) }}" onsubmit="return AjaxPost()"
-                  method="post">
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your display name') }}</span>
-                    <input class="form-control" aria-describedby="sizing-addon1" type="text" required placeholder="name"
-                           name="name" value="{{ user.profireader_name }}">
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your email') }}</span>
-                    <input class="form-control" aria-describedby="sizing-addon1" type="email" required
-                           placeholder="name" name="name" value="{{ user.profireader_email }}">
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name') }}</span>
-                    <input class="form-control" aria-describedby="sizing-addon1" type="text" required
-                           placeholder="first name" name="first_name" value="{{ user.profireader_first_name or '' }}">
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your last name') }}</span>
-                    <input class="form-control" aria-describedby="sizing-addon1" type="text" required
-                           placeholder="last name" name="last_name" value="{{ user.profireader_last_name or '' }}">
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Gender') }}</span>
-                    {% if user.profireader_gender=='female' %}
-                        <input type="radio" name="gender" id="male" value="male">
-                        <label for="male">{{ '{{' }}_('Male'){{ '}}' }}</label>
-                        <input type="radio" name="gender" id="female" value="female" checked="checked">
-                        <label for="female">{{ '{{' }}_('Female'){{ '}}' }}</label>
-                    {% else %}
-                        <input type="radio" name="gender" id="male" value="male" checked="checked">
-                        <label for="male">{{ '{{' }}_('Male'){{ '}}' }}</label>
-                        <input type="radio" name="gender" id="female" value="female">
-                        <label for="female">{{ '{{' }}_('Female'){{ '}}' }}</label>
-                    {% endif %}
-                    {#                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="name" name="gender" value="{{ user.profireader_name }}">#}
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Language') }}</span>
-                    <select id="language" name="language" style="width: 100px">
-                        {% if user.lang=='en' %}
-                            <option selected="selected">en</option>
-                            <option>uk</option>
-                        {% else %}
-                            <option>en</option>
-                            <option selected="selected">uk</option>
-                        {% endif %}
-                    </select>
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your web-page') }}</span>
-                    <input class="form-control" aria-describedby="sizing-addon1" type="url"
-                           placeholder="www.your.webpage.com" name="link" value="{{ user.profireader_link or '' }}">
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Phone') }}</span>
-                    <input class="form-control" aria-describedby="sizing-addon1" type="tel" required
-                           placeholder="your phone" name="phone" value="{{ user.profireader_phone or '' }}">
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Location') }}</span>
-                    <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="your city"
-                           name="location" value="{{ user.location or '' }}">
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('About me') }}</span>
-                    <textarea class="form-control" style="height: 100px;" aria-describedby="sizing-addon1" type="text"
-                              placeholder="Give us some information about you please" rows="8" cols="40" name="about_me"
-                              value="{{ user.about_me or '' }}"></textarea>
-                </div>
-                <div class="item"><span></span><input type="submit" value="Update Profile"
-                                                      name="submit"></div>
-            </form>
-
-            <!--
-            <form action="{{ url_for('user.edit_profile', user_id=user.id) }}" onsubmit="return AjaxPost()"
-                  method="post">
-                <div class="item"><span>{{ '{{' }}_('Your display name'){{ '}}' }}:</span><input type="text"
-                                                                                                 placeholder="name"
-                                                                                                 name="name"
-                                                                                                 value="{{ user.profireader_name }}">
-
-                </div>
-                <div class="item"><span>{{ '{{' }}_('Your email'){{ '}}' }}:</span>{{ user.profireader_email }} <a
-                        href="{{ url_for('auth.change_email_request') }}"> [{{ '{{' }}_('change'){{ '}}' }}]</a></div>
-                <div class="item"><span>{{ '{{' }}_('Your first name'){{ '}}' }}:</span><input type="text"
-                                                                                               placeholder="first name"
-                                                                                               name="first_name"
-                                                                                               value="{{ user.profireader_first_name or '' }}">
-                </div>
-                <div class="item"><span>{{ '{{' }}_('Your last name'){{ '}}' }}:</span><input type="text"
-                                                                                              placeholder="last name"
-                                                                                              name="last_name"
-                                                                                              value="{{ user.profireader_last_name or '' }}">
-                </div>
-                <div class="item"><span>{{ '{{' }}_('Gender'){{ '}}' }}:</span>
-                    {% if user.profireader_gender=='female' %}
-                        <input type="radio" name="gender" id="male" value="male">
-                        <label for="male">{{ '{{' }}_('Male'){{ '}}' }}</label>
-                        <input type="radio" name="gender" id="female" value="female" checked="checked">
-                        <label for="female">{{ '{{' }}_('Female'){{ '}}' }}</label>
-                    {% else %}
-                        <input type="radio" name="gender" id="male" value="male" checked="checked">
-                        <label for="male">{{ '{{' }}_('Male'){{ '}}' }}</label>
-                        <input type="radio" name="gender" id="female" value="female">
-                        <label for="female">{{ '{{' }}_('Female'){{ '}}' }}</label>
-                    {% endif %}
-                </div>
-                <div class="item"><span>{{ '{{' }}_('Language'){{ '}}' }}:</span>
-                    <select id="language" name="language" style="width: 100px">
-                        {% if user.lang=='en' %}
-                            <option selected="selected">en</option>
-                            <option>uk</option>
-                        {% else %}
-                            <option>en</option>
-                            <option selected="selected">uk</option>
-                        {% endif %}
-                    </select>
+                <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 profile-thumbnail" pr-image="data.user.profireader_small_avatar_url">
+                    <div class="control">
+                        <a ng-click="mySwitch = !mySwitch">
+                            <span ng-hide="mySwitch">[{{ _('upload picture') }}]</span><span
+                                ng-show="mySwitch">[{{ _('hide') }}]</span>
+                        </a>
+                        <form ng-hide="mySwitch" id="myform" method="post" style="display: inline;">
+                            <input type="hidden" name="avatar" value="Use Gravatar"/><a
+                                onclick="document.getElementById('myform').submit();" style="border: none;">[{{ _('use
+                            gravatar') }}]</a>
+                        </form>
+                        <form id="avatar" ng-show="mySwitch" ng-init="mySwitch=false" action="{{ request.path }}"
+                              method="post"
+                              enctype="multipart/form-data">
+                            {{ _('Select image to upload') }}:
+                            <input style="font-size: 12px;" type="file" name="avatar" id="fileToUpload"
+                                   accept="image/*">
+                            <input type="submit" name="avatar" value="{{ _('Upload Image') }}">
+                        </form>
+                    </div>
                 </div>
 
-                <div class="item"><span>{{ '{{' }}_('Your web-page'){{ '}}' }}:</span><input type="text"
-                                                                                             placeholder="www.your.webpage.com"
-                                                                                             name="link"
-                                                                                             value="{{ user.profireader_link or '' }}">
-                </div>
-                <div class="item"><span>{{ '{{' }}_('Phone'){{ '}}' }}:</span><input type="text"
-                                                                                     placeholder="{{ '{{' }}_('your phone'){{ '}}' }}"
-                                                                                     name="phone"
-                                                                                     value="{{ user.profireader_phone or '' }}">
-                </div>
-                <div class="item"><span>{{ '{{' }}_('Location'){{ '}}' }}:</span><input type="text"
-                                                                                        placeholder="{{ '{{' }}_('your city'){{ '}}' }}"
-                                                                                        name="location"
-                                                                                        value="{{ user.location or '' }}">
-                </div>
-                <div class="item"><span>{{ '{{' }}_('About me'){{ '}}' }}:</span><textarea name="about_me" cols="40"
-                                                                                           rows="8"
-                                                                                           placeholder="{{ '{{' }}_('Give us some information about you please'){{ '}}' }}">{{ user.about_me or '' }}</textarea>
-                </div>
-                <div class="item"><span></span><input type="submit" value="{{ '{{' }}_('Update Profile'){{ '}}' }}"
-                                                      name="submit"></div>
-            </form>
-            -->
+                <!-- <a>
+                     <span ng-hide="mySwitch">[{{ _('use gravatar') }}]</span>
+                 </a>-->
+
+              <form class="col-lg-9 col-md-9 col-sm-9 col-xs-9 edit-grup">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your display name') }}</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="name" ng-model="data.profireader_name"
+                                ng-value="user.profireader_name">
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your email') }}</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" disabled="disabled" placeholder="youremail@example.com" ng-model="data.profireader_email"
+                               name="name" ng-value="user.profireader_email">
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name') }}</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text"
+                               placeholder="first name" name="first_name" ng-value="user.profireader_first_name" ng-model="data.profireader_first_name">
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your last name') }}</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="last name"
+                               name="last_name" ng-value="user.profireader_last_name" ng-model="data.profireader_last_name">
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Birthday') }}</span>
+                        <input class="form-control" pr-datepicker="" ng-model="data.birth_tm" aria-describedby="sizing-addon1" type="date"
+                               placeholder="birthday" name="birthday" ng-value="user.birth_tm" >
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Gender') }}</span>
+                            <input type="radio" name="gender" id="male" value="male" ng-click="data.profireader_gender = 'male'" ng-checked="data.profireader_gender == 'male'">
+                            <label for="male">{{ _('Male') }}</label>
+                            <input type="radio" name="gender" id="female" value="female" ng-click="data.profireader_gender = 'female'" ng-checked="data.profireader_gender == 'female'">
+                            <label for="female">{{ _('Female') }}</label>
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Language') }}</span>
+                        <select id="language" style="width: 150px" ng-options="option.name as option.display for option in languages" ng-model="data.lang"></select>
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your web-page') }}</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text"
+                               placeholder="www.your.webpage.com" name="link" ng-value="user.profireader_link" ng-model="data.profireader_link">
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your country') }}</span>
+                        <select id="country" style="width: 150px" ng-options="option for option in countries" ng-model="data.country"></select>
+                       <!-- країни дікт <select id="country" style="width: 150px" ng-options="country.value as _('__country ' + country.name) for country in countries" ng-model="data.country"></select> -->
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Phone') }}</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text"
+                               placeholder="your phone" name="phone" ng-value="user.profireader_phone" ng-model="data.profireader_phone">
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Location') }}</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="your city"
+                               name="location" ng-value="user.location" ng-model="data.location">
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('About me') }}</span>
+                        <textarea class="form-control" style="height: 100px;" aria-describedby="sizing-addon1"
+                                  type="text" placeholder="Give us some information about you please" rows="8" cols="40"
+                                  name="about_me" ng-value="user.about_me" ng-model="data.about_me"></textarea>
+                    </div>
+                    <div class="item"><button class="btn btn-default save-profile pull-right
+                        border-radius"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save') ">Save profile</button></div>
+                </form>
+            </div>
         </div>
-
-        {#<form class="send coordinates" action="{{ url_for('article.update', article_version_id = article_version.id) }}" onsubmit="return AjaxPost()" id="edit" method="post">#}
-        {##}
-        {#<h3></h3>#}
-        {##}
-        {#<p>Article name<br/><input type="text" id="name" placeholder="name" name="name" value="{{ article_version.name }}"></p>#}
-        {#<p>Short Description<br/><textarea id="short" placeholder="short" name="short">{{ article_version.short }}</textarea></p>#}
-        {#<p>Full text<br/><textarea placeholder="text" name="long">{{ article_version.long }}</textarea></p>#}
-        {##}
-        {#<input type="submit" value="...">#}
-        {#</form>#}
-    </div>
+{% endraw %}
 {% endblock portal_content %}
 
 {% block scripts %}
