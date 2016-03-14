@@ -14,28 +14,27 @@
 
 {% block styles %}
 
+
     <link href='https://fonts.googleapis.com/css?family=Roboto:400,900,300,500,700&subset=latin,cyrillic-ext,cyrillic' rel='stylesheet' type='text/css'>
     <link href="//static.profireader.com/static/css/font-awesome.min.css" rel="stylesheet">
     <link href="//static.profireader.com/static/css/bootstrap.css" rel="stylesheet">
     <link href="//static.profireader.com/static/css/_profreader.css" rel="stylesheet">
     <link href="//static.profireader.com/static/css/style.css"  rel="stylesheet">
-
-
-    {#    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">#}
-    <link rel="stylesheet" href="//static.profireader.com/static/css/icons.css">
+    <link href="//static.profireader.com/static/css/icons.css" rel="stylesheet" >
+    <link href="//static.profireader.com/static/css/oles.css" rel="stylesheet" >
 
 {% endblock styles %}
 
 {% block head %}
     {{ super() }}
+
+    <link rel="shortcut icon" href="//static.profireader.com/static/favicon.ico" type="image/x-icon"/>
+    <link rel="icon" href="//static.profireader.com/static/favicon.ico" type="image/gif"/>
+
     <script>
         var pr_angular_modules = ['ui.bootstrap', 'profireaderdirectives', 'ngSanitize', 'ajaxFormModule',
             'ngAnimate', 'ngTouch', 'ui.slider'];
     </script>
-
-
-    <link rel="shortcut icon" href="//static.profireader.com/static/favicon.ico" type="image/x-icon"/>
-    <link rel="icon" href="//static.profireader.com/static/favicon.ico" type="image/gif"/>
 
     {{ config_variables()|safe }}
 
@@ -48,37 +47,14 @@
     <script src="//static.profireader.com/static/angular-ajax-validator/ngAjaxValidator.js"></script>
     <script src="//static.profireader.com/static/angular-ui-slider/slider.js"></script>
 
-    {#    {% include '_ruslan/partials/_header_files_grid.html' %}#}
-
-
-
-    {#    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js"></script>#}
-    {#    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js"></script>#}
-
-    {#    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.18/angular.js"></script>#}
 
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-sanitize.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-animate.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-touch.js"></script>
-    {#    {% if angular_ui_bootstrap_version %}#}
-    {#        <script src="{{ angular_ui_bootstrap_version }}"></script>#}
-    {#    {% endif %}#}
-    {#<script src="//static.profireader.com/static/image_editor/demo/js/main.js"></script>#}
-    {#    <script src="//static.profireader.com/static/filemanager/angular-filemanager.min.js"></script><!-- Comment if you need to use raw source code -->#}
 
-    {#    <script src="//static.profireader.com/static/filemanager/cached-templates.js"></script><!-- Comment if you need to use raw source code -->#}
-    {#    <script src="{{bootstrap_find_resource('js/bootstrap.js', cdn='bootstrap')}}"></script>#}
 
     <script src="//static.profireader.com/static/js/underscore-min.js"></script>
-
-    <!-- ui-select files -->
-    {#    <script src="//static.profireader.com/static/js/select.js"></script>#}
-    <!-- profireader_angular.js uses //static.profireader.com/static/js/select.js -->
     <script src="//static.profireader.com/static/js/profireader_angular.js"></script>
-
-    {#    <script src="//static.profireader.com/static/js/jquery.smooth-scroll.js"></script>#}
-    {#    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>#}
-
 
 
     <script>
@@ -115,6 +91,5 @@
 
 {% block scripts %}
     {% include 'partials/portal_footer_Profireader.html' %}
-    <link href="//static.profireader.com/static/css/oles.css" rel="stylesheet">
 {% endblock scripts %}
 

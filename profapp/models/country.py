@@ -8,9 +8,6 @@ class Country(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     iso = Column(TABLE_TYPES['iso'])
     name = Column(TABLE_TYPES['name'])
-    nicename = Column(TABLE_TYPES['name'])
-    iso3= Column(TABLE_TYPES['iso3'])
-    numcode= Column(TABLE_TYPES['numcode'])
     phonecode= Column(TABLE_TYPES['phonecode'])
 
     @staticmethod
