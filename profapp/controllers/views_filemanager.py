@@ -85,7 +85,8 @@ def filemanager():
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
     company = db(Company, journalist_folder_file_id=ancestors[0]).first()
-    if json['params']['search_text'] != '':
+
+    if json['params'].get('search_text'):
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],
                          json['params']['search_text'], company_id=company.id)
     else:

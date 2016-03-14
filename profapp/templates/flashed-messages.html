@@ -24,7 +24,9 @@
                 });
             }
 
-            $scope.alerts.push(msg);
+            $timeout(function () {
+                $scope.alerts.push(msg);
+            },0);
 
 
             if (atime && atime > 0) {

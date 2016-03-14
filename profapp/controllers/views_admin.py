@@ -88,7 +88,7 @@ def ips_load(json):
     params['sort'] = {}
     params['filter'] = {}
     params['search_text'] = {}
-    print(json)
+
     if json.get('sort'):
         for n in json.get('sort'):
             params['sort'][n] = json.get('sort')[n]
