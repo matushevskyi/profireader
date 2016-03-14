@@ -156,6 +156,9 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
         if canbesubmited is True:
             membership = MemberCompanyPortal.get(portal_id=portal.id, company_id=company.id)
             canbesubmited = membership.has_rights(MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH)
+            if not canbesubmited is True:
+                canbesubmited = "Membership need right `{}` to perform action `{}`".format(
+                        MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH, ArticleCompany.ACTIONS['SUBMIT'])
         ret['actions'] = {ArticleCompany.ACTIONS['SUBMIT']: canbesubmited}
 
     return ret

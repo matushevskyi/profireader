@@ -642,6 +642,7 @@ class File(Base, PRBase):
 
     @staticmethod
     def crop(image_id, image_query, coordinates, company_owner):
+        return
         """
         :param image_id: image id from table File.
         :param coordinates: dict with following parameters: x from 0 - width image,
@@ -719,6 +720,7 @@ class File(Base, PRBase):
         [1] - y - from 0 - height of image , [2] - width- from 0 - width image,[3] - height- from 0 - height image
         :return: cropped file id from table File
         """
+        return
         image_croped_assoc = db(ImageCroped, original_image_id=original_image_id).one() # get image_croped object from table
         # image_croped and filter by original_image_id
         croped = db(File, id=image_croped_assoc.croped_image_id).one()# get cropped file object from table
@@ -742,6 +744,7 @@ class File(Base, PRBase):
     @staticmethod
     def crop_with_coordinates(image, coordinates,  ratio=Config.IMAGE_EDITOR_RATIO,
                               height=Config.HEIGHT_IMAGE):
+        return
         """
 
         :param image: File objects
