@@ -37,7 +37,8 @@
     };
 
 
-    angular.module('ajaxFormModule', ['ui.bootstrap']).factory('$af', ['$ok', function ($ok) {
+    angular.module('ajaxFormModule', ['ui.bootstrap'])
+        .factory('$af', ['$ok', function ($ok) {
 
         var modelsForValidation = [];
 
@@ -80,7 +81,8 @@
         };
         return ret;
 
-    }]).directive('af', ['$af', '$ok', '$timeout', function ($af, $ok, $timeout) {
+    }])
+        .directive('af', ['$af', '$ok', '$timeout', function ($af, $ok, $timeout) {
 //TODO: OZ by OZ: interact with model validation features (prestine, dirty, valid)
         return {
             restrict: 'A',
