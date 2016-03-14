@@ -716,10 +716,17 @@ class File(Base, PRBase):
 
     @staticmethod
     def check_coordinates(coordinates, params):
+        width = coordinates['width']
         if coordinates['width'] != params['width']:
-            coordinates['width'] = params['width']
-            coordinates['height'] = 450
-        return coordinates['width'], coordinates['height']
+            width = params['width']
+        if params['aspect_ratio'][0]*coordinates['width']>coordinates['height']:
+            height = params['aspect_ratio'][0]*coordinates['width']
+        elif params['aspect_ratio'][1]*coordinates['width']<coordinates['height']:
+            height = params['aspect_ratio'][1]*coordinates['width']
+        else:
+            height = coordinates['height']
+        return width ,height
+
 
     @staticmethod
     def update_croped_image(original_image_id, coordinates, zoom, params):
@@ -763,8 +770,12 @@ class File(Base, PRBase):
         :param height: height for creating size (int(ratio*height), height)
         :return: cropped bytes of file and area(coordinates)
         """
-        width, height = File.check_coordinates(coordinates, params)
-        size = (width, height) #size for future cropped image
+        File.check_coordinates(coordinates, params)
+        size = (File.check_coordinates(coordinates, params))
+        print(size)
+        size = (int(ratio*height), height)
+
+        print(size)
         try:
             image_pil = Image.open(BytesIO(image.file_content.content)) # create Pillow object from content of original picture
             area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],

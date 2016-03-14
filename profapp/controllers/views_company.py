@@ -316,7 +316,7 @@ def load(json, company_id=None):
                     resp = new_comp.get_client_side_dict()
                     resp.update({'error': True})
                     return resp
-                logo_id = crop_image(file_id, json['logo']['crop']['coordinates'], json['logo']['zoom'],{'width':300, 'aspect_ratio':[0.5,2]})
+                logo_id = crop_image(file_id, json['logo']['crop']['coordinates'], json['logo']['zoom'],{'width':300, 'aspect_ratio':[0.5,1.5]})
                 new_comp.updates({'logo_file_id': logo_id})
                 if old_logo_id:
                     ImageCroped.delete_cropped(old_logo_id)
