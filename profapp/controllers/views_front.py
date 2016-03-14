@@ -27,7 +27,7 @@ def get_division_for_subportal(portal_id, member_company_id):
         filter(PortalDivision.portal_id == portal_id)
     PortalDivisionSettings = q.all()
     if (len(PortalDivisionSettings)):
-        return PortalDivisionSettings[0]
+        return PortalDivisionSettings[0].portal_division
     else:
         return g.db().query(PortalDivision).filter_by(portal_id=portal_id,
                                                       portal_division_type_id='index').one()
