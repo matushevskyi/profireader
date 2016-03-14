@@ -228,7 +228,7 @@ class Company(Base, PRBase):
     def get_image_client_dict(self, upload=True, browse=None,
                               crop={'coordinates': None, 'aspect': False},
                               preset_urls={},
-                              no_selection_url=fileUrl(FOLDER_AND_FILE.no_logo())):
+                              no_selection_url=fileUrl(FOLDER_AND_FILE.no_company_logo())):
 
         is_image = db(ImageCroped, croped_image_id=self.logo_file_id).one()
         ret = {
