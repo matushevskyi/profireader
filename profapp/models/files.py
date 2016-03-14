@@ -643,12 +643,14 @@ class File(Base, PRBase):
     @staticmethod
     def crop(image_query, coordinates, zoom, company_owner, params):
         #TODO SS by SS in future add allow_stretch_image param
-
-        if db(ImageCroped, original_image_id=image_query.id).count():  # check if croped image already exists
+        File.check_aspect_ratio(coordinates, params)
+        image_exist = db(ImageCroped, original_image_id=image_query.id).first()
+        if image_exist:  # check if croped image already exists
+            if image_exist.croped_width == coordinates['width'] and image_exist.croped_height == coordinates['height']:
+                return db(File, id=image_exist.croped_image_id).first().id
             return File.update_croped_image(image_query.id, coordinates, zoom, params)  # call function update_croped_image. see func documentation
         bytes_file, area = File.crop_with_coordinates(image_query,
                                                  coordinates, params)  # call function crop_with_coordinates. see func documentation
-
         if bytes_file:  # if func crop_with_coordinates doesn't return False.
             croped = File()  # get empty file object
             croped.md_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())  # set md_tm
@@ -725,14 +727,13 @@ class File(Base, PRBase):
             image_croped_assoc.y = float(area[1])# set coordinates to ImageCroped object - x
             image_croped_assoc.width = float(area[2])# set coordinates to ImageCroped object - x
             image_croped_assoc.height = float(area[3])# set coordinates to ImageCroped object - x
-            image_croped_assoc.croped_width = round(coordinates['width'])
-            image_croped_assoc.croped_height = round(coordinates['height'])
+            image_croped_assoc.croped_width = coordinates['width']
+            image_croped_assoc.croped_height = coordinates['height']
             image_croped_assoc.zoom = zoom
         return croped.id # cropped file id from table File
 
     @staticmethod
     def crop_with_coordinates(image, coordinates, params):
-        File.check_aspect_ratio(coordinates,params)
         try:
             image_pil = Image.open(BytesIO(image.file_content.content)) # create Pillow object from content of original picture
             area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],
