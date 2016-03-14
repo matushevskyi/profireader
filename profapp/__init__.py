@@ -181,6 +181,7 @@ def load_user(apptype):
 
     user_dict = INFO_ITEMS_NONE.copy()
     user_dict['logged_via'] = None
+    user_dict['birth_tm'] = None
     user_dict['registered_tm'] = None
     user_dict['lang'] = 'uk'
     #  ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
@@ -206,6 +207,7 @@ def load_user(apptype):
                 user_dict[attr] = \
                     user.attribute_getter(logged_via, attr)
         user_dict['id'] = id
+        user_dict['birth_tm'] = user.birth_tm
         user_dict['registered_tm'] = user.registered_tm
         user_dict['lang'] = user.lang
         user_dict['tos'] = user.tos
