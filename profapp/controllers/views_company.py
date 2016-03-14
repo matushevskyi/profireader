@@ -10,7 +10,7 @@ from ..models.portal import PortalDivision
 
 from ..models.articles import ArticleCompany, ArticlePortalDivision
 from utils.db_utils import db
-from ..models.files import File
+from ..models.files import File, ImageCroped
 from .pagination import pagination
 from .views_file import crop_image
 from config import Config
@@ -292,6 +292,7 @@ def load(json, company_id=None):
         company_dict['logo'] = company.get_image_client_dict()
         return company_dict
     else:
+
         company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
                                    'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
@@ -299,28 +300,38 @@ def load(json, company_id=None):
                 company.detach()
             return company.validate(company_id is None and user_can_edit)
         else:
-            if json['image'].get('uploaded'):
+            selected_logo = json['logo']['selected_by_user']
+            print(json)
+            if selected_logo['type'] == 'upload':
+
+                print(json['logo']['crop'])
                 if company_id is None:
                     company.setup_new_company()
                 company.save().get_client_side_dict()
-                imgdataContent = json['image']['uploaded']['dataContent']
+                imgdataContent = selected_logo['file']['content']
                 image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
                 bb = base64.b64decode(image_data)
                 new_comp = db(Company, id=company.id).first()
-                file_id = File.uploadLogo(bb, json['image']['name'], json['image']['type'],
+                old_logo_id = new_comp.logo_file_id
+                file_id = File.uploadLogo(bb, selected_logo['file']['name'], selected_logo['file']['type'],
                                           new_comp.journalist_folder_file_id).id
                 if 'error' in File.check_image_mime(file_id):
                     resp = new_comp.get_client_side_dict()
                     resp.update({'error': True})
                     return resp
-                logo_id = crop_image(file_id, json['image']['coordinates'])
+                logo_id = crop_image(file_id, json['logo']['crop']['coordinates'])
                 new_comp.updates({'logo_file_id': logo_id})
+                print(old_logo_id)
+                # if old_logo_id:
+                #     ImageCroped.delete_cropped(old_logo_id)
                 return new_comp.get_client_side_dict()
             else:
-                img = json['image']
-                img_id = img.get('image_file_id')
+                if selected_logo['type'] == 'old':
+                    pass
+                print(json['logo']['original_image_id'])
+                img_id = json['logo']['original_image_id']
                 if img_id:
-                    company.logo_file_id = crop_image(img_id, img['coordinates'])
+                    company.logo_file_id = crop_image(img_id, json['logo']['crop']['coordinates'])
                 elif not img_id:
                     company.logo_file_id = None
                 if company_id is None:

@@ -701,7 +701,7 @@ class File(Base, PRBase):
                         croped_image_id=croped.id,
                         x=float(area[0]), y=float(area[1]),
                         width=float(area[2]),
-                        height=float(area[3]), rotate=int(coordinates['rotate'])).save()  # save
+                        height=float(area[3])).save()  # save
             return croped.id  # return cropped file id from table file
         else:
             return image_id  # if exception raised we return which pass to our native function
@@ -736,7 +736,6 @@ class File(Base, PRBase):
             image_croped_assoc.y = float(area[1])# set coordinates to ImageCroped object - x
             image_croped_assoc.width = float(area[2])# set coordinates to ImageCroped object - x
             image_croped_assoc.height = float(area[3])# set coordinates to ImageCroped object - x
-            image_croped_assoc.rotate = int(coordinates['rotate'])
         return croped.id # cropped file id from table File
 
     @staticmethod
@@ -759,11 +758,9 @@ class File(Base, PRBase):
             if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)): #
                 # if coordinates are not correctly, we make coordinates the same as image coordinates
                 area[0], area[1], area[2], area[3] = 0, 0, image_pil.width, image_pil.height
-            angle = int(coordinates["rotate"])*-1
             area[2] = (area[0]+area[2])# The crop rectangle, as a (left, upper, right, lower)-tuple.    RIGHT
             area[3] = (area[1]+area[3])# The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
-            rotated = image_pil.rotate(angle)
-            cropped = rotated.crop(area).resize(size) # crop and resize image with area and size
+            cropped = image_pil.crop(area).resize(size) # crop and resize image with area and size
             bytes_file = BytesIO() # create BytesIO object to save cropped image to Pillow object
             cropped.save(bytes_file, image.mime.split('/')[-1].upper()) # save cropped image to Pillow object
             # (not to database)
@@ -856,6 +853,15 @@ class ImageCroped(Base, PRBase):
     def get_coordinates_and_original_img(croped_image_id):
         coor_img = db(ImageCroped, croped_image_id=croped_image_id).one()
         return coor_img.original_image_id, coor_img.get_client_side_dict()
+
+    @staticmethod
+    def delete_cropped(old_logo_id):
+        image_cropped = db(ImageCroped, croped_image_id=old_logo_id).first()
+        image = File.get(image_cropped.original_image_id)
+        image.delfile()
+        g.sql_connection.execute("DELETE FROM image_croped WHERE croped_image_id='%s';"
+                             % old_logo_id)
+
 
 
 class YoutubeApi(GoogleAuthorize):
