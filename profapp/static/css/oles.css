@@ -3,16 +3,6 @@
     color: #ccc;
 }
 
-/*#navigation_selected_division {*/
-/*color: red;*/
-/*}*/
-
-/*.tag-in-article {*/
-/*border: dashed #00264d 1px;*/
-/*padding: 1px 3px;*/
-/*background-color: yellow;*/
-/*display: none;*/
-/*}*/
 
 .item:hover {
     /*background: rgba(255, 200, 200, 0.3);*/
@@ -340,3 +330,4 @@
 .highlightedText {
     background: yellow;
 }
+

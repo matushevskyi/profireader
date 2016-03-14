@@ -1,11 +1,11 @@
 <!-- Navigation -->
 <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
     <div class="well">
-    <div class="social-block">
-        {% include 'search_block.html' %}
-{#        {% include 'social.html' %}#}
-        {% include 'subscribe_to_portal.html' %}
-    </div>
+        <div class="social-block">
+            {% include 'search_block.html' %}
+            {#        {% include 'social.html' %}#}
+            {% include 'subscribe_to_portal.html' %}
+        </div>
         <!-- Brand and toggle get grouped for better mobile display -->
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse"
@@ -24,10 +24,9 @@
             <ul class="nav navbar-nav">
                 {% for division in portal.divisions %}
                     {% if division.portal_division_type_id != 'index' %}
-                        <li>
-                            <a {% if division.id == current_division.id %}id="navigation_selected_division"{% endif %}
-                               href="
-                                       {% if division.portal_division_type_id != 'company_subportal' %} {{ url_for('front.division', division_name=division.name, page=1, search_text='') }}{% else %}{{ url_for('front.subportal', member_company_id = division['member_company']['id'] ,
+                        <li {% if division.id == current_division.id %}class="active"{% endif %}>
+                            <a href="{% if division.portal_division_type_id != 'company_subportal' %}
+                                {{ url_for('front.division', division_name=division.name, page=1, search_text='') }}{% else %}{{ url_for('front.subportal', member_company_id = division['member_company']['id'] ,
                                         member_company_name = division['member_company']['name']) }} {% endif %}">{{ division.name }}</a>
                         </li>
                     {% endif %}
