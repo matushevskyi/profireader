@@ -316,32 +316,28 @@ def load(json, company_id=None):
                     resp = new_comp.get_client_side_dict()
                     resp.update({'error': True})
                     return resp
-                logo_id = crop_image(file_id, json['logo']['crop']['coordinates'], json['logo']['zoom'],{'width':300, 'aspect_ratio':[0.5,1.5]})
+                logo_id = crop_image(file_id, json['logo']['crop']['coordinates'], json['logo']['zoom'],{'image_size':(300, 400),'aspect_ratio':[0.5,1.5]})
                 new_comp.updates({'logo_file_id': logo_id})
-                if old_logo_id:
-                    ImageCroped.delete_cropped(old_logo_id)
                 company_dict = new_comp.get_client_side_dict()
-                company_dict['logo'] = company.get_image_client_dict()
-                return company_dict
             else:
                 img_id = None
-                print(json['logo']['zoom'])
                 if selected_logo['type'] == 'old':
                     img_id = json['logo']['original_image_id']
                 elif selected_logo['type'] == 'browse':
                     img_id = selected_logo['file_id']
                     old_logo_id=company.logo_file_id
                 if img_id:
-                    company.logo_file_id = crop_image(img_id, json['logo']['crop']['coordinates'], json['logo']['zoom'], {'width':300, 'aspect_ratio':[0.5,2]})
+                    company.logo_file_id = crop_image(img_id, json['logo']['crop']['coordinates'], json['logo']['zoom'], {'image_size':(400, 300), 'aspect_ratio':[0.5,1.5]})
                 elif not img_id:
                     company.logo_file_id = None
                 if company_id is None:
                     company.setup_new_company()
                 company_dict = company.save().get_client_side_dict()
-                company_dict['logo'] = company.get_image_client_dict()
-                if old_logo_id:
-                        ImageCroped.delete_cropped(old_logo_id)
-                return company_dict
+
+            if old_logo_id:
+                    ImageCroped.delete_cropped(old_logo_id)
+            company_dict['logo'] = company.get_image_client_dict()
+            return company_dict
 
 
 # @company_bp.route('/confirm_create/', methods=['POST'])
