@@ -13,7 +13,7 @@
 {#        });#}
 {#      });#}
 {#    </script>#}
-<h3 ng-controller="UserLoginController">{{ '{{' }}_('or Simple registration'){{ '}}' }}</h3>
+<h3 ng-controller="UserLoginController">{{ _('or Simple registration') }}</h3>
 
 <form class="register-form-profirider" action="{{ url_for('auth.signup') }}" method="post">
     <input pr-test="RegEmail" class="form-control" type="email" placeholder="email" required name="email">
