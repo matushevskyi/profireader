@@ -13,12 +13,12 @@
             $scope.save_user_profile = {{ raw_url_for('user.edit_profile')| safe }}
             $scope.url_user_setings = {{ raw_url_for('user.profile')| safe}};
 
+
             $scope.data = {};
 
-            $scope.afterLoad = function (resp, deff) {
-                deff(resp);
-                $scope.setImageUrl(resp['logo_file_id']);
-            };
+            $scope.afterSave = function (data, defaultcallback) {
+                add_message('your profile was saved', 'success')
+            }
 
             $scope.amidLoad = function (data, defaultcallback) {
                 $scope.countries = data['countries'];
@@ -31,50 +31,42 @@
             };
 
 
-            $scope.save_user_changes = function () {
-                console.log($scope.data)
-            }
-
-            $scope.setImageUrl = function (logo_file_id) {
-                $scope.logo_file_url = fileUrl(logo_file_id);
-            };
-
         }])
 
     </script>
 
     {% raw %}
     <div ng-controller="edit_user" class="container">
-    <div af af-amid-load="amidLoad" class="edit_user_profile" ng-model="data">
+    <div af
+         af-after-save="afterSave"
+         af-amid-load="amidLoad" class="edit_user_profile" ng-model="data">
         <div class="row link-page">
             <h5 class="">{{ _('Edit profile') }}</h5>
             <a ng-if="data.user" title="profile" href="{{ data.user?url_user_profile({'user_id': data.user.id}):'' }}"><i
                     class="fa fa-user fa-2x"></i></a>
-            <!--<a ng-if="data.user" title="setings" href="{{ data.user?url_user_profile({'user_id': data.user.id}):'' }}"><i
-                    class="fa fa-cog fa-2x"></i></a>-->
+            <a ng-if="0 && data.user" title="setings" href="{{ data.user?url_user_profile({'user_id': data.user.id}):'' }}"><i
+                    class="fa fa-cog fa-2x"></i></a>
         </div>
 
 
         <div class="row">
             <!-- <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}"><br> -->
 
-            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 profile-thumbnail">
-                <div class="control">
 
-                </div>
-            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-8 profile-thumbnail">
+
+            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 profile-thumbnail">
                         <div ng-model="data.image"
-                             pr-crop
+                             apr-crop
                              pr-crop-aspect="0.33"
                              pr-crop-upload
                              pr-crop-default-company-id="company_id"
                              pr-crop-nothing-selected="//static.profireader.com/static/front/img/profi.png"
                              pr-crop-urls="//static.profireader.com/static/front/img/profi.png"></div>
+
             </div>
 
 
-            <form class="col-lg-9 col-md-9 col-sm-9 col-xs-9 edit-grup">
-            <form class="col-lg-8 col-md-8 col-sm-8 col-xs-12 edit-grup">
+            <form class="col-lg-8 col-md-8 col-sm-8 col-xs-8 edit-grup">
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Your display name') }}</span>
                     <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="name"
@@ -161,34 +153,6 @@
 {% block scripts %}
     {{ super() }}
     {{ moment.include_moment() }}
-    <script type="text/javascript">
 
-
-        function AjaxPost() {
-            $.post('{{ request.path }}', {
-                        'name': $("#name").val(),
-                        'short': $("#short").val(),
-                        'full': $("#full").val()
-                    }, function (resp) {
-                        console.log(resp);
-                    },
-                    'json');
-            return true;
-        }
-        ;
-
-        function AjaxPost2() {
-            $.post('', {
-                        'logo_file': $("#logo_file").val(),
-                        'name': $("#name").val()
-                    }, function (resp) {
-                        console.log(resp);
-                    },
-                    'json');
-            return true;
-        }
-        ;
-
-    </script>
 
 {% endblock %}
