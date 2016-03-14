@@ -1,14 +1,14 @@
 <script type="text/ng-template" id="tos_dialog.html">
             <div class="modal-header">
-                <h3 class="modal-title">{{ _('Pls accept tos dialog header') }}</h3>
+                <h3 pr-test="LicenceTitle" class="modal-title">{{ _('Pls accept tos dialog header') }}</h3>
             </div>
             <div class="modal-body">
                 {{ __('Licence text') }}
             </div>
 
             <div class="modal-footer">
-            <button type="button" class="btn btn-default" ng-click="accept_tos('accept')">Accept</button>
-            <button type="button" class="btn btn-default" ng-click="accept_tos('decline')">Decline</button>
+            <button pr-test="AcceptLicence" type="button" class="btn btn-default" ng-click="accept_tos('accept')">Accept</button>
+            <button pr-test="DeclineLicence" type="button" class="btn btn-default" ng-click="accept_tos('decline')">Decline</button>
             </div>
         </div>
     </script>
@@ -85,7 +85,7 @@
     <div class="container">
 
         <div class="row">
-            <button type="button" ng-click="tos()" class="btn btn-info btn-lg" ng-if="user.id && !user.tos">{{ _('Accept licence') }}</button>
+            <button pr-test="HeaderAcceptLicence" type="button" ng-click="tos()" class="btn btn-info btn-lg" ng-if="user.id && !user.tos">{{ _('Accept licence') }}</button>
             <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
                         data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
@@ -94,7 +94,9 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a pr-test="ProfiLogo" class="navbar-brand" href="{{ url_general()}}"><img src="//static.profireader.com/static/front/img/profi.png"></a>
+                <a pr-test="ProfiLogo" class="navbar-brand" href="{{ url_general()}}">
+                    <img src="//static.profireader.com/static/front/img/profi.png">
+                </a>
             </div>
 
             <div class="col-lg-offset-2 col-md-offset-1 col-lg-6 col-md-7 col-sm-8 col-xs-12 menu-site">
