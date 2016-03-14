@@ -92,7 +92,7 @@ def tos_required(func):
     @wraps(func)
     def decorated_view(*args, **kwargs):
         if not g.user or not g.user.tos:
-            flash('You have not accept licence and terms')
+            # flash('You have not accept licence and terms')
             return redirect(url_for('general.index'))
         return func(*args, **kwargs)
     return decorated_view
