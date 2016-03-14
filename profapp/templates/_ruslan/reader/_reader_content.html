@@ -3,48 +3,49 @@
 
 {% block portal_content %}
     {% include '_ruslan/reader/_reader_nav.html' %}
-<script>
+    <script>
 
-    module.controller('list_reader', function ($scope, $ok, $timeout) {
+        module.controller('list_reader', function ($scope, $ok, $timeout) {
             $scope.favorite = {{ favorite }}
-            $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
+                    $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
             $scope.add_delete_favorite = '{{ url_for('reader.add_delete_favorite') }}'
             {#    into this function put url    #}
-            $scope.add_to_favorite = function(article){
-                $ok($scope.add_delete_favorite,{'article':article}, function(resp){
-                   article.is_favorite = resp
+            $scope.add_to_favorite = function (article) {
+                $ok($scope.add_delete_favorite, {'article': article}, function (resp) {
+                    article.is_favorite = resp
                 })
             }
             $scope.loadNextPage('')
 
         });
 
-</script>
-{% raw %}
+    </script>
+    {% raw %}
     <div ng-init="loadData()" class="container" ng-controller="list_reader">
-        <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-7 reader-content" ng-repeat="article in data.articles">
+        <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-7 reader-content"
+             ng-repeat="article in data.articles">
             <div class="block-item list-elements">
                 <div class="item-type article">
                     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
-                            <img class="logo-portal-news" ng-src="{{ article.portal.logo }}">
+                        <img class="logo-portal-news" ng-src="{{ article.portal.logo }}">
                     </div>
                     <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
 
                         <span class="label label-success"><a pr-test="ArticleDivision" target="_blank"
-                                                             href="//{{ article.portal.host }}/{{ article.division.name}}/1/?search_text=">{{ article.division.name}}</a></span>
+                                                             href="//{{ article.portal.host }}/{{ article.division.name}}/1/?search_text=">{{
+                            article.division.name}}</a></span>
                         <a pr-test="ArticlePortal" target="_blank"
                            href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
                            class="item-company">{{ article.portal.name}}</a>
-                         <!--TODO OZ by SS we need this link?
-                        <!---<a target="_blank" href="">{{ article.company.name }}</a>-->
-                        <div class="item-read_count">Read: {{ article.read_count }}
-                            <div style="display: inline;"
-                                 class="item-publication-date">{{ article.publishing_tm }}</div>
+                        <div style=""
+                             class="item-publication-date">{{ article.publishing_tm }}
                         </div>
+                        <div class="item-read_count">Read: {{ article.read_count }}</div>
+
                     </div>
                 </div>
                 <a target="_blank" type="link" href="//{{ article.portal.host}}/details/{{ article.id }}">
-                    <img class="list-reader-image" pr-image="article.image_file_id" alt="img">
+                    <img class="list-reader-image" style="background-size: cover;" pr-image="article.image_file_id" alt="img">
                 </a>
                 <h3 class="item-title">
                     <a target="_blank"
@@ -57,8 +58,12 @@
                     <p>{{ article.short}}</p>
                 </div>
                 <div class="row">
-                    <div style="cursor: pointer" class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5" ng-click="add_to_favorite(article)">
-                        <i ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i ng-if="article.is_favorite" class="fa fa-heart"></i> {{ _('Favorite') }}
+                    <div style="cursor: pointer"
+                         class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5"
+                         ng-click="add_to_favorite(article)">
+                        <i ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i ng-if="article.is_favorite"
+                                                                                     class="fa fa-heart"></i> {{
+                        _('Favorite') }}
                     </div>
                     <div class="col-lg-5 col-md-5 col-sm-5 col-xs-5">
                         <span class="pull-right"><i class="fa fa-share"></i>{{ _('Share') }}</span>
@@ -67,10 +72,12 @@
                 <div class="item-additional-info">
                 </div>
                 <div class="bottom-hide"></div>
-                <img pr-image="article.image_file_id" src="//static.profireader.com/static/images/0.gif" class="block-item-img"/>
+                <img pr-image="article.image_file_id" src="//static.profireader.com/static/images/0.gif"
+                     class="block-item-img"/>
             </div>
         </div>
-    <h3 ng-if="!data.articles && !loading" style="text-align: center">{{ __('Your portals does"t have articles') }}</h3>
+        <h3 ng-if="!data.articles && !loading" style="text-align: center">{{ __('Your portals does"t have articles')
+            }}</h3>
     </div>
-{% endraw %}
+    {% endraw %}
 {% endblock portal_content %}
