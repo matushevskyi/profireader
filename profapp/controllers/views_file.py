@@ -227,11 +227,11 @@ def allowed_referrers(domain):
                    'http://rodynnifirmy.profireader.com' else False
 
 
-def crop_image(image_id, coordinates):
+def crop_image(image_id, coordinates, zoom, params):
     image_query = db(File, id=image_id).one()  # get file object
     company_owner = db(Company).filter(or_(
                 Company.system_folder_file_id == image_query.root_folder_id,
                 Company.journalist_folder_file_id == image_query.root_folder_id)).one()  # get company file owner
-    return File.crop(image_id, image_query, coordinates, company_owner)
+    return File.crop(image_query, coordinates, zoom, company_owner, params)
 
 
