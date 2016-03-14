@@ -263,7 +263,7 @@ def login():
 @login_required   # Only logged in user can be logged out
 def logout():
     logout_user()
-    flash('You have been logged out.')
+    # flash('You have been logged out.')
     return redirect(url_for('general.index'))
 
 
