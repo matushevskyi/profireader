@@ -40,8 +40,7 @@ def edit_profile(user_id):
         abort(403)
     user_query = db(User, id=user_id)
     user = user_query.first()
-    return render_template('general/user_edit_profile.html', user=user, langs=Config.LANGUAGES,
-                           countries=Country.get_countries(), avatar_size=AVATAR_SIZE)
+    return render_template('general/user_edit_profile.html', user=user)
 
 
 @user_bp.route('/edit-profile/<user_id>/', methods=['POST'])
@@ -57,9 +56,10 @@ def edit_profile_load(json, user_id):
     # user = user_query.first()
 
     if action == 'load':
-        return g.user.get_client_side_dict()
+        return {'user': g.user.get_client_side_dict(), 'languages': Config.LANGUAGES,
+                           'countries': Country.get_countries(), 'avatar': {}}
     else:
-        g.user.updates(json)
+        g.user.updates(json['user'])
         if action == 'validate':
             g.user.detach()
             return g.user.validate(False)
