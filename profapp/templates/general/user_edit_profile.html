@@ -7,36 +7,29 @@
 {% block portal_content %}
     <script>
         module.controller('edit_user', ['$scope', function ($scope) {
+            $scope.$$translate = {{ translates('edit_user')|safe }};
 
-            $scope.error = '{{ error }}';
             $scope.url_user_profile = {{ raw_url_for('user.profile')| safe }};
             $scope.save_user_profile = {{ raw_url_for('user.edit_profile')| safe }}
-                    $scope.url_user_setings = {{ raw_url_for('user.profile')| safe}};
-            $scope.user = {{user.get_client_side_dict() | tojson | safe}};
-            $scope.languages = {{ langs | safe}}
-                    $scope.countries = {{ countries | safe}}
-                            $scope.data = {};
+            $scope.url_user_setings = {{ raw_url_for('user.profile')| safe}};
 
 
-            $scope.afterLoad = function (resp, deff) {
-                deff(resp);
-                $scope.setImageUrl(resp['logo_file_id']);
-            };
+            $scope.data = {};
+
+            $scope.afterSave = function (data, defaultcallback) {
+                add_message('your profile was saved', 'success')
+            }
 
             $scope.amidLoad = function (data, defaultcallback) {
-                if (data.birth_tm)
-                    data.birth_tm = new Date(data.birth_tm);
+                $scope.countries = data['countries'];
+                $scope.languages = data['languages'];
+                delete data['countries'];
+                delete data['languages'];
+                if (data.user.birth_tm)
+                    data.user.birth_tm = new Date(data.user.birth_tm);
                 return data;
             };
 
-
-            $scope.save_user_changes = function () {
-                console.log($scope.data)
-            }
-
-            $scope.setImageUrl = function (logo_file_id) {
-                $scope.logo_file_url = fileUrl(logo_file_id);
-            };
 
         }])
 
@@ -44,108 +37,103 @@
 
     {% raw %}
     <div ng-controller="edit_user" class="container">
-    <div af af-amid-load="amidLoad" class="edit_user_profile" ng-model="data">
+    <div af
+         af-after-save="afterSave"
+         af-amid-load="amidLoad" class="edit_user_profile" ng-model="data">
         <div class="row link-page">
             <h5 class="">{{ _('Edit profile') }}</h5>
-            <a title="profile" href="{{ url_user_profile({'user_id':user.id}) }}"><i
+            <a ng-if="data.user" title="profile" href="{{ data.user?url_user_profile({'user_id': data.user.id}):'' }}"><i
                     class="fa fa-user fa-2x"></i></a>
-            <!--<a title="setings" href="{{ url_user_profile({'user_id':user.id}) }}"><i
-                    class="fa fa-cog fa-2x"></i></a>-->
+            <a ng-if="0 && data.user" title="setings" href="{{ data.user?url_user_profile({'user_id': data.user.id}):'' }}"><i
+                    class="fa fa-cog fa-2x"></i></a>
         </div>
 
 
         <div class="row">
             <!-- <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}"><br> -->
 
-            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-8 profile-thumbnail">
+
+
+            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 profile-thumbnail">
                         <div ng-model="data.image"
-                             pr-crop
+                             apr-crop
                              pr-crop-aspect="0.33"
                              pr-crop-upload
                              pr-crop-default-company-id="company_id"
                              pr-crop-nothing-selected="//static.profireader.com/static/front/img/profi.png"
                              pr-crop-urls="//static.profireader.com/static/front/img/profi.png"></div>
+
             </div>
 
 
-            <form class="col-lg-8 col-md-8 col-sm-8 col-xs-12 edit-grup">
+            <form class="col-lg-8 col-md-8 col-sm-8 col-xs-8 edit-grup">
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Your display name') }}</span>
                     <input class="form-control" aria-describedby="sizing-addon1" type="text" placeholder="name"
-                           ng-model="data.profireader_name"
-                           ng-value="user.profireader_name">
+                           ng-model="data.user.profireader_name">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Your email') }}</span>
                     <input class="form-control" aria-describedby="sizing-addon1" type="text" disabled="disabled"
-                           placeholder="youremail@example.com" ng-model="data.profireader_email"
-                           name="name" ng-value="user.profireader_email">
+                           placeholder="youremail@example.com" ng-model="data.user.profireader_email">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name') }}</span>
                     <input class="form-control" aria-describedby="sizing-addon1" type="text"
-                           placeholder="first name" name="first_name" ng-value="user.profireader_first_name"
-                           ng-model="data.profireader_first_name">
+                           placeholder="first name" ng-model="data.user.profireader_first_name">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Your last name') }}</span>
                     <input class="form-control" aria-describedby="sizing-addon1" type="text"
                            placeholder="last name"
-                           name="last_name" ng-value="user.profireader_last_name"
-                           ng-model="data.profireader_last_name">
+                           ng-model="data.user.profireader_last_name">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Birthday') }}</span>
-                    <input class="form-control" pr-datepicker="" ng-model="data.birth_tm"
+                    <input class="form-control" pr-datepicker="" ng-model="data.user.birth_tm"
                            aria-describedby="sizing-addon1" type="date"
-                           placeholder="birthday" name="birthday" ng-value="user.birth_tm">
+                           placeholder="birthday"/>
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Gender') }}</span>
-                    <input type="radio" name="gender" id="male" value="male"
-                           ng-click="data.profireader_gender = 'male'"
-                           ng-checked="data.profireader_gender == 'male'">
+                    <input type="radio" id="male" ng-model="data.user.profireader_gender" ng-value="'male'">
                     <label for="male">{{ _('Male') }}</label>
-                    <input type="radio" name="gender" id="female" value="female"
-                           ng-click="data.profireader_gender = 'female'"
-                           ng-checked="data.profireader_gender == 'female'">
+                    <input type="radio" id="female" ng-model="data.user.profireader_gender" ng-value="'female'">
                     <label for="female">{{ _('Female') }}</label>
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Language') }}</span>
                     <select id="language" style="width: 150px"
                             ng-options="option.name as option.display for option in languages"
-                            ng-model="data.lang"></select>
+                            ng-model="data.user.lang"></select>
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Your web-page') }}</span>
                     <input class="form-control" aria-describedby="sizing-addon1" type="text"
-                           placeholder="www.your.webpage.com" name="link" ng-value="user.profireader_link"
-                           ng-model="data.profireader_link">
+                           placeholder="www.your.webpage.com" name="link" ng-model="data.user.profireader_link">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Your country') }}</span>
-                    <select id="country" style="width: 150px" ng-options="option for option in countries"
-                            ng-model="data.country"></select>
-                    <!-- країни дікт <select id="country" style="width: 150px" ng-options="country.value as _('__country ' + country.name) for country in countries" ng-model="data.country"></select> -->
+
+                    <select id="country" style="width: 150px"
+                            ng-options="country.value as country.name for country in countries"
+                            ng-model="data.user.country"></select>
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Phone') }}</span>
                     <input class="form-control" aria-describedby="sizing-addon1" type="text"
-                           placeholder="your phone" name="phone" ng-value="user.profireader_phone"
-                           ng-model="data.profireader_phone">
+                           placeholder="your phone" ng-model="data.user.profireader_phone">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Location') }}</span>
                     <input class="form-control" aria-describedby="sizing-addon1" type="text"
-                           placeholder="your city"
-                           name="location" ng-value="user.location" ng-model="data.location">
+                           placeholder="your city" ng-model="data.user.location">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('About me') }}</span>
                         <textarea class="form-control" style="height: 100px;" aria-describedby="sizing-addon1"
-                                  type="text" placeholder="Give us some information about you please" rows="8" cols="40"
-                                  name="about_me" ng-value="user.about_me" ng-model="data.about_me"></textarea>
+                                  type="text" name="about" placeholder="Give us some information about you please" rows="8"
+                                  cols="40" ng-model="data.user.about_me"></textarea>
                 </div>
                 <div class="item">
                     <button class="btn btn-default save-profile pull-right
@@ -165,34 +153,6 @@
 {% block scripts %}
     {{ super() }}
     {{ moment.include_moment() }}
-    <script type="text/javascript">
 
-
-        function AjaxPost() {
-            $.post('{{ request.path }}', {
-                        'name': $("#name").val(),
-                        'short': $("#short").val(),
-                        'full': $("#full").val()
-                    }, function (resp) {
-                        console.log(resp);
-                    },
-                    'json');
-            return true;
-        }
-        ;
-
-        function AjaxPost2() {
-            $.post('', {
-                        'logo_file': $("#logo_file").val(),
-                        'name': $("#name").val()
-                    }, function (resp) {
-                        console.log(resp);
-                    },
-                    'json');
-            return true;
-        }
-        ;
-
-    </script>
 
 {% endblock %}
