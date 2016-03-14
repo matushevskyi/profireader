@@ -386,7 +386,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 }
 
                 var restartCropper = function (src, sure_is_preset, on_success) {
-
+                    console.log(src)
                     var fr = new Image();
                     fr.addEventListener('load', function (e) {
 

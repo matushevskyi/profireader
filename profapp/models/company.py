@@ -230,12 +230,13 @@ class Company(Base, PRBase):
                               preset_urls={},
                               no_selection_url=fileUrl(FOLDER_AND_FILE.no_company_logo())):
 
-        is_image = db(ImageCroped, croped_image_id=self.logo_file_id).one()
+        is_image = db(ImageCroped, croped_image_id=self.logo_file_id).first()
         ret = {
             'upload': upload,
             'browse': self.id if browse is None else browse,
             'min_size': [100, 100],
             'crop': crop,
+            'original_image_id': is_image.original_image_id if is_image else None,
             'preset_urls': {'glyphicon-remove-circle': no_selection_url},
             'no_selection_url': no_selection_url,
             'selected_url': None
@@ -243,7 +244,7 @@ class Company(Base, PRBase):
 
         if is_image:
             ret['crop']['coordinates'] = is_image.get_coordinates()
-            ret['selected_url'] = fileUrl(is_image.croped_image_id)
+            ret['selected_url'] = fileUrl(is_image.original_image_id)
 
         return ret
         #

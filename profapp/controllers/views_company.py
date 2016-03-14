@@ -10,7 +10,7 @@ from ..models.portal import PortalDivision
 
 from ..models.articles import ArticleCompany, ArticlePortalDivision
 from utils.db_utils import db
-from ..models.files import File
+from ..models.files import File, ImageCroped
 from .pagination import pagination
 from .views_file import crop_image
 from config import Config
@@ -299,33 +299,45 @@ def load(json, company_id=None):
                 company.detach()
             return company.validate(company_id is None and user_can_edit)
         else:
-            if json['image'].get('uploaded'):
+            old_logo_id = None
+            selected_logo = json['logo']['selected_by_user']
+            if selected_logo['type'] == 'upload':
                 if company_id is None:
                     company.setup_new_company()
                 company.save().get_client_side_dict()
-                imgdataContent = json['image']['uploaded']['dataContent']
+                imgdataContent = selected_logo['file']['content']
                 image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
                 bb = base64.b64decode(image_data)
                 new_comp = db(Company, id=company.id).first()
-                file_id = File.uploadLogo(bb, json['image']['name'], json['image']['type'],
+                old_logo_id = new_comp.logo_file_id
+                file_id = File.uploadLogo(bb, selected_logo['file']['name'], selected_logo['file']['type'],
                                           new_comp.journalist_folder_file_id).id
                 if 'error' in File.check_image_mime(file_id):
                     resp = new_comp.get_client_side_dict()
                     resp.update({'error': True})
                     return resp
-                logo_id = crop_image(file_id, json['image']['coordinates'])
+                logo_id = crop_image(file_id, json['logo']['crop']['coordinates'], json['logo']['zoom'],{'image_size':(300, 400),'aspect_ratio':[0.5,1.5]})
                 new_comp.updates({'logo_file_id': logo_id})
-                return new_comp.get_client_side_dict()
+                company_dict = new_comp.get_client_side_dict()
             else:
-                img = json['image']
-                img_id = img.get('image_file_id')
+                img_id = None
+                if selected_logo['type'] == 'old':
+                    img_id = json['logo']['original_image_id']
+                elif selected_logo['type'] == 'browse':
+                    img_id = selected_logo['file_id']
+                    old_logo_id=company.logo_file_id
                 if img_id:
-                    company.logo_file_id = crop_image(img_id, img['coordinates'])
+                    company.logo_file_id = crop_image(img_id, json['logo']['crop']['coordinates'], json['logo']['zoom'], {'image_size':(400, 300), 'aspect_ratio':[0.5,1.5]})
                 elif not img_id:
                     company.logo_file_id = None
                 if company_id is None:
                     company.setup_new_company()
-                return company.save().get_client_side_dict()
+                company_dict = company.save().get_client_side_dict()
+
+            if old_logo_id:
+                    ImageCroped.delete_cropped(old_logo_id)
+            company_dict['logo'] = company.get_image_client_dict()
+            return company_dict
 
 
 # @company_bp.route('/confirm_create/', methods=['POST'])

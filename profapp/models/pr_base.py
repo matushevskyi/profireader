@@ -368,7 +368,7 @@ class Grid:
                 elif filter['type'] == 'select':
                     query = query.filter(filter['field'] == filter['value'])
                 elif filter['type'] == 'date_range':
-                    fromm = datetime.datetime.utcfromtimestamp((filter['value']['from'] + 1) / 1000)
+                    fromm = datetime.datetime.utcfromtimestamp((filter['value']['from']) / 1000)
                     to = datetime.datetime.utcfromtimestamp((filter['value']['to'] + 86399999) / 1000)
                     query = query.filter(filter['field'].between(fromm, to))
                 elif filter['type'] == 'range':
