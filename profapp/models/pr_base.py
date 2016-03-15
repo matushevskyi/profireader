@@ -23,6 +23,9 @@ import datetime
 import operator
 from collections import OrderedDict
 from functools import reduce
+import base64
+
+from ..utils import fileUrl, fileID
 
 Base = declarative_base()
 
@@ -481,6 +484,60 @@ class PRBase:
 
         return self
 
+    def set_image_client_dict(self, image, folder):
+        from ..models.files import File, ImageCroped
+        old_logo_id = None
+        cropped_image = None
+        selected_logo = image['selected_by_user']
+        if selected_logo['type'] == 'upload':
+            imgdataContent = selected_logo['file']['content']
+            image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
+            content = base64.b64decode(image_data)
+            old_logo_id = self.logo_file_id
+            cropped_image = File.uploadLogo(content, selected_logo['file']['name'], selected_logo['file']['type'],folder)
+            if 'error' in File.check_image_mime(cropped_image.id):
+                resp = self.get_client_side_dict()
+                resp.update({'error': True})
+                return resp
+        if selected_logo['type'] == 'old':
+            cropped_image = File.get(fileID(image['selected_url']))
+        if selected_logo['type'] == 'browse':
+            file = File.get(selected_logo['file_id'])
+            cropped_image = file.copy_file(folder)
+            old_logo_id=self.logo_file_id
+        if cropped_image:
+            self.logo_file_id = File.crop(cropped_image, image['crop']['coordinates'], image['zoom'],self,{'image_size':(400, 300),'aspect_ratio':[0.5,1.5]})
+        elif not cropped_image:
+            self.logo_file_id = None
+        if old_logo_id:
+                ImageCroped.delete_cropped(old_logo_id)
+
+    def get_image_client_dict(self,
+                              upload=None,
+                              browse=True,
+                              crop_from_image_file=None,
+                              preset_urls={},
+                              selected_url = None,
+                              no_selection_url=None):
+
+        ret = {
+            'upload': upload,
+            'browse': browse,
+            'min_size': [100, 100],
+            'crop': {'coordinates': None, 'aspect': False},
+            'original_image_id': None,
+            'preset_urls': preset_urls,
+            'no_selection_url': no_selection_url,
+            'selected_url': selected_url
+        }
+
+        if crop_from_image_file:
+            ret['original_image_id'] = crop_from_image_file.original_image_id,
+            ret['crop']['coordinates'] = crop_from_image_file.get_coordinates()
+            ret['selected_url'] = fileUrl(crop_from_image_file.original_image_id)
+
+        return ret
+
     def validate(self, is_new=False):
         return {'errors': {}, 'warnings': {}, 'notices': {}}
 
@@ -720,6 +777,8 @@ class PRBase:
         event.listen(cls, 'after_insert', cls.add_to_search)
         event.listen(cls, 'after_update', cls.update_search_table)
         event.listen(cls, 'after_delete', cls.delete_from_search)
+
+
 
 
 #
