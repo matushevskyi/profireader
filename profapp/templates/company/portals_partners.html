@@ -68,7 +68,7 @@
 
         $scope.grid_action = function (id, action, row, column_name) {
             if(row.actions[action] == true){
-                return $ok($scope.url_change_status({company_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action}, function(resp){}).finally(function () {
+                return $ok($scope.url_change_status({company_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action, who:'membership',eployment_company:$scope.company_id}, function(resp){}).finally(function () {
                     $scope.gridApi.grid.setGridData();
                 })
             }else{

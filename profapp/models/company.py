@@ -442,6 +442,7 @@ class UserCompany(Base, PRBase):
 
     @staticmethod
     def get(user_id=None, company_id=None):
+        print(company_id)
         return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).one()
 
     @staticmethod

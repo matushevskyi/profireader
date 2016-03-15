@@ -267,11 +267,11 @@
 
             $scope.abort = function(){
                 if($scope.uploadFileList.length>0){
-                    console.log($scope.uploadFileList)
+                    console.log($scope.list_file_id)
                     if($scope.f){
                         $scope.f.upload.abort();
                         $scope.f.progress = 0;
-                        $scope.auto_remove($scope.uploadFileList, $scope.fileNavigator.getCurrentFolder());
+                        $scope.auto_remove($scope.list_file_id, $scope.fileNavigator.getCurrentFolder());
                     }
                     $('#uploadfile').find('input[type=file], input[type=number], textarea').val('');
                 }
@@ -293,7 +293,7 @@
                 var url = '/filemanager/send/' + $scope.fileNavigator.getCurrentFolder() + '/';
                 var count = 0
                 var total = 0
-                console.log($scope.uploadFileList)
+                $scope.list_file_id = []
                 for(var i=0;i<$scope.uploadFileList.length;i++){
                     total += $scope.uploadFileList[i].size
                 }
@@ -305,7 +305,6 @@
                         resumeSizeUrl: '/filemanager/resumeupload/',
                         resumeChunkSize: $scope.config['chunkSize'],
                         ftype: file.type,
-                        upload_file_id: $scope.upload_file_id,
                         headers: {
                             'optional-header': 'header-value'
                         },
@@ -318,6 +317,7 @@
                         $scope.f.progress = Math.min(100, parseInt(100.0 *
                             evt.loaded / total)) + oldprogress;
                     }).success(function (data) {
+                        $scope.list_file_id.push(data.file_id)
                         if(data.error){
                             $scope.fileNavigator.refresh();
                         }
@@ -326,7 +326,6 @@
                         if($scope.uploadFileList[count]){
                             $scope.f = $scope.uploadFileList[count];
                             uploading($scope.uploadFileList[count])
-
                         }else {
                             close()
                         }

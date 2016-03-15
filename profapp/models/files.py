@@ -187,7 +187,6 @@ class File(Base, PRBase):
 
     @staticmethod
     def get_action(action):
-        from ..models.company import UserCompany
         return action
 
     @staticmethod
@@ -434,8 +433,8 @@ class File(Base, PRBase):
 
     @staticmethod
     def auto_remove(list, folder_id):
-        print(list)
-        for file in [db(File, name=file.name, parent_id=folder_id).first() for file in list]:
+        list.append(session['f_id'])
+        for file in [db(File, id=id).first() for id in list]:
             g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
                              % file.id)
 
@@ -530,7 +529,7 @@ class File(Base, PRBase):
         if file_mime in Config.ALLOWED_IMAGE_FORMATS:
             try:
                 Image.open(BytesIO(file_.file_content.content))
-                return ''
+                return file_.id
             except Exception as e:
                 return 'error'
 

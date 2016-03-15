@@ -446,11 +446,12 @@ def portals_partners_load(json, company_id):
 @ok
 # freeze our part in this company
 def portals_partners_change_status(json, company_id, portal_id):
+    print(company_id, portal_id)
     partner = MemberCompanyPortal.get(portal_id=portal_id, company_id=company_id)
-    employment = UserCompany.get(company_id=company_id)
+    employment = UserCompany.get(company_id=json.get('eployment_company'))
     if partner.action_is_allowed(json.get('action'), employment,
                                  UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
-                                 MemberCompanyPortal.ACTION_FOR_STATUS[partner.status]):
+                                 MemberCompanyPortal.ACTION_FOR_STATUS[json.get('who')][partner.status]):
         partner.set_client_side_dict(
                 status=MemberCompanyPortal.STATUS_FOR_ACTION[json.get('action')])
         partner.save()
@@ -525,7 +526,7 @@ def companies_partners_load(json, company_id):
     subquery = Company.subquery_company_partners(company_id, json.get('filter'),filters_exсept=MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES)
     members, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [PRBase.merge_dicts({'member': member.get_client_side_dict(more_fields='company'),
-                           'company_id': company_id},
+                           'company_id': company_id, 'portal_id': db(Portal, company_owner_id=company_id).first().id},
                            {'actions': member.actions(company_id, 'member')})
                           for member in members],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
