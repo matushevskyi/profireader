@@ -279,9 +279,9 @@ def profile(company_id=None):
 @login_required
 @ok
 def load(json, company_id=None):
-    user_can_edit = UserCompany.get(company_id=company_id).rights['PORTAL_EDIT_PROFILE'] if company_id else None
-    if not user_can_edit:
-        raise Exception('no PORTAL_EDIT_PROFILE')
+    # user_can_edit = UserCompany.get(company_id=company_id).rights['PORTAL_EDIT_PROFILE'] if company_id else None
+    # if not user_can_edit:
+    #     raise Exception('no PORTAL_EDIT_PROFILE')
     action = g.req('action', allowed=['load', 'validate', 'save'])
     company = Company() if company_id is None else Company.get(company_id)
     if action == 'load':
