@@ -24,6 +24,8 @@ import operator
 from collections import OrderedDict
 from functools import reduce
 
+from ..utils import fileUrl
+
 Base = declarative_base()
 
 
@@ -481,6 +483,32 @@ class PRBase:
 
         return self
 
+    def get_image_client_dict(self,
+                              upload=None,
+                              browse=True,
+                              crop_from_image_file=None,
+                              preset_urls={},
+                              selected_url = None,
+                              no_selection_url=None):
+
+        ret = {
+            'upload': upload,
+            'browse': browse,
+            'min_size': [100, 100],
+            'crop': {'coordinates': None, 'aspect': False},
+            'original_image_id': None,
+            'preset_urls': preset_urls,
+            'no_selection_url': no_selection_url,
+            'selected_url': selected_url
+        }
+
+        if crop_from_image_file:
+            ret['original_image_id'] = crop_from_image_file.original_image_id,
+            ret['crop']['coordinates'] = crop_from_image_file.get_coordinates()
+            ret['selected_url'] = fileUrl(crop_from_image_file.original_image_id)
+
+        return ret
+
     def validate(self, is_new=False):
         return {'errors': {}, 'warnings': {}, 'notices': {}}
 
@@ -720,6 +748,8 @@ class PRBase:
         event.listen(cls, 'after_insert', cls.add_to_search)
         event.listen(cls, 'after_update', cls.update_search_table)
         event.listen(cls, 'after_delete', cls.delete_from_search)
+
+
 
 
 #
