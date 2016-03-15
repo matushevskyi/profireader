@@ -41,8 +41,8 @@ def fileUrl(id, down=False, if_no_file=None):
 
 def fileID(url):
 
-    reg = r'^https?://file(?P<server>%{3})\.profireader\.com/(?P<id>%{8}-%{4}-4(%{3})-%{4}-%{12})/.*$' % \
-          ('[0-9a-f]',) * 5
+    reg = r'^(https?:)?//file(?P<server>%s{3})\.profireader\.com/(?P<id>%s{8}-%s{4}-4(%s{3})-%s{4}-%s{12})/.*$' % \
+          ('[0-9a-f]','[0-9a-f]','[0-9a-f]','[0-9a-f]','[0-9a-f]','[0-9a-f]')
 
     match = re.match(reg, url)
     return match.group('id') if match else None

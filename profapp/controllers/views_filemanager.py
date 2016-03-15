@@ -137,7 +137,7 @@ def cut(json):
 @filemanager_bp.route('/auto_remove/', methods=['POST'])
 @ok
 def auto_remove(json):
-    return File.auto_remove(json.get('name'), json.get('folder_id'))
+    return File.auto_remove(json.get('list'), json.get('folder_id'))
 
 
 

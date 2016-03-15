@@ -143,7 +143,7 @@ class Company(Base, PRBase):
         # get all users in company : company.employees
         # get all users companies : user.employers
 
-    # TODO: VK by OZ I think this have to be moved to __init__ and dublication check to validation
+    # TODO: VK by OZ I think this have to be moved to __init__ and duplication check to validation
     def setup_new_company(self):
         """Add new company to company table and make all necessary relationships,
         if company with this name already exist raise DublicateName"""
@@ -159,7 +159,6 @@ class Company(Base, PRBase):
         g.user.companies.append(self)
         self.youtube_playlists.append(YoutubePlaylist(name=self.name, company_owner=self))
         self.save()
-        print(self)
 
         return self
 
@@ -225,6 +224,12 @@ class Company(Base, PRBase):
                                     'own_portal.id|host',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    def set_image_client_dict(self, image, folder):
+        if image['selected_by_user']['type'] == 'preset':
+            pass
+        else:
+            PRBase.set_image_client_dict(self, image, folder)
 
     def get_image_client_dict(self):
 
