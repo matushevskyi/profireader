@@ -15,6 +15,7 @@
     <script>
     module.controller('portals_partners', function ($scope, $ok, $sce)  {
         angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portals_partners');
+        $scope.$$translate = {{ translates('portals_partners')|safe }};
         $scope.url_portals_partners = '{{ url_for('portal.portals_partners', company_id=company.id)}}';
         $scope.company_id = '{{ company.id|safe }}';
         $scope.url_search_for_portal = function () {

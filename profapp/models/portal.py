@@ -352,37 +352,55 @@ class MemberCompanyPortal(Base, PRBase):
         'UNSUBSCRIBE': 'UNSUBSCRIBE',
         'FREEZE': 'FREEZE',
         'WITHDRAW': 'WITHDRAW',
-        'RESTORE': 'RESTORE'
+        'RESTORE': 'RESTORE',
+        'REJECT': 'REJECT',
+        'SUSPEND': 'SUSPEND',
+        'ENLIST': 'ENLIST'
     }
 
     ACTION_FOR_STATUS = {
-        STATUSES['ACTIVE']: {
-            'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
-            'FREEZE': ACTIONS['FREEZE'],
-        },
-        STATUSES['APPLICANT']: {'WITHDRAW': ACTIONS['WITHDRAW']},
-        STATUSES['SUSPENDED']: {'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE']},
-        STATUSES['FROZEN']: {
-            'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
-            'RESTORE': ACTIONS['RESTORE']
-        },
-        STATUSES['REJECTED']: {'WITHDRAW': ACTIONS['WITHDRAW']},
-        STATUSES['DELETED']: {}
+        'membership':{
+                STATUSES['ACTIVE']: {
+                    'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
+                    'FREEZE': ACTIONS['FREEZE']},
+                STATUSES['APPLICANT']: {'WITHDRAW': ACTIONS['WITHDRAW']},
+                STATUSES['SUSPENDED']: {'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE']},
+                STATUSES['FROZEN']: {
+                    'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
+                    'RESTORE': ACTIONS['RESTORE']},
+                STATUSES['REJECTED']: {'WITHDRAW': ACTIONS['WITHDRAW']},
+                STATUSES['DELETED']: {}},
+        'member':{
+                STATUSES['ACTIVE']: {
+                    'REJECT': ACTIONS['REJECT'],
+                    'SUSPEND': ACTIONS['SUSPEND']},
+                STATUSES['APPLICANT']: {'REJECT': ACTIONS['REJECT'],
+                                        'ENLIST': ACTIONS['ENLIST']},
+                STATUSES['SUSPENDED']: {'REJECT': ACTIONS['REJECT'],
+                                        'RESTORE': ACTIONS['RESTORE']},
+                STATUSES['FROZEN']: {},
+                STATUSES['REJECTED']: {'RESTORE': ACTIONS['RESTORE']},
+                STATUSES['DELETED']: {}
+        }
     }
 
     STATUS_FOR_ACTION = {
-        'UNSUBSCRIBE': 'DELETED',
-        'FREEZE': 'FROZEN',
-        'WITHDRAW': 'DELETED'
+        'UNSUBSCRIBE': STATUSES['DELETED'],
+        'FREEZE': STATUSES['FROZEN'],
+        'WITHDRAW': STATUSES['DELETED'],
+        'REJECT': STATUSES['REJECTED'],
+        'SUSPEND': STATUSES['SUSPENDED'],
+        'ENLIST': STATUSES['ACTIVE'],
+        'RESTORE': STATUSES['ACTIVE']
     }
 
-    def actions(self, company_id, partner):
+    def actions(self, company_id, who):
         from .company import UserCompany
         right_for_action = UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS
         employment = UserCompany.get(company_id=company_id)
         return {action_name: self.action_is_allowed(action_name, employment, right_for_action,
-                                                    self.ACTION_FOR_STATUS[partner.status]) for action_name in
-                self.ACTION_FOR_STATUS[partner.status]}
+                                                    self.ACTION_FOR_STATUS[who][self.status]) for action_name in
+                self.ACTION_FOR_STATUS[who][self.status]}
 
     def action_is_allowed(self, action_name, employment, right_for_action, actions):
         if not employment:

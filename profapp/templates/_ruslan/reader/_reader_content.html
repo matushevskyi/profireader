@@ -6,6 +6,7 @@
     <script>
 
         module.controller('list_reader', function ($scope, $ok, $timeout) {
+            $scope.$$translate = {{ translates('list_reader')|safe }};
             $scope.favorite = {{ favorite }}
                     $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
             $scope.add_delete_favorite = '{{ url_for('reader.add_delete_favorite') }}'

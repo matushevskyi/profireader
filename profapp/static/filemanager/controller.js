@@ -243,9 +243,10 @@
                 }
             };
 
-            $scope.auto_remove = function(name, folder,success, error){
+            $scope.auto_remove = function(list, folder){
+                console.log(list)
                 var data = {
-                    'name':name,
+                    'list':list,
                     'folder_id':folder
                 };
                 return $http.post(fileManagerConfig.auto_removeUrl, data).success(function(data) {
@@ -266,6 +267,7 @@
 
             $scope.abort = function(){
                 if($scope.uploadFileList.length>0){
+                    console.log($scope.uploadFileList)
                     if($scope.f){
                         $scope.f.upload.abort();
                         $scope.f.progress = 0;
@@ -291,6 +293,7 @@
                 var url = '/filemanager/send/' + $scope.fileNavigator.getCurrentFolder() + '/';
                 var count = 0
                 var total = 0
+                console.log($scope.uploadFileList)
                 for(var i=0;i<$scope.uploadFileList.length;i++){
                     total += $scope.uploadFileList[i].size
                 }

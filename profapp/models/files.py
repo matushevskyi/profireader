@@ -434,11 +434,10 @@ class File(Base, PRBase):
 
     @staticmethod
     def auto_remove(list, folder_id):
+        print(list)
         for file in [db(File, name=file.name, parent_id=folder_id).first() for file in list]:
             g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
                              % file.id)
-            # FileContent.delfile(FileContent.get(file.thumbnail_id)) if file.thumbnail_id else None
-            # YoutubeVideo.delfile(YoutubeVideo.get(file.id)) if file.mime == 'video/*' else  FileContent.delfile(FileContent.get(file.id))
 
     @staticmethod
     def removeAll(parent_id, mime):
@@ -643,12 +642,14 @@ class File(Base, PRBase):
     @staticmethod
     def crop(image_query, coordinates, zoom, company_owner, params):
         #TODO SS by SS in future add allow_stretch_image param
-
-        if db(ImageCroped, original_image_id=image_query.id).count():  # check if croped image already exists
+        File.check_aspect_ratio(coordinates, params)
+        image_exist = db(ImageCroped, original_image_id=image_query.id).first()
+        if image_exist:  # check if croped image already exists
+            if image_exist.croped_width == coordinates['width'] and image_exist.croped_height == coordinates['height']:
+                return db(File, id=image_exist.croped_image_id).first().id
             return File.update_croped_image(image_query.id, coordinates, zoom, params)  # call function update_croped_image. see func documentation
         bytes_file, area = File.crop_with_coordinates(image_query,
                                                  coordinates, params)  # call function crop_with_coordinates. see func documentation
-
         if bytes_file:  # if func crop_with_coordinates doesn't return False.
             croped = File()  # get empty file object
             croped.md_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())  # set md_tm
@@ -657,33 +658,15 @@ class File(Base, PRBase):
             croped.name = image_query.name + '_cropped'  # set name of cropped file. File will continious as _cropped
             croped.parent_id = company_owner.system_folder_file_id  # set parent folder(directory) for cropped file
             #  from company owner system folder. System folder should present in company object.
-
             croped.root_folder_id = company_owner.system_folder_file_id  # set root(/) folder(directory) for cropped
             # file from company owner system folder. System folder should present in company object.
-
-            croped.mime = image_query.mime  # set file mime for cropped image (mime it's:L
-            # A media type (also MIME type and content type)[1] is a two-part identifier for file formats and format
-            # contents transmitted on the Internet. The Internet Assigned Numbers Authority (IANA) is the official
-            # authority for the standardization and publication of these classifications. Media types were first defined in
-            # Request for Comments 2045 in November 1996,[2] at which point they were named MIME
-            # (Multipurpose Internet Mail Extensions) types. From WIKI !!! )
-
+            croped.mime = image_query.mime
             fc = FileContent(content=bytes_file.getvalue(), file=croped)  # get FileContent object.
-            # content should contain bytes of file produced in bytes_file
-            copy_original_image_to_system_folder = \
-                File(parent_id=company_owner.system_folder_file_id, name=image_query.name + '_original',
-                     mime=image_query.mime, size=image_query.size, user_id=g.user.id,
-                     root_folder_id=company_owner.system_folder_file_id, author_user_id=g.user.id)
-            # copy original image file to system folder of company, because we save all original files of cropped image
-            cfc = FileContent(content=image_query.file_content.content,
-                              file=copy_original_image_to_system_folder)
-            # copy original image file CONTENT !!! (bytes) to system folder of company,
-            #  because we save all original files of cropped image
-            g.db.add_all([croped, fc, copy_original_image_to_system_folder, cfc])  # Add all created objects to postgresql
+            g.db.add_all([croped, fc])  # Add all created objects to postgresql
             # transaction
             g.db.flush()  # flush transaction, because then we will save id of cropped image from table file to
             # table image_cropped and need id from our created object
-            ImageCroped(original_image_id=copy_original_image_to_system_folder.id,
+            ImageCroped(original_image_id=image_query.id,
                         croped_image_id=croped.id,
                         x=float(area[0]), y=float(area[1]),
                         width=float(area[2]),
@@ -725,14 +708,13 @@ class File(Base, PRBase):
             image_croped_assoc.y = float(area[1])# set coordinates to ImageCroped object - x
             image_croped_assoc.width = float(area[2])# set coordinates to ImageCroped object - x
             image_croped_assoc.height = float(area[3])# set coordinates to ImageCroped object - x
-            image_croped_assoc.croped_width = round(coordinates['width'])
-            image_croped_assoc.croped_height = round(coordinates['height'])
+            image_croped_assoc.croped_width = coordinates['width']
+            image_croped_assoc.croped_height = coordinates['height']
             image_croped_assoc.zoom = zoom
         return croped.id # cropped file id from table File
 
     @staticmethod
     def crop_with_coordinates(image, coordinates, params):
-        File.check_aspect_ratio(coordinates,params)
         try:
             image_pil = Image.open(BytesIO(image.file_content.content)) # create Pillow object from content of original picture
             area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],
