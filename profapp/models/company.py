@@ -27,6 +27,7 @@ from ..models.portal import MemberCompanyPortal
 from ..models.portal import UserPortalReader
 from ..utils import fileUrl
 import re
+from .files import ImageCroped
 
 
 class Company(Base, PRBase):
@@ -227,11 +228,13 @@ class Company(Base, PRBase):
 
     def get_image_client_dict(self):
 
-        return PRBase.get_image_client_dict(self, upload=True, browse=browse,
-                                            croped_image_file_id = self.logo_file_id,
-                              crop={'coordinates': None, 'aspect': False},
-                              preset_urls={},
-                              no_selection_url=fileUrl(FOLDER_AND_FILE.no_company_logo()))
+        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
+
+        return PRBase.get_image_client_dict(self, upload=True, browse=self.id,
+                                            crop_from_image_file=db(ImageCroped,
+                                                                    croped_image_id=self.logo_file_id).first(),
+                                            preset_urls={'glyphicon-remove-circle': nologo_url},
+                                            no_selection_url=nologo_url)
 
 
         #
@@ -248,11 +251,12 @@ class Company(Base, PRBase):
         # }
 
     @staticmethod
-    def get_allowed_statuses(company_id=None,portal_id=None):
+    def get_allowed_statuses(company_id=None, portal_id=None):
         if company_id:
-            sub_query = db(MemberCompanyPortal, company_id=company_id).filter(MemberCompanyPortal.status!="DELETED").all()
+            sub_query = db(MemberCompanyPortal, company_id=company_id).filter(
+                MemberCompanyPortal.status != "DELETED").all()
         else:
-            sub_query = db(MemberCompanyPortal, portal_id = portal_id)
+            sub_query = db(MemberCompanyPortal, portal_id=portal_id)
         return sorted(list({partner.status for partner in sub_query}))
 
     @staticmethod
@@ -261,39 +265,41 @@ class Company(Base, PRBase):
         list_filters = []
         if filters_exсept:
             if 'status' in filters:
-                    list_filters.append({'type': 'multiselect', 'value': filters['status'], 'field': MemberCompanyPortal.status})
+                list_filters.append(
+                        {'type': 'multiselect', 'value': filters['status'], 'field': MemberCompanyPortal.status})
             else:
                 sub_query = sub_query.filter(and_(MemberCompanyPortal.status != v for v in filters_exсept))
-        # if filters:
-        #     sub_query = sub_query.join(MemberCompanyPortal.portal)
-        #     if 'portal.name' in filters:
-        #         list_filters.append({'type': 'text', 'value': filters['portal.name'], 'field': Portal.name})
-        #     if 'link' in filters:
-        #         list_filters.append({'type': 'text', 'value': filters['link'], 'field': Portal.host})
-        #     if 'company' in filters:
-        #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
-        #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
+                # if filters:
+                #     sub_query = sub_query.join(MemberCompanyPortal.portal)
+                #     if 'portal.name' in filters:
+                #         list_filters.append({'type': 'text', 'value': filters['portal.name'], 'field': Portal.name})
+                #     if 'link' in filters:
+                #         list_filters.append({'type': 'text', 'value': filters['link'], 'field': Portal.host})
+                #     if 'company' in filters:
+                #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
+                #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
             sub_query = Grid.subquery_grid(sub_query, list_filters)
         return sub_query
 
     @staticmethod
     def subquery_company_partners(company_id, filters, filters_exсept=None):
-        sub_query = db(MemberCompanyPortal, portal_id = db(Portal, company_owner_id=company_id).subquery().c.id)
+        sub_query = db(MemberCompanyPortal, portal_id=db(Portal, company_owner_id=company_id).subquery().c.id)
         list_filters = []
         if filters_exсept:
             if 'member.status' in filters:
-                    list_filters.append({'type': 'multiselect', 'value': filters['member.status'], 'field': MemberCompanyPortal.status})
+                list_filters.append(
+                        {'type': 'multiselect', 'value': filters['member.status'], 'field': MemberCompanyPortal.status})
             else:
                 sub_query = sub_query.filter(and_(MemberCompanyPortal.status != v for v in filters_exсept))
-        # if filters:
-        #     sub_query = sub_query.join(MemberCompanyPortal.portal)
-        #     if 'portal.name' in filters:
-        #         list_filters.append({'type': 'text', 'value': filters['portal.name'], 'field': Portal.name})
-        #     if 'link' in filters:
-        #         list_filters.append({'type': 'text', 'value': filters['link'], 'field': Portal.host})
-        #     if 'company' in filters:
-        #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
-        #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
+                # if filters:
+                #     sub_query = sub_query.join(MemberCompanyPortal.portal)
+                #     if 'portal.name' in filters:
+                #         list_filters.append({'type': 'text', 'value': filters['portal.name'], 'field': Portal.name})
+                #     if 'link' in filters:
+                #         list_filters.append({'type': 'text', 'value': filters['link'], 'field': Portal.host})
+                #     if 'company' in filters:
+                #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
+                #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
             sub_query = Grid.subquery_grid(sub_query, list_filters)
         return sub_query
 

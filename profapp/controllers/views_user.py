@@ -64,7 +64,7 @@ def edit_profile_load(json, user_id):
         g.user.updates(json['user'])
         if action == 'validate':
             g.user.detach()
-            return {'user': g.user.validate(False)}
+            return g.user.validate(False)
         else:
             g.user.save()
             return {'user': g.user.get_client_side_dict()}
