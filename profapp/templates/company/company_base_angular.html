@@ -23,7 +23,7 @@
 </script>
 {% raw %}
 <div ng-controller="CompanyMenuController" class="topbar-menu-links">
-    <div ng-cloak ng-show="user.id">
+    <div ng-if="user.id && company.id" ng-cloak>
         <div class="container">
         <div class="row menu-company-inside">
             <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 menu-company">
@@ -57,9 +57,10 @@
                    href="{{ url_company_readers({company_id: company.id}) }}">{{ _('Readers') }}</a>
                 <a ng-if="company.own_portal" ng-class="{'selected': selected_company_menu == 'companies_partners'}"
                    href="{{ url_portal_companies_partners({company_id: company.id}) }}">{{ _('Members') }}</a>
-                <a ng-if="company.own_portal" ng-class="{'selected': selected_company_menu == 'statistics'}" id="statistics"
+                <a ng-if="0 && company.own_portal" ng-class="{'selected': selected_company_menu == 'statistics'}"
+                   id="statistics"
                    href="#">{{ _('Statistics') }}</a>
-                <a ng-if="company.own_portal" ng-class="{'selected': selected_company_menu == 'portal_profile'}" id="portal_profile"
+                <a ng-if="0 && company.own_portal" ng-class="{'selected': selected_company_menu == 'portal_profile'}" id="portal_profile"
                    href="#">{{ _('Portal profile') }}</a>
             </div>
         </div>

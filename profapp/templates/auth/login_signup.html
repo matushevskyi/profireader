@@ -11,26 +11,26 @@
 {% block portal_content %}
     <div class="row " ng-controller="UserLoginController">
     </div>
-    <div class="auth-input auth-form col-lg-4 col-md-4 col-sm-5 col-xs-12" ng-controller="UserLoginController">
+    <div class="auth-input auth-form col-lg-4 col-md-5 col-sm-6 col-xs-10" ng-controller="UserLoginController">
         <div class="tabs">
             <div ng-hide="login_signup==='signup'" class="tab-link">
-                <a pr-test="TabLogIn" class="tab actual" title="Log in to Profireader">{{ '{{' }}_('Log in'){{ '}}' }}</a>
-                <a pr-test="TabSignUp" class="tab" ng-click="login_signup='signup'" href="" title="Sign up to Profireader">{{ '{{' }}_('Sign up'){{ '}}' }}</a>
+                <a pr-test="TabLogIn" class="tab actual" title="Log in to Profireader">{{ _('Log in') }}</a>
+                <a pr-test="TabSignUp" class="tab" ng-click="login_signup='signup'" href="" title="Sign up to Profireader">{{ _('Sign up') }}</a>
             </div>
             <div ng-show="login_signup==='signup'" class="tab-link">
-                <a class="tab" ng-click="login_signup='login'" href="" title="Log in to Profireader">{{ '{{' }}_('Log in'){{ '}}' }}</a>
-                <a class="tab actual" title="Sign up to Profireader">{{ '{{' }}_('Sign up'){{ '}}' }}</a>
+                <a class="tab" ng-click="login_signup='login'" href="" title="Log in to Profireader">{{ _('Log in') }}</a>
+                <a class="tab actual" title="Sign up to Profireader">{{ _('Sign up') }}</a>
             </div>
         </div>
 
         <div class="content-block">
             <stan ng-if="login_signup==='signup'">
-                <h3>{{ '{{' }}_('Sign up via social'){{ '}}' }}:</h3>
+                <h3>{{ _('Sign up via social') }}:</h3>
                 {% include 'partials/LoginSignup - Soc Networks.html' %}
                 {% include 'partials/Signup - Profireader.html' %}
             </stan>
             <div ng-if="login_signup!=='signup'">
-                <h3>{{ '{{' }}_('Login via social'){{ '}}' }}:</h3>
+                <h3>{{ _('Login via social') }}:</h3>
                 {% include 'partials/LoginSignup - Soc Networks.html' %}
                 {% include 'partials/Log in - Profireader.html' %}
             </div>

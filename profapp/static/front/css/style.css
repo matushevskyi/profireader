@@ -703,11 +703,6 @@ footer .promo {
     background: #F5F5F5;
 }
 
-.subportal.collapse.navbar-collapse ul #navigation_selected_division {
-    color: #fff;
-    background: #389a5e;
-    border: none;
-}
 
 .subportal.collapse.navbar-collapse ul {
     width: 100%;

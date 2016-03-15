@@ -232,15 +232,15 @@ def login():
     print(email,    password)
 
     if email and password:
-        print('sss')
+
         user = g.db.query(User).filter(User.profireader_email == email).first()
-        print(user.profireader_email)
+
 
         if user and user.is_banned():
             flash('You can not be logged in. Please contact the Profireader administration.')
             return redirect(url_for('general.index'))
         if user and user.verify_password(password):
-            print('ddd')
+
             login_user(user)
 
             if portal_id:
@@ -263,7 +263,7 @@ def login():
 @login_required   # Only logged in user can be logged out
 def logout():
     logout_user()
-    flash('You have been logged out.')
+    # flash('You have been logged out.')
     return redirect(url_for('general.index'))
 
 

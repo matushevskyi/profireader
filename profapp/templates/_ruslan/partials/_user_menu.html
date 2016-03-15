@@ -1,14 +1,14 @@
 <script type="text/ng-template" id="tos_dialog.html">
             <div class="modal-header">
-                <h3 class="modal-title">{{ _('Pls accept tos dialog header') }}</h3>
+                <h3 pr-test="LicenceTitle" class="modal-title">{{ _('Pls accept tos dialog header') }}</h3>
             </div>
             <div class="modal-body">
                 {{ __('Licence text') }}
             </div>
 
             <div class="modal-footer">
-            <button type="button" class="btn btn-default" ng-click="accept_tos('accept')">Accept</button>
-            <button type="button" class="btn btn-default" ng-click="accept_tos('decline')">Decline</button>
+            <button pr-test="AcceptLicence" type="button" class="btn btn-default" ng-click="accept_tos('accept')">Accept</button>
+            <button pr-test="DeclineLicence" type="button" class="btn btn-default" ng-click="accept_tos('decline')">Decline</button>
             </div>
         </div>
     </script>
@@ -85,7 +85,7 @@
     <div class="container">
 
         <div class="row">
-            <button type="button" ng-click="tos()" class="btn btn-info btn-lg" ng-if="user.id && !user.tos">{{ _('Accept licence') }}</button>
+            <button pr-test="HeaderAcceptLicence" type="button" ng-click="tos()" class="btn btn-info btn-lg" ng-if="user.id && !user.tos">{{ _('Accept licence') }}</button>
             <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
                         data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
@@ -103,21 +103,23 @@
 
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <ul>
-                        <li><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="{{ _('Стрічка читача') }}"
+                        <li ng-if="user.id"><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="{{ _('Стрічка
+                        читача')
+                         }}"
                                ng-class="{'selected': selected_user_menu == 'line_readers'}"><i
                                 class="fa fa-newspaper-o"></i></a></li>
-                        <li><a pr_test="UserMassages" href="{{ url_messenger }}" title="{{ _('Всі повідомлення') }}"
+                        <li ng-if="user.id"><a pr_test="UserMassages" href="{{ url_messenger }}" title="{{ _('Всі повідомлення') }}"
                                ng-class="{'selected': selected_user_menu == 'messages'}"><i
                                 class="fa fa-envelope-o"></i></a></li>
-                        <li><a pr_test="CompaniesList" href="{{ url_company_show() }}" title="{{ _('Компанії') }}"
+                        <li ng-if="user.id"><a pr_test="CompaniesList" href="{{ url_company_show() }}" title="{{ _('Компанії') }}"
                                ng-class="{'selected': selected_user_menu == 'companies_list'}"><i
                                 class="fa fa-building-o"></i></a></li>
-                        <li><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
+                        <li ng-if="user.id"><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
                                ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
                                 class="fa fa-folder-open-o"></i></a></li>
                         <li><a pr_test="UserInfo" href="{{ url_general_help() }}" title="{{ _('Інформація') }}"
                                ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-info"></i></a></li>
-                        <li ng-show="user.id" role="presentation" class="menu-profile">
+                        <li ng-if="user.id" role="presentation" class="menu-profile">
                             <a pr_test="UserProfile"  href="{{ url_user_profile({user_id:user.id}) }}" role="button" aria-haspopup="true"
                                aria-expanded="false">
                                 <img class="person-small-cover" pr-image="" pr-no-image="{{ user_avatar_url }}">
@@ -132,7 +134,7 @@
                             </ul>-->
                         </li>
 
-                        <li ng-show="!user.id" role="presentation" class="menu-profile">
+                        <li ng-if="!user.id" role="presentation" class="menu-profile">
                             <a pr_test="LogIn" class="login-profile" href="{{ login_url }}?login_signup=login">Login</a>
                         </li>
                     </ul>

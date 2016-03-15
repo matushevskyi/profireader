@@ -158,7 +158,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 //TODO: OZ by OZ: move it to angular attrs
                 scope.zoomable = true;
                 scope.resetable = true;
-                scope.minimal = 0.1;
+                //scope.minimal = 0.1;
 
                 scope.croper_loaded = false;
                 scope.originalModel = $.extend(true, {}, scope.prCrop);
@@ -235,9 +235,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                                 scope.prCrop['zoom'] = 0;
                                 scope.prCrop['crop']['coordinates'] = {rotate: 0};
                                 var uploaded_file = (window.URL || window.webkitURL).createObjectURL(the_file);
-                                //model.$modelValue.type = file.type;
-                                //model.$modelValue.name = file.name;
-                                //model.$modelValue.dataContent = content;
                                 restartCropper(uploaded_file, false, function () {
                                     scope.prCrop['selected_by_user'] = {
                                         'type': 'upload', 'file': {
@@ -260,6 +257,15 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 var resizeContainer = function (loadedimg) {
 
+
+                    if (scope.prCrop['min_size'] &&
+                        (scope.prCrop['min_size'][0] && loadedimg.width < scope.prCrop['min_size'][0] ||
+                         scope.prCrop['min_size'][1] && loadedimg.height < scope.prCrop['min_size'][1])) {
+                                throw ['Image too small. minimum size is %(0)s*%(1)s', scope.prCrop['min_size']]
+                                }
+
+
+
                     var options = {};
 
                     var $outer_container = $('.img-container', element);
@@ -277,7 +283,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         options['minContainerWidth'] = $outer_container.width();
                         options['minContainerHeight'] = $outer_container.height() / image_wider;
                         scope.minzoom = 1.0 * $inner_container.width() / loadedimg.width;
-                        scope.maxzoom = 10;
                     }
                     else {
                         $inner_container.css({
@@ -290,8 +295,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         options['minContainerWidth'] = $outer_container.width() * image_wider;
                         options['minContainerHeight'] = $outer_container.height();
                         scope.minzoom = 1.0 * $inner_container.height() / loadedimg.height;
-                        scope.maxzoom = 10;
                     }
+
+                    scope.maxzoom = 1.0;
 
                     if (scope.minzoom > scope.maxzoom) {
                         scope.minzoom = scope.maxzoom;
@@ -301,8 +307,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     if (scope.prCrop['crop']) {
                         options['minCanvasWidth'] = options['minContainerWidth'];
                         options['minContainerHeight'] = options['minContainerHeight'];
-                        options['minCropBoxWidth'] = $outer_container.width() * scope.minimal;
-                        options['minCropBoxHeight'] = $outer_container.height() * scope.minimal;
+                        options['minCropBoxWidth'] = scope.prCrop['min_size'][0] * scope.maxzoom;
+                        options['minCropBoxHeight'] = scope.prCrop['min_size'][1] * scope.maxzoom;
                         options['aspectRatio'] = scope.prCrop['crop']['aspect'];
                         options['data'] = scope.prCrop['crop']['coordinates'];
                     }
@@ -316,8 +322,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     options['strict'] = true;
                     options['viewMode'] = 3;
                     options['zoomable'] = scope.zoomable;
-                    options['minCropBoxWidth'] = 100;
+
                     //options['autoCrop'] = true;
+
 
                     options['zoom'] = function (e) {
                         if (e.ratio < scope.minzoom * 1.01 && e.ratio !== scope.minzoom) {
@@ -335,17 +342,25 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             }
                             return false;
                         }
+
                         scope.prCrop.zoom = e.ratio;
+
+                        //if (scope.prCrop['min_size'] && scope.prCrop['min_size'][0]>0) {
+                        //    console.log(scope.prCrop['min_size'], scope.prCrop['min_size'][0]*e.ratio);
+                        //    $().cropper('minCropBoxWidth',  scope.prCrop['min_size'][0]*e.ratio);
+                        //}
+                        //if (scope.prCrop['min_size'] && scope.prCrop['min_size'][1]>0) {
+                        //    $().cropper({'minCropBoxHeight': scope.prCrop['min_size'][1]*e.ratio});
+                        //}
+
                     }
 
 
                     options['built'] = function (e) {
                         scope.croper_loaded = true;
-
                         if (on_success) {
                             on_success()
                         }
-
                         if (scope.zoomable) {
                             $(this).cropper('zoomTo', scope.prCrop.zoom ? scope.prCrop.zoom : scope.minzoom);
                         }
@@ -356,27 +371,22 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     //    console.log(e.action, e);
                     //}
 
+
+
                     options['crop'] = function (e) {
-                        //console.log(scope.prCrop['min_size'], e.width);
-                        //if ((scope.prCrop['min_size'][0] && e.width < scope.prCrop['min_size'][0])
-                        //    || (scope.prCrop['min_size'][1] && e.height < scope.prCrop['min_size'][1])) {
-                        //    console.log('too small');
-                        //    e.preventDefault();
-                        //}
-                        //else {
+
                         $timeout(function () {
                             scope.prCrop['crop']['coordinates'] = {
                                 'width': e.width, 'height': e.height, 'y': e.y, 'x': e.x
                             };
                         })
-                        //}
                     }
 
                     $image.cropper(options);
                 }
 
                 var restartCropper = function (src, sure_is_preset, on_success) {
-
+                    console.log(src)
                     var fr = new Image();
                     fr.addEventListener('load', function (e) {
 
@@ -400,15 +410,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                                 });
                             }
 
-                            if (is_preset) {
-                                loadCropper = false;
-                            } else {
-                                if (scope.prCrop['min_size'] &&
-                                    (fr.width < scope.prCrop['min_size'][0] || fr.height < scope.prCrop['min_size'][1])) {
-                                    add_message('Image too small. minimum size is %(0)sx%(1)s', scope.prCrop['min_size']);
-                                    return false;
-                                }
-                            }
+                            loadCropper = !is_preset;
                         }
 
                         $image.hide();
@@ -436,7 +438,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         }
                     }, false);
                     fr.addEventListener('error', function (e) {
-                            add_message('Image loading error');
+                            add_message('Image loading error', 'warning');
                         }
                     );
                     fr.src = src;
