@@ -6,8 +6,10 @@
 
 {% block portal_content %}
     <script>
-        module.controller('edit_user', ['$scope', function ($scope) {
+        module.controller('edit_user', ['$scope', '$af', function ($scope, $af) {
             $scope.$$translate = {{ translates('edit_user')|safe }};
+            $scope.$af = $af;
+            console.log($af);
 
             $scope.url_user_profile = {{ raw_url_for('user.profile')| safe }};
             $scope.save_user_profile = {{ raw_url_for('user.edit_profile')| safe }}
@@ -68,16 +70,6 @@
 
             <form class="col-lg-8 col-md-8 col-sm-8 col-xs-8 edit-grup">
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your display name') }}</span>
-                    <input pr-validation-answer class="form-control" aria-describedby="sizing-addon1" type="text"
-                           placeholder="name" ng-model="data.user.profireader_name">
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your email') }}</span>
-                    <input class="form-control" aria-describedby="sizing-addon1" type="text" disabled="disabled"
-                           placeholder="youremail@example.com" ng-model="data.user.profireader_email">
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name') }}</span>
                     <input pr-validation-answer class="form-control" aria-describedby="sizing-addon1" type="text"
                            placeholder="first name" ng-model="data.user.profireader_first_name">
@@ -85,9 +77,14 @@
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Your last name') }}</span>
                     <input pr-validation-answer class="form-control" aria-describedby="sizing-addon1" type="text"
-                           placeholder="last name"
-                           ng-model="data.user.profireader_last_name">
+                           placeholder="last name" ng-model="data.user.profireader_last_name">
                 </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Your email') }}</span>
+                    <input class="form-control" aria-describedby="sizing-addon1" type="text" disabled="disabled"
+                           placeholder="youremail@example.com" ng-model="data.user.profireader_email">
+                </div>
+
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Birthday') }}</span>
                     <input class="form-control" pr-datepicker="" ng-model="data.user.birth_tm"
@@ -136,10 +133,11 @@
                                   cols="40" ng-model="data.user.about_me"></textarea>
                 </div>
                 <div class="item">
+                    {{ $af }}
                     <button class="btn btn-default save-profile pull-right
                         border-radius"
                             type="button" ng-click="$af.save(data)"
-                            ng-disabled="!$af.isActionAllowed(data, 'save') ">Save profile
+                            ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save profile') }}
                     </button>
                 </div>
             </form>

@@ -254,11 +254,11 @@ class User(Base, UserMixin, PRBase):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
-        if not re.match(r'[^\s]{3}', self.profireader_name):
+        if not re.match(r'[^\s]{3}', str(self.profireader_name)):
             ret['errors']['profireader_name'] = 'pls enter a bit longer name'
-        if not re.match(r'[^\s]{3}', self.profireader_first_name):
+        if not re.match(r'[^\s]{3}', str(self.profireader_first_name)):
             ret['errors']['profireader_first_name'] = 'pls enter a bit longer name'
-        if not re.match(r'[^\s]{3}', self.profireader_last_name):
+        if not re.match(r'[^\s]{3}', str(self.profireader_last_name)):
             ret['errors']['profireader_last_name'] = 'pls enter a bit longer name'
         return ret
 

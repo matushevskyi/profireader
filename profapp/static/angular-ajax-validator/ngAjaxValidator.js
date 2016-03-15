@@ -357,10 +357,8 @@
             link: function link(scope, element, attrs) {
                 var model_name = '';
                 var field_name = '';
-                //console.log(attrs);
+
                 if (attrs['prValidationAnswer'] === '') {
-                    //data.user.profireader_name
-                    //data_validation.user:profireader_name
                     var model_field  = attrs['ngModel'].split('.');
                     field_name = model_field.pop();
                     model_name = model_field.shift() + '_validation';
