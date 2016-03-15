@@ -355,9 +355,23 @@
             terminal: true,
             priority: 1000,
             link: function link(scope, element, attrs) {
-                var model_fields = attrs['prValidationAnswer'].split(':');
-                var model_name = model_fields[0];
-                var field_name = model_fields[1];
+                var model_name = '';
+                var field_name = '';
+                //console.log(attrs);
+                if (attrs['prValidationAnswer'] === '') {
+                    //data.user.profireader_name
+                    //data_validation.user:profireader_name
+                    var model_field  = attrs['ngModel'].split('.');
+                    field_name = model_field.pop();
+                    model_name = model_field.shift() + '_validation';
+                    model_name = model_name + '.' + model_field.join('.');
+                }
+                else {
+                    var model_fields = attrs['prValidationAnswer'].split(':');
+                    model_name = model_fields[0];
+                    field_name = model_fields[1];
+                }
+
                 element.attr('uib-popover', "{{ "+model_name+".errors."+field_name+" || "+model_name+".warnings."+field_name+"" +
                     " || "+model_name+".notices."+field_name+" }}");
                 element.attr('ng-class', "{'pr-validation-error': "+model_name+".errors."+field_name+", 'pr-validation-warning':" +
