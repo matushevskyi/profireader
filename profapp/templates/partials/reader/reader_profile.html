@@ -28,6 +28,7 @@ module.controller('grid_reader_modal', function ($scope, $uibModalInstance, list
         });
 
 module.controller('grid_reader', function ($scope, $uibModal, $ok, $sce, uiGridConstants, $timeout) {
+        $scope.$$translate = {{ translates('grid_reader')|safe }};
         $scope.url_search_translations = {{ raw_url_for('reader.profile')|safe }}
         $scope.reader_edit_profile = {{ raw_url_for('reader.edit_portal_subscription')|safe }};
         {% raw %}

@@ -13,6 +13,7 @@
             $scope.save_user_profile = {{ raw_url_for('user.edit_profile')| safe }}
                     $scope.url_user_setings = {{ raw_url_for('user.profile')| safe}};
             $scope.user = {{user.get_client_side_dict() | tojson | safe}};
+            $scope.$$translate = {{translates('edit_user') | safe}};
             $scope.languages = {{ langs | safe}}
                     $scope.countries = {{ countries | safe}}
                             $scope.data = {};

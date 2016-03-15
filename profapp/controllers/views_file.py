@@ -9,7 +9,6 @@ import re
 from sqlalchemy import or_
 from config import Config
 from utils.db_utils import db
-from ..models.company import Company
 from flask import current_app
 from werkzeug.datastructures import Headers
 import mimetypes
@@ -228,6 +227,7 @@ def allowed_referrers(domain):
 
 
 def crop_image(image_id, coordinates, zoom, params):
+    from ..models.company import Company
     image_query = db(File, id=image_id).one()  # get file object
     company_owner = db(Company).filter(or_(
                 Company.system_folder_file_id == image_query.root_folder_id,

@@ -225,6 +225,13 @@ class Company(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
+
+    def set_image_client_dict(self, image, folder):
+        if image['selected_by_user']['type'] == 'preset':
+            pass
+        else:
+            PRBase.set_image_client_dict(self, image, folder)
+
     def get_image_client_dict(self, upload=True, browse=None,
                               crop={'coordinates': None, 'aspect': False},
                               preset_urls={},

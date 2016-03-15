@@ -23,6 +23,7 @@ import datetime
 import operator
 from collections import OrderedDict
 from functools import reduce
+import base64
 
 Base = declarative_base()
 
@@ -480,6 +481,35 @@ class PRBase:
                 self.position = insert_after_object.position - 1
 
         return self
+
+    def set_image_client_dict(self, image, folder):
+        from ..models.files import File, ImageCroped
+        old_logo_id = None
+        cropped_image = None
+        selected_logo = image['selected_by_user']
+        if selected_logo['type'] == 'upload':
+            imgdataContent = selected_logo['file']['content']
+            image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
+            content = base64.b64decode(image_data)
+            old_logo_id = self.logo_file_id
+            cropped_image = File.uploadLogo(content, selected_logo['file']['name'], selected_logo['file']['type'],folder)
+            if 'error' in File.check_image_mime(cropped_image.id):
+                resp = self.get_client_side_dict()
+                resp.update({'error': True})
+                return resp
+        if selected_logo['type'] == 'old':
+            cropped_image = File.get(image['original_image_id'])
+        if selected_logo['type'] == 'browse':
+            file = File.get(selected_logo['file_id'])
+            cropped_image = file.copy_file(folder)
+            old_logo_id=self.logo_file_id
+        if cropped_image:
+            self.logo_file_id = File.crop(cropped_image, image['crop']['coordinates'], image['zoom'],self,{'image_size':(400, 300),'aspect_ratio':[0.5,1.5]})
+        elif not cropped_image:
+            self.logo_file_id = None
+        if old_logo_id:
+                ImageCroped.delete_cropped(old_logo_id)
+
 
     def validate(self, is_new=False):
         return {'errors': {}, 'warnings': {}, 'notices': {}}

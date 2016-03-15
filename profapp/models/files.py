@@ -434,11 +434,10 @@ class File(Base, PRBase):
 
     @staticmethod
     def auto_remove(list, folder_id):
+        print(list)
         for file in [db(File, name=file.name, parent_id=folder_id).first() for file in list]:
             g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
                              % file.id)
-            # FileContent.delfile(FileContent.get(file.thumbnail_id)) if file.thumbnail_id else None
-            # YoutubeVideo.delfile(YoutubeVideo.get(file.id)) if file.mime == 'video/*' else  FileContent.delfile(FileContent.get(file.id))
 
     @staticmethod
     def removeAll(parent_id, mime):
@@ -659,33 +658,15 @@ class File(Base, PRBase):
             croped.name = image_query.name + '_cropped'  # set name of cropped file. File will continious as _cropped
             croped.parent_id = company_owner.system_folder_file_id  # set parent folder(directory) for cropped file
             #  from company owner system folder. System folder should present in company object.
-
             croped.root_folder_id = company_owner.system_folder_file_id  # set root(/) folder(directory) for cropped
             # file from company owner system folder. System folder should present in company object.
-
-            croped.mime = image_query.mime  # set file mime for cropped image (mime it's:L
-            # A media type (also MIME type and content type)[1] is a two-part identifier for file formats and format
-            # contents transmitted on the Internet. The Internet Assigned Numbers Authority (IANA) is the official
-            # authority for the standardization and publication of these classifications. Media types were first defined in
-            # Request for Comments 2045 in November 1996,[2] at which point they were named MIME
-            # (Multipurpose Internet Mail Extensions) types. From WIKI !!! )
-
+            croped.mime = image_query.mime
             fc = FileContent(content=bytes_file.getvalue(), file=croped)  # get FileContent object.
-            # content should contain bytes of file produced in bytes_file
-            copy_original_image_to_system_folder = \
-                File(parent_id=company_owner.system_folder_file_id, name=image_query.name + '_original',
-                     mime=image_query.mime, size=image_query.size, user_id=g.user.id,
-                     root_folder_id=company_owner.system_folder_file_id, author_user_id=g.user.id)
-            # copy original image file to system folder of company, because we save all original files of cropped image
-            cfc = FileContent(content=image_query.file_content.content,
-                              file=copy_original_image_to_system_folder)
-            # copy original image file CONTENT !!! (bytes) to system folder of company,
-            #  because we save all original files of cropped image
-            g.db.add_all([croped, fc, copy_original_image_to_system_folder, cfc])  # Add all created objects to postgresql
+            g.db.add_all([croped, fc])  # Add all created objects to postgresql
             # transaction
             g.db.flush()  # flush transaction, because then we will save id of cropped image from table file to
             # table image_cropped and need id from our created object
-            ImageCroped(original_image_id=copy_original_image_to_system_folder.id,
+            ImageCroped(original_image_id=image_query.id,
                         croped_image_id=croped.id,
                         x=float(area[0]), y=float(area[1]),
                         width=float(area[2]),
