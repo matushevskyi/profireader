@@ -193,7 +193,7 @@ def send(parent_id):
         file = youtube.upload()
     else:
         file = File.upload(name, data, parent.id, root, company, content=uploaded_file.stream.read(-1))
-    return jsonify({'result': {'size': 0}, 'error': True if file=='error' else False})
+    return jsonify({'result': {'size': 0}, 'error': True if file=='error' else False, 'file_id':file})
 
 
 @filemanager_bp.route('/resumeupload/', methods=['GET'])
