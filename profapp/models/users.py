@@ -17,9 +17,12 @@ from utils.db_utils import db
 from sqlalchemy import String
 import hashlib
 from flask.ext.login import UserMixin
-from .files import File
+from .files import File, ImageCroped
 from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
+from ..utils import fileUrl
+from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+
 
 class User(Base, UserMixin, PRBase):
     __tablename__ = 'user'
@@ -52,6 +55,7 @@ class User(Base, UserMixin, PRBase):
                                     default='//static.profireader.com/static/no_avatar.png')
     profireader_small_avatar_url = Column(TABLE_TYPES['url'], nullable=False,
                                           default='//static.profireader.com/static/no_avatar_small.png')
+    avatar_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
     # status_id = Column(Integer, db.ForeignKey('status.id'))
 
     email_conf_token = Column(TABLE_TYPES['token'])
@@ -185,6 +189,7 @@ class User(Base, UserMixin, PRBase):
         self.about_me = about_me
         self.location = location
         self.password = password
+
         self.confirmed = confirmed
         self.banned = banned
         self.birth_tm = None
@@ -255,11 +260,11 @@ class User(Base, UserMixin, PRBase):
     def validate(self, is_new):
         ret = super().validate(is_new)
         if not re.match(r'[^\s]{3}', self.profireader_name):
-            ret['errors']['name'] = 'pls enter a bit longer name'
+            ret['errors']['profireader_name'] = 'pls enter a bit longer name'
         if not re.match(r'[^\s]{3}', self.profireader_first_name):
-            ret['errors']['name'] = 'pls enter a bit longer name'
+            ret['errors']['profireader_first_name'] = 'pls enter a bit longer name'
         if not re.match(r'[^\s]{3}', self.profireader_last_name):
-            ret['errors']['name'] = 'pls enter a bit longer name'
+            ret['errors']['profireader_last_name'] = 'pls enter a bit longer name'
         return ret
 
     @staticmethod
@@ -373,6 +378,16 @@ class User(Base, UserMixin, PRBase):
         hash = hashlib.md5(email.encode('utf-8')).hexdigest()
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
                 url=url, hash=hash, size=size, default=default, rating=rating)
+
+    def get_image_client_dict(self):
+
+        noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())
+
+        return PRBase.get_image_client_dict(self, upload=True, browse=self.id,
+                                            crop_from_image_file=db(ImageCroped,
+                                                                    croped_image_id=self.avatar_file_id).first(),
+                                            preset_urls={'glyphicon-remove-circle': noavatar_url},
+                                            no_selection_url=noavatar_url)
 
     def profile_completed(self):
         completeness = True

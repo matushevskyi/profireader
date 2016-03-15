@@ -280,6 +280,8 @@ def profile(company_id=None):
 @ok
 def load(json, company_id=None):
     user_can_edit = UserCompany.get(company_id=company_id).rights['PORTAL_EDIT_PROFILE'] if company_id else None
+    if not user_can_edit:
+        raise Exception('no PORTAL_EDIT_PROFILE')
     action = g.req('action', allowed=['load', 'validate', 'save'])
     company = Company() if company_id is None else Company.get(company_id)
     if action == 'load':
@@ -290,12 +292,12 @@ def load(json, company_id=None):
         company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
                                    'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
-            if company_id is not None and user_can_edit:
+            if company_id is not None:
                 company.detach()
-            return company.validate(company_id is None and user_can_edit)
+            return company.validate(company_id is None)
         else:
             if company_id is None:
-                company.setup_new_company().save()
+                company.setup_new_company()
             company.set_image_client_dict(json['logo'], company.system_folder_file_id)
             company_dict = company.get_client_side_dict()
             company_dict['logo'] = company.get_image_client_dict()

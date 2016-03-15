@@ -293,6 +293,7 @@
                 var url = '/filemanager/send/' + $scope.fileNavigator.getCurrentFolder() + '/';
                 var count = 0
                 var total = 0
+                console.log($scope.uploadFileList)
                 for(var i=0;i<$scope.uploadFileList.length;i++){
                     total += $scope.uploadFileList[i].size
                 }
