@@ -23,6 +23,8 @@ import datetime
 import operator
 from collections import OrderedDict
 from functools import reduce
+from .files import ImageCroped
+from ..utils import fileUrl
 
 Base = declarative_base()
 
@@ -480,6 +482,30 @@ class PRBase:
                 self.position = insert_after_object.position - 1
 
         return self
+
+    def get_image_client_dict(self, upload=True, browse=None,
+                              croped_image_file_id=None,
+                              preset_urls={},
+                              no_selection_url=None):
+
+        crop_from_image_file = db(ImageCroped, croped_image_id=croped_image_file_id).first()
+        ret = {
+            'upload': upload,
+            'browse': self.id if browse is None else browse,
+            'min_size': [100, 100],
+            'crop': {'coordinates': None, 'aspect': False},
+            'original_image_id': None,
+            'preset_urls': {'glyphicon-remove-circle': no_selection_url},
+            'no_selection_url': no_selection_url,
+            'selected_url': None
+        }
+
+        if crop_from_image_file:
+            ret['original_image_id'] = crop_from_image_file.original_image_id,
+            ret['crop']['coordinates'] = crop_from_image_file.get_coordinates()
+            ret['selected_url'] = fileUrl(crop_from_image_file.original_image_id)
+
+        return ret
 
     def validate(self, is_new=False):
         return {'errors': {}, 'warnings': {}, 'notices': {}}

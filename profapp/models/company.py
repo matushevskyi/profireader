@@ -19,7 +19,7 @@ from ..controllers import errors
 from ..constants.STATUS import STATUS_NAME
 from .rights import get_my_attributes
 from functools import wraps
-from .files import YoutubePlaylist, ImageCroped
+from .files import YoutubePlaylist
 from ..constants.SEARCH import RELEVANCE
 from .users import User
 from ..models.portal import Portal
@@ -225,28 +225,15 @@ class Company(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    def get_image_client_dict(self, upload=True, browse=None,
+    def get_image_client_dict(self):
+
+        return PRBase.get_image_client_dict(self, upload=True, browse=browse,
+                                            croped_image_file_id = self.logo_file_id,
                               crop={'coordinates': None, 'aspect': False},
                               preset_urls={},
-                              no_selection_url=fileUrl(FOLDER_AND_FILE.no_company_logo())):
+                              no_selection_url=fileUrl(FOLDER_AND_FILE.no_company_logo()))
 
-        is_image = db(ImageCroped, croped_image_id=self.logo_file_id).first()
-        ret = {
-            'upload': upload,
-            'browse': self.id if browse is None else browse,
-            'min_size': [100, 100],
-            'crop': crop,
-            'original_image_id': is_image.original_image_id if is_image else None,
-            'preset_urls': {'glyphicon-remove-circle': no_selection_url},
-            'no_selection_url': no_selection_url,
-            'selected_url': None
-        }
 
-        if is_image:
-            ret['crop']['coordinates'] = is_image.get_coordinates()
-            ret['selected_url'] = fileUrl(is_image.original_image_id)
-
-        return ret
         #
         # is_image = ImageCroped.get_coordinates_and_original_img(self.logo_file_id)
         # return {
