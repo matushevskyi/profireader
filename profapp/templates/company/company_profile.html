@@ -48,7 +48,7 @@
 
 
             $scope.edit = function () {
-                $scope.editing = $scope.rights_user_in_company['COMPANY_EDIT_PROFILE'] ? true : false;
+                $scope.editing = $scope.can_edit;
             };
 
             $scope.afterSave = function (resp, deff) {
@@ -61,7 +61,7 @@
             };
 
             $scope.afterLoad = function (resp, deff) {
-                $scope.edit_rights = resp.id ? $scope.rights_user_in_company['COMPANY_EDIT_PROFILE']: true;
+                $scope.can_edit = resp['actions']['edit'];
                 $scope.editing = resp.id ? false: true;
                 deff(resp);
 //                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
@@ -103,7 +103,7 @@
                                 type="button" ng-click="$af.save(data)"
                                 ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save profile') }}</button>
                             <button class="btn btn-default edit-profile pull-right border-radius" type="button"
-                                ng-click="edit()" ng-if="edit_rights && !editing">{{ _('Edit profile') }}
+                                ng-click="edit()" ng-if="can_edit && !editing">{{ _('Edit profile') }}
                         </button>
                         </div>
                         <div ng-if="!company.id">
@@ -115,7 +115,7 @@
 
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                        <ul class="edit-block" ng-show="!editing">
+                        <ul class="edit-block" ng-if="!editing">
                             <li ng-show="company.name"><h3>{{ company.name }}</h3></li>
                             <li ng-show="company.country">{{ _('Country:') }} {{ company.country }}</li>
                             <li ng-show="company.region">{{ _('Region:') }} {{ company.region }}</li>
@@ -128,7 +128,7 @@
                             <li ng-show="">Long??</li>
                             <li ng-show="company.own_portal.host">{{ _('Portal:') }} {{ company.own_portal.host }}</li>
                         </ul>
-                        <div class="edit-block" ng-if="edit">
+                        <div class="edit-block" ng-if="editing">
                             <div class="col-lg-2">{{ _('Name:') }}</div>
                             <div class="col-lg-10 edit-data">
                                 <input pr-validation-answer="data_validation:name" type="text" class="form-control border-radius" value="{{ company.name }}"
