@@ -25,7 +25,7 @@ from collections import OrderedDict
 from functools import reduce
 import base64
 
-from ..utils import fileUrl
+from ..utils import fileUrl, fileID
 
 Base = declarative_base()
 
@@ -500,7 +500,7 @@ class PRBase:
                 resp.update({'error': True})
                 return resp
         if selected_logo['type'] == 'old':
-            cropped_image = File.get(image['original_image_id'])
+            cropped_image = File.get(fileID(image['selected_url']))
         if selected_logo['type'] == 'browse':
             file = File.get(selected_logo['file_id'])
             cropped_image = file.copy_file(folder)
