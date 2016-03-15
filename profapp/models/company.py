@@ -19,7 +19,7 @@ from ..controllers import errors
 from ..constants.STATUS import STATUS_NAME
 from .rights import get_my_attributes
 from functools import wraps
-from .files import YoutubePlaylist, ImageCroped
+from .files import YoutubePlaylist
 from ..constants.SEARCH import RELEVANCE
 from .users import User
 from ..models.portal import Portal
@@ -27,6 +27,7 @@ from ..models.portal import MemberCompanyPortal
 from ..models.portal import UserPortalReader
 from ..utils import fileUrl
 import re
+from .files import ImageCroped
 
 
 class Company(Base, PRBase):
@@ -225,28 +226,17 @@ class Company(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    def get_image_client_dict(self, upload=True, browse=None,
-                              crop={'coordinates': None, 'aspect': False},
-                              preset_urls={},
-                              no_selection_url=fileUrl(FOLDER_AND_FILE.no_company_logo())):
+    def get_image_client_dict(self):
 
-        is_image = db(ImageCroped, croped_image_id=self.logo_file_id).first()
-        ret = {
-            'upload': upload,
-            'browse': self.id if browse is None else browse,
-            'min_size': [100, 100],
-            'crop': crop,
-            'original_image_id': is_image.original_image_id if is_image else None,
-            'preset_urls': {'glyphicon-remove-circle': no_selection_url},
-            'no_selection_url': no_selection_url,
-            'selected_url': None
-        }
+        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
 
-        if is_image:
-            ret['crop']['coordinates'] = is_image.get_coordinates()
-            ret['selected_url'] = fileUrl(is_image.original_image_id)
+        return PRBase.get_image_client_dict(self, upload=True, browse=self.id,
+                                            crop_from_image_file=db(ImageCroped,
+                                                                    croped_image_id=self.logo_file_id).first(),
+                                            preset_urls={'glyphicon-remove-circle': nologo_url},
+                                            no_selection_url=nologo_url)
 
-        return ret
+
         #
         # is_image = ImageCroped.get_coordinates_and_original_img(self.logo_file_id)
         # return {
@@ -261,11 +251,12 @@ class Company(Base, PRBase):
         # }
 
     @staticmethod
-    def get_allowed_statuses(company_id=None,portal_id=None):
+    def get_allowed_statuses(company_id=None, portal_id=None):
         if company_id:
-            sub_query = db(MemberCompanyPortal, company_id=company_id).filter(MemberCompanyPortal.status!="DELETED").all()
+            sub_query = db(MemberCompanyPortal, company_id=company_id).filter(
+                MemberCompanyPortal.status != "DELETED").all()
         else:
-            sub_query = db(MemberCompanyPortal, portal_id = portal_id)
+            sub_query = db(MemberCompanyPortal, portal_id=portal_id)
         return sorted(list({partner.status for partner in sub_query}))
 
     @staticmethod
@@ -274,39 +265,41 @@ class Company(Base, PRBase):
         list_filters = []
         if filters_exсept:
             if 'status' in filters:
-                    list_filters.append({'type': 'multiselect', 'value': filters['status'], 'field': MemberCompanyPortal.status})
+                list_filters.append(
+                        {'type': 'multiselect', 'value': filters['status'], 'field': MemberCompanyPortal.status})
             else:
                 sub_query = sub_query.filter(and_(MemberCompanyPortal.status != v for v in filters_exсept))
-        # if filters:
-        #     sub_query = sub_query.join(MemberCompanyPortal.portal)
-        #     if 'portal.name' in filters:
-        #         list_filters.append({'type': 'text', 'value': filters['portal.name'], 'field': Portal.name})
-        #     if 'link' in filters:
-        #         list_filters.append({'type': 'text', 'value': filters['link'], 'field': Portal.host})
-        #     if 'company' in filters:
-        #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
-        #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
+                # if filters:
+                #     sub_query = sub_query.join(MemberCompanyPortal.portal)
+                #     if 'portal.name' in filters:
+                #         list_filters.append({'type': 'text', 'value': filters['portal.name'], 'field': Portal.name})
+                #     if 'link' in filters:
+                #         list_filters.append({'type': 'text', 'value': filters['link'], 'field': Portal.host})
+                #     if 'company' in filters:
+                #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
+                #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
             sub_query = Grid.subquery_grid(sub_query, list_filters)
         return sub_query
 
     @staticmethod
     def subquery_company_partners(company_id, filters, filters_exсept=None):
-        sub_query = db(MemberCompanyPortal, portal_id = db(Portal, company_owner_id=company_id).subquery().c.id)
+        sub_query = db(MemberCompanyPortal, portal_id=db(Portal, company_owner_id=company_id).subquery().c.id)
         list_filters = []
         if filters_exсept:
             if 'member.status' in filters:
-                    list_filters.append({'type': 'multiselect', 'value': filters['member.status'], 'field': MemberCompanyPortal.status})
+                list_filters.append(
+                        {'type': 'multiselect', 'value': filters['member.status'], 'field': MemberCompanyPortal.status})
             else:
                 sub_query = sub_query.filter(and_(MemberCompanyPortal.status != v for v in filters_exсept))
-        # if filters:
-        #     sub_query = sub_query.join(MemberCompanyPortal.portal)
-        #     if 'portal.name' in filters:
-        #         list_filters.append({'type': 'text', 'value': filters['portal.name'], 'field': Portal.name})
-        #     if 'link' in filters:
-        #         list_filters.append({'type': 'text', 'value': filters['link'], 'field': Portal.host})
-        #     if 'company' in filters:
-        #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
-        #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
+                # if filters:
+                #     sub_query = sub_query.join(MemberCompanyPortal.portal)
+                #     if 'portal.name' in filters:
+                #         list_filters.append({'type': 'text', 'value': filters['portal.name'], 'field': Portal.name})
+                #     if 'link' in filters:
+                #         list_filters.append({'type': 'text', 'value': filters['link'], 'field': Portal.host})
+                #     if 'company' in filters:
+                #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
+                #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
             sub_query = Grid.subquery_grid(sub_query, list_filters)
         return sub_query
 
