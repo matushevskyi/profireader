@@ -488,9 +488,9 @@ class PRBase:
         old_image_cropped = db(ImageCroped, croped_image_id=old_croped_image_id).first()
         if type == 'browse':
             if old_image_cropped:
-                if user_data['image_file_id'] == old_image_cropped.croped_image_id and old_image_cropped.same_coordinates(user_data['crop_coordinates']):
+                if user_data['image_file_id'] == old_image_cropped.original_image_id and old_image_cropped.same_coordinates(user_data['crop_coordinates']):
                     return old_croped_image_id
-                elif user_data['image_file_id'] == old_image_cropped.croped_image_id and not old_image_cropped.same_coordinates(user_data['crop_coordinates']):
+                elif user_data['image_file_id'] == old_image_cropped.original_image_id and not old_image_cropped.same_coordinates(user_data['crop_coordinates']):
                     original_image = File.get(user_data['image_file_id'])
                     return original_image.update_croped_image(old_image_cropped, user_data['crop_coordinates'],folder_id, params)
                 else:
