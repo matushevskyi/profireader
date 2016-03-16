@@ -6,7 +6,7 @@ from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..models.company import Company, UserCompany
 from ..models.portal import PortalDivision, Portal, PortalDivisionType, MemberCompanyPortal
 from ..models.users import User
-from ..models.files import File, FileContent
+from ..models.files import File
 from ..models.tag import Tag, TagPortalDivision, TagPortalDivisionArticle
 from config import Config
 # from ..models.tag import Tag
