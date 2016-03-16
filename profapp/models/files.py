@@ -805,12 +805,12 @@ class ImageCroped(Base, PRBase):
         self.croped_height = croped_height
         self.zoom = zoom
 
-    def get_client_side_dict(self, fields='x,y,width,height,rotate',
+    def get_client_side_dict(self, fields='x,y,width,height,rotate,zoom',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
     def get_coordinates(self):
-        ret = self.to_dict('x,y,width,height')
+        ret = self.to_dict('x,y,width,height,rotate,zoom')
         return ret
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
