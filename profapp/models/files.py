@@ -718,8 +718,7 @@ class File(Base, PRBase):
             area[3] = (area[1] + area[3])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
             cropped = image_pil.crop(area).resize(params['image_size'])  # crop and resize image with area and size
             bytes_file = BytesIO()  # create BytesIO object to save cropped image to Pillow object
-            cropped.save(bytes_file, self.mime.split('/')[-1].upper())  # save cropped image to Pillow object
-            # (not to database)
+            cropped.save(bytes_file, self.mime.split('/')[-1].upper())
             return bytes_file, area  # cropped bytes of file and area(coordinates)
         except ValueError:  # if error occured return False
             return False
