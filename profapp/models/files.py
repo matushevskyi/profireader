@@ -660,7 +660,7 @@ class File(Base, PRBase):
     def crop(self, coordinates, folder_id, params):
         # TODO SS by SS in future add allow_stretch_image param
         File.check_aspect_ratio(coordinates, params)
-        bytes_file, area = File.crop_with_coordinates(self, coordinates, params)
+        bytes_file, area = self.crop_with_coordinates(coordinates, params)
         if bytes_file:
             new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
             ImageCroped(original_image_id=self.id,
@@ -718,8 +718,7 @@ class File(Base, PRBase):
             area[3] = (area[1] + area[3])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
             cropped = image_pil.crop(area).resize(params['image_size'])  # crop and resize image with area and size
             bytes_file = BytesIO()  # create BytesIO object to save cropped image to Pillow object
-            cropped.save(bytes_file, self.mime.split('/')[-1].upper())  # save cropped image to Pillow object
-            # (not to database)
+            cropped.save(bytes_file, self.mime.split('/')[-1].upper())
             return bytes_file, area  # cropped bytes of file and area(coordinates)
         except ValueError:  # if error occured return False
             return False
@@ -807,7 +806,7 @@ class ImageCroped(Base, PRBase):
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
     def same_coordinates(self, coordinates):
-        if self.x == coordinates.x and self.y == coordinates.y:
+        if self.x == coordinates['x'] and self.y == coordinates['y']:
             return True
         else:
             return False
