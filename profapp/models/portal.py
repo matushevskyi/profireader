@@ -355,7 +355,8 @@ class MemberCompanyPortal(Base, PRBase):
         'RESTORE': 'RESTORE',
         'REJECT': 'REJECT',
         'SUSPEND': 'SUSPEND',
-        'ENLIST': 'ENLIST'
+        'ENLIST': 'ENLIST',
+        'ALLOW': 'ALLOW'
     }
 
     ACTION_FOR_STATUS = {
@@ -372,6 +373,7 @@ class MemberCompanyPortal(Base, PRBase):
                 STATUSES['DELETED']: {}},
         'member':{
                 STATUSES['ACTIVE']: {
+                    'ALLOW':ACTIONS['ALLOW'],
                     'REJECT': ACTIONS['REJECT'],
                     'SUSPEND': ACTIONS['SUSPEND']},
                 STATUSES['APPLICANT']: {'REJECT': ACTIONS['REJECT'],

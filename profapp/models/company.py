@@ -228,9 +228,8 @@ class Company(Base, PRBase):
     def set_image_client_dict(self, image):
         if image['selected_by_user']['type'] == 'preset':
             image['selected_by_user']['type'] = 'none'
-
         self.logo_file_id = PRBase.set_image_client_dict(self, image['selected_by_user'],
-                                                         self.logo_file_id, self.system_folder_file_id)
+                                                         self.logo_file_id, self.system_folder_file_id, params={'image_size':(400, 300),'aspect_ratio':[0.5,1.5]})
 
     def get_image_client_dict(self):
 
@@ -443,7 +442,6 @@ class UserCompany(Base, PRBase):
 
     @staticmethod
     def get(user_id=None, company_id=None):
-        print(company_id)
         return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).one()
 
     @staticmethod

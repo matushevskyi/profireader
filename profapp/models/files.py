@@ -633,44 +633,37 @@ class File(Base, PRBase):
             File.update_all(self.id, attr)
         return self.id
 
-    @staticmethod
-    def crop(image_query, coordinates, zoom, company_owner, params):
+    def create_cropped_image(self, bytes_file, area, coordinates, zoom, folder_id):
+        croped = File()
+        croped.md_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        croped.size = sys.getsizeof(
+            bytes_file.getvalue())
+        croped.name = self.name + '_cropped'
+        croped.parent_id = folder_id
+        croped.root_folder_id = folder_id
+        croped.mime = self.mime
+        fc = FileContent(content=bytes_file.getvalue(), file=croped)
+        g.db.add_all([croped, fc])
+        g.db.flush()
+        return croped
+
+    def crop(self, coordinates, folder_id, params):
         #TODO SS by SS in future add allow_stretch_image param
         File.check_aspect_ratio(coordinates, params)
-        image_exist = db(ImageCroped, original_image_id=image_query.id).first()
-        if image_exist:  # check if croped image already exists
-            if image_exist.croped_width == coordinates['width'] and image_exist.croped_height == coordinates['height']:
-                return db(File, id=image_exist.croped_image_id).first().id
-            return File.update_croped_image(image_query.id, coordinates, zoom, params)  # call function update_croped_image. see func documentation
-        bytes_file, area = File.crop_with_coordinates(image_query,
-                                                 coordinates, params)  # call function crop_with_coordinates. see func documentation
-        if bytes_file:  # if func crop_with_coordinates doesn't return False.
-            croped = File()  # get empty file object
-            croped.md_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())  # set md_tm
-            croped.size = sys.getsizeof(
-                bytes_file.getvalue())  # get size from bytes_file(object Image Pillow) and set it to File object
-            croped.name = image_query.name + '_cropped'  # set name of cropped file. File will continious as _cropped
-            croped.parent_id = company_owner.system_folder_file_id  # set parent folder(directory) for cropped file
-            #  from company owner system folder. System folder should present in company object.
-            croped.root_folder_id = company_owner.system_folder_file_id  # set root(/) folder(directory) for cropped
-            # file from company owner system folder. System folder should present in company object.
-            croped.mime = image_query.mime
-            fc = FileContent(content=bytes_file.getvalue(), file=croped)  # get FileContent object.
-            g.db.add_all([croped, fc])  # Add all created objects to postgresql
-            # transaction
-            g.db.flush()  # flush transaction, because then we will save id of cropped image from table file to
-            # table image_cropped and need id from our created object
-            ImageCroped(original_image_id=image_query.id,
-                        croped_image_id=croped.id,
-                        x=float(area[0]), y=float(area[1]),
-                        width=float(area[2]),
-                        height=float(area[3]),
-                        croped_width=round(coordinates['width']),
-                        croped_height=round(coordinates['height']),
-                        zoom=zoom).save()  # save
-            return croped.id  # return cropped file id from table file
+        bytes_file, area = File.crop_with_coordinates(self, coordinates, params)
+        if bytes_file:
+            new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
+            ImageCroped(original_image_id=self.id,
+                    croped_image_id=new_cropped_image.id,
+                    x=float(area[0]), y=float(area[1]),
+                    width=float(area[2]),
+                    height=float(area[3]),
+                    croped_width=round(coordinates['width']),
+                    croped_height=round(coordinates['height']),
+                    zoom=coordinates['zoom']).save()
+            return new_cropped_image.id
         else:
-            return image_query.id
+            return self.id
 
     @staticmethod
     def check_aspect_ratio(coordinates,params):
@@ -686,31 +679,27 @@ class File(Base, PRBase):
         coordinates['height'] = round(coordinates['height'])
 
 
-    @staticmethod
-    def update_croped_image(original_image_id, coordinates, zoom, params):
-        image_croped_assoc = db(ImageCroped, original_image_id=original_image_id).one() # get image_croped object from table
-        # image_croped and filter by original_image_id
-        croped = db(File, id=image_croped_assoc.croped_image_id).one()# get cropped file object from table
-        # file
-        image_query = g.db.query(File).filter_by(id=image_croped_assoc.original_image_id).first()
-        bytes_file, area = File.crop_with_coordinates(image_query, coordinates, params)# call function crop_with_coordinates to get ImagePil
-        # object with cropped image and get properly coordinates
-        if bytes_file: # if not exception occured in function crop_with_coordinates do
-            croped.size = sys.getsizeof(bytes_file.getvalue())# get size from bytes_file(object Image Pillow) and set it to File object
-            croped.file_content.content = bytes_file.getvalue() # Get file content (bytes) from saved Pillow object
-            image_croped_assoc.x = float(area[0]) # set coordinates to ImageCroped object - x
-            image_croped_assoc.y = float(area[1])# set coordinates to ImageCroped object - x
-            image_croped_assoc.width = float(area[2])# set coordinates to ImageCroped object - x
-            image_croped_assoc.height = float(area[3])# set coordinates to ImageCroped object - x
-            image_croped_assoc.croped_width = coordinates['width']
-            image_croped_assoc.croped_height = coordinates['height']
-            image_croped_assoc.zoom = zoom
-        return croped.id # cropped file id from table File
+    def update_croped_image(self, old_image_cropped, coordinates,folder_id, params):
+        File.check_aspect_ratio(coordinates, params)
+        bytes_file, area = self.crop_with_coordinates( coordinates, params)
+        if bytes_file:
+            File.get(old_image_cropped.croped_image_id).delete()
+            new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
+            old_image_cropped.croped_image_id = new_cropped_image.id
+            old_image_cropped.x = float(area[0])
+            old_image_cropped.y = float(area[1])
+            old_image_cropped.width = float(area[2])
+            old_image_cropped.height = float(area[3])
+            old_image_cropped.croped_width = coordinates['width']
+            old_image_cropped.croped_height = coordinates['height']
+            old_image_cropped.zoom = coordinates['zoom']
+            return new_cropped_image.id
+        return old_image_cropped.croped_image_id
 
-    @staticmethod
-    def crop_with_coordinates(image, coordinates, params):
+
+    def crop_with_coordinates(self, coordinates, params):
         try:
-            image_pil = Image.open(BytesIO(image.file_content.content)) # create Pillow object from content of original picture
+            image_pil = Image.open(BytesIO(self.file_content.content)) # create Pillow object from content of original picture
             area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],
                                      coordinates['height'])] # convert dict of coordinates to list
             if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)): #
@@ -720,7 +709,7 @@ class File(Base, PRBase):
             area[3] = (area[1]+area[3])# The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
             cropped = image_pil.crop(area).resize(params['image_size']) # crop and resize image with area and size
             bytes_file = BytesIO() # create BytesIO object to save cropped image to Pillow object
-            cropped.save(bytes_file, image.mime.split('/')[-1].upper()) # save cropped image to Pillow object
+            cropped.save(bytes_file, self.mime.split('/')[-1].upper()) # save cropped image to Pillow object
             # (not to database)
             return bytes_file, area #  cropped bytes of file and area(coordinates)
         except ValueError: # if error occured return False
@@ -734,10 +723,9 @@ class FileContent(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'),
                 primary_key=True)
     content = Column(Binary, nullable=False)
-    file = relationship('File',
-                                uselist=False,
+    file = relationship('File', uselist=False,
                                 backref=backref('file_content', uselist=False),
-                                cascade='save-update,delete')
+                                )
 
     def __init__(self, file=None, content=None):
         self.file = file
@@ -812,6 +800,12 @@ class ImageCroped(Base, PRBase):
         ret = self.to_dict('x,y,width,height,rotate,zoom')
         return ret
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
+
+    def same_coordinates(self, coordinates):
+        if self.x == coordinates.x and self.y == coordinates.y:
+            return True
+        else:
+            return False
 
     @staticmethod
     def get_coordinates_and_original_img(croped_image_id):
