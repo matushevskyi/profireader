@@ -225,11 +225,12 @@ class Company(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    def set_image_client_dict(self, image, folder):
+    def set_image_client_dict(self, image):
         if image['selected_by_user']['type'] == 'preset':
-            pass
-        else:
-            PRBase.set_image_client_dict(self, image, folder)
+            image['selected_by_user']['type'] = 'none'
+
+        self.logo_file_id = PRBase.set_image_client_dict(self, image['selected_by_user'],
+                                                         self.logo_file_id, self.system_folder_file_id)
 
     def get_image_client_dict(self):
 

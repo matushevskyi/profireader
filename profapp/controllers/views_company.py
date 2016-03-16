@@ -300,9 +300,11 @@ def load(json, company_id=None):
         else:
             if company_id is None:
                 company.setup_new_company()
-            company.set_image_client_dict(json['logo'], company.system_folder_file_id)
+            company.set_image_client_dict(json['logo'])
             company_dict = company.get_client_side_dict()
             company_dict['logo'] = company.get_image_client_dict()
+            company_dict['actions'] = {'edit': True if company_id or UserCompany.get(
+                company_id=company_id).rights['PORTAL_EDIT_PROFILE'] else False}
             return company_dict
 
 

@@ -24,7 +24,7 @@ class Ips(Base, PRBase):
     def delete(objects):
         for obj in objects:
             f = db(Ips, id=obj['id']).first()
-            Ips.delfile(f)
+            f.delete()
         return 'True'
 
     @staticmethod
