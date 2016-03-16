@@ -67,8 +67,8 @@ def filemanager():
         'get_root'] if 'get_root' in request.args else None
     if get_root:
         root = Company.get(get_root)
-        last_visit_root_name = root.name + " files"
-        last_root_id = root.journalist_folder_file_id
+        last_visit_root_name = (root.name + " files") if root else ''
+        last_root_id = root.journalist_folder_file_id if root else ''
     err = True if len(library) == 0 else False
     return render_template('filemanager.html', library=library, err=err, last_visit_root=last_visit_root_name.replace(
         '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),
