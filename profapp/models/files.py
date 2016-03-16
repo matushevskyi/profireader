@@ -438,11 +438,6 @@ class File(Base, PRBase):
             g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
                              % file.id)
 
-    @staticmethod
-    def removeAll(parent_id, mime):
-        list = [FileContent.delfile(FileContent.get(file.id)) for file in db(File, parent_id=parent_id, mime=mime)]
-
-
     def remove(self, company_id=None):
         if company_id and not File.if_action_allowed(File.ACTIONS['remove'], company_id):
             return {"error": 'You haven\'t aproriate rights!'}
@@ -452,13 +447,13 @@ class File(Base, PRBase):
             list = File.get_all_in_dir_rev(self.id)
             for f in list:
                 if f.mime == 'directory':
-                    File.delfile(f)
+                    f.delete()
                 elif f.mime == 'video/*':
                     YoutubeVideo.delfile(YoutubeVideo.get(f.id))
                 else:
                    g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
                              % f.id)
-            File.delfile(self)
+            self.delete()
         elif self.mime == 'video/*':
             YoutubeVideo.delfile(YoutubeVideo.get(self.id))
         else:
@@ -822,15 +817,6 @@ class ImageCroped(Base, PRBase):
     def get_coordinates_and_original_img(croped_image_id):
         coor_img = db(ImageCroped, croped_image_id=croped_image_id).one()
         return coor_img.original_image_id, coor_img.get_client_side_dict()
-
-    @staticmethod
-    def delete_cropped(old_logo_id):
-        image_cropped = db(ImageCroped, croped_image_id=old_logo_id).first()
-        image = File.get(image_cropped.original_image_id)
-        ImageCroped.delfile(image_cropped)
-        g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
-                             % image.id)
-
 
 
 class YoutubeApi(GoogleAuthorize):
