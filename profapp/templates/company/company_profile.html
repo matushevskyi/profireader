@@ -66,6 +66,7 @@
                 deff(resp);
 //                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
             };
+            $scope.company_name = {{company.get_client_side_dict().name | tojson | safe}};
 
         });
     </script>
@@ -130,22 +131,16 @@
                             <li ng-show="company.own_portal.host">{{ _('Portal:') }} {{ company.own_portal.host }}</li>
                         </ul>
                         <div class="edit-block" ng-if="editing">
-                             <form name="form">
-            <legend>pattern</legend>
-            <input type="text" ng-model="name" name="name" pattern="[0-9]{4}"/>
-            <div ng-show="form.name.$error.pattern">Name doesn't match pattern!</div>
-        </form>
-        <form name="formTwo">
-            <legend>ng-pattern</legend>
-            <input type="text" ng-model="nameTwo" name="name" ng-pattern="/[0-9]{4}/"/>
-            <div ng-show="formTwo.name.$error.pattern">Name doesn't match pattern!</div>
+
+                        <form name="formTwo">
 
                             <div class="col-lg-2">{{ _('Name:') }}</div>
                             <div class="col-lg-10 edit-data">
-                                <input pr-validation-answer="data_validation:name" type="text" class="form-control border-radius" value="{{ company.name }}"
-                                       id="basic-url" aria-describedby="basic-addon3" ng-model="name" name="name" pattern="[A-Z]{4}">
-                                 <div ng-show="formTwo.name.$error.pattern">Name doesn't match pattern!</div>
+                                <input pr-validation-answer="data_validation:name" type="text" class="form-control border-radius"
+                                       id="basic-url" aria-describedby="basic-addon3" ng-model="company_name" name="company_name" ng-pattern="/[\wа-я]{4}/">
+                                 <div ng-show="formTwo.company_name.$error.pattern" class="error-input">The company name should be longer!</div>
                             </div>
+
                             <div class="col-lg-2">{{ _('Country:') }}</div>
                             <div class="col-lg-10 edit-data">
                                 <input pr-validation-answer="data_validation:country" type="text" class="form-control border-radius" value="{{ company.country }}"

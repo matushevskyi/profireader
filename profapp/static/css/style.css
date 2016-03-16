@@ -582,6 +582,9 @@ body {
 .pr-validation-notice {
   border-color: #f44336;
 }
+.error-input {
+  color: #ff0000;
+}
 /* ---Subscriptions--- */
 .submit-subscriptions input {
   width: 100%;
