@@ -15,10 +15,11 @@ from urllib.error import HTTPError as response_code
 from urllib import parse
 from sqlalchemy import desc
 from io import BytesIO
-from .google import GoogleAuthorize,GoogleToken
+from .google import GoogleAuthorize, GoogleToken
 import sys
-import os,urllib
+import os, urllib
 from time import gmtime, strftime
+
 
 class File(Base, PRBase):
     __tablename__ = 'file'
@@ -48,6 +49,10 @@ class File(Base, PRBase):
 
     UniqueConstraint('name', 'parent_id', name='unique_name_in_folder')
     thumbnail_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
+
+    file_content = relationship('FileContent', uselist=False, foreign_keys='FileContent.id',
+                                cascade="save-update, merge, delete")
+
     thumbnail = relationship('File', uselist=True, foreign_keys='File.thumbnail_id')
 
     owner = relationship('User',
@@ -58,7 +63,8 @@ class File(Base, PRBase):
     def __init__(self, parent_id=None, name=None, mime='text/plain', size=0,
                  user_id=None, cr_tm=None, md_tm=None, ac_tm=None,
                  root_folder_id=None, youtube_id=None,
-                 company_id=None, copyright_author_name=None, author_user_id=None, image_croped=None, thumbnail_id=None):
+                 company_id=None, copyright_author_name=None, author_user_id=None, image_croped=None,
+                 thumbnail_id=None):
         super(File, self).__init__()
         self.parent_id = parent_id
         self.name = name
@@ -70,18 +76,17 @@ class File(Base, PRBase):
         self.md_tm = md_tm
         self.root_folder_id = root_folder_id
         self.ac_tm = ac_tm
-        self.copyright_author_name=copyright_author_name
+        self.copyright_author_name = copyright_author_name
         self.author_user_id = author_user_id
         self.company_id = company_id
         self.youtube_id = youtube_id
         self.image_croped = image_croped
 
-
     def __repr__(self):
         return "<File(name='%s', mime=%s', id='%s', parent_id='%s')>" % (
             self.name, self.mime, self.id, self.parent_id)
 
-    ACTIONS ={
+    ACTIONS = {
         'download': 'download',
         'remove': 'remove',
         'show': 'show',
@@ -105,7 +110,7 @@ class File(Base, PRBase):
     @staticmethod
     def if_copy(name):
         ext = File.ext(name)
-        if len(ext)>0 and re.search('\(\d+\)'+ext, name):
+        if len(ext) > 0 and re.search('\(\d+\)' + ext, name):
             return File.get_name(name)[0:-3]
         elif re.search('\(\d+\)$', name):
             return name[0:-3]
@@ -115,7 +120,7 @@ class File(Base, PRBase):
 
     @staticmethod
     def is_name(name, mime, parent_id):
-        if [file for file in db(File,parent_id=parent_id, mime=mime, name=name)]:
+        if [file for file in db(File, parent_id=parent_id, mime=mime, name=name)]:
             return True
         else:
             return False
@@ -125,9 +130,9 @@ class File(Base, PRBase):
         if id_file == id_folder:
             return False
         folder = File.get(id_folder)
-        dirs_in_dir = [file for file in db(File, parent_id = id_file, mime='directory')]
+        dirs_in_dir = [file for file in db(File, parent_id=id_file, mime='directory')]
         for dir in dirs_in_dir:
-            for f in db(File, parent_id = dir.id, mime='directory'):
+            for f in db(File, parent_id=dir.id, mime='directory'):
                 dirs_in_dir.append(f)
             if dir.id == id_folder:
                 return False
@@ -153,7 +158,7 @@ class File(Base, PRBase):
         rel_sort = []
         sort = []
         for file in files:
-            if re.match(r'^'+name+'.*', file.name.lower()):
+            if re.match(r'^' + name + '.*', file.name.lower()):
                 rel_sort.append(file)
             else:
                 sort.append(file)
@@ -166,23 +171,24 @@ class File(Base, PRBase):
         actions['paste'] = lambda file: None
         name = name.lower()
         all_files = File.get_all_in_dir_rev(folder_id)[::-1]
-        sort_dirs = []; sort_files = []
+        sort_dirs = [];
+        sort_files = []
         for file in all_files:
-            if re.match(r'.*'+name+'.*', file.name.lower()):
+            if re.match(r'.*' + name + '.*', file.name.lower()):
                 sort_dirs.append(file) if file.mime == 'directory' else sort_files.append(file)
         sort_d = File.sort_search(name, sort_dirs)
         sort_f = File.sort_search(name, sort_files)
-        s = sort_d+sort_f
+        s = sort_d + sort_f
         ret = list({'size': file.size, 'name': file.name, 'id': file.id, 'parent_id': file.parent_id,
-                                'type': File.type(file),
-                                'date': str(file.md_tm).split('.')[0],
+                    'type': File.type(file),
+                    'date': str(file.md_tm).split('.')[0],
                     'url': file.url(),
                     'path_to': File.path(file),
                     'author_name': file.copyright_author_name,
                     'description': file.description,
                     'actions': {action: actions[action](file) for action in actions}
                     }
-                                        for file in s if file.mime != 'image/thumbnail')
+                   for file in s if file.mime != 'image/thumbnail')
         return ret
 
     @staticmethod
@@ -200,11 +206,12 @@ class File(Base, PRBase):
     @staticmethod
     def list(parent_id=None, file_manager_called_for='', name=None, company_id=None):
         folder = File.get(parent_id)
-        show = lambda file: True if File.if_action_allowed('show',company_id) else False
+        show = lambda file: True if File.if_action_allowed('show', company_id) else False
         actions = {}
         default_actions = {}
         # default_actions['choose'] = lambda file: None
-        default_actions['download'] = lambda file: None if ((file.mime == 'directory') or (file.mime == 'root')) else True
+        default_actions['download'] = lambda file: None if (
+        (file.mime == 'directory') or (file.mime == 'root')) else True
         if file_manager_called_for == 'file_browse_image':
             default_actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
             actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
@@ -227,20 +234,21 @@ class File(Base, PRBase):
             ret = search_files
         else:
             # 'cropable': True if File.is_cropable(file) else False,
-            size = (int(Config.IMAGE_EDITOR_RATIO*100), 100)
+            size = (int(Config.IMAGE_EDITOR_RATIO * 100), 100)
             str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
             ret = list({'size': file.size, 'name': file.name, 'id': file.id,
                         'parent_id': file.parent_id, 'type': File.type(file),
                         'date': str(file.md_tm).split('.')[0],
                         'url': file.get_thumbnail_url(size=str_size),
-                        'youtube_data': {'id':file.youtube_video.video_id, 'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
+                        'youtube_data': {'id': file.youtube_video.video_id,
+                                         'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
                         'path_to': File.path(file),
                         'author_name': file.copyright_author_name,
                         'description': file.description,
                         'actions': {action: actions[action](file) for action in actions},
                         }
                        for file in [file.get_thumbnails(size=size)
-                           for file in db(File, parent_id=parent_id)] if show(file) and
+                                    for file in db(File, parent_id=parent_id)] if show(file) and
                        file.mime != 'image/thumbnail')
             # we need all records from the table "file"
             ret.append({'id': folder.id, 'parent_id': folder.parent_id,
@@ -264,10 +272,10 @@ class File(Base, PRBase):
                     resized.save(bytes_file, self.mime.split('/')[-1].upper())
                     thumbnail = File(md_tm=self.md_tm, size=sys.getsizeof(bytes_file.getvalue()),
                                      name=self.name + '_thumbnail_{str_size}'.format(
-                                         str_size=str_size),
+                                             str_size=str_size),
                                      parent_id=self.parent_id,
                                      root_folder_id=self.root_folder_id,
-                                     mime=self.mime.split('/')[0]+'/thumbnail',
+                                     mime=self.mime.split('/')[0] + '/thumbnail',
                                      thumbnail_id=self.id)
                     FileContent(content=bytes_file.getvalue(), file=thumbnail)
                     self.thumbnail.append(thumbnail)
@@ -277,10 +285,9 @@ class File(Base, PRBase):
                     # from ..controllers.errors import BadFormatFile
                     self.remove()
 
-            #     details = e.args[0]
-            #     print(details['message'])
-                # resized = image_pil.resize(size)
-
+                    #     details = e.args[0]
+                    #     print(details['message'])
+                    # resized = image_pil.resize(size)
 
         return self
 
@@ -293,7 +300,7 @@ class File(Base, PRBase):
         if any:
             thumbnail = db(File, thumbnail_id=self.id).first()
         else:
-            thumbnail = db(File, thumbnail_id=self.id, name=self.name+'_thumbnail_'+size).first()
+            thumbnail = db(File, thumbnail_id=self.id, name=self.name + '_thumbnail_' + size).first()
         return thumbnail
 
     def type(self):
@@ -313,7 +320,7 @@ class File(Base, PRBase):
         del parents[0]
         path = '/'
         for dir in parents:
-            path += dir+'/'
+            path += dir + '/'
         path += self.name
         return path
 
@@ -354,13 +361,13 @@ class File(Base, PRBase):
         ex = File.ext(oldname)
         l = len(ex)
         name = oldname[:-l]
-        return  name
+        return name
 
     @staticmethod
     def ext(oldname):
         name = oldname[::-1]
         b = name.find('.')
-        c = name[0:(b+1):1]
+        c = name[0:(b + 1):1]
         c = c[::-1]
         return c
 
@@ -370,16 +377,16 @@ class File(Base, PRBase):
             ext = File.ext(name)
             name = File.if_copy(name)
             list = []
-            for n in db(File,parent_id = parent_id, mime=mime):
-                if re.match(r'^'+name+'\(\d+\)'+''+ext+'', n.name):
+            for n in db(File, parent_id=parent_id, mime=mime):
+                if re.match(r'^' + name + '\(\d+\)' + '' + ext + '', n.name):
                     pos = (len(n.name) - 2) - len(ext)
-                    list.append(int(n.name[pos:pos+1]))
+                    list.append(int(n.name[pos:pos + 1]))
             if list == []:
-                return name+'(1)'+ext
+                return name + '(1)' + ext
             else:
                 list.sort()
                 index = list[-1] + 1
-                return name+'('+str(index)+')'+ext
+                return name + '(' + str(index) + ')' + ext
         else:
             return name
 
@@ -387,10 +394,10 @@ class File(Base, PRBase):
 
     @staticmethod
     def createdir(parent_id=None, name=None, author_user_id=None,
-                  root_folder_id = None,
+                  root_folder_id=None,
                   company_id=None, copyright='', author=''):
         f = File(parent_id=parent_id, author_user_id=author_user_id,
-                 root_folder_id = root_folder_id,
+                 root_folder_id=root_folder_id,
                  name=name, size=0, company_id=company_id, mime='directory')
         g.db.add(f)
         g.db.commit()
@@ -409,7 +416,7 @@ class File(Base, PRBase):
     def set_properties(self, add_all, **kwargs):
         if self == None:
             return False
-        attr = {f:kwargs[f] for f in kwargs}
+        attr = {f: kwargs[f] for f in kwargs}
         check = File.is_name(attr['name'], self.mime, self.parent_id) if attr['name'] != 'None' else True
         if attr['name'] == 'None':
             del attr['name']
@@ -436,7 +443,7 @@ class File(Base, PRBase):
         list.append(session['f_id'])
         for file in [db(File, id=id).first() for id in list]:
             g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
-                             % file.id)
+                                     % file.id)
 
     def remove(self, company_id=None):
         if company_id and not File.if_action_allowed(File.ACTIONS['remove'], company_id):
@@ -451,22 +458,23 @@ class File(Base, PRBase):
                 elif f.mime == 'video/*':
                     YoutubeVideo.delfile(YoutubeVideo.get(f.id))
                 else:
-                   g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
-                             % f.id)
+                    g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
+                                             % f.id)
             self.delete()
         elif self.mime == 'video/*':
             YoutubeVideo.delfile(YoutubeVideo.get(self.id))
         else:
             # file = file.get_thumbnail(any=True) or file
             g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
-                             % self.id)
+                                     % self.id)
         return 'Success'
 
     @staticmethod
     def save_files(files, new_id, attr):
         for file in files:
             attr['parent_id'] = new_id
-            file_content = YoutubeVideo.get(file.id).detach() if file.mime == 'video/*' else FileContent.get(file.id).detach()
+            file_content = YoutubeVideo.get(file.id).detach() if file.mime == 'video/*' else FileContent.get(
+                file.id).detach()
             file.detach().attr(attr)
             file.save()
             if file.mime == 'video/*':
@@ -502,13 +510,13 @@ class File(Base, PRBase):
     def uploadLogo(content, name, type, directory, root=None):
         size = len(content)
         unique_name = File.get_unique_name(urllib.parse.unquote(name).replace(
-        '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), type, directory)
+                '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), type, directory)
         file = File(parent_id=directory,
-                            root_folder_id=root if root else directory,
-                            name=unique_name,
-                            mime=type,
-                            size=size
-                            ).save()
+                    root_folder_id=root if root else directory,
+                    name=unique_name,
+                    mime=type,
+                    size=size
+                    ).save()
         file_cont = FileContent(file=file, content=content)
         g.db.add(file, file_cont)
         g.db.commit()
@@ -542,7 +550,7 @@ class File(Base, PRBase):
             g.db.add(file, file_cont)
             g.db.commit()
             session['f_id'] = file.id
-            if data.get('chunkNumber')==data.get('chunkQuantity'):
+            if data.get('chunkNumber') == data.get('chunkQuantity'):
                 return File.check_image_mime(file.id)
             return file.id
         else:
@@ -551,20 +559,20 @@ class File(Base, PRBase):
             cont = bytes(file_cont.content)
             c = cont + bytes(content)
             file_cont.updates({'content': c})
-            if data.get('chunkNumber')==data.get('chunkQuantity'):
+            if data.get('chunkNumber') == data.get('chunkQuantity'):
                 return File.check_image_mime(id)
             return id
 
     @staticmethod
-    def update_files(files,attr):
+    def update_files(files, attr):
         for file in files:
             file.updates(attr)
         return files
 
     @staticmethod
     def update_all_in_dir(id, attr):
-        lists = [file for file in db(File, parent_id = id) if file.mime == 'directory']
-        files = [file for file in db(File, parent_id = id) if file.mime != 'directory']
+        lists = [file for file in db(File, parent_id=id) if file.mime == 'directory']
+        files = [file for file in db(File, parent_id=id) if file.mime != 'directory']
         c = len(lists)
         c_ = 1
         File.update_files(files, attr)
@@ -573,11 +581,11 @@ class File(Base, PRBase):
             if c_ <= c:
                 list.updates(attr)
                 new_list.append(list)
-            for file in db(File,parent_id = list.id):
+            for file in db(File, parent_id=list.id):
                 if file.mime == 'directory':
-                        lists.append(file)
-                        file.updates(attr)
-                        new_list.append(file)
+                    lists.append(file)
+                    file.updates(attr)
+                    new_list.append(file)
                 elif file.mime != 'directory':
                     file.updates(attr)
             c_ += 1
@@ -585,7 +593,7 @@ class File(Base, PRBase):
 
     @staticmethod
     def update_all(id, attr):
-        files_in_parent = [file for file in db(File, parent_id = id)]
+        files_in_parent = [file for file in db(File, parent_id=id)]
         del attr['name']
         del attr['parent_id']
         for file in files_in_parent:
@@ -603,7 +611,8 @@ class File(Base, PRBase):
         id = self.id
         root = folder.root_folder_id if folder.root_folder_id == None else folder.id
         attr = {f: kwargs[f] for f in kwargs}
-        attr.update({'name': File.get_unique_name(self.name, self.mime, parent_id), 'parent_id': parent_id, 'root_folder_id': root})
+        attr.update({'name': File.get_unique_name(self.name, self.mime, parent_id), 'parent_id': parent_id,
+                     'root_folder_id': root})
         copy_file = self.detach().attr(attr)
         copy_file.save()
         if self.mime == 'directory':
@@ -626,8 +635,9 @@ class File(Base, PRBase):
         if self.parent_id == parent_id:
             return self.id
         root = folder.root_folder_id if folder.root_folder_id == None else folder.id
-        attr = {f:kwargs[f] for f in kwargs}
-        attr.update({'name': File.get_unique_name(self.name, self.mime, parent_id), 'parent_id': parent_id, 'root_folder_id': root})
+        attr = {f: kwargs[f] for f in kwargs}
+        attr.update({'name': File.get_unique_name(self.name, self.mime, parent_id), 'parent_id': parent_id,
+                     'root_folder_id': root})
         self.updates(attr)
         if self.mime == 'directory':
             File.update_all(self.id, attr)
@@ -637,7 +647,7 @@ class File(Base, PRBase):
         croped = File()
         croped.md_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())
         croped.size = sys.getsizeof(
-            bytes_file.getvalue())
+                bytes_file.getvalue())
         croped.name = self.name + '_cropped'
         croped.parent_id = folder_id
         croped.root_folder_id = folder_id
@@ -648,40 +658,39 @@ class File(Base, PRBase):
         return croped
 
     def crop(self, coordinates, folder_id, params):
-        #TODO SS by SS in future add allow_stretch_image param
+        # TODO SS by SS in future add allow_stretch_image param
         File.check_aspect_ratio(coordinates, params)
         bytes_file, area = File.crop_with_coordinates(self, coordinates, params)
         if bytes_file:
             new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
             ImageCroped(original_image_id=self.id,
-                    croped_image_id=new_cropped_image.id,
-                    x=float(area[0]), y=float(area[1]),
-                    width=float(area[2]),
-                    height=float(area[3]),
-                    croped_width=round(coordinates['width']),
-                    croped_height=round(coordinates['height']),
-                    zoom=coordinates['zoom']).save()
+                        croped_image_id=new_cropped_image.id,
+                        x=float(area[0]), y=float(area[1]),
+                        width=float(area[2]),
+                        height=float(area[3]),
+                        croped_width=round(coordinates['width']),
+                        croped_height=round(coordinates['height']),
+                        zoom=coordinates['zoom']).save()
             return new_cropped_image.id
         else:
             return self.id
 
     @staticmethod
-    def check_aspect_ratio(coordinates,params):
+    def check_aspect_ratio(coordinates, params):
         width = coordinates['width']
         height = coordinates['height']
-        if params['aspect_ratio'][0]*width>coordinates['height']:
-            coordinates['width'] = params['aspect_ratio'][1]*coordinates['height']
-            coordinates['x'] = (width-coordinates['width'])/2
-        elif params['aspect_ratio'][1]*width<coordinates['height']:
-            coordinates['height'] = params['aspect_ratio'][1]*width
-            coordinates['y'] = (height-coordinates['height'])/2
+        if params['aspect_ratio'][0] * width > coordinates['height']:
+            coordinates['width'] = params['aspect_ratio'][1] * coordinates['height']
+            coordinates['x'] = (width - coordinates['width']) / 2
+        elif params['aspect_ratio'][1] * width < coordinates['height']:
+            coordinates['height'] = params['aspect_ratio'][1] * width
+            coordinates['y'] = (height - coordinates['height']) / 2
         coordinates['width'] = round(coordinates['width'])
         coordinates['height'] = round(coordinates['height'])
 
-
-    def update_croped_image(self, old_image_cropped, coordinates,folder_id, params):
+    def update_croped_image(self, old_image_cropped, coordinates, folder_id, params):
         File.check_aspect_ratio(coordinates, params)
-        bytes_file, area = self.crop_with_coordinates( coordinates, params)
+        bytes_file, area = self.crop_with_coordinates(coordinates, params)
         if bytes_file:
             File.get(old_image_cropped.croped_image_id).delete()
             new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
@@ -696,36 +705,32 @@ class File(Base, PRBase):
             return new_cropped_image.id
         return old_image_cropped.croped_image_id
 
-
     def crop_with_coordinates(self, coordinates, params):
         try:
-            image_pil = Image.open(BytesIO(self.file_content.content)) # create Pillow object from content of original picture
+            image_pil = Image.open(
+                BytesIO(self.file_content.content))  # create Pillow object from content of original picture
             area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],
-                                     coordinates['height'])] # convert dict of coordinates to list
-            if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)): #
+                                     coordinates['height'])]  # convert dict of coordinates to list
+            if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)):  #
                 # if coordinates are not correctly, we make coordinates the same as image coordinates
                 area[0], area[1], area[2], area[3] = 0, 0, image_pil.width, image_pil.height
-            area[2] = (area[0]+area[2])# The crop rectangle, as a (left, upper, right, lower)-tuple.    RIGHT
-            area[3] = (area[1]+area[3])# The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
-            cropped = image_pil.crop(area).resize(params['image_size']) # crop and resize image with area and size
-            bytes_file = BytesIO() # create BytesIO object to save cropped image to Pillow object
-            cropped.save(bytes_file, self.mime.split('/')[-1].upper()) # save cropped image to Pillow object
+            area[2] = (area[0] + area[2])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    RIGHT
+            area[3] = (area[1] + area[3])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
+            cropped = image_pil.crop(area).resize(params['image_size'])  # crop and resize image with area and size
+            bytes_file = BytesIO()  # create BytesIO object to save cropped image to Pillow object
+            cropped.save(bytes_file, self.mime.split('/')[-1].upper())  # save cropped image to Pillow object
             # (not to database)
-            return bytes_file, area #  cropped bytes of file and area(coordinates)
-        except ValueError: # if error occured return False
+            return bytes_file, area  # cropped bytes of file and area(coordinates)
+        except ValueError:  # if error occured return False
             return False
-
-
 
 
 class FileContent(Base, PRBase):
     __tablename__ = 'file_content'
-    id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'),
-                primary_key=True)
+    id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), primary_key=True)
     content = Column(Binary, nullable=False)
-    file = relationship('File', uselist=False,
-                                backref=backref('file_content', uselist=False),
-                                )
+
+    file = relationship('File', uselist=False, back_populates='file_content')
 
     def __init__(self, file=None, content=None):
         self.file = file
@@ -779,7 +784,7 @@ class ImageCroped(Base, PRBase):
     zoom = Column(TABLE_TYPES['int'], nullable=False)
 
     def __init__(self, original_image_id=None, x=None, y=None, width=None, height=None, rotate=None,
-                 croped_image_id=None, croped_width=None,croped_height=None, zoom=None):
+                 croped_image_id=None, croped_width=None, croped_height=None, zoom=None):
         super(ImageCroped, self).__init__()
         self.original_image_id = original_image_id
         self.croped_image_id = croped_image_id
@@ -847,12 +852,12 @@ class YoutubeApi(GoogleAuthorize):
         """ make body to create request. category_id default 22, status default 'public'. """
 
         body = dict(snippet=dict(
-                    title=self.body_dict.get('title') or '',
-                    description=self.body_dict.get('description') or '',
-                    tags=self.body_dict.get('tags'),
-                    categoryId=self.body_dict.get('category_id') or 22),
-                    status=dict(
-                    privacyStatus=self.body_dict.get('status') or 'public'))
+                title=self.body_dict.get('title') or '',
+                description=self.body_dict.get('description') or '',
+                tags=self.body_dict.get('tags'),
+                categoryId=self.body_dict.get('category_id') or 22),
+                status=dict(
+                        privacyStatus=self.body_dict.get('status') or 'public'))
         return body
 
     def make_headers_for_start_upload(self, content_length):
@@ -883,7 +888,7 @@ class YoutubeApi(GoogleAuthorize):
         url = self.make_encoded_url_for_upload(body.keys())
         body = json.dumps(body).encode('utf8')
         headers = self.make_headers_for_start_upload(sys.getsizeof(body))
-        r = req.Request(url=url, headers=headers,  method='POST')
+        r = req.Request(url=url, headers=headers, method='POST')
         response = req.urlopen(r, data=body)
         session['video_id'] = response.headers.get('X-Goog-Correlation-Id')
         session['url'] = response.headers.get('Location')
@@ -894,7 +899,7 @@ class YoutubeApi(GoogleAuthorize):
                    'content-type': 'application/octet-stream',
                    'content-length': self.chunk_info.get('chunk_size'),
                    'content-range': 'bytes 0-{0}/{1}'.format(
-                       self.chunk_info.get('chunk_size')-1, self.chunk_info.get('total_size'))}
+                           self.chunk_info.get('chunk_size') - 1, self.chunk_info.get('total_size'))}
         return headers
 
     def make_headers_for_resumable_upload(self):
@@ -902,10 +907,10 @@ class YoutubeApi(GoogleAuthorize):
         video = db(YoutubeVideo, id=session['id']).one()
         last_byte = self.chunk_info.get('chunk_size') + video.size - 1
         last_byte = self.chunk_info.get('total_size') - 1 if (self.chunk_info.get(
-            'chunk_size') + video.size - 1) > self.chunk_info.get('total_size') else last_byte
+                'chunk_size') + video.size - 1) > self.chunk_info.get('total_size') else last_byte
         headers = {'authorization': 'Bearer {0}'.format(video.authorization),
                    'content-type': 'application/octet-stream',
-                   'content-length': self.chunk_info.get('total_size')-video.size - 1,
+                   'content-length': self.chunk_info.get('total_size') - video.size - 1,
                    'content-range': 'bytes {0}-{1}/{2}'.format(video.size,
                                                                last_byte,
                                                                self.chunk_info.get('total_size'))}
@@ -917,7 +922,7 @@ class YoutubeApi(GoogleAuthorize):
         headers = {'authorization': 'Bearer {0}'.format(session.get('access_token')),
                    'content-range': 'bytes */{0}'.format(self.chunk_info.get('total_size')),
                    'content-length': 0}
-        r = req.Request(url=session['url'], headers=headers,  method='PUT')
+        r = req.Request(url=session['url'], headers=headers, method='PUT')
         try:
             response = req.urlopen(r)
             return response
@@ -938,7 +943,7 @@ class YoutubeApi(GoogleAuthorize):
         try:
             if not chunk_number:
                 r = req.Request(url=session['url'], headers=headers, method='PUT')
-                response = req.urlopen(r, data=self.video_file,)
+                response = req.urlopen(r, data=self.video_file, )
                 if response.code == 200 or response.code == 201:
                     name = File.get_unique_name(self.body_dict['title'], 'video/*', self.parent_folder_id)
                     file = File(parent_id=self.parent_folder_id,
@@ -966,7 +971,7 @@ class YoutubeApi(GoogleAuthorize):
                             size=self.chunk_info.get('total_size'),
                             mime='video/*')
                 youtube = YoutubeVideo(file=file, authorization=session['authorization'].split(' ')[-1],
-                                       size=int(e.headers.get('Range').split('-')[-1])+1,
+                                       size=int(e.headers.get('Range').split('-')[-1]) + 1,
                                        user_id=g.user_dict['id'],
                                        video_id=session['video_id'],
                                        playlist=playlist
@@ -994,7 +999,7 @@ class YoutubeApi(GoogleAuthorize):
         except response_code as e:
             if e.code == 308:
                 db(YoutubeVideo, id=session['id']).update(
-                    {'size': int(e.headers.get('Range').split('-')[-1]) + 1})
+                        {'size': int(e.headers.get('Range').split('-')[-1]) + 1})
             return 'uploading'
 
 
@@ -1015,9 +1020,9 @@ class YoutubeVideo(Base, PRBase):
                          nullable=False)
     playlist = relationship('YoutubePlaylist', uselist=False)
     file = relationship('File',
-                                uselist=False,
-                                backref=backref('youtube_video', uselist=False),
-                                cascade='save-update,delete')
+                        uselist=False,
+                        backref=backref('youtube_video', uselist=False),
+                        cascade='save-update,delete')
 
     def __init__(self, file=None, title='Title', authorization=None, size=None, user_id=None, video_id=None,
                  status='uploading', playlist_id=None, playlist=None):
@@ -1040,7 +1045,7 @@ class YoutubeVideo(Base, PRBase):
         body = json.dumps(body).encode('utf8')
         headers = self.make_headers_to_put_video_in_playlist(sys.getsizeof(body))
         try:
-            r = req.Request(url=url, headers=headers,  method='POST')
+            r = req.Request(url=url, headers=headers, method='POST')
             response = req.urlopen(r, data=body)
             response_str_from_bytes = response.readall().decode('utf-8')
             fields = json.loads(response_str_from_bytes)
@@ -1092,13 +1097,12 @@ class YoutubePlaylist(Base, PRBase):
         self.save()
 
     def create_new_playlist(self):
-
         """ This method create playlist and return response """
         body = self.make_body_to_get_playlist_url()
         url = self.make_encoded_url_for_playlists()
         body = json.dumps(body).encode('utf8')
         headers = self.make_headers_to_get_playlists(sys.getsizeof(body))
-        r = req.Request(url=url, headers=headers,  method='POST')
+        r = req.Request(url=url, headers=headers, method='POST')
         response = req.urlopen(r, data=body)
         response_str_from_bytes = response.readall().decode('utf-8')
         fields = json.loads(response_str_from_bytes)
@@ -1132,7 +1136,7 @@ class YoutubePlaylist(Base, PRBase):
     def get_not_full_company_playlist(company_id):
         """ Return not full company playlist. Pass company id. """
         playlist = db(YoutubePlaylist, company_id=company_id).order_by(
-            desc(YoutubePlaylist.md_tm)).first()
+                desc(YoutubePlaylist.md_tm)).first()
         return playlist
 
     def add_video_to_cloned_playlist_with_new_name(self, video):
