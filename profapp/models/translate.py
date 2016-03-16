@@ -138,7 +138,7 @@ class TranslateTemplate(Base, PRBase):
     def delete(objects):
         for obj in objects:
             f = db(TranslateTemplate, template=obj['template'], name=obj['name']).first()
-            TranslateTemplate.delfile(f)
+            f.delete()
         return 'True'
 
     @staticmethod
