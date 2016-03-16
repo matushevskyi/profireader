@@ -161,21 +161,27 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 //scope.minimal = 0.1;
 
                 scope.croper_loaded = false;
-                scope.originalModel = $.extend(true, {}, scope.prCrop);
-                scope.fallback_url = '//static.profireader.com/static/images/choose_image.png';
+                //scope.originalModel = $.extend(true, {}, scope.prCrop);
+                scope.fallback_url = '//static.profireader.com/static/images/0.png';
 
 
                 scope.setModel = function () {
-                    scope.uploadable = scope.prCrop['upload'] ? true : false;
-                    scope.browsable = scope.prCrop['browse'] ? true : false;
-                    scope.cropable = scope.prCrop['cropper'] ? scope.prCrop['cropper'] : false;
-                    scope.no_selection_url = scope.prCrop['no_selection_url'];
+                    scope.uploadable = false;
+                    scope.browsable = false;
+                    scope.cropable = false;
+                    scope.no_selection_url = scope.fallback_url;
+                    if (scope.prCrop) {
+                        scope.uploadable = scope.prCrop['upload'] ? true : false;
+                        scope.browsable = scope.prCrop['browse'] ? true : false;
+                        scope.cropable = scope.prCrop['cropper'] ? scope.prCrop['cropper'] : false;
+                        scope.no_selection_url = scope.prCrop['no_selection_url'];
+
+                    }
                 };
 
                 scope.resetModel = function () {
                     scope.prCrop = $.extend(true, {}, scope.originalModel);
                     scope.setModel();
-                    restartCropper(imageUrlFromUserSelection());
                 };
 
                 var updateCoordinates = function (dict) {
@@ -187,7 +193,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 var getFromCoordinates = function (key, ifnotset) {
                     return (!scope.prCrop['selected_by_user']['crop_coordinates']
-                    || scope.prCrop['selected_by_user']['crop_coordinates'][key] === undefined) ?
+                    || scope.prCrop['selected_by_user']['crop_coordinates'][key] === undefined
+                        || scope.prCrop['selected_by_user']['crop_coordinates'][key] === null) ?
                         (ifnotset === undefined ? null : ifnotset) :
                         scope.prCrop['selected_by_user']['crop_coordinates'][key];
                 }
@@ -236,6 +243,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 scope.zoom = function (ratio, only_check_posibility) {
                     if (!scope.croper_loaded) return false;
                     var curent_zoom = getFromCoordinates('zoom', null);
+
                     if (ratio < 0 && curent_zoom <= scope.minzoom) return false;
                     if (ratio > 0 && curent_zoom >= scope.maxzoom) return false;
 
@@ -248,6 +256,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 scope.selectPresetUrl = function (className) {
                     if (scope.prCrop['preset_urls'] && scope.prCrop['preset_urls'][className]) {
                         restartCropper(scope.prCrop['preset_urls'][className], {'type': 'preset', 'class': className});
+
                     }
                 };
 
@@ -333,7 +342,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         scope.minzoom = scope.maxzoom;
                     }
 
-
                     if (scope.prCrop['cropper']) {
                         options['minCanvasWidth'] = options['minContainerWidth'];
                         options['minContainerHeight'] = options['minContainerHeight'];
@@ -375,13 +383,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                         updateCoordinates({'zoom': e.ratio});
 
-                        //if (scope.prCrop['min_size'] && scope.prCrop['min_size'][0]>0) {
-                        //    console.log(scope.prCrop['min_size'], scope.prCrop['min_size'][0]*e.ratio);
-                        //    $().cropper('minCropBoxWidth',  scope.prCrop['min_size'][0]*e.ratio);
-                        //}
-                        //if (scope.prCrop['min_size'] && scope.prCrop['min_size'][1]>0) {
-                        //    $().cropper({'minCropBoxHeight': scope.prCrop['min_size'][1]*e.ratio});
-                        //}
 
                     }
 
@@ -392,6 +393,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             on_success()
                         }
                         if (scope.zoomable) {
+                            console.log('zoomTo', getFromCoordinates('zoom', scope.minzoom));
                             $(this).cropper('zoomTo', getFromCoordinates('zoom', scope.minzoom));
                         }
                     }
@@ -419,7 +421,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     var fr = new Image();
                     fr.addEventListener('load', function (e) {
 
-                        $image.hide();
+                        //$image.hide();
 
                         try {
                             var options = resizeContainer(fr);
@@ -431,14 +433,15 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         }
 
                         $image.attr('src', src);
-                        $image.show();
+                        //$image.show();
 
                         var selection = new_selection_by_user ? new_selection_by_user : scope.prCrop['selected_by_user'];
                         options['data'] = selection['crop_coordinates'];
 
                         scope.croper_loaded = false;
-                        $image.cropper('destroy');
 
+
+                        $image.cropper('destroy');
 
                         if (scope.prCrop['cropper'] && ((selection['type'] === 'browse') || (selection['type'] === 'upload'))) {
                             runCropper(options, function () {
@@ -450,7 +453,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         else {
                             if (new_selection_by_user) {
                                 scope.prCrop['selected_by_user'] = new_selection_by_user;
+                                $timeout(scope.setModel,0);
                             }
+
+
                         }
                     }, false);
                     fr.addEventListener('error', function (e) {
@@ -461,8 +467,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 }
 
 
-                scope.$watch(attrs['prCrop'], function () {
-                    if (scope.prCrop['selected_by_user']) {
+                scope.$watch('prCrop', function () {
+                    scope.originalModel = $.extend(true, {}, scope.prCrop);
+                    scope.setModel();
+                    if (scope.prCrop && scope.prCrop['selected_by_user']) {
                         restartCropper(imageUrlFromUserSelection());
                     }
                 });
