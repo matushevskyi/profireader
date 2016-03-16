@@ -49,6 +49,7 @@
     -web-kit-transition: background-size 0.3s ease-in;
     /*border: 3px rgba(200, 200, 200, 0.5) solid;*/
     margin-bottom: 25px;
+    padding: 0px;
     border: 1px solid #DCE4EC;
     /*box-sizing: content-box;*/
 }
