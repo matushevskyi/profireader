@@ -11,7 +11,7 @@
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
     {% from 'macros.html' import scripts %}
-    {{ scripts(names=['croper']) }}
+    {{ scripts(names=['cropper']) }}
     <script>
         module.controller('CompanyProfile', function ($scope, $timeout) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');
@@ -84,6 +84,7 @@
 
                     <div ng-if="editing">
                         <div style="width: 360px; height: 270px; position: relative" pr-crop="data.logo"></div>
+                        <br/><br/><br/><br/><br/><br/>{{ data.logo }}
                     </div>
                 </div>
 

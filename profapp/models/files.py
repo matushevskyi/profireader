@@ -645,14 +645,14 @@ class File(Base, PRBase):
         fc = FileContent(content=bytes_file.getvalue(), file=croped)
         g.db.add_all([croped, fc])
         g.db.flush()
-        return croped.id
+        return croped
 
-    def crop(self, coordinates, zoom, folder_id, params):
+    def crop(self, coordinates, folder_id, params):
         #TODO SS by SS in future add allow_stretch_image param
         File.check_aspect_ratio(coordinates, params)
         bytes_file, area = File.crop_with_coordinates(self, coordinates, params)
         if bytes_file:
-            new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, zoom, folder_id)
+            new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
             ImageCroped(original_image_id=self.id,
                     croped_image_id=new_cropped_image.id,
                     x=float(area[0]), y=float(area[1]),
@@ -660,7 +660,7 @@ class File(Base, PRBase):
                     height=float(area[3]),
                     croped_width=round(coordinates['width']),
                     croped_height=round(coordinates['height']),
-                    zoom=zoom).save()
+                    zoom=coordinates['zoom']).save()
             return new_cropped_image.id
         else:
             return self.id
@@ -679,12 +679,12 @@ class File(Base, PRBase):
         coordinates['height'] = round(coordinates['height'])
 
 
-    def update_croped_image(self, old_image_cropped, coordinates, zoom,folder_id, params):
+    def update_croped_image(self, old_image_cropped, coordinates,folder_id, params):
         File.check_aspect_ratio(coordinates, params)
         bytes_file, area = self.crop_with_coordinates( coordinates, params)
         if bytes_file:
             File.get(old_image_cropped.croped_image_id).delete()
-            new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, zoom, folder_id)
+            new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
             old_image_cropped.croped_image_id = new_cropped_image.id
             old_image_cropped.x = float(area[0])
             old_image_cropped.y = float(area[1])
@@ -692,7 +692,7 @@ class File(Base, PRBase):
             old_image_cropped.height = float(area[3])
             old_image_cropped.croped_width = coordinates['width']
             old_image_cropped.croped_height = coordinates['height']
-            old_image_cropped.zoom = zoom
+            old_image_cropped.zoom = coordinates['zoom']
             return new_cropped_image.id
         return old_image_cropped.croped_image_id
 
@@ -723,10 +723,9 @@ class FileContent(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'),
                 primary_key=True)
     content = Column(Binary, nullable=False)
-    file = relationship('File',
-                                uselist=False,
+    file = relationship('File', uselist=False,
                                 backref=backref('file_content', uselist=False),
-                                cascade='save-update,delete')
+                                )
 
     def __init__(self, file=None, content=None):
         self.file = file
@@ -793,18 +792,20 @@ class ImageCroped(Base, PRBase):
         self.croped_height = croped_height
         self.zoom = zoom
 
-    def get_client_side_dict(self, fields='x,y,width,height,rotate',
+    def get_client_side_dict(self, fields='x,y,width,height,rotate,zoom',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
     def get_coordinates(self):
-        ret = self.to_dict('x,y,width,height')
+        ret = self.to_dict('x,y,width,height,rotate,zoom')
         return ret
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
     def same_coordinates(self, coordinates):
         if self.x == coordinates.x and self.y == coordinates.y:
             return True
+        else:
+            return False
 
     @staticmethod
     def get_coordinates_and_original_img(croped_image_id):
