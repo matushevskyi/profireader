@@ -650,7 +650,7 @@ class File(Base, PRBase):
     def crop(self, coordinates, folder_id, params):
         #TODO SS by SS in future add allow_stretch_image param
         File.check_aspect_ratio(coordinates, params)
-        bytes_file, area = File.crop_with_coordinates(self, coordinates, params)
+        bytes_file, area = self.crop_with_coordinates(coordinates, params)
         if bytes_file:
             new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
             ImageCroped(original_image_id=self.id,

@@ -500,11 +500,22 @@ class PRBase:
                 original_image = File.get(user_data['image_file_id'])
             content = original_image.file_content.content
             new_orginal_image = File.uploadLogo(content, original_image.name, original_image.mime,folder_id)
-            return new_orginal_image.crop(user_data['crop_coordinates'], folder_id, params)
 
 
-        # original_image = File.get(old_image_cropped.original_image_id)
-        # original_image.delete()
+        original_image = File.get(old_image_cropped.original_image_id)
+        original_image.delete()
+        if type == None:
+            return None
+        if type == 'upload':
+            imgdataContent = user_data['file']['content']
+            image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
+            content = base64.b64decode(image_data)
+            new_orginal_image = File.uploadLogo(content, user_data['file']['name'], user_data['file']['mime'],folder_id)
+            if 'error' in File.check_image_mime(new_orginal_image.id):
+                resp = self.get_client_side_dict()
+                resp.update({'error': True})
+                return resp
+        return new_orginal_image.crop(user_data['crop_coordinates'], folder_id, params)
         # remove old_croped_image_id
         # .delete()
 
