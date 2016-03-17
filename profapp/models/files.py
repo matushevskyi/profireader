@@ -659,7 +659,6 @@ class File(Base, PRBase):
 
     def crop(self, coordinates, folder_id, params):
         # TODO SS by SS in future add allow_stretch_image param
-        File.check_aspect_ratio(coordinates, params)
         bytes_file, area = self.crop_with_coordinates(coordinates, params)
         if bytes_file:
             new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
@@ -690,7 +689,6 @@ class File(Base, PRBase):
         coordinates['height'] = round(coordinates['height'])
 
     def update_croped_image(self, old_image_cropped, coordinates, folder_id, params):
-        File.check_aspect_ratio(coordinates, params)
         bytes_file, area = self.crop_with_coordinates(coordinates, params)
         if bytes_file:
             File.get(old_image_cropped.croped_image_id).delete()
@@ -700,8 +698,8 @@ class File(Base, PRBase):
             old_image_cropped.y = float(area[1])
             old_image_cropped.width = float(area[2])
             old_image_cropped.height = float(area[3])
-            old_image_cropped.croped_width = coordinates['width']
-            old_image_cropped.croped_height = coordinates['height']
+            old_image_cropped.croped_width = round(coordinates['width'])
+            old_image_cropped.croped_height = round(coordinates['height'])
             old_image_cropped.zoom = coordinates['zoom']
             return new_cropped_image.id
         return old_image_cropped.croped_image_id
@@ -709,14 +707,11 @@ class File(Base, PRBase):
     def crop_with_coordinates(self, coordinates, params):
         try:
             image_pil = Image.open(
-                    BytesIO(self.file_content.content))  # create Pillow object from content of original picture
-            area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],
-                                     coordinates['height'])]  # convert dict of coordinates to list
-
-            left = min(max(0, area[0]), image_pil.width)
-            top = min(max(0, area[1]), image_pil.height)
-            right = max(min(area[0] + area[2], image_pil.width), area[0])
-            bottom = max(min(area[1] + area[3], image_pil.height) - area[1], area[1])
+                    BytesIO(self.file_content.content))
+            left = min(max(0, coordinates['x']), image_pil.width)
+            top = min(max(0, coordinates['y']), image_pil.height)
+            right = max(min(coordinates['x'] + coordinates['width'], image_pil.width), coordinates['x'])
+            bottom = max(min(coordinates['y'] + coordinates['height'], image_pil.height), coordinates['y'])
 
             area_aspect = (right - left) / (bottom - top)
             if params['aspect_ratio'][0] > params['aspect_ratio'][1]:
@@ -729,28 +724,19 @@ class File(Base, PRBase):
                 right -= ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
                 left += ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
 
-
-            wider = (right-left)/(top-bottom) / (params['image_size'][0]/params['image_size'][1])
+            wider = (right-left)/(bottom-top) / (params['image_size'][0]/params['image_size'][1])
             if wider>1:
                 neww = params['image_size'][0]
                 newh = params['image_size'][1]/wider
             else:
                 newh = params['image_size'][1]
                 neww = params['image_size'][0]*wider
-
-            # image_wider = loadedimg.width * $outer_container.height() / loadedimg.height / $outer_container.width()
-            # if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)):  #
-            #     # if coordinates are not correctly, we make coordinates the same as image coordinates
-            #     area[0], area[1], area[2], area[3] = 0, 0, image_pil.width, image_pil.height
-            # area[2] = (area[0] + area[2])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    RIGHT
-            # area[3] = (area[1] + area[3])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
-            cropped = image_pil.crop([left, top, right, bottom]).resize((neww, newh))  # crop and resize image
-            # with area and
-            # size
-            bytes_file = BytesIO()  # create BytesIO object to save cropped image to Pillow object
+            cropped = image_pil.crop((int(left), int(top), int(right), int(bottom)))
+            cropped = cropped.resize((int(neww), int(newh)))
+            bytes_file = BytesIO()
             cropped.save(bytes_file, self.mime.split('/')[-1].upper())
-            return bytes_file, area  # cropped bytes of file and area(coordinates)
-        except ValueError:  # if error occured return False
+            return bytes_file, [int(left), int(top), int(image_pil.width), int(image_pil.height)]
+        except ValueError:
             return False
 
 
@@ -840,6 +826,7 @@ class ImageCroped(Base, PRBase):
         if (self.x == int(coordinates['x'])) and self.y == int(coordinates['y']) \
                 and (round(coordinates['width']) == self.croped_width and round(
                         coordinates['height']) == self.croped_height):
+            print('true')
             return True
         else:
             return False
