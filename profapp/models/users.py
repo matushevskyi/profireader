@@ -385,7 +385,7 @@ class User(Base, UserMixin, PRBase):
 
 
 
-        return PRBase.get_image_client_dict(self, upload=True, browse=True,
+        return PRBase.get_image_cropped_file(self, upload=True, browse=True,
                                             crop_from_image_file=db(ImageCroped,
                                                                     croped_image_id=self.avatar_file_id).first(),
                                             preset_urls={
@@ -561,3 +561,5 @@ class User(Base, UserMixin, PRBase):
 class Group(Base, PRBase):
     __tablename__ = 'group'
     id = Column(TABLE_TYPES['string_30'], primary_key=True)
+
+
