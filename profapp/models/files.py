@@ -806,7 +806,10 @@ class ImageCroped(Base, PRBase):
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
     def same_coordinates(self, coordinates):
-        if self.x == coordinates['x'] and self.y == coordinates['y']:
+        print(self.x, float(int(coordinates['x'])), self.y, float(int(coordinates['y'])))
+        if (self.x == float(int(coordinates['x'])) and self.y == float(int(coordinates['y'])))\
+                and (round(coordinates['width']) == self.croped_width and round(coordinates['height']) == self.croped_height):
+            print('true')
             return True
         else:
             return False
