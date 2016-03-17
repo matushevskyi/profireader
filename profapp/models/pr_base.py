@@ -482,14 +482,30 @@ class PRBase:
 
         return self
 
-    def set_image_client_dict(self, user_data, old_croped_image_id, folder_id):
+    def set_image_client_dict(self, user_data, old_croped_image_id, folder_id, params):
+        from ..models.files import File, ImageCroped
         type = user_data['type']
-        # 'none', 'browse', 'upload', 'old'
-        # 'old' old_croped_image_id
+        old_image_cropped = db(ImageCroped, croped_image_id=old_croped_image_id).first()
+        if type == 'browse':
+            if old_image_cropped:
+                if user_data['image_file_id'] == old_image_cropped.croped_image_id and old_image_cropped.same_coordinates(user_data['crop_coordinates']):
+                    return old_croped_image_id
+                elif user_data['image_file_id'] == old_image_cropped.croped_image_id and not old_image_cropped.same_coordinates(user_data['crop_coordinates']):
+                    original_image = File.get(user_data['image_file_id'])
+                    return original_image.update_croped_image(old_image_cropped, user_data['crop_coordinates'],folder_id, params)
+                else:
+                    if old_image_cropped.croped_image_id:
+                        File.get(old_image_cropped.croped_image_id).delete()
+                    original_image = File.get(user_data['image_file_id'])
+            else:
+                original_image = File.get(user_data['image_file_id'])
+            content = original_image.file_content.content
+            new_orginal_image = File.uploadLogo(content, original_image.name, original_image.mime,folder_id)
+            return new_orginal_image.crop(user_data['crop_coordinates'], folder_id, params)
 
-        # if  type == 'old' && same coords
-        # return  old_croped_image_id
 
+        # original_image = File.get(old_image_cropped.original_image_id)
+        # original_image.delete()
         # remove old_croped_image_id
         # .delete()
 
