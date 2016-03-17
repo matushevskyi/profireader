@@ -35,7 +35,7 @@
                         <span class="label label-success"><a pr-test="ArticleDivision" target="_blank"
                                                              href="//{{ article.portal.host }}/{{ article.division.name}}/1/?search_text=">{{
                             article.division.name}}</a></span>
-                        <a pr-test="ArticlePortal" target="_blank"
+                        <a pr-portal-id="{{ article.portal.id }}" pr-test="ArticlePortal" target="_blank"
                            href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
                            class="item-company">{{ article.portal.name}}</a>
                         <div style=""
@@ -59,7 +59,7 @@
                     <p>{{ article.short}}</p>
                 </div>
                 <div class="row">
-                    <div style="cursor: pointer"
+                    <div pr-test="AddToFavoriteButton" style="cursor: pointer"
                          class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5"
                          ng-click="add_to_favorite(article)">
                         <i ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i ng-if="article.is_favorite"

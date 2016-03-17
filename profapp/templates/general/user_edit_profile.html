@@ -41,8 +41,8 @@
              af-after-save="afterSave"
              af-amid-load="amidLoad" class="edit_user_profile" ng-model="data">
             <div class="row link-page">
-                <h5 class="">{{ _('Edit profile') }}</h5>
-                <a ng-if="data.user" title="profile"
+                <h5 pr-test="EditProfileTitle" class="">{{ _('Edit profile') }}</h5>
+                <a pr-test="ReturnToProfile" ng-if="data.user" title="profile"
                    href="{{ data.user?url_user_profile({'user_id': data.user.id}):'' }}"><i
                         class="fa fa-user fa-2x"></i></a>
                 <a ng-if="0 && data.user" title="setings"
@@ -64,7 +64,7 @@
                 <form class="col-lg-8 col-md-8 col-sm-8 col-xs-8 edit-grup">
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your display name') }}</span>
-                        <input pr-validation-answer="data_validation:profireader_name" class="form-control"
+                        <input pr-test="" pr-validation-answer="data_validation:profireader_name" class="form-control"
                                aria-describedby="sizing-addon1" type="text" placeholder="name"
                                ng-model="data.user.profireader_name">
                     </div>
@@ -75,12 +75,12 @@
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name') }}</span>
-                        <input pr-validation-answer="data_validation:profireader_first_name" class="form-control" aria-describedby="sizing-addon1" type="text"
+                        <input pr-test="FirstNameEdit" pr-validation-answer="data_validation:profireader_first_name" class="form-control" aria-describedby="sizing-addon1" type="text"
                                placeholder="first name" ng-model="data.user.profireader_first_name">
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your last name') }}</span>
-                        <input pr-validation-answer="data_validation:profireader_last_name" class="form-control" aria-describedby="sizing-addon1" type="text"
+                        <input pr-test="LastNameEdit" pr-validation-answer="data_validation:profireader_last_name" class="form-control" aria-describedby="sizing-addon1" type="text"
                                placeholder="last name"
                                ng-model="data.user.profireader_last_name">
                     </div>
@@ -133,7 +133,7 @@
                                   cols="40" ng-model="data.user.about_me"></textarea>
                     </div>
                     <div class="item">
-                        <button class="btn btn-default save-profile pull-right
+                        <button pr-test="SaveProfileButton" class="btn btn-default save-profile pull-right
                         border-radius"
                                 type="button" ng-click="$af.save(data)"
                                 ng-disabled="!$af.isActionAllowed(data, 'save') ">Save profile
