@@ -359,33 +359,6 @@ class MemberCompanyPortal(Base, PRBase):
         'ALLOW': 'ALLOW'
     }
 
-    ACTION_FOR_STATUS = {
-        'membership':{
-                STATUSES['ACTIVE']: {
-                    'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
-                    'FREEZE': ACTIONS['FREEZE']},
-                STATUSES['APPLICANT']: {'WITHDRAW': ACTIONS['WITHDRAW']},
-                STATUSES['SUSPENDED']: {'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE']},
-                STATUSES['FROZEN']: {
-                    'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
-                    'RESTORE': ACTIONS['RESTORE']},
-                STATUSES['REJECTED']: {'WITHDRAW': ACTIONS['WITHDRAW']},
-                STATUSES['DELETED']: {}},
-        'member':{
-                STATUSES['ACTIVE']: {
-                    'ALLOW':ACTIONS['ALLOW'],
-                    'REJECT': ACTIONS['REJECT'],
-                    'SUSPEND': ACTIONS['SUSPEND']},
-                STATUSES['APPLICANT']: {'REJECT': ACTIONS['REJECT'],
-                                        'ENLIST': ACTIONS['ENLIST']},
-                STATUSES['SUSPENDED']: {'REJECT': ACTIONS['REJECT'],
-                                        'RESTORE': ACTIONS['RESTORE']},
-                STATUSES['FROZEN']: {},
-                STATUSES['REJECTED']: {'RESTORE': ACTIONS['RESTORE']},
-                STATUSES['DELETED']: {}
-        }
-    }
-
     STATUS_FOR_ACTION = {
         'UNSUBSCRIBE': STATUSES['DELETED'],
         'FREEZE': STATUSES['FROZEN'],
@@ -398,13 +371,13 @@ class MemberCompanyPortal(Base, PRBase):
 
     def actions(self, company_id, who):
         from .company import UserCompany
-        right_for_action = UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS
         employment = UserCompany.get(company_id=company_id)
-        return {action_name: self.action_is_allowed(action_name, employment, right_for_action,
-                                                    self.ACTION_FOR_STATUS[who][self.status]) for action_name in
-                self.ACTION_FOR_STATUS[who][self.status]}
+        action_for_status = UserCompany.ACTION_FOR_STATUSES_MEMBER if who == 'member' else UserCompany.ACTION_FOR_STATUSES_MEMBERSHIP
+        return {action_name: self.action_is_allowed(action_name, employment,
+                                                    action_for_status[self.status]) for action_name in
+                action_for_status[self.status]}
 
-    def action_is_allowed(self, action_name, employment, right_for_action, actions):
+    def action_is_allowed(self, action_name, employment, actions):
         if not employment:
             return "Unconfirmed employment"
 
@@ -419,8 +392,8 @@ class MemberCompanyPortal(Base, PRBase):
             return "Company `{}` with status `{}` need status ACTIVE to perform action `{}`".format(self.portal.own_company.name,
                     self.portal.own_company.status, action_name)
 
-        if not employment.has_rights(right_for_action):
-            return "Employment need right `{}` to perform action `{}`".format(right_for_action, action_name)
+        if not employment.has_rights(actions[action_name]):
+            return "Employment need right `{}` to perform action `{}`".format(actions[action_name],action_name)
 
         return True
 
