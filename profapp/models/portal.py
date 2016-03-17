@@ -360,13 +360,13 @@ class MemberCompanyPortal(Base, PRBase):
     }
 
     STATUS_FOR_ACTION = {
-        'UNSUBSCRIBE': STATUSES['DELETED'],
-        'FREEZE': STATUSES['FROZEN'],
-        'WITHDRAW': STATUSES['DELETED'],
-        'REJECT': STATUSES['REJECTED'],
-        'SUSPEND': STATUSES['SUSPENDED'],
-        'ENLIST': STATUSES['ACTIVE'],
-        'RESTORE': STATUSES['ACTIVE']
+        ACTIONS['UNSUBSCRIBE']: STATUSES['DELETED'],
+        ACTIONS['FREEZE']: STATUSES['FROZEN'],
+        ACTIONS['WITHDRAW']: STATUSES['DELETED'],
+        ACTIONS['REJECT']: STATUSES['REJECTED'],
+        ACTIONS['SUSPEND']: STATUSES['SUSPENDED'],
+        ACTIONS['ENLIST']: STATUSES['ACTIVE'],
+        ACTIONS['RESTORE']: STATUSES['ACTIVE']
     }
 
     def actions(self, company_id, who):
