@@ -383,10 +383,15 @@ class User(Base, UserMixin, PRBase):
 
         noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())
 
-        return PRBase.get_image_client_dict(self, upload=True, browse=self.id,
+
+
+        return PRBase.get_image_client_dict(self, upload=True, browse=True,
                                             crop_from_image_file=db(ImageCroped,
                                                                     croped_image_id=self.avatar_file_id).first(),
-                                            preset_urls={'glyphicon-remove-circle': noavatar_url},
+                                            preset_urls={
+                                                'glyphicon-remove-circle': noavatar_url,
+                                                'glyphicon glyphicon-share': self.gravatar(size=500)
+                                            },
                                             no_selection_url=noavatar_url)
 
     def profile_completed(self):
