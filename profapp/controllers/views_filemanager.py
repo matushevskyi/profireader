@@ -2,7 +2,7 @@ import os
 import re
 from flask import render_template, g, make_response
 from flask.ext.login import current_user
-from profapp.models.files import File, FileContent, YoutubeApi
+from profapp.models.files import File, YoutubeApi
 from .blueprints_declaration import filemanager_bp
 from .request_wrapers import ok
 from functools import wraps
@@ -67,10 +67,9 @@ def filemanager():
         'get_root'] if 'get_root' in request.args else None
     if get_root:
         root = Company.get(get_root)
-        last_visit_root_name = root.name + " files"
-        last_root_id = root.journalist_folder_file_id
+        last_visit_root_name = (root.name + " files") if root else ''
+        last_root_id = root.journalist_folder_file_id if root else ''
     err = True if len(library) == 0 else False
-    print(last_visit_root_name)
     return render_template('filemanager.html', library=library, err=err, last_visit_root=last_visit_root_name.replace(
         '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),
                            last_root_id=last_root_id,
@@ -137,7 +136,7 @@ def cut(json):
 @filemanager_bp.route('/auto_remove/', methods=['POST'])
 @ok
 def auto_remove(json):
-    return File.auto_remove(json.get('name'), json.get('folder_id'))
+    return File.auto_remove(json.get('list'), json.get('folder_id'))
 
 
 
@@ -193,7 +192,7 @@ def send(parent_id):
         file = youtube.upload()
     else:
         file = File.upload(name, data, parent.id, root, company, content=uploaded_file.stream.read(-1))
-    return jsonify({'result': {'size': 0}, 'error': True if file=='error' else False})
+    return jsonify({'result': {'size': 0}, 'error': True if file=='error' else False, 'file_id':file})
 
 
 @filemanager_bp.route('/resumeupload/', methods=['GET'])

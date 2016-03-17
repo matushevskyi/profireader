@@ -5,11 +5,11 @@
 {% endblock head %}
 
 {% block portal_content %}
+    {% from 'macros.html' import scripts %}
+    {{ scripts(names=['cropper']) }}
     <script>
-        module.controller('edit_user', ['$scope', '$af', function ($scope, $af) {
+        module.controller('edit_user', ['$scope', function ($scope) {
             $scope.$$translate = {{ translates('edit_user')|safe }};
-            $scope.$af = $af;
-            console.log($af);
 
             $scope.url_user_profile = {{ raw_url_for('user.profile')| safe }};
             $scope.save_user_profile = {{ raw_url_for('user.edit_profile')| safe }}
@@ -55,6 +55,11 @@
 
             <div class="row">
                 <!-- <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}"><br> -->
+
+
+                <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 profile-thumbnail">
+                    <div style="width: 100%; height: 300px; position: relative" pr-crop="data.user
+                    .avatar"></div>
                 </div>
 
 

@@ -143,7 +143,7 @@ class Company(Base, PRBase):
         # get all users in company : company.employees
         # get all users companies : user.employers
 
-    # TODO: VK by OZ I think this have to be moved to __init__ and dublication check to validation
+    # TODO: VK by OZ I think this have to be moved to __init__ and duplication check to validation
     def setup_new_company(self):
         """Add new company to company table and make all necessary relationships,
         if company with this name already exist raise DublicateName"""
@@ -159,7 +159,6 @@ class Company(Base, PRBase):
         g.user.companies.append(self)
         self.youtube_playlists.append(YoutubePlaylist(name=self.name, company_owner=self))
         self.save()
-        print(self)
 
         return self
 
@@ -226,15 +225,27 @@ class Company(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
+    def set_image_client_dict(self, image):
+        if image['selected_by_user']['type'] == 'preset':
+            if image['selected_by_user']['class'] == 'glyphicon-remove-circle':
+                image['selected_by_user']['type'] = 'none'
+            else:
+                raise ValueError("passed unknow preset class `{}`".format(image['selected_by_user']['class']))
+
+        self.logo_file_id = PRBase.set_image_cropped_file(self, image['selected_by_user'],
+                                                          self.logo_file_id, self.system_folder_file_id,
+                                                          params={'image_size': (400, 300), 'aspect_ratio': [0.5, 2.0]})
+        return self
+
     def get_image_client_dict(self):
 
         nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
 
-        return PRBase.get_image_client_dict(self, upload=True, browse=self.id,
-                                            crop_from_image_file=db(ImageCroped,
-                                                                    croped_image_id=self.logo_file_id).first(),
-                                            preset_urls={'glyphicon-remove-circle': nologo_url},
-                                            no_selection_url=nologo_url)
+        return PRBase.get_image_cropped_file(self, upload=True, browse=self.id,
+                                             crop_from_image_file=db(ImageCroped,
+                                                                     croped_image_id=self.logo_file_id).first(),
+                                             preset_urls={'glyphicon-remove-circle': nologo_url},
+                                             no_selection_url=nologo_url)
 
 
         #
@@ -254,7 +265,7 @@ class Company(Base, PRBase):
     def get_allowed_statuses(company_id=None, portal_id=None):
         if company_id:
             sub_query = db(MemberCompanyPortal, company_id=company_id).filter(
-                MemberCompanyPortal.status != "DELETED").all()
+                    MemberCompanyPortal.status != "DELETED").all()
         else:
             sub_query = db(MemberCompanyPortal, portal_id=portal_id)
         return sorted(list({partner.status for partner in sub_query}))
@@ -348,6 +359,39 @@ class UserCompany(Base, PRBase):
         'remove': RIGHT_AT_COMPANY.FILES_DELETE_OTHERS,
         'show': RIGHT_AT_COMPANY.FILES_BROWSE,
         'upload': RIGHT_AT_COMPANY.FILES_UPLOAD
+    }
+
+    ACTION_FOR_STATUSES_MEMBERSHIP = {
+        MemberCompanyPortal.STATUSES['ACTIVE']: {
+            MemberCompanyPortal.ACTIONS['UNSUBSCRIBE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
+            MemberCompanyPortal.ACTIONS['FREEZE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+        MemberCompanyPortal.STATUSES['APPLICANT']: {
+            MemberCompanyPortal.ACTIONS['WITHDRAW']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+        MemberCompanyPortal.STATUSES['SUSPENDED']: {
+            MemberCompanyPortal.ACTIONS['UNSUBSCRIBE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+        MemberCompanyPortal.STATUSES['FROZEN']: {
+            MemberCompanyPortal.ACTIONS['UNSUBSCRIBE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
+            MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+        MemberCompanyPortal.STATUSES['REJECTED']: {
+            MemberCompanyPortal.ACTIONS['WITHDRAW']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+        MemberCompanyPortal.STATUSES['DELETED']: {}
+    }
+
+    ACTION_FOR_STATUSES_MEMBER = {
+        MemberCompanyPortal.STATUSES['ACTIVE']: {
+            MemberCompanyPortal.ACTIONS['ALLOW']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
+            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
+            MemberCompanyPortal.ACTIONS['SUSPEND']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+        MemberCompanyPortal.STATUSES['APPLICANT']: {
+            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
+            MemberCompanyPortal.ACTIONS['ENLIST']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+        MemberCompanyPortal.STATUSES['SUSPENDED']: {
+            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
+            MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+        MemberCompanyPortal.STATUSES['FROZEN']: {},
+        MemberCompanyPortal.STATUSES['REJECTED']: {
+            MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+        MemberCompanyPortal.STATUSES['DELETED']: {}
     }
 
     ACTIONS_FOR_STATUSES = {

@@ -23,8 +23,9 @@ import datetime
 import operator
 from collections import OrderedDict
 from functools import reduce
+import base64
 
-from ..utils import fileUrl
+from ..utils import fileUrl, fileID
 
 Base = declarative_base()
 
@@ -211,15 +212,16 @@ class Search(Base):
             joined = db(Search.index, func.min(Search.text).label('text'),
                         func.min(Search.table_name).label('table_name'),
                         index=subquery_search.subquery().c.index).filter(
-                Search.kind.in_(tuple(field_name))).group_by(Search.index)
+                    Search.kind.in_(tuple(field_name))).group_by(Search.index)
             return joined
+
         subquery_search = db(Search.index.label('index'),
                              func.sum(Search.relevance).label('relevance'),
                              func.min(Search.table_name).label('table_name'),
                              func.min(Search.md_tm).label('md_tm'),
                              func.max(Search.position).label('position'),
                              func.max(Search.text).label('text')).filter(
-            or_(*self.__get_search_params(*args))).group_by('index')
+                or_(*self.__get_search_params(*args))).group_by('index')
         if type(ord_by) in (str, list, tuple):
             order = self.__get_order('text', 'text')
             subquery_search = add_joined_search(ord_by)
@@ -232,49 +234,49 @@ class Search(Base):
             subquery_search = subquery_search.order_by(order)
         else:
             subquery_search = subquery_search.order_by(order).order_by(
-                self.__get_order('md_tm', 'md_tm'))
+                    self.__get_order('md_tm', 'md_tm'))
         return subquery_search
 
     def __get_order(self, order_name, field):
         order_name += '+' if self.__desc_asc == 'desc' else '-'
         result = {'text+': lambda field_name: desc(func.max(getattr(Search, field_name, Search.text))),
                   'text-': lambda field_name: asc(func.max(
-                      getattr(Search, field_name, Search.text))),
+                          getattr(Search, field_name, Search.text))),
                   'md_tm+': lambda field_name: desc(func.min(
-                      getattr(Search, field_name, Search.md_tm))),
+                          getattr(Search, field_name, Search.md_tm))),
                   'md_tm-': lambda field_name: asc(func.min(
-                      getattr(Search, field_name, Search.md_tm))),
+                          getattr(Search, field_name, Search.md_tm))),
                   'relevance+': lambda field_name: desc(func.sum(
-                      getattr(Search, field_name, Search.relevance))),
+                          getattr(Search, field_name, Search.relevance))),
                   'relevance-': lambda field_name: asc(func.sum(
-                      getattr(Search, field_name, Search.relevance))),
+                          getattr(Search, field_name, Search.relevance))),
                   'position+': lambda field_name: desc(func.max(
-                      getattr(Search, field_name, Search.position))),
+                          getattr(Search, field_name, Search.position))),
                   'position-': lambda field_name: asc(func.max(
-                      getattr(Search, field_name, Search.position)))
+                          getattr(Search, field_name, Search.position)))
                   }[order_name](field)
         return result
 
     def __get_objects_from_db(self, *args, ordered_objects_list=None):
-            items = dict()
-            for cls in args:
-                fields = cls.get('return_fields') or 'id'
-                tags = cls.get('tags')
-                assert type(fields) is str, \
-                    'Arg parameter return_fields must be string but %s given' % fields
-                for a in db(cls['class']).filter(cls['class'].id.in_(
-                        list(map(lambda x: x[0], ordered_objects_list)))).all():
-                    if fields != 'default_dict' and not tags:
-                        items[a.id] = a.get_client_side_dict(fields=fields)
-                    elif fields != 'default_dict' and tags:
-                        items[a.id] = a.get_client_side_dict(fields=fields)
-                        items[a.id].update(dict(tags=a.tags))
-                    elif fields == 'default_dict' and not tags:
-                        items[a.id] = a.get_client_side_dict()
-                    else:
-                        items[a.id] = a.get_client_side_dict()
-                        items[a.id].update(dict(tags=a.tags))
-            return collections.OrderedDict((id, items[id]) for id, val in ordered_objects_list)
+        items = dict()
+        for cls in args:
+            fields = cls.get('return_fields') or 'id'
+            tags = cls.get('tags')
+            assert type(fields) is str, \
+                'Arg parameter return_fields must be string but %s given' % fields
+            for a in db(cls['class']).filter(cls['class'].id.in_(
+                    list(map(lambda x: x[0], ordered_objects_list)))).all():
+                if fields != 'default_dict' and not tags:
+                    items[a.id] = a.get_client_side_dict(fields=fields)
+                elif fields != 'default_dict' and tags:
+                    items[a.id] = a.get_client_side_dict(fields=fields)
+                    items[a.id].update(dict(tags=a.tags))
+                elif fields == 'default_dict' and not tags:
+                    items[a.id] = a.get_client_side_dict()
+                else:
+                    items[a.id] = a.get_client_side_dict()
+                    items[a.id].update(dict(tags=a.tags))
+        return collections.OrderedDict((id, items[id]) for id, val in ordered_objects_list)
 
     def __get_search_params(self, *args: dict):
         search_params = []
@@ -309,7 +311,7 @@ class Search(Base):
                 'Parameter page is not integer, or page < 1 .'
             assert (getattr(args[0]['class'], str(ord_by), False) is not False) or \
                    (type(ord_by) is int) or type(
-                ord_by is (list or tuple)), \
+                    ord_by is (list or tuple)), \
                 'Bad value for parameter "order_by".' \
                 'You requested attribute which is not in class %s or give bad kwarg type.' \
                 'Can be string, list or tuple %s given' % \
@@ -322,7 +324,7 @@ class Search(Base):
             tb_info = traceback.extract_tb(tb)
             filename_, line_, func_, text_ = tb_info[-1]
             message = 'An error occurred on File "{file}" line {line}\n {assert_message}'.format(
-                line=line_, assert_message=e.args, file=filename_)
+                    line=line_, assert_message=e.args, file=filename_)
             raise errors.BadDataProvided({'message': message})
 
 
@@ -396,16 +398,15 @@ class PRBase:
     def __init__(self):
         self.query = g.db.query_property()
 
-
     @staticmethod
-    def str2float(str, onfail = None):
+    def str2float(str, onfail=None):
         try:
             return float(str)
         except Exception:
             return onfail
 
     @staticmethod
-    def str2int(str, onfail = None):
+    def str2int(str, onfail=None):
         try:
             return int(str)
         except Exception:
@@ -413,8 +414,7 @@ class PRBase:
 
     @staticmethod
     def inRange(what, fromr, tor):
-        return True if (what>=fromr) and (what<=tor) else False
-
+        return True if (what >= fromr) and (what <= tor) else False
 
     @staticmethod
     def parseDate(str):
@@ -435,8 +435,7 @@ class PRBase:
 
     @staticmethod
     def del_attr_by_keys(dict, keys):
-        return {key:dict[key] for key in dict if key not in keys}
-
+        return {key: dict[key] for key in dict if key not in keys}
 
     # if insert_after_id == False - insert at top
     # if insert_after_id == True - insert at bottom
@@ -483,36 +482,75 @@ class PRBase:
 
         return self
 
-    def get_image_client_dict(self,
+    def set_image_cropped_file(self, user_data, old_croped_image_id, folder_id, params):
+        from ..models.files import File, ImageCroped
+        selected_by_user_type = user_data['type']
+        old_image_cropped = db(ImageCroped, croped_image_id=old_croped_image_id).first()
+        if selected_by_user_type == 'browse':
+            if old_image_cropped:
+                if user_data[
+                    'image_file_id'] == old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
+                        user_data['crop_coordinates'], params):
+                    return old_croped_image_id
+                elif user_data[
+                    'image_file_id'] == old_image_cropped.original_image_id and not old_image_cropped.same_coordinates(
+                        user_data['crop_coordinates'], params):
+                    original_image = File.get(user_data['image_file_id'])
+                    return original_image.update_croped_image(old_image_cropped, user_data['crop_coordinates'],
+                                                              folder_id, params)
+                else:
+                    original_image = File.get(user_data['image_file_id'])
+            else:
+                original_image = File.get(user_data['image_file_id'])
+            content = original_image.file_content.content
+            new_orginal_image = File.uploadLogo(content, original_image.name, original_image.mime, folder_id)
+        if old_image_cropped:
+            old_original_image = File.get(old_image_cropped.original_image_id)
+            if old_original_image:
+                old_original_image.delete()
+        if selected_by_user_type == 'none':
+            # todo: SS by OZ: is old file removed on this selection?
+            return None
+        if selected_by_user_type == 'upload':
+            imgdataContent = user_data['file']['content']
+            image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
+            content = base64.b64decode(image_data)
+            new_orginal_image = File.uploadLogo(content, user_data['file']['name'], user_data['file']['mime'],
+                                                folder_id)
+            if 'error' in File.check_image_mime(new_orginal_image.id):
+                resp = self.get_client_side_dict()
+                resp.update({'error': True})
+                return resp
+        return new_orginal_image.crop(user_data['crop_coordinates'], folder_id, params)
+
+    def get_image_cropped_file(self,
                               upload=None,
                               browse=True,
+                              cropper={'aspect': False, 'min_size': [100, 100]},
                               crop_from_image_file=None,
                               preset_urls={},
-                              selected_url = None,
+                              selected_by_user_type='none',
                               no_selection_url=None):
 
         ret = {
             'upload': upload,
             'browse': browse,
-            'min_size': [100, 100],
-            'crop': {'coordinates': None, 'aspect': False},
-            'original_image_id': None,
+            'cropper': cropper,
             'preset_urls': preset_urls,
             'no_selection_url': no_selection_url,
-            'selected_url': selected_url
+            'selected_by_user': {'type': selected_by_user_type}
         }
 
         if crop_from_image_file:
-            ret['original_image_id'] = crop_from_image_file.original_image_id,
-            ret['crop']['coordinates'] = crop_from_image_file.get_coordinates()
-            ret['selected_url'] = fileUrl(crop_from_image_file.original_image_id)
+            ret['selected_by_user'] = {'type': 'browse', 'image_file_id': crop_from_image_file.original_image_id,
+                                       'crop_coordinates': crop_from_image_file.get_coordinates()}
 
         return ret
 
     def validate(self, is_new=False):
         return {'errors': {}, 'warnings': {}, 'notices': {}}
 
-    def delfile(self):
+    def delete(self):
         g.db.delete(self)
         g.db.commit()
 
@@ -749,9 +787,6 @@ class PRBase:
         event.listen(cls, 'after_update', cls.update_search_table)
         event.listen(cls, 'after_delete', cls.delete_from_search)
 
-
-
-
 #
 #
 #
@@ -777,4 +812,3 @@ class PRBase:
 # event.listen(ArticlePortal, 'before_insert', set_long_striped)
 # event.listen(ArticleCompany, 'before_update', set_long_striped)
 # event.listen(ArticleCompany, 'before_insert', set_long_striped)
-

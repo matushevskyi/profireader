@@ -15,6 +15,7 @@
     <script>
     module.controller('portals_partners', function ($scope, $ok, $sce)  {
         angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portals_partners');
+        $scope.$$translate = {{ translates('portals_partners')|safe }};
         $scope.url_portals_partners = '{{ url_for('portal.portals_partners', company_id=company.id)}}';
         $scope.company_id = '{{ company.id|safe }}';
         $scope.url_search_for_portal = function () {
@@ -27,7 +28,6 @@
         $scope.selectedPortal = null;
         $scope.selectedPortal_sending = false;
         $scope.user_right = {{ rights_user_in|safe }}
-
 
         {% raw %}
 
@@ -67,7 +67,7 @@
 
         $scope.grid_action = function (id, action, row, column_name) {
             if(row.actions[action] == true){
-                return $ok($scope.url_change_status({company_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action}, function(resp){}).finally(function () {
+                return $ok($scope.url_change_status({partner_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action, who:row.who,company_id:$scope.company_id}, function(resp){}).finally(function () {
                     $scope.gridApi.grid.setGridData();
                 })
             }else{
