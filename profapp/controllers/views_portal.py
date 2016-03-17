@@ -448,9 +448,9 @@ def portals_partners_load(json, company_id):
 def portals_partners_change_status(json, partner_id, portal_id):
     partner = MemberCompanyPortal.get(portal_id=portal_id, company_id=partner_id)
     employee = UserCompany.get(company_id=json.get('company_id'))
+    action_for_status = UserCompany.ACTION_FOR_STATUSES_MEMBER if json.get('who') == 'member' else UserCompany.ACTION_FOR_STATUSES_MEMBERSHIP
     if partner.action_is_allowed(json.get('action'), employee,
-                                 UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
-                                 MemberCompanyPortal.ACTION_FOR_STATUS[json.get('who')][partner.status]):
+                                 action_for_status[partner.status]):
         partner.set_client_side_dict(
                 status=MemberCompanyPortal.STATUS_FOR_ACTION[json.get('action')])
         partner.save()

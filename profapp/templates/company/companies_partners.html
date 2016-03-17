@@ -26,7 +26,11 @@
         {% raw %}
 
         $scope.portal_link = function(link){
-            return 'http://' + link;
+            if(link){
+                return 'http://' + link;
+            }else{
+                return null
+            }
         };
 
         $scope.grid_update_row = function (updated_row) {
