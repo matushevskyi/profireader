@@ -482,99 +482,54 @@ class PRBase:
 
         return self
 
-    def set_image_client_dict(self, user_data, old_croped_image_id, folder_id):
-        type = user_data['type']
-        # 'none', 'browse', 'upload', 'old'
-        # 'old' old_croped_image_id
+    def set_image_cropped_file(self, user_data, old_croped_image_id, folder_id, params):
+        from ..models.files import File, ImageCroped
+        selected_by_user_type = user_data['type']
+        old_image_cropped = db(ImageCroped, croped_image_id=old_croped_image_id).first()
+        if selected_by_user_type == 'browse':
+            if old_image_cropped:
+                if user_data[
+                    'image_file_id'] == old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
+                        user_data['crop_coordinates'], params):
+                    return old_croped_image_id
+                elif user_data[
+                    'image_file_id'] == old_image_cropped.original_image_id and not old_image_cropped.same_coordinates(
+                        user_data['crop_coordinates'], params):
+                    original_image = File.get(user_data['image_file_id'])
+                    return original_image.update_croped_image(old_image_cropped, user_data['crop_coordinates'],
+                                                              folder_id, params)
+                else:
+                    original_image = File.get(user_data['image_file_id'])
+            else:
+                original_image = File.get(user_data['image_file_id'])
+            content = original_image.file_content.content
+            new_orginal_image = File.uploadLogo(content, original_image.name, original_image.mime, folder_id)
+        if old_image_cropped:
+            old_original_image = File.get(old_image_cropped.original_image_id)
+            if old_original_image:
+                old_original_image.delete()
+        if selected_by_user_type == 'none':
+            # todo: SS by OZ: is old file removed on this selection?
+            return None
+        if selected_by_user_type == 'upload':
+            imgdataContent = user_data['file']['content']
+            image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
+            content = base64.b64decode(image_data)
+            new_orginal_image = File.uploadLogo(content, user_data['file']['name'], user_data['file']['mime'],
+                                                folder_id)
+            if 'error' in File.check_image_mime(new_orginal_image.id):
+                resp = self.get_client_side_dict()
+                resp.update({'error': True})
+                return resp
+        return new_orginal_image.crop(user_data['crop_coordinates'], folder_id, params)
 
-        # if  type == 'old' && same coords
-        # return  old_croped_image_id
-
-        # remove old_croped_image_id
-        # .delete()
-
-
-        # if type in ['none', 'browse', 'upload']
-        # remove row from File (old_for_cropping_image_id) and by constrain ImageCroped
-
-        # if type === none
-        # return None
-
-        # if type == 'upload' or type == 'browse':
-        #   if type == 'upload':
-
-        #   if type == 'browse':
-
-        # File.uploadLogo(content, selected_logo['file']['name'], selected_logo['file']['type'],folder)
-
-        #     new row in newrow=ImageCroped
-        # return newrow.cropped_image_id
-        #
-        #
-        #
-        #
-        #
-        # from ..models.files import File, ImageCroped
-        # # old_logo_id = None
-        # cropped_image = None
-        #
-        # user_selection = image['selected_by_user']
-        # user_selection_type = user_selection['type']
-        #
-        #
-        #
-        # if user_selection_type == 'none':
-        #     # remove copy_for_cropping, return None
-        #     if old_croped_file_id:
-        #         ImageCroped.delete_cropped(old_logo_id)
-        #     def delete_cropped(old_logo_id):
-        # image_cropped = db(ImageCroped, croped_image_id=old_logo_id).first()
-        # image = File.get(image_cropped.original_image_id)
-        # image_cropped.delete()
-        #
-        # g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
-        #                      % image.id)
-        #
-        #
-        # elif user_selection_type == 'old':
-        #
-        # elif user_selection_type == 'browse':
-        #
-        # elif user_selection_type == 'upload':
-        #
-        # else:
-        #     pass
-        #
-        # if selected_logo['type'] == 'upload':
-        #     imgdataContent = selected_logo['file']['content']
-        #     image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
-        #     content = base64.b64decode(image_data)
-        #     old_logo_id = self.logo_file_id
-        #     cropped_image = File.uploadLogo(content, selected_logo['file']['name'], selected_logo['file']['type'],folder)
-        #     if 'error' in File.check_image_mime(cropped_image.id):
-        #         resp = self.get_client_side_dict()
-        #         resp.update({'error': True})
-        #         return resp
-        # if selected_logo['type'] == 'old':
-        #     cropped_image = File.get(fileID(image['selected_url']))
-        # if selected_logo['type'] == 'browse':
-        #     file = File.get(selected_logo['file_id'])
-        #     cropped_image = file.copy_file(folder)
-        #     old_logo_id=self.logo_file_id
-        # if cropped_image:
-        #     self.logo_file_id = File.crop(cropped_image, image['crop']['coordinates'], image['zoom'],self,{'image_size':(400, 300),'aspect_ratio':[0.5,1.5]})
-        # elif not cropped_image:
-        #     self.logo_file_id = None
-        # if old_logo_id:
-        #         ImageCroped.delete_cropped(old_logo_id)
-
-    def get_image_client_dict(self,
+    def get_image_cropped_file(self,
                               upload=None,
                               browse=True,
                               cropper={'aspect': False, 'min_size': [100, 100]},
                               crop_from_image_file=None,
                               preset_urls={},
-                              selected_by_user_type = 'none',
+                              selected_by_user_type='none',
                               no_selection_url=None):
 
         ret = {

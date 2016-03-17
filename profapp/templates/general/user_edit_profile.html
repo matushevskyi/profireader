@@ -5,6 +5,8 @@
 {% endblock head %}
 
 {% block portal_content %}
+    {% from 'macros.html' import scripts %}
+    {{ scripts(names=['cropper']) }}
     <script>
         module.controller('edit_user', ['$scope', function ($scope) {
             $scope.$$translate = {{ translates('edit_user')|safe }};
@@ -56,8 +58,8 @@
 
 
                 <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 profile-thumbnail">
-                    <div ng-model="data.avatar" pr-crop></div>
-
+                    <div style="width: 100%; height: 300px; position: relative" pr-crop="data.user
+                    .avatar"></div>
                 </div>
 
 

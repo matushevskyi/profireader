@@ -1,6 +1,6 @@
 from .blueprints_declaration import file_bp
 from flask import request, g, abort
-from ..models.files import File, FileContent, ImageCroped
+from ..models.files import File, FileContent
 from io import BytesIO
 from PIL import Image
 from time import gmtime, strftime
@@ -46,9 +46,8 @@ def file_query(table, file_id):
 @file_bp.route('<string:file_id>')
 def get(file_id):
     image_query = file_query(File, file_id)
-    image_query_content = g.db.query(FileContent).filter_by(id=file_id).first()
 
-    if not image_query or not image_query_content:
+    if not image_query:
         return abort(404)
 
     if 'HTTP_REFERER' in request.headers.environ:
@@ -57,6 +56,7 @@ def get(file_id):
         allowedreferrer = ''
 
     if allowed_referrers(allowedreferrer):
+        image_query_content = g.db.query(FileContent).filter_by(id=file_id).first()
         return send_file(BytesIO(image_query_content.content),
                          mimetype=image_query.mime, as_attachment=(request.args.get('d') is not None),
                          attachment_filename=urllib.parse.quote(

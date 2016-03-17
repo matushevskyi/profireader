@@ -12,35 +12,56 @@
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
 
+
     <script>
-    module.controller('company_partners', ['$scope', '$ok', '$sce', function ($scope, $ok, $sce)  {
+    module.controller('company_partners',  function ($scope, $ok, $uibModal)  {
         angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_partners');
         $scope.$$translate = {{translates('company_partners') | safe}};
         $scope.url_companies_partners = '{{ url_for('portal.companies_partners_load', company_id=company.id)
          }}';
         $scope.url_company_partner_details = {{ raw_url_for('portal.company_partner_update')| safe}};
         $scope.url_change_status = {{ raw_url_for('portal.portals_partners_change_status')|safe }};
+        $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
 
         {% raw %}
 
         $scope.portal_link = function(link){
-            return 'http://' + link;
+            if(link){
+                return 'http://' + link;
+            }else{
+                return null
+            }
+        };
+
+        $scope.grid_update_row = function (updated_row) {
+                console.log($scope, updated_row);
+//                    TODO: SS by OZ: how i can access grid data without data cariable in my scope?
+                $scope.grid_change_row($scope.data, updated_row);
         };
 
         $scope.grid_action = function (id, action, row, column_name) {
-            if(row.actions[action] == true){
-                return $ok($scope.url_change_status({company_id:row.member.company.id, portal_id:row.portal_id}) ,{action:action, who:'member',eployment_company:row.company_id}, function(resp){}).finally(function () {
-                    $scope.gridApi.grid.setGridData();
-                })
-            }else{
-                add_message(row.actions[action], 'danger', 3000)
+            if(column_name == 'actions'){
+               if (action === 'ALLOW') {
+                    window.location.href = $scope.url_company_partner_details({
+                        employeer_id: row.company_id, member_id:row.member.company.id
+                    });
+                    return;
+                }else{
+                  if(row.actions[action] == true){
+                        return $ok($scope.url_change_status({partner_id:row.member.company.id, portal_id:row.portal_id}) ,{action:action, who:row.who,company_id:row.company_id}, function(resp){}).finally(function () {
+                            $scope.gridApi.grid.setGridData();
+                        })
+                   }else{
+                        add_message(row.actions[action], 'danger', 3000)
+                   }
+               }
             }
         };
 
         $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
                         urlLoadGridData: $scope.url_companies_partners,
                         columnDefs: [
-                             {name: 'member.company.name', type: 'link',img:'member.company.logo_file_id', href: 'url_company_partner_details({employeer_id: row.entity.company_id,member_id:row.entity.member.company.id})'},
+                             {name: 'member.company.name', type: 'link',img:'member.company.logo_file_id', href: 'portal_link(row.entity.member.company.own_portal.host)'},
                              {name: 'member.status', filter: {type: 'multi_select',default_selected:true}},
                              {name: 'member.rights', width: '200', type: 'icons', afilter: {type: 'input'}},
                              {name: 'actions', width: '*', type: 'actions', onclick: 'grid_action', classes: function (id,
@@ -50,7 +71,7 @@
                         ]
                     });
         {% endraw %}
-    }])
+    })
     </script>
 
     {% raw %}
