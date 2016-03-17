@@ -211,7 +211,7 @@ class File(Base, PRBase):
         default_actions = {}
         # default_actions['choose'] = lambda file: None
         default_actions['download'] = lambda file: None if (
-        (file.mime == 'directory') or (file.mime == 'root')) else True
+            (file.mime == 'directory') or (file.mime == 'root')) else True
         if file_manager_called_for == 'file_browse_image':
             default_actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
             actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
@@ -474,7 +474,7 @@ class File(Base, PRBase):
         for file in files:
             attr['parent_id'] = new_id
             file_content = YoutubeVideo.get(file.id).detach() if file.mime == 'video/*' else FileContent.get(
-                file.id).detach()
+                    file.id).detach()
             file.detach().attr(attr)
             file.save()
             if file.mime == 'video/*':
@@ -677,6 +677,7 @@ class File(Base, PRBase):
 
     @staticmethod
     def check_aspect_ratio(coordinates, params):
+        # todo: SS by OZ: this function doesn't work
         width = coordinates['width']
         height = coordinates['height']
         if params['aspect_ratio'][0] * width > coordinates['height']:
@@ -708,15 +709,44 @@ class File(Base, PRBase):
     def crop_with_coordinates(self, coordinates, params):
         try:
             image_pil = Image.open(
-                BytesIO(self.file_content.content))  # create Pillow object from content of original picture
+                    BytesIO(self.file_content.content))  # create Pillow object from content of original picture
             area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],
                                      coordinates['height'])]  # convert dict of coordinates to list
-            if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)):  #
-                # if coordinates are not correctly, we make coordinates the same as image coordinates
-                area[0], area[1], area[2], area[3] = 0, 0, image_pil.width, image_pil.height
-            area[2] = (area[0] + area[2])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    RIGHT
-            area[3] = (area[1] + area[3])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
-            cropped = image_pil.crop(area).resize(params['image_size'])  # crop and resize image with area and size
+
+            left = min(max(0, area[0]), image_pil.width)
+            top = min(max(0, area[1]), image_pil.height)
+            right = max(min(area[0] + area[2], image_pil.width), area[0])
+            bottom = max(min(area[1] + area[3], image_pil.height) - area[1], area[1])
+
+            area_aspect = (right - left) / (bottom - top)
+            if params['aspect_ratio'][0] > params['aspect_ratio'][1]:
+                params['aspect_ratio'][0],params['aspect_ratio'][1] = params['aspect_ratio'][1], \
+                                                                      params['aspect_ratio'][0]
+            if params['aspect_ratio'] and params['aspect_ratio'][0] and area_aspect < params['aspect_ratio'][0]:
+                bottom -= ((bottom - top) - (right - left) / params['aspect_ratio'][0]) / 2
+                top += ((bottom - top) - (right - left) / params['aspect_ratio'][0]) / 2
+            elif params['aspect_ratio'] and params['aspect_ratio'][1] and area_aspect > params['aspect_ratio'][1]:
+                right -= ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
+                left += ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
+
+
+            wider = (right-left)/(top-bottom) / (params['image_size'][0]/params['image_size'][1])
+            if wider>1:
+                neww = params['image_size'][0]
+                newh = params['image_size'][1]/wider
+            else:
+                newh = params['image_size'][1]
+                neww = params['image_size'][0]*wider
+
+            # image_wider = loadedimg.width * $outer_container.height() / loadedimg.height / $outer_container.width()
+            # if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)):  #
+            #     # if coordinates are not correctly, we make coordinates the same as image coordinates
+            #     area[0], area[1], area[2], area[3] = 0, 0, image_pil.width, image_pil.height
+            # area[2] = (area[0] + area[2])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    RIGHT
+            # area[3] = (area[1] + area[3])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
+            cropped = image_pil.crop([left, top, right, bottom]).resize((neww, newh))  # crop and resize image
+            # with area and
+            # size
             bytes_file = BytesIO()  # create BytesIO object to save cropped image to Pillow object
             cropped.save(bytes_file, self.mime.split('/')[-1].upper())
             return bytes_file, area  # cropped bytes of file and area(coordinates)
@@ -807,8 +837,9 @@ class ImageCroped(Base, PRBase):
 
     def same_coordinates(self, coordinates, params):
         File.check_aspect_ratio(coordinates, params)
-        if (self.x == int(coordinates['x'])) and self.y == int(coordinates['y'])\
-                and (round(coordinates['width']) == self.croped_width and round(coordinates['height']) == self.croped_height):
+        if (self.x == int(coordinates['x'])) and self.y == int(coordinates['y']) \
+                and (round(coordinates['width']) == self.croped_width and round(
+                        coordinates['height']) == self.croped_height):
             return True
         else:
             return False

@@ -21,7 +21,7 @@ class TestCase(Base):
     @classmethod
     def setUpClass(cls):
         # cls.app = create_app(config='config.TestingConfig')
-        cls.app = create_app(host=args.host, front=args.front, config='config.TestingConfig')
+        cls.app = create_app(config='config.TestingConfig', apptype='profi')
         cls.client = cls.app.test_client()
         cls._ctx = cls.app.test_request_context()
         cls._ctx.push()
