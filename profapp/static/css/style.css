@@ -926,6 +926,22 @@ body {
   color: #fff;
   padding: 10px;
 }
+/*--- CREATE NEW MATERIALS ---*/
+.create-material {
+  margin-bottom: 100px;
+}
+.create-material .create-new-material {
+  margin-left: 0;
+}
+.create-material button.ng-binding {
+  background-color: #18B505;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  margin-top: 15px;
+  float: right;
+  padding: 10px 50px;
+}
 /* ---MEDIA--- */
 @media screen and (max-width: 1024px) {
   /* Specific to this particular image */

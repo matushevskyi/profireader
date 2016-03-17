@@ -232,9 +232,10 @@
 
     {% raw %}
 
-    <div ng-init="init()" ng-controller="article_edit">
+    <div ng-init="init()" ng-controller="article_edit" class="create-material">
+    <div class="row link-page create-new-material"><h5>{{ _(title) }}</h5></div></br>
         <form name="newMaterial">
-            <h1 class="nice-title">{{ _(title) }}<span></span></h1>
+            <!-- <h1 class="nice-title">{{ _(title) }}<span></span></h1> -->
 
             <div af af-amid-load="amidLoad" af-amid-save="amidSave" af-before-save="getData"
                  af-beforeValidate="getData" af-watch="data.article" ng-model="data">
@@ -244,7 +245,7 @@
                                             maybe layout selector is apporpriate here-->
                     {{ _('Article title') }}
                     <pr_help_tooltip>article_title</pr_help_tooltip>
-                    <input style="width: 100%" type="text" ng-model="data.article.title" name="article_title" ng-pattern="/[\wа-яёі']{3}/">
+                    <input class="form-control" style="width: 100%" type="text" ng-model="data.article.title" name="article_title" ng-pattern="/[\wа-яёі']{3}/">
                     <div ng-show="newMaterial.article_title.$error.pattern" class="error-input">
                         The title name should be longer!
                     </div>
@@ -252,10 +253,10 @@
                     {{ _('Article subtitle') }}
                     <pr_help_tooltip>article_subtitle</pr_help_tooltip> <span
                         af-validation-answer="data_validation:subtitle"></span>
-                    <input style="width: 100%" type="text" ng-model="data.article.subtitle">
+                    <input class="form-control" style="width: 100%" type="text" ng-model="data.article.subtitle">
 
                     {{ _('Keywords') }}
-                    <input style="width: 100%" ng-model="data.article.keywords" name="article_keywords" ng-pattern="/[\wа-яёі']{2}/">
+                    <input class="form-control" style="width: 100%" ng-model="data.article.keywords" name="article_keywords" ng-pattern="/[\wа-яёі']{2}/">
                     <div ng-show="newMaterial.article_keywords.$error.pattern" class="error-input">
                         The keywords should be longer!
                     </div>
@@ -275,7 +276,7 @@
                     <link href="//static.profireader.com/static/front/bird/css/article.css" rel="stylesheet">
 
                     {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
-                    <textarea style="width: 100%" placeholder="{{_('short')}}" ng-model="data.article.short"></textarea>
+                    <textarea class="form-control" style="width: 100%" placeholder="{{_('short')}}" ng-model="data.article.short"></textarea>
 
                     {{ _('Full text') }}
             <textarea ui-tinymce="tinymceImageOptions" style="width: 400px;"
@@ -289,9 +290,9 @@
                      ng-model="data.article.tags"></div>
 
                 <div class="update_col1">
-                    <button class="create_button" ng-disabled="!$af.isActionAllowed(data, 'save')"
-                            ng-click="$af.save(data)">&nbsp;<span style="color: green"
-                                                                  class="glyphicon glyphicon-save-file"></span>&nbsp;{{
+                    *Всі поля обов'язкові до заповнення
+                    <button  ng-disabled="!$af.isActionAllowed(data, 'save')"
+                            ng-click="$af.save(data)">&nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;{{
                         data.article.id ? _('save') : _('create') }}
                     </button>
                 </div>
