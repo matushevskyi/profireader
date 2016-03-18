@@ -76,7 +76,7 @@
     </script>
 
     {% raw %}
-    <div ng-controller="materials_list">
+    <div ng-controller="materials_list" ng-cloak>
         <h2>{{ _('Materials of company `%(company.name)s`')}}</h2>
         <a href="{{ url_material_create({company_id: company.id}) }}">{{ _('Create new material') }}</a>
         <div class="grid" id="grid1" ui-grid-edit ui-grid-grouping ui-grid-pagination ui-grid="gridOptions1">

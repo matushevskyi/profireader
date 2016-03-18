@@ -40,7 +40,7 @@
 
     {% raw %}
     <script type="text/ng-template" id="employment_action_dialog.html">
-        <div aaf ng-model="data" af-url="{{ url_submit_to_portal({'article_action': action}) }}"
+        <div ng-cloak aaf ng-model="data" af-url="{{ url_submit_to_portal({'article_action': action}) }}"
              af-after-save="afterSave"
              af-amid-load="amidLoad"
              af-watch="data.publication">

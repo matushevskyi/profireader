@@ -28,7 +28,7 @@
 
 {% block portal_content %}
 
-    <div class="container" ng-controller="UserLoginController">
+    <div class="container" ng-controller="UserLoginController" ng-cloak>
         <div class="row link-page"><h5>User profile</h5>
             <a title="edit" pr_test="EditProfile" href="{{ url_for('user.edit_profile', user_id=user.id) }}">
                 <i class="fa fa-pencil fa-2x"></i>
@@ -44,7 +44,8 @@
                         <h3 pr-test="UserProfiName">{{ user.profireader_name }}</h3>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Email:') }}</div>
-                            <div pr-test="UserProfiEmail" class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_email }}</div>
+                            <div pr-test="UserProfiEmail"
+                                 class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_email }}</div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Display name:') }}</div>
@@ -72,7 +73,8 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Web-page:') }}</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9"><span>{{ user.profireader_link or '' }}</span></div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">
+                                <span>{{ user.profireader_link or '' }}</span></div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Phone:') }}</div>

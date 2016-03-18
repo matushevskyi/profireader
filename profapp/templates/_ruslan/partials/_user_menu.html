@@ -82,7 +82,7 @@
 </script>
 {% raw %}
 <nav ng-init="tos()" ng-controller="UserLoginController" class="navbar navbar-fixed-top nav-bg">
-    <div class="container">
+    <div class="container" ng-cloak>
 
         <div class="row">
             <button pr-test="HeaderAcceptLicence" type="button" ng-click="tos()" class="btn btn-info btn-lg" ng-if="user.id && !user.tos">{{ _('Accept licence') }}</button>

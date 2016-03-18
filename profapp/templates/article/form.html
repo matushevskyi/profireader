@@ -63,11 +63,11 @@
             {% endif %}
 
             tinyArticleOptions['formats'] =
-                    _.chain($.extend({}, {{ tinymce_format_groups()|tojson }}, custom_formats)). // here we have dict in form {group_label: {format: format_properties}}
-                    reduce(_.extend, {}). // flatten groups
+                    _.chain($.extend({}, {{ tinymce_format_groups()|tojson }}, custom_formats)).// here we have dict in form {group_label: {format: format_properties}}
+                    reduce(_.extend, {}).// flatten groups
                     map(function (format_properties, format_name) { // convert each format to tinymce in flat dictionary
                         return [format_name, convert_python_format_to_tinymce_format(format_properties)]; // form list of [key, val] pairs
-                    }).object(). // convert each [key, val] pair to {key: val} element
+                    }).object().// convert each [key, val] pair to {key: val} element
                     value(); // get result
 
             tinyArticleOptions['pr_formats'] = _.size(custom_formats) ? get_array_for_menu_build(custom_formats) : [];
@@ -232,63 +232,72 @@
 
     {% raw %}
 
-    <div ng-init="init()" ng-controller="article_edit">
-        <h1 class="nice-title">{{ _(title) }}<span></span></h1>
+    <div ng-init="init()" ng-controller="article_edit" ng-cloak class="create-material">
+    <div class="row link-page create-new-material"><h5>{{ _(title) }}</h5></div></br>
+        <form name="newMaterial">
+            <!-- <h1 class="nice-title">{{ _(title) }}<span></span></h1> -->
 
-        <div af af-amid-load="amidLoad" af-amid-save="amidSave" af-before-save="getData"
-             af-beforeValidate="getData" af-watch="data.article" ng-model="data">
+            <div af af-amid-load="amidLoad" af-amid-save="amidSave" af-before-save="getData"
+                 af-beforeValidate="getData" af-watch="data.article" ng-model="data">
 
-            <div class="update_col1">
-                <!-- TODO: OK by OZ:   this block form should share same classes with layout to look MAXIMUM like in portal
-                                        maybe layout selector is apporpriate here-->
-                {{ _('Article title') }}
-                <pr_help_tooltip>article_title</pr_help_tooltip> <span
-                    af-validation-answer="data_validation:title"></span>
-                <input style="width: 100%" type="text" ng-model="data.article.title">
+                <div class="update_col1">
+                    <!-- TODO: OK by OZ:   this block form should share same classes with layout to look MAXIMUM like in portal
+                                            maybe layout selector is apporpriate here-->
+                    {{ _('Article title') }}
+                    <pr_help_tooltip>article_title</pr_help_tooltip>
+                    <input class="form-control" style="width: 100%" type="text" ng-model="data.article.title" name="article_title" ng-pattern="/[\wа-яёі']{3}/">
+                    <div ng-show="newMaterial.article_title.$error.pattern" class="error-input">
+                        The title name should be longer!
+                    </div>
 
-                {{ _('Article subtitle') }}
-                <pr_help_tooltip>article_subtitle</pr_help_tooltip> <span
-                    af-validation-answer="data_validation:subtitle"></span>
-                <input style="width: 100%" type="text" ng-model="data.article.subtitle">
+                    {{ _('Article subtitle') }}
+                    <pr_help_tooltip>article_subtitle</pr_help_tooltip> <span
+                        af-validation-answer="data_validation:subtitle"></span>
+                    <input class="form-control" style="width: 100%" type="text" ng-model="data.article.subtitle">
 
-                {{ _('Keywords') }} <span af-validation-answer="data_validation:keywords"></span>
-                <input style="width: 100%" ng-model="data.article.keywords"/>
-            </div>
-
-
-            <div class="update_col1">
-                {{ _('Select picture') }}
-                <div ng-model="data.image" pr-cropper pr-company-id="{{ data.article.company.id }}"></div>
-            </div>
+                    {{ _('Keywords') }}
+                    <input class="form-control" style="width: 100%" ng-model="data.article.keywords" name="article_keywords" ng-pattern="/[\wа-яёі']{2}/">
+                    <div ng-show="newMaterial.article_keywords.$error.pattern" class="error-input">
+                        The keywords should be longer!
+                    </div>
+                </div>
 
 
-            <div class="update_col1">
-                <!-- TODO: OZ by OZ move this code to one file -->
-                <link href="//static.profireader.com/static/css/article.css" rel="stylesheet">
-<!-- TODO: OZ by OZ: select css for current theme. also look for another place with same todo-->
-                <link href="//static.profireader.com/static/front/bird/css/article.css" rel="stylesheet">
+                <div class="update_col1">
+                    {{ _('Select picture') }}
+                    <div ng-model="data.image" pr-cropper pr-company-id="{{ data.article.company.id }}"></div>
+                </div>
 
-                {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
-                <textarea style="width: 100%" placeholder="{{_('short')}}" ng-model="data.article.short"></textarea>
 
-                {{ _('Full text') }}
+                <div class="update_col1">
+                    <!-- TODO: OZ by OZ move this code to one file -->
+                    <link href="//static.profireader.com/static/css/article.css" rel="stylesheet">
+                    <!-- TODO: OZ by OZ: select css for current theme. also look for another place with same todo-->
+                    <link href="//static.profireader.com/static/front/bird/css/article.css" rel="stylesheet">
+
+                    {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
+                    <textarea class="form-control" style="width: 100%" placeholder="{{_('short')}}" ng-model="data.article.short"></textarea>
+
+                    {{ _('Full text') }}
             <textarea ui-tinymce="tinymceImageOptions" style="width: 400px;"
                       ng-model="data.article.long"></textarea>
 
-            </div>
+                </div>
 
-            <!-- TODO: AA by OZ -->
-            <div ng-if="data.article.division" class="update_col1" pr-tags="data['portal_division']['availableTags']"
-                 ng-model="data.article.tags"></div>
+                <!-- TODO: AA by OZ -->
+                <div ng-if="data.article.division" class="update_col1"
+                     pr-tags="data['portal_division']['availableTags']"
+                     ng-model="data.article.tags"></div>
 
-            <div class="update_col1">
-                <button class="create_button" ng-disabled="!$af.isActionAllowed(data, 'save')"
-                        ng-click="$af.save(data)">&nbsp;<span style="color: green"
-                                                              class="glyphicon glyphicon-save-file"></span>&nbsp;{{
-                    data.article.id ? _('save') : _('create') }}
-                </button>
+                <div class="update_col1">
+                    *Всі поля обов'язкові до заповнення
+                    <button  ng-disabled="!$af.isActionAllowed(data, 'save')"
+                            ng-click="$af.save(data)">&nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;{{
+                        data.article.id ? _('save') : _('create') }}
+                    </button>
+                </div>
             </div>
-        </div>
+        </form>
     </div>
     {% endraw %}
 
