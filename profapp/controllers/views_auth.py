@@ -5,6 +5,7 @@ from ..constants.SOCIAL_NETWORKS import DB_FIELDS, SOC_NET_FIELDS, \
 from flask.ext.login import logout_user, current_user, login_required
 from urllib.parse import quote
 from ..models.users import User
+from utils.db_utils import db
 from ..controllers.request_wrapers import tos_required
 from ..forms.auth import LoginForm, RegistrationForm, ChangePasswordForm, \
     PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm
@@ -19,6 +20,8 @@ from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
 from ..utils.redirect_url import redirect_url
 from utils.pr_email import SendEmail
 from .request_wrapers import ok
+from datetime import datetime
+import time
 # def _session_saver():
 #    session.modified = True
 
@@ -118,7 +121,7 @@ def before_request():
 
 @auth_bp.route('/unconfirmed')
 def unconfirmed():
-    if current_user.is_anonymous() or current_user.confirmed:
+    if current_user.confirmed:
         return redirect(url_for('general.index'))
     return render_template('auth/unconfirmed.html')
 
@@ -173,10 +176,14 @@ def signup():
         )
         user.avatar('gravatar', size=AVATAR_SIZE, small_size=AVATAR_SMALL_SIZE)
         # # user.password = signup_form.password.data  # pass is automatically hashed
+        token = user.generate_confirmation_token()
+        user.email_conf_token = token.decode("utf-8")
+        print(token)
 
+        user.email_conf_tm = datetime.today()
         g.db.add(user)
         g.db.commit()
-        token = user.generate_confirmation_token()
+
         SendEmail().send_email(subject='Confirm Your Account', template='auth/email/confirm',
                                send_to=(user.profireader_email, ), user=user, token=token)
         flash('A confirmation email has been sent to you by email.')
@@ -268,16 +275,54 @@ def logout():
 
 
 @auth_bp.route('/confirm/<token>')
-@login_required
 def confirm(token):
-    if current_user.confirmed:
-        return redirect(url_for('general.index'))
-    if current_user.confirm(token):
-        flash('You have confirmed your account. Thanks!')
-        return redirect(url_for('help.help'))
+
+    user = db(User, email_conf_token=token).first()
+    if not user:
+        return render_template("auth/unconfirmed.html", message='Please confirm Your account before proceed!')
+    elif not user.email_conf_tm.timestamp() > \
+                    int(time.time()) - current_app.config.get('EMAIL_CONFIRMATION_TOKEN_TTL', 3600*24):
+        return render_template("auth/unconfirmed.html", email=user.profireader_email)
+    elif user.confirmed:
+        return render_template("error.html", message='Your account has been already confirmed!')
     else:
-        flash('The confirmation link is invalid or has expired.')
-    return redirect(url_for('general.index'))
+        logout_user()
+        user.confirmed = True
+        user.save()
+        login_user(user)
+        return render_template("auth/confirmed.html")
+
+
+    # if
+    # elif user.confirm(token):
+    #     message = 'bla bla'
+    #     return render_template("errors/404.html", message=message)
+    # else:
+    #     message = 'The confirmation link is invalid or has expired.'
+    #     return render_template("errors/403.html", message=message)
+    # return redirect(url_for('errors/403.html'))
+
+
+    # user = db(User, email_conf_token=token).first()
+    # if user and user.confirmed:
+    #
+    #     message = 'Congratulations!'
+    #     print(message)
+    #     return render_template("auth/confirmed.html", message=message)
+    #
+    # elif user:
+    #     if user.confirm(token):
+    #         message = 'bla bla'#поправити
+    #         # logout/login=user
+    #         return render_template("auth/confirmed.html", message=message)
+    #     else:
+    #         message = 'The confirmation link is invalid or has expired.'
+    #         return render_template("errors/404.html", message=message)
+    # else:
+    #     message = 'The confirmation link is invalid or has expired.'
+    #     return render_template("errors/403.html", message=message)
+
+
 
 
 @auth_bp.route('/tos', methods=['POST'])
@@ -292,6 +337,8 @@ def tos(json):
 @login_required
 def resend_confirmation():
     token = current_user.generate_confirmation_token()
+    current_user.email_conf_token = token.decode("utf-8")
+    current_user.save()
     SendEmail().send_email(subject='Confirm Your Account', template='auth/email/confirm',
                            send_to=(current_user.profireader_email, ), user=current_user, token=token)
     flash('A new confirmation email has been sent to you by email.')

@@ -16,7 +16,7 @@
         }]);
     </script>
     {% raw %}
-    <div ng-init="loadData()" ng-controller="fired">
+    <div ng-init="loadData()" ng-controller="fired" ng-cloak>
         <div ng-if="data==''"><h2>{{_('There are not fired employees in this company')}}</h2></div>
         <div ng-repeat="emplo in data">
             <dt><img src="{{ emplo.employee.profireader_small_avatar_url }}">

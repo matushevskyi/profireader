@@ -15,11 +15,13 @@
 {#    </script>#}
 <h3 ng-controller="UserLoginController">{{ _('or Simple registration') }}</h3>
 
-<form class="register-form-profirider" action="{{ url_for('auth.signup') }}" method="post">
-    <input pr-test="RegEmail" class="form-control" type="email" placeholder="email" required name="email">
+<form name="formLogin" class="register-form-profirider" action="{{ url_for('auth.signup') }}" method="post">
+    <input pr-test="RegEmail" class="form-control" type="email" placeholder="email" required name="email" ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/">
+        <div ng-show="formLogin.email.$error.pattern" class="error-input">The email not validate!</div>
     <input pr-test="RegName" class="form-control" type="text" placeholder="display name" required name="display_name">
     <input pr-test="RegPass" class="form-control" type="password" placeholder="password" required name="password">
-    <input pr-test="RegRepeatPass" class="form-control" type="password" placeholder="repeat password" required name="password1">
+    <input pr-test="RegRepeatPass" class="form-control" type="password" placeholder="repeat password" required
+           name="password1">
     <input pr-test="RegSubmit" class="sabmit-form" type="submit">
 </form>
 

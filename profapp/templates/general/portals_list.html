@@ -54,7 +54,7 @@
     </script>
 
     {% raw %}
-    <div class="container serch-portal" ng-controller="portals_list" ng-init="search_for_portal()">
+    <div class="container serch-portal" ng-controller="portals_list" ng-init="search_for_portal()" ng-cloak>
         <div class="row">
             <h2>{{ _('Please, search and subscribe to any portal') }}</h2>
         </div>
@@ -67,7 +67,7 @@
         </div>
         <div class="row">
             <h4 ng-if="data.list_portals.length==0 && search_text.length>0" style="color: red">{{ _('For your search no
-            results!') }}</h4>
+                results!') }}</h4>
         </div>
         <div ng-repeat="portal in data.list_portals" class="row block-portal">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-6">
