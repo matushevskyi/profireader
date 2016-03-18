@@ -275,12 +275,16 @@ class File(Base, PRBase):
                                              str_size=str_size),
                                      parent_id=self.parent_id,
                                      root_folder_id=self.root_folder_id,
-                                     mime=self.mime.split('/')[0] + '/thumbnail',
-                                     thumbnail_id=self.id)
-                    FileContent(content=bytes_file.getvalue(), file=thumbnail)
-                    self.thumbnail.append(thumbnail)
-                    g.db.add(thumbnail)
+                                     mime=self.mime.split('/')[0] + '/thumbnail').save()
+                    content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
+                    g.db.add_all([thumbnail, content])
                     g.db.flush()
+                    ImageCroped(original_image_id=self.id,
+                            croped_image_id=thumbnail.id,
+                            width=image_pil.width,
+                            height=image_pil.height).save()
+
+
                 except Exception as e:  # truncated png/gif
                     # from ..controllers.errors import BadFormatFile
                     self.remove()
@@ -692,7 +696,6 @@ class File(Base, PRBase):
 
     @staticmethod
     def get_correct_coordinates(left, top, right, bottom, params):
-        print(left, top, right, bottom)
         area_aspect = (right - left) / (bottom - top)
         if params['aspect_ratio'][0] > params['aspect_ratio'][1]:
             params['aspect_ratio'][0],params['aspect_ratio'][1] = params['aspect_ratio'][1], \
@@ -703,7 +706,6 @@ class File(Base, PRBase):
         elif params['aspect_ratio'] and params['aspect_ratio'][1] and area_aspect > params['aspect_ratio'][1]:
             right -= ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
             left += ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
-        print(left, top, right, bottom)
         return left, top, right, bottom
 
     def crop_with_coordinates(self, coordinates, params):

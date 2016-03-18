@@ -486,6 +486,7 @@ class PRBase:
         from ..models.files import File, ImageCroped
         selected_by_user_type = user_data['type']
         old_image_cropped = db(ImageCroped, croped_image_id=old_croped_image_id).first()
+        print(user_data, old_croped_image_id)
         if selected_by_user_type == 'browse':
             if old_image_cropped:
                 if user_data[
