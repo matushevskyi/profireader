@@ -60,17 +60,6 @@
                     <div class="item-short-content">
                         <p>{{ article.short}}</p>
                 </h3>
-                <div class="item-short-content">
-                    <p>{{ article.short}}</p>
-                </div>
-                <div class="row">
-                    <div pr-test="AddToFavoriteButton" style="cursor: pointer"
-                         class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5"
-                         ng-click="add_to_favorite(article)">
-                        <i pr-like="NotFavorite" ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i pr-like="IsFavorite" ng-if="article.is_favorite"
-                                                                                     class="fa fa-heart"></i> {{
-                        _('Favorite') }}
-                    </div>
                     <div class="row">
                         <div style="cursor: pointer"
                              class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5"
