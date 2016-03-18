@@ -379,6 +379,19 @@ class User(Base, UserMixin, PRBase):
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
                 url=url, hash=hash, size=size, default=default, rating=rating)
 
+
+    def set_image_client_dict(self, image):
+        if image['selected_by_user']['type'] == 'preset':
+            if image['selected_by_user']['class'] == 'glyphicon-remove-circle':
+                image['selected_by_user']['type'] = 'none'
+            else:
+                raise ValueError("passed unknow preset class `{}`".format(image['selected_by_user']['class']))
+
+        self.avatar_file_id = PRBase.set_image_cropped_file(self, image['selected_by_user'],
+                                                          self.avatar_file_id, self.system_folder_file_id,
+                                                          params={'image_size': (245, 245), 'aspect_ratio': [0.5, 2.0]})
+        return self
+
     def get_image_client_dict(self):
 
         noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())

@@ -50,23 +50,19 @@ def edit_profile(user_id):
 def edit_profile_load(json, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
-    # user_query = db(User, id=user_id)
-
-
-    # user = user_query.first()
-
     if action == 'load':
         ret = {'user': g.user.get_client_side_dict(), 'languages': Config.LANGUAGES,
                'countries': Country.get_countries()}
         ret['user']['avatar'] = g.user.get_image_client_dict()
         return ret
     else:
+        print(json)
         g.user.updates(json['user'])
         if action == 'validate':
             g.user.detach()
             return g.user.validate(False)
         else:
-            g.user.save()
+            g.user.set_image_client_dict(json['user']['avatar']).save()
             ret = {'user': g.user.get_client_side_dict()}
             ret['user']['avatar'] = g.user.get_image_client_dict()
             return ret
