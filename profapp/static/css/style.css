@@ -1,4 +1,12 @@
 /* ---In All syte--- */
+[ng\:cloak],
+[ng-cloak],
+[data-ng-cloak],
+[x-ng-cloak],
+.ng-cloak,
+.x-ng-cloak {
+  display: none !important;
+}
 body {
   padding-top: 100px;
 }

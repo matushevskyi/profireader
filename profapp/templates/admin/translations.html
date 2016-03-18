@@ -179,7 +179,7 @@
         }
     </style>
     <div ng-controller="translation_list">
-        <div class="grid" id="grid1" ui-grid-pagination ui-grid-selection ui-grid-edit ui-grid="gridOptions1"></div>
+        <div ng-cloak class="grid" id="grid1" ui-grid-pagination ui-grid-selection ui-grid-edit ui-grid="gridOptions1"></div>
         <a ng-show="load_contr" class="btn btn-danger"
            ng-class="{'disabled': ( isSelectedRows === false )}" style="text-align: center"
            ng-click="showModalDelete()">{{ _('Delete selected rows') }}</a>

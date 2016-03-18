@@ -16,14 +16,14 @@
             $scope.employer = {{ employer|tojson|safe }};
             $scope.employment = {{ employment|tojson|safe }};
             $scope.user_right = {{ user_right_in|safe }}
-            $scope.url_company_employee_update = {{ raw_url_for('company.employee_update')|safe }};
+                    $scope.url_company_employee_update = {{ raw_url_for('company.employee_update')|safe }};
             $scope.update = function () {
-                if($scope.user_right){
+                if ($scope.user_right) {
                     window.location.href = $scope.url_company_employee_update({
                         'company_id': $scope.employer.id,
                         'user_id': $scope.employee.id
                     });
-                }else{
+                } else {
                     add_message('Sorry!!!You haven\'t got  appropriate rights!', 'danger', 8000)
                 }
             }
@@ -32,7 +32,7 @@
     </script>
     {% raw %}
 
-    <div  ng-controller="company_employee_details">
+    <div ng-controller="company_employee_details" ng-cloak>
 
         <h2>
             <img class="person-small-cover" pr-image pr-no-image="{{ employee.profireader_small_avatar_url }}"/>
@@ -44,9 +44,12 @@
         {{ _('position') }} {{ employment.position }}<br>
         {{ _('permissions') }}<br>
         <div ng-class="{disabled: !permitted}" ng-repeat="(right_name, permitted) in employment.rights">
-            <i class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"></i>{{ right_name }}
+            <i class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"></i>{{
+            right_name }}
         </div>
-        <button pr-user-rights="user_right" class="btn fr" type="button" ng-click="update()">{{ _('Update employment') }}</button>
+        <button pr-user-rights="user_right" class="btn fr" type="button" ng-click="update()">{{ _('Update employment')
+            }}
+        </button>
     </div>
 
     {% endraw %}

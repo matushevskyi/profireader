@@ -10,7 +10,7 @@
 
 {% block portal_content %}
 
-<div class="container" ng-controller="UserLoginController">
+<div class="container" ng-controller="UserLoginController" ng-cloak>
     <h1 class="nice-title">Hello, {{ current_user.profireader_name }}!<span></span></h1>
     <h3 pr-test="UnConfirmedYet">{{ _('You have not confirmed your account yet') }}.</h3>
     <p>

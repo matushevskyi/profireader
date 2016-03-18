@@ -15,10 +15,10 @@
     ;
 </script>
 {% block portal_content %}
-    <div class="link-page">
+    <div class="link-page" ng-cloak>
         <h5>{{ _('Help page') }}</h5>
     </div>
-    <form name="formHelp" class="help-page" ng-model="data">
+    <form ng-cloak name="formHelp" class="help-page" ng-model="data">
         <h3>{{ __('Надішліть нам повідомлення') }}<br>
             <small>{{ __('Адміністратор сайту зв’яжеться з Вами') }}</small>
         </h3>

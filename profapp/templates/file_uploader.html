@@ -46,7 +46,7 @@ app.controller('MyCtrl', ['$scope', 'Upload', '$timeout', function ($scope, Uplo
 }]);
 </script>
 {% raw %}
-<body ng-app="fileUpload" ng-controller="MyCtrl">
+<body ng-app="fileUpload" ng-controller="MyCtrl" ng-cloak>
   <h4>Upload on file select</h4>{{ resp }}
   <button type="file" ngf-select="uploadUsingUpload($file)" ngf-max-size="10000MB">
       Select File</button>

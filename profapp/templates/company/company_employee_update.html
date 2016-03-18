@@ -17,7 +17,7 @@
             $scope.after_save = function () {
                 window.location.href = $scope.url_company_employee_list({
                     'company_id': $scope.data.employer.id
-{#                    'user_id': $scope.data.employee.id#}
+                    {#                    'user_id': $scope.data.employee.id#}
                 });
             };
 
@@ -26,8 +26,8 @@
     </script>
     {% raw %}
 
-    <div ng-controller="company_employee_update">
-        <div style="text-align: center" ng-if="!user_right"><h2>Sorry!!!You haven't got  appropriate rights!</h2></div>
+    <div ng-controller="company_employee_update" ng-cloak>
+        <div style="text-align: center" ng-if="!user_right"><h2>Sorry!!!You haven't got appropriate rights!</h2></div>
         <div af af-after-save="after_save" af-watch="data.employment" ng-model="data" pr-user-rights="user_right">
             <h2>
                 <img class="person-small-cover" pr-image
