@@ -38,7 +38,7 @@
     </script>
 
     {% raw %}
-    <div ng-controller="edit_user" class="container">
+    <div ng-controller="edit_user" class="container" ng-cloak>
         <div af
              af-after-save="afterSave"
              af-amid-load="amidLoad" class="edit_user_profile" ng-model="data">
@@ -64,7 +64,7 @@
 
 
                 <form name="formUser" class="col-lg-8 col-md-8 col-sm-8 col-xs-8 edit-grup">
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <!--<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your display name') }}</span>
                         <input pr-validation-answer="data_validation:profireader_name" class="form-control"
                                aria-describedby="sizing-addon1" type="text" placeholder="name"
@@ -73,12 +73,8 @@
                         <div ng-show="formUser.profireader_name.$error.pattern" class="error-input">The
                             user name should be longer!
                         </div>
-                    </div>
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your email') }}</span>
-                        <input class="form-control" aria-describedby="sizing-addon1" type="text" disabled="disabled"
-                               placeholder="youremail@example.com" ng-model="data.user.profireader_email">
-                    </div>
+                    </div>-->
+
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name') }}</span>
                         <input pr-validation-answer="data_validation:profireader_first_name" class="form-control"
@@ -98,6 +94,11 @@
                         <div ng-show="formUser.profireader_last_name.$error.pattern" class="error-input">The
                             user name should be longer!
                         </div>
+                    </div>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your email') }}</span>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text" disabled="disabled"
+                               placeholder="youremail@example.com" ng-model="data.user.profireader_email">
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Birthday') }}</span>
