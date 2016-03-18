@@ -267,6 +267,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 };
 
                 var $image = $('img', element);
+                var $outer_container = $('.img-container', element);
+                var $inner_container = $('.img-container-cropper', element);
 
                 scope.fileUploaded = function (event) {
                     var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
@@ -306,10 +308,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
 
                     var options = {};
-
-                    var $outer_container = $('.img-container', element);
-                    var $inner_container = $('.img-container-cropper', element);
-
 
                     var image_wider = loadedimg.width * $outer_container.height() / loadedimg.height / $outer_container.width()
                     if (image_wider > 1) {
@@ -420,8 +418,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 var restartCropper = function (src, new_selection_by_user) {
                     var fr = new Image();
                     fr.addEventListener('load', function (e) {
+                        console.log('2')
 
                         //$image.hide();
+                        $outer_container.removeClass('loading');
+                        $outer_container.addClass('cropper-bg');
+                        $inner_container.show();
 
                         try {
                             var options = resizeContainer(fr);
@@ -460,9 +462,18 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         }
                     }, false);
                     fr.addEventListener('error', function (e) {
+                        console.log('3')
+                        $outer_container.removeClass('loading');
+                        $outer_container.addClass('cropper-bg');
+                            $inner_container.show();
                             add_message('Image loading error', 'warning');
                         }
                     );
+                    $inner_container.hide();
+                    //debugger;
+                    //$timeout(function () {fr.src = src},1000)
+                    $outer_container.removeClass('cropper-bg');
+                    $outer_container.addClass('loading');
                     fr.src = src;
                 }
 
