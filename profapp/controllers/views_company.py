@@ -287,7 +287,7 @@ def load(json, company_id=None):
     if action == 'load':
         company_dict = company.get_client_side_dict()
         company_dict['logo'] = company.get_image_client_dict()
-        company_dict['actions'] = {'edit': True if company_id or UserCompany.get(
+        company_dict['actions'] = {'edit': True if company_id and UserCompany.get(
                 company_id=company_id).rights['PORTAL_EDIT_PROFILE'] else False}
         return company_dict
     else:
