@@ -275,12 +275,16 @@ class File(Base, PRBase):
                                              str_size=str_size),
                                      parent_id=self.parent_id,
                                      root_folder_id=self.root_folder_id,
-                                     mime=self.mime.split('/')[0] + '/thumbnail',
-                                     thumbnail_id=self.id)
-                    FileContent(content=bytes_file.getvalue(), file=thumbnail)
-                    self.thumbnail.append(thumbnail)
-                    g.db.add(thumbnail)
+                                     mime=self.mime.split('/')[0] + '/thumbnail').save()
+                    content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
+                    g.db.add_all([thumbnail, content])
                     g.db.flush()
+                    ImageCroped(original_image_id=self.id,
+                            croped_image_id=thumbnail.id,
+                            width=image_pil.width,
+                            height=image_pil.height).save()
+
+
                 except Exception as e:  # truncated png/gif
                     # from ..controllers.errors import BadFormatFile
                     self.remove()
@@ -688,10 +692,10 @@ class File(Base, PRBase):
         old_image_cropped.croped_width = int(area[2]-area[0])
         old_image_cropped.croped_height = int(area[3]-area[1])
         old_image_cropped.zoom = coordinates['zoom']
-        return new_cropped_image
+        return new_cropped_image.save()
 
     @staticmethod
-    def check_aspect_ratio(left, top, right, bottom, params):
+    def get_correct_coordinates(left, top, right, bottom, params):
         area_aspect = (right - left) / (bottom - top)
         if params['aspect_ratio'][0] > params['aspect_ratio'][1]:
             params['aspect_ratio'][0],params['aspect_ratio'][1] = params['aspect_ratio'][1], \
@@ -713,7 +717,7 @@ class File(Base, PRBase):
             right = max(min(coordinates['x'] + coordinates['width'], image_pil.width), coordinates['x'])
             bottom = max(min(coordinates['y'] + coordinates['height'], image_pil.height), coordinates['y'])
 
-            left, top, right, bottom = File.check_aspect_ratio(left, top, right, bottom, params)
+            left, top, right, bottom = File.get_correct_coordinates(left, top, right, bottom, params)
 
             wider = (right-left)/(bottom-top) / (params['image_size'][0]/params['image_size'][1])
             if wider>1:
@@ -726,7 +730,7 @@ class File(Base, PRBase):
             cropped = cropped.resize((int(neww), int(newh)))
             bytes_file = BytesIO()
             cropped.save(bytes_file, self.mime.split('/')[-1].upper())
-            return bytes_file, [left, top,right, bottom, int(image_pil.width), int(image_pil.height)]
+            return bytes_file, [left, top, right, bottom, int(image_pil.width), int(image_pil.height)]
         except ValueError:
             return False
 
@@ -813,7 +817,7 @@ class ImageCroped(Base, PRBase):
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
     def same_coordinates(self, coordinates, params):
-        left, top, right, bottom = File.check_aspect_ratio(coordinates['x'], coordinates['y'], (coordinates['x'] + coordinates['width']),
+        left, top, right, bottom = File.get_correct_coordinates(coordinates['x'], coordinates['y'], (coordinates['x'] + coordinates['width']),
                                                            (coordinates['y'] + coordinates['height']), params)
         if (round(self.x) == round(left)) and round(self.y) == round(top) \
                 and (int(right-left) == self.croped_width and int(bottom-top)
