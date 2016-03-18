@@ -1,4 +1,12 @@
 /* ---In All syte--- */
+[ng\:cloak],
+[ng-cloak],
+[data-ng-cloak],
+[x-ng-cloak],
+.ng-cloak,
+.x-ng-cloak {
+  display: none !important;
+}
 body {
   padding-top: 100px;
 }
@@ -582,6 +590,9 @@ body {
 .pr-validation-notice {
   border-color: #f44336;
 }
+.error-input {
+  color: #ff0000;
+}
 /* ---Subscriptions--- */
 .submit-subscriptions input {
   width: 100%;
@@ -922,6 +933,22 @@ body {
   background-color: rgba(255, 0, 0, 0.47);
   color: #fff;
   padding: 10px;
+}
+/*--- CREATE NEW MATERIALS ---*/
+.create-material {
+  margin-bottom: 100px;
+}
+.create-material .create-new-material {
+  margin-left: 0;
+}
+.create-material button.ng-binding {
+  background-color: #18B505;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  margin-top: 15px;
+  float: right;
+  padding: 10px 50px;
 }
 /* ---MEDIA--- */
 @media screen and (max-width: 1024px) {

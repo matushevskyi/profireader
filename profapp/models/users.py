@@ -377,6 +377,26 @@ class User(Base, UserMixin, PRBase):
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
                 url=url, hash=hash, size=size, default=default, rating=rating)
 
+
+    def set_image_client_dict(self, image):
+        if image['selected_by_user']['type'] == 'preset':
+            image['selected_by_user']['type'] = 'none'
+            if image['selected_by_user']['class'] == 'glyphicon-remove-circle':
+                self.profireader_avatar_url = image['preset_urls'][image['selected_by_user']['class']]
+            elif image['selected_by_user']['class'] == 'glyphicon glyphicon-share':
+                self.profireader_avatar_url = image['preset_urls'][image['selected_by_user']['class']]
+                self.profireader_small_avatar_url = self.gravatar(size=100)
+            else:
+                raise ValueError("passed unknow preset class `{}`".format(image['selected_by_user']['class']))
+
+        self.avatar_file_id = PRBase.set_image_cropped_file(self, image['selected_by_user'],
+                                                          self.avatar_file_id, self.system_folder_file_id,
+                                                          params={'image_size': (500, 500), 'aspect_ratio': [0.5, 2.0]})
+        if self.avatar_file_id:
+            self.profireader_avatar_url = fileUrl(self.avatar_file_id)
+            self.profireader_small_avatar_url = fileUrl(File.get(self.avatar_file_id).get_thumbnails((133,100)).id)
+        return self
+
     def get_image_client_dict(self):
 
         noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())

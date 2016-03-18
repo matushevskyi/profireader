@@ -82,29 +82,31 @@
     {% raw %}
 
     <div ng-init="loadData()" ng-controller="article_my_versions">
-        <div ng-if="loading">{{ _('Loading...') }}</div>
-        <div ng-if="!loading">
-            <h2>{{ _('Article title is `%(data.mine_version.title)s`') }}</h2>
-            {{ data.mine_version.short }}
-            <h4>{{ _('Created at %(data.mine_version.cr_tm)s') }}</h4>
-            <h4>{{ _('Last modified at %(data.mine_version.md_tm)s') }} [<a
-                    href="{{ url_material_update({article_company_id: data.mine_version.id}) }}">{{_('edit')}}</a>]</h4>
+        <div>
+            <div ng-if="loading">{{ _('Loading...') }}</div>
+            <div ng-if="!loading">
+                <h2>{{ _('Article title is `%(data.mine_version.title)s`') }}</h2>
+                {{ data.mine_version.short }}
+                <h4>{{ _('Created at %(data.mine_version.cr_tm)s') }}</h4>
+                <h4>{{ _('Last modified at %(data.mine_version.md_tm)s') }} [<a
+                        href="{{ url_material_update({article_company_id: data.mine_version.id}) }}">{{_('edit')}}</a>]
+                </h4>
 
-            {{ _('submit my article to company') }} <input typeahead-on-select="onSelect($item, $model, $label)"
-                                                           typeahead-template-url="typeaheadTemplate.html"
-                                                           typeahead-loading="loadingCompanies"
-                                                           ng-model="selectedCompany_name"
-                                                           typeahead="company as company.name for company in searchForCompanyToSubmit($viewValue)"
-                                                           name="company_id"/>&nbsp;
-            <button class="btn" ng-click="submitToCompany()"
-                    ng-class="{'disabled': !selectedCompany || selectedCompany_sending}"
-                    ng-disabled="!selectedCompany || selectedCompany_sending">{{ _('submit for publication') }}
-            </button>
-            <i ng-show="loadingCompanies" class="glyphicon glyphicon-refresh"></i>
-            <hr/>
-            <h2>{{ _('Submitted to following companies') }}</h2>
+                {{ _('submit my article to company') }} <input typeahead-on-select="onSelect($item, $model, $label)"
+                                                               typeahead-template-url="typeaheadTemplate.html"
+                                                               typeahead-loading="loadingCompanies"
+                                                               ng-model="selectedCompany_name"
+                                                               typeahead="company as company.name for company in searchForCompanyToSubmit($viewValue)"
+                                                               name="company_id"/>&nbsp;
+                <button class="btn" ng-click="submitToCompany()"
+                        ng-class="{'disabled': !selectedCompany || selectedCompany_sending}"
+                        ng-disabled="!selectedCompany || selectedCompany_sending">{{ _('submit for publication') }}
+                </button>
+                <i ng-show="loadingCompanies" class="glyphicon glyphicon-refresh"></i>
+                <hr/>
+                <h2>{{ _('Submitted to following companies') }}</h2>
 
-            <div style="height: 30em; overflow: auto">
+                <div style="height: 30em; overflow: auto">
     <span ng-repeat="a_submitted in data.submitted_versions"
           id="article_submitted_to_company_id_{{ a_submitted.company_id }}">
         <h3>{{ _('Article title is `%(title)s` submitted to company `%(company.name)s` and has status `%(status)s`',
@@ -117,8 +119,8 @@
         <h5>{{ _('Created at %(cr_tm)s', a_submitted) }}</h5>
         <h5>{{ _('Last modified at %(md_tm)s by user `%(editor.profireader_name)s`', a_submitted) }}</h5>
     </span>
+                </div>
             </div>
-
         </div>
     </div>
     {% endraw %}
