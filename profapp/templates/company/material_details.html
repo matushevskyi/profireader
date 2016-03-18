@@ -142,7 +142,7 @@
         }
     </style>
 
-    <div ng-controller="material_details">
+    <div ng-controller="material_details" ng-cloak>
         {% raw %}
         <h2>{{ _('Material details `%(title)s`', {title: data.material.title}) }}</h2>
         <h4>{{ _('Created at') }} {{data.material.cr_tm}}</h4>

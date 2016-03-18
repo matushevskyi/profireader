@@ -12,11 +12,11 @@
     {% raw %}
 
     <div style="position: relative;  width: 100%; height: 100%; padding: 5px" class="img-container cropper-bg">
-        <div  style="position: relative;  width: 100%; height: 100%;" class="img-container-cropper">
+        <div style="position: relative;  width: 100%; height: 100%;" class="img-container-cropper">
             <img style="width: 100%; height: 100%;"/>
         </div>
     </div>
-    <div class="btn-group">
+    <div class="btn-group" ng-cloak>
         <button ng-if="zoomable" ng-disabled="!zoom(0.1, true)" ng-click="zoom(0.1)" class="btn
         btn-primary"
                 type="button" title="Zoom In">
@@ -39,13 +39,13 @@
                         class="glyphicon glyphicon-folder-open"></span></span>
         </button>
         <label ng-if="uploadable" class="btn btn-primary btn-upload"
-              title="Upload image file">
-            <input pr-file-change="fileUploaded" type="file" class="sr-only pr-cropper-input-image"  name="file"
+               title="Upload image file">
+            <input pr-file-change="fileUploaded" type="file" class="sr-only pr-cropper-input-image" name="file"
                    accept="image/*">
             <span class="docs-tooltip" data-toggle="tooltip" title="Import image with Blob URLs">
               <span class="glyphicon glyphicon-upload"></span>
             </span>
-          </label>
+        </label>
 
         <button ng-repeat="(url_class_name, url) in prCrop.preset_urls" class="btn btn-primary" type="button"
                 ng-click="selectPresetUrl(url_class_name)">

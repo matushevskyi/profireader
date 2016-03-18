@@ -39,7 +39,8 @@
     {% raw %}
 
 
-    <div ng-controller="portal_create">
+    <div ng-controller="portal_create" ng-cloak>
+        <form name="formPortal">
         <div class="container list-form" af
              af-after-save="afterSave"
              af-watch="data.portal"
@@ -68,7 +69,9 @@
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10 edit-data">
                             <input type="text" class="form-control border-radius" id="basic-url"
                                    aria-describedby="basic-addon3" pr-validation-answer="data_validation:name"
-                                   ng-model="data.portal.name">
+                                   ng-model="data.portal.name" name="portal_name" ng-pattern="/[\wа-яёі']{4}/">
+                            <div ng-show="formPortal.portal_name.$error.pattern" class="error-input">The
+                                        portal name should be longer!</div>
                         </div>
                         <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 name-form"><span>Host:</span></div>
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10 edit-data form-portal-edit">
@@ -191,7 +194,7 @@
             -->
 
         </div>
-
+</form>
 
     </div>
     {% endraw %}

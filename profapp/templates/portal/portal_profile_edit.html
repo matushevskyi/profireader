@@ -13,7 +13,7 @@
     {% include 'portal/tag_edit.html' %}
     {#    <script src="//static.profireader.com/static/js/tag_edit.js"></script>#}
     {% raw %}
-    <div ng-init="loadData(null, null, null, loadPortalDivisionTags4)" ng-controller="PortalProfileEditController">
+    <div ng-cloak ng-init="loadData(null, null, null, loadPortalDivisionTags4)" ng-controller="PortalProfileEditController">
 
         <!-- !!!{{ data.PortalDivisionTagsName }}<br/><br/> -->
         <!-- {{ loadPortalDivisionTags2() }} -->
