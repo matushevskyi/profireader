@@ -211,10 +211,6 @@ def load_user(apptype):
         user_dict['registered_tm'] = user.registered_tm
         user_dict['lang'] = user.lang
         user_dict['tos'] = user.tos
-
-
-
-
         # name = user.user_name
 
     # user_dict = {'id': id, 'name': name, 'logged_via': logged_via}

@@ -496,8 +496,8 @@ class PRBase:
                     'image_file_id'] == old_image_cropped.original_image_id and not old_image_cropped.same_coordinates(
                         user_data['crop_coordinates'], params):
                     original_image = File.get(user_data['image_file_id'])
-                    return original_image.update_croped_image(old_image_cropped, user_data['crop_coordinates'],
-                                                              folder_id, params)
+                    return original_image.crop(user_data['crop_coordinates'],
+                                                              folder_id, params, old_image_cropped)
                 else:
                     original_image = File.get(user_data['image_file_id'])
             else:

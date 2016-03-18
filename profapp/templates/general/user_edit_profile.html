@@ -39,7 +39,7 @@
 
     {% raw %}
     <div ng-controller="edit_user" class="container">
-        <div ng-cloak af
+        <div af
              af-after-save="afterSave"
              af-amid-load="amidLoad" class="edit_user_profile" ng-model="data">
             <div class="row link-page">
@@ -149,16 +149,16 @@
                                   type="text" name="about" placeholder="Give us some information about you please"
                                   rows="8"
                                   cols="40" ng-model="data.user.about_me"></textarea>
-                    </div>
-                    <div class="item">
-                        <button class="btn btn-default save-profile pull-right
+                </div>
+                <div class="item">
+                    <button class="btn btn-default save-profile pull-right
                         border-radius"
-                                type="button" ng-click="$af.save(data)"
-                                ng-disabled="!$af.isActionAllowed(data, 'save') ">Save profile
-                        </button>
-                    </div>
-                </form>
-            </div>
+                            type="button" ng-click="$af.save(data)"
+                            ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save profile') }}
+                    </button>
+                </div>
+            </form>
+
         </div>
     </div>
     {% endraw %}
