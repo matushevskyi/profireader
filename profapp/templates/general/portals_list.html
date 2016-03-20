@@ -56,14 +56,14 @@
     {% raw %}
     <div class="container serch-portal" ng-controller="portals_list" ng-init="search_for_portal()" ng-cloak>
         <div class="row">
-            <h2>{{ _('Please, search and subscribe to any portal') }}</h2>
+            <h2 pr-test="SearchAndSubscribeTitle">{{ _('Please, search and subscribe to any portal') }}</h2>
         </div>
         <div class="row">
-            <input placeholder="Search" class="form-control" ng-model="search_text" ng-change="search_for_portal()"
+            <input pr-test="SearchForPortals" placeholder="Search" class="form-control" ng-model="search_text" ng-change="search_for_portal()"
                    id="portal_search" type="text">
         </div>
         <div class=" row link-page">
-            <h5 ng-if="search_text.length>0">{{ _('Searching results') }}:</h5>
+            <h5 pr-test="PortalSearchingResults" ng-if="search_text.length>0">{{ _('Searching results') }}:</h5>
         </div>
         <div class="row">
             <h4 ng-if="data.list_portals.length==0 && search_text.length>0" style="color: red">{{ _('For your search no
@@ -74,11 +74,11 @@
                 <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
             </div>
             <div class="col-lg-7 col-md-6 col-sm-6 col-xs-6">
-                <h3><span ng-bind-html="highlight(portal.name, search_text)"></span></h3>
+                <h3><span pr-test="SearchResults-PortalsName" ng-bind-html="highlight(portal.name, search_text)"></span></h3>
                 <span class="address-portal" ng-bind-html="highlight(portal.host, search_text)"></span>
             </div>
             <div class="col-lg-2 col-md-2 col-sm-2 col-xs-6">
-                <button ng-disabled="portal.subscribed" class="btn-search-portal" ng-click="subscribe(portal.id)">
+                <button pr-test-portal-id="{{ portal.id }}" pr-test="SearchAndSubscribeBtn" ng-disabled="portal.subscribed" class="btn-search-portal" ng-click="subscribe(portal.id)">
                     {{ _('Subscribe') }}
                 </button>
             </div>
