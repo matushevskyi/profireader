@@ -29,7 +29,7 @@
     }
 
 </script>
-<div ng-controller="CompanyEmployees">
+<div ng-controller="CompanyEmployees" ng-cloak>
     <span ng-cloak ng-show="'{{ g.user_dict['id'] }}'">
         {% for user_id in company_user_rights %}
             {% if not curr_user %}

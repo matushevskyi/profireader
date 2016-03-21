@@ -312,53 +312,14 @@ def resend_confirmation():
     flash('A new confirmation email has been sent to you by email.')
     return redirect(url_for('general.index'))
 
-# import config
-# import smtplib
-# from email.mime.text import MIMEText
-# import sys
-# import traceback
-#
-#
-# class SendEmail:
-#     def __init__(self, username=config.MAIL_GMAIL, password=config.MAIL_PWD,
-#                  send_to=None):
-#         self.username = username
-#         self.password = password
-#         self.send_to = send_to or [config.MAIL_GMAIL]
-#         self.send_email()
-#
-#     def send_email(self, subject='Test Error', text='Test Error', exception=None):
-#
-#         if exception:
-#             , , tb = sys.exc_info()
-#             traceback.print_tb(tb)
-#             tb_info = traceback.extract_tb(tb)
-#             filename, line, func, text = tb_info[-1]
-#             message = 'An error occurred on File "{file}" line {line}\n {assert_message}'.format(
-#                 line=line, assert_message=exception.args, file=filename)
-#             print(message)
-#             text = message
-#         msg = MIMEText(text)
-#         msg['Subject'] = subject
-#         msg['From'] = self.username
-#         msg['To'] = ','.join(self.send_to)
-#         server = smtplib.SMTP('smtp.gmail.com:587')
-#
-#         server.starttls()
-#         server.login(self.username, self.password)
-#         server.sendmail(self.username, self.send_to, msg.as_string())
-#         server.quit()
 
-@auth_bp.route('/help')
+@auth_bp.route('/help', methods=["POST"])
 @login_required
-def help_message():
-    print('123')
-
-    SendEmail().send_email(subject='Send help message', template='general.index', send_to=(current_user.profireader_email,
-                                                                 ["profireader.service@gmail.com"], ''), user=current_user)
-    print(current_user.profireader_email)
+@ok
+def help_message(json):
+    SendEmail().send_email(subject='Send help message', send_to=("profireader.service@gmail.com", ''), text=json.get('message'),user=current_user)
     flash('Your message has been sent! ')
-    return redirect(url_for('general.index'))
+    return {'ok':'ok'}
 
 
 @auth_bp.route('/change-password', methods=['GET', 'POST'])

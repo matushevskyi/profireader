@@ -62,7 +62,7 @@ th, td {
     }]);
 </script>
 
-    <div ng-controller="CompanyReaders">
+    <div ng-controller="CompanyReaders" ng-cloak>
         <h3 style="text-align: center!important;">{{_('Portal readers')}}</h3>
         <div ng-if="!load_contr">{{_('Loading...')}}</div>
         <div class="grid" id="grid1" ui-grid-edit ui-grid-pagination ui-grid="gridOptions1" >

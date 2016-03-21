@@ -102,7 +102,7 @@
     </script>
 
     {% raw %}
-       <div ng-controller="portals_partners">
+       <div ng-controller="portals_partners" ng-cloak>
        <h3> {{ _('Join to portal') }} </h3>
             <input pr-user-rights="user_right" typeahead-on-select="onSelect($item, $model, $label)"
                    uib-typeahead-template-url="typeaheadTemplate.html"

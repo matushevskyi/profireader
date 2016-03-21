@@ -80,7 +80,7 @@
     </script>
     {% include 'company/company_base_angular.html' %}
     {% raw %}
-    <div ng-init="loadPublicationDetails()" ng-controller="article_list">
+    <div ng-init="loadPublicationDetails()" ng-controller="article_list" ng-cloak>
 
         <div ng-if="loading">{{_('Loading...')}}</div>
         <div ng-if="!loading">

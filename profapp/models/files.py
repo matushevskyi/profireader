@@ -275,12 +275,16 @@ class File(Base, PRBase):
                                              str_size=str_size),
                                      parent_id=self.parent_id,
                                      root_folder_id=self.root_folder_id,
-                                     mime=self.mime.split('/')[0] + '/thumbnail',
-                                     thumbnail_id=self.id)
-                    FileContent(content=bytes_file.getvalue(), file=thumbnail)
-                    self.thumbnail.append(thumbnail)
-                    g.db.add(thumbnail)
+                                     mime=self.mime.split('/')[0] + '/thumbnail').save()
+                    content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
+                    g.db.add_all([thumbnail, content])
                     g.db.flush()
+                    ImageCroped(original_image_id=self.id,
+                            croped_image_id=thumbnail.id,
+                            width=image_pil.width,
+                            height=image_pil.height).save()
+
+
                 except Exception as e:  # truncated png/gif
                     # from ..controllers.errors import BadFormatFile
                     self.remove()
@@ -657,100 +661,77 @@ class File(Base, PRBase):
         g.db.flush()
         return croped
 
-    def crop(self, coordinates, folder_id, params):
+    def crop(self, coordinates, folder_id, params, old_image_cropped=None):
         # TODO SS by SS in future add allow_stretch_image param
-        File.check_aspect_ratio(coordinates, params)
         bytes_file, area = self.crop_with_coordinates(coordinates, params)
         if bytes_file:
-            new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
-            ImageCroped(original_image_id=self.id,
-                        croped_image_id=new_cropped_image.id,
-                        x=float(area[0]), y=float(area[1]),
-                        width=float(area[2]),
-                        height=float(area[3]),
-                        croped_width=round(coordinates['width']),
-                        croped_height=round(coordinates['height']),
-                        zoom=coordinates['zoom']).save()
-            return new_cropped_image.id
+            if old_image_cropped:
+                return self.update_croped_image(old_image_cropped, coordinates, bytes_file, area, folder_id).id
+            else:
+                new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
+                ImageCroped(original_image_id=self.id,
+                            croped_image_id=new_cropped_image.id,
+                            x=float(area[0]), y=float(area[1]),
+                            width=float(area[4]),
+                            height=float(area[5]),
+                            croped_width=int(area[2]-area[0]),
+                            croped_height=int(area[3]-area[1]),
+                            zoom=coordinates['zoom']).save()
+                return new_cropped_image.id
         else:
             return self.id
 
-    @staticmethod
-    def check_aspect_ratio(coordinates, params):
-        # todo: SS by OZ: this function doesn't work
-        width = coordinates['width']
-        height = coordinates['height']
-        if params['aspect_ratio'][0] * width > coordinates['height']:
-            coordinates['width'] = params['aspect_ratio'][1] * coordinates['height']
-            coordinates['x'] = (width - coordinates['width']) / 2
-        elif params['aspect_ratio'][1] * width < coordinates['height']:
-            coordinates['height'] = params['aspect_ratio'][1] * width
-            coordinates['y'] = (height - coordinates['height']) / 2
-        coordinates['width'] = round(coordinates['width'])
-        coordinates['height'] = round(coordinates['height'])
+    def update_croped_image(self, old_image_cropped, coordinates ,bytes_file, area, folder_id):
+        File.get(old_image_cropped.croped_image_id).delete()
+        new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
+        old_image_cropped.croped_image_id = new_cropped_image.id
+        old_image_cropped.x = float(area[0])
+        old_image_cropped.y = float(area[1])
+        old_image_cropped.width = float(area[4])
+        old_image_cropped.height = float(area[5])
+        old_image_cropped.croped_width = int(area[2]-area[0])
+        old_image_cropped.croped_height = int(area[3]-area[1])
+        old_image_cropped.zoom = coordinates['zoom']
+        return new_cropped_image.save()
 
-    def update_croped_image(self, old_image_cropped, coordinates, folder_id, params):
-        File.check_aspect_ratio(coordinates, params)
-        bytes_file, area = self.crop_with_coordinates(coordinates, params)
-        if bytes_file:
-            File.get(old_image_cropped.croped_image_id).delete()
-            new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
-            old_image_cropped.croped_image_id = new_cropped_image.id
-            old_image_cropped.x = float(area[0])
-            old_image_cropped.y = float(area[1])
-            old_image_cropped.width = float(area[2])
-            old_image_cropped.height = float(area[3])
-            old_image_cropped.croped_width = coordinates['width']
-            old_image_cropped.croped_height = coordinates['height']
-            old_image_cropped.zoom = coordinates['zoom']
-            return new_cropped_image.id
-        return old_image_cropped.croped_image_id
+    @staticmethod
+    def get_correct_coordinates(left, top, right, bottom, params):
+        area_aspect = (right - left) / (bottom - top)
+        if params['aspect_ratio'][0] > params['aspect_ratio'][1]:
+            params['aspect_ratio'][0],params['aspect_ratio'][1] = params['aspect_ratio'][1], \
+                                                                  params['aspect_ratio'][0]
+        if params['aspect_ratio'] and params['aspect_ratio'][0] and area_aspect < params['aspect_ratio'][0]:
+            bottom -= ((bottom - top) - (right - left) / params['aspect_ratio'][0]) / 2
+            top += ((bottom - top) - (right - left) / params['aspect_ratio'][0]) / 2
+        elif params['aspect_ratio'] and params['aspect_ratio'][1] and area_aspect > params['aspect_ratio'][1]:
+            right -= ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
+            left += ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
+        return left, top, right, bottom
 
     def crop_with_coordinates(self, coordinates, params):
         try:
             image_pil = Image.open(
-                    BytesIO(self.file_content.content))  # create Pillow object from content of original picture
-            area = [int(a) for a in (coordinates['x'], coordinates['y'], coordinates['width'],
-                                     coordinates['height'])]  # convert dict of coordinates to list
+                    BytesIO(self.file_content.content))
+            left = min(max(0, coordinates['x']), image_pil.width)
+            top = min(max(0, coordinates['y']), image_pil.height)
+            right = max(min(coordinates['x'] + coordinates['width'], image_pil.width), coordinates['x'])
+            bottom = max(min(coordinates['y'] + coordinates['height'], image_pil.height), coordinates['y'])
 
-            left = min(max(0, area[0]), image_pil.width)
-            top = min(max(0, area[1]), image_pil.height)
-            right = max(min(area[0] + area[2], image_pil.width), area[0])
-            bottom = max(min(area[1] + area[3], image_pil.height) - area[1], area[1])
+            left, top, right, bottom = File.get_correct_coordinates(left, top, right, bottom, params)
 
-            area_aspect = (right - left) / (bottom - top)
-            if params['aspect_ratio'][0] > params['aspect_ratio'][1]:
-                params['aspect_ratio'][0],params['aspect_ratio'][1] = params['aspect_ratio'][1], \
-                                                                      params['aspect_ratio'][0]
-            if params['aspect_ratio'] and params['aspect_ratio'][0] and area_aspect < params['aspect_ratio'][0]:
-                bottom -= ((bottom - top) - (right - left) / params['aspect_ratio'][0]) / 2
-                top += ((bottom - top) - (right - left) / params['aspect_ratio'][0]) / 2
-            elif params['aspect_ratio'] and params['aspect_ratio'][1] and area_aspect > params['aspect_ratio'][1]:
-                right -= ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
-                left += ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
-
-
-            wider = (right-left)/(top-bottom) / (params['image_size'][0]/params['image_size'][1])
+            wider = (right-left)/(bottom-top) / (params['image_size'][0]/params['image_size'][1])
             if wider>1:
                 neww = params['image_size'][0]
                 newh = params['image_size'][1]/wider
             else:
                 newh = params['image_size'][1]
                 neww = params['image_size'][0]*wider
-
-            # image_wider = loadedimg.width * $outer_container.height() / loadedimg.height / $outer_container.width()
-            # if not (area[0] in range(0, image_pil.width)) or not (area[1] in range(0, image_pil.height)):  #
-            #     # if coordinates are not correctly, we make coordinates the same as image coordinates
-            #     area[0], area[1], area[2], area[3] = 0, 0, image_pil.width, image_pil.height
-            # area[2] = (area[0] + area[2])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    RIGHT
-            # area[3] = (area[1] + area[3])  # The crop rectangle, as a (left, upper, right, lower)-tuple.    LOWER
-            cropped = image_pil.crop([left, top, right, bottom]).resize((neww, newh))  # crop and resize image
-            # with area and
-            # size
-            bytes_file = BytesIO()  # create BytesIO object to save cropped image to Pillow object
+            cropped = image_pil.crop((int(left), int(top), int(right), int(bottom)))
+            cropped = cropped.resize((int(neww), int(newh)))
+            bytes_file = BytesIO()
             cropped.save(bytes_file, self.mime.split('/')[-1].upper())
-            return bytes_file, area  # cropped bytes of file and area(coordinates)
-        except ValueError:  # if error occured return False
+            return bytes_file, [left, top, right, bottom, int(image_pil.width), int(image_pil.height)]
+        except ValueError:
             return False
 
 
@@ -826,20 +807,22 @@ class ImageCroped(Base, PRBase):
         self.croped_height = croped_height
         self.zoom = zoom
 
-    def get_client_side_dict(self, fields='x,y,width,height,rotate,zoom',
+    def get_client_side_dict(self, fields='x,y,croped_width,croped_height,rotate,zoom',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
     def get_coordinates(self):
-        ret = self.to_dict('x,y,width,height,rotate,zoom')
+        ret = self.to_dict('x,y,croped_width,croped_height,rotate,zoom')
         return ret
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
     def same_coordinates(self, coordinates, params):
-        File.check_aspect_ratio(coordinates, params)
-        if (self.x == int(coordinates['x'])) and self.y == int(coordinates['y']) \
-                and (round(coordinates['width']) == self.croped_width and round(
-                        coordinates['height']) == self.croped_height):
+        left, top, right, bottom = File.get_correct_coordinates(coordinates['x'], coordinates['y'], (coordinates['x'] + coordinates['width']),
+                                                           (coordinates['y'] + coordinates['height']), params)
+        if (round(self.x) == round(left)) and round(self.y) == round(top) \
+                and (int(right-left) == self.croped_width and int(bottom-top)
+                    == self.croped_height):
+            print('true')
             return True
         else:
             return False
