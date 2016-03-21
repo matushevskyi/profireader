@@ -293,38 +293,6 @@ def confirm(token):
         return render_template("auth/confirmed.html")
 
 
-    # if
-    # elif user.confirm(token):
-    #     message = 'bla bla'
-    #     return render_template("errors/404.html", message=message)
-    # else:
-    #     message = 'The confirmation link is invalid or has expired.'
-    #     return render_template("errors/403.html", message=message)
-    # return redirect(url_for('errors/403.html'))
-
-
-    # user = db(User, email_conf_token=token).first()
-    # if user and user.confirmed:
-    #
-    #     message = 'Congratulations!'
-    #     print(message)
-    #     return render_template("auth/confirmed.html", message=message)
-    #
-    # elif user:
-    #     if user.confirm(token):
-    #         message = 'bla bla'#поправити
-    #         # logout/login=user
-    #         return render_template("auth/confirmed.html", message=message)
-    #     else:
-    #         message = 'The confirmation link is invalid or has expired.'
-    #         return render_template("errors/404.html", message=message)
-    # else:
-    #     message = 'The confirmation link is invalid or has expired.'
-    #     return render_template("errors/403.html", message=message)
-
-
-
-
 @auth_bp.route('/tos', methods=['POST'])
 @login_required
 @ok
@@ -342,6 +310,54 @@ def resend_confirmation():
     SendEmail().send_email(subject='Confirm Your Account', template='auth/email/confirm',
                            send_to=(current_user.profireader_email, ), user=current_user, token=token)
     flash('A new confirmation email has been sent to you by email.')
+    return redirect(url_for('general.index'))
+
+# import config
+# import smtplib
+# from email.mime.text import MIMEText
+# import sys
+# import traceback
+#
+#
+# class SendEmail:
+#     def __init__(self, username=config.MAIL_GMAIL, password=config.MAIL_PWD,
+#                  send_to=None):
+#         self.username = username
+#         self.password = password
+#         self.send_to = send_to or [config.MAIL_GMAIL]
+#         self.send_email()
+#
+#     def send_email(self, subject='Test Error', text='Test Error', exception=None):
+#
+#         if exception:
+#             , , tb = sys.exc_info()
+#             traceback.print_tb(tb)
+#             tb_info = traceback.extract_tb(tb)
+#             filename, line, func, text = tb_info[-1]
+#             message = 'An error occurred on File "{file}" line {line}\n {assert_message}'.format(
+#                 line=line, assert_message=exception.args, file=filename)
+#             print(message)
+#             text = message
+#         msg = MIMEText(text)
+#         msg['Subject'] = subject
+#         msg['From'] = self.username
+#         msg['To'] = ','.join(self.send_to)
+#         server = smtplib.SMTP('smtp.gmail.com:587')
+#
+#         server.starttls()
+#         server.login(self.username, self.password)
+#         server.sendmail(self.username, self.send_to, msg.as_string())
+#         server.quit()
+
+@auth_bp.route('/help')
+@login_required
+def help_message():
+    print('123')
+
+    SendEmail().send_email(subject='Send help message', template='general.index', send_to=(current_user.profireader_email,
+                                                                 ["profireader.service@gmail.com"], ''), user=current_user)
+    print(current_user.profireader_email)
+    flash('Your message has been sent! ')
     return redirect(url_for('general.index'))
 
 

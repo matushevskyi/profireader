@@ -27,7 +27,7 @@
                    value="{{ g.user.profireader_email }}">
                 <textarea pr-test="TextInput" class="form-control" rows="4"
                           placeholder="Питання та побажання"></textarea>
-            <button pr-test="SendMessage" class="pull-right" onclick="sendMessage()" type="submit">Надіслати</button>
+            <a pr-test="SendMessage" href="{{ url_for('auth.help_message') }}" class="pull-right" onclick="sendMessage()" type="submit">{{ 'Надіслати' }}</a>
         </div>
     </form>
 
