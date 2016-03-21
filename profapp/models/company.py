@@ -45,9 +45,9 @@ class Company(Base, PRBase):
             'browse': self.id,
             'upload': True,
             'crop': True,
-            'image_size': [400, 400],
-            'min_size': [100, 100],
-            'aspect_ratio': [0.5, 1.0],
+            'image_size': [400, 300],
+            'min_size': [100, 75],
+            'aspect_ratio': [0.5, 3],
             'preset_urls': {'glyphicon-remove-circle': nologo_url},
             'no_selection_url': nologo_url
         }
