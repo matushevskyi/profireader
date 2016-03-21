@@ -163,8 +163,9 @@ class ArticlePortalDivision(Base, PRBase):
         return {action_name: self.action_is_allowed(action_name, employment, membership) for action_name in
                 self.ACTIONS_FOR_STATUSES[self.status]}
 
-    def check_favorite_status(self, user_id):
-        return db(ReaderArticlePortalDivision, user_id=user_id, article_portal_division_id=self.id,
+    def check_favorite_status(self, user_id=None):
+        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user_id,
+                  article_portal_division_id=self.id,
                   favorite=True).count() > 0
 
     def like_dislike_user_article(self, liked):
@@ -174,8 +175,8 @@ class ArticlePortalDivision(Base, PRBase):
         self.like_count += 1
 
     @staticmethod
-    def article_is_liked(user_id, article_portal_division_id):
-        return db(ReaderArticlePortalDivision, user_id=user_id,
+    def article_is_liked(article_portal_division_id, user_id = None):
+        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user_id,
                   article_portal_division_id=article_portal_division_id, liked=True).count() > 0
 
     def search_filter_default(self, division_id, company_id=None):
@@ -240,7 +241,7 @@ class ArticlePortalDivision(Base, PRBase):
         if self.id not in session.get('recently_read_articles', []):
             self.read_count += 1
         session['recently_read_articles'] = list(
-            filter(bool, set(session.get('recently_read_articles', []) + [self.id])))
+                filter(bool, set(session.get('recently_read_articles', []) + [self.id])))
 
     portal = relationship('Portal',
                           secondary='portal_division',
@@ -919,7 +920,7 @@ class ReaderArticlePortalDivision(Base, PRBase):
                      user_id=g.user_id).first()
         if not article:
             article = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
-        article.favorite = False if favorite else True
+        article.favorite = True if favorite else False
         article.liked = True
         return article.favorite
 
@@ -934,8 +935,8 @@ class ReaderArticlePortalDivision(Base, PRBase):
         if not db(ReaderArticlePortalDivision,
                   user_id=g.user_id, article_portal_division_id=article_portal_division_id).count():
             return ReaderArticlePortalDivision(user_id=g.user_id,
-                                        article_portal_division_id=article_portal_division_id,
-                                        favorite=False).save()
+                                               article_portal_division_id=article_portal_division_id,
+                                               favorite=False).save()
 
     def get_article_portal_division(self):
         return db(ArticlePortalDivision, id=self.article_portal_division_id).one()

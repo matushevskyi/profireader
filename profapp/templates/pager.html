@@ -17,51 +17,51 @@
         </div>
     </div>
     <div class="btn-group" ng-cloak>
-        <button ng-if="zoomable" ng-disabled="!zoom(0.1, true)" ng-click="zoom(0.1)" class="btn
+        <span ng-if="zoomable" ng-disabled="!zoom(0.1, true)" ng-click="zoom(0.1)" class="btn
         btn-primary"
-                type="button" title="Zoom In">
+              type="button" title="Zoom In">
                   <span class="docs-tooltip" data-toggle="tooltip"><span
                           class="glyphicon glyphicon-zoom-in"></span></span>
-        </button>
+        </span>
 
-        <button ng-if="zoomable" ng-disabled="!zoom(-0.1, true)" ng-click="zoom(-0.1)" class="btn
+        <span ng-if="zoomable" ng-disabled="!zoom(-0.1, true)" ng-click="zoom(-0.1)" class="btn
         btn-primary"
-                type="button"
-                title="Zoom Out">
+              type="button"
+              title="Zoom Out">
                  <span class="docs-tooltip" data-toggle="tooltip"><span
                          class="glyphicon glyphicon-zoom-out"></span></span>
-        </button>
+        </span>
 
-        <button ng-if="browsable" class="btn btn-primary" type="button"
-                value="{{ image_file_url }}"
-                ng-click="chooseImage(true, avatar)">
-                <span class="docs-tooltip" data-toggle="tooltip" title="Chose image"><span
-                        class="glyphicon glyphicon-folder-open"></span></span>
-        </button>
+
+                <span ng-if="browsable" ng-click="chooseImage(true)" class="btn btn-primary docs-tooltip"
+                       ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'browse'}"
+                      title="Chose image"><span class="glyphicon glyphicon-folder-open"></span></span>
+
+
         <label ng-if="uploadable" class="btn btn-primary btn-upload"
+               ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'upload'}"
                title="Upload image file">
             <input pr-file-change="fileUploaded" type="file" class="sr-only pr-cropper-input-image" name="file"
                    accept="image/*">
-            <span class="docs-tooltip" data-toggle="tooltip" title="Import image with Blob URLs">
               <span class="glyphicon glyphicon-upload"></span>
-            </span>
         </label>
 
-        <button ng-repeat="(url_class_name, url) in prCrop.preset_urls" class="btn btn-primary" type="button"
-                ng-click="selectPresetUrl(url_class_name)">
+        <span ng-repeat="(url_class_name, url) in prCrop.preset_urls" class="btn btn-primary" type="button"
+              ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'preset'}"
+              ng-click="selectPresetUrl(url_class_name)">
                 <span class="docs-tooltip" data-toggle="tooltip" title="{{ url_class_name }}"><span
                         class="glyphicon {{ url_class_name }}"></span></span>
-        </button>
-
-        <button ng-if="resetable" class="btn btn-primary" type="button"
-                ng-click="resetModel()">
-                <span class="docs-tooltip" data-toggle="tooltip" title="Reset image"><span
-                        class="glyphicon glyphicon-repeat"></span></span>
-        </button>
+        </span>
 
 
-        <input type="hidden" ng-model="data.article.image_file_id">
+
+            <span ng-if="resetable"
+                  ng-click="resetModel()" class="btn btn-primary" title="Reset image"><span
+                    class="glyphicon glyphicon-repeat"></span></span>
+
+
     </div>
+    <input type="hidden" ng-model="data.article.image_file_id">
     {% endraw %}
 </script>
 

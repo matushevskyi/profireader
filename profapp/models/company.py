@@ -39,6 +39,19 @@ class Company(Base, PRBase):
 
     logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
 
+    def logo_file_properties(self):
+        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
+        return {
+            'browse': self.id,
+            'upload': True,
+            'crop': True,
+            'image_size': [450, 450],
+            'min_size': [100, 100],
+            'aspect_ratio': [0.5, 3.0],
+            'preset_urls': {'glyphicon-remove-circle': nologo_url},
+            'no_selection_url': nologo_url
+        }
+
     journalist_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
     # corporate_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
     system_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
@@ -225,41 +238,18 @@ class Company(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    def set_image_client_dict(self, image):
-        if image['selected_by_user']['type'] == 'preset':
-            if image['selected_by_user']['class'] == 'glyphicon-remove-circle':
-                image['selected_by_user']['type'] = 'none'
-            else:
-                raise ValueError("passed unknow preset class `{}`".format(image['selected_by_user']['class']))
 
-        self.logo_file_id = PRBase.set_image_cropped_file(self, image['selected_by_user'],
-                                                          self.logo_file_id, self.system_folder_file_id,
-                                                          params={'image_size': (400, 300), 'aspect_ratio': [0.5, 2.0]})
+
+    def get_logo_client_side_dict(self):
+        return self.get_image_cropped_file(self.logo_file_properties(),
+                                             db(ImageCroped, croped_image_id=self.logo_file_id).first())
+
+    def set_logo_client_side_dict(self, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user'] = {'type': 'none'}
+        self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+                                                          client_data, self.logo_file_id, self.system_folder_file_id)
         return self
-
-    def get_image_client_dict(self):
-
-        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
-
-        return PRBase.get_image_cropped_file(self, upload=True, browse=self.id,
-                                             crop_from_image_file=db(ImageCroped,
-                                                                     croped_image_id=self.logo_file_id).first(),
-                                             preset_urls={'glyphicon-remove-circle': nologo_url},
-                                             no_selection_url=nologo_url)
-
-
-        #
-        # is_image = ImageCroped.get_coordinates_and_original_img(self.logo_file_id)
-        # return {
-        #     'file_id': self.logo_file_id,
-        #     'upload': upload,
-        #     'crop': {
-        #         'ratio': Config.IMAGE_EDITOR_RATIO,
-        #         'coordinates': None,
-        #     },
-        #     'browse': self.id,
-        #     'no_image_url': g.fileUrl()
-        # }
 
     @staticmethod
     def get_allowed_statuses(company_id=None, portal_id=None):

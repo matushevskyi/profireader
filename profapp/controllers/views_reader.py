@@ -24,7 +24,7 @@ def details_reader(article_portal_division_id):
                                                        'company.name|id')
     article_dict['tags'] = article.tags
     ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
-    favorite = article.check_favorite_status(user_id=g.user.id)
+    favorite = article.check_favorite_status()
 
     return render_template('partials/reader/reader_details.html',
                            article=article_dict,
@@ -46,7 +46,7 @@ def list_reader_load(json):
     next_page = json.get('next_page') if json.get('next_page') else 1
     search_text = request.args.get('search_text') or ''
     article_fields = 'title|id|subtitle|short|image_file_id|subtitle|publishing_tm|read_count,company.name|logo_file_id|id,' \
-                     'division.name,portal.name|host|logo_file_id'
+                     'division.name,portal.name|host|logo_file_id|id'
     favorite = request.args.get('favorite') == 'True'
     if not favorite:
         articles, pages, page = Search().search({'class': ArticlePortalDivision,

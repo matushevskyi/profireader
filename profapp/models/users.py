@@ -256,7 +256,6 @@ class User(Base, UserMixin, PRBase):
         self.yahoo_link = YAHOO_ALL['link']
         self.yahoo_phone = YAHOO_ALL['phone']
 
-
     def validate(self, is_new):
         ret = super().validate(is_new)
         if not re.match(r'[^\s]{3}', str(self.profireader_name)):
@@ -271,7 +270,6 @@ class User(Base, UserMixin, PRBase):
     def user_query(user_id):
         ret = db(User, id=user_id).one()
         return ret
-
 
     @property
     def banned(self):
@@ -379,20 +377,40 @@ class User(Base, UserMixin, PRBase):
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
                 url=url, hash=hash, size=size, default=default, rating=rating)
 
+
+    def set_image_client_dict(self, image):
+        if image['selected_by_user']['type'] == 'preset':
+            image['selected_by_user']['type'] = 'none'
+            if image['selected_by_user']['class'] == 'glyphicon-remove-circle':
+                self.profireader_avatar_url = image['preset_urls'][image['selected_by_user']['class']]
+            elif image['selected_by_user']['class'] == 'glyphicon glyphicon-share':
+                self.profireader_avatar_url = image['preset_urls'][image['selected_by_user']['class']]
+                self.profireader_small_avatar_url = self.gravatar(size=100)
+            else:
+                raise ValueError("passed unknow preset class `{}`".format(image['selected_by_user']['class']))
+
+        self.avatar_file_id = PRBase.set_image_cropped_file(self, image['selected_by_user'],
+                                                          self.avatar_file_id, self.system_folder_file_id,
+                                                          params={'image_size': (500, 500), 'aspect_ratio': [0.5, 2.0]})
+        if self.avatar_file_id:
+            self.profireader_avatar_url = fileUrl(self.avatar_file_id)
+            self.profireader_small_avatar_url = fileUrl(File.get(self.avatar_file_id).get_thumbnails((133,100)).id)
+        return self
+
     def get_image_client_dict(self):
 
         noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())
 
-
-
         return PRBase.get_image_cropped_file(self, upload=True, browse=True,
-                                            crop_from_image_file=db(ImageCroped,
-                                                                    croped_image_id=self.avatar_file_id).first(),
-                                            preset_urls={
-                                                'glyphicon-remove-circle': noavatar_url,
-                                                'glyphicon glyphicon-share': self.gravatar(size=500)
-                                            },
-                                            no_selection_url=noavatar_url)
+                                             cropper={'aspect': [0.5, 2], 'min_size': [100, 100]},
+                                             crop_from_image_file=db(ImageCroped,
+
+                                                                     croped_image_id=self.avatar_file_id).first(),
+                                             preset_urls={
+                                                 'glyphicon-remove-circle': noavatar_url,
+                                                 'glyphicon glyphicon-share': self.gravatar(size=500)
+                                             },
+                                             no_selection_url=noavatar_url)
 
     def profile_completed(self):
         completeness = True
@@ -529,12 +547,14 @@ class User(Base, UserMixin, PRBase):
 
     def avatar_update(self, passed_file):
         if passed_file:
-            list = [file for file in db(File, parent_id=self.system_folder_file_id, ) if re.search('^image/.*', file.mime) and file.mime != 'image/thumbnail']
-            file = File.uploadLogo(passed_file.stream.read(-1), passed_file.filename, passed_file.content_type, self.system_folder_file_id)
+            list = [file for file in db(File, parent_id=self.system_folder_file_id, ) if
+                    re.search('^image/.*', file.mime) and file.mime != 'image/thumbnail']
+            file = File.uploadLogo(passed_file.stream.read(-1), passed_file.filename, passed_file.content_type,
+                                   self.system_folder_file_id)
             if 'error' in File.check_image_mime(file.id):
-                    return self
+                return self
             self.profireader_avatar_url = file.url()
-            file_thumbnail = file.get_thumbnails(size=(133,100)).thumbnail
+            file_thumbnail = file.get_thumbnails(size=(133, 100)).thumbnail
             self.profireader_small_avatar_url = file_thumbnail[0].url()
         else:
             list = [file for file in db(File, parent_id=self.system_folder_file_id, ) if
@@ -553,7 +573,8 @@ class User(Base, UserMixin, PRBase):
     # def is_administrator(self):
     #    return self.can(Permission.ADMINISTER)
 
-    def get_client_side_dict(self, fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url|profireader_email|profireader_first_name|profireader_last_name|birth_tm|profireader_link|profireader_phone|location|profireader_gender|lang|about_me|country',
+    def get_client_side_dict(self,
+                             fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url|profireader_email|profireader_first_name|profireader_last_name|birth_tm|profireader_link|profireader_phone|location|profireader_gender|lang|about_me|country',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
@@ -561,5 +582,3 @@ class User(Base, UserMixin, PRBase):
 class Group(Base, PRBase):
     __tablename__ = 'group'
     id = Column(TABLE_TYPES['string_30'], primary_key=True)
-
-
