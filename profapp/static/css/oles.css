@@ -337,3 +337,9 @@
     background-image: url("//static.profireader.com/static/images/loading.gif");
     background-color: transparent;
 }
+
+.img_300 {
+    width: 300px;
+    height: 300px;
+}
+

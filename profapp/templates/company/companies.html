@@ -148,7 +148,7 @@
                  ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
                 <div class="thumbnail company-thumbnail">
                     <a href="{{ url_company_profile({company_id: my_employer.id}) }}">
-                        <img pr-image="my_employer.logo_file_id" alt="image" style="width: 100%">
+                        <img class="img_300" pr-image="my_employer.logo_file_id" alt="image">
                     </a>
                     <div pr-test="SomeCompanyInfo" class="caption some-company-info">
 
@@ -173,63 +173,7 @@
     </div>
 
     {% endraw %}
-    <!-- old template -->
-    {#    <div ng-init="loadData()" ng-controller="companies_list">#}
-    {#        <h1 class="nice-title">{{_('Company list')}}<span></span></h1>#}
-    {#        <a class="h1-btn icon icon-add" href="{{ url_create_own_company }}" title="{{ _('CREATE OWN COMPANY') }}"><img#}
-    {#                src="//static.profireader.com/static/front/img/ico/companies.png"/></a>#}
-    {#        <div ng-if="loading">{{ _('Loading...') }}</div>#}
-    {#        <div ng-if="!loading">#}
-    {#            <div class="one-company" ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">#}
-    {#                <div class="company-item">#}
-    {#                    <img pr-image="my_employer.logo_file_id" class="company-logo"/>#}
-    {#                    <a href="{{ url_company_profile({company_id: my_employer.id}) }}">#}
-    {#                        {{ _('Company: `%(name)s`'+(my_employer.author_user_id==data.user_id? ' Type: OWN COMPANY':'JOINED COMPANY') , my_employer) }}#}
-    {#                    </a>#}
-    {#                    <br/>#}
-    {#                    <span ng-if="!my_employer.own_portal.host"><b>{{_('Portals')}}: </b>{{_('No')}}</span>#}
-    {##}
-    {#                    <div ng-if="my_employer.own_portal.host">#}
-    {#                        <a href="http://{{ my_employer.own_portal.host }}">#}
-    {#                            http://{{ my_employer.own_portal.host }}#}
-    {#                        </a>#}
-    {#                        <a href="{{ url_portal_profile({portal_id: my_employer.own_portal.id}) }}">[{{_('portal profile')}}]</a>#}
-    {#                    </div>#}
-    {#                    <br/>#}
-    {#                </div>#}
-    {##}
-    {#            </div>#}
-    {#            <br/>#}
-    {##}
-    {#            <div class="one-company" ng-repeat="non_active_employer in data.non_active_user_company_status"#}
-    {#                 id="joined_company_{{ non_active_employer.id }}">#}
-    {#                <div class="company-item">#}
-    {#                    <img pr-image="non_active_employer.logo_file_id" class="company-logo"/>#}
-    {#                    <a href="{{ url_company_profile({company_id: non_active_employer.id}) }}">{{ _('Company:#}
-    {#                        `%(name)s` - NON ACTIVE',#}
-    {#                        non_active_employer) }}</a>#}
-    {#                </div>#}
-    {#            </div>#}
-    {##}
-    {#        </div>#}
-    {##}
-    {#        <hr/>#}
-    {#        <h1 class="nice-title">{{ _('Join also to company') }}<span></span></h1>#}
-    {#        <br/>#}
-    {##}
-    {#        <input uib-typeahead-on-select="onSelect($item, $model, $label)"#}
-    {#               uib-typeahead-template-url="typeaheadTemplate.html"#}
-    {#               uib-typeahead-loading="loadingCompanies"#}
-    {#               ng-model="selectedCompany_name"#}
-    {#               uib-typeahead="company as company.name for company in searchForCompanyToJoin($viewValue)"#}
-    {#               name="company_id"/>&nbsp;#}
-    {#        <button class="btn" ng-click="joinToCompany()"#}
-    {#                ng-class="{'disabled': !selectedCompany || selectedCompany_sending}"#}
-    {#                ng-disabled="!selectedCompany || selectedCompany_sending">{{ _('join to this company') }}#}
-    {#        </button>#}
-    {#        <i ng-show="loadingCompanies" class="glyphicon glyphicon-refresh"></i>#}
-    {##}
-    {#    </div>#}
+
 
 
 
