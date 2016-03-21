@@ -24,7 +24,7 @@ def details_reader(article_portal_division_id):
                                                        'company.name|id')
     article_dict['tags'] = article.tags
     ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
-    favorite = article.check_favorite_status(user_id=g.user.id)
+    favorite = article.check_favorite_status()
 
     return render_template('partials/reader/reader_details.html',
                            article=article_dict,

@@ -1,0 +1,23 @@
+<div class="row" style="border-bottom: 1px solid #000;padding-bottom: 5px;">
+    <div class="item-company col-lg-4 col-md-4 col-sm-4 col-xs-4"><a
+            href="//profireader.com/company/profile/{{ article['company']['id'] }}">
+        {{ article['company']['name']|safe }}</a>
+    </div>
+
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">{{ article['publishing_tm']|safe }}</div>
+
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">Read {{ article['read_count'] }}</div>
+
+
+</div>
+<div class="row" style="color: #3f4c55;margin-top: 10px;margin-bottom: 15px;">
+    <div class="item-comments col-lg-4 col-md-4 col-sm-4 col-xs-4">{{ _('Comments') }} 0</div>
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">Likes {{ article['like_count'] }}</div>
+
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"
+         onclick="on_off_something(this, '{{ url_for('front.add_delete_favorite', article_portal_division_id = article['id']) }}',
+                 '.fa-heart', '.fa-heart-o');">
+        <i {% if favorite %}style="display: none"{% endif %} class="fa fa-heart"> Remove from bookmark</i>
+        <i {% if not favorite %}style="display: none"{% endif %} class="fa fa-heart-o"> Add to bookmark</i>
+    </div>
+</div>
