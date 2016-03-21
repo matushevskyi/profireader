@@ -171,7 +171,7 @@ class File(Base, PRBase):
         actions['paste'] = lambda file: None
         name = name.lower()
         all_files = File.get_all_in_dir_rev(folder_id)[::-1]
-        sort_dirs = [];
+        sort_dirs = []
         sort_files = []
         for file in all_files:
             if re.match(r'.*' + name + '.*', file.name.lower()):
@@ -240,6 +240,7 @@ class File(Base, PRBase):
                         'parent_id': file.parent_id, 'type': File.type(file),
                         'date': str(file.md_tm).split('.')[0],
                         'url': file.get_thumbnail_url(size=str_size),
+                        'file_url' : file.url(),
                         'youtube_data': {'id': file.youtube_video.video_id,
                                          'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
                         'path_to': File.path(file),
@@ -275,6 +276,7 @@ class File(Base, PRBase):
                                              str_size=str_size),
                                      parent_id=self.parent_id,
                                      root_folder_id=self.root_folder_id,
+                                     company_id=self.company_id,
                                      mime=self.mime.split('/')[0] + '/thumbnail').save()
                     content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
                     g.db.add_all([thumbnail, content])
