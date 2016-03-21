@@ -331,3 +331,9 @@
     background: yellow;
 }
 
+.loading {
+    background-repeat: no-repeat;
+    background-position: center;
+    background-image: url("//static.profireader.com/static/images/loading.gif");
+    background-color: transparent;
+}

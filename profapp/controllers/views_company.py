@@ -278,7 +278,7 @@ def profile(company_id=None):
 @company_bp.route('/<string:company_id>/profile/', methods=['POST'])
 @login_required
 @ok
-def load(json, company_id=None):
+def profile_load_validate_save(json, company_id=None):
     user_can_edit = UserCompany.get(company_id=company_id).rights['PORTAL_EDIT_PROFILE'] if company_id else None
     # if not user_can_edit:
     #     raise Exception('no PORTAL_EDIT_PROFILE')
@@ -286,7 +286,7 @@ def load(json, company_id=None):
     company = Company() if company_id is None else Company.get(company_id)
     if action == 'load':
         company_dict = company.get_client_side_dict()
-        company_dict['logo'] = company.get_image_client_dict()
+        company_dict['logo'] = company.get_logo_client_side_dict()
         company_dict['actions'] = {'edit': True if company_id and UserCompany.get(
                 company_id=company_id).rights['PORTAL_EDIT_PROFILE'] else False}
         return company_dict
@@ -300,8 +300,8 @@ def load(json, company_id=None):
         else:
             if company_id is None:
                 company.setup_new_company()
-            company_dict = company.set_image_client_dict(json['logo']).save().get_client_side_dict()
-            company_dict['logo'] = company.get_image_client_dict()
+            company_dict = company.set_logo_client_side_dict(json['logo']).save().get_client_side_dict()
+            company_dict['logo'] = company.get_logo_client_side_dict()
             company_dict['actions'] = {'edit': True if company_id or UserCompany.get(
                 company_id=company_id).rights['PORTAL_EDIT_PROFILE'] else False}
             return company_dict
