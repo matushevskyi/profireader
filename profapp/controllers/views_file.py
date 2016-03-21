@@ -13,7 +13,7 @@ from flask import current_app
 from werkzeug.datastructures import Headers
 import mimetypes
 import os
-from time import time
+from time import time, sleep
 from zlib import adler32
 from flask._compat import string_types, text_type
 import urllib.parse
@@ -72,6 +72,8 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
               attachment_filename=None, add_etags=True,
               cache_timeout=None, conditional=False, headers={}):
 
+
+
     """Sends the contents of a file to the client.  This will use the
     most efficient method available and configured.  By default it will
     try to use the WSGI server's file_wrapper support.  Alternatively
@@ -129,6 +131,9 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
                           :meth:`~Flask.get_send_file_max_age` of
                           :data:`~flask.current_app`.
     """
+
+    # sleep(5)
+    
     mtime = None
 
     if isinstance(filename_or_fp, string_types):

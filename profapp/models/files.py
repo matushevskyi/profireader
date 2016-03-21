@@ -672,8 +672,7 @@ class File(Base, PRBase):
                 ImageCroped(original_image_id=self.id,
                             croped_image_id=new_cropped_image.id,
                             x=float(area[0]), y=float(area[1]),
-                            width=float(area[4]),
-                            height=float(area[5]),
+                            width=float(area[2]), height=float(area[3]),
                             croped_width=int(area[2]-area[0]),
                             croped_height=int(area[3]-area[1]),
                             zoom=coordinates['zoom']).save()
@@ -687,25 +686,25 @@ class File(Base, PRBase):
         old_image_cropped.croped_image_id = new_cropped_image.id
         old_image_cropped.x = float(area[0])
         old_image_cropped.y = float(area[1])
-        old_image_cropped.width = float(area[4])
-        old_image_cropped.height = float(area[5])
+        old_image_cropped.width = float(area[2])
+        old_image_cropped.height = float(area[3])
         old_image_cropped.croped_width = int(area[2]-area[0])
         old_image_cropped.croped_height = int(area[3]-area[1])
         old_image_cropped.zoom = coordinates['zoom']
         return new_cropped_image.save()
 
     @staticmethod
-    def get_correct_coordinates(left, top, right, bottom, params):
+    def get_correct_coordinates(left, top, right, bottom, column_data):
         area_aspect = (right - left) / (bottom - top)
-        if params['aspect_ratio'][0] > params['aspect_ratio'][1]:
-            params['aspect_ratio'][0],params['aspect_ratio'][1] = params['aspect_ratio'][1], \
-                                                                  params['aspect_ratio'][0]
-        if params['aspect_ratio'] and params['aspect_ratio'][0] and area_aspect < params['aspect_ratio'][0]:
-            bottom -= ((bottom - top) - (right - left) / params['aspect_ratio'][0]) / 2
-            top += ((bottom - top) - (right - left) / params['aspect_ratio'][0]) / 2
-        elif params['aspect_ratio'] and params['aspect_ratio'][1] and area_aspect > params['aspect_ratio'][1]:
-            right -= ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
-            left += ((right - left) - (bottom - top) * params['aspect_ratio'][1]) / 2
+        if column_data['aspect_ratio'][0] > column_data['aspect_ratio'][1]:
+            column_data['aspect_ratio'][0],column_data['aspect_ratio'][1] = column_data['aspect_ratio'][1], \
+                                                                  column_data['aspect_ratio'][0]
+        if column_data['aspect_ratio'] and column_data['aspect_ratio'][0] and area_aspect < column_data['aspect_ratio'][0]:
+            bottom -= ((bottom - top) - (right - left) / column_data['aspect_ratio'][0]) / 2
+            top += ((bottom - top) - (right - left) / column_data['aspect_ratio'][0]) / 2
+        elif column_data['aspect_ratio'] and column_data['aspect_ratio'][1] and area_aspect > column_data['aspect_ratio'][1]:
+            right -= ((right - left) - (bottom - top) * column_data['aspect_ratio'][1]) / 2
+            left += ((right - left) - (bottom - top) * column_data['aspect_ratio'][1]) / 2
         return left, top, right, bottom
 
     def crop_with_coordinates(self, coordinates, params):
@@ -730,7 +729,7 @@ class File(Base, PRBase):
             cropped = cropped.resize((int(neww), int(newh)))
             bytes_file = BytesIO()
             cropped.save(bytes_file, self.mime.split('/')[-1].upper())
-            return bytes_file, [left, top, right, bottom, int(image_pil.width), int(image_pil.height)]
+            return bytes_file, [left, top, right, bottom]
         except ValueError:
             return False
 
@@ -812,13 +811,13 @@ class ImageCroped(Base, PRBase):
         return self.to_dict(fields, more_fields)
 
     def get_coordinates(self):
-        ret = self.to_dict('x,y,croped_width,croped_height,rotate,zoom')
+        ret = self.to_dict('x,y,width,height,rotate,zoom')
         return ret
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
-    def same_coordinates(self, coordinates, params):
+    def same_coordinates(self, coordinates, column_data):
         left, top, right, bottom = File.get_correct_coordinates(coordinates['x'], coordinates['y'], (coordinates['x'] + coordinates['width']),
-                                                           (coordinates['y'] + coordinates['height']), params)
+                                                           (coordinates['y'] + coordinates['height']), column_data)
         if (round(self.x) == round(left)) and round(self.y) == round(top) \
                 and (int(right-left) == self.croped_width and int(bottom-top)
                     == self.croped_height):
