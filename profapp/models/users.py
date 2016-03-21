@@ -275,7 +275,7 @@ class User(Base, UserMixin, PRBase):
             'image_size': [300, 400],
             'min_size': [75, 100],
             'aspect_ratio': [0.5, 2],
-            'preset_urls': {'glyphicon-remove-circle': nologo_url},
+            'preset_urls': {'glyphicon-remove-circle': nologo_url, 'glyphicon glyphicon-share': self.gravatar(size=500)},
             'no_selection_url': nologo_url
         }
 
