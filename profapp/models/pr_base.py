@@ -482,27 +482,28 @@ class PRBase:
 
         return self
 
-    def set_image_cropped_file(self, user_data, old_croped_image_id, folder_id, params):
+    def set_image_cropped_file(self, column_data, user_data, old_croped_image_id, folder_id):
         from ..models.files import File, ImageCroped
-        selected_by_user_type = user_data['type']
+        selected_by_user = user_data['selected_by_user']
+        selected_by_user_type = selected_by_user['type']
         old_image_cropped = db(ImageCroped, croped_image_id=old_croped_image_id).first()
-        print(user_data, old_croped_image_id)
+
         if selected_by_user_type == 'browse':
             if old_image_cropped:
-                if user_data[
-                    'image_file_id'] == old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
-                        user_data['crop_coordinates'], params):
+                if selected_by_user['image_file_id'] == \
+                        old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
+                        selected_by_user['crop_coordinates'], column_data):
                     return old_croped_image_id
-                elif user_data[
+                elif selected_by_user[
                     'image_file_id'] == old_image_cropped.original_image_id and not old_image_cropped.same_coordinates(
-                        user_data['crop_coordinates'], params):
-                    original_image = File.get(user_data['image_file_id'])
-                    return original_image.crop(user_data['crop_coordinates'],
-                                                              folder_id, params, old_image_cropped)
+                        selected_by_user['crop_coordinates'], column_data):
+                    original_image = File.get(selected_by_user['image_file_id'])
+                    return original_image.crop(selected_by_user['crop_coordinates'],
+                                               folder_id, column_data, old_image_cropped)
                 else:
-                    original_image = File.get(user_data['image_file_id'])
+                    original_image = File.get(selected_by_user['image_file_id'])
             else:
-                original_image = File.get(user_data['image_file_id'])
+                original_image = File.get(selected_by_user['image_file_id'])
             content = original_image.file_content.content
             new_orginal_image = File.uploadLogo(content, original_image.name, original_image.mime, folder_id)
         if old_image_cropped:
@@ -513,38 +514,32 @@ class PRBase:
             # todo: SS by OZ: is old file removed on this selection?
             return None
         if selected_by_user_type == 'upload':
-            imgdataContent = user_data['file']['content']
+            imgdataContent = selected_by_user['file']['content']
             image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
             content = base64.b64decode(image_data)
-            new_orginal_image = File.uploadLogo(content, user_data['file']['name'], user_data['file']['mime'],
+            new_orginal_image = File.uploadLogo(content, selected_by_user['file']['name'], selected_by_user['file']['mime'],
                                                 folder_id)
             if 'error' in File.check_image_mime(new_orginal_image.id):
                 resp = self.get_client_side_dict()
                 resp.update({'error': True})
                 return resp
-        return new_orginal_image.crop(user_data['crop_coordinates'], folder_id, params)
+        return new_orginal_image.crop(selected_by_user['crop_coordinates'], folder_id, column_data)
 
-    def get_image_cropped_file(self,
-                              upload=None,
-                              browse=True,
-                              cropper={'aspect': False, 'min_size': [100, 100]},
-                              crop_from_image_file=None,
-                              preset_urls={},
-                              selected_by_user_type='none',
-                              no_selection_url=None):
-
+    def get_image_cropped_file(self, parameters={}, croped_image_file_id=None):
         ret = {
-            'upload': upload,
-            'browse': browse,
-            'cropper': cropper,
-            'preset_urls': preset_urls,
-            'no_selection_url': no_selection_url,
-            'selected_by_user': {'type': selected_by_user_type}
+            'upload': parameters.get('upload'),
+            'browse': parameters.get('browse'),
+            'cropper': {'aspect_ratio': parameters.get('aspect_ratio')} if parameters.get('crop') else False,
+            'min_size': parameters.get('min_size'),
+            'preset_urls': parameters.get('preset_urls'),
+            'no_selection_url': parameters.get('no_selection_url'),
+            'selected_by_user': {'type': 'none'}
         }
 
-        if crop_from_image_file:
-            ret['selected_by_user'] = {'type': 'browse', 'image_file_id': crop_from_image_file.original_image_id,
-                                       'crop_coordinates': crop_from_image_file.get_coordinates()}
+        if croped_image_file_id:
+            ret['selected_by_user'] = {'type': 'browse', 'image_file_id': croped_image_file_id.original_image_id}
+            if ret['cropper']:
+                ret['selected_by_user']['crop_coordinates'] = croped_image_file_id.get_coordinates()
 
         return ret
 

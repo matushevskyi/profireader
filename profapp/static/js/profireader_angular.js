@@ -151,14 +151,13 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             scope: {
                 prCrop: '='
             },
-            //require: 'ngModel',
 
             link: function (scope, element, attrs, model) {
 
                 //TODO: OZ by OZ: move it to angular attrs
                 scope.zoomable = true;
                 scope.resetable = true;
-                scope.aspect = false;
+                scope.aspect_ratio = false;
                 //scope.minimal = 0.1;
 
                 scope.croper_loaded = false;
@@ -170,7 +169,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     scope.uploadable = false;
                     scope.browsable = false;
                     scope.cropable = false;
-                    scope.aspect = false;
+                    scope.aspect_ratio = false;
                     scope.no_selection_url = scope.fallback_url;
                     if (scope.prCrop) {
                         scope.uploadable = scope.prCrop['upload'] ? true : false;
@@ -203,6 +202,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 element.html($templateCache.get('cropper.html'));
 
                 $compile(element.contents())(scope);
+
+
 
                 var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
 
@@ -256,6 +257,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 var $outer_container = $('.img-container', element);
                 var $inner_container = $('.img-container-cropper', element);
 
+
+
                 scope.fileUploaded = function (event) {
                     var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
                     if (the_file) {
@@ -264,7 +267,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             fr.onload = function (e) {
                                 var uploaded_file = (window.URL || window.webkitURL).createObjectURL(the_file);
                                 restartCropper(uploaded_file, {
-                                    'type': 'upload', 'file': {
+                                    'type': 'upload',
+                                    'file': {
                                         'mime': the_file.type,
                                         'name': the_file.name,
                                         'content': fr.result
@@ -298,10 +302,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     }
 
 
-                    if (scope.prCrop['cropper']['min_size'] &&
-                        (scope.prCrop['cropper']['min_size'][0] && loadedimg.width < scope.prCrop['cropper']['min_size'][0] ||
-                        scope.prCrop['cropper']['min_size'][1] && loadedimg.height < scope.prCrop['cropper']['min_size'][1])) {
-                        return scope.$root._('Image too small. minimum size is %(0)sx%(1)s', scope.prCrop['cropper']['min_size'])
+                    if (scope.prCrop['min_size'] &&
+                        (scope.prCrop['min_size'][0] && loadedimg.width < scope.prCrop['min_size'][0] ||
+                        scope.prCrop['min_size'][1] && loadedimg.height < scope.prCrop['min_size'][1])) {
+                        return scope.$root._('Image too small. minimum size is %(0)sx%(1)s', scope.prCrop['min_size'])
                     }
 
 
@@ -341,24 +345,26 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     if (scope.prCrop['cropper']) {
                         options['minCanvasWidth'] = options['minContainerWidth'];
                         options['minContainerHeight'] = options['minContainerHeight'];
-                        options['minCropBoxWidth'] = scope.prCrop['cropper']['min_size'][0] * scope.maxzoom;
-                        options['minCropBoxHeight'] = scope.prCrop['cropper']['min_size'][1] * scope.maxzoom;
-                        scope.aspect = false;
-                        scope.previous_aspect_data = null;
-                        if (options['aspectRatio'] && options['aspectRatio'] > 0) {
-                            options['aspectRatio'] = scope.prCrop['cropper']['aspect'];
+                        if (scope.prCrop) {
+                            options['minCropBoxWidth'] = scope.prCrop['min_size'][0] * scope.maxzoom;
+                            options['minCropBoxHeight'] = scope.prCrop['min_size'][1] * scope.maxzoom;
                         }
-                        else if (_.isArray(scope.prCrop['cropper']['aspect']) && scope.prCrop['cropper']['aspect'].length == 2
-                            && scope.prCrop['cropper']['aspect'][0] > 0 && scope.prCrop['cropper']['aspect'][1] > 0
+                        scope.aspect_ratio = false;
+                        scope.previous_aspect_data = null;
+                        if (scope.prCrop['cropper']['aspect_ratio'] && scope.prCrop['cropper']['aspect_ratio'] > 0) {
+                            options['aspectRatio'] = scope.prCrop['cropper']['aspect_ratio'];
+                        }
+                        else if (_.isArray(scope.prCrop['cropper']['aspect_ratio']) && scope.prCrop['cropper']['aspect_ratio'].length == 2
+                            && scope.prCrop['cropper']['aspect_ratio'][0] > 0 && scope.prCrop['cropper']['aspect_ratio'][1] > 0
                         ) {
-                            if (scope.prCrop['cropper']['aspect'][0] == scope.prCrop['cropper']['aspect'][1]) {
-                                options['aspectRatio'] = scope.prCrop['cropper']['aspect'][0];
+                            if (scope.prCrop['cropper']['aspect_ratio'][0] == scope.prCrop['cropper']['aspect_ratio'][1]) {
+                                options['aspectRatio'] = scope.prCrop['cropper']['aspect_ratio'][0];
                             }
-                            else if (scope.prCrop['cropper']['aspect'][0] < scope.prCrop['cropper']['aspect'][1]) {
-                                scope.aspect = [scope.prCrop['cropper']['aspect'][0], scope.prCrop['cropper']['aspect'][1]]
+                            else if (scope.prCrop['cropper']['aspect_ratio'][0] < scope.prCrop['cropper']['aspect_ratio'][1]) {
+                                scope.aspect_ratio = [scope.prCrop['cropper']['aspect_ratio'][0], scope.prCrop['cropper']['aspect_ratio'][1]]
                             }
                             else {
-                                scope.aspect = [scope.prCrop['cropper']['aspect'][1], scope.prCrop['cropper']['aspect'][0]]
+                                scope.aspect_ratio = [scope.prCrop['cropper']['aspect_ratio'][1], scope.prCrop['cropper']['aspect_ratio'][0]]
                             }
                         }
                     }
@@ -371,10 +377,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     options['strict'] = true;
                     options['viewMode'] = 3;
                     options['zoomable'] = scope.zoomable;
-
-
-                    //options['autoCrop'] = true;
-
 
                     options['zoom'] = function (e) {
                         if (e.ratio < scope.minzoom * 1.01 && e.ratio !== scope.minzoom) {
@@ -398,30 +400,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     }
 
-                    if (scope.aspect) {
-                        options['cropmove'] = function (event) {
-                            var data = $image.cropper('getData');
-                            var asp = data.width / data.height;
-                            //console.log(asp, scope.aspect);
-                            if (asp < scope.aspect[0] || asp > scope.aspect[1]) {
-                                event.preventDefault();
-                                if (scope.previous_aspect_data) {
-                                    $image.cropper('setData', scope.previous_aspect_data)
-                                }
-                        }
-                            else {
-                                scope.previous_aspect_data = data;
-                            }
-                        }
-                    }
-
                     options['built'] = function (e) {
                         scope.croper_loaded = true;
                         if (on_success) {
                             on_success()
                         }
                         if (scope.zoomable) {
-                            console.log('zoomTo', getFromCoordinates('zoom', scope.minzoom));
                             $(this).cropper('zoomTo', getFromCoordinates('zoom', scope.minzoom));
                         }
                     }
@@ -432,6 +416,21 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     //}
 
                     options['crop'] = function (e) {
+                        if (scope.aspect_ratio) {
+                            var data = $image.cropper('getData');
+                            var asp = data.width / data.height;
+                            if (asp < scope.aspect_ratio[0] || asp > scope.aspect_ratio[1]) {
+                                event.preventDefault();
+                                if (scope.previous_aspect_data) {
+                                    $image.cropper('setData', scope.previous_aspect_data)
+                                }
+                                return false;
+                            }
+                            else {
+                                scope.previous_aspect_data = data;
+                            }
+                        }
+
                         $timeout(function () {
                             updateCoordinates({
                                 'width': e.width,
@@ -441,7 +440,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             });
                         })
                     }
-
                     $image.cropper(options);
                 }
 
@@ -460,8 +458,41 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 var setNewModelValue = function (new_selection_by_user) {
                     if (new_selection_by_user) {
-                        scope.prCrop['selected_by_user'] = new_selection_by_user;
+                        $timeout(function () {
+                            scope.prCrop['selected_by_user'] = new_selection_by_user;
+                        }, 0);
                     }
+                }
+
+                var normalize_coordinates = function (coordinates, size, aspect) {
+                    if (!coordinates) {
+                        coordinates = {};
+                    }
+
+                    if (!(coordinates.x >= 0 && coordinates.x <= size[0] - 1 && coordinates.width >= 1 && coordinates.width <= size[0] - coordinates.x)) {
+                        coordinates.x = size[0] / 10.
+                        coordinates.width = 8 * size[0] / 10.
+                    }
+
+                    if (!(coordinates.y >= 0 && coordinates.y <= size[1] - 1 && coordinates.height >= 1 && coordinates.height <= size[1] - coordinates.y)) {
+                        coordinates.y = size[1] / 10.
+                        coordinates.height = 8 * size[1] / 10.
+                    }
+
+                    if (aspect) {
+                        var img_aspect = coordinates.width / coordinates.height;
+                        if (img_aspect < aspect[0]) {
+                            coordinates.y += (coordinates.height - coordinates.width / aspect[0]) / 2.
+                            coordinates.height -= (coordinates.height - coordinates.width / aspect[0])
+                        }
+                        if (img_aspect > aspect[1]) {
+                            coordinates.x += (coordinates.width - coordinates.height * aspect[1]) / 2.
+                            coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
+                        }
+                    }
+
+                    return coordinates;
+
                 }
 
                 var restartCropper = function (src, new_selection_by_user, force_image_src_on_error) {
@@ -481,7 +512,13 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         $image.attr('src', src);
 
                         var selection = new_selection_by_user ? new_selection_by_user : scope.prCrop['selected_by_user'];
-                        options['data'] = selection['crop_coordinates'];
+
+                        options['autoCrop'] = true;
+
+                        options['data'] = normalize_coordinates(selection['crop_coordinates'], [fr.width, fr.height],
+                            options['aspectRatio'] ? [options['aspectRatio'], options['aspectRatio']] :
+                                (scope.aspect_ratio ? [scope.aspect_ratio[0], scope.aspect_ratio[1]] : false));
+
                         if (scope.prCrop['cropper'] && ((selection['type'] === 'browse') || (selection['type'] === 'upload'))) {
                             runCropper(options);
                         }
