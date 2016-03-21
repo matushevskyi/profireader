@@ -7,12 +7,12 @@
 {% block portal_content %}
 <script>
 
-    module.controller('helpmessage',  function($scope, $ok, $timeout){
+    module.controller('helpmessage',  function($scope, $ok){
 
       $scope.help_message = '{{ url_for('auth.help_message') }}'
 
       $scope.sendMessage = function(message) {
-          return $ok($scope.help_message, {message:message}, function(resp){
+          return $ok($scope.help_message, {message:message, }, function(resp){
               if (resp['ok']) {
                         window.location.href = '{{ url_for('reader.list_reader') }}'
                 } else {
