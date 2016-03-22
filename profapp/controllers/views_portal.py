@@ -40,7 +40,7 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
     layouts = [x.get_client_side_dict() for x in db(PortalLayout).all()]
     types = {x.id: x.get_client_side_dict() for x in PortalDivisionType.get_division_types()}
     company = Company.get(company_id)
-
+    portal = Portal() if portal_id is None else Portal.get(portal_id)
     if action == 'load':
         ret = {'company': company.get_client_side_dict(),
                'layouts': layouts, 'division_types': types}
@@ -68,6 +68,7 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
                                   'portal_division_type_id': 'company_subportal',
                                   'page_size': '',
                                   'settings': {'company_id': ret['portal_company_members'][0]['id']}}]}
+            ret['logo'] = portal.get_logo_client_side_dict()
         return ret
     else:
         json_portal = json['portal']
@@ -96,7 +97,9 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
             portal.divisions = divisions
             PortalConfig(portal=portal, page_size_for_divisions=page_size_for_config)
         if action == 'save':
-            return portal.setup_created_portal(g.filter_json(json_portal, 'logo_file_id')).save().get_client_side_dict()
+            portal.setup_created_portal(g.filter_json(json_portal, 'logo_file_id')).save()
+            portal_dict = portal.set_logo_client_side_dict(json['logo']).save().get_client_side_dict()
+            return portal_dict
         else:
             return portal.validate(create_or_update == 'create')
 

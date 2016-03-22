@@ -187,6 +187,9 @@ def signup():
                            login_signup='signup')
 
 
+@auth_bp.route('//', methods=['POST'])
+
+
 @auth_bp.route('/login_signup/<soc_network_name>', methods=['GET', 'POST'])
 # @auth_bp.route('/login_signup_socnet/<soc_network_name>', methods=['GET', 'POST'])
 # @auth_bp.route('/login_signup/<string:soc_network_name>/<string:portal_id>', methods=['GET', 'POST'])

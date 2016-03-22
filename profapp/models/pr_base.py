@@ -529,6 +529,7 @@ class PRBase:
         ret = {
             'upload': parameters.get('upload'),
             'browse': parameters.get('browse'),
+            'none': parameters.get('none'),
             'cropper': {'aspect_ratio': parameters.get('aspect_ratio')} if parameters.get('crop') else False,
             'min_size': parameters.get('min_size'),
             'preset_urls': parameters.get('preset_urls'),

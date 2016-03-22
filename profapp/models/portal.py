@@ -15,7 +15,9 @@ from sqlalchemy import orm
 import itertools
 from config import Config
 import simplejson
-from .files import File
+from .files import File, ImageCroped
+from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+from ..utils import fileUrl
 from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
@@ -182,6 +184,30 @@ class Portal(Base, PRBase):
 
 
         pass
+
+    def logo_file_properties(self):
+        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
+        return {
+            'browse': self.id,
+            'upload': True,
+            'crop': True,
+            'image_size': [450, 450],
+            'min_size': [100, 100],
+            'aspect_ratio': [0.5, 3.0],
+            'preset_urls': {'glyphicon-remove-circle': nologo_url},
+            'no_selection_url': nologo_url
+    }
+
+    def get_logo_client_side_dict(self):
+        return self.get_image_cropped_file(self.logo_file_properties(),
+                                             db(ImageCroped, croped_image_id=self.logo_file_id).first())
+
+    def set_logo_client_side_dict(self, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user'] = {'type': 'none'}
+        self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+                                                          client_data, self.logo_file_id, self.own_company.system_folder_file_id)
+        return self
 
     def setup_created_portal(self, logo_file_id=None):
         # TODO: OZ by OZ: move this to some event maybe
