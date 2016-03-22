@@ -10,6 +10,11 @@
 body {
   padding-top: 100px;
 }
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .widewrapper {
   min-height: 80vh;
 }
@@ -421,7 +426,6 @@ body {
 }
 .some-company-info h3 {
   text-align: center;
-  margin-top: 0px;
 }
 .some-company-info a {
   color: #18BCAB;

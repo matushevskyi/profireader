@@ -168,16 +168,20 @@ class ArticlePortalDivision(Base, PRBase):
                   article_portal_division_id=self.id,
                   favorite=True).count() > 0
 
+    def check_liked_status(self, user_id=None):
+        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user_id,
+                  article_portal_division_id=self.id,
+                  liked=True).count() > 0
+
+    def check_liked_count(self):
+        return db(ReaderArticlePortalDivision, article_portal_division_id=self.id, liked=True).count()
+
     def like_dislike_user_article(self, liked):
         article = db(ReaderArticlePortalDivision, article_portal_division_id=self.id,
                      user_id=g.user_id).one()
         article.favorite = True if liked else False
         self.like_count += 1
 
-    @staticmethod
-    def article_is_liked(article_portal_division_id, user_id = None):
-        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user_id,
-                  article_portal_division_id=article_portal_division_id, liked=True).count() > 0
 
     def search_filter_default(self, division_id, company_id=None):
         """ :param division_id: string with id from table portal_division,
@@ -916,13 +920,23 @@ class ReaderArticlePortalDivision(Base, PRBase):
 
     @staticmethod
     def add_delete_favorite_user_article(article_portal_division_id, favorite):
-        article = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id,
+        articleReader = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id,
                      user_id=g.user_id).first()
-        if not article:
+        if not articleReader:
+            articleReader = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
+        articleReader.favorite = True if favorite else False
+        articleReader.save()
+        return articleReader.favorite
+
+    @staticmethod
+    def add_delete_liked_user_article(article_portal_division_id, liked):
+        articleReader = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id,
+                     user_id=g.user_id).first()
+        if not articleReader:
             article = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
-        article.favorite = True if favorite else False
-        article.liked = True
-        return article.favorite
+        articleReader.liked = True if liked else False
+        articleReader.save()
+        return articleReader.liked
 
     @staticmethod
     def article_is_favorite(user_id, article_portal_division_id):

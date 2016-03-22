@@ -4,28 +4,6 @@
     {{ super() }}
 {% endblock head %}
 
-<!--<div ng-controller="UserLoginController" >-->
-<!--<h1 class="nice-title">{{ '{{' }}_('User Profile'){{ '}}' }}<span></span></h1>-->
-<!--<a class="h1-btn icon icon-edit" href="{{ url_for('user.edit_profile', user_id=user.id) }}"  title="{{ _('EDIT PROFFILE') }}"><img src="//static.profireader.com/static/front/img/ico/user.png" /></a>-->
-<!--</div>-->
-<!--<div ng-controller="UserLoginController" class="user-profile">-->
-<!--<h2>{{ user.profireader_name }}</h2>-->
-<!--<div class="info">-->
-<!--{#        <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}"><br>#}-->
-<!--{#        <img class="img-rounded profile-thumbnail" src="{{ user.profireader_avatar_url }}" style="width:{{ avatar_size }}px;height:{{ avatar_size }}px;border:0"><br>#}-->
-<!--<div class="profile-thumbnail" style="background-image: url('{{ user.profireader_avatar_url }}')"></div>-->
-<!--<div class="item"><span>{{ '{{' }}_('Your email'){{ '}}' }}:</span> {{ user.profireader_email }}</div>-->
-<!--<div class="item"><span>{{ '{{' }}_('Your display name'){{ '}}' }}:</span> {{ user.profireader_name }}</div>-->
-<!--<div class="item"><span>{{ '{{' }}_('Your first name'){{ '}}' }}:</span> {{ user.profireader_first_name or ''}}</div>-->
-<!--<div class="item"><span>{{ '{{' }}_('Your last name'){{ '}}' }}:</span> {{ user.profireader_last_name or ''}}</div>-->
-<!--<div class="item"><span></span> {{ user.profireader_gender or ''}}:</div>-->
-<!--<div class="item"><span>{{ '{{' }}_('Your web-page'){{ '}}' }}:</span> {{ user.profireader_link or ''}}</div>-->
-<!--<div class="item"><span>{{ '{{' }}_('Phone'){{ '}}' }}:</span>  {{ user.profireader_phone.national or ''}}</div>-->
-<!--<div class="item"><span>{{ '{{' }}_('Your location'){{ '}}' }}:</span> {{ user.location or ''}}</div>-->
-<!--<div class="item"><span>{{ '{{' }}_('About'){{ '}}' }}:</span> {{ user.about_me or ''}}</div>-->
-<!--{#        <p>{{ '{{' }}_('Member since'){{ '}}' }} {{ '{{' }} user.registered_tm {{ '}}' }}.</p>#}-->
-<!--<div class="item"><span>{{ '{{' }}_('Member since'){{ '}}' }}</span>{{ moment(user.registered_tm).format('L') }}.</div>-->
-
 {% block portal_content %}
 
     <div class="container" ng-controller="UserLoginController" ng-cloak>
@@ -99,46 +77,6 @@
     </div>
 
 
-    <!--
-
-    <div ng-controller="UserLoginController">
-        <h1 class="nice-title">{{ '{{' }}_('User Profile'){{ '}}' }}<span></span></h1>
-        <a pr_test="EditProfile" class="h1-btn" href="{{ url_for('user.edit_profile', user_id=user.id) }}">{{ '{{' }}_('Edit
-            profile'){{ '}}' }}</a>
-    </div>
-
-    <div class="form info" style="padding-left: 10px" ng-controller="UserLoginController">
-        <div ng-controller="UserLoginController" class="user-profile">
-            <h2 pr-test="UserProfiName">{{ user.profireader_name }}</h2>
-            <div class="info">
-                {#        <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}"><br>#}
-                {#        <img class="img-rounded profile-thumbnail" src="{{ user.profireader_avatar_url }}" style="width:{{ avatar_size }}px;height:{{ avatar_size }}px;border:0"><br>#}
-                <div class="profile-thumbnail"
-                     style="background-image: url('{{ user.profireader_small_avatar_url }}')"></div>
-
-                <div class="item"><span>{{ '{{' }}_('Your email'){{ '}}' }}:</span> {{ user.profireader_email }}</div>
-                <div class="item"><span>{{ '{{' }}_('Your display name'){{ '}}' }}:</span> {{ user.profireader_name }}
-                </div>
-                <div class="item">
-                    <span>{{ '{{' }}_('Your first name'){{ '}}' }}:</span> {{ user.profireader_first_name or '' }}</div>
-                <div class="item">
-                    <span>{{ '{{' }}_('Your last name'){{ '}}' }}:</span> {{ user.profireader_last_name or '' }}</div>
-                <div class="item"><span>{{ '{{' }}_('Gender'){{ '}}' }}:</span> {{ user.profireader_gender or '' }}
-                </div>
-                <div class="item"><span>{{ '{{' }}_('Your web-page'){{ '}}' }}:</span> {{ user.profireader_link or '' }}
-                </div>
-                <div class="item">
-                    <span>{{ '{{' }}_('Phone'){{ '}}' }}:</span> {{ user.profireader_phone.national or '' }}</div>
-                <div class="item"><span>{{ '{{' }}_('Your location'){{ '}}' }}:</span> {{ user.location or '' }}</div>
-                <div class="item"><span>{{ '{{' }}_('About'){{ '}}' }}:</span> {{ user.about_me or '' }}</div>
-                {#        <p>{{ '{{' }}_('Member since'){{ '}}' }} {{ '{{' }} user.registered_tm {{ '}}' }}.</p>#}
-                <div class="item">
-                    <span>{{ '{{' }}_('Member since'){{ '}}' }}:</span>{{ moment(user.registered_tm).format('L') }}.
-                </div>
-            </div>
-        </div>
-    </div>
--->
 {% endblock portal_content %}
 
 {% block scripts %}
