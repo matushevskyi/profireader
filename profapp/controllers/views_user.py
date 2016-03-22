@@ -55,6 +55,7 @@ def edit_profile_load(json, user_id):
         ret['user']['avatar'] = g.user.get_image_client_dict()
         return ret
     else:
+        print(json)
         g.user.updates(json['user'])
         if action == 'validate':
             g.user.detach()

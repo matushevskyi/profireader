@@ -171,7 +171,7 @@ class File(Base, PRBase):
         actions['paste'] = lambda file: None
         name = name.lower()
         all_files = File.get_all_in_dir_rev(folder_id)[::-1]
-        sort_dirs = [];
+        sort_dirs = []
         sort_files = []
         for file in all_files:
             if re.match(r'.*' + name + '.*', file.name.lower()):
@@ -240,6 +240,7 @@ class File(Base, PRBase):
                         'parent_id': file.parent_id, 'type': File.type(file),
                         'date': str(file.md_tm).split('.')[0],
                         'url': file.get_thumbnail_url(size=str_size),
+                        'file_url' : file.url(),
                         'youtube_data': {'id': file.youtube_video.video_id,
                                          'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
                         'path_to': File.path(file),
@@ -275,6 +276,7 @@ class File(Base, PRBase):
                                              str_size=str_size),
                                      parent_id=self.parent_id,
                                      root_folder_id=self.root_folder_id,
+                                     company_id=self.company_id,
                                      mime=self.mime.split('/')[0] + '/thumbnail').save()
                     content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
                     g.db.add_all([thumbnail, content])
@@ -520,10 +522,10 @@ class File(Base, PRBase):
                     name=unique_name,
                     mime=type,
                     size=size
-                    ).save()
+                    )
         file_cont = FileContent(file=file, content=content)
-        g.db.add(file, file_cont)
-        g.db.commit()
+        g.db.add_all([file, file_cont])
+        g.db.flush()
         return file
 
     @staticmethod
@@ -671,10 +673,10 @@ class File(Base, PRBase):
                 new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
                 ImageCroped(original_image_id=self.id,
                             croped_image_id=new_cropped_image.id,
-                            x=float(area[0]), y=float(area[1]),
-                            width=float(area[2]), height=float(area[3]),
-                            croped_width=int(area[2]-area[0]),
-                            croped_height=int(area[3]-area[1]),
+                            x=float(round(area[0], 6)), y=float(round(area[1], 6)),
+                            width=float(area[2]-area[0]), height=float(area[3]-area[1]),
+                            croped_width=float(area[4]),
+                            croped_height=float(area[5]),
                             zoom=coordinates['zoom']).save()
                 return new_cropped_image.id
         else:
@@ -684,12 +686,12 @@ class File(Base, PRBase):
         File.get(old_image_cropped.croped_image_id).delete()
         new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
         old_image_cropped.croped_image_id = new_cropped_image.id
-        old_image_cropped.x = float(area[0])
-        old_image_cropped.y = float(area[1])
-        old_image_cropped.width = float(area[2])
-        old_image_cropped.height = float(area[3])
-        old_image_cropped.croped_width = int(area[2]-area[0])
-        old_image_cropped.croped_height = int(area[3]-area[1])
+        old_image_cropped.x = float(round(area[0], 6))
+        old_image_cropped.y = float(round(area[1], 6))
+        old_image_cropped.width = float(area[2]-area[0])
+        old_image_cropped.height = float(area[3]-area[1])
+        old_image_cropped.croped_width = float(area[4])
+        old_image_cropped.croped_height = float(area[5])
         old_image_cropped.zoom = coordinates['zoom']
         return new_cropped_image.save()
 
@@ -720,16 +722,16 @@ class File(Base, PRBase):
 
             wider = (right-left)/(bottom-top) / (params['image_size'][0]/params['image_size'][1])
             if wider>1:
-                neww = params['image_size'][0]
-                newh = params['image_size'][1]/wider
+                newwidth = params['image_size'][0]
+                newheight = params['image_size'][1]/wider
             else:
-                newh = params['image_size'][1]
-                neww = params['image_size'][0]*wider
+                newheight = params['image_size'][1]
+                newwidth = params['image_size'][0]*wider
             cropped = image_pil.crop((int(left), int(top), int(right), int(bottom)))
-            cropped = cropped.resize((int(neww), int(newh)))
+            cropped = cropped.resize((int(newwidth), int(newheight)))
             bytes_file = BytesIO()
             cropped.save(bytes_file, self.mime.split('/')[-1].upper())
-            return bytes_file, [left, top, right, bottom]
+            return bytes_file, [left, top, right, bottom,newwidth, newheight]
         except ValueError:
             return False
 
