@@ -158,7 +158,7 @@ def uploader(company_id=None):
         if 'code' in request.args:
             session['auth_code'] = request.args['code']
             token_db_class.save_credentials()
-        return redirect(url_for('company.show')) if 'code' in request.args \
+        return redirect(url_for('company.companies')) if 'code' in request.args \
             else redirect(google.get_auth_code())
     return render_template('file_uploader.html', company_id=company_id)
 

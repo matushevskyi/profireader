@@ -8,7 +8,7 @@
 
     <script xmlns="http://www.w3.org/1999/html">
         module.controller('companies_list', ['$scope', '$ok', '$timeout', function ($scope, $ok, $timeout) {
-            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('companies_list')
+            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('companies')
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.url_search_for_company = {{ raw_url_for('company.search_for_company_to_join')|safe }};
             $scope.url_join = {{ raw_url_for('company.join_to_company')|safe }};
@@ -64,6 +64,7 @@
                 $ok($scope.url_join({company_id: company_id}), {company_id: company_id}, function (resp) {
                     $scope.selectedCompany = null;
                     $scope.selectedCompany_name = null;
+                    $scope.data_search = [];
                     $scope.data['companies'] = resp['companies'];
                     $timeout(function () {
                         scrool('#joined_company_' + company_id);
@@ -74,7 +75,7 @@
                 });
             };
 
-            $scope.loadNextPage('{{ url_for('company.load_companies')|safe }}')
+            $scope.loadNextPage('{{ url_for('company.companies_load')|safe }}')
 
         }]);
     </script>
