@@ -21,7 +21,6 @@ from ..utils.redirect_url import redirect_url
 from utils.pr_email import SendEmail
 from .request_wrapers import ok
 from datetime import datetime
-import time
 # def _session_saver():
 #    session.modified = True
 
@@ -166,6 +165,7 @@ def signup():
                 elif form.get('password') != form.get('password1'):
                     return False
         return True
+
     if check_fields():  # # pass1 == pass2
         profireader_all = SOC_NET_NONE['profireader'].copy()
         profireader_all['email'] = email
@@ -175,20 +175,13 @@ def signup():
             password=password  # # pass is automatically hashed
         )
         user.avatar('gravatar', size=AVATAR_SIZE, small_size=AVATAR_SMALL_SIZE)
-        # # user.password = signup_form.password.data  # pass is automatically hashed
-        token = user.generate_confirmation_token()
-        user.email_conf_token = token.decode("utf-8")
-        print(token)
-
-        user.email_conf_tm = datetime.today()
+        user.generate_confirmation_token()
         g.db.add(user)
         g.db.commit()
-
-        SendEmail().send_email(subject='Confirm Your Account', template='auth/email/confirm',
-                               send_to=(user.profireader_email, ), user=user, token=token)
+        SendEmail().send_email(subject='Confirm Your Account',
+                               html=render_template('auth/email/resend_confirmation.html', user=user),
+                               send_to=(user.profireader_email, ))
         flash('A confirmation email has been sent to you by email.')
-        print(user.profireader_email)
-        # return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
         return redirect(url_for('auth.login_signup_endpoint'))
     return render_template('auth/login_signup.html',
                            login_signup='signup')
@@ -274,23 +267,31 @@ def logout():
     return redirect(url_for('general.index'))
 
 
-@auth_bp.route('/confirm/<token>')
-def confirm(token):
+@auth_bp.route('/resend_confirmation/')
+@login_required
+def resend_confirmation():
+    current_user.generate_confirmation_token().save()
+    SendEmail().send_email(subject='Confirm Your Account',
+                           html=render_template('auth/email/resend_confirmation.html', user=current_user),
+                           send_to=(current_user.profireader_email, ))
+    flash('A new confirmation email has been sent to you by email.')
+    return redirect(url_for('general.index'))
 
+
+@auth_bp.route('/confirm_email/<token>/')
+def confirm(token):
     user = db(User, email_conf_token=token).first()
-    if not user:
-        return render_template("auth/unconfirmed.html", message='Please confirm Your account before proceed!')
-    elif not user.email_conf_tm.timestamp() > \
-                    int(time.time()) - current_app.config.get('EMAIL_CONFIRMATION_TOKEN_TTL', 3600*24):
-        return render_template("auth/unconfirmed.html", email=user.profireader_email)
-    elif user.confirmed:
+    if user and user.confirmed:
         return render_template("error.html", message='Your account has been already confirmed!')
+    elif not user or not user.confirm_email():
+        return render_template("auth/unconfirmed.html", message='Wrong or expired token',
+                               email=user.profireader_email if user else '')
     else:
         logout_user()
         user.confirmed = True
         user.save()
         login_user(user)
-        return render_template("auth/confirmed.html")
+        return render_template("auth/confirm_email.html")
 
 
 @auth_bp.route('/tos', methods=['POST'])
@@ -300,33 +301,16 @@ def tos(json):
     g.user.tos = json['accept'] == 'accept'
     return {'tos': g.user.tos}
 
-
-@auth_bp.route('/confirm')
-@login_required
-def resend_confirmation():
-    token = current_user.generate_confirmation_token()
-    current_user.email_conf_token = token.decode("utf-8")
-    current_user.save()
-    # html = render_html()
-    # user=current_user, token=token
-    # template='auth/email/confirm'
-
-    SendEmail().send_email(subject='Confirm Your Account', html=html,
-                           send_to=(current_user.profireader_email, ))
-    flash('A new confirmation email has been sent to you by email.')
-    return redirect(url_for('general.index'))
-
-
-
 @auth_bp.route('/help', methods=["POST"])
-@login_required
 @ok
 def help_message(json):
 
-    SendEmail().send_email(subject='Send help message', send_to=("profireader.service@gmail.com", ''),
-                           html=('From '+current_user.profireader_email+': '+json.get('message')))
-    flash('Your message has been sent! ')
-    return True
+        SendEmail().send_email(subject='Send help message', send_to=("profireader.service@gmail.com", ''),
+                               html=('From '+json['data']['email']+': '+json['data']['message']))
+
+        flash('Your message has been sent! ')
+        redirect(url_for('reader.list_reader'))
+        return True
 
 
 @auth_bp.route('/change-password', methods=['GET', 'POST'])

@@ -43,8 +43,8 @@
              af-after-save="afterSave"
              af-amid-load="amidLoad" class="edit_user_profile" ng-model="data">
             <div class="row link-page">
-                <h5 pr-test="EditProfileTitle" class="">{{ _('Edit profile') }}</h5>
-                <a pr-test="ReturnToProfile" ng-if="data.user" title="profile"
+                <h5 class="">{{ _('Edit profile') }}</h5>
+                <a ng-if="data.user" title="profile"
                    href="{{ data.user?url_user_profile({'user_id': data.user.id}):'' }}"><i
                         class="fa fa-user fa-2x"></i></a>
                 <a ng-if="0 && data.user" title="setings"
@@ -63,28 +63,17 @@
                 </div>
 
 
-                <form name="formUser" class="col-lg-8 col-md-8 col-sm-8 col-xs-8 edit-grup">
+                <form class="col-lg-8 col-md-8 col-sm-8 col-xs-8 edit-grup">
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-<<<<<<< HEAD
-                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name') }}</span>
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name *') }}</span>
                         <input pr-validation-answer="data_validation:profireader_first_name" class="form-control" aria-describedby="sizing-addon1" type="text"
                                placeholder="first name" ng-model="data.user.profireader_first_name">
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your last name') }}</span>
+                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your last name *') }}</span>
                         <input pr-validation-answer="data_validation:profireader_last_name" class="form-control" aria-describedby="sizing-addon1" type="text"
                                placeholder="last name"
                                ng-model="data.user.profireader_last_name">
-=======
-                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your display name') }}</span>
-                        <input pr-test="" pr-validation-answer="data_validation:profireader_name" class="form-control"
-                               aria-describedby="sizing-addon1" type="text" placeholder="name"
-                               ng-pattern="/[\wа-яёі']{4}/"
-                               name="profireader_name" ng-model="data.user.profireader_name">
-                        <div ng-show="formUser.profireader_name.$error.pattern" class="error-input">The
-                            user name should be longer!
-                        </div>
->>>>>>> origin/master
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your email') }}</span>
@@ -92,34 +81,10 @@
                                placeholder="youremail@example.com" ng-model="data.user.profireader_email">
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name') }}</span>
-                        <input pr-validation-answer="data_validation:profireader_first_name" class="form-control"
-                               aria-describedby="sizing-addon1" type="text"
-                               placeholder="first name" ng-model="data.user.profireader_first_name"
-                               name="profireader_first_name" ng-pattern="/[\wа-яёі']{4}/">
-                        <div ng-show="formUser.profireader_first_name.$error.pattern" class="error-input">The
-                            user name should be longer!
-                        </div>
-                        <input pr-test="FirstNameEdit" pr-validation-answer="data_validation:profireader_first_name" class="form-control" aria-describedby="sizing-addon1" type="text"
-                               placeholder="first name" ng-model="data.user.profireader_first_name">
-                    </div>
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                        <span class="input-group-addon" id="sizing-addon1">{{ _('Your last name') }}</span>
-                        <input pr-validation-answer="data_validation:profireader_last_name" class="form-control"
-                               aria-describedby="sizing-addon1" type="text"
-                               placeholder="last name" ng-model="data.user.profireader_last_name"
-                               name="profireader_last_name" ng-pattern="/[\wа-яёі']{4}/">
-                        <div ng-show="formUser.profireader_last_name.$error.pattern" class="error-input">The
-                            user name should be longer!
-                        </div>
-                        <input pr-test="LastNameEdit" pr-validation-answer="data_validation:profireader_last_name" class="form-control" aria-describedby="sizing-addon1" type="text"
-                               placeholder="last name"
-                               ng-model="data.user.profireader_last_name">
-                    </div>
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Birthday') }}</span>
                         <input class="form-control" pr-datepicker="" ng-model="data.user.birth_tm"
-                               aria-describedby="sizing-addon1" type="date" placeholder="birthday">
+                               aria-describedby="sizing-addon1" type="date"
+                               placeholder="birthday"/>
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Gender') }}</span>
@@ -148,12 +113,8 @@
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Phone') }}</span>
-                        <input class="form-control" aria-describedby="sizing-addon1" type="number"
-                               placeholder="your phone" ng-model="data.user.profireader_phone"
-                               ng-pattern="/[0-9]{6}/">
-                        <div ng-show="formUser.profireader_phone.$error.pattern" class="error-input">The
-                            phone number should be longer!
-                        </div>
+                        <input class="form-control" aria-describedby="sizing-addon1" type="text"
+                               placeholder="your phone" ng-model="data.user.profireader_phone">
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Location') }}</span>
@@ -169,9 +130,6 @@
                 </div>
                 <div class="item">
                     <button class="btn btn-default save-profile pull-right
-                    </div>
-                    <div class="item">
-                        <button pr-test="SaveProfileButton" class="btn btn-default save-profile pull-right
                         border-radius"
                             type="button" ng-click="$af.save(data)"
                             ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save profile') }}
