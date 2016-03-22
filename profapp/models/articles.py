@@ -8,21 +8,19 @@ from ..models.portal import PortalDivision, Portal, PortalDivisionType, MemberCo
 from ..models.users import User
 from ..models.files import File
 from ..models.tag import Tag, TagPortalDivision, TagPortalDivisionArticle
-from config import Config
-# from ..models.tag import Tag
-from utils.db_utils import db
 from .pr_base import PRBase, Base, MLStripper, Search, Grid
 # from db_init import Base
 from utils.db_utils import db
 from flask import g, session
 from sqlalchemy.sql import or_, and_
-from sqlalchemy.sql import expression
 import re
 from sqlalchemy import event
-from ..controllers import errors
 from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
 from flask import redirect, url_for
+from .files import ImageCroped
+from ..utils import fileUrl
+from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 
 
 class ArticlePortalDivision(Base, PRBase):
@@ -419,6 +417,13 @@ class ArticlePortalDivision(Base, PRBase):
 
         return ret
 
+    def get_image_client_side_dict(self):
+        return Article.get_image_client_side_dict(self)
+
+
+    def set_image_client_side_dict(self, client_data):
+        return Article.set_image_client_side_dict(self, client_data)
+
 
 class ArticleCompany(Base, PRBase):
     __tablename__ = 'article_company'
@@ -531,6 +536,13 @@ class ArticleCompany(Base, PRBase):
                              fields='id|title|subtitle|short|keywords|cr_tm|md_tm|article_id|image_file_id|company_id',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    def get_image_client_side_dict(self):
+        return Article.get_image_client_side_dict(self)
+
+
+    def set_image_client_side_dict(self, client_data):
+        return Article.set_image_client_side_dict(self, client_data)
 
     def validate(self, is_new):
         ret = super().validate(is_new)
@@ -835,6 +847,38 @@ class Article(Base, PRBase):
                            ArticlePortalDivision.long_stripped.ilike("%" + search_text + "%")))
         return sub_query
 
+    @staticmethod
+    def logo_file_properties(article):
+        noimage_url = fileUrl(FOLDER_AND_FILE.no_article_image())
+        return {
+            'browse': article.id,
+            'upload': True,
+            'none': noimage_url,
+            'crop': True,
+            'image_size': [450, 450],
+            'min_size': [100, 100],
+            'aspect_ratio': [0.5, 3.0],
+            'preset_urls': {},
+            'no_selection_url': noimage_url
+        }
+
+    @staticmethod
+    def get_image_client_side_dict(article):
+        return article.get_image_cropped_file(Article.logo_file_properties(article),
+                                             db(ImageCroped, croped_image_id=article.image_file_id).first())
+
+    @staticmethod
+    def set_image_client_side_dict(article, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user'] = {'type': 'none'}
+        if not article.company:
+            folder_id = Company.get(article.company_id).system_folder_file_id
+        else:
+            folder_id = article.company.system_folder_file_id
+        article.image_file_id = article.set_image_cropped_file(Article.logo_file_properties(article),
+                                                          client_data, article.image_file_id, folder_id)
+        return article
+
     # @staticmethod
     # def get_articles_for_portal(page_size, portal_division_id,
     #                             pages, page=1, search_text=None):
@@ -932,6 +976,7 @@ class ReaderArticlePortalDivision(Base, PRBase):
     def add_delete_liked_user_article(article_portal_division_id, liked):
         articleReader = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id,
                      user_id=g.user_id).first()
+
         if not articleReader:
             article = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
         articleReader.liked = True if liked else False
