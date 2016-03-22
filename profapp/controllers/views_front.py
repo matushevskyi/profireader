@@ -112,6 +112,7 @@ def details(article_portal_division_id):
 @front_bp.route('_a/add_delete_favorite/<string:article_portal_division_id>/', methods=['POST'])
 @ok
 def add_delete_favorite(json, article_portal_division_id):
+
     ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, json['on'])
     return {'on': False if json['on'] else True}
 

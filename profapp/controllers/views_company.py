@@ -42,7 +42,7 @@ def load_companies(json):
             Company.id == db(UserCompany, user_id=g.user.id).subquery().c.company_id), page=1,
             items_per_page=6 * json.get('next_page') if json.get('next_page') else 6)
     return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],
-            'user_id': g.user_dict['id'], 'end': pages == 1}
+            'user_id': g.user_dict['id'], 'end': True if pages == 1 or pages == 0 else False}
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])

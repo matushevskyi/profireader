@@ -369,7 +369,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             }
                         }
                     }
-                    console.log(options)
                     return options;
                 }
 
@@ -508,14 +507,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
                         }
                     }
-                    console.log(coordinates)
                     return coordinates;
 
                 }
 
                 var restartCropper = function (src, new_selection_by_user, force_image_src_on_error) {
                     var fr = new Image();
-                    console.log(src)
                     fr.addEventListener('load', function (e) {
 
                         loadImage(false);
@@ -537,7 +534,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         options['data'] = normalize_coordinates(selection['crop_coordinates'], [fr.width, fr.height],
                             options['aspectRatio'] ? [options['aspectRatio'], options['aspectRatio']] :
                                 (scope.aspect_ratio ? [scope.aspect_ratio[0], scope.aspect_ratio[1]] : false));
-                        console.log(options['data'])
                         if (scope.prCrop['cropper'] && ((selection['type'] === 'browse') || (selection['type'] === 'upload'))) {
                             runCropper(options, [fr.width, fr.height]);
                         }
@@ -1785,24 +1781,39 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             scope.next_page = 1;
             $(window).scroll(function () {
                 if ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
+
                     if (scope.loading === false && scope.data.end !== true) {
+
                         scope.loading = true;
                         scope.next_page += 1;
                         if (scope.scroll_data) {
                             scope.scroll_data.next_page = scope.next_page
                         }
-                        $ok(url, scope.scroll_data ? scope.scroll_data : {next_page: scope.next_page}, function (resp) {
-                            scope.data = resp;
-                            if (scope.data.end)
-                                scope.next_page = 1
-                        }).finally(function () {
-                            $timeout(function () {
-                                scope.loading = false;
-                            }, 1000)
-                        });
+                        load()
                     }
                 }
             });
+            $timeout(function(){
+                if(scope.data.end === false){
+                    scope.next_page += 1;
+                    load()
+                }
+            }, 500);
+            var load = function(){
+                $ok(url, scope.scroll_data ? scope.scroll_data : {next_page: scope.next_page}, function (resp) {
+                    scope.data = resp;
+                    if (scope.data.end)
+                        scope.next_page = 1
+                }).finally(function () {
+                    $timeout(function () {
+                        scope.loading = false;
+                        if ($(document).height() - $(window).height() === 0 && !scope.data.end) {
+                            scope.next_page += 1;
+                            load ()
+                        }
+                    }, 1000)
+                });
+            }
         },
         dateOptions: {
             formatYear: 'yy',
