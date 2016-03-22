@@ -152,10 +152,10 @@
                     </a>
                     <div pr-test="SomeCompanyInfo" class="caption some-company-info">
 
-                        <h3><a pr-test="YourCompanyListTitles"
-                               href="{{ url_company_profile({company_id: my_employer.id}) }}">
+                        <a pr-test="YourCompanyListTitles"
+                               href="{{ url_company_profile({company_id: my_employer.id}) }}"><h3 class="ellipsis">
                             {{ _('%(name)s' , my_employer) }}
-                        </a></h3>
+                        </h3></a>
                         <p pr-test="JoinedCompany">{{ _((my_employer.author_user_id==data.user_id? ' Type: OWN
                             COMPANY':'JOINED COMPANY') ,
                             my_employer) }}</p>
