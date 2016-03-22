@@ -413,31 +413,12 @@ class ArticlePortalDivision(Base, PRBase):
 
         return ret
 
-    def logo_file_properties(self):
-        noimage_url = fileUrl(FOLDER_AND_FILE.no_article_image())
-        return {
-            'browse': self.id,
-            'upload': True,
-            'crop': True,
-            'image_size': [450, 450],
-            'min_size': [100, 100],
-            'aspect_ratio': [0.5, 3.0],
-            'preset_urls': {'glyphicon-remove-circle': noimage_url},
-            'no_selection_url': noimage_url
-        }
-
-
-    def get_logo_client_side_dict(self):
-        return self.get_image_cropped_file(self.logo_file_properties(),
-                                             db(ImageCroped, croped_image_id=self.image_file_id).first())
+    def get_image_client_side_dict(self):
+        return Article.get_image_client_side_dict(self)
 
 
     def set_image_client_side_dict(self, client_data):
-        if client_data['selected_by_user']['type'] == 'preset':
-            client_data['selected_by_user'] = {'type': 'none'}
-        self.image_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-                                                          client_data, self.image_file_id, self.company.system_folder_file_id)
-        return self
+        return Article.set_image_client_side_dict(self, client_data)
 
 
 class ArticleCompany(Base, PRBase):
@@ -499,19 +480,6 @@ class ArticleCompany(Base, PRBase):
 
     }
 
-    def logo_file_properties(self):
-        noimage_url = fileUrl(FOLDER_AND_FILE.no_article_image())
-        return {
-            'browse': self.id,
-            'upload': True,
-            'crop': True,
-            'image_size': [450, 450],
-            'min_size': [100, 100],
-            'aspect_ratio': [0.5, 3.0],
-            'preset_urls': {'glyphicon-remove-circle': noimage_url},
-            'no_selection_url': noimage_url
-        }
-
     def action_is_allowed(self, action_name, employment):
 
         if not employment:
@@ -565,21 +533,12 @@ class ArticleCompany(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    def get_logo_client_side_dict(self):
-        return self.get_image_cropped_file(self.logo_file_properties(),
-                                             db(ImageCroped, croped_image_id=self.image_file_id).first())
+    def get_image_client_side_dict(self):
+        return Article.get_image_client_side_dict(self)
 
 
     def set_image_client_side_dict(self, client_data):
-        if client_data['selected_by_user']['type'] == 'preset':
-            client_data['selected_by_user'] = {'type': 'none'}
-        if not self.company:
-            folder_id = Company.get(self.company_id).system_folder_file_id
-        else:
-            folder_id = self.company.system_folder_file_id
-        self.image_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-                                                          client_data, self.image_file_id, folder_id)
-        return self
+        return Article.set_image_client_side_dict(self, client_data)
 
     def validate(self, is_new):
         ret = super().validate(is_new)
@@ -883,6 +842,37 @@ class Article(Base, PRBase):
                            ArticlePortalDivision.short.ilike("%" + search_text + "%"),
                            ArticlePortalDivision.long_stripped.ilike("%" + search_text + "%")))
         return sub_query
+
+    @staticmethod
+    def logo_file_properties(article):
+        noimage_url = fileUrl(FOLDER_AND_FILE.no_article_image())
+        return {
+            'browse': article.id,
+            'upload': True,
+            'crop': True,
+            'image_size': [450, 450],
+            'min_size': [100, 100],
+            'aspect_ratio': [0.5, 3.0],
+            'preset_urls': {'glyphicon-remove-circle': noimage_url},
+            'no_selection_url': noimage_url
+        }
+
+    @staticmethod
+    def get_image_client_side_dict(article):
+        return article.get_image_cropped_file(Article.logo_file_properties(article),
+                                             db(ImageCroped, croped_image_id=article.image_file_id).first())
+
+    @staticmethod
+    def set_image_client_side_dict(article, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user'] = {'type': 'none'}
+        if not article.company:
+            folder_id = Company.get(article.company_id).system_folder_file_id
+        else:
+            folder_id = article.company.system_folder_file_id
+        article.image_file_id = article.set_image_cropped_file(Article.logo_file_properties(article),
+                                                          client_data, article.image_file_id, folder_id)
+        return article
 
     # @staticmethod
     # def get_articles_for_portal(page_size, portal_division_id,

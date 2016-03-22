@@ -65,7 +65,7 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
 
     if action == 'load':
         article_dict = articleVersion.get_client_side_dict(more_fields='long|company')
-        article_dict['image'] = articleVersion.get_logo_client_side_dict()
+        article_dict['image'] = articleVersion.get_image_client_side_dict()
         if publication_id:
             article_dict = dict(list(article_dict.items()) + [('tags', article_tag_names)])
         print(article_dict)
@@ -85,7 +85,7 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
             if publication_id:
                 articleVersion.insert_after(json['portal_division']['insert_after'],
                                             articleVersion.position_unique_filter())
-            article_dict['image'] = articleVersion.get_logo_client_side_dict()
+            article_dict['image'] = articleVersion.get_image_client_side_dict()
             return {'article': article_dict,
                     'portal_division': portal_division_dict(articleVersion)}
 
