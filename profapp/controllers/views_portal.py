@@ -71,7 +71,6 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
             ret['logo'] = portal.get_logo_client_side_dict()
         return ret
     else:
-        print(json['logo'])
         json_portal = json['portal']
         if create_or_update == 'update':
             pass
