@@ -68,7 +68,6 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
         article_dict['image'] = articleVersion.get_image_client_side_dict()
         if publication_id:
             article_dict = dict(list(article_dict.items()) + [('tags', article_tag_names)])
-        print(article_dict)
         return {'article': article_dict,
                 'portal_division': portal_division_dict(articleVersion, available_tag_names)}
     else:
