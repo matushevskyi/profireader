@@ -7,12 +7,13 @@
 {% block portal_content %}
 <script>
 
-    module.controller('helpmessage',  function($scope, $ok){
-
-      $scope.help_message = '{{ url_for('auth.help_message') }}'
+    module.controller('info',  function($scope, $ok){
+      angularControllerFunction('UserLoginController', 'set_selected_user_menu')('info');
+      $scope.$$translate = {{translates('info') | safe}};
+      $scope.help_message = '{{ url_for('auth.help_message') }}';
 
       $scope.sendMessage = function(message) {
-          return $ok($scope.help_message, {message:message, }, function(resp){
+          return $ok($scope.help_message, {message:message}, function(resp){
               if (resp['ok']) {
                         window.location.href = '{{ url_for('reader.list_reader') }}'
                 } else {
@@ -23,7 +24,7 @@
     });
 </script>
     {% raw %}
-    <div class="helpmessage" ng-controller="helpmessage">
+    <div class="helpmessage" ng-controller="info">
         <div class="link-page" ng-cloak>
             <h5>{{ _('Help page') }}</h5>
         </div>
@@ -42,7 +43,7 @@
                 <textarea pr-test="TextInput" class="form-control" rows="4"
                           ng-model='data.message' placeholder="Питання та побажання"></textarea>
                 <button pr-test="SendMessage" class="pull-right" ng-click="sendMessage(data.message)"
-                   type="submit">{{ 'Надіслати' }}</button>
+                   type="submit">{{ _('Send') }}</button>
             </div>
         </form>
     </div>

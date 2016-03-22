@@ -4,7 +4,6 @@
 {% block portal_content %}
     {% include '_ruslan/reader/_reader_nav.html' %}
     <script>
-
         module.controller('list_reader', function ($scope, $ok, $timeout) {
             angularControllerFunction('UserLoginController', 'set_selected_user_menu')('list_reader');
             $scope.$$translate = {{ translates('list_reader')|safe }};
