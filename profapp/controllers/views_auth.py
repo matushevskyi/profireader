@@ -293,38 +293,6 @@ def confirm(token):
         return render_template("auth/confirmed.html")
 
 
-    # if
-    # elif user.confirm(token):
-    #     message = 'bla bla'
-    #     return render_template("errors/404.html", message=message)
-    # else:
-    #     message = 'The confirmation link is invalid or has expired.'
-    #     return render_template("errors/403.html", message=message)
-    # return redirect(url_for('errors/403.html'))
-
-
-    # user = db(User, email_conf_token=token).first()
-    # if user and user.confirmed:
-    #
-    #     message = 'Congratulations!'
-    #     print(message)
-    #     return render_template("auth/confirmed.html", message=message)
-    #
-    # elif user:
-    #     if user.confirm(token):
-    #         message = 'bla bla'#поправити
-    #         # logout/login=user
-    #         return render_template("auth/confirmed.html", message=message)
-    #     else:
-    #         message = 'The confirmation link is invalid or has expired.'
-    #         return render_template("errors/404.html", message=message)
-    # else:
-    #     message = 'The confirmation link is invalid or has expired.'
-    #     return render_template("errors/403.html", message=message)
-
-
-
-
 @auth_bp.route('/tos', methods=['POST'])
 @login_required
 @ok
@@ -339,10 +307,26 @@ def resend_confirmation():
     token = current_user.generate_confirmation_token()
     current_user.email_conf_token = token.decode("utf-8")
     current_user.save()
-    SendEmail().send_email(subject='Confirm Your Account', template='auth/email/confirm',
-                           send_to=(current_user.profireader_email, ), user=current_user, token=token)
+    # html = render_html()
+    # user=current_user, token=token
+    # template='auth/email/confirm'
+
+    SendEmail().send_email(subject='Confirm Your Account', html=html,
+                           send_to=(current_user.profireader_email, ))
     flash('A new confirmation email has been sent to you by email.')
     return redirect(url_for('general.index'))
+
+
+
+@auth_bp.route('/help', methods=["POST"])
+@login_required
+@ok
+def help_message(json):
+
+    SendEmail().send_email(subject='Send help message', send_to=("profireader.service@gmail.com", ''),
+                           html=('From '+current_user.profireader_email+': '+json.get('message')))
+    flash('Your message has been sent! ')
+    return True
 
 
 @auth_bp.route('/change-password', methods=['GET', 'POST'])
