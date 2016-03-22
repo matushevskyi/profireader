@@ -21,7 +21,7 @@
             $scope.user_have_company = true;
 {#            $scope.company = {{company.get_client_side_dict() | tojson | safe}};#}
 
-            $scope.url_back = {{raw_url_for('company.show') | safe}};
+            $scope.url_back = {{raw_url_for('company.companies') | safe}};
             $scope.url_portal_profile = {{raw_url_for('portal.profile') | safe}};
 
             $scope.data = {};
@@ -53,7 +53,7 @@
 
             $scope.afterSave = function (resp, deff) {
                 if (resp && !$scope.data.id) {
-                    window.location.href = '{{ url_for('company.show') |safe }}';
+                    window.location.href = '{{ url_for('company.companies') |safe }}';
                 }
                 $scope.editing = false;
                 deff(resp);

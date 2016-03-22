@@ -28,7 +28,7 @@ def search_to_submit_article(json):
 @tos_required
 @login_required
 # @check_rights(simple_permissions([]))
-def show():
+def companies():
     return render_template('company/companies.html')
 
 
@@ -36,7 +36,7 @@ def show():
 @login_required
 # @check_rights(simple_permissions([]))
 @ok
-def load_companies(json):
+def companies_load(json):
     companies, pages, page, count = pagination(query=db(Company)
         .filter(
             Company.id == db(UserCompany, user_id=g.user.id).subquery().c.company_id), page=1,
@@ -300,10 +300,10 @@ def profile_load_validate_save(json, company_id=None):
         else:
             if company_id is None:
                 company.setup_new_company()
+
             company_dict = company.set_logo_client_side_dict(json['logo']).save().get_client_side_dict()
             company_dict['logo'] = company.get_logo_client_side_dict()
-            company_dict['actions'] = {'edit': True if company_id or UserCompany.get(
-                company_id=company_id).rights['PORTAL_EDIT_PROFILE'] else False}
+            company_dict['actions'] = {'edit': True if company_id else False}
             return company_dict
 
 

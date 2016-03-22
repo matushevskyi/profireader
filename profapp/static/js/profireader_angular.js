@@ -157,6 +157,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 //TODO: OZ by OZ: move it to angular attrs
                 scope.zoomable = true;
                 scope.resetable = true;
+                scope.noneurl = true;
                 scope.aspect_ratio = false;
                 //scope.minimal = 0.1;
 
@@ -168,10 +169,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 scope.setModel = function () {
                     scope.uploadable = false;
                     scope.browsable = false;
+                    scope.noneurl = false;
                     scope.cropable = false;
                     scope.aspect_ratio = false;
                     scope.no_selection_url = scope.fallback_url;
                     if (scope.prCrop) {
+                        scope.noneurl = scope.prCrop['none'] ? scope.prCrop['none'] : false;
                         scope.uploadable = scope.prCrop['upload'] ? true : false;
                         scope.browsable = scope.prCrop['browse'] ? true : false;
                         scope.cropable = scope.prCrop['cropper'] ? scope.prCrop['cropper'] : false;
@@ -239,6 +242,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             'class': className
                         }, true);
 
+                    }
+                };
+
+                scope.selectNone  = function () {
+                    if (scope.noneurl) {
+                        restartCropper(scope.noneurl, {'type': 'none'}, true);
                     }
                 };
 

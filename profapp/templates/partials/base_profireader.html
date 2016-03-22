@@ -74,7 +74,7 @@
                                             Profile'){{ '}}' }}</a></li>
                                     {#                                    <li><a href="{{ url_for('auth.change_password') }}">{{ '{{' }}_('Change Password'){{ '}}' }}</a></li>#}
                                     {#                                    <li><a href="{{ url_for('auth.change_email_request') }}">{{ '{{' }}_('Change Email'){{ '}}' }}</a></li>#}
-                                    {#                                    <li><a href="{{ url_for('company.show') }}">{{ '{{' }}_('Company'){{ '}}' }}</a></li>#}
+                                    {#                                    <li><a href="{{ url_for('company.companies') }}">{{ '{{' }}_('Company'){{ '}}' }}</a></li>#}
                                     {#                                    <li><a href="{{ url_for('article.show_mine') }}">{{ '{{' }}_('My articles'){{ '}}' }}</a></li>#}
                                     <li><a href="{{ url_for('auth.logout') }}">{{ '{{' }}_('Log Out'){{ '}}' }}</a></li>
                                     {#                                    <li><a href="#" ng-click="open_filemanager()">{{ '{{' }}_('File manager'){{ '}}' }}</a>#}
@@ -91,7 +91,7 @@
                             class="tooltip">{{ '{{' }}_('Read my feed'){{ '}}' }}</span></a></li>
                     <li><a class="messages_btn" href="#" title="{{ _('All Messages') }}"><span
                             class="tooltip">{{ '{{' }}_('All Messages'){{ '}}' }}</span></a></li>
-                    <li><a class="company_btn" href="{{ url_for('company.show') }}" title="{{ _('Company') }}"><span
+                    <li><a class="company_btn" href="{{ url_for('company.companies') }}" title="{{ _('Company') }}"><span
                             class="tooltip">{{ '{{' }}_('Company'){{ '}}' }}</span></a></li>
 {#                    <li><a class="article_btn" href="{{ url_for('article.show_mine') }}" title="{{ _('My articles') }}"><span#}
 {#                            class="tooltip">{{ '{{' }}_('My articles'){{ '}}' }}</span></a></li>#}

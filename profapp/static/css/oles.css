@@ -47,10 +47,6 @@
     font-weight: bold;
 }
 
-.link {
-    cursor: pointer;
-}
-
 .text-align-right {
     text-align: right;
 }
@@ -341,5 +337,13 @@
 .img_300 {
     width: 300px;
     height: 300px;
+}
+
+.link {
+    cursor:pointer;
+}
+
+.link:hover span {
+    text-decoration: underline;
 }
 
