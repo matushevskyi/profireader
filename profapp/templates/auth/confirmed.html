@@ -10,8 +10,15 @@
 
 {% block portal_content %}
 
+
+
 <div class="container" ng-controller="UserLoginController1">
     <h1 class="nice-title">Hello, {{ current_user.profireader_name }}!<span></span></h1>
     <h3 pr-test="Confirmed">{{ _('You have confirmed your account successfully!') }}</h3>
+    <p>
+
+        <a pr-test="ConfirmEmail" href="{{ url_for('reader.list_reader') }}">{{ _('Start from here!') }}</a>
+    </p>
+
 </div>
 {% endblock portal_content %}
