@@ -148,7 +148,7 @@
                  ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
                 <div class="thumbnail company-thumbnail">
                     <a href="{{ url_company_profile({company_id: my_employer.id}) }}">
-                        <img class="img_300" pr-image="my_employer.logo_file_id" alt="image">
+                        <img pr-image="my_employer.logo_file_id" alt="image" style="width: 400px; height: 300px;">
                     </a>
                     <div pr-test="SomeCompanyInfo" class="caption some-company-info">
 
