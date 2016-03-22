@@ -379,7 +379,8 @@ class UserCompany(Base, PRBase):
         MemberCompanyPortal.STATUSES['SUSPENDED']: {
             MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
             MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        MemberCompanyPortal.STATUSES['FROZEN']: {},
+        MemberCompanyPortal.STATUSES['FROZEN']: {
+            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
         MemberCompanyPortal.STATUSES['REJECTED']: {
             MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
         MemberCompanyPortal.STATUSES['DELETED']: {}
@@ -472,7 +473,7 @@ class UserCompany(Base, PRBase):
 
     @staticmethod
     def get(user_id=None, company_id=None):
-        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).one()
+        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
 
     @staticmethod
     # TODO: OZ by OZ: rework this as in action-style
