@@ -10,6 +10,11 @@
 body {
   padding-top: 100px;
 }
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .widewrapper {
   min-height: 80vh;
 }
