@@ -8,21 +8,19 @@ from ..models.portal import PortalDivision, Portal, PortalDivisionType, MemberCo
 from ..models.users import User
 from ..models.files import File
 from ..models.tag import Tag, TagPortalDivision, TagPortalDivisionArticle
-from config import Config
-# from ..models.tag import Tag
-from utils.db_utils import db
 from .pr_base import PRBase, Base, MLStripper, Search, Grid
 # from db_init import Base
 from utils.db_utils import db
 from flask import g, session
 from sqlalchemy.sql import or_, and_
-from sqlalchemy.sql import expression
 import re
 from sqlalchemy import event
-from ..controllers import errors
 from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
 from flask import redirect, url_for
+from .files import ImageCroped
+from ..utils import fileUrl
+from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 
 
 class ArticlePortalDivision(Base, PRBase):
@@ -415,6 +413,32 @@ class ArticlePortalDivision(Base, PRBase):
 
         return ret
 
+    def logo_file_properties(self):
+        noimage_url = fileUrl(FOLDER_AND_FILE.no_article_image())
+        return {
+            'browse': self.id,
+            'upload': True,
+            'crop': True,
+            'image_size': [450, 450],
+            'min_size': [100, 100],
+            'aspect_ratio': [0.5, 3.0],
+            'preset_urls': {'glyphicon-remove-circle': noimage_url},
+            'no_selection_url': noimage_url
+        }
+
+
+    def get_logo_client_side_dict(self):
+        return self.get_image_cropped_file(self.logo_file_properties(),
+                                             db(ImageCroped, croped_image_id=self.image_file_id).first())
+
+
+    def set_image_client_side_dict(self, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user'] = {'type': 'none'}
+        self.image_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+                                                          client_data, self.image_file_id, self.company.system_folder_file_id)
+        return self
+
 
 class ArticleCompany(Base, PRBase):
     __tablename__ = 'article_company'
@@ -475,6 +499,19 @@ class ArticleCompany(Base, PRBase):
 
     }
 
+    def logo_file_properties(self):
+        noimage_url = fileUrl(FOLDER_AND_FILE.no_article_image())
+        return {
+            'browse': self.id,
+            'upload': True,
+            'crop': True,
+            'image_size': [450, 450],
+            'min_size': [100, 100],
+            'aspect_ratio': [0.5, 3.0],
+            'preset_urls': {'glyphicon-remove-circle': noimage_url},
+            'no_selection_url': noimage_url
+        }
+
     def action_is_allowed(self, action_name, employment):
 
         if not employment:
@@ -527,6 +564,22 @@ class ArticleCompany(Base, PRBase):
                              fields='id|title|subtitle|short|keywords|cr_tm|md_tm|article_id|image_file_id|company_id',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    def get_logo_client_side_dict(self):
+        return self.get_image_cropped_file(self.logo_file_properties(),
+                                             db(ImageCroped, croped_image_id=self.image_file_id).first())
+
+
+    def set_image_client_side_dict(self, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user'] = {'type': 'none'}
+        if not self.company:
+            folder_id = Company.get(self.company_id).system_folder_file_id
+        else:
+            folder_id = self.company.system_folder_file_id
+        self.image_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+                                                          client_data, self.image_file_id, folder_id)
+        return self
 
     def validate(self, is_new):
         ret = super().validate(is_new)
@@ -918,10 +971,13 @@ class ReaderArticlePortalDivision(Base, PRBase):
     def add_delete_favorite_user_article(article_portal_division_id, favorite):
         article = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id,
                      user_id=g.user_id).first()
+        print(article.id)
+        print(g.user)
         if not article:
             article = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
         article.favorite = True if favorite else False
         article.liked = True
+        print(article.favorite)
         return article.favorite
 
     @staticmethod
