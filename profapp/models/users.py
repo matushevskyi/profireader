@@ -267,16 +267,17 @@ class User(Base, UserMixin, PRBase):
         return ret
 
     def logo_file_properties(self):
-        nologo_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())
+        noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())
         return {
             'browse': self.id,
             'upload': True,
+            'none': noavatar_url,
             'crop': True,
             'image_size': [300, 400],
             'min_size': [75, 100],
             'aspect_ratio': [0.5, 2],
-            'preset_urls': {'glyphicon-remove-circle': nologo_url, 'glyphicon glyphicon-share': self.gravatar(size=500)},
-            'no_selection_url': nologo_url
+            'preset_urls': {'glyphicon-share': self.gravatar(size=500)},
+            'no_selection_url': noavatar_url
         }
 
     @staticmethod

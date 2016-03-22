@@ -664,7 +664,6 @@ class File(Base, PRBase):
         return croped
 
     def crop(self, coordinates, folder_id, params, old_image_cropped=None):
-        # TODO SS by SS in future add allow_stretch_image param
         bytes_file, area = self.crop_with_coordinates(coordinates, params)
         if bytes_file:
             if old_image_cropped:

@@ -13,7 +13,6 @@ from ..models.company import Company, UserCompany
 
 from utils.db_utils import db
 from sqlalchemy.orm.exc import NoResultFound
-from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from sqlalchemy.sql import expression, and_
 from sqlalchemy import text
 import time
@@ -60,59 +59,33 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
     elif publication_id:  # updating portal version
         articleVersion = ArticlePortalDivision.get(publication_id)
         portal_division_id = articleVersion.portal_division_id
-
         article_tag_names = articleVersion.tags
         available_tags = PortalDivision.get(portal_division_id).portal_division_tags
         available_tag_names = list(map(lambda x: getattr(x, 'name', ''), available_tags))
 
     if action == 'load':
         article_dict = articleVersion.get_client_side_dict(more_fields='long|company')
-
+        article_dict['image'] = articleVersion.get_image_client_side_dict()
         if publication_id:
             article_dict = dict(list(article_dict.items()) + [('tags', article_tag_names)])
-
-        image_dict = {'ratio': Config.IMAGE_EDITOR_RATIO, 'coordinates': None,
-                      'image_file_id': article_dict['image_file_id'],
-                      'no_image_url': g.fileUrl(FOLDER_AND_FILE.no_article_image())
-                      }
-        # article_dict['long'] = '<table><tr><td><em>cell</em> 1</td><td><strong>cell<strong> 2</td></tr></table>'
-        # TODO: VK by OZ: this code should be moved to model
-        try:
-            if article_dict.get('image_file_id'):
-                image_dict['image_file_id'], image_dict['coordinates'] = ImageCroped. \
-                    get_coordinates_and_original_img(article_dict.get('image_file_id'))
-            else:
-                image_dict['image_file_id'] = None
-        except Exception as e:
-            pass
-
         return {'article': article_dict,
-                'image': image_dict,
                 'portal_division': portal_division_dict(articleVersion, available_tag_names)}
     else:
-        parameters = g.filter_json(json, 'article.title|subtitle|short|long|keywords, image.*')
+        parameters = g.filter_json(json, 'article.title|subtitle|short|long|keywords')
         articleVersion.attr(parameters['article'])
-
         if action == 'validate':
             articleVersion.detach()
             return articleVersion.validate(articleVersion.id is not None)
         else:
-            image_id = parameters['image'].get('image_file_id')
-            # TODO: VK by OZ: this code dont work if ArticlePortalDivision updated
-            if image_id:
-                articleVersion.image_file_id = crop_image(image_id, parameters['image']['coordinates'])
-            else:
-                articleVersion.image_file_id = None
-
             if type(articleVersion) == ArticlePortalDivision:
                 tag_names = json['article']['tags']
                 articleVersion.manage_article_tags(tag_names)
-
-            articleVersion.save()
+            article_dict = articleVersion.set_image_client_side_dict(json['article']['image']).save().get_client_side_dict(more_fields='long|company')
             if publication_id:
                 articleVersion.insert_after(json['portal_division']['insert_after'],
                                             articleVersion.position_unique_filter())
-            return {'article': articleVersion.save().get_client_side_dict(more_fields='long'), 'image': json['image'],
+            article_dict['image'] = articleVersion.get_image_client_side_dict()
+            return {'article': article_dict,
                     'portal_division': portal_division_dict(articleVersion)}
 
 
