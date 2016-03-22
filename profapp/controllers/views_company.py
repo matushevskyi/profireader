@@ -302,8 +302,9 @@ def profile_load_validate_save(json, company_id=None):
                 company.setup_new_company()
             company_dict = company.set_logo_client_side_dict(json['logo']).save().get_client_side_dict()
             company_dict['logo'] = company.get_logo_client_side_dict()
-            company_dict['actions'] = {'edit': True if company_id or UserCompany.get(
-                company_id=company_id).rights['PORTAL_EDIT_PROFILE'] else False}
+            if company_id:
+                company_dict['actions'] = {'edit': True if company_id or UserCompany.get(
+                    company_id=company_id).rights['PORTAL_EDIT_PROFILE'] else False}
             return company_dict
 
 
