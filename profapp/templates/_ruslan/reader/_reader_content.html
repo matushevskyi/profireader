@@ -17,7 +17,6 @@
                 })
             };
             $scope.loadNextPage('')
-
         });
 
     </script>
@@ -29,7 +28,9 @@
                 <div class="block-item list-elements">
                     <div class="item-type article">
                         <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
-                            <img class="logo-portal-news" ng-src="{{ article.portal.logo }}">
+                            <a href="//{{ article.portal.host }}">
+                                <img class="logo-portal-news" ng-src="{{ article.portal.logo }}">
+                            </a>
                         </div>
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
 
