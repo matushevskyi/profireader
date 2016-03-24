@@ -39,6 +39,7 @@ class SendEmail:
 
         server.quit()
 
+
     @staticmethod
     def send_email_decorator(**params):
         def decorator(func):

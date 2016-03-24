@@ -13,7 +13,10 @@ from sqlalchemy.sql import expression, and_
 
 @general_bp.route('help/')
 def help():
-    return render_template('help.html')
+    email = None
+    if g.user:
+        email = g.user_dict['email']
+    return render_template('help.html', data={'email':email})
 
 
 @general_bp.route('')
