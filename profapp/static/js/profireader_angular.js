@@ -1803,7 +1803,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 }
             });
             $timeout(function(){
-                if(scope.data.end === false){
+                if(scope.data.end === false && ($(document).height() - $(window).height() === 0)){
                     scope.next_page += 1;
                     load()
                 }

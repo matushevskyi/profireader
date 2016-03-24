@@ -514,18 +514,18 @@ class File(Base, PRBase):
 
     @staticmethod
     def uploadLogo(content, name, type, directory, root=None):
-        size = len(content)
-        unique_name = File.get_unique_name(urllib.parse.unquote(name).replace(
-                '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), type, directory)
         file = File(parent_id=directory,
                     root_folder_id=root if root else directory,
-                    name=unique_name,
-                    mime=type,
-                    size=size
-                    )
-        file_cont = FileContent(file=file, content=content)
-        g.db.add_all([file, file_cont])
-        g.db.flush()
+                    mime=type)
+        try:
+            file.name = File.get_unique_name(urllib.parse.unquote(name).replace(
+                    '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), type, directory)
+            file.size = len(content)
+            file_cont = FileContent(file=file, content=content)
+            g.db.add_all([file, file_cont])
+            g.db.flush()
+        except Exception:
+            file.delete()
         return file
 
     @staticmethod

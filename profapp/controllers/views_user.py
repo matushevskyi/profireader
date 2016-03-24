@@ -51,16 +51,20 @@ def edit_profile_load(json, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     if action == 'load':
         ret = {'user': g.user.get_client_side_dict(), 'languages': Config.LANGUAGES,
-               'countries': Country.get_countries()}
+               'countries': Country.get_countries(), 'change_password': {'password1': '', 'password2': ''}}
         ret['user']['avatar'] = g.user.get_image_client_dict()
         return ret
     else:
-        print(json)
         g.user.updates(json['user'])
         if action == 'validate':
             g.user.detach()
-            return g.user.validate(False)
+            validate = g.user.validate(False)
+            if json['change_password']['password1'] != json['change_password']['password2']:
+                validate['errors']['password2'] = 'pls enter the same passwords'
+            return validate
         else:
+            if json['change_password']['password1']:
+                g.user.password = json['change_password']['password1']
             g.user.set_image_client_dict(json['user']['avatar']).save()
             ret = {'user': g.user.get_client_side_dict()}
             ret['user']['avatar'] = g.user.get_image_client_dict()
