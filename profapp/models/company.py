@@ -122,7 +122,14 @@ class Company(Base, PRBase):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
-
+        if not re.match(r'[^\s]{3}', str(self.country)):
+            ret['errors']['country'] = 'pls enter a bit longer name'
+        if not re.match(r'[^\s]{3}', str(self.region)):
+            ret['errors']['region'] = 'pls enter a bit longer name'
+        if not re.match(r'[^\s]{3}', str(self.city)):
+            ret['errors']['city'] = 'pls enter a bit longer name'
+        if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", str(self.email)):
+            ret['errors']['email'] = 'Invalid email address'
         if not re.match('[^\s]{3,}', self.name):
             ret['errors']['name'] = 'pls enter a bit longer name'
 
