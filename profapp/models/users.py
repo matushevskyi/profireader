@@ -503,19 +503,18 @@ class User(Base, UserMixin, PRBase):
             self.confirmed = True
         return self.confirmed
 
+    def generate_pass_reset_token(self):
+        self.pass_reset_token = random.getrandbits(128)
+        self.pass_reset_conf_tm = datetime.datetime.now()
+        return self
+
     def generate_reset_token(self):
         self.email_conf_token = random.getrandbits(128)
         self.email_conf_tm = datetime.datetime.now()
         return self
 
-    def reset_password(self, token, new_password):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            return False
-        if data.get('reset') != self.id:
-            return False
+    def reset_password(self, new_password):
+        self.pass_reset_token = None
         self.password = new_password
         g.db.add(self)
         g.db.commit()

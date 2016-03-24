@@ -560,7 +560,7 @@ def get_publication_dict(publication):
     if ret.get('long'):
         del ret['long']
 
-    ret['actions'] = publication.get_actions_for_status(publication.division.portal.company_owner_id)
+    ret['actions'] = publication.actions(publication.division.portal.own_company)
 
     return ret
 

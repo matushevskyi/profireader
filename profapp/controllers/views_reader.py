@@ -10,6 +10,7 @@ from .request_wrapers import ok
 from utils.db_utils import db
 from flask.ext.login import login_required
 import datetime
+from ..models.pr_base import PRBase
 from ..models.files import File
 
 
@@ -70,16 +71,7 @@ def list_reader_load(json):
                                                 items_per_page=5*next_page,
                                                 search_text=search_text)
     # portals = UserPortalReader.get_portals_for_user() if not articles else None
-    list_articles = []
-    for article_id, article in articles.items():
-        article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
-        article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
-            articles[article_id]['company']['logo_file_id'] else None
-        article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-            articles[article_id]['portal']['logo_file_id'] else None
-        del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
-        list_articles.append(article)
-
+    list_articles = ArticlePortalDivision.get_list_reader_articles(articles)
     return {
         'end': pages == 1,
         'articles': list_articles,

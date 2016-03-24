@@ -331,46 +331,66 @@ def change_password():
             flash('Invalid password.')
     return render_template("auth/change_password.html", form=form)
 
+@auth_bp.route('/reset_password', methods=['GET'])
+def password_resets():
+    return render_template('auth/reset_password.html')
 
-@auth_bp.route('/reset', methods=['GET', 'POST'])
-def password_reset_request():
+
+
+@auth_bp.route('/reset_password', methods=['POST'])
+@ok
+def password_reset_request(json):
     if not current_user.is_anonymous():
         flash('To reset your password logout first please.')
-        return redirect(url_for('general.index'))
-    form = PasswordResetRequestForm()
-    if form.validate_on_submit():
-        user = g.db.query(User).\
-            filter_by(profireader_email=form.email.data).first()
-        if user.is_banned():
-            return redirect(url_for('general.index'))
-        if user:
-            token = user.generate_reset_token()
-            SendEmail().send_email(subject='Reset Your Password', template='auth/email/reset_password',
-                                   send_to=(user.profireader_email, ), user=user, token=token,
-                                   next=request.args.get('next'))
-            flash('An email with instructions to reset your password has been sent to you.')
-        else:
-            flash('You are not Profireader user yet. Sign up Profireader first please.')
-        return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
-    return render_template('auth/reset_password.html', form=form)
+        return redirect(url_for('reader.list_reader'))
+    user = db(User, profireader_email=json.get('email')).first()
+    if user:
+        user.generate_pass_reset_token().save()
+        SendEmail().send_email(subject='Reset password', send_to=(user.profireader_email, ""),
+                               html=render_template('auth/email/reset_password.html', user=user),)
+        flash('An email with instructions to reset your password has been sent to you.')
+        redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
+    else:
+        flash('You are not Profireader user yet. Sign up Profireader first please.')
+    return {}
 
 
-@auth_bp.route('/reset/<token>', methods=['GET', 'POST'])
+
+@auth_bp.route('/reset/<token>', methods=['GET'])
 def password_reset(token):
     if not current_user.is_anonymous():
         return redirect(url_for('general.index'))
-    form = PasswordResetForm()
-    if form.validate_on_submit():
-        user = g.db.query(User).\
-            filter_by(profireader_email=form.email.data).first()
+    return render_template('auth/reset_password_token.html', token=token)
+
+@auth_bp.route('/reset/<token>', methods=['POST'])
+def password_reset_change(token):
+    form = request.form
+    user = g.db.query(User).\
+        filter_by(profireader_email=request.form.get('email')).first()
+    if user.pass_reset_token != token:
+        flash('Your put wrong email.')
+        return redirect(url_for('auth.password_resets'))
+    def check_fields():
+        form = request.form
+        required_fields = ['email', 'password', 'password1']
+        for field in required_fields:
+            if field not in form.keys():
+                return False
+            else:
+                if not form.get(field):
+                    return False
+                elif form.get('password') != form.get('password1'):
+                    return False
+        return True
+    if check_fields():
         if (user is None) or user.is_banned():
             return redirect(url_for('general.index'))
-        if user.reset_password(token, form.password.data):
+        if user.reset_password(form.get('password')):
             flash('Your password has been updated.')
             return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
         else:
             return redirect(url_for('general.index'))
-    return render_template('auth/reset_password_token.html', form=form, token=token)
+    return ''
 
 
 @auth_bp.route('/change-email', methods=['GET', 'POST'])
