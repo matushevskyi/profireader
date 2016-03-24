@@ -43,8 +43,9 @@
                             <div style=""
                                  class="item-publication-date">{{ article.publishing_tm }}
                             </div>
-                            <div class="item-read_count">Read: {{ article.read_count }}</div>
-
+                            <div class="pull-right comments-count"><i class="fa fa-comments-o"></i>604</div>
+                            <div class="pull-right like-count"><i class="fa fa-thumbs-o-up"></i>12</div>
+                            <div class="pull-right item-read_count"><i class="fa fa-eye"></i> {{ article.read_count }}</div>
                         </div>
                     </div>
                     <a target="_blank" type="link" href="//{{ article.portal.host}}/details/{{ article.id }}">
@@ -65,9 +66,8 @@
                         <div style="cursor: pointer"
                              class="col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-lg-5 col-md-5 col-sm-5 col-xs-5"
                              ng-click="add_to_favorite(article)">
-                            <i ng-if="!article.is_favorite" class="fa fa-heart-o"></i><i ng-if="article.is_favorite"
-                                                                                         class="fa fa-heart"></i> {{
-                            _('Favorite') }}
+                            <i ng-if="!article.is_favorite" class="fa fa-bookmark-o"></i><i ng-if="article.is_favorite" class="fa fa-bookmark"></i>
+                             {{_('Favorite') }}
                         </div>
                         <div class="col-lg-5 col-md-5 col-sm-5 col-xs-5">
                             <span class="pull-right"><i class="fa fa-share"></i>{{ _('Share') }}</span>
