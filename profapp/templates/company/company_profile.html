@@ -19,7 +19,7 @@
             $scope.$$translate = {{translates('CompanyProfile') | safe}};
             $scope.cropper_for_copmany = true;
             $scope.user_have_company = true;
-{#            $scope.company = {{company.get_client_side_dict() | tojson | safe}};#}
+            {#            $scope.company = {{company.get_client_side_dict() | tojson | safe}};#}
 
             $scope.url_back = {{raw_url_for('company.companies') | safe}};
             $scope.url_portal_profile = {{raw_url_for('portal.profile') | safe}};
@@ -67,16 +67,16 @@
 //                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
             };
             //company value
-{#            $scope.company_name = {{data.get_client_side_dict().name | tojson | safe}};#}
-{#            $scope.company_country = {{data.get_client_side_dict().country | tojson | safe}};#}
-{#            $scope.company_city = {{data.get_client_side_dict().city | tojson | safe}};#}
-{#            $scope.company_postcode = {{ data.get_client_side_dict().postcode | tojson | safe }};#}
-{#            $scope.company_address = {{ data.get_client_side_dict().address | tojson | safe }};#}
-{#            $scope.company_phone = {{ data.get_client_side_dict().phone | tojson | safe  }};#}
-{#            $scope.company_phone2 = {{ data.get_client_side_dict().phone2 | tojson | safe  }};#}
-{#            $scope.company_email = {{ data.get_client_side_dict().email | tojson | safe  }};#}
-{#            $scope.company_lat = {{ data.get_client_side_dict().lat | tojson | safe }};#}
-{#            $scope.company_lon = {{ data.get_client_side_dict().lon | tojson | safe }};#}
+            {#            $scope.company_name = {{data.get_client_side_dict().name | tojson | safe}};#}
+            {#            $scope.company_country = {{data.get_client_side_dict().country | tojson | safe}};#}
+            {#            $scope.company_city = {{data.get_client_side_dict().city | tojson | safe}};#}
+            {#            $scope.company_postcode = {{ data.get_client_side_dict().postcode | tojson | safe }};#}
+            {#            $scope.company_address = {{ data.get_client_side_dict().address | tojson | safe }};#}
+            {#            $scope.company_phone = {{ data.get_client_side_dict().phone | tojson | safe  }};#}
+            {#            $scope.company_phone2 = {{ data.get_client_side_dict().phone2 | tojson | safe  }};#}
+            {#            $scope.company_email = {{ data.get_client_side_dict().email | tojson | safe  }};#}
+            {#            $scope.company_lat = {{ data.get_client_side_dict().lat | tojson | safe }};#}
+            {#            $scope.company_lon = {{ data.get_client_side_dict().lon | tojson | safe }};#}
         });
     </script>
     {% raw %}
@@ -101,9 +101,8 @@
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                         <div ng-if="data.id">
                             <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                    ng-if="data.own_portal" disabled ng-click="portal_update(data.id,
-                                    data.own_portal.id)
-                                    ">{{_('Portal profile') }}
+                                    ng-if="data.own_portal" ng-click="portal_update(data.id, data.own_portal.id)">
+                                {{_('Portal profile') }}
                             </button>
                             <button class="btn btn-default go-portal pull-right border-radius" type="button"
                                     ng-if="!data.own_portal" ng-click="portal_create(data.id)">{{
@@ -150,8 +149,9 @@
                                            class="form-control border-radius"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.name"
                                            oles_name="company_name" oles_oles_ng-pattern="/[\wа-яёі']{3}/">
-                                    <div  ng-if=" 0 && formCompany.company_name.$error.pattern" class="error-input">The
-                                        company name should be longer!</div>
+                                    <div ng-if=" 0 && formCompany.company_name.$error.pattern" class="error-input">The
+                                        company name should be longer!
+                                    </div>
                                 </div>
 
                                 <div class="col-lg-2">{{ _('Country:') }}</div>
@@ -160,8 +160,10 @@
                                            class="form-control border-radius"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.country"
                                            oles_name="company_country" oles_ng-pattern="/[\wа-яёі]{2}/">
-                                    <div  ng-if=" 0 && formCompany.company_country.$error.pattern" class="error-input">The
-                                        country name should be longer!</div>
+                                    <div ng-if=" 0 && formCompany.company_country.$error.pattern" class="error-input">
+                                        The
+                                        country name should be longer!
+                                    </div>
                                 </div>
                                 <div class="col-lg-2">{{ _('Region:') }}</div>
                                 <div class="col-lg-10 edit-data">
@@ -175,7 +177,8 @@
                                            class="form-control border-radius" oles_name="company_city"
                                            oles_ng-pattern="/[\wа-яёі]{2}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.city">
-                                    <div  ng-if=" 0 && formCompany.company_city.$error.pattern" class="error-input">The city
+                                    <div ng-if=" 0 && formCompany.company_city.$error.pattern" class="error-input">The
+                                        city
                                         name should be longer!
                                     </div>
 
@@ -186,7 +189,8 @@
                                            class="form-control border-radius" oles_ng-pattern="/[0-9]{3}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.postcode"
                                            oles_name="company_postcode">
-                                    <div  ng-if=" 0 && formCompany.company_postcode.$error.pattern" class="error-input">The
+                                    <div ng-if=" 0 && formCompany.company_postcode.$error.pattern" class="error-input">
+                                        The
                                         postcode should be longer!
                                     </div>
 
@@ -197,18 +201,20 @@
                                            class="form-control border-radius" oles_ng-pattern="/[\wа-яёі\0-9]{4}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.address"
                                            oles_name="company_address">
-                                    <div  ng-if=" 0 && formCompany.company_address.$error.pattern" class="error-input">The
+                                    <div ng-if=" 0 && formCompany.company_address.$error.pattern" class="error-input">
+                                        The
                                         address should be longer!
                                     </div>
 
                                 </div>
                                 <div class="col-lg-2">{{ _('Phone:') }}</div>
                                 <div class="col-lg-10 edit-data">
-                                    <input pr-validation-answer="data_validation:phone" oles_type="number" ng-maxlength="12"
+                                    <input pr-validation-answer="data_validation:phone" oles_type="number"
+                                           ng-maxlength="12"
                                            class="form-control border-radius" oles_ng-pattern="/[0-9]{6}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.phone"
                                            oles_name="company_phone">
-                                    <div  ng-if=" 0 && formCompany.company_phone.$error.pattern" class="error-input">The
+                                    <div ng-if=" 0 && formCompany.company_phone.$error.pattern" class="error-input">The
                                         phone should be longer!
                                     </div>
 
@@ -226,7 +232,7 @@
                                            oles_ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.email"
                                            oles_name="company_email">
-                                    <div  ng-if=" 0 && formCompany.company_email.$error.pattern" class="error-input">The
+                                    <div ng-if=" 0 && formCompany.company_email.$error.pattern" class="error-input">The
                                         email not validate!
                                     </div>
 

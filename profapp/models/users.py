@@ -273,9 +273,9 @@ class User(Base, UserMixin, PRBase):
             'upload': True,
             'none': noavatar_url,
             'crop': True,
-            'image_size': [300, 400],
-            'min_size': [75, 100],
-            'aspect_ratio': [0.5, 2],
+            'image_size': [300, 300],
+            'min_size': [100, 100],
+            'aspect_ratio': [1, 1],
             'preset_urls': {'glyphicon-share': self.gravatar(size=500)},
             'no_selection_url': noavatar_url
         }
@@ -391,28 +391,31 @@ class User(Base, UserMixin, PRBase):
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
                 url=url, hash=hash, size=size, default=default, rating=rating)
 
-
-    def set_image_client_dict(self, client_data):
+    def set_avatar_client_side_dict(self, client_data):
         if client_data['selected_by_user']['type'] == 'preset':
             client_data['selected_by_user']['type'] = 'none'
-            if client_data['selected_by_user']['class'] == 'glyphicon-remove-circle':
-                self.profireader_avatar_url = client_data['preset_urls'][client_data['selected_by_user']['class']]
-            elif client_data['selected_by_user']['class'] == 'glyphicon glyphicon-share':
-                self.profireader_avatar_url = client_data['preset_urls'][client_data['selected_by_user']['class']]
+            if client_data['selected_by_user']['class'] == 'glyphicon-share':
+                self.profireader_avatar_url = self.gravatar(size=500)
                 self.profireader_small_avatar_url = self.gravatar(size=100)
             else:
                 raise ValueError("passed unknow preset class `{}`".format(client_data['selected_by_user']['class']))
+
 
         self.avatar_file_id = self.set_image_cropped_file(self.logo_file_properties(),
                                                           client_data, self.avatar_file_id, self.system_folder_file_id)
         if self.avatar_file_id:
             self.profireader_avatar_url = fileUrl(self.avatar_file_id)
             self.profireader_small_avatar_url = fileUrl(File.get(self.avatar_file_id).get_thumbnails((133,100)).id)
+
         return self
 
-    def get_image_client_dict(self):
-        return self.get_image_cropped_file(self.logo_file_properties(),
+    def get_avatar_client_side_dict(self):
+        ret = self.get_image_cropped_file(self.logo_file_properties(),
                                              db(ImageCroped, croped_image_id=self.avatar_file_id).first())
+
+        if self.profireader_avatar_url == self.gravatar(size=500):
+            ret['selected_by_user'] = {'type': 'preset', 'class': 'glyphicon-share'}
+        return ret
 
     def profile_completed(self):
         completeness = True

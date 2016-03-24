@@ -34,6 +34,7 @@
     }
     function getSearchBlock(article) {
         var text = foundText(article);
+        if (!text) return '';
         var index = indexFound;
         var size = 45;
         document.write(text ? addColoredSpan((index > size ? '...' : '') +

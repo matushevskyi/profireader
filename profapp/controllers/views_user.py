@@ -52,7 +52,7 @@ def edit_profile_load(json, user_id):
     if action == 'load':
         ret = {'user': g.user.get_client_side_dict(), 'languages': Config.LANGUAGES,
                'countries': Country.get_countries()}
-        ret['user']['avatar'] = g.user.get_image_client_dict()
+        ret['user']['avatar'] = g.user.get_avatar_client_side_dict()
         return ret
     else:
         print(json)
@@ -61,7 +61,7 @@ def edit_profile_load(json, user_id):
             g.user.detach()
             return g.user.validate(False)
         else:
-            g.user.set_image_client_dict(json['user']['avatar']).save()
+            g.user.set_avatar_client_side_dict(json['user']['avatar']).save()
             ret = {'user': g.user.get_client_side_dict()}
-            ret['user']['avatar'] = g.user.get_image_client_dict()
+            ret['user']['avatar'] = g.user.get_avatar_client_side_dict()
             return ret
