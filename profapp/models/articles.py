@@ -338,6 +338,20 @@ class ArticlePortalDivision(Base, PRBase):
             companies[article.company.id] = article.company.name
         return companies
 
+    @staticmethod
+    def get_list_reader_articles(articles):
+        list_articles = []
+        for article_id, article in articles.items():
+            article['publishing_tm'] = PRBase.datetime_from_utc_to_local(article['publishing_tm'], "%d %B %Y, %H:%M")
+            article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
+            article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
+                articles[article_id]['company']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
+            article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
+                articles[article_id]['portal']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
+            del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
+            list_articles.append(article)
+        return list_articles
+
     # def clone_for_company(self, company_id):
     #     return self.detach().attr({'company_id': company_id,
     #                                'status': ARTICLE_STATUS_IN_COMPANY.

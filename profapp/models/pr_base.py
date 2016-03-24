@@ -2,7 +2,6 @@ from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Table, Column, Integer, Text, ForeignKey, String, Boolean, or_, and_, text, desc, asc, join
 from sqlalchemy.orm import relationship, backref, make_transient, class_mapper, aliased
 from sqlalchemy.sql import func
-import datetime
 import re
 import sys
 import traceback
@@ -20,6 +19,7 @@ from sqlalchemy.sql import expression, functions, update
 from utils.validators import validators
 from sqlalchemy import and_
 import datetime
+import time
 import operator
 from collections import OrderedDict
 from functools import reduce
@@ -783,6 +783,13 @@ class PRBase:
         event.listen(cls, 'after_insert', cls.add_to_search)
         event.listen(cls, 'after_update', cls.update_search_table)
         event.listen(cls, 'after_delete', cls.delete_from_search)
+
+    @staticmethod
+    def datetime_from_utc_to_local(utc_datetime, format):
+        now_timestamp = time.time()
+        offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
+        utc_datetime = utc_datetime + offset
+        return datetime.datetime.strftime(utc_datetime, format)
 
 #
 #
