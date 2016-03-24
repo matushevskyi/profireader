@@ -22,6 +22,8 @@ from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
 from ..utils import fileUrl
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+import random
+import time
 
 
 class User(Base, UserMixin, PRBase):
@@ -491,36 +493,28 @@ class User(Base, UserMixin, PRBase):
         return self.password_hash and \
                check_password_hash(self.password_hash, password)
 
-    def generate_confirmation_token(self, expiration=3600):
-        # with app.app_context
-        s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'confirm': self.id})
+    def generate_confirmation_token(self):
+        self.email_conf_token = random.getrandbits(128)
+        self.email_conf_tm = datetime.datetime.now()
+        return self
 
-    def confirm(self, token):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            return False
-        if data.get('confirm') != self.id:
-            return False
-        self.confirmed = True
-        g.db.add(self)
-        g.db.commit()
-        return True
+    def confirm_email(self):
+        if self.email_conf_tm.timestamp() > int(time.time()) - current_app.config.get('EMAIL_CONFIRMATION_TOKEN_TTL', 3600*24):
+            self.confirmed = True
+        return self.confirmed
 
-    def generate_reset_token(self, expiration=3600):
-        s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'reset': self.id})
+    def generate_pass_reset_token(self):
+        self.pass_reset_token = random.getrandbits(128)
+        self.pass_reset_conf_tm = datetime.datetime.now()
+        return self
 
-    def reset_password(self, token, new_password):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            return False
-        if data.get('reset') != self.id:
-            return False
+    def generate_reset_token(self):
+        self.email_conf_token = random.getrandbits(128)
+        self.email_conf_tm = datetime.datetime.now()
+        return self
+
+    def reset_password(self, new_password):
+        self.pass_reset_token = None
         self.password = new_password
         g.db.add(self)
         g.db.commit()

@@ -73,7 +73,7 @@ def list_reader_load(json):
     # portals = UserPortalReader.get_portals_for_user() if not articles else None
     list_articles = ArticlePortalDivision.get_list_reader_articles(articles)
     return {
-        'end': pages == 1,
+        'end': pages == 1 or pages == 0,
         'articles': list_articles,
         'pages': pages,
         'current_page': page,
