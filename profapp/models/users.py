@@ -506,11 +506,16 @@ class User(Base, UserMixin, PRBase):
     def generate_pass_reset_token(self):
         self.pass_reset_token = random.getrandbits(128)
         self.pass_reset_conf_tm = datetime.datetime.now()
+        # if self.pass_reset_conf_tm.timestamp() > int(time.time()) - current_app.config.get('PASSWORD_CONFIRMATION_TOKEN_TTL', 3600*24):
+        #     self.confirmed = True
+        #     return self.confirmed
         return self
 
     def generate_reset_token(self):
         self.email_conf_token = random.getrandbits(128)
-        self.email_conf_tm = datetime.datetime.now()
+        if self.pass_reset_conf_tm.timestamp() > int(time.time()) - current_app.config.get('PASSWORD_CONFIRMATION_TOKEN_TTL', 3600*24):
+            self.confirmed = True
+            return self.confirmed
         return self
 
     def reset_password(self, new_password):
