@@ -303,10 +303,12 @@ class File(Base, PRBase):
         return thumbnail.url() if thumbnail else self.url()
 
     def get_thumbnail(self, size=None, any=False):
-        if any:
-            thumbnail = db(File, thumbnail_id=self.id).first()
-        else:
-            thumbnail = db(File, thumbnail_id=self.id, name=self.name + '_thumbnail_' + size).first()
+        image_cropped = db(ImageCroped, original_image_id=self.id).first()
+        thumbnail = None
+        if any and image_cropped:
+            thumbnail = db(File, id=image_cropped.croped_image_id).first()
+        elif image_cropped:
+            thumbnail = db(File, id=image_cropped.croped_image_id, name=self.name + '_thumbnail_' + size).first()
         return thumbnail
 
     def type(self):
@@ -524,7 +526,7 @@ class File(Base, PRBase):
             file_cont = FileContent(file=file, content=content)
             g.db.add_all([file, file_cont])
             g.db.flush()
-        except Exception:
+        except:
             file.delete()
         return file
 
