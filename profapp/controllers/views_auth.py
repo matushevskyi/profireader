@@ -342,7 +342,9 @@ def password_resets():
 def password_reset_request(json):
     if not current_user.is_anonymous():
         flash('To reset your password logout first please.')
-        return redirect(url_for('reader.list_reader'))
+        redirect(url_for('reader.list_reader'))
+        return False
+
     user = db(User, profireader_email=json.get('email')).first()
     if user:
         user.generate_pass_reset_token().save()
@@ -359,7 +361,7 @@ def password_reset_request(json):
 @auth_bp.route('/reset/<token>', methods=['GET'])
 def password_reset(token):
     if not current_user.is_anonymous():
-        return redirect(url_for('general.index'))
+        return redirect(url_for('auth/reset_password_token.html'))
     return render_template('auth/reset_password_token.html', token=token)
 
 @auth_bp.route('/reset/<token>', methods=['POST'])
