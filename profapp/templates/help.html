@@ -7,8 +7,9 @@
 {% block portal_content %}
 <script>
 
-    module.controller('helpmessage',  function($scope, $ok){
-      $scope.$$translate = {{ translates('helpmessage')|safe }};
+    module.controller('info',  function($scope, $ok){
+      angularControllerFunction('UserLoginController', 'set_selected_user_menu')('info');
+      $scope.$$translate = {{ translates('info')|safe }};
       $scope.help_message = '{{ url_for('auth.help_message') }}'
       $scope.data = {{ data | tojson}}
 

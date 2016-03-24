@@ -399,7 +399,7 @@ class User(Base, UserMixin, PRBase):
             client_data['selected_by_user']['type'] = 'none'
             if client_data['selected_by_user']['class'] == 'glyphicon-remove-circle':
                 self.profireader_avatar_url = client_data['preset_urls'][client_data['selected_by_user']['class']]
-            elif client_data['selected_by_user']['class'] == 'glyphicon glyphicon-share':
+            elif client_data['selected_by_user']['class'] == 'glyphicon-share':
                 self.profireader_avatar_url = client_data['preset_urls'][client_data['selected_by_user']['class']]
                 self.profireader_small_avatar_url = self.gravatar(size=100)
             else:

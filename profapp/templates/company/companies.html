@@ -8,7 +8,7 @@
 
     <script xmlns="http://www.w3.org/1999/html">
         module.controller('companies_list', ['$scope', '$ok', '$timeout', function ($scope, $ok, $timeout) {
-            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('companies')
+            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('companies');
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.url_search_for_company = {{ raw_url_for('company.search_for_company_to_join')|safe }};
             $scope.url_join = {{ raw_url_for('company.join_to_company')|safe }};
@@ -142,8 +142,8 @@
                                                                                                     ng-click="show_more()">{{
             _('Show more search results') }}</a></h4></div>
         <div class="row company-list">
-            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12"><h3 ng-if="data.companies">Your company list:</h3>
-                <h2 ng-if="!data.companies && !loading">You haven't got any company yet!Create own or join to!</h2>
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12"><h3 ng-if="data.companies.length>0">Your company list:</h3>
+                <h2 ng-if="data.companies.length===0 && !loading">You haven't got any company yet!Create own or join to!</h2>
             </div>
             <div ng-if="data.companies" class="col-lg-4 col-md-4 col-sm-6 col-xs-6"
                  ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">

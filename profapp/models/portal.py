@@ -417,6 +417,8 @@ class MemberCompanyPortal(Base, PRBase):
         if self.portal.own_company.status != 'ACTIVE' and action_name == MemberCompanyPortal.ACTIONS['FREEZE']:
             return "Company `{}` with status `{}` need status ACTIVE to perform action `{}`".format(self.portal.own_company.name,
                     self.portal.own_company.status, action_name)
+        if self.portal.company_owner_id == self.company_id:
+            return 'You can`t {0} portal of your own company'.format(action_name)
 
         if not employment.has_rights(actions[action_name]):
             return "Employment need right `{}` to perform action `{}`".format(actions[action_name],action_name)
