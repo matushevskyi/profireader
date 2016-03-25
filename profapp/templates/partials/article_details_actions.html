@@ -18,23 +18,30 @@
         <comments_count>0</comments_count>
     </i></div>
     <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"
-         onclick="switch_something(this, '{{ url_for('front.add_delete_liked', article_portal_division_id =
-         article['id']) }}', '.fa-thumbs-o-up', '.fa-thumbs-up', {'liked_count': 'liked_count'});">
-        <i {% if liked %}style="display: none"{% endif %} class="fa fa-thumbs-o-up link"> <span>{{ _('Like') }}</span>
-            <liked_count>{{ liked_count }}</liked_count>
+         {% if g.user_id %}onclick="switch_something(this, '{{ url_for('front.add_delete_liked', article_portal_division_id =
+         article['id']) }}', '.fa-thumbs-o-up', '.fa-thumbs-up', {'liked_count': '.liked_count'});"{% else %}title="
+         {{ _('You need log in to att to bookmark article') }}"{%
+                 endif
+                 %}>
+        <i {% if liked %}style="display: none"{% endif %} class="fa fa-thumbs-o-up {% if g.user_id %}link{% endif %}">
+            <span>{{ _('Like') }}</span>
+            <liked_count class="liked_count">{{ liked_count }}</liked_count>
         </i>
         <i {% if not liked %}style="display: none"{% endif %}
-           class="fa fa-thumbs-up link"> <span>{{ _('Unlike') }}</span>
+           class="fa fa-thumbs-up {% if g.user_id %}link{% endif %}"> <span>{{ _('Unlike') }}</span>
             <liked_count>{{ liked_count }}</liked_count>
         </i>
     </div>
 
     <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"
-         onclick="switch_something(this, '{{ url_for('front.add_delete_favorite', article_portal_division_id = article['id']) }}',
-                 '.fa-bookmark-o', '.fa-bookmark');">
+         {% if g.user_id %}onclick="switch_something(this, '{{ url_for('front.add_delete_favorite',
+         article_portal_division_id =
+         article['id']) }}',
+                 '.fa-bookmark-o', '.fa-bookmark');"{% else %}title="{{ _('You need log in to att to like article')
+                  }}"{% endif %}>
         <i {% if favorite %}style="display: none"{% endif %}
-           class="fa fa-bookmark-o link"> <span>{{ _('Add to bookmark') }}</span></i>
+           class="fa fa-bookmark-o {% if g.user_id %}link{% endif %}"> <span>{{ _('Add to bookmark') }}</span></i>
         <i {% if not favorite %}style="display: none"{% endif %}
-           class="fa fa-bookmark link"> <span>{{ _('Remove from bookmark') }}</span></i>
+           class="fa fa-bookmark {% if g.user_id %}link{% endif %}"> <span>{{ _('Remove from bookmark') }}</span></i>
     </div>
 </div>
