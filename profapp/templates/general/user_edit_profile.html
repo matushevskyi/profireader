@@ -107,9 +107,9 @@
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Your country') }}</span>
 
-                    <select id="country" style="width: 150px"
-                            ng-options="country.value as country.name for country in countries"
-                            ng-model="data.user.country"></select>
+                    <select id="country" style="width: 15em"
+                            ng-options="country.id as country.name for country in countries"
+                            ng-model="data.user.country_id"></select>
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Password') }}</span>

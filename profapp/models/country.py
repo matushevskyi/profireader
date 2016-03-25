@@ -12,4 +12,4 @@ class Country(Base, PRBase):
 
     @staticmethod
     def get_countries():
-        return [{'value': country.id, 'name': country.name} for country in db(Country).all()]
+        return [{'id': country.id, 'name': country.name} for country in db(Country).all()]
