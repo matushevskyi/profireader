@@ -342,7 +342,7 @@ class ArticlePortalDivision(Base, PRBase):
     def get_list_reader_articles(articles):
         list_articles = []
         for article_id, article in articles.items():
-            article['publishing_tm'] = PRBase.datetime_from_utc_to_local(article['publishing_tm'], "%d %B %Y, %H:%M")
+            # article['publishing_tm'] = PRBase.datetime_from_utc_to_local(article['publishing_tm'], "%d %B %Y, %H:%M")
             article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
             article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
                 articles[article_id]['company']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())

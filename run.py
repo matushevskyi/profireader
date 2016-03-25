@@ -8,7 +8,6 @@ args = parser.parse_args()
 app = create_app(apptype=args.apptype)
 
 if __name__ == '__main__':
-    # app.run(host='127.40.71.198', port=8080)  #app.run(debug=True)
     if args.apptype == 'front':
         port = 8888
     elif args.apptype == 'file':
