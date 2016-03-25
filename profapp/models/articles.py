@@ -344,6 +344,7 @@ class ArticlePortalDivision(Base, PRBase):
         for article_id, article in articles.items():
             article['publishing_tm'] = PRBase.datetime_from_utc_to_local(article['publishing_tm'], "%d %B %Y, %H:%M")
             article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
+            article['liked'] = ReaderArticlePortalDivision.article_is_liked(g.user.id, article_id)
             article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
                 articles[article_id]['company']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
             article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
@@ -997,6 +998,11 @@ class ReaderArticlePortalDivision(Base, PRBase):
         articleReader.save()
         return articleReader.liked
 
+    @staticmethod
+    def article_is_liked(user_id,article_portal_division_id):
+        reader_article = db(ReaderArticlePortalDivision, user_id=user_id,
+                            article_portal_division_id=article_portal_division_id).first()
+        return reader_article.liked if reader_article else False
     @staticmethod
     def article_is_favorite(user_id, article_portal_division_id):
         reader_article = db(ReaderArticlePortalDivision, user_id=user_id,
