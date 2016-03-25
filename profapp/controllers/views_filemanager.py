@@ -84,13 +84,11 @@ def filemanager():
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
     company = db(Company, journalist_folder_file_id=ancestors[0]).first()
-
     if json['params'].get('search_text'):
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],
                          json['params']['search_text'], company_id=company.id)
     else:
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=company.id)
-
     return {'list': list, 'ancestors': ancestors, 'can_upload': File.if_action_allowed('upload', company.id)}
 
 
@@ -122,8 +120,7 @@ def rename(json):
 @ok
 def copy(json):
     file = File.get(request.json['params']['id'])
-    file.copy_file(request.json['params']['folder_id'])
-    return file.id
+    return file.copy_file(request.json['params']['folder_id']).id
 
 
 @filemanager_bp.route('/cut/', methods=['POST'])
