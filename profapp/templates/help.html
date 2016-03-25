@@ -9,13 +9,15 @@
 
     module.controller('info',  function($scope, $ok){
       angularControllerFunction('UserLoginController', 'set_selected_user_menu')('info');
-      $scope.$$translate = {{translates('info') | safe}};
-      $scope.help_message = '{{ url_for('auth.help_message') }}';
+      $scope.$$translate = {{ translates('info')|safe }};
+      $scope.help_message = '{{ url_for('auth.help_message') }}'
+      $scope.data = {{ data | tojson}}
 
-      $scope.sendMessage = function(message) {
-          return $ok($scope.help_message, {message:message}, function(resp){
-              if (resp['ok']) {
-                        window.location.href = '{{ url_for('reader.list_reader') }}'
+      $scope.sendMessage = function(data) {
+          return $ok($scope.help_message, {data:data}, function(help_message){
+              if (help_message =True) {
+                    window.location.href = '{{ url_for('reader.list_reader') }}'
+                    add_message('Your message has been sent', 'warning')
                 } else {
                     add_message('Try again', 'danger')
                 }
@@ -24,25 +26,25 @@
     });
 </script>
     {% raw %}
-    <div class="helpmessage row" ng-controller="info">
+    <div class="helpmessage row" ng-controller="helpmessage">
         <div class="link-page" ng-cloak>
             <h5>{{ _('Help page') }}</h5>
         </div>
         <form ng-cloak name="formHelp" class="help-page" ng-model="data">
-            <h3>{{ __('Надішліть нам повідомлення') }}<br>
-                <small>{{ __('Адміністратор сайту зв’яжеться з Вами') }}</small>
+            <h3>{{ __('Contact Us') }}<br>
+                <small>{{ __('Site Administrator will contact you') }}</small>
             </h3>
             <div class="form-for-message col-lg-6 col-lg-offset-3 col-md-6 col-md-offset-3">
 
                 <input pr-test="EmailInput" type="email" class="form-control" placeholder="Email"
-                       ng-model="data.user.profireader_email" name="profireader_email"
+                       ng-model="data.email" name="profireader_email"
                        ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/">
                 <div ng-show="formHelp.profireader_email.$error.pattern" class="error-input">The
                     email not validate!
                 </div>
                 <textarea pr-test="TextInput" class="form-control" rows="4"
-                          ng-model='data.message' placeholder="Питання та побажання"></textarea>
-                <button pr-test="SendMessage" class="pull-right" ng-click="sendMessage(data.message)"
+                          ng-model='data.message' placeholder="{{ _('Questions and wishes...') }}"></textarea>
+                <button pr-test="SendMessage" class="pull-right" ng-click="sendMessage(data)"
                    type="submit">{{ _('Send') }}</button>
             </div>
         </form>
