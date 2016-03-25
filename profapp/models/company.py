@@ -132,6 +132,9 @@ class Company(Base, PRBase):
             ret['errors']['email'] = 'Invalid email address'
         if not re.match('[^\s]{3,}', self.name):
             ret['errors']['name'] = 'pls enter a bit longer name'
+        # phone validation
+        # if not re.match('^\+?[0-9]{3}-?[0-9]{6,12}$', self.phone):
+        #     ret['errors']['phone'] = 'pls enter a correct number'
 
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)
