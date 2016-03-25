@@ -8,8 +8,8 @@ class Country(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     iso = Column(TABLE_TYPES['iso'])
     name = Column(TABLE_TYPES['name'])
-    phonecode= Column(TABLE_TYPES['phonecode'])
+    phonecode = Column(TABLE_TYPES['phonecode'])
 
     @staticmethod
     def get_countries():
-        return [{'value': country.iso, 'name': country.name} for country in db(Country).all()]
+        return [{'value': country.id, 'name': country.name} for country in db(Country).all()]
