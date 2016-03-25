@@ -48,7 +48,6 @@ def auth_before_subscribe_to_portal(portal_id):
 
 
 @general_bp.route('send_email_create_portal/')
-@login_required
 def send_email_create_portal():
     return render_template('general/send_email_create_portal.html')
 

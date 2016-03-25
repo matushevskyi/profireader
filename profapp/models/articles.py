@@ -993,7 +993,7 @@ class ReaderArticlePortalDivision(Base, PRBase):
                      user_id=g.user_id).first()
 
         if not articleReader:
-            article = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
+            articleReader = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
         articleReader.liked = True if liked else False
         articleReader.save()
         return articleReader.liked
