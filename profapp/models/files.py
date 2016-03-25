@@ -107,6 +107,11 @@ class File(Base, PRBase):
     def is_graphics(file):
         return re.match('^image/.*', file.mime)
 
+    def if_cropped(self):
+        if self.name[-8:] == '_cropped':
+            return True
+        return False
+
     @staticmethod
     def if_copy(name):
         ext = File.ext(name)
@@ -347,12 +352,13 @@ class File(Base, PRBase):
 
     @staticmethod
     def get_all_in_dir_rev(id):
-        files_in_parent = [file for file in db(File, parent_id=id)]
+        files_in_parent = [file for file in db(File, parent_id=id) if file.mime != 'image/thumbnail']
         for file in files_in_parent:
             if file.mime == 'directory':
-                for fil in db(File, parent_id=file.id):
+                for fil in db(File, parent_id=file.id).filter(File.mime != 'image/thumbnail'):
                     files_in_parent.append(fil)
         files_in_parent = files_in_parent[::-1]
+        print(files_in_parent)
         return files_in_parent
 
     @staticmethod
@@ -450,8 +456,7 @@ class File(Base, PRBase):
     def auto_remove(list, folder_id):
         list.append(session['f_id'])
         for file in [db(File, id=id).first() for id in list]:
-            g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
-                                     % file.id)
+            file.delete()
 
     def remove(self, company_id=None):
         if company_id and not File.if_action_allowed(File.ACTIONS['remove'], company_id):
@@ -461,20 +466,10 @@ class File(Base, PRBase):
         if self.mime == 'directory':
             list = File.get_all_in_dir_rev(self.id)
             for f in list:
-                if f.mime == 'directory':
-                    f.delete()
-                elif f.mime == 'video/*':
-                    YoutubeVideo.delfile(YoutubeVideo.get(f.id))
-                else:
-                    g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
-                                             % f.id)
+                f.delete()
             self.delete()
-        elif self.mime == 'video/*':
-            YoutubeVideo.delfile(YoutubeVideo.get(self.id))
         else:
-            # file = file.get_thumbnail(any=True) or file
-            g.sql_connection.execute("DELETE FROM file WHERE id='%s';"
-                                     % self.id)
+            self.delete()
         return 'Success'
 
     @staticmethod

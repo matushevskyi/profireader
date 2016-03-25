@@ -128,6 +128,12 @@ def list_reader_load(json):
 def add_delete_favorite(json):
     return ReaderArticlePortalDivision.add_delete_favorite_user_article(json.get('article')['id'], json.get('article')['is_favorite'])
 
+@reader_bp.route('/add_to_like/', methods=['POST'])
+@ok
+def add_delete_like(json):
+    liked = ReaderArticlePortalDivision.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
+    return ReaderArticlePortalDivision.count_likes(g.user.id, json.get('article')['id'])
+
 
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
 @tos_required

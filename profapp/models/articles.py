@@ -342,8 +342,10 @@ class ArticlePortalDivision(Base, PRBase):
     def get_list_reader_articles(articles):
         list_articles = []
         for article_id, article in articles.items():
-            article['publishing_tm'] = PRBase.datetime_from_utc_to_local(article['publishing_tm'], "%d %B %Y, %H:%M")
+            # article['publishing_tm'] = PRBase.datetime_from_utc_to_local(article['publishing_tm'], "%d %B %Y, %H:%M")
             article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
+            article['liked'] = ReaderArticlePortalDivision.count_likes(g.user.id, article_id)
+            article['list_liked_reader'] = []#ReaderArticlePortalDivision.get_list_reader_liked(article_id)
             article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
                 articles[article_id]['company']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
             article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
@@ -869,7 +871,7 @@ class Article(Base, PRBase):
             'upload': True,
             'none': noimage_url,
             'crop': True,
-            'image_size': [450, 450],
+            'image_size': [400, 300],
             'min_size': [100, 100],
             'aspect_ratio': [0.5, 3.0],
             'preset_urls': {},
@@ -993,15 +995,39 @@ class ReaderArticlePortalDivision(Base, PRBase):
 
         if not articleReader:
             articleReader = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
-        articleReader.liked = True if liked else False
+        articleReader.liked = False if articleReader.liked else True
+        article_division = ArticlePortalDivision.get(article_portal_division_id)
+        article_division.like_count = article_division.like_count - 1 \
+            if articleReader.liked == False and article_division.like_count != 0 else article_division.like_count + 1
+        article_division.save()
         articleReader.save()
         return articleReader.liked
+
+    @staticmethod
+    def count_likes(user_id, article_portal_division_id):
+        article_division = ArticlePortalDivision.get(article_portal_division_id)
+        return article_division.like_count
+
+    @staticmethod
+    def article_is_liked(user_id,article_portal_division_id):
+        reader_article = db(ReaderArticlePortalDivision, user_id=user_id,
+                            article_portal_division_id=article_portal_division_id).first()
+        return reader_article.liked if reader_article else False
 
     @staticmethod
     def article_is_favorite(user_id, article_portal_division_id):
         reader_article = db(ReaderArticlePortalDivision, user_id=user_id,
                             article_portal_division_id=article_portal_division_id).first()
         return reader_article.favorite if reader_article else False
+
+    @staticmethod
+    def get_list_reader_liked(article_portal_division_id):
+        liked_users = [User.get(article.user_id).profireader_name for article in db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id)]
+        if g.user.profireader_name in liked_users:
+            index = liked_users.index(g.user.profireader_name)
+            del liked_users[index]
+            liked_users.insert(0, g.user.profireader_name)
+        return liked_users
 
     @staticmethod
     def add_to_table_if_not_exists(article_portal_division_id):

@@ -34,7 +34,6 @@ class User(Base, UserMixin, PRBase):
     profireader_first_name = Column(TABLE_TYPES['name'])
     profireader_last_name = Column(TABLE_TYPES['name'])
     profireader_name = Column(TABLE_TYPES['name'])
-    country = Column(TABLE_TYPES['name'])
     profireader_gender = Column(TABLE_TYPES['gender'])
     profireader_link = Column(TABLE_TYPES['link'])
     profireader_phone = Column(TABLE_TYPES['phone'])
@@ -72,6 +71,8 @@ class User(Base, UserMixin, PRBase):
 
     # FB_NET_FIELD_NAMES = ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
     # SOCIAL_NETWORKS = ['profireader', 'google', 'facebook', 'linkedin', 'twitter', 'microsoft', 'yahoo']
+    country_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('country.id'), nullable=True)
+    country = relationship('Country')
 
     # GOOGLE
     google_id = Column(TABLE_TYPES['id_soc_net'])
@@ -576,7 +577,7 @@ class User(Base, UserMixin, PRBase):
     #    return self.can(Permission.ADMINISTER)
 
     def get_client_side_dict(self,
-                             fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url|profireader_email|profireader_first_name|profireader_last_name|birth_tm|profireader_link|profireader_phone|location|profireader_gender|lang|about_me|country',
+                             fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url|profireader_email|profireader_first_name|profireader_last_name|birth_tm|profireader_link|profireader_phone|location|profireader_gender|lang|about_me|country_id',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
