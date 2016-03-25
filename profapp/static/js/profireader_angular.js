@@ -207,7 +207,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 $compile(element.contents())(scope);
 
 
-
                 var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
 
                 window[callback_name] = function (item) {
@@ -245,7 +244,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     }
                 };
 
-                scope.selectNone  = function () {
+                scope.selectNone = function () {
                     if (scope.noneurl) {
                         restartCropper(scope.noneurl, {'type': 'none'}, true);
                     }
@@ -265,7 +264,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 var $image = $('img', element);
                 var $outer_container = $('.img-container', element);
                 var $inner_container = $('.img-container-cropper', element);
-
 
 
                 scope.fileUploaded = function (event) {
@@ -353,7 +351,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     if (scope.prCrop['cropper']) {
                         options['minCanvasWidth'] = options['minContainerWidth'];
-                        options['minContainerHeight'] = options['minContainerHeight'];
+                        options['minCanvasHeight'] = options['minContainerHeight'];
                         //if (scope.prCrop) {
                         //    console.log(scope.prCrop['min_size']);
                         //    options['minCropBoxWidth'] = scope.prCrop['min_size'][0] * scope.maxzoom;
@@ -361,31 +359,156 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         //}
                         scope.aspect_ratio = false;
                         scope.previous_data = null;
-                        if (scope.prCrop['cropper']['aspect_ratio'] && scope.prCrop['cropper']['aspect_ratio'] > 0) {
-                            options['aspectRatio'] = scope.prCrop['cropper']['aspect_ratio'];
-                        }
-                        else if (_.isArray(scope.prCrop['cropper']['aspect_ratio']) && scope.prCrop['cropper']['aspect_ratio'].length == 2
-                            && scope.prCrop['cropper']['aspect_ratio'][0] > 0 && scope.prCrop['cropper']['aspect_ratio'][1] > 0
-                        ) {
-                            if (scope.prCrop['cropper']['aspect_ratio'][0] == scope.prCrop['cropper']['aspect_ratio'][1]) {
-                                options['aspectRatio'] = scope.prCrop['cropper']['aspect_ratio'][0];
-                            }
-                            else if (scope.prCrop['cropper']['aspect_ratio'][0] < scope.prCrop['cropper']['aspect_ratio'][1]) {
-                                scope.aspect_ratio = [scope.prCrop['cropper']['aspect_ratio'][0], scope.prCrop['cropper']['aspect_ratio'][1]]
-                            }
-                            else {
-                                scope.aspect_ratio = [scope.prCrop['cropper']['aspect_ratio'][1], scope.prCrop['cropper']['aspect_ratio'][0]]
-                            }
+                        if (_.isArray(scope.prCrop['cropper']['aspect_ratio']) && scope.prCrop['cropper']['aspect_ratio'].length == 2
+                            && scope.prCrop['cropper']['aspect_ratio'][0] > 0 && scope.prCrop['cropper']['aspect_ratio'][1] > 0 &&
+                            scope.prCrop['cropper']['aspect_ratio'][0] <= scope.prCrop['cropper']['aspect_ratio'][1]) {
+                            scope.aspect_ratio = [scope.prCrop['cropper']['aspect_ratio'][0], scope.prCrop['cropper']['aspect_ratio'][1]]
                         }
                     }
                     return options;
                 }
 
+                var normalize_coordinates = function (coordinates, size, aspect, east, west, north, south) {
+                    var changed = false;
+                    if (!coordinates) {
+                        coordinates = {};
+                        changed = true;
+                    }
+
+                    if (!(coordinates.x >= 0 && coordinates.x <= size[0] - 1 && coordinates.width >= 1 && coordinates.width <= size[0] - coordinates.x)) {
+
+                        coordinates.x = size[0] / 10.
+                        coordinates.width = 8 * size[0] / 10.
+                        changed = true;
+                    }
+
+                    if (!(coordinates.y >= 0 && coordinates.y <= size[1] - 1 && coordinates.height >= 1 && coordinates.height <= size[1] - coordinates.y)) {
+                        coordinates.y = size[1] / 10.
+                        coordinates.height = 8 * size[1] / 10.
+                        changed = true;
+                    }
+
+                    if (aspect) {
+                        var img_aspect = coordinates.width / coordinates.height;
+                        if (img_aspect < aspect[0]) {
+                            coordinates.y += (coordinates.height - coordinates.width / aspect[0]) / 2.
+                            coordinates.height -= (coordinates.height - coordinates.width / aspect[0])
+                            changed = true;
+                        }
+                        if (img_aspect > aspect[1]) {
+                            coordinates.x += (coordinates.width - coordinates.height * aspect[1]) / 2.
+                            coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
+                            changed = true;
+                        }
+                    }
+                    return changed;
+
+                }
+
+                var normalize_coordinates1 = function (x1, y1, x2, y2, size, container_size, minsize, aspect, corner_action) {
+                    console.log(aspect);
+
+                    coordinates = {
+                        x: Math.min(x1, x2) / container_size[0] * size[0],
+                        y: Math.min(y1, y2) / container_size[1] * size[1]
+                    }
+                    coordinates['width'] = coordinates.x + Math.max(x1, x2) / container_size[0] * size[0];
+                    coordinates['height'] = coordinates.y + Math.max(y1, y2) / container_size[1] * size[1];
+
+                    //console.log(coordinates);
+
+
+                    var changed = false;
+                    //if (!coordinates) {
+                    //    coordinates = {
+                    //        x: size[0] / 10.,
+                    //        y: size[1] / 10.,
+                    //        width: 9. * size[0] / 10.,
+                    //        height: 9. * size[1] / 10.
+                    //    };
+                    //}
+
+                    //coordinates.x = coordinates.x >= 0 ? coordinates.x : 0;
+                    //coordinates.y = coordinates.y >= 0 ? coordinates.y : 0;
+                    //coordinates.width = coordinates.x + coordinates.width <= size[0] ? coordinates.width : size[0] - coordinates.x;
+                    //coordinates.height = coordinates.y + coordinates.height <= size[1] ? coordinates.height : size[1] - coordinates.y;
+
+                    //if (!(coordinates.x >= 0))
+                    //
+                    //    coordinates.x = size[0] / 10.
+                    //    coordinates.width = 8 * size[0] / 10.
+                    //    changed = true;
+                    //}
+                    //
+                    //if (!(coordinates.y >= 0 && coordinates.y <= size[1] - 1 && coordinates.height >= 1 && coordinates.height <= size[1] - coordinates.y)) {
+                    //    coordinates.y = size[1] / 10.
+                    //    coordinates.height = 8 * size[1] / 10.
+                    //    changed = true;
+                    //}
+
+                    var xmove = 0;
+                    var ymove = 0;
+                    switch (corner_action) {
+                        case 'nw':
+                            xmove = 1.;
+                            ymove = 1.;
+                            break;
+                        case 'n':
+                            xmove = 0.5;
+                            ymove = 1.;
+                            break;
+                        case 'ne':
+                            xmove = 0;
+                            ymove = 1.;
+                            break;
+                        case 'e':
+                            xmove = 0;
+                            ymove = 0.5;
+                            break;
+                        case 'se':
+                            xmove = 0;
+                            ymove = 0;
+                            break;
+                        case 's':
+                            xmove = 0.5;
+                            ymove = 0;
+                            break;
+                        case 'sw':
+                            xmove = 0;
+                            ymove = 1;
+                            break;
+                        case 'w':
+                            xmove = 1;
+                            ymove = 0.5;
+                            break;
+                    }
+
+                    if (aspect) {
+                        var img_aspect = coordinates.width / coordinates.height;
+                        if (img_aspect < aspect[0]) {
+                            console.log(img_aspect, aspect, 'to wide', coordinates);
+                            coordinates.y += (coordinates.height - coordinates.width / aspect[0]) * ymove;
+                            coordinates.height -= (coordinates.height - coordinates.width / aspect[0])
+                            changed = true;
+                        }
+                        else if (img_aspect > aspect[1]) {
+                            console.log(img_aspect, aspect, 'to tall', coordinates);
+                            coordinates.x += (coordinates.width - coordinates.height * aspect[1]) * xmove;
+                            coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
+                            changed = true;
+                        }
+                    }
+                    return coordinates;
+
+                }
 
                 var runCropper = function (options, image_size) {
 
+                    var optionsa = {};
+
                     options['strict'] = true;
                     options['viewMode'] = 3;
+                    //options['aspectRatio'] = 1;
                     options['zoomable'] = scope.zoomable;
 
                     options['zoom'] = function (e) {
@@ -408,28 +531,27 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         updateCoordinates({'zoom': e.ratio});
 
 
-                        var data =$image.cropper('getData');
+                        var data = $image.cropper('getData');
                         var zoomed = false;
 
                         if (data.width < scope.prCrop['min_size'][0] * scope.maxzoom) {
                             data.width = scope.prCrop['min_size'][0] * scope.maxzoom;
                             if (data.width + data.x > image_size[0]) {
-                                data.x  = image_size[0] - data.width;
+                                data.x = image_size[0] - data.width;
                             }
                             zoomed = true;
-                            }
+                        }
                         if (data.height < scope.prCrop['min_size'][1] * scope.maxzoom) {
                             data.height = scope.prCrop['min_size'][1] * scope.maxzoom;
                             if (data.height + data.y > image_size[1]) {
-                                data.y  = image_size[1] - data.height;
+                                data.y = image_size[1] - data.height;
                             }
                             zoomed = true;
-                            }
+                        }
                         if (zoomed) {
                             $image.cropper('setData', scope.previous_data)
                             updateCoordinates({'x': data.x, 'y': data.y, 'width': data.width, 'height': data.height});
                         }
-
 
 
                     }
@@ -441,30 +563,109 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         }
                     }
 
-                    options['crop'] = function (e) {
-                        if (scope.aspect_ratio) {
-                            var data = $image.cropper('getData');
-                            var asp = data.width / data.height;
-                            if (asp < scope.aspect_ratio[0] || asp > scope.aspect_ratio[1] || data.width < scope.prCrop['min_size'][0] * scope.maxzoom || data.height < scope.prCrop['min_size'][1] * scope.maxzoom) {
-                                event.preventDefault();
-                                if (scope.previous_data) {
-                                    $image.cropper('setData', scope.previous_data)
-                                }
-                                return false;
-                            }
-                            else {
-                                scope.previous_data = data;
-                            }
+                    options['cropstart'] = function (e) {
+                        console.log(e);
+                        scope.click_data = {'action': e.action, 'x': e.originalEvent.x, 'y': e.originalEvent.y};
+//'e': resize the east side of the crop box
+//'w': resize the west side of the crop box
+//'s': resize the south side of the crop box
+//'n': resize the north side of the crop box
+//'se': resize the southeast side of the crop box
+//'sw': resize the southwest side of the crop box
+//'ne': resize the northeast side of the crop box
+//'nw': resize the northwest side of the crop box
+                    }
+
+                    options['cropmove'] = function (e) {
+                        //console.log(e.width);
+                        console.log(e.originalEvent.x, (e.originalEvent.x - scope.click_data.x)/(e.originalEvent.y - scope.click_data.y));
+                        if ((e.originalEvent.x - scope.click_data.x)/(e.originalEvent.y - scope.click_data.y) > 1.0) {
+                            e.originalEvent.x = e.originalEvent.y - scope.click_data.y + scope.click_data.x;
+
+                        }
+                        e.originalEvent.x = 100;
+                        console.log(e.originalEvent.x);
+                        return;
+                        var data = {x: e.x, y: e.y, width: e.width, height: e.height}
+                        console.log(e.originalEvent.x);
+                        var new_data = normalize_coordinates1(scope.click_data.x, scope.click_data.y,
+                            e.originalEvent.x, e.originalEvent.y, image_size,
+                            [options['minCanvasWidth'], options['minCanvasHeight']],
+                            [100, 100], scope.aspect_ratio, scope.click_data.action);
+                        if (new_data) {
+                            e.originalEvent.x = (new_data.x + new_data.width) / image_size[0] * options['minCanvasWidth'];
+                            e.originalEvent.y = (new_data.y + new_data.height) / image_size[1] * options['minCanvasHeight'];
+                        }
+                        console.log(e.originalEvent.x);
+
+                    }
+
+
+                    optionsa['crop'] = function (e) {
+
+                        if (e.width/ e.height>1) {
+                            e.width = e.height;
+
+                            $image.cropper('setData', {width: e.width});
+                            e.preventDefault();
+                        }
+                        return;
+
+                        var data = {x: e.x, y: e.y, width: e.width, height: e.height}
+
+                        var changed = normalize_coordinates1(data, image_size, image_size, scope.aspect_ratio, scope.corner_action);
+                        if (changed) {
+                            e.x = data.x;
+                            e.y = data.y;
+                            e.width = data.width;
+                            e.height = data.height;
+                            e.preventDefault();
+                            $image.cropper('setData', data);
+                            $timeout(function () {
+                                updateCoordinates({
+                                    'width': data.width,
+                                    'height': data.height,
+                                    'y': data.y,
+                                    'x': data.x
+                                });
+                            })
+                        }
+                        else {
+                            $timeout(function () {
+                                updateCoordinates({
+                                    'width': data.width,
+                                    'height': data.height,
+                                    'y': data.y,
+                                    'x': data.x
+                                });
+                            })
                         }
 
-                        $timeout(function () {
-                            updateCoordinates({
-                                'width': e.width,
-                                'height': e.height,
-                                'y': e.y,
-                                'x': e.x
-                            });
-                        })
+
+                        //if (scope.aspect_ratio) {
+                        //    var data = $image.cropper('getData');
+                        //
+                        //    var asp = data.width / data.height;
+                        //    if (asp < scope.aspect_ratio[0] || asp > scope.aspect_ratio[1]) {
+                        //        event.preventDefault();
+                        //        if (scope.previous_data) {
+                        //            $image.cropper('setData', scope.previous_data)
+                        //        }
+                        //        return false;
+                        //    }
+                        //    if (data.width < scope.prCrop['min_size'][0] * scope.maxzoom || data.height < scope.prCrop['min_size'][1] * scope.maxzoom) {
+                        //        event.preventDefault();
+                        //        if (scope.previous_data) {
+                        //            $image.cropper('setData', scope.previous_data)
+                        //        }
+                        //        return false;
+                        //    }
+                        //    else {
+                        //        scope.previous_data = data;
+                        //    }
+                        //}
+
+
                     }
                     $image.cropper(options);
                 }
@@ -490,35 +691,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     }
                 }
 
-                var normalize_coordinates = function (coordinates, size, aspect) {
-                    if (!coordinates) {
-                        coordinates = {};
-                    }
-
-                    if (!(coordinates.x >= 0 && coordinates.x <= size[0] - 1 && coordinates.width >= 1 && coordinates.width <= size[0] - coordinates.x)) {
-                        coordinates.x = size[0] / 10.
-                        coordinates.width = 8 * size[0] / 10.
-                    }
-
-                    if (!(coordinates.y >= 0 && coordinates.y <= size[1] - 1 && coordinates.height >= 1 && coordinates.height <= size[1] - coordinates.y)) {
-                        coordinates.y = size[1] / 10.
-                        coordinates.height = 8 * size[1] / 10.
-                    }
-
-                    if (aspect) {
-                        var img_aspect = coordinates.width / coordinates.height;
-                        if (img_aspect < aspect[0]) {
-                            coordinates.y += (coordinates.height - coordinates.width / aspect[0]) / 2.
-                            coordinates.height -= (coordinates.height - coordinates.width / aspect[0])
-                        }
-                        if (img_aspect > aspect[1]) {
-                            coordinates.x += (coordinates.width - coordinates.height * aspect[1]) / 2.
-                            coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
-                        }
-                    }
-                    return coordinates;
-
-                }
 
                 var restartCropper = function (src, new_selection_by_user, force_image_src_on_error) {
                     var fr = new Image();
@@ -541,8 +713,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         options['autoCrop'] = true;
 
                         options['data'] = normalize_coordinates(selection['crop_coordinates'], [fr.width, fr.height],
-                            options['aspectRatio'] ? [options['aspectRatio'], options['aspectRatio']] :
-                                (scope.aspect_ratio ? [scope.aspect_ratio[0], scope.aspect_ratio[1]] : false));
+                            (scope.aspect_ratio ? [scope.aspect_ratio[0], scope.aspect_ratio[1]] : false));
                         if (scope.prCrop['cropper'] && ((selection['type'] === 'browse') || (selection['type'] === 'upload'))) {
                             runCropper(options, [fr.width, fr.height]);
                         }
@@ -1808,7 +1979,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     load()
                 }
             }, 500);
-            var load = function(){
+            var load = function () {
                 $ok(url, scope.scroll_data ? scope.scroll_data : {next_page: scope.next_page}, function (resp) {
                     scope.data = resp;
                     if (scope.data.end)
@@ -1818,7 +1989,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         scope.loading = false;
                         if ($(document).height() - $(window).height() === 0 && !scope.data.end) {
                             scope.next_page += 1;
-                            load ()
+                            load()
                         }
                     }, 1000)
                 });
