@@ -4,19 +4,36 @@
 {% block portal_content %}
     {% include '_ruslan/reader/_reader_nav.html' %}
     <script>
-        module.controller('list_reader', function ($scope, $ok, $timeout) {
+        module.controller('list_reader', function ($scope, $ok, $sce) {
             angularControllerFunction('UserLoginController', 'set_selected_user_menu')('list_reader');
             $scope.$$translate = {{ translates('list_reader')|safe }};
             $scope.favorite = {{ favorite }}
             $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
             $scope.add_delete_favorite = '{{ url_for('reader.add_delete_favorite') }}'
+            $scope.add_delete_like = '{{ url_for('reader.add_delete_like') }}'
             $scope.add_to_favorite = function (article) {
                 article.is_favorite = article['is_favorite']? False: True
                 $ok($scope.add_delete_favorite, {'article': article}, function (resp) {
                     article.is_favorite = resp
                 })
             };
+            $scope.like = function(article){
+                $ok($scope.add_delete_like, {'article': article}, function (resp) {
+                    article.liked = resp
+                })
+            }
             $scope.loadNextPage('');
+            var trusted = {};
+
+{#            $scope.getPopoverContent = function(article) {#}
+{#                var tool = '\n';#}
+{#                for(var i =0;i<article.list_liked_reader.length;i+=1){#}
+{#                    tool += article.list_liked_reader[i]+'\n';#}
+{#                }#}
+{#                var content = tool;#}
+{#                content = '<span style="width:10px">'+tool+'</span>';#}
+{#              return trusted[content] || (trusted[content] = $sce.trustAsHtml(content));#}
+{#            }#}
         });
 
     </script>
@@ -62,11 +79,11 @@
                 </h3>
                     <div class="row">
                         <ul style="list-style: none; border-top: 1px solid #E3E3E3; padding-top: 15px;">
-                            <li style="display: inline-block; margin-right: 50px; cursor: pointer" ng-click="add_to_favorite(article)"><i ng-if="!article.is_favorite" class="fa fa-bookmark-o"></i><i ng-if="article.is_favorite" class="fa fa-bookmark"></i>
+                            <li style="display: inline-block; margin-right: 60px; cursor: pointer" ng-click="add_to_favorite(article)"><i ng-if="!article.is_favorite" class="fa fa-bookmark-o"></i><i ng-if="article.is_favorite" class="fa fa-bookmark"></i>
                              {{_('Favorite') }}</li>
-                            <li style=" display: inline-block; margin-right: 50px;"><i class="fa fa-comments-o"></i>604</li>
-                            <li style=" display: inline-block; margin-right: 50px;"><i class="fa fa-thumbs-o-up"></i>12</li>
-                            <li style=" display: inline-block; margin-right: 50px;"><i class="fa fa-share"></i>{{ _('Share') }}</li>
+                            <li class="liked" style=" display: inline-block; margin-right: 60px;cursor: pointer" ng-click="like(article)" popover-popup-delay="50" popover-trigger="mouseenter" popover-placement="top" uib-popover-html="getPopoverContent(article)"><i class="fa fa-thumbs-o-up"></i>{{ article.liked }}</li>
+                            <li style=" display: inline-block; margin-right: 60px;"><i class="fa fa-comments-o"></i>604</li>
+                            <li style=" display: inline-block; margin-right: 60px;"><i class="fa fa-share"></i>{{ _('Share') }}</li>
                         </ul>
                     </div>
                     <div class="item-additional-info">
