@@ -19,9 +19,9 @@
     </i></div>
     <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"
          onclick="switch_something(this, '{{ url_for('front.add_delete_liked', article_portal_division_id =
-         article['id']) }}', '.fa-thumbs-o-up', '.fa-thumbs-up', {'liked_count': 'liked_count'});">
+         article['id']) }}', '.fa-thumbs-o-up', '.fa-thumbs-up', {'liked_count': '.liked_count'});">
         <i {% if liked %}style="display: none"{% endif %} class="fa fa-thumbs-o-up link"> <span>{{ _('Like') }}</span>
-            <liked_count>{{ liked_count }}</liked_count>
+            <liked_count class="liked_count">{{ liked_count }}</liked_count>
         </i>
         <i {% if not liked %}style="display: none"{% endif %}
            class="fa fa-thumbs-up link"> <span>{{ _('Unlike') }}</span>
