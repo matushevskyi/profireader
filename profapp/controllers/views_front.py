@@ -266,9 +266,7 @@ def send_message(json, member_company_id):
 def index(page=1):
     search_text, portal, _ = get_params()
     if not portal:
-        return render_template('front/error.html',
-                           message="No portal found {}".format(request.host),
-                           )
+        return render_template('front/error.html', message="No portal found %(host)s", dict = {'host': request.host} )
 
     division = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
                                                       portal_division_type_id='index').one()
