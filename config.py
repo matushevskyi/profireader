@@ -23,7 +23,7 @@ class Config(object):
     SITE_TITLE = 'Profireader'
 
     # Statement for enabling the development environment
-    DEBUG = False
+    DEBUG = True
     TESTING = False
 
     MAIL_SERVER = 'smtp.gmail.com:587'

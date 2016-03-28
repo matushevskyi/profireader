@@ -464,7 +464,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     # babel = Babel(app)
 
     app.teardown_request(close_database)
-    app.debug = False
+    app.debug = True
 
 
     app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))

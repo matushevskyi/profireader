@@ -792,7 +792,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             }
         };
     })
-    .directive('prDatepicker', function () {
+    .directive('prDatepicker', function ($compile) {
         return {
             replace: false,
             require: 'ngModel',
@@ -801,21 +801,44 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 ngModel: '='
             },
             link: function (scope, element, attrs, model) {
-                scope.$watch('ngModel', function (nv, ov) {
-                    scope.setdate = scope['ngModel'];
-                });
-                scope.$watch('setdate', function (nv, ov) {
-                    if (nv && nv.setHours) nv.setHours(12);
-                    scope['ngModel'] = nv;
-                });
+                //scope.$watch('ngModel', function (nv, ov) {
+                //    scope.setdate = scope['ngModel'];
+                //});
+
+                scope.setdate = new Date();
+
+                scope.opened = false;
+
+                scope.open_calendar = function () {
+                    scope.opened = true;
+                };
+
+                element.html('{{ setdate }}<input type="text" class="form-control" uib-datepicker-popup ' +
+                    'ng-model="setdate"' +
+                    ' is-open="opened" datepicker-options="dateOptions" ng-required="true" close-text="Close"' +
+                    ' />' +
+            '<span class="input-group-btn">' +
+            '<button type="button" class="btn btn-default" ng-click="open_calendar()"><i class="glyphicon' +
+                    ' glyphicon-calendar"></i></button>' +
+            '</span>');
+
+                $compile(element.contents())(scope);
+
+                //scope.$watch('setdate', function (nv, ov) {
+                //    if (nv && nv.setHours) nv.setHours(12);
+                //    scope['ngModel'] = nv;
+                //});
             },
-            template: function (ele, attrs) {
-// TODO: MY BY OZ: please uncoment time (comented by ng-if=0 now), move date and time to one line
-                return '<span><input style="width: 15em; display: inline" type="date" class="form-control" uib-datepicker-popup\
-               ng-model="setdate" ng-required="true"\
-               datepicker-options="dateOptions" close-text="Close"/><span class="input-group-btn"></span>\
-               </span>';
-            }
+//            template: function (ele, attrs) {
+//// TODO: MY BY OZ: please uncoment time (comented by ng-if=0 now), move date and time to one line
+//
+//                return ;
+//
+//               // return '<span><input style="width: 15em; display: inline" type="date" class="form-control" uib-datepicker-popup\
+//               //ng-model="setdate" ng-required="true"\
+//               //datepicker-options="dateOptions" close-text="Close"/><span class="input-group-btn"></span>\
+//               //</span>';
+//            }
         }
     })
     .directive('highlighter', ['$timeout', function ($timeout) {

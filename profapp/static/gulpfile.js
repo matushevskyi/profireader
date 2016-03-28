@@ -63,7 +63,7 @@ gulp.task('install_angular_animate', function () {
 });
 
 gulp.task('install_angular_bootstrap', function () {
-    return gulp.src([src + 'angular-bootstrap/ui-bootstrap.min.js', src + 'angular-bootstrap/ui-bootstrap-tpls.min.js'])
+    return gulp.src([src + 'angular-bootstrap/ui-bootstrap.min.js', src + 'angular-bootstrap/ui-bootstrap-tpls.min.js', src + 'angular-bootstrap/ui-bootstrap.js', src + 'angular-bootstrap/ui-bootstrap-tpls.js'])
         .pipe(gulp.dest(dst + 'angular-bootstrap/'));
 });
 
