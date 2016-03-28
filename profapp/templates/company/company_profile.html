@@ -25,6 +25,7 @@
             $scope.url_portal_profile = {{raw_url_for('portal.profile') | safe}};
 
             $scope.data = {};
+            $scope.coordinates = [];
             $scope.rights_user_in_company = {{rights_user_in_company | tojson | safe}};
 
             $scope.editing = false;
@@ -93,8 +94,12 @@
                          pr-image="data.logo_file_id" alt="image">
 
                     <div ng-if="editing">
-                        <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
+                        <div style="width: 400px; height: 300px; position: relative" pr-cropa="data.logo"
+                             pr-crop-coordinates="coordinates"
+                             pr-crop-image-url="fileUrl(data.logo.selected_by_user.image_file_id)"></div>
+                        {{ coordinates }}
                     </div>
+
                 </div>
 
                 <div class="col-lg-7 col-md-7 col-sm-12 col-xs-12 edit-company">

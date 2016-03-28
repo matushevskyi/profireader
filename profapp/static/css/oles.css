@@ -3,7 +3,6 @@
     color: #ccc;
 }
 
-
 .item:hover {
     /*background: rgba(255, 200, 200, 0.3);*/
 }
@@ -147,16 +146,15 @@
 
 /*TODO: RI by OZ: this class for grid icons (see employees icons) */
 .pr-grid-cell-field-type-icons-icon {
-  display: inline-block;
-  font: normal normal normal 14px/1 FontAwesome;
-  font-size: inherit;
-  text-rendering: auto;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  width: 1.4em;
+    display: inline-block;
+    font: normal normal normal 14px/1 FontAwesome;
+    font-size: inherit;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    width: 1.4em;
 
 }
-
 
 .pr-grid-cell-field-type-icons-icon:before {
     content: "\f00c";
@@ -167,6 +165,7 @@
     content: "\f06e";
     color: dodgerblue;
 }
+
 .pr-grid-cell-field-type-icons-icon-FILES_UPLOAD:before {
     content: "\f093";
     color: dodgerblue;
@@ -207,7 +206,6 @@
     color: dodgerblue;
 }
 
-
 .pr-grid-cell-field-type-icons-icon-COMPANY_REQUIRE_MEMBEREE_AT_PORTALS:before {
     content: "\f196";
     color: #790B79;
@@ -247,6 +245,7 @@
     content: "\f183";
     color: #FF4103;
 }
+
 .pr-grid-cell-field-type-icons-icon-MATERIAL_SUBMIT:before {
     content: "\f00c";
     color: dodgerblue;
@@ -256,10 +255,12 @@
     content: "\f044";
     color: dodgerblue;
 }
+
 .pr-grid-cell-field-type-icons-icon-PUBLICATION_UNPUBLISH:before {
     content: "\f05e";
     color: dodgerblue;
 }
+
 .pr-grid-cell-field-type-icons-icon-PUBLICATION_PUBLISH:before {
     content: "\f0a1";
     color: dodgerblue;
@@ -269,7 +270,6 @@
     content: "\f0a2";
     color: dodgerblue;
 }
-
 
 .pr-grid-cell-field-type-actions {
     padding: 2px;
@@ -318,7 +318,6 @@
     margin-right: 2px;
 }
 
-
 .p4px {
     padding: 4px;
 }
@@ -340,10 +339,74 @@
 }
 
 .link {
-    cursor:pointer;
+    cursor: pointer;
 }
 
 .link:hover span {
     text-decoration: underline;
+}
+
+.ng-crop-rect {
+    cursor: move;
+    position: absolute;
+    border: dashed #0d1318 thin;
+    box-sizing: border-box;
+    background-repeat: no-repeat;
+    background-position: left 0px top 0px;
+    background-image: none;
+}
+
+.ng-crop-rect-corner {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: solid #0d1318 thin;
+    box-sizing: border-box;
+    margin-left: -5px;
+    margin-top: -5px;
+
+}
+
+.ng-crop-mouse-over {
+    cursor: crosshair;
+    background-color: #0d1318;
+    -khtml-opacity: .5;
+    -moz-opacity: .5;
+    -ms-filter: (alpha(opacity=50));
+    filter: alpha(opacity=50);
+    filter: progid:DXImageTransform.Microsoft.Alpha(opacity=0.5);
+    opacity: .5;
+}
+
+.ng-crop-rect-n.ng-crop-rect-w {
+    cursor: nw-resize;
+}
+
+.ng-crop-rect-n {
+    cursor: n-resize;
+}
+
+.ng-crop-rect-n.ng-crop-rect-e {
+    cursor: ne-resize;
+}
+
+.ng-crop-rect-e {
+    cursor: e-resize;
+}
+
+.ng-crop-rect-s.ng-crop-rect-e {
+    cursor: se-resize;
+}
+
+.ng-crop-rect-s {
+    cursor: s-resize;
+}
+
+.ng-crop-rect-s.ng-crop-rect-w {
+    cursor: sw-resize;
+}
+
+.ng-crop-rect-w {
+    cursor: w-resize;
 }
 

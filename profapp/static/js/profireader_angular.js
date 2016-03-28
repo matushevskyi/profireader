@@ -145,6 +145,377 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             }
         };
     })
+    .directive('prCropa', ['$compile', '$templateCache', '$timeout', function ($compile, $templateCache, $timeout) {
+        return {
+            restrict: 'A',
+            scope: {
+                prCropa: '=',
+                coordinates: '=prCropCoordinates',
+                prCropImageUrl: '='
+            },
+            link: function (scope, element, attrs, model) {
+                element.html('<div style="position: relative;  width: 100%; height: 100%; padding: 5px" class="img-container cropper-bg">' +
+                    '<div style="position: relative;  width: 100%; height: 100%;" class="img-container-cropper">' +
+                    '<img style="width: 100%; height: 100%;"/>' +
+                    '<div ng-crop-action="set" class="ng-crop-action ng-crop-mouse-over" style="position: absolute; top: 0px; left: 0px;  width: 100%; height: 100%;"></div>' +
+                    '<div ng-crop-action="move" class="ng-crop-action ng-crop-rect"></div>' +
+                    '<div ng-crop-action="nw" class="ng-crop-action ng-crop-rect-corner ng-crop-rect-n ng-crop-rect-w"></div>' +
+                    '<div ng-crop-action="n" class="ng-crop-action ng-crop-rect-corner ng-crop-rect-n"></div>' +
+                    '<div ng-crop-action="ne" class="ng-crop-action ng-crop-rect-corner ng-crop-rect-n ng-crop-rect-e"></div>' +
+                    '<div ng-crop-action="e" class="ng-crop-action ng-crop-rect-corner ng-crop-rect-e"></div>' +
+                    '<div ng-crop-action="se" class="ng-crop-action ng-crop-rect-corner ng-crop-rect-s ng-crop-rect-e"></div>' +
+                    '<div ng-crop-action="s" class="ng-crop-action ng-crop-rect-corner ng-crop-rect-s"></div>' +
+                    '<div ng-crop-action="sw" class="ng-crop-action ng-crop-rect-corner ng-crop-rect-s ng-crop-rect-w"></div>' +
+                    '<div ng-crop-action="w" class="ng-crop-action ng-crop-rect-corner ng-crop-rect-w"></div>' +
+                    '</div></div>');
+
+                $compile(element.contents())(scope);
+
+                var $e = function (selector) {
+                    return $(selector, element);
+                }
+
+                scope.$rect = $e('.ng-crop-rect');
+                scope.$over = $e('.ng-crop-mouse-over');
+                scope.$img = $e('img');
+                scope.$east = $e('.ng-crop-rect-e');
+                scope.$north = $e('.ng-crop-rect-n');
+                scope.$west = $e('.ng-crop-rect-w');
+                scope.$south = $e('.ng-crop-rect-s');
+                scope.$corners = $e('.ng-crop-rect-corner');
+                scope.$actions = $e('.ng-crop-action');
+                scope.$canvas = $e('.img-container-cropper');
+                scope.$outer = $e('.img-container');
+
+                scope.fitByImageRect = function (canvasrect, compass) {
+                    var imgrect = canvas2imgRect(canvasrect);
+
+                    if (imgrect[2] - imgrect[0] > scope.max_size[0]) {
+                        canvasrect[0] = img2canvasX(imgrect[0] + (imgrect[2] - imgrect[0]) * compass.w - scope.max_size[0] * compass.w);
+                        canvasrect[2] = img2canvasX(imgrect[2] + (imgrect[0] - imgrect[2]) * compass.e + scope.max_size[0] * compass.e);
+                    }
+                    else if (imgrect[2] - imgrect[0] < scope.min_size[0]) {
+                        canvasrect[0] = img2canvasX(imgrect[0] + (imgrect[2] - imgrect[0]) * compass.w - scope.min_size[0] * compass.w);
+                        canvasrect[2] = img2canvasX(imgrect[2] + (imgrect[0] - imgrect[2]) * compass.e + scope.min_size[0] * compass.e);
+                    }
+
+                    if (imgrect[3] - imgrect[1] > scope.max_size[1]) {
+                        canvasrect[1] = img2canvasX(imgrect[1] + (imgrect[3] - imgrect[1]) * compass.w - scope.max_size[1] * compass.w);
+                        canvasrect[3] = img2canvasX(imgrect[3] + (imgrect[1] - imgrect[3]) * compass.e + scope.max_size[1] * compass.e);
+                    }
+                    else if (imgrect[3] - imgrect[1] < scope.min_size[1]) {
+                        canvasrect[1] = img2canvasX(imgrect[1] + (imgrect[3] - imgrect[1]) * compass.w - scope.min_size[1] * compass.w);
+                        canvasrect[3] = img2canvasX(imgrect[3] + (imgrect[1] - imgrect[3]) * compass.e + scope.min_size[1] * compass.e);
+                    }
+
+                    if (canvasrect[0] < 0) {
+                        canvasrect[2] = canvasrect[2] - canvasrect[0];
+                        canvasrect[0] = 0;
+                    }
+                    if (canvasrect[1] < 0) {
+                        canvasrect[3] = canvasrect[3] - canvasrect[1];
+                        canvasrect[1] = 0;
+                    }
+                    if (canvasrect[3] > scope.canvas[1]) {
+                        canvasrect[1] = canvasrect[1] - (canvasrect[3] - scope.canvas[1]);
+                        canvasrect[3] = scope.canvas[1];
+                    }
+                    if (canvasrect[2] > scope.canvas[0]) {
+                        canvasrect[0] = canvasrect[0] - (canvasrect[2] - scope.canvas[0]);
+                        canvasrect[2] = scope.canvas[0];
+                    }
+                    return imgrect;
+                };
+
+                scope.fitByCanvasRect = function (current, moused, compass) {
+                    var w = current[0] - current[2];
+                    var h = current[1] - current[3];
+                    var d = [0, 0, 0, 0];
+                    if (compass.w)      d[0] = inRange(moused[0], -current[0], -w);
+                    else if (compass.e) d[2] = inRange(moused[0], w, scope.canvas[0] - current[2]);
+                    if (compass.n)      d[1] = inRange(moused[1], -current[1], -h);
+                    else if (compass.s) d[3] = inRange(moused[1], h, scope.canvas[1] - current[3]);
+
+                    return [current[0] + d[0], current[1] + d[1], current[2] + d[2], current[3] + d[3]];
+                };
+
+                scope.$watch('prCropImageUrl', function (newv, oldv) {
+                    scope.loaded = false;
+                    var img = new Image();
+                    img.onload = function () {
+
+                        scope.$rect.css('background-image', 'url(' + newv + ')');
+                        scope.$img.attr('src', newv);
+                        scope.size = [img.naturalWidth, img.naturalHeight];
+
+                        var image_wider = scope.size[0] * scope.$outer.height() / scope.size[1] / scope.$outer.width()
+
+                        if (image_wider > 1) {
+                            scope.$canvas.css({
+                                'width': '' + scope.$outer.width() + 'px',
+                                'height': '' + scope.$outer.height() / image_wider + 'px',
+                                'top': '' + scope.$outer.height() * (1 - 1 / image_wider) / 2 + 'px',
+                                'left': '0px'
+                            })
+                            scope.canvas = [scope.$outer.width(), scope.$outer.height()/image_wider];
+                            scope.min_zoom = 1.0 * scope.canvas[0] / scope.size[0];
+                            scope.max_zoom = 1.0;
+                        }
+                        else {
+                            scope.$canvas.css({
+                                'width': '' + scope.$outer.width() * image_wider + 'px',
+                                'height': '' + scope.$outer.height() + 'px',
+                                'top': '0px',
+                                'left': '' + scope.$outer.width() * (1 - image_wider ) / 2 + 'px'
+                            })
+                            scope.canvas = [scope.$outer.width() * image_wider, scope.$outer.height()];
+                            scope.min_zoom = 1.0 * scope.canvas[1] / scope.size[1];
+                            scope.max_zoom = 1.0;
+                        }
+
+
+                        console.log(scope.canvas, scope.$outer.width(), scope.$outer.height(), image_wider);
+
+                        scope.zoom = scope.min_zoom;
+
+                        if (scope.min_zoom > scope.max_zoom) {
+                            console.error('min zoom > max zoom', scope.min_zoom, scope.max_zoom);
+                            scope.min_zoom = scope.max_zoom;
+                        }
+                        console.log(scope);
+                        var canvasrect = [Math.round(scope.canvas[0] / 10.), Math.round(scope.canvas[1] / 10.),
+                            Math.round(9 * scope.canvas[0] / 10.), Math.round(9 * scope.canvas[1] / 10.)];
+                        var imagerect = scope.fitByImageRect(canvasrect, {w: 0.5, e: 0.5, n: 0.5, s: 0.5});
+                        resizeRect(canvasrect, imagerect);
+                        scope.loaded = true;
+                    }
+                    img.src = newv;
+
+                });
+
+                scope.rect = false;
+                //scope.coordinates = false;
+                scope.canvas = false;
+                scope.canvas_origin = [0, 0];
+                scope.zoom = false;
+                scope.max_zoom = 1;
+                scope.min_zoom = false;
+                scope.size = false;
+                scope.min_size = [0, 0];
+                scope.max_size = [Infinity, Infinity];
+                scope.min_aspect = 0.5;
+                scope.max_aspect = 2;
+                scope.loaded = false;
+                scope.enabled = true;
+
+                scope.$actions.on('mousedown', function (e) {
+                    var action = $(this).attr('ng-crop-action');
+                    var prevrect = scope.rect;
+                    if (action === 'set') {
+                        var pxpy = scope.mouseRelativeTo(e, scope.$over);
+                        prevrect = [pxpy[0], pxpy[1], pxpy[0], pxpy[1]];
+                    }
+                    scope.mouse_clicked = scope.mouseRelativeTo(e).concat([action, prevrect]);
+                    e.preventDefault();
+                    //scope.rect = false;
+                });
+
+                var inRangePoint = function (vs, mins, maxs) {
+                    return [inRange(vs[0], mins[0], maxs[0]), inRange(vs[1], mins[1], maxs[1])];
+                }
+
+                var inRange = function (v, min, max) {
+                    return Math.min(Math.max(min, v), max);
+                }
+
+                var resizeRect = function (cr) {
+
+                    //if ((x1 === x2) || (y1 === y2)) return false;
+
+                    var ir = canvas2imgRect(cr);
+
+
+                    //if (forceis[0] !== false) ir[0] = img2canvasX(forceis[0])
+                    //if (forceis[2] !== false) ir[2] = img2canvasX(forceis[2])
+                    //if (forceis[1] !== false) ir[1] = img2canvasX(forceis[1])
+                    //if (forceis[3] !== false) ir[3] = img2canvasX(forceis[3])
+
+                    //var r = inRangePoint([cr[0], cr[1]], [0, 0], [cr[2], cr[3]]).concat(inRangePoint([cr[2], cr[3]], [cr[0], cr[1]], scope.canvas));
+
+                    scope.$corners.css({left: (cr[0] + cr[2]) / 2, top: (cr[1] + cr[3]) / 2});
+                    scope.$west.css({left: cr[0]});
+                    scope.$north.css({top: cr[1]});
+                    scope.$east.css({left: cr[2]});
+                    scope.$south.css({top: cr[3]});
+
+                    console.log(scope.canvas_origin);
+                    console.log(cr);
+
+                    scope.$img.css({
+                        width: scope.size[0] * scope.zoom, height: scope.size[1] * scope.zoom,
+                        left: '-' + scope.canvas_origin[0] + 'px',
+                        top: '-' + scope.canvas_origin[1] + 'px'
+                    });
+
+                    scope.$rect.css('background-size', '' + scope.size[0] * scope.zoom + 'px ' + scope.size[1] * scope.zoom + 'px');
+                    scope.$rect.css({
+                        left: cr[0], top: cr[1], width: cr[2] - cr[0], height: cr[3] - cr[1],
+                        //'background-position': 'left -' + (cr[0] + 1) + 'px top -' + (cr[1] + 1) + 'px'
+                        'background-position': 'left -' + (cr[0] + scope.canvas_origin[0] + 1) + 'px top -' + (cr[1] + scope.canvas_origin[1] + 1) + 'px'
+                    });
+                    scope.rect = cr;
+                    $timeout(function () {
+                        scope.coordinates = ir;
+                    });
+
+                    //console.log(scope.coordinates);
+                }
+
+                scope.mouseRelativeTo = function (event, $e) {
+                    var $el = $e ? $e : scope.$over;
+                    return [(event.pageX - $el.offset().left) + $(window).scrollLeft(),
+                        (event.pageY - $el.offset().top) + $(window).scrollTop()];
+                }
+
+
+                var canvas2imgX = function (cx) {
+                    return (cx + scope.canvas_origin[0]) / scope.zoom;
+                }
+
+                var canvas2imgY = function (cy) {
+                    return (cy + scope.canvas_origin[1]) / scope.zoom;
+                }
+
+                var img2canvasX = function (ix) {
+                    return ix * scope.zoom - scope.canvas_origin[0];
+                }
+
+                var img2canvasY = function (iy) {
+                    return iy * scope.zoom - scope.canvas_origin[0];
+                }
+
+                var canvas2imgRect = function (canvasrect) {
+                    return [canvas2imgX(canvasrect[0]), canvas2imgY(canvasrect[1]), canvas2imgX(canvasrect[2]), canvas2imgY(canvasrect[3])];
+                }
+
+                var img2canvasRect = function (imgrect) {
+                    return [img2canvasX(imgrect[0]), img2canvasY(imgrect[1]), img2canvasX(imgrect[2]), img2canvasY(imgrect[3])];
+                }
+
+
+                var mm = function (e) {
+                    if (!scope.mouse_clicked) {
+                        return;
+                    }
+                    var act = scope.mouse_clicked;
+                    var current = act[3];
+                    var mousenow = scope.mouseRelativeTo(e, scope.$over);
+                    var dxdy = [mousenow[0] - act[0], mousenow[1] - act[1]];
+
+                    if (act[2] === 'set') {
+                        //var cr = [act[0], act[1],inRange(mousenow[0], 0, scope.canvas[0]), inRange(mousenow[1], 0, scope.canvas[1])];
+                        var compass = {};
+                        var dxdy = [mousenow[0] - act[0], mousenow[1] - act[1]];
+                        compass.e = dxdy[0] >= 0 ? 1 : 0;
+                        compass.w = 1 - compass.e;
+                        compass.s = dxdy[1] >= 0 ? 1 : 0;
+                        compass.n = 1 - compass.s;
+                        var canvasrect = scope.fitByCanvasRect(current, dxdy, compass);
+                        var imagerect = scope.fitByImageRect(canvasrect, compass);
+                        resizeRect(canvasrect, imagerect);
+                    }
+                    else if (act[2] === 'move') {
+                        var d = inRangePoint(dxdy, [-current[0], -current[1]], [scope.canvas[0] - current[2], scope.canvas[1] - current[3]]);
+                        resizeRect([current[0] + d[0], current[1] + d[1], current[2] + d[0], current[3] + d[1]]);
+                    }
+                    else {
+                        var sides = act[2].split('');
+                        var compass = {
+                            w: sides.indexOf('w') > -1 ? 1 : 0,
+                            e: sides.indexOf('e') > -1 ? 1 : 0,
+                            n: sides.indexOf('n') > -1 ? 1 : 0,
+                            s: sides.indexOf('s') > -1 ? 1 : 0
+                        };
+                        var canvasrect = scope.fitByCanvasRect(current, dxdy, compass);
+                        var imagerect = scope.fitByImageRect(canvasrect, compass);
+                        resizeRect(canvasrect, imagerect);
+                    }
+
+
+                    e.preventDefault();
+                }
+
+                var relativeDeviation = function (v, in_respect_to) {
+                    return Math.abs(v - in_respect_to) / in_respect_to;
+                }
+
+
+                scope.zoom_to = function (new_zoomratio, new_center) {
+                    if (!scope.loaded) return false;
+                    var stick_margin = 0.01;
+
+                    new_zoomratio = inRange(new_zoomratio, scope.min_zoom, scope.max_zoom);
+
+                    if (relativeDeviation(new_zoomratio, scope.max_zoom) < stick_margin) new_zoomratio = scope.max_zoom;
+                    if (relativeDeviation(new_zoomratio, scope.min_zoom) < stick_margin) new_zoomratio = scope.min_zoom;
+
+                    scope.zoom = new_zoomratio;
+
+                    //var canvas_center = [(scope.rect[0] + scope.rect[2] / 2 , (scope.rect[1] + scope.rect[3] / 2];
+
+                    scope.canvas_origin = [(new_zoomratio * scope.size[0] - scope.canvas[0]) / 2, (new_zoomratio * scope.size[1] - scope.canvas[1]) / 2];
+
+
+                    var canvasrect = scope.fitByCanvasRect(img2canvasRect(scope.coordinates), [0, 0], {
+                        w: 0.5,
+                        e: 0.5,
+                        n: 0.5,
+                        s: 0.5
+                    });
+                    var imagerect = scope.fitByImageRect(canvasrect, {w: 0.5, e: 0.5, n: 0.5, s: 0.5});
+
+                    resizeRect(canvasrect, imagerect);
+                };
+
+                scope.zoom_by = function (zoom_multiplier, new_center) {
+                    if (!scope.loaded) return false;
+                    var float_error = 0.000001;
+
+                    if ((zoom_multiplier >= 1. && relativeDeviation(scope.zoom, scope.max_zoom) < float_error) ||
+                        (zoom_multiplier <= 1. && relativeDeviation(scope.zoom, scope.min_zoom) < float_error)) return false;
+
+                    scope.zoom_to(scope.zoom * zoom_multiplier, new_center);
+                };
+
+
+                var mouse_wheeel = function () {
+                    window.addEventListener(('onwheel' in document ? 'wheel' : 'onmousewheel' in document ? 'mousewheel' : 'DOMMouseScroll'),
+                        function (event) {
+                            console.log(event);
+                            var normalized;
+                            if (event.wheelDelta) {
+                                normalized = (event.wheelDelta % 120 - 0) == -0 ? event.wheelDelta / 120 : event.wheelDelta / 12;
+                            } else {
+                                var rawAmmount = event.deltaY ? event.deltaY : event.detail;
+                                normalized = -(rawAmmount % 3 ? rawAmmount * 10 : rawAmmount / 3);
+                            }
+                            var new_center = scope.mouseRelativeTo(event)
+                            scope.zoom_by((normalized == 1) ? 10 / 9 : 9 / 10, new_center);
+                        });
+                }
+
+
+                $(window).on('mousemove', mm).on('mouseup', function (e) {
+                    mm(e);
+                    scope.mouse_clicked = false;
+                });
+
+                mouse_wheeel();
+
+
+            }
+        }
+    }])
     .directive('prCrop', ['$compile', '$templateCache', '$timeout', function ($compile, $templateCache, $timeout) {
         return {
             restrict: 'A',
@@ -578,8 +949,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     options['cropmove'] = function (e) {
                         //console.log(e.width);
-                        console.log(e.originalEvent.x, (e.originalEvent.x - scope.click_data.x)/(e.originalEvent.y - scope.click_data.y));
-                        if ((e.originalEvent.x - scope.click_data.x)/(e.originalEvent.y - scope.click_data.y) > 1.0) {
+                        console.log(e.originalEvent.x, (e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y));
+                        if ((e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y) > 1.0) {
                             e.originalEvent.x = e.originalEvent.y - scope.click_data.y + scope.click_data.x;
 
                         }
@@ -603,7 +974,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     optionsa['crop'] = function (e) {
 
-                        if (e.width/ e.height>1) {
+                        if (e.width / e.height > 1) {
                             e.width = e.height;
 
                             $image.cropper('setData', {width: e.width});
@@ -1973,8 +2344,8 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                 }
             });
-            $timeout(function(){
-                if(scope.data.end === false && ($(document).height() - $(window).height() === 0)){
+            $timeout(function () {
+                if (scope.data.end === false && ($(document).height() - $(window).height() === 0)) {
                     scope.next_page += 1;
                     load()
                 }
