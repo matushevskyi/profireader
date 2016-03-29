@@ -39,6 +39,13 @@
                 return '//' + host + '/';
             }
 
+            $scope.aa = new Date();
+            $scope.calendar_opened = false;
+
+            $scope.calendar_open = function() {
+                $scope.calendar_opened = true;
+            }
+
 
             $scope.loadMaterialDetails = function (data, callback) {
                 $scope.loading = true
@@ -144,6 +151,11 @@
 
     <div ng-controller="material_details" ng-cloak>
         {% raw %}
+        <input type="text" class="form-control" uib-datepicker-popup ng-model="aa"
+                       is-open="calendar_opened" datepicker-options="dateOptions" ng-required="true"
+                       close-text="Close"/>
+                <span class="input-group-btn"><button type="button" class="btn btn-default" ng-click="calendar_open()">
+                    <i class="glyphicon' glyphicon-calendar"></i></button></span>
         <h2>{{ _('Material details `%(title)s`', {title: data.material.title}) }}</h2>
         <h4>{{ _('Created at') }} {{data.material.cr_tm}}</h4>
         <h4>{{ _('Last modified at') }} {{data.material.md_tm}}</h4>

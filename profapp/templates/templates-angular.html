@@ -32,6 +32,12 @@
         $scope.object_name = (action === 'SUBMIT') ? 'material' : 'publication';
         $scope.action = action;
 
+        $scope.calendar_opened = false;
+
+        $scope.calendar_open = function () {
+            $scope.calendar_opened = true;
+        }
+
         $scope.data = {
             action: action,
             portal: {id: portal_id},
@@ -87,10 +93,9 @@
                                 type="radio"> {{ division.name }}
                     </label>
                 </div>
-                {{ _('Select publication date') }}<span
-                    af-validation-answer="data_validation:publishing_tm"></span><br/>
+                {{ _('Select publication date') }}
+                <div apr-datepicker ang-model="data.publication.publishing_tm"></div>
 
-                <div pr-datepicker ng-model="data.publication.publishing_tm"></div>
                 <div ng-if="is_selection_division_event()">
                     {{ _('Select event date') }}<span af-validation-answer="data_validation:event_tm"></span><br/>
                     <div pr-datepicker ng-model="data.publication.event_tm"></div>
