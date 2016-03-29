@@ -3,7 +3,7 @@ sys.path.append('..')
 from profapp.models.articles import Article, ArticleCompany, ArticleCompanyHistory, \
     ArticlePortalDivision
 from profapp.models.company import Company, UserCompany
-from profapp.models.files import File, FileContent
+from profapp.models.files import File
 from profapp.models.users import User
 from profapp.models.portal import Portal
 from profapp.models.pr_base import MLStripper
@@ -15,7 +15,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from config import ProductionDevelopmentConfig
 import datetime
 classes = [ArticlePortalDivision, Article, ArticleCompany, ArticleCompanyHistory,
-           Company, UserCompany, FileContent, File, User, Portal]
+           Company, UserCompany, File, User, Portal]
 engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,

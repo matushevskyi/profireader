@@ -2,7 +2,7 @@ import os
 import re
 from flask import render_template, g, make_response
 from flask.ext.login import current_user
-from profapp.models.files import File, FileContent, YoutubeApi
+from profapp.models.files import File, YoutubeApi
 from .blueprints_declaration import filemanager_bp
 from .request_wrapers import ok
 from functools import wraps
@@ -67,10 +67,9 @@ def filemanager():
         'get_root'] if 'get_root' in request.args else None
     if get_root:
         root = Company.get(get_root)
-        last_visit_root_name = root.name + " files"
-        last_root_id = root.journalist_folder_file_id
+        last_visit_root_name = (root.name + " files") if root else ''
+        last_root_id = root.journalist_folder_file_id if root else ''
     err = True if len(library) == 0 else False
-    print(last_visit_root_name)
     return render_template('filemanager.html', library=library, err=err, last_visit_root=last_visit_root_name.replace(
         '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),
                            last_root_id=last_root_id,
@@ -85,13 +84,11 @@ def filemanager():
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
     company = db(Company, journalist_folder_file_id=ancestors[0]).first()
-
     if json['params'].get('search_text'):
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],
                          json['params']['search_text'], company_id=company.id)
     else:
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=company.id)
-
     return {'list': list, 'ancestors': ancestors, 'can_upload': File.if_action_allowed('upload', company.id)}
 
 
@@ -123,8 +120,7 @@ def rename(json):
 @ok
 def copy(json):
     file = File.get(request.json['params']['id'])
-    file.copy_file(request.json['params']['folder_id'])
-    return file.id
+    return file.copy_file(request.json['params']['folder_id']).id
 
 
 @filemanager_bp.route('/cut/', methods=['POST'])
@@ -159,7 +155,7 @@ def uploader(company_id=None):
         if 'code' in request.args:
             session['auth_code'] = request.args['code']
             token_db_class.save_credentials()
-        return redirect(url_for('company.show')) if 'code' in request.args \
+        return redirect(url_for('company.companies')) if 'code' in request.args \
             else redirect(google.get_auth_code())
     return render_template('file_uploader.html', company_id=company_id)
 
@@ -193,7 +189,7 @@ def send(parent_id):
         file = youtube.upload()
     else:
         file = File.upload(name, data, parent.id, root, company, content=uploaded_file.stream.read(-1))
-    return jsonify({'result': {'size': 0}, 'error': True if file=='error' else False})
+    return jsonify({'result': {'size': 0}, 'error': True if file=='error' else False, 'file_id':file})
 
 
 @filemanager_bp.route('/resumeupload/', methods=['GET'])

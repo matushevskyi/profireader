@@ -24,6 +24,7 @@
 
     module.controller('UserLoginController', function ($scope, $uibModal, $ok, $timeout) {
         $scope.user = {{ g.user_dict|tojson|safe }};
+        console.log($scope.user)
         $scope.tos = function () {
             if (!$scope.user.id || $scope.user.tos) {
                 return;
@@ -50,7 +51,7 @@
                    return '{{ url_for('general.index')|safe }}'}
                 };
 
-                        $scope.url_company_show = {{ raw_url_for('company.show')|safe }}
+                        $scope.url_company_companies = {{ raw_url_for('company.companies')|safe }}
                                 $scope.url_general_help = {{ raw_url_for('general.help')|safe }}
                                         $scope.url_auth_logout = {{ raw_url_for('auth.logout')|safe }}
                                                 $scope.url_user_profile = {{ raw_url_for('user.profile')|safe }}
@@ -82,7 +83,7 @@
 </script>
 {% raw %}
 <nav ng-init="tos()" ng-controller="UserLoginController" class="navbar navbar-fixed-top nav-bg">
-    <div class="container">
+    <div class="container" ng-cloak>
 
         <div class="row">
             <button pr-test="HeaderAcceptLicence" type="button" ng-click="tos()" class="btn btn-info btn-lg" ng-if="user.id && !user.tos">{{ _('Accept licence') }}</button>
@@ -103,16 +104,13 @@
 
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <ul>
-                        <li ng-if="user.id"><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="{{ _('Стрічка
-                        читача')
-                         }}"
-                               ng-class="{'selected': selected_user_menu == 'line_readers'}"><i
+                        <li ng-if="user.id"><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="{{ _('Стрічкa читача') }}" ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
                                 class="fa fa-newspaper-o"></i></a></li>
                         <li ng-if="user.id"><a pr_test="UserMassages" href="{{ url_messenger }}" title="{{ _('Всі повідомлення') }}"
                                ng-class="{'selected': selected_user_menu == 'messages'}"><i
                                 class="fa fa-envelope-o"></i></a></li>
-                        <li ng-if="user.id"><a pr_test="CompaniesList" href="{{ url_company_show() }}" title="{{ _('Компанії') }}"
-                               ng-class="{'selected': selected_user_menu == 'companies_list'}"><i
+                        <li ng-if="user.id"><a pr_test="CompaniesList" href="{{ url_company_companies() }}" title="{{ _('Компанії') }}"
+                               ng-class="{'selected': selected_user_menu == 'companies'}"><i
                                 class="fa fa-building-o"></i></a></li>
                         <li ng-if="user.id"><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
                                ng-class="{'selected': selected_user_menu == 'file_manager'}"><i

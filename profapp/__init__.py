@@ -211,10 +211,6 @@ def load_user(apptype):
         user_dict['registered_tm'] = user.registered_tm
         user_dict['lang'] = user.lang
         user_dict['tos'] = user.tos
-
-
-
-
         # name = user.user_name
 
     # user_dict = {'id': id, 'name': name, 'logged_via': logged_via}
@@ -228,6 +224,7 @@ def load_user(apptype):
     g.portal = None
     g.portal_id = None
     g.portal_layout_path = ''
+    g.debug = current_app.debug
 
     for variable in g.db.query(Config).filter_by(server_side=1).all():
 
@@ -298,6 +295,11 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
             '" uib-popover-html="\'' + HtmlHelper.quoteattr(
                     translate_phrase_or_html(context, 'help tooltip ' + phrase, None, '*')) + '\'"></span>')
 
+
+@jinja2.contextfunction
+def localtime(value):
+    return Markup("<script> var a = new Date('{}'); a.setTime( a.getTime() - a.getTimezoneOffset()*60*1000 ); "
+                  "document.write(a.toLocaleString()) </script><noscript>{}</noscript>".format(value, value))
 
 @jinja2.contextfunction
 def nl2br(value):
@@ -462,7 +464,8 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     # babel = Babel(app)
 
     app.teardown_request(close_database)
-    app.config['DEBUG'] = True
+    app.debug = False
+
 
     app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))
     app.before_request(lambda: load_user(apptype))
@@ -541,6 +544,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
 
     app.jinja_env.filters['nl2br'] = nl2br
+    app.jinja_env.filters['localtime'] = localtime
 
     # see: http://flask.pocoo.org/docs/0.10/patterns/sqlalchemy/
     # Flask will automatically remove database sessions at the end of the

@@ -5,6 +5,7 @@ from ..constants.SOCIAL_NETWORKS import DB_FIELDS, SOC_NET_FIELDS, \
 from flask.ext.login import logout_user, current_user, login_required
 from urllib.parse import quote
 from ..models.users import User
+from utils.db_utils import db
 from ..controllers.request_wrapers import tos_required
 from ..forms.auth import LoginForm, RegistrationForm, ChangePasswordForm, \
     PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm
@@ -19,6 +20,7 @@ from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
 from ..utils.redirect_url import redirect_url
 from utils.pr_email import SendEmail
 from .request_wrapers import ok
+from datetime import datetime
 # def _session_saver():
 #    session.modified = True
 
@@ -118,7 +120,7 @@ def before_request():
 
 @auth_bp.route('/unconfirmed')
 def unconfirmed():
-    if current_user.is_anonymous() or current_user.confirmed:
+    if current_user.confirmed:
         return redirect(url_for('general.index'))
     return render_template('auth/unconfirmed.html')
 
@@ -163,6 +165,7 @@ def signup():
                 elif form.get('password') != form.get('password1'):
                     return False
         return True
+
     if check_fields():  # # pass1 == pass2
         profireader_all = SOC_NET_NONE['profireader'].copy()
         profireader_all['email'] = email
@@ -172,19 +175,19 @@ def signup():
             password=password  # # pass is automatically hashed
         )
         user.avatar('gravatar', size=AVATAR_SIZE, small_size=AVATAR_SMALL_SIZE)
-        # # user.password = signup_form.password.data  # pass is automatically hashed
-
+        user.generate_confirmation_token()
         g.db.add(user)
         g.db.commit()
-        token = user.generate_confirmation_token()
-        SendEmail().send_email(subject='Confirm Your Account', template='auth/email/confirm',
-                               send_to=(user.profireader_email, ), user=user, token=token)
+        SendEmail().send_email(subject='Confirm Your Account',
+                               html=render_template('auth/email/resend_confirmation.html', user=user),
+                               send_to=(user.profireader_email, ))
         flash('A confirmation email has been sent to you by email.')
-        print(user.profireader_email)
-        # return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
         return redirect(url_for('auth.login_signup_endpoint'))
     return render_template('auth/login_signup.html',
                            login_signup='signup')
+
+
+@auth_bp.route('//', methods=['POST'])
 
 
 @auth_bp.route('/login_signup/<soc_network_name>', methods=['GET', 'POST'])
@@ -267,17 +270,31 @@ def logout():
     return redirect(url_for('general.index'))
 
 
-@auth_bp.route('/confirm/<token>')
+@auth_bp.route('/resend_confirmation/')
 @login_required
-def confirm(token):
-    if current_user.confirmed:
-        return redirect(url_for('general.index'))
-    if current_user.confirm(token):
-        flash('You have confirmed your account. Thanks!')
-        return redirect(url_for('help.help'))
-    else:
-        flash('The confirmation link is invalid or has expired.')
+def resend_confirmation():
+    current_user.generate_confirmation_token().save()
+    SendEmail().send_email(subject='Confirm Your Account',
+                           html=render_template('auth/email/resend_confirmation.html', user=current_user),
+                           send_to=(current_user.profireader_email, ))
+    flash('A new confirmation email has been sent to you by email.')
     return redirect(url_for('general.index'))
+
+
+@auth_bp.route('/confirm_email/<token>/')
+def confirm(token):
+    user = db(User, email_conf_token=token).first()
+    if user and user.confirmed:
+        return render_template("error.html", message='Your account has been already confirmed!')
+    elif not user or not user.confirm_email():
+        return render_template("auth/unconfirmed.html", message='Wrong or expired token',
+                               email=user.profireader_email if user else '')
+    else:
+        logout_user()
+        user.confirmed = True
+        user.save()
+        login_user(user)
+        return render_template("auth/confirm_email.html")
 
 
 @auth_bp.route('/tos', methods=['POST'])
@@ -287,15 +304,16 @@ def tos(json):
     g.user.tos = json['accept'] == 'accept'
     return {'tos': g.user.tos}
 
+@auth_bp.route('/help', methods=["POST"])
+@ok
+def help_message(json):
 
-@auth_bp.route('/confirm')
-@login_required
-def resend_confirmation():
-    token = current_user.generate_confirmation_token()
-    SendEmail().send_email(subject='Confirm Your Account', template='auth/email/confirm',
-                           send_to=(current_user.profireader_email, ), user=current_user, token=token)
-    flash('A new confirmation email has been sent to you by email.')
-    return redirect(url_for('general.index'))
+        SendEmail().send_email(subject='Send help message', send_to=("profireader.service@gmail.com", ''),
+                               html=('From '+json['data']['email']+': '+json['data']['message']))
+
+        flash('Your message has been sent! ')
+        redirect(url_for('reader.list_reader'))
+        return True
 
 
 @auth_bp.route('/change-password', methods=['GET', 'POST'])
@@ -313,46 +331,68 @@ def change_password():
             flash('Invalid password.')
     return render_template("auth/change_password.html", form=form)
 
+@auth_bp.route('/reset_password', methods=['GET'])
+def password_resets():
+    return render_template('auth/reset_password.html')
 
-@auth_bp.route('/reset', methods=['GET', 'POST'])
-def password_reset_request():
+
+
+@auth_bp.route('/reset_password', methods=['POST'])
+@ok
+def password_reset_request(json):
     if not current_user.is_anonymous():
         flash('To reset your password logout first please.')
-        return redirect(url_for('general.index'))
-    form = PasswordResetRequestForm()
-    if form.validate_on_submit():
-        user = g.db.query(User).\
-            filter_by(profireader_email=form.email.data).first()
-        if user.is_banned():
-            return redirect(url_for('general.index'))
-        if user:
-            token = user.generate_reset_token()
-            SendEmail().send_email(subject='Reset Your Password', template='auth/email/reset_password',
-                                   send_to=(user.profireader_email, ), user=user, token=token,
-                                   next=request.args.get('next'))
-            flash('An email with instructions to reset your password has been sent to you.')
-        else:
-            flash('You are not Profireader user yet. Sign up Profireader first please.')
-        return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
-    return render_template('auth/reset_password.html', form=form)
+        redirect(url_for('reader.list_reader'))
+        return False
+
+    user = db(User, profireader_email=json.get('email')).first()
+    if user:
+        user.generate_pass_reset_token().save()
+        SendEmail().send_email(subject='Reset password', send_to=(user.profireader_email, ""),
+                               html=render_template('auth/email/reset_password.html', user=user),)
+        flash('An email with instructions to reset your password has been sent to you.')
+        redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
+    else:
+        flash('You are not Profireader user yet. Sign up Profireader first please.')
+    return {}
 
 
-@auth_bp.route('/reset/<token>', methods=['GET', 'POST'])
+
+@auth_bp.route('/reset/<token>', methods=['GET'])
 def password_reset(token):
     if not current_user.is_anonymous():
-        return redirect(url_for('general.index'))
-    form = PasswordResetForm()
-    if form.validate_on_submit():
-        user = g.db.query(User).\
-            filter_by(profireader_email=form.email.data).first()
+        return redirect(url_for('auth/reset_password_token.html'))
+    return render_template('auth/reset_password_token.html', token=token)
+
+@auth_bp.route('/reset/<token>', methods=['POST'])
+def password_reset_change(token):
+    form = request.form
+    user = g.db.query(User).\
+        filter_by(profireader_email=request.form.get('email')).first()
+    if user.pass_reset_token != token:
+        flash('Your put wrong email.')
+        return redirect(url_for('auth.password_resets'))
+    def check_fields():
+        form = request.form
+        required_fields = ['email', 'password', 'password1']
+        for field in required_fields:
+            if field not in form.keys():
+                return False
+            else:
+                if not form.get(field):
+                    return False
+                elif form.get('password') != form.get('password1'):
+                    return False
+        return True
+    if check_fields():
         if (user is None) or user.is_banned():
             return redirect(url_for('general.index'))
-        if user.reset_password(token, form.password.data):
+        if user.reset_password(form.get('password')):
             flash('Your password has been updated.')
             return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
         else:
             return redirect(url_for('general.index'))
-    return render_template('auth/reset_password_token.html', form=form, token=token)
+    return ''
 
 
 @auth_bp.route('/change-email', methods=['GET', 'POST'])

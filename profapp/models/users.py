@@ -34,7 +34,6 @@ class User(Base, UserMixin, PRBase):
     profireader_first_name = Column(TABLE_TYPES['name'])
     profireader_last_name = Column(TABLE_TYPES['name'])
     profireader_name = Column(TABLE_TYPES['name'])
-    country = Column(TABLE_TYPES['name'])
     profireader_gender = Column(TABLE_TYPES['gender'])
     profireader_link = Column(TABLE_TYPES['link'])
     profireader_phone = Column(TABLE_TYPES['phone'])
@@ -72,6 +71,8 @@ class User(Base, UserMixin, PRBase):
 
     # FB_NET_FIELD_NAMES = ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
     # SOCIAL_NETWORKS = ['profireader', 'google', 'facebook', 'linkedin', 'twitter', 'microsoft', 'yahoo']
+    country_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('country.id'), nullable=True)
+    country = relationship('Country')
 
     # GOOGLE
     google_id = Column(TABLE_TYPES['id_soc_net'])
@@ -256,22 +257,34 @@ class User(Base, UserMixin, PRBase):
         self.yahoo_link = YAHOO_ALL['link']
         self.yahoo_phone = YAHOO_ALL['phone']
 
-
     def validate(self, is_new):
         ret = super().validate(is_new)
-        if not re.match(r'[^\s]{3}', self.profireader_name):
+        if not re.match(r'[^\s]{3}', str(self.profireader_name)):
             ret['errors']['profireader_name'] = 'pls enter a bit longer name'
-        if not re.match(r'[^\s]{3}', self.profireader_first_name):
+        if not re.match(r'[^\s]{3}', str(self.profireader_first_name)):
             ret['errors']['profireader_first_name'] = 'pls enter a bit longer name'
-        if not re.match(r'[^\s]{3}', self.profireader_last_name):
+        if not re.match(r'[^\s]{3}', str(self.profireader_last_name)):
             ret['errors']['profireader_last_name'] = 'pls enter a bit longer name'
         return ret
+
+    def logo_file_properties(self):
+        noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())
+        return {
+            'browse': self.id,
+            'upload': True,
+            'none': noavatar_url,
+            'crop': True,
+            'image_size': [300, 400],
+            'min_size': [75, 100],
+            'aspect_ratio': [0.5, 2],
+            'preset_urls': {'glyphicon-share': self.gravatar(size=500)},
+            'no_selection_url': noavatar_url
+        }
 
     @staticmethod
     def user_query(user_id):
         ret = db(User, id=user_id).one()
         return ret
-
 
     @property
     def banned(self):
@@ -379,15 +392,31 @@ class User(Base, UserMixin, PRBase):
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
                 url=url, hash=hash, size=size, default=default, rating=rating)
 
-    def get_image_client_dict(self):
+    def set_avatar_client_side_dict(self, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user']['type'] = 'none'
+            if client_data['selected_by_user']['class'] == 'glyphicon-share':
+                self.profireader_avatar_url = self.gravatar(size=500)
+                self.profireader_small_avatar_url = self.gravatar(size=100)
+            else:
+                raise ValueError("passed unknow preset class `{}`".format(client_data['selected_by_user']['class']))
 
-        noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())
 
-        return PRBase.get_image_client_dict(self, upload=True, browse=self.id,
-                                            crop_from_image_file=db(ImageCroped,
-                                                                    croped_image_id=self.avatar_file_id).first(),
-                                            preset_urls={'glyphicon-remove-circle': noavatar_url},
-                                            no_selection_url=noavatar_url)
+        self.avatar_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+                                                          client_data, self.avatar_file_id, self.system_folder_file_id)
+        if self.avatar_file_id:
+            self.profireader_avatar_url = fileUrl(self.avatar_file_id)
+            self.profireader_small_avatar_url = fileUrl(File.get(self.avatar_file_id).get_thumbnails((133,100)).id)
+
+        return self
+
+    def get_avatar_client_side_dict(self):
+        ret = self.get_image_cropped_file(self.logo_file_properties(),
+                                             db(ImageCroped, croped_image_id=self.avatar_file_id).first())
+
+        if self.profireader_avatar_url == self.gravatar(size=500):
+            ret['selected_by_user'] = {'type': 'preset', 'class': 'glyphicon-share'}
+        return ret
 
     def profile_completed(self):
         completeness = True
@@ -466,36 +495,33 @@ class User(Base, UserMixin, PRBase):
         return self.password_hash and \
                check_password_hash(self.password_hash, password)
 
-    def generate_confirmation_token(self, expiration=3600):
-        # with app.app_context
-        s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'confirm': self.id})
+    def generate_confirmation_token(self):
+        self.email_conf_token = random.getrandbits(128)
+        self.email_conf_tm = datetime.datetime.now()
+        return self
 
-    def confirm(self, token):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            return False
-        if data.get('confirm') != self.id:
-            return False
-        self.confirmed = True
-        g.db.add(self)
-        g.db.commit()
-        return True
+    def confirm_email(self):
+        if self.email_conf_tm.timestamp() > int(time.time()) - current_app.config.get('EMAIL_CONFIRMATION_TOKEN_TTL', 3600*24):
+            self.confirmed = True
+        return self.confirmed
 
-    def generate_reset_token(self, expiration=3600):
-        s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'reset': self.id})
+    def generate_pass_reset_token(self):
+        self.pass_reset_token = random.getrandbits(128)
+        self.pass_reset_conf_tm = datetime.datetime.now()
+        # if self.pass_reset_conf_tm.timestamp() > int(time.time()) - current_app.config.get('PASSWORD_CONFIRMATION_TOKEN_TTL', 3600*24):
+        #     self.confirmed = True
+        #     return self.confirmed
+        return self
 
-    def reset_password(self, token, new_password):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            return False
-        if data.get('reset') != self.id:
-            return False
+    def generate_reset_token(self):
+        self.email_conf_token = random.getrandbits(128)
+        if self.pass_reset_conf_tm.timestamp() > int(time.time()) - current_app.config.get('PASSWORD_CONFIRMATION_TOKEN_TTL', 3600*24):
+            self.confirmed = True
+            return self.confirmed
+        return self
+
+    def reset_password(self, new_password):
+        self.pass_reset_token = None
         self.password = new_password
         g.db.add(self)
         g.db.commit()
@@ -524,12 +550,14 @@ class User(Base, UserMixin, PRBase):
 
     def avatar_update(self, passed_file):
         if passed_file:
-            list = [file for file in db(File, parent_id=self.system_folder_file_id, ) if re.search('^image/.*', file.mime) and file.mime != 'image/thumbnail']
-            file = File.uploadLogo(passed_file.stream.read(-1), passed_file.filename, passed_file.content_type, self.system_folder_file_id)
+            list = [file for file in db(File, parent_id=self.system_folder_file_id, ) if
+                    re.search('^image/.*', file.mime) and file.mime != 'image/thumbnail']
+            file = File.uploadLogo(passed_file.stream.read(-1), passed_file.filename, passed_file.content_type,
+                                   self.system_folder_file_id)
             if 'error' in File.check_image_mime(file.id):
-                    return self
+                return self
             self.profireader_avatar_url = file.url()
-            file_thumbnail = file.get_thumbnails(size=(133,100)).thumbnail
+            file_thumbnail = file.get_thumbnails(size=(133, 100)).thumbnail
             self.profireader_small_avatar_url = file_thumbnail[0].url()
         else:
             list = [file for file in db(File, parent_id=self.system_folder_file_id, ) if
@@ -548,7 +576,8 @@ class User(Base, UserMixin, PRBase):
     # def is_administrator(self):
     #    return self.can(Permission.ADMINISTER)
 
-    def get_client_side_dict(self, fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url|profireader_email|profireader_first_name|profireader_last_name|birth_tm|profireader_link|profireader_phone|location|profireader_gender|lang|about_me|country',
+    def get_client_side_dict(self,
+                             fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url|profireader_email|profireader_first_name|profireader_last_name|birth_tm|profireader_link|profireader_phone|location|profireader_gender|lang|about_me|country_id',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 

@@ -40,7 +40,7 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
     layouts = [x.get_client_side_dict() for x in db(PortalLayout).all()]
     types = {x.id: x.get_client_side_dict() for x in PortalDivisionType.get_division_types()}
     company = Company.get(company_id)
-
+    portal = Portal() if portal_id is None else Portal.get(portal_id)
     if action == 'load':
         ret = {'company': company.get_client_side_dict(),
                'layouts': layouts, 'division_types': types}
@@ -68,6 +68,7 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
                                   'portal_division_type_id': 'company_subportal',
                                   'page_size': '',
                                   'settings': {'company_id': ret['portal_company_members'][0]['id']}}]}
+            ret['logo'] = portal.get_logo_client_side_dict()
         return ret
     else:
         json_portal = json['portal']
@@ -96,7 +97,9 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
             portal.divisions = divisions
             PortalConfig(portal=portal, page_size_for_divisions=page_size_for_config)
         if action == 'save':
-            return portal.setup_created_portal(g.filter_json(json_portal, 'logo_file_id')).save().get_client_side_dict()
+            portal.setup_created_portal(g.filter_json(json_portal, 'logo_file_id')).save()
+            portal_dict = portal.set_logo_client_side_dict(json['logo']).save().get_client_side_dict()
+            return portal_dict
         else:
             return portal.validate(create_or_update == 'create')
 
@@ -431,7 +434,7 @@ def portals_partners_load(json, company_id):
     partners_g, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     partner_list = [
         PRBase.merge_dicts(partner.get_client_side_dict(fields='id,status,portal.own_company,portal,rights'),
-                           {'actions': partner.actions(company_id, 'membership')})
+                           {'actions': partner.actions(company_id, 'membership')}, {'who':'membership'})
         for partner in partners_g]
     return {'page': current_page,
             'grid_data': partner_list,
@@ -441,16 +444,16 @@ def portals_partners_load(json, company_id):
             'total': count}
 
 
-@portal_bp.route('/portals_partners_change_status/<string:company_id>/<string:portal_id>', methods=['POST'])
+@portal_bp.route('/portals_partners_change_status/<string:partner_id>/<string:portal_id>', methods=['POST'])
 @login_required
 @ok
 # freeze our part in this company
-def portals_partners_change_status(json, company_id, portal_id):
-    partner = MemberCompanyPortal.get(portal_id=portal_id, company_id=company_id)
-    employment = UserCompany.get(company_id=company_id)
-    if partner.action_is_allowed(json.get('action'), employment,
-                                 UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
-                                 MemberCompanyPortal.ACTION_FOR_STATUS[partner.status]):
+def portals_partners_change_status(json, partner_id, portal_id):
+    partner = MemberCompanyPortal.get(portal_id=portal_id, company_id=partner_id)
+    employee = UserCompany.get(company_id=json.get('company_id'))
+    action_for_status = UserCompany.ACTION_FOR_STATUSES_MEMBER if json.get('who') == 'member' else UserCompany.ACTION_FOR_STATUSES_MEMBERSHIP
+    if partner.action_is_allowed(json.get('action'), employee,
+                                 action_for_status[partner.status]):
         partner.set_client_side_dict(
                 status=MemberCompanyPortal.STATUS_FOR_ACTION[json.get('action')])
         partner.save()
@@ -525,8 +528,8 @@ def companies_partners_load(json, company_id):
     subquery = Company.subquery_company_partners(company_id, json.get('filter'),filters_exсept=MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES)
     members, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [PRBase.merge_dicts({'member': member.get_client_side_dict(more_fields='company'),
-                           'company_id': company_id},
-                           {'actions': member.actions(company_id, 'member')})
+                           'company_id': company_id, 'portal_id': db(Portal, company_owner_id=company_id).first().id},
+                           {'actions': member.actions(company_id, 'member')},{'who':'member'})
                           for member in members],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'member.status': [{'value': status, 'label': status} for status in MemberCompanyPortal.STATUSES]}.items()},
@@ -557,7 +560,7 @@ def get_publication_dict(publication):
     if ret.get('long'):
         del ret['long']
 
-    ret['actions'] = publication.get_actions_for_status(publication.division.portal.company_owner_id)
+    ret['actions'] = publication.actions(publication.division.portal.own_company)
 
     return ret
 

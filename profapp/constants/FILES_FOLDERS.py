@@ -10,4 +10,4 @@ class FOLDER_AND_FILE:
 
     @staticmethod
     def no_user_avatar():
-        return '00000000-0000-4001-a316-49fd35fdf742'
+        return '00000000-0000-4001-3b0f-f75d5f3942fd'

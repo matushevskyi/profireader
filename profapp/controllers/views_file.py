@@ -1,6 +1,6 @@
 from .blueprints_declaration import file_bp
 from flask import request, g, abort
-from ..models.files import File, FileContent, ImageCroped
+from ..models.files import File, FileContent
 from io import BytesIO
 from PIL import Image
 from time import gmtime, strftime
@@ -13,7 +13,7 @@ from flask import current_app
 from werkzeug.datastructures import Headers
 import mimetypes
 import os
-from time import time
+from time import time, sleep
 from zlib import adler32
 from flask._compat import string_types, text_type
 import urllib.parse
@@ -46,9 +46,8 @@ def file_query(table, file_id):
 @file_bp.route('<string:file_id>')
 def get(file_id):
     image_query = file_query(File, file_id)
-    image_query_content = g.db.query(FileContent).filter_by(id=file_id).first()
 
-    if not image_query or not image_query_content:
+    if not image_query:
         return abort(404)
 
     if 'HTTP_REFERER' in request.headers.environ:
@@ -57,6 +56,7 @@ def get(file_id):
         allowedreferrer = ''
 
     if allowed_referrers(allowedreferrer):
+        image_query_content = g.db.query(FileContent).filter_by(id=file_id).first()
         return send_file(BytesIO(image_query_content.content),
                          mimetype=image_query.mime, as_attachment=(request.args.get('d') is not None),
                          attachment_filename=urllib.parse.quote(
@@ -71,6 +71,8 @@ def get(file_id):
 def send_file(filename_or_fp, mimetype=None, as_attachment=False,
               attachment_filename=None, add_etags=True,
               cache_timeout=None, conditional=False, headers={}):
+
+
 
     """Sends the contents of a file to the client.  This will use the
     most efficient method available and configured.  By default it will
@@ -129,6 +131,9 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
                           :meth:`~Flask.get_send_file_max_age` of
                           :data:`~flask.current_app`.
     """
+
+    # sleep(5)
+    
     mtime = None
 
     if isinstance(filename_or_fp, string_types):

@@ -91,8 +91,9 @@ def details(article_portal_division_id):
              ArticlePortalDivision.portal_division_id.in_(
                  db(PortalDivision.id).filter(PortalDivision.portal_id == article.division.portal_id))
              )).order_by(ArticlePortalDivision.cr_tm.desc()).limit(5).all()
-    favorite = article.check_favorite_status(user_id=g.user.id)
-    liked = article.article_is_liked(g.user.id, article_portal_division_id)
+    favorite = article.check_favorite_status()
+    liked = article.check_liked_status()
+    liked_count = article.check_liked_count()
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
@@ -104,17 +105,26 @@ def details(article_portal_division_id):
                            article=article_dict,
                            favorite=favorite,
                            liked=liked,
+                           liked_count = liked_count,
                            article_visibility=article_visibility is True,
                            redirect_info=article_visibility
                            )
 
 
-@front_bp.route('/add_to_favorite/', methods=['POST'])
-def add_delete_favorite():
-    favorite = json.loads(request.form.get('favorite'))
-    article_portal_division_id = request.form.get('article_portal_division_id')
-    ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, favorite)
-    return jsonify({'favorite': favorite})
+@front_bp.route('_a/add_delete_favorite/<string:article_portal_division_id>/', methods=['POST'])
+@ok
+def add_delete_favorite(json, article_portal_division_id):
+
+    ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, json['on'])
+    return {'on': False if json['on'] else True}
+
+@front_bp.route('_a/add_delete_liked/<string:article_portal_division_id>/', methods=['POST'])
+@ok
+def add_delete_liked(json, article_portal_division_id):
+    article = ArticlePortalDivision.get(article_portal_division_id)
+    ReaderArticlePortalDivision.add_delete_liked_user_article(article_portal_division_id, json['on'])
+    return {'on': False if json['on'] else True, 'liked_count': article.check_liked_count()}
+
 
 
 @front_bp.route('<string:division_name>/_c/<string:member_company_id>/<string:member_company_name>/')

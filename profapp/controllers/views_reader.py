@@ -10,6 +10,7 @@ from .request_wrapers import ok
 from utils.db_utils import db
 from flask.ext.login import login_required
 import datetime
+from ..models.pr_base import PRBase
 from ..models.files import File
 
 
@@ -24,7 +25,7 @@ def details_reader(article_portal_division_id):
                                                        'company.name|id')
     article_dict['tags'] = article.tags
     ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
-    favorite = article.check_favorite_status(user_id=g.user.id)
+    favorite = article.check_favorite_status()
 
     return render_template('partials/reader/reader_details.html',
                            article=article_dict,
@@ -46,7 +47,7 @@ def list_reader_load(json):
     next_page = json.get('next_page') if json.get('next_page') else 1
     search_text = request.args.get('search_text') or ''
     article_fields = 'title|id|subtitle|short|image_file_id|subtitle|publishing_tm|read_count,company.name|logo_file_id|id,' \
-                     'division.name,portal.name|host|logo_file_id'
+                     'division.name,portal.name|host|logo_file_id|id'
     favorite = request.args.get('favorite') == 'True'
     if not favorite:
         articles, pages, page = Search().search({'class': ArticlePortalDivision,
@@ -70,18 +71,9 @@ def list_reader_load(json):
                                                 items_per_page=5*next_page,
                                                 search_text=search_text)
     # portals = UserPortalReader.get_portals_for_user() if not articles else None
-    list_articles = []
-    for article_id, article in articles.items():
-        article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
-        article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
-            articles[article_id]['company']['logo_file_id'] else None
-        article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-            articles[article_id]['portal']['logo_file_id'] else None
-        del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
-        list_articles.append(article)
-
+    list_articles = ArticlePortalDivision.get_list_reader_articles(articles)
     return {
-        'end': pages == 1,
+        'end': True if pages == 1 or pages == 0 else False,
         'articles': list_articles,
         'pages': pages,
         'current_page': page,
@@ -135,6 +127,12 @@ def list_reader_load(json):
 @ok
 def add_delete_favorite(json):
     return ReaderArticlePortalDivision.add_delete_favorite_user_article(json.get('article')['id'], json.get('article')['is_favorite'])
+
+@reader_bp.route('/add_to_like/', methods=['POST'])
+@ok
+def add_delete_like(json):
+    liked = ReaderArticlePortalDivision.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
+    return ReaderArticlePortalDivision.count_likes(g.user.id, json.get('article')['id'])
 
 
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])

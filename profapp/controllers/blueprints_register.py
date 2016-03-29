@@ -52,6 +52,7 @@ def register_profi(app):
 def register_front(app):
     from . import views_front
     app.register_blueprint(front_bp, url_prefix='/')
+    app.register_blueprint(user_bp, url_prefix='/users')
     # app.register_blueprint(reader_bp, url_prefix='/')
 
 def register_static(app):

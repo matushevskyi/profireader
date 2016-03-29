@@ -29,7 +29,6 @@
         $scope.selectedPortal_sending = false;
         $scope.user_right = {{ rights_user_in|safe }}
 
-
         {% raw %}
 
         $scope.onSelect = function ($item, $model, $label) {
@@ -68,7 +67,7 @@
 
         $scope.grid_action = function (id, action, row, column_name) {
             if(row.actions[action] == true){
-                return $ok($scope.url_change_status({company_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action}, function(resp){}).finally(function () {
+                return $ok($scope.url_change_status({partner_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action, who:row.who,company_id:$scope.company_id}, function(resp){}).finally(function () {
                     $scope.gridApi.grid.setGridData();
                 })
             }else{
@@ -103,7 +102,7 @@
     </script>
 
     {% raw %}
-       <div ng-controller="portals_partners">
+       <div ng-controller="portals_partners" ng-cloak>
        <h3> {{ _('Join to portal') }} </h3>
             <input pr-user-rights="user_right" typeahead-on-select="onSelect($item, $model, $label)"
                    uib-typeahead-template-url="typeaheadTemplate.html"

@@ -15,7 +15,9 @@ from sqlalchemy import orm
 import itertools
 from config import Config
 import simplejson
-from .files import File
+from .files import File, ImageCroped
+from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+from ..utils import fileUrl
 from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
@@ -182,6 +184,30 @@ class Portal(Base, PRBase):
 
 
         pass
+
+    def logo_file_properties(self):
+        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
+        return {
+            'browse': self.id,
+            'upload': True,
+            'crop': True,
+            'image_size': [450, 450],
+            'min_size': [100, 100],
+            'aspect_ratio': [0.5, 3.0],
+            'preset_urls': {'glyphicon-remove-circle': nologo_url},
+            'no_selection_url': nologo_url
+    }
+
+    def get_logo_client_side_dict(self):
+        return self.get_image_cropped_file(self.logo_file_properties(),
+                                             db(ImageCroped, croped_image_id=self.logo_file_id).first())
+
+    def set_logo_client_side_dict(self, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user'] = {'type': 'none'}
+        self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+                                                          client_data, self.logo_file_id, self.own_company.system_folder_file_id)
+        return self
 
     def setup_created_portal(self, logo_file_id=None):
         # TODO: OZ by OZ: move this to some event maybe
@@ -355,54 +381,29 @@ class MemberCompanyPortal(Base, PRBase):
         'RESTORE': 'RESTORE',
         'REJECT': 'REJECT',
         'SUSPEND': 'SUSPEND',
-        'ENLIST': 'ENLIST'
-    }
-
-    ACTION_FOR_STATUS = {
-        'membership':{
-                STATUSES['ACTIVE']: {
-                    'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
-                    'FREEZE': ACTIONS['FREEZE']},
-                STATUSES['APPLICANT']: {'WITHDRAW': ACTIONS['WITHDRAW']},
-                STATUSES['SUSPENDED']: {'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE']},
-                STATUSES['FROZEN']: {
-                    'UNSUBSCRIBE': ACTIONS['UNSUBSCRIBE'],
-                    'RESTORE': ACTIONS['RESTORE']},
-                STATUSES['REJECTED']: {'WITHDRAW': ACTIONS['WITHDRAW']},
-                STATUSES['DELETED']: {}},
-        'member':{
-                STATUSES['ACTIVE']: {
-                    'REJECT': ACTIONS['REJECT'],
-                    'SUSPEND': ACTIONS['SUSPEND']},
-                STATUSES['APPLICANT']: {'REJECT': ACTIONS['REJECT'],
-                                        'ENLIST': ACTIONS['ENLIST']},
-                STATUSES['SUSPENDED']: {'REJECT': ACTIONS['REJECT'],
-                                        'RESTORE': ACTIONS['RESTORE']},
-                STATUSES['FROZEN']: {},
-                STATUSES['REJECTED']: {'RESTORE': ACTIONS['RESTORE']},
-                STATUSES['DELETED']: {}
-        }
+        'ENLIST': 'ENLIST',
+        'ALLOW': 'ALLOW'
     }
 
     STATUS_FOR_ACTION = {
-        'UNSUBSCRIBE': STATUSES['DELETED'],
-        'FREEZE': STATUSES['FROZEN'],
-        'WITHDRAW': STATUSES['DELETED'],
-        'REJECT': STATUSES['REJECTED'],
-        'SUSPEND': STATUSES['SUSPENDED'],
-        'ENLIST': STATUSES['ACTIVE'],
-        'RESTORE': STATUSES['ACTIVE']
+        ACTIONS['UNSUBSCRIBE']: STATUSES['DELETED'],
+        ACTIONS['FREEZE']: STATUSES['FROZEN'],
+        ACTIONS['WITHDRAW']: STATUSES['DELETED'],
+        ACTIONS['REJECT']: STATUSES['REJECTED'],
+        ACTIONS['SUSPEND']: STATUSES['SUSPENDED'],
+        ACTIONS['ENLIST']: STATUSES['ACTIVE'],
+        ACTIONS['RESTORE']: STATUSES['ACTIVE']
     }
 
     def actions(self, company_id, who):
         from .company import UserCompany
-        right_for_action = UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS
         employment = UserCompany.get(company_id=company_id)
-        return {action_name: self.action_is_allowed(action_name, employment, right_for_action,
-                                                    self.ACTION_FOR_STATUS[who][self.status]) for action_name in
-                self.ACTION_FOR_STATUS[who][self.status]}
+        action_for_status = UserCompany.ACTION_FOR_STATUSES_MEMBER if who == 'member' else UserCompany.ACTION_FOR_STATUSES_MEMBERSHIP
+        return {action_name: self.action_is_allowed(action_name, employment,
+                                                    action_for_status[self.status]) for action_name in
+                action_for_status[self.status]}
 
-    def action_is_allowed(self, action_name, employment, right_for_action, actions):
+    def action_is_allowed(self, action_name, employment, actions):
         if not employment:
             return "Unconfirmed employment"
 
@@ -416,9 +417,11 @@ class MemberCompanyPortal(Base, PRBase):
         if self.portal.own_company.status != 'ACTIVE' and action_name == MemberCompanyPortal.ACTIONS['FREEZE']:
             return "Company `{}` with status `{}` need status ACTIVE to perform action `{}`".format(self.portal.own_company.name,
                     self.portal.own_company.status, action_name)
+        if self.portal.company_owner_id == self.company_id:
+            return 'You can`t {0} portal of your own company'.format(action_name)
 
-        if not employment.has_rights(right_for_action):
-            return "Employment need right `{}` to perform action `{}`".format(right_for_action, action_name)
+        if not employment.has_rights(actions[action_name]):
+            return "Employment need right `{}` to perform action `{}`".format(actions[action_name],action_name)
 
         return True
 

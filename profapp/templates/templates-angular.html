@@ -68,7 +68,7 @@
     <div af ng-model="data" af-url="{{ url_submit_to_portal({'article_action': action}) }}"
          af-after-save="afterSave"
          af-amid-load="amidLoad"
-         af-watch="data.publication">
+         af-watch="data.publication" ng-cloak>
         <div class="modal-header">
             <h3 class="modal-title">{{ _(action + ' ' + object_name + ' at portal') }}</h3>
         </div>

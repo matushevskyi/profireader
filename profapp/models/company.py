@@ -39,6 +39,20 @@ class Company(Base, PRBase):
 
     logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
 
+    def logo_file_properties(self):
+        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
+        return {
+            'browse': self.id,
+            'upload': True,
+            'none': nologo_url,
+            'crop': True,
+            'image_size': [450, 450],
+            'min_size': [100, 100],
+            'aspect_ratio': [0.5, 3.0],
+            'preset_urls': {},
+            'no_selection_url': nologo_url
+        }
+
     journalist_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
     # corporate_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
     system_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
@@ -108,9 +122,19 @@ class Company(Base, PRBase):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
-
+        if not re.match(r'[^\s]{3}', str(self.country)):
+            ret['errors']['country'] = 'pls enter a bit longer name'
+        if not re.match(r'[^\s]{3}', str(self.region)):
+            ret['errors']['region'] = 'pls enter a bit longer name'
+        if not re.match(r'[^\s]{3}', str(self.city)):
+            ret['errors']['city'] = 'pls enter a bit longer name'
+        if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", str(self.email)):
+            ret['errors']['email'] = 'Invalid email address'
         if not re.match('[^\s]{3,}', self.name):
             ret['errors']['name'] = 'pls enter a bit longer name'
+        # phone validation
+        # if not re.match('^\+?[0-9]{3}-?[0-9]{6,12}$', self.phone):
+        #     ret['errors']['phone'] = 'pls enter a correct number'
 
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)
@@ -225,41 +249,24 @@ class Company(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    def set_image_client_dict(self, image, folder):
-        if image['selected_by_user']['type'] == 'preset':
-            pass
-        else:
-            PRBase.set_image_client_dict(self, image, folder)
-
-    def get_image_client_dict(self):
-
-        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
-
-        return PRBase.get_image_client_dict(self, upload=True, browse=self.id,
-                                            crop_from_image_file=db(ImageCroped,
-                                                                    croped_image_id=self.logo_file_id).first(),
-                                            preset_urls={'glyphicon-remove-circle': nologo_url},
-                                            no_selection_url=nologo_url)
 
 
-        #
-        # is_image = ImageCroped.get_coordinates_and_original_img(self.logo_file_id)
-        # return {
-        #     'file_id': self.logo_file_id,
-        #     'upload': upload,
-        #     'crop': {
-        #         'ratio': Config.IMAGE_EDITOR_RATIO,
-        #         'coordinates': None,
-        #     },
-        #     'browse': self.id,
-        #     'no_image_url': g.fileUrl()
-        # }
+    def get_logo_client_side_dict(self):
+        return self.get_image_cropped_file(self.logo_file_properties(),
+                                             db(ImageCroped, croped_image_id=self.logo_file_id).first())
+
+    def set_logo_client_side_dict(self, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user'] = {'type': 'none'}
+        self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+                                                          client_data, self.logo_file_id, self.system_folder_file_id)
+        return self
 
     @staticmethod
     def get_allowed_statuses(company_id=None, portal_id=None):
         if company_id:
             sub_query = db(MemberCompanyPortal, company_id=company_id).filter(
-                MemberCompanyPortal.status != "DELETED").all()
+                    MemberCompanyPortal.status != "DELETED").all()
         else:
             sub_query = db(MemberCompanyPortal, portal_id=portal_id)
         return sorted(list({partner.status for partner in sub_query}))
@@ -355,6 +362,40 @@ class UserCompany(Base, PRBase):
         'upload': RIGHT_AT_COMPANY.FILES_UPLOAD
     }
 
+    ACTION_FOR_STATUSES_MEMBERSHIP = {
+        MemberCompanyPortal.STATUSES['ACTIVE']: {
+            MemberCompanyPortal.ACTIONS['UNSUBSCRIBE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
+            MemberCompanyPortal.ACTIONS['FREEZE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+        MemberCompanyPortal.STATUSES['APPLICANT']: {
+            MemberCompanyPortal.ACTIONS['WITHDRAW']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+        MemberCompanyPortal.STATUSES['SUSPENDED']: {
+            MemberCompanyPortal.ACTIONS['UNSUBSCRIBE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+        MemberCompanyPortal.STATUSES['FROZEN']: {
+            MemberCompanyPortal.ACTIONS['UNSUBSCRIBE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
+            MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+        MemberCompanyPortal.STATUSES['REJECTED']: {
+            MemberCompanyPortal.ACTIONS['WITHDRAW']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+        MemberCompanyPortal.STATUSES['DELETED']: {}
+    }
+
+    ACTION_FOR_STATUSES_MEMBER = {
+        MemberCompanyPortal.STATUSES['ACTIVE']: {
+            MemberCompanyPortal.ACTIONS['ALLOW']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
+            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
+            MemberCompanyPortal.ACTIONS['SUSPEND']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+        MemberCompanyPortal.STATUSES['APPLICANT']: {
+            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
+            MemberCompanyPortal.ACTIONS['ENLIST']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+        MemberCompanyPortal.STATUSES['SUSPENDED']: {
+            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
+            MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+        MemberCompanyPortal.STATUSES['FROZEN']: {
+            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+        MemberCompanyPortal.STATUSES['REJECTED']: {
+            MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+        MemberCompanyPortal.STATUSES['DELETED']: {}
+    }
+
     ACTIONS_FOR_STATUSES = {
         STATUSES['APPLICANT']: {
             ACTIONS['ENLIST']: {'employment': [RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
@@ -442,7 +483,7 @@ class UserCompany(Base, PRBase):
 
     @staticmethod
     def get(user_id=None, company_id=None):
-        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).one()
+        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
 
     @staticmethod
     # TODO: OZ by OZ: rework this as in action-style

@@ -21,6 +21,7 @@
                 parent_id: model && model.parent_id || '',
                 recursive: false,
                 url: model && model.url || '',
+                file_url: model && model.file_url || '',
                 sizeKb: function() {
                     return Math.round(this.size / 1024, 1);
                 },
