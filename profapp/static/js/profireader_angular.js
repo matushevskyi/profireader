@@ -578,8 +578,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     options['cropmove'] = function (e) {
                         //console.log(e.width);
-                        console.log(e.originalEvent.x, (e.originalEvent.x - scope.click_data.x)/(e.originalEvent.y - scope.click_data.y));
-                        if ((e.originalEvent.x - scope.click_data.x)/(e.originalEvent.y - scope.click_data.y) > 1.0) {
+                        console.log(e.originalEvent.x, (e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y));
+                        if ((e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y) > 1.0) {
                             e.originalEvent.x = e.originalEvent.y - scope.click_data.y + scope.click_data.x;
 
                         }
@@ -603,7 +603,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     optionsa['crop'] = function (e) {
 
-                        if (e.width/ e.height>1) {
+                        if (e.width / e.height > 1) {
                             e.width = e.height;
 
                             $image.cropper('setData', {width: e.width});
@@ -801,26 +801,54 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 prElementClass: '='
             },
             link: function (scope, element, attrs, model) {
+
+                $.datetimepicker.setDateFormatter({
+                    parseDate: function (date, format) {
+                        console.log(date, format);
+                    },
+
+                    formatDate: function (date, format) {
+                        console.log(date, format);
+                    }
+                });
+
+                $('<input style="width: 0px; height: 0px; padding: 0px; margin: 0px; border: 0px; visibility: hidden"' +
+                    ' class="holderforjquerydatepicker"/>').insertAfter($(element));
+
                 scope.$watch('ngModel', function (nv, ov) {
                     scope.setdate = scope['ngModel'];
                 });
-                var property = {};
+                var property = {
+                    value: '2013/03/22',
+                    onChangeDateTime: function (dp, $input) {
+
+                        $timeout(function () {
+                            scope['ngModel'] = $input.val();
+                        }, 0)
+                    }
+                    //formatter: '',
+                }
                 //minDate:'-1970/01/02',//yesterday is minimum date(for today use 0 or -1970/01/01)
                 //maxDate:'+1970/01/02'//tomorrow is maximum date calendar
 
                 property['startDate'] = '+1971/05/01';
-                if(attrs['prMode']){
-                    property['timepicker'] = attrs['prMode'] === 'time'? true:false
-                    property['datepicker'] = attrs['prMode'] === 'date'? true:false
+                if (attrs['prMode']) {
+                    property['timepicker'] = attrs['prMode'] === 'time' ? true : false
+                    property['datepicker'] = attrs['prMode'] === 'date' ? true : false
                 }
                 //$timeout(function(){
                 //    var dd = new Date(scope['ngModel']).getTime();
                 //    scope['ngModel'] = property['timepicker'] || !attrs['prMode']?getLocalTime(dd, true):getLocalTime(dd)
                 //}, 500);
 
-                element.datetimepicker(property);
+                console.log(property);
+                var placeholder = $(element).nextAll('.holderforjquerydatepicker');
+                placeholder.datetimepicker(property);
+                $(element).click(function () {
+                    placeholder.datetimepicker('show');
+                })
 
-                if(attrs["prElementClass"]){
+                if (attrs["prElementClass"]) {
                     element.addClass(attrs["prElementClass"])
                 }
             }
@@ -2008,8 +2036,8 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                 }
             });
-            $timeout(function(){
-                if(scope.data.end === false && ($(document).height() - $(window).height() === 0)){
+            $timeout(function () {
+                if (scope.data.end === false && ($(document).height() - $(window).height() === 0)) {
                     scope.next_page += 1;
                     load()
                 }
@@ -2105,15 +2133,15 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 });
 
 
-function getLocalTime(date, needtime){
+function getLocalTime(date, needtime) {
     var offset = new Date().getTimezoneOffset();
     //var da = new Date(date-(offset * 60000))
     var parsedate = new Date(date)
-    var curr_month = parsedate.getMonth()+1;
-    if(needtime){
-        return parsedate.getFullYear()+'/'+curr_month+'/'+parsedate.getDate()+' '+parsedate.getHours()+':'+parsedate.getMinutes()
+    var curr_month = parsedate.getMonth() + 1;
+    if (needtime) {
+        return parsedate.getFullYear() + '/' + curr_month + '/' + parsedate.getDate() + ' ' + parsedate.getHours() + ':' + parsedate.getMinutes()
     }
-    return parsedate.getFullYear()+'/'+curr_month+'/'+parsedate.getDate()
+    return parsedate.getFullYear() + '/' + curr_month + '/' + parsedate.getDate()
 }
 
 

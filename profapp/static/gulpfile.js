@@ -112,8 +112,13 @@ gulp.task('less', ['less_compile'], function() {
     return gulp.watch('./css/*.less', ['less_compile']);
 });
 
+gulp.task('jquery_datetimepicker', function () {
+    return gulp.src([src + 'jquery-datetimepicker/jquery.datetimepicker.*'])
+        .pipe(gulp.dest(dst + 'jquery-datetimepicker/'));
+});
+
 
 gulp.task('default', ['clean', 'install_fileuploader', 'install_angular', 'install_angular_translate', 'install_angular_cookies', 
 'install_angular_ui_tinymce', 'install_tinymce', 'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
-'install_slider','install_bootstrap', 'install_angular_crop']);
+'install_slider','install_bootstrap', 'install_angular_crop', 'jquery_datetimepicker']);
 
