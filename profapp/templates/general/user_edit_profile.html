@@ -31,8 +31,6 @@
                     data.user.birth_tm = new Date(data.user.birth_tm);
                 return data;
             };
-
-
         }])
 
     </script>
@@ -83,8 +81,8 @@
 
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Birthday') }}</span>
-                    <input class="form-control" pr-datepicker="" ng-model="data.user.birth_tm"
-                           aria-describedby="sizing-addon1" type="date" placeholder="birthday">
+
+                    <input pr-date-timepicker ng-model="data.user.birth_tm" pr-element-class="form-control" pr-mode="date">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Gender') }}</span>

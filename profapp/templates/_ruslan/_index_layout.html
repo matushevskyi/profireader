@@ -27,6 +27,8 @@
     <link href="//static.profireader.com/static/css/style.css" rel="stylesheet">
     <link href="//static.profireader.com/static/css/icons.css" rel="stylesheet">
     <link href="//static.profireader.com/static/css/oles.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="/static/new/jquery-datetimepicker/jquery.datetimepicker.css">
+
 
 {% endblock styles %}
 
@@ -81,6 +83,7 @@
     <script src="//static.profireader.com/static/js/profireader_angular.js"></script>
     <script src="//static.profireader.com/static/js/profireader.js"></script>
 
+    <script src="/static/new/jquery-datetimepicker/jquery.datetimepicker.full.min.js"></script>
     <script>
         {% for message in get_flashed_messages() %}
             add_message('{{ message }}', 'warning');

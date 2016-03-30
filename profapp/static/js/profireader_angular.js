@@ -792,6 +792,41 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             }
         };
     })
+    .directive('prDateTimepicker', function ($timeout) {
+        return {
+            require: 'ngModel',
+            restrict: 'A',
+            scope: {
+                ngModel: '=',
+                prElementClass: '='
+            },
+            link: function (scope, element, attrs, model) {
+                scope.$watch('ngModel', function (nv, ov) {
+                    scope.setdate = scope['ngModel'];
+                });
+                var property = {};
+                //minDate:'-1970/01/02',//yesterday is minimum date(for today use 0 or -1970/01/01)
+                //maxDate:'+1970/01/02'//tomorrow is maximum date calendar
+
+                property['startDate'] = '+1971/05/01';
+                if(attrs['prMode']){
+                    property['timepicker'] = attrs['prMode'] === 'time'? true:false
+                    property['datepicker'] = attrs['prMode'] === 'date'? true:false
+                }
+                //$timeout(function(){
+                //    var dd = new Date(scope['ngModel']).getTime();
+                //    scope['ngModel'] = property['timepicker'] || !attrs['prMode']?getLocalTime(dd, true):getLocalTime(dd)
+                //}, 500);
+
+                element.datetimepicker(property);
+
+                if(attrs["prElementClass"]){
+                    element.addClass(attrs["prElementClass"])
+                }
+            }
+
+        }
+    })
     .directive('prDatepicker', function () {
         return {
             replace: false,
@@ -2068,6 +2103,18 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
         }
     })
 });
+
+
+function getLocalTime(date, needtime){
+    var offset = new Date().getTimezoneOffset();
+    //var da = new Date(date-(offset * 60000))
+    var parsedate = new Date(date)
+    var curr_month = parsedate.getMonth()+1;
+    if(needtime){
+        return parsedate.getFullYear()+'/'+curr_month+'/'+parsedate.getDate()+' '+parsedate.getHours()+':'+parsedate.getMinutes()
+    }
+    return parsedate.getFullYear()+'/'+curr_month+'/'+parsedate.getDate()
+}
 
 
 function cleanup_html(html) {
