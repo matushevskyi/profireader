@@ -48,7 +48,7 @@ class ArticlePortalDivision(Base, PRBase):
     status = Column(TABLE_TYPES['status'], default='SUBMITTED')
     STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED'}
 
-    visibility = Column(TABLE_TYPES['status'], default='REGISTERED')
+    visibility = Column(TABLE_TYPES['status'], default='OPEN')
     like_count = Column(TABLE_TYPES['int'], default=0)
     VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
 
