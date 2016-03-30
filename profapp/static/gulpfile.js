@@ -11,28 +11,10 @@ var src = 'bower_components/';
 var dst = 'new/';
 
 var watch = require('gulp-watch');
+var runSequence = require('run-sequence');
+var gutil = require('gulp-util');
+
 //var ext_replace = require('gulp-ext-replace');
-
-// TODO: OZ by OZ: paths to less files in map files are css/css. that is why we need ./profapp/static/css/css -> /profapp/static/css symlink. fix it
-gulp.task('less_compile', function () {
-  gulp.src('./css/*.less')
-    .pipe(less({
-        sourceMap: {
-            sourceMapRootpath: '/static/css' // Optional absolute or relative path to your LESS files
-        }
-    }))
-//    .pipe(ext_replace('.css', '.less.css'))
-    .pipe(gulp.dest('./css'));
-
-  gulp.src('./front/spring/css/*.less')
-    .pipe(less({
-        sourceMap: {
-            sourceMapRootpath: '/static/front/spring/css' // Optional absolute or relative path to your LESS files
-        }
-    }))
-//    .pipe(ext_replace('.css', '.less.css'))
-    .pipe(gulp.dest('./front/spring/css'));
-});
 
 gulp.task('clean', function (cb) {
 //    del([
@@ -117,12 +99,40 @@ gulp.task('install_bootstrap', function () {
         .pipe(gulp.dest(dst + 'bootstrap/'));
 });
 
-gulp.task('less', ['less_compile'], function() {
-    return gulp.watch('./css/*.less', ['less_compile']);
+gulp.task('less', function () {
+    var layouts = ['spring', 'bird', 'forester'];
+
+    var dirs = ['./css/*.less', ];
+    for (var i = 0; i < layouts.length; i++) {
+        dirs.push('./front/' + layouts[i] + '/css/*.less');
+    }
+
+    for (var i = 0; i < dirs.length; i++) {
+        gutil.log(gutil.colors.yellow('recompiling ' + ' (' + dirs[i] +  ')'));
+        gulp.src(dirs[i])
+        .pipe(less({
+            sourceMap: {
+                sourceMapRootpath: dirs[i].replace(/\/[^\/]*$/, '')
+            }
+        }))
+        .pipe(gulp.dest(dirs[i].replace(/\/[^\/]*$/,'')));
+    }
+
+    gulp.watch(dirs).on('change', function(file) {
+        gutil.log(gutil.colors.yellow('JS changed' + ' (' + file.path.replace(/.less$/, '.css,.map') +' created)'));
+        gulp.src(file.path)
+        .pipe(less({
+            sourceMap: {
+                sourceMapRootpath: file.path.replace(/.less$/, '')
+            }
+        }))
+        .pipe(gulp.dest(file.path.replace(/\/[^\/]*$/,'')));
+    })
+
 });
 
 
-gulp.task('default', ['clean', 'install_fileuploader', 'install_angular', 'install_angular_translate', 'install_angular_cookies', 
-'install_angular_ui_tinymce', 'install_tinymce', 'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
-'install_slider','install_bootstrap', 'install_angular_crop']);
+gulp.task('default', ['clean', 'install_fileuploader', 'install_angular', 'install_angular_translate', 'install_angular_cookies',
+    'install_angular_ui_tinymce', 'install_tinymce', 'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
+    'install_slider', 'install_bootstrap', 'install_angular_crop']);
 
