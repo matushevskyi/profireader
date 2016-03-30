@@ -536,7 +536,7 @@ class PRBase:
             'no_selection_url': parameters.get('no_selection_url'),
             'selected_by_user': {'type': 'none'}
         }
-
+        print(croped_image_file_id)
         if croped_image_file_id:
             ret['selected_by_user'] = {'type': 'browse', 'image_file_id': croped_image_file_id.original_image_id}
             if ret['cropper']:

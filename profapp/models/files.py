@@ -660,6 +660,19 @@ class File(Base, PRBase):
         g.db.flush()
         return croped
 
+    def copy_from_cropped_file(self):
+        image_cropped = db(ImageCroped, croped_image_id=self.id).first()
+        copy_from_origininal = File.get(image_cropped.original_image_id).copy_file(self.parent_id)
+        copy_crop = File.get(image_cropped.croped_image_id).copy_file(self.parent_id)
+        ImageCroped(original_image_id=copy_from_origininal.id,
+                            croped_image_id=copy_crop.id,
+                            x=image_cropped.x, y=image_cropped.y,
+                            width=image_cropped.width, height=image_cropped.height,
+                            croped_width=image_cropped.croped_width,
+                            croped_height=image_cropped.croped_height,
+                            zoom=image_cropped.zoom).save()
+        return copy_crop
+
     def crop(self, coordinates, folder_id, params, old_image_cropped=None):
         bytes_file, area = self.crop_with_coordinates(coordinates, params)
         if bytes_file:
