@@ -11,3 +11,8 @@ function switch_something(element, url, selector_off, selector_on, replace_key_s
             })
     })
 }
+function prFormatDate(str) {
+    var a = new Date(str);
+    return a.toLocaleString();   
+}
+ 

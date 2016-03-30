@@ -298,8 +298,7 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
 
 @jinja2.contextfunction
 def localtime(value):
-    return Markup("<script> var a = new Date('{}'); a.setTime( a.getTime() - a.getTimezoneOffset()*60*1000 ); "
-                  "document.write(a.toLocaleString()) </script><noscript>{}</noscript>".format(value, value))
+    return Markup("<script> document.write(prFormatDate('{}')) </script><noscript>{}</noscript>".format(value, value))
 
 @jinja2.contextfunction
 def nl2br(value):
