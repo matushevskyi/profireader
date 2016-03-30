@@ -692,7 +692,6 @@ class ArticleCompany(Base, PRBase):
         company = db(PortalDivision, id=portal_division_id).one().portal.own_company
 
         for file_id in filesintext:
-            print(file_id+'dasdas')
             filesintext[file_id] = \
                 File.get(file_id).copy_from_cropped_file().id
 
@@ -882,7 +881,6 @@ class Article(Base, PRBase):
 
     @staticmethod
     def get_image_client_side_dict(article):
-        print(article.image_file_id)
         return article.get_image_cropped_file(Article.logo_file_properties(article),
                                              db(ImageCroped, croped_image_id=article.image_file_id).first())
 

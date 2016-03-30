@@ -2124,14 +2124,13 @@ function getGMT(date){
 
 
 function getLocalTime(date, needtime){
-    var offset = new Date().getTimezoneOffset();
-    //var da = new Date(date-(offset * 60000))
-    var parsedate = new Date(date)
-    var curr_month = parsedate.getMonth()+1;
+    var time = new Date(date)
+    var month = time.getMonth() + 1
+    var minutes = time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes();
     if(needtime){
-        return parsedate.getFullYear()+'/'+curr_month+'/'+parsedate.getDate()+' '+parsedate.getHours()+':'+parsedate.getMinutes()
+        return time.getFullYear()+"/"+month+'/'+time.getDate()+ ', '+ time.getHours()+':'+minutes
     }
-    return parsedate.getFullYear()+'/'+curr_month+'/'+parsedate.getDate()
+    return new time.toDateString()
 }
 
 
