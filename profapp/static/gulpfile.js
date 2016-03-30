@@ -78,6 +78,11 @@ gulp.task('install_tinymce', function () {
         .pipe(gulp.dest(dst + 'tinymce/'));
 });
 
+gulp.task('install_datepicker', function () {
+    return gulp.src([src + 'angular-ui-slider/src/slider.js'])
+        .pipe(gulp.dest(dst + 'angular-ui-slider/'));
+});
+
 gulp.task('install_angular_crop', function () {
     return gulp.src([src + 'ngImgCrop/compile/minified/*'])
         .pipe(gulp.dest(dst + 'angular-crop/'));

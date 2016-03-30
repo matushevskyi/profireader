@@ -17,6 +17,7 @@ import re
 from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
+import time
 from flask import redirect, url_for
 from .files import ImageCroped
 from ..utils import fileUrl
@@ -341,17 +342,19 @@ class ArticlePortalDivision(Base, PRBase):
     @staticmethod
     def get_list_reader_articles(articles):
         list_articles = []
+        localtime = time.localtime(time.time())
         for article_id, article in articles.items():
-            # article['publishing_tm'] = PRBase.datetime_from_utc_to_local(article['publishing_tm'], "%d %B %Y, %H:%M")
-            article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
-            article['liked'] = ReaderArticlePortalDivision.count_likes(g.user.id, article_id)
-            article['list_liked_reader'] = []#ReaderArticlePortalDivision.get_list_reader_liked(article_id)
-            article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
-                articles[article_id]['company']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
-            article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-                articles[article_id]['portal']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
-            del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
-            list_articles.append(article)
+            if datetime(*localtime[:6]) > article['publishing_tm']:
+                # article['publishing_tm'] = PRBase.datetime_from_utc_to_local(article['publishing_tm'], "%d %B %Y, %H:%M")
+                article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
+                article['liked'] = ReaderArticlePortalDivision.count_likes(g.user.id, article_id)
+                article['list_liked_reader'] = []#ReaderArticlePortalDivision.get_list_reader_liked(article_id)
+                article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
+                    articles[article_id]['company']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
+                article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
+                    articles[article_id]['portal']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
+                del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
+                list_articles.append(article)
         return list_articles
 
     # def clone_for_company(self, company_id):
@@ -409,6 +412,7 @@ class ArticlePortalDivision(Base, PRBase):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
+        print(self.publishing_tm)
 
         if not self.publishing_tm:
             ret['errors']['publishing_tm'] = 'Please select publication date'
