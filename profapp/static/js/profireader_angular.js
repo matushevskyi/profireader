@@ -813,6 +813,13 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     property['timepicker'] = attrs['prMode'] === 'time'? true:false
                     property['datepicker'] = attrs['prMode'] === 'date'? true:false
                 }
+                //$timeout(function() {
+                //    scope['ngModel'] = getGMT(scope['ngModel']);
+                //}, 500)
+
+                //var offset = new Date().getTimezoneOffset();
+                //scope['ngModel']
+                //new Date(date-(offset * 60000))
                 //$timeout(function(){
                 //    var dd = new Date(scope['ngModel']).getTime();
                 //    scope['ngModel'] = property['timepicker'] || !attrs['prMode']?getLocalTime(dd, true):getLocalTime(dd)
@@ -2103,6 +2110,17 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
         }
     })
 });
+
+function getGMT(date){
+    console.log(date)
+    var prdate = new Date(date).getTime()
+    var offset = new Date().getTimezoneOffset();
+    console.log(prdate)
+    console.log(offset)
+    var ptTime = new Date(prdate+(offset * 60000))
+    console.log(ptTime)
+    return ptTime
+}
 
 
 function getLocalTime(date, needtime){

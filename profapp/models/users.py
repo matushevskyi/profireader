@@ -22,7 +22,8 @@ from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
 from ..utils import fileUrl
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
-
+import random
+import time
 
 class User(Base, UserMixin, PRBase):
     __tablename__ = 'user'
