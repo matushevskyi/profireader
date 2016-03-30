@@ -30,6 +30,8 @@ class File(Base, PRBase):
     mime = Column(String(30), default='text/plain', nullable=False)
     description = Column(TABLE_TYPES['text'], default='', nullable=False)
     copyright = Column(TABLE_TYPES['text'], default='', nullable=False)
+    # youtube_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
+
     company_id = Column(TABLE_TYPES['id_profireader'],
                         ForeignKey('company.id'),
                         nullable=False)
@@ -61,8 +63,9 @@ class File(Base, PRBase):
                          cascade='save-update,delete')
 
     def __init__(self, parent_id=None, name=None, mime='text/plain', size=0,
-                 user_id=None, cr_tm=None, md_tm=None, ac_tm=None,
-                 root_folder_id=None, youtube_id=None,
+                 cr_tm=None, md_tm=None, ac_tm=None,
+                 root_folder_id=None,
+                 # youtube_id=None,
                  company_id=None, copyright_author_name=None, author_user_id=None, image_croped=None,
                  thumbnail_id=None):
         super(File, self).__init__()
@@ -71,7 +74,6 @@ class File(Base, PRBase):
         self.thumbnail_id = thumbnail_id
         self.mime = mime
         self.size = size
-        self.user_id = user_id
         self.cr_tm = cr_tm
         self.md_tm = md_tm
         self.root_folder_id = root_folder_id
@@ -79,7 +81,7 @@ class File(Base, PRBase):
         self.copyright_author_name = copyright_author_name
         self.author_user_id = author_user_id
         self.company_id = company_id
-        self.youtube_id = youtube_id
+        # self.youtube_id = youtube_id
         self.image_croped = image_croped
 
     def __repr__(self):
@@ -612,14 +614,20 @@ class File(Base, PRBase):
             return False
         id = self.id
         root = folder.root_folder_id if folder.root_folder_id == None else folder.id
+        # newobject = File.get(self.id)
+        copy_file = File(parent_id=parent_id, name=File.get_unique_name(self.name, self.mime, parent_id),
+                         mime=self.mime, size=self.size,
+                 root_folder_id=root,
+                         # youtube_id=self.youtube_id,
+                 company_id=self.company_id, copyright_author_name=self.copyright_author_name,
+                         author_user_id=self.author_user_id)
+
         attr = {f: kwargs[f] for f in kwargs}
-        attr.update({'name': File.get_unique_name(self.name, self.mime, parent_id), 'parent_id': parent_id,
-                     'root_folder_id': root})
-        copy_file = self.detach().attr(attr)
+        copy_file.attr(attr)
         copy_file.save()
-        if self.mime == 'directory':
+        if copy_file.mime == 'directory':
             File.save_all(id, attr, copy_file.id)
-        elif self.mime == 'video/*':
+        elif copy_file.mime == 'video/*':
             youtube_video = YoutubeVideo.get(id).detach()
             copy_file.youtube_video = youtube_video
         else:
@@ -661,6 +669,20 @@ class File(Base, PRBase):
 
     def copy_from_cropped_file(self):
         image_cropped = db(ImageCroped, croped_image_id=self.id).first()
+        if not image_cropped:
+            # if article have no record in ImageCroped table we
+            # create one with copied file as `original file for croping`
+            print(self.id)
+            new_cropped_from_file = File.get(self.id).copy_file(self.parent_id)
+            image_pil = Image.open(BytesIO(new_cropped_from_file.file_content.content))
+            image_cropped = ImageCroped(original_image_id=new_cropped_from_file.id,
+                            croped_image_id=self.id,
+                            x=0, y=0,
+                            width=image_pil.width, height=image_pil.height,
+                            croped_width=image_pil.width,
+                            croped_height=image_pil.height,
+                            zoom=None).save()
+
         copy_from_origininal = File.get(image_cropped.original_image_id).copy_file(self.parent_id)
         copy_crop = File.get(image_cropped.croped_image_id).copy_file(self.parent_id)
         ImageCroped(original_image_id=copy_from_origininal.id,

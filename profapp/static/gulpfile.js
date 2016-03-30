@@ -23,6 +23,15 @@ gulp.task('less_compile', function () {
     }))
 //    .pipe(ext_replace('.css', '.less.css'))
     .pipe(gulp.dest('./css'));
+
+  gulp.src('./front/spring/css/*.less')
+    .pipe(less({
+        sourceMap: {
+            sourceMapRootpath: '/static/front/spring/css' // Optional absolute or relative path to your LESS files
+        }
+    }))
+//    .pipe(ext_replace('.css', '.less.css'))
+    .pipe(gulp.dest('./front/spring/css'));
 });
 
 gulp.task('clean', function (cb) {
