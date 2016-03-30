@@ -44,7 +44,7 @@
   var CLASS_MOVE = 'cropper-move';
   var CLASS_CROP = 'cropper-crop';
   var CLASS_DISABLED = 'cropper-disabled';
-  var CLASS_BG = 'cropper-bg1';
+  var CLASS_BG = 'cropper-bg';
 
   // Events
   var EVENT_MOUSE_DOWN = 'mousedown touchstart pointerdown MSPointerDown';

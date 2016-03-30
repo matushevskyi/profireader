@@ -9,8 +9,7 @@
                 return true
             }
         };
-        login_signup = '{{ login_signup }}';  // login_signup = 'login' or 'signup' or None
-        $scope.login_signup = (login_signup === 'signup') ? 'signup' : 'login';
+
         $scope.$$translate = {{ translates('UserLoginController')|safe }};
         $scope.open_filemanager = function () {
             window.location.href = '/filemanager/';

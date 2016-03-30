@@ -1,47 +1,130 @@
 {% extends "_ruslan/_index_layout.html" %}
 {% block title %}Profireader - SignUp{% endblock title %}
-{% block head %}
-    {{ super() }}
-{% endblock head %}
-
-{% block portal_base %}
-    {{ super() }}
-{% endblock portal_base %}
-
 {% block portal_content %}
-    <div class="row " ng-controller="UserLoginController">
-    </div>
-    <div ng-cloak class="auth-input auth-form col-lg-4 col-md-5 col-sm-6 col-xs-10" ng-controller="UserLoginController">
+
+    <script>
+
+        module.controller('UserLoginSignupController', ['$scope', '$ok', '$timeout', function ($scope, $ok, $timeout) {
+            $scope.$$translate = {{ translates('UserLoginSignupController')|safe }};
+            $scope.login_signup = ('{{ login_signup }}' === 'signup') ? 'signup' : 'login';
+
+            $scope.url_password_reset_request = '{{ url_for('auth.password_reset_request') }}';
+            $scope.url_signup = '{{ url_for('auth.signup') }}';
+            $scope.url_login = '{{ url_for('auth.login')  }}';
+            $scope.url_login_signup_soc_network = {{ raw_url_for('auth.login_signup_soc_network')|safe }};
+            $scope.social_networks = [
+                {'name': 'google', 'class': 'google-icon', 'prTest': 'GoogleLogin'},
+                    {'name': 'facebook', 'class': 'facebook-icon', 'prTest': 'FacebookLogin'},
+                    {'name': 'linkedin', 'class': 'linkedin-icon', 'prTest': 'LinkedinLogin'},
+                    {'name': 'microsoft', 'class': 'microsoft-icon', 'prTest': 'MicrosoftLogin'}
+
+            ]
+        }]);
+
+    </script>
+
+    <div ng-cloak class="auth-input auth-form col-lg-4 col-md-5 col-sm-6 col-xs-10"
+         ng-controller="UserLoginSignupController">
+        {% raw %}
         <div class="tabs">
             <div ng-hide="login_signup==='signup'" class="tab-link">
                 <a pr-test="TabLogIn" class="tab actual" title="Log in to Profireader">{{ _('Log in') }}</a>
-                <a pr-test="TabSignUp" class="tab" ng-click="login_signup='signup'" href="" title="Sign up to Profireader">{{ _('Sign up') }}</a>
+                <a pr-test="TabSignUp" class="tab" ng-click="login_signup='signup'" title="Sign up to Profireader">{{
+                    _('Sign up') }}</a>
             </div>
             <div ng-show="login_signup==='signup'" class="tab-link">
-                <a class="tab" ng-click="login_signup='login'" href="" title="Log in to Profireader">{{ _('Log in') }}</a>
+                <a class="tab" ng-click="login_signup='login'" title="Log in to Profireader">{{ _('Log in') }}</a>
                 <a class="tab actual" title="Sign up to Profireader">{{ _('Sign up') }}</a>
             </div>
         </div>
 
         <div class="content-block">
-            <stan ng-if="login_signup==='signup'">
-                <h3>{{ _('Sign up via social') }}:</h3>
-                {% include 'partials/LoginSignup - Soc Networks.html' %}
-                {% include 'partials/Signup - Profireader.html' %}
-            </stan>
-            <div ng-if="login_signup!=='signup'">
-                <h3>{{ _('Login via social') }}:</h3>
-                {% include 'partials/LoginSignup - Soc Networks.html' %}
-                {% include 'partials/Log in - Profireader.html' %}
+
+            <h3>{{ _(login_signup + ' via social') }}:</h3>
+            <div class="social-icons-style">
+                <div class="google-icon">
+                    <a pr_test="GoogleLogin"
+                       href="{{ url_login_signup_soc_network({soc_network_name: 'google'}) }}">
+                        <i class=" google-icon fa fa-google-plus-square fa-3x"></i>
+                    </a>
+                </div>
+                <div class="facebook-icon">
+                    <a pr_test="FacebookLogin"
+                       href="{{ url_login_signup_soc_network({soc_network_name: 'facebook'}) }}">
+                        <i class="fa fa-facebook-square fa-3x"></i>
+                    </a>
+                </div>
+                <div class="linkedin-icon">
+                    <a pr_test="LinkedinLogin"
+                       href="{{ url_login_signup_soc_network({soc_network_name: 'linkedin'}) }}">
+                        <i class="fa fa-linkedin-square fa-3x"></i>
+                    </a>
+                </div>
+                <div class="microsoft-icon">
+                    <a pr_test="MicrosoftLogin"
+                       href="{{ url_login_signup_soc_network({soc_network_name: 'microsoft'}) }}">
+                        <i class="fa fa-windows fa-3x"></i>
+                    </a>
+                </div>
             </div>
+
+
+            <div ng-if="login_signup==='signup'" class="login-form-profirider">
+                <h3>{{ _('or Simple registration') }}</h3>
+                <input pr-test="RegEmail" class="form-control" type="email" placeholder="email" required
+                       name="email" ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/">
+                <div ng-show="formLogin.email.$error.pattern" class="error-input">The email not validate!</div>
+                <input pr-test="RegName" class="form-control" type="text" placeholder="display name" required
+                       name="display_name">
+                <input pr-test="RegPass" class="form-control" type="password" placeholder="password" required
+                       name="password">
+                <input pr-test="RegRepeatPass" class="form-control" type="password" placeholder="repeat password"
+                       required
+                       name="password1">
+                <input pr-test="RegSubmit" class="submit-form" type="submit">
+            </div>
+
+            <div ng-if="login_signup==='login'" class="login-form-profirider">
+                <h3> {{ _('Log in using Profireader') }}</h3>
+                <input class="form-control" type="email" placeholder="email" required name="email"
+                       ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/">
+
+                <input class="form-control" type="password" placeholder="password" required name="password">
+                <input class="submit-form" type="submit">
+                <div class="logout-now">
+                    <p>{{ _('Forgot your password') }}?
+                        <a pr-test="PassResetRequest" href="{{ url_password_reset_request }}">{{ _('Click here to
+                            Reset it') }}</a></p>
+                </div>
+            </div>
+
+        </div>
+        {% endraw %}
+        {#
+    <a pr_test="GoogleLogin" class="login-by login-by-google"
+       href="{{ url_for('auth.login_signup_soc_network', soc_network_name='google', portal_id=request.args.get('subscribe', None)) }}">
+
+    </a>
+    <a pr_test="FacebookLogin" class="login-by login-by-facebook"
+       href="{{ url_for('auth.login_signup_soc_network', soc_network_name='facebook', portal_id=request.args.get('subscribe', None)) }}">
+
+    </a>
+    <a pr_test="LinkedinLogin" class="login-by login-by-linkedin"
+       href="{{ url_for('auth.login_signup_soc_network', soc_network_name='linkedin', portal_id=request.args.get('subscribe', None)) }}">
+
+    </a>
+    {#<a href="{{ url_for('auth.login_signup_soc_network', soc_network_name='twitter', portal_id=request.args.get('subscribe', None)) }}">twitter</a>#}
+        {#<a pr_test="MicrosoftLogin" class="login-by login-by-microsoft"
+       href="{{ url_for('auth.login_signup_soc_network', soc_network_name='microsoft', portal_id=request.args.get('subscribe', None)) }}">
+
+    </a>-->#}
+        {#<a href="{{ url_for('auth.login_signup_soc_network', soc_network_name='yahoo', portal_id=request.args.get('subscribe', None)) }}">yahoo</a>#}
+        {#    <a class="login-by login-by-vkontakte" href="{{ url_for('auth.login_signup_soc_network', soc_network_name='vkontakte', portal_id=request.args.get('subscribe', None)) }}"></a>#}
+
+
+        {#                {% include 'partials/LoginSignup - Soc Networks.html' %}#}
+        {#                {% include 'partials/Signup - Profireader.html' %}#}
     </div>
 
-    </div>
 
-    {#
-    <div>
-    <div class="by-socials-block"><h2>Sign up using any of the following
-        services:</h2>{% include 'partials/Signup - Soc Networks.html' %}</div>
-    <div class="by-profireader-block"><h2>Simple registration</h2>{% include 'partials/Signup - Profireader.html' %}</div>
-    #}
 {% endblock portal_content %}
