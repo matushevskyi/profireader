@@ -115,8 +115,17 @@
                         <li ng-if="user.id"><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
                                ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
                                 class="fa fa-folder-open-o"></i></a></li>
-                        <li><a pr_test="UserInfo" href="{{ url_general_help() }}" title="{{ _('Інформація') }}"
+                        <li class="info-padding"><a pr_test="UserInfo" href="{{ url_general_help() }}" title="{{ _('Інформація') }}"
                                ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-info"></i></a></li>
+
+                        <li class="dropdown"><a class="dropbtn" title="{{ _('Мова') }}"><i class="fa fa-language"></i></a>
+                        <div class="dropdown-content">
+                            <a href="#">English</a>
+                            <a href="#">Український</a>
+                            <a href="#">Русский</a>
+                          </div>
+                        </li>
+
                         <li ng-if="user.id" role="presentation" class="menu-profile">
                             <a pr_test="UserProfile"  href="{{ url_user_profile({user_id:user.id}) }}" role="button" aria-haspopup="true"
                                aria-expanded="false">
