@@ -1,0 +1,349 @@
+/* font typefaces */
+
+.article-content .profireader_article_font_family_arial {
+    font-family: Arial;
+}
+
+.article-content .profireader_article_font_family_courier {
+    font-family: Courier;
+}
+
+.article-content .profireader_article_font_family_monospace {
+    font-family: monospace;
+}
+
+/* font colors */
+
+.article-content .profireader_article_foreground_color_red {
+    color: #f00;
+}
+
+.article-content .profireader_article_foreground_color_green {
+    color: #0f0;
+}
+
+.article-content .profireader_article_foreground_color_blue {
+    color: #00f;
+}
+
+.article-content .profireader_article_foreground_color_gray {
+    color: #ccc;
+}
+
+.article-content .profireader_article_foreground_color_black {
+    color: #000;
+}
+
+.article-content .profireader_article_foreground_color_white {
+    color: #fff;
+}
+
+/* bg-colors */
+
+.article-content .profireader_article_background_color_red {
+    background-color: #f00;
+}
+
+.article-content .profireader_article_background_color_green {
+    background-color: #0f0;
+}
+
+.article-content .profireader_article_background_color_blue {
+    background-color: #00f;
+}
+
+.article-content .profireader_article_background_color_gray {
+    background-color: #ccc;
+}
+
+.article-content .profireader_article_background_color_black {
+    background-color: #000;
+}
+
+.article-content .profireader_article_background_color_white {
+    background-color: #fff;
+}
+
+/* borders placing */
+
+.article-content .profireader_article_border_placement_left.profireader_article_border_type_solid {
+    border-left-style: solid;
+}
+
+.article-content .profireader_article_border_placement_left.profireader_article_border_type_dashed {
+    border-left-style: dashed;
+}
+
+.article-content .profireader_article_border_placement_left.profireader_article_border_type_dotted {
+    border-left-style: dotted;
+}
+
+.article-content .profireader_article_border_placement_left.profireader_article_border_type_double {
+    border-left-style: double;
+}
+
+.article-content .profireader_article_border_placement_right.profireader_article_border_type_solid {
+    border-right-style: solid;
+}
+
+.article-content .profireader_article_border_placement_right.profireader_article_border_type_dashed {
+    border-right-style: dashed;
+}
+
+.article-content .profireader_article_border_placement_right.profireader_article_border_type_dotted {
+    border-right-style: dotted;
+}
+
+.article-content .profireader_article_border_placement_right.profireader_article_border_type_double {
+    border-right-style: double;
+}
+
+.article-content .profireader_article_border_placement_top.profireader_article_border_type_solid {
+    border-top-style: solid;
+}
+
+.article-content .profireader_article_border_placement_top.profireader_article_border_type_dashed {
+    border-top-style: dashed;
+}
+
+.article-content .profireader_article_border_placement_top.profireader_article_border_type_dotted {
+    border-top-style: dotted;
+}
+
+.article-content .profireader_article_border_placement_top.profireader_article_border_type_double {
+    border-top-style: double;
+}
+
+.article-content .profireader_article_border_placement_bottom.profireader_article_border_type_solid {
+    border-bottom-style: solid;
+}
+
+.article-content .profireader_article_border_placement_bottom.profireader_article_border_type_dashed {
+    border-bottom-style: dashed;
+}
+
+.article-content .profireader_article_border_placement_bottom.profireader_article_border_type_dotted {
+    border-bottom-style: dotted;
+}
+
+.article-content .profireader_article_border_placement_bottom.profireader_article_border_type_double {
+    border-bottom-style: double;
+}
+
+.article-content .profireader_article_border_placement_none.profireader_article_border_type_solid {
+    border-left-style: none;
+    border-right-style: none;
+    border-top-style: none;
+    border-bottom-style: none;
+}
+
+.article-content .profireader_article_border_placement_none.profireader_article_border_type_dashed {
+    border-left-style: none;
+    border-right-style: none;
+    border-top-style: none;
+    border-bottom-style: none;
+}
+
+.article-content .profireader_article_border_placement_none.profireader_article_border_type_dotted {
+    border-left-style: none;
+    border-right-style: none;
+    border-top-style: none;
+    border-bottom-style: none;
+}
+
+.article-content .profireader_article_border_placement_none.profireader_article_border_type_double {
+    border-left-style: none;
+    border-right-style: none;
+    border-top-style: none;
+    border-bottom-style: none;
+}
+
+.article-content .profireader_article_border_placement_all.profireader_article_border_type_solid {
+    border-left-style: solid;
+    border-right-style: solid;
+    border-top-style: solid;
+    border-bottom-style: solid;
+}
+
+.article-content .profireader_article_border_placement_all.profireader_article_border_type_dashed {
+    border-left-style: dashed;
+    border-right-style: dashed;
+    border-top-style: dashed;
+    border-bottom-style: dashed;
+}
+
+.article-content .profireader_article_border_placement_all.profireader_article_border_type_dotted {
+    border-left-style: dotted;
+    border-right-style: dotted;
+    border-top-style: dotted;
+    border-bottom-style: dotted;
+}
+
+.article-content .profireader_article_border_placement_all.profireader_article_border_type_double {
+    border-left-style: double;
+    border-right-style: double;
+    border-top-style: double;
+    border-bottom-style: double;
+}
+
+/* border types */
+
+.article-content .profireader_article_border_type_solid {
+
+}
+
+.article-content .profireader_article_border_type_dashed {
+
+}
+
+.article-content .profireader_article_border_type_dotted {
+
+}
+
+.article-content .profireader_article_border_type_double {
+
+}
+
+/* border-colors */
+
+.article-content .profireader_article_border_color_red {
+    border-color: #f00;
+}
+
+.article-content .profireader_article_border_color_green {
+    border-color: #0f0;
+}
+
+.article-content .profireader_article_border_color_blue {
+    border-color: #00f;
+}
+
+.article-content .profireader_article_border_color_gray {
+    border-color: #ccc;
+}
+
+.article-content .profireader_article_border_color_black {
+    border-color: #000;
+}
+
+.article-content .profireader_article_border_color_white {
+    border-color: #fff;
+}
+
+/* border width */
+
+.article-content .profireader_article_border_width_medium {
+    border-width: medium;
+}
+
+.article-content .profireader_article_border_width_thin {
+    border-width: thin;
+}
+
+.article-content .profireader_article_border_width_thick {
+    border-width: thick;
+}
+
+/* margins */
+
+.article-content .profireader_article_margin_placement_left.profireader_article_margin_size_thin {
+    margin-left: 1em;
+}
+.article-content .profireader_article_margin_placement_left.profireader_article_margin_size_medium {
+    margin-left: 2em;
+}
+.article-content .profireader_article_margin_placement_left.profireader_article_margin_size_thick {
+    margin-left: 4em;
+}
+
+.article-content .profireader_article_margin_placement_right.profireader_article_margin_size_thin {
+    margin-right: 1em;
+}
+.article-content .profireader_article_margin_placement_right.profireader_article_margin_size_medium {
+    margin-right: 2em;
+}
+.article-content .profireader_article_margin_placement_right.profireader_article_margin_size_thick {
+    margin-right: 4em;
+}
+
+.article-content .profireader_article_margin_placement_top.profireader_article_margin_size_thin {
+    margin-top: 1em;
+}
+.article-content .profireader_article_margin_placement_top.profireader_article_margin_size_medium {
+    margin-top: 2em;
+}
+.article-content .profireader_article_margin_placement_top.profireader_article_margin_size_thick {
+    margin-top: 4em;
+}
+
+.article-content .profireader_article_margin_placement_bottom.profireader_article_margin_size_thin {
+    margin-bottom: 1em;
+}
+.article-content .profireader_article_margin_placement_bottom.profireader_article_margin_size_medium {
+    margin-bottom: 2em;
+}
+.article-content .profireader_article_margin_placement_bottom.profireader_article_margin_size_thick {
+    margin-bottom: 4em;
+}
+
+.article-content .profireader_article_margin_placement_all.profireader_article_margin_size_thin {
+    margin: 1em;
+}
+.article-content .profireader_article_margin_placement_all.profireader_article_margin_size_medium {
+    margin: 2em;
+}
+.article-content .profireader_article_margin_placement_all.profireader_article_margin_size_thick {
+    margin: 4em;
+}
+
+/* paddings */
+
+.article-content .profireader_article_padding_placement_left.profireader_article_padding_size_thin {
+    padding-left: 1em;
+}
+.article-content .profireader_article_padding_placement_left.profireader_article_padding_size_medium {
+    padding-left: 2em;
+}
+.article-content .profireader_article_padding_placement_left.profireader_article_padding_size_thick {
+    padding-left: 4em;
+}
+
+.article-content .profireader_article_padding_placement_right.profireader_article_padding_size_thin {
+    padding-right: 1em;
+}
+.article-content .profireader_article_padding_placement_right.profireader_article_padding_size_medium {
+    padding-right: 2em;
+}
+.article-content .profireader_article_padding_placement_right.profireader_article_padding_size_thick {
+    padding-right: 4em;
+}
+
+.article-content .profireader_article_padding_placement_top.profireader_article_padding_size_thin {
+    padding-top: 1em;
+}
+.article-content .profireader_article_padding_placement_top.profireader_article_padding_size_medium {
+    padding-top: 2em;
+}
+.article-content .profireader_article_padding_placement_top.profireader_article_padding_size_thick {
+    padding-top: 4em;
+}
+
+.article-content .profireader_article_padding_placement_bottom.profireader_article_padding_size_thin {
+    padding-bottom: 1em;
+}
+.article-content .profireader_article_padding_placement_bottom.profireader_article_padding_size_medium {
+    padding-bottom: 2em;
+}
+.article-content .profireader_article_padding_placement_bottom.profireader_article_padding_size_thick {
+    padding-bottom: 4em;
+}
+
+.article-content .profireader_article_padding_placement_all.profireader_article_padding_size_thin {
+    padding: 1em;
+}
+.article-content .profireader_article_padding_placement_all.profireader_article_padding_size_medium {
+    padding: 2em;
+}
+.article-content .profireader_article_padding_placement_all.profireader_article_padding_size_thick {
+    padding: 4em;
+}
