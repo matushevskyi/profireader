@@ -692,7 +692,6 @@ class ArticleCompany(Base, PRBase):
         company = db(PortalDivision, id=portal_division_id).one().portal.own_company
 
         for file_id in filesintext:
-            print(file_id+'dasdas')
             filesintext[file_id] = \
                 File.get(file_id).copy_from_cropped_file().id
 
