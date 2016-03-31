@@ -216,8 +216,8 @@ def load_user(apptype):
 
     # user_dict = {'id': id, 'name': name, 'logged_via': logged_via}
 
-    g.user_init = user_init
     g.user = user
+    g.user_init = user_init
     g.user_dict = user_dict
     g.user_id = user_dict['id']
     if 'language' in session:
