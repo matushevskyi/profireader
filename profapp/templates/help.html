@@ -8,12 +8,18 @@
 <script>
 
     module.controller('info',  function($scope, $ok){
-      angularControllerFunction('UserLoginController', 'set_selected_user_menu')('info');
+      angularControllerFunction('set_selected_user_menu')('info');
       $scope.$$translate = {{ translates('info')|safe }};
       $scope.help_message = '{{ url_for('auth.help_message') }}'
       $scope.data = {{ data | tojson}}
 
+      $scope.isDisabled = false;
+      $scope.disableButton = function() {
+            $scope.isDisabled = true;
+        }
+
       $scope.sendMessage = function(data) {
+          $scope.disableButton()
           return $ok($scope.help_message, {data:data}, function(help_message){
               if (help_message =True) {
                     window.location.href = '{{ url_for('reader.list_reader') }}'
@@ -44,7 +50,7 @@
                 </div>
                 <textarea pr-test="TextInput" class="form-control" rows="4"
                           ng-model='data.message' placeholder="{{ _('Questions and wishes...') }}"></textarea>
-                <button pr-test="SendMessage" class="pull-right" ng-click="sendMessage(data)"
+                <button pr-test="SendMessage" class="pull-right" ng-click="sendMessage(data)" ng-disabled="isDisabled"
                    type="submit">{{ _('Send') }}</button>
             </div>
         </form>
