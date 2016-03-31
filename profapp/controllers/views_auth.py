@@ -164,7 +164,7 @@ def signup():
                     return False
                 elif form.get('password') != form.get('password1'):
                     return False
-        
+
         if db(User, profireader_email=request.form.get('email')).first():
             flash('User with this email already exist')
             return False
