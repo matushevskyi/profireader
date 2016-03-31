@@ -360,7 +360,6 @@ class File(Base, PRBase):
                 for fil in db(File, parent_id=file.id).filter(File.mime != 'image/thumbnail'):
                     files_in_parent.append(fil)
         files_in_parent = files_in_parent[::-1]
-        print(files_in_parent)
         return files_in_parent
 
     @staticmethod
