@@ -2111,27 +2111,29 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
     })
 });
 
-function getGMT(date){
-    console.log(date)
-    var prdate = new Date(date).getTime()
-    var offset = new Date().getTimezoneOffset();
-    console.log(prdate)
-    console.log(offset)
-    var ptTime = new Date(prdate+(offset * 60000))
-    console.log(ptTime)
-    return ptTime
-}
+// function getGMT(date){
+//     console.log(date)
+//     var prdate = new Date(date).getTime()
+//     var offset = new Date().getTimezoneOffset();
+//     console.log(prdate)
+//     console.log(offset)
+//     var ptTime = new Date(prdate+(offset * 60000))
+//     console.log(ptTime)
+//     return ptTime
+// }
 
 
 function getLocalTime(date, needtime){
-    var offset = new Date().getTimezoneOffset();
-    //var da = new Date(date-(offset * 60000))
-    var parsedate = new Date(date)
-    var curr_month = parsedate.getMonth()+1;
+    var monthdict = {1:"January", 2:"February",  3:"March", 4:"April" , 5:"May",
+        6:"June", 7:"July", 8:"August", 9:"September", 10:"October", 11:"November", 12:"December" }
+    var time = new Date(date);
+    // var month = monthdict[time.getMonth() + 1];
+    // var minutes = time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes();
     if(needtime){
-        return parsedate.getFullYear()+'/'+curr_month+'/'+parsedate.getDate()+' '+parsedate.getHours()+':'+parsedate.getMinutes()
+        return time.toLocaleString()
+        // return time.getDate()+' '+month+' '+time.getFullYear()+', '+ time.getHours()+':'+minutes
     }
-    return parsedate.getFullYear()+'/'+curr_month+'/'+parsedate.getDate()
+    return new time.toDateString()
 }
 
 
@@ -2206,14 +2208,6 @@ function highLightSubstring(substring, block, element) {
             $(this).html($(this).html().replace(re, '<span class="search-highlight">' + rex[0] + '</span>'));
         })
     })
-}
-
-//get next page when our scroll in bottom
-function getNextPage(func) {
-    $(window).scroll(function () {
-        if ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
-        }
-    });
 }
 
 function angularControllerFunction(controller_attr, function_name) {

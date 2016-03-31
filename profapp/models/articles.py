@@ -421,10 +421,11 @@ class ArticlePortalDivision(Base, PRBase):
         else:
             portalDivision = PortalDivision.get(self.portal_division_id)
             if portalDivision.portal_division_type_id == 'events':
-                if not self.event_tm:
-                    ret['errors']['event_tm'] = 'Please select event date'
-                elif self.event_tm and datetime.now() > self.event_tm:
-                    ret['warnings']['event_tm'] = 'Event time in past'
+                self.event_tm = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S %Z")
+                # if not self.event_tm:
+                #     ret['errors']['event_tm'] = 'Please select event date'
+                # elif self.event_tm and datetime.now() > self.event_tm:
+                #     ret['warnings']['event_tm'] = 'Event time in past'
 
         if ret['errors']:
             ret['errors']['_'] = 'You have some error'
@@ -881,7 +882,6 @@ class Article(Base, PRBase):
 
     @staticmethod
     def get_image_client_side_dict(article):
-        print(article.image_file_id)
         return article.get_image_cropped_file(Article.logo_file_properties(article),
                                              db(ImageCroped, croped_image_id=article.image_file_id).first())
 
