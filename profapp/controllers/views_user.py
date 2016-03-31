@@ -11,6 +11,7 @@ from ..controllers.request_wrapers import tos_required
 from .request_wrapers import ok
 from config import Config
 from ..models.country import Country
+from flask import session
 
 
 @user_bp.route('/profile/<user_id>')
@@ -80,4 +81,5 @@ def change_language(json):
         g.user.save()
     else:
         print('sdsd')
+        session['language'] = json.get('language')
         g.lang = json.get('language')

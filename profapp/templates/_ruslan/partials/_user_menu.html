@@ -25,7 +25,7 @@
     module.controller('UserLoginController', function ($scope, $uibModal, $ok, $timeout) {
         $scope.user = {{ g.user_dict|tojson|safe }};
         $scope.languages = {{ g.languages|tojson|safe }}
-                console.log($scope.languages)
+        $scope.lang = {{ g.lang|tojson|safe }}
         $scope.tos = function () {
             if (!$scope.user.id || $scope.user.tos) {
                 return;
@@ -128,7 +128,7 @@
 
                         <li class="dropdown"><a class="dropbtn" title="{{ _('Мова') }}"><i class="fa fa-language"></i></a>
                         <div class="dropdown-content">
-                            <a ng-repeat="lang in languages" ng-class="{'selected': lang.name == user.lang}" style="cursor: pointer" ng-click="changeLanguage(lang.name)">{{ lang.display }}</a>
+                            <a ng-repeat="language in languages" ng-class="{'selected': language.name == lang}" style="cursor: pointer" ng-click="changeLanguage(language.name)">{{language.display}}</a>
                           </div>
                         </li>
 

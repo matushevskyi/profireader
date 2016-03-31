@@ -2,7 +2,7 @@ import hashlib
 import re
 import json
 
-from flask import Flask, g, request, current_app
+from flask import Flask, g, request, current_app, session
 from beaker.middleware import SessionMiddleware
 from authomatic import Authomatic
 from profapp.utils.redirect_url import url_page
@@ -23,7 +23,7 @@ from .constants.SOCIAL_NETWORKS import INFO_ITEMS_NONE, SOC_NET_FIELDS
 from .constants.USER_REGISTERED import REGISTERED_WITH
 from .models.users import User
 from .models.config import Config
-from config import Config as Configur
+from config import Config as Configure
 from profapp.controllers.errors import BadDataProvided
 from .models.translate import TranslateTemplate
 from .models.tools import HtmlHelper
@@ -220,8 +220,12 @@ def load_user(apptype):
     g.user = user
     g.user_dict = user_dict
     g.user_id = user_dict['id']
-    g.lang = user.lang if user else 'uk'
-    g.languages = Configur.LANGUAGES
+    if 'language' in session:
+        lang = session['language']
+    else:
+        lang = 'uk'
+    g.lang = user.lang if user else lang
+    g.languages = Configure.LANGUAGES
     g.portal = None
     g.portal_id = None
     g.portal_layout_path = ''
@@ -299,6 +303,7 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
 
 @jinja2.contextfunction
 def localtime(value):
+    print(value)
     return Markup("<script> document.write(prFormatDate('{}')) </script><noscript>{}</noscript>".format(value, value))
 
 @jinja2.contextfunction
