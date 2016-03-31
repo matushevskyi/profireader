@@ -56,7 +56,6 @@ def edit_profile_load(json, user_id):
         ret['user']['avatar'] = g.user.get_avatar_client_side_dict()
         return ret
     else:
-        print(json)
         g.user.updates(json['user'])
         if action == 'validate':
             g.user.detach()
@@ -75,11 +74,9 @@ def edit_profile_load(json, user_id):
 @user_bp.route('/change_lang', methods=['POST'])
 @ok
 def change_language(json):
-    print(json)
     if g.user:
         g.user.lang = json.get('language')
         g.user.save()
     else:
-        print('sdsd')
         session['language'] = json.get('language')
         g.lang = json.get('language')

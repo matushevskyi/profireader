@@ -177,9 +177,7 @@ def setup_authomatic(app):
 
 
 def load_user(apptype):
-    user_init = current_user
     user = None
-
     user_dict = INFO_ITEMS_NONE.copy()
     user_dict['logged_via'] = None
     user_dict['birth_tm'] = None
@@ -187,12 +185,10 @@ def load_user(apptype):
     user_dict['lang'] = 'uk'
     #  ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
 
-
-
-    if user_init.is_authenticated():
+    if current_user.is_authenticated():
         from profapp.models.users import User
 
-        id = user_init.get_id()
+        id = current_user.get_id()
         # user = g.db.query(User).filter_by(id=id).first()
         user = current_user
         logged_via = REGISTERED_WITH[user.logged_in_via()]
@@ -212,14 +208,8 @@ def load_user(apptype):
         user_dict['registered_tm'] = user.registered_tm
         user_dict['lang'] = user.lang
         user_dict['tos'] = user.tos
-        # name = user.user_name
 
-    # user_dict = {'id': id, 'name': name, 'logged_via': logged_via}
-
-    g.user_init = user_init
     g.user = user
-    g.user_dict = user_dict
-    g.user_id = user_dict['id']
     if 'language' in session:
         lang = session['language']
     else:
@@ -303,7 +293,6 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
 
 @jinja2.contextfunction
 def localtime(value):
-    print(value)
     return Markup("<script> document.write(prFormatDate('{}')) </script><noscript>{}</noscript>".format(value, value))
 
 @jinja2.contextfunction
@@ -505,7 +494,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
             g.portal = portal
             g.portal_id = portal.id
             g.portal_layout_path = portal.layout.path
-            g.lang = g.portal.lang if g.portal else g.user_dict['lang']
+            g.lang = g.portal.lang if g.portal else g.user.lang
 
         app.before_request(load_portal)
         from profapp.controllers.blueprints_register import register_front as register_blueprints_front

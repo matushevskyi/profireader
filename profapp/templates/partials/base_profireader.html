@@ -1,7 +1,7 @@
 <script>
 
     module.controller('UserLoginController', ['$scope', '$uibModal', '$ok', '$timeout', function ($scope, $uibModal, $ok, $timeout) {
-        $scope.user = {{ g.user_dict|tojson|safe }};
+        $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
         $scope.tos = function () {
             var accepted = $scope.user.tos;
             if (accepted != true) {
@@ -65,7 +65,7 @@
                                     {#                        <img src="{{ current_user.profireader_small_avatar_url }}" style="width:18px;border:0">#}
                                     {#TODO: AA by OZ: in next line http://bla-bla/None (404 error) if no user loged in #}
                                     <img class="person-small-cover" src="{{ current_user.profireader_small_avatar_url }}">
-                                    {{ '{{' }} user.name {{ '}}' }}
+                                    {{ '{{' }} user.profireader_name {{ '}}' }}
                                     <b class="caret"></b>
                                 </a>
                                 <ul class="dropdown-menu">

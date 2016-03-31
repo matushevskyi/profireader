@@ -28,7 +28,7 @@ EMAIL_REGEX = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
 
 def login_signup_general(*soc_network_names):
-    if g.user_init and g.user_init.is_authenticated():
+    if current_user.is_authenticated():
         flash('You are already logged in. Logout first to login as another user.')
         return redirect(redirect_url())
 
@@ -128,7 +128,7 @@ def unconfirmed():
 @auth_bp.route('/login_signup/', methods=['GET'])
 def login_signup_endpoint():
     # if g.user_init and g.user_init.is_authenticated():
-    if g.user_init.is_authenticated():
+    if current_user.is_authenticated():
         if session.get('portal_id'):
             return redirect(url_for('reader.reader_subscribe', portal_id=session['portal_id']))
         elif session.get('back_to'):
@@ -145,7 +145,7 @@ def login_signup_endpoint():
 @auth_bp.route('/signup/', methods=['POST'])
 def signup():
     # if g.user_init and g.user_init.is_authenticated():
-    if g.user_init.is_authenticated():
+    if current_user.is_authenticated():
         # raise BadDataProvided
         flash('You are already logged in. To sign up Profireader with new account you should logout first')
         return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=signup')
@@ -227,7 +227,7 @@ def login():
     # portal_id = request.args.get('subscribe', None)
     portal_id = session.get('portal_id')
     back_to = session.get('back_to')
-    if g.user_init.is_authenticated():
+    if current_user.is_authenticated():
         if portal_id:
             session.pop('portal_id')
             return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))

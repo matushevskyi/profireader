@@ -138,7 +138,7 @@ def add_delete_like(json):
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
 @tos_required
 def reader_subscribe(portal_id):
-    user_dict = g.user_dict
+    user_dict = g.user.get_client_side_dict()
     portal = Portal.get(portal_id)
     if not portal:
         raise BadDataProvided
@@ -163,7 +163,7 @@ def reader_subscribe(portal_id):
 @tos_required
 @ok
 def reader_subscribe_registered(json):
-    user_dict = g.user_dict
+    user_dict = g.user.get_client_side_dict()
     portal_id = json['portal_id']
     portal = Portal.get(portal_id)
     if not portal:

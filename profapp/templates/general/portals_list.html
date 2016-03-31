@@ -14,7 +14,7 @@
             $scope.search_text = '';
             $scope.scroll_data = {};
             $scope.subscribe = function (portal_id) {
-                {% if g.user_id %}
+                {% if g.user.id %}
                     $ok('{{ url_for('reader.reader_subscribe_registered')|safe }}', {portal_id: portal_id}, function (resp) {
                         if (resp) {
                             _.map($scope.data, function (portal) {

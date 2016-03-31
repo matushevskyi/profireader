@@ -15,7 +15,7 @@
     <script>
         module.controller('CompanyProfile', function ($scope, $timeout) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');
-            $scope.user = {{g.user_dict | tojson | safe}};
+            $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
             $scope.$$translate = {{translates('CompanyProfile') | safe}};
             $scope.cropper_for_copmany = true;
             $scope.user_have_company = true;
