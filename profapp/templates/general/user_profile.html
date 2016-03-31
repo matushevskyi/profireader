@@ -35,7 +35,7 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Birthday:') }}</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ moment(user.birth_tm).format('DD/MM/YYYY') }}</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ moment(user.birth_tm, 'dddd, LL') }}</div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Gender:') }}</div>
@@ -64,7 +64,8 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Member since:') }}</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ moment(user.registered_tm).format('L') }}</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ moment(user.registered_tm, 'dddd, LL
+                             hh:mm') }}</div>
                         </div>
                     </div>
                 </div>
@@ -75,7 +76,3 @@
 
 {% endblock portal_content %}
 
-{% block scripts %}
-    {{ super() }}
-    {{ moment.include_moment() }}
-{% endblock %}

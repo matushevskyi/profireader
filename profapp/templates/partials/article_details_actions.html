@@ -5,7 +5,7 @@
     </div>
 
     <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"><i
-            class="fa fa-calendar"> {{ localtime(article['publishing_tm']|safe) }}</i></div>
+            class="fa fa-calendar"> {{ moment(article['publishing_tm']) }}</i></div>
 
     <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"><i
             class="fa fa-paw"> <span>{{ _('Readers') }}</span> {{ article['read_count'] }}</i></div>

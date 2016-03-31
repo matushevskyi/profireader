@@ -339,6 +339,8 @@ class ArticlePortalDivision(Base, PRBase):
             companies[article.company.id] = article.company.name
         return companies
 
+# TODO: SS by OZ: contition `if datetime(*localtime[:6]) > article['publishing_tm']:` should be checked by sql (passed
+# to search function)
     @staticmethod
     def get_list_reader_articles(articles):
         list_articles = []

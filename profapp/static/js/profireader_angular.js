@@ -792,72 +792,64 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             }
         };
     })
-    .directive('prDateTimepicker', function ($timeout) {
+    .directive('prDateTimePicker', function ($timeout) {
         return {
             require: 'ngModel',
             restrict: 'A',
             scope: {
                 ngModel: '=',
-                prElementClass: '='
             },
-            link: function (scope, element, attrs, model) {
+            link: function (scope, element, attrs, ngModelController) {
 
-                $.datetimepicker.setDateFormatter({
-                    parseDate: function (date, format) {
-                        console.log(date, format);
-                    },
+                var format = (attrs['prDt']?attrs['prDt']:'dddd, LL hh:mm');
+                element.addClass("pr-datetimepicker");
 
-                    formatDate: function (date, format) {
-                        console.log(date, format);
-                    }
-                });
+                ngModelController.$formatters = [function (d) {
+                    return moment(d).format(format);
+                }];
 
-                $('<input style="width: 0px; height: 0px; padding: 0px; margin: 0px; border: 0px; visibility: hidden"' +
-                    ' class="holderforjquerydatepicker"/>').insertAfter($(element));
+                element.datetimepicker({
+                    locale: window._LANG,
+                    format: format,
 
-                scope.$watch('ngModel', function (nv, ov) {
-                    scope.setdate = scope['ngModel'];
-                });
-                var property = {
-                    value: '2013/03/22',
-                    onChangeDateTime: function (dp, $input) {
+                }).on("dp.change", function (e) {
+                    $timeout(function () {
+                        scope['ngModel'] = e.date.toISOString();
+                    },0)
 
-                        $timeout(function () {
-                            scope['ngModel'] = $input.val();
-                        }, 0)
-                    }
-                    //formatter: '',
-                }
-                //minDate:'-1970/01/02',//yesterday is minimum date(for today use 0 or -1970/01/01)
-                //maxDate:'+1970/01/02'//tomorrow is maximum date calendar
-
-                property['startDate'] = '+1971/05/01';
-                if (attrs['prMode']) {
-                    property['timepicker'] = attrs['prMode'] === 'time' ? true : false
-                    property['datepicker'] = attrs['prMode'] === 'date' ? true : false
-                }
-                //$timeout(function() {
-                //    scope['ngModel'] = getGMT(scope['ngModel']);
-                //}, 500)
-
-                //var offset = new Date().getTimezoneOffset();
-                //scope['ngModel']
-                //new Date(date-(offset * 60000))
-                //$timeout(function(){
-                //    var dd = new Date(scope['ngModel']).getTime();
-                //    scope['ngModel'] = property['timepicker'] || !attrs['prMode']?getLocalTime(dd, true):getLocalTime(dd)
-                //}, 500);
-
-                console.log(property);
-                var placeholder = $(element).nextAll('.holderforjquerydatepicker');
-                placeholder.datetimepicker(property);
-                $(element).click(function () {
-                    placeholder.datetimepicker('show');
                 })
 
-                if (attrs["prElementClass"]) {
-                    element.addClass(attrs["prElementClass"])
-                }
+            }
+
+        }
+    }).directive('prDatePicker', function ($timeout) {
+        return {
+            require: 'ngModel',
+            restrict: 'A',
+            scope: {
+                ngModel: '=',
+            },
+            link: function (scope, element, attrs, ngModelController) {
+
+                var format = (attrs['prDatePicker']?attrs['prDatePicker']:'dddd, LL');
+                element.addClass("pr-datetimepicker");
+
+                ngModelController.$formatters = [function (d) {
+                    return moment(d).format(format);
+                }];
+
+                element.datetimepicker({
+                    locale: window._LANG,
+                    format: format,
+
+                }).on("dp.change", function (e) {
+                    $timeout(function () {
+                        console.log(scope['ngModel']);
+                        // scope['ngModel'] = moment(e.date).format();
+                    },0)
+
+                })
+
             }
 
         }
@@ -2151,13 +2143,15 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 // }
 
 
-function getLocalTime(date, needtime){
-    var monthdict = {1:"January", 2:"February",  3:"March", 4:"April" , 5:"May",
-        6:"June", 7:"July", 8:"August", 9:"September", 10:"October", 11:"November", 12:"December" }
+function getLocalTime(date, needtime) {
+    var monthdict = {
+        1: "January", 2: "February", 3: "March", 4: "April", 5: "May",
+        6: "June", 7: "July", 8: "August", 9: "September", 10: "October", 11: "November", 12: "December"
+    }
     var time = new Date(date);
     // var month = monthdict[time.getMonth() + 1];
     // var minutes = time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes();
-    if(needtime){
+    if (needtime) {
         return time.toLocaleString()
         // return time.getDate()+' '+month+' '+time.getFullYear()+', '+ time.getHours()+':'+minutes
     }

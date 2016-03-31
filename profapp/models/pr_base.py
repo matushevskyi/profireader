@@ -603,6 +603,8 @@ class PRBase:
         if isinstance(object_property, datetime.datetime):
             return object_property.replace(object_property.year, object_property.month, object_property.day,
                                            object_property.hour, object_property.minute, object_property.second, 0)
+        elif isinstance(object_property, datetime.date):
+            return "{}-{}-{}".format(object_property.year, object_property.month, object_property.day)
         elif isinstance(object_property, dict):
             return object_property
         else:
