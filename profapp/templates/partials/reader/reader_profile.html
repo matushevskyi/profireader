@@ -89,7 +89,7 @@ module.controller('grid_reader', function ($scope, $uibModal, $ok, $sce, uiGridC
         </div>
         <a ng-show="!areAllEmpty(datas.grid_data)" class="btn btn-danger"
            ng-class="{'disabled': ( isSelectedRows === false )}" style="text-align: center"
-           ng-click="showModalDelete()">Delete selected rows</a>
+           ng-click="showModalDelete()"><div>{{ _('Delete selected rows') }}</div></a>
     </div>
 {% endraw %}
 {% endblock portal_content %}

@@ -290,7 +290,7 @@
                      ng-model="data.article.tags"></div>
 
                 <div class="update_col1">
-                    *Всі поля обов'язкові до заповнення
+                    *All fields are required
                     <button  ng-disabled="!$af.isActionAllowed(data, 'save')"
                             ng-click="$af.save(data)">&nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;{{
                         data.article.id ? _('save') : _('create') }}
