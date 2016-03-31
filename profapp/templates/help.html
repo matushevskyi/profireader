@@ -12,6 +12,7 @@
       $scope.$$translate = {{ translates('info')|safe }};
       $scope.help_message = '{{ url_for('auth.help_message') }}'
       $scope.data = {{ data | tojson}}
+              console.log($scope.data)
 
       $scope.isDisabled = false;
       $scope.disableButton = function() {
@@ -45,8 +46,8 @@
                 <input pr-test="EmailInput" type="email" class="form-control" placeholder="Email"
                        ng-model="data.email" name="profireader_email"
                        ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/">
-                <div ng-show="formHelp.profireader_email.$error.pattern" class="error-input">The
-                    email not validate!
+                <div ng-show="formHelp.profireader_email.$error.pattern" class="error-input">{{ _('The
+                        email not validate!') }}
                 </div>
                 <textarea pr-test="TextInput" class="form-control" rows="4"
                           ng-model='data.message' placeholder="{{ _('Questions and wishes...') }}"></textarea>

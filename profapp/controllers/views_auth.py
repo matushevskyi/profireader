@@ -80,7 +80,7 @@ def login_signup_general(*soc_network_names):
                     return redirect(url_for('general.index'))
 
                 login_user(user)
-                flash('You have successfully logged in.')
+                flash('You have successfully logged in!!!!', 'danger')
 
                 # session['user_id'] = user.id assignment
                 # is automatically executed by login_user(user)
@@ -374,7 +374,7 @@ def password_reset_change(token):
     user = g.db.query(User).\
         filter_by(profireader_email=request.form.get('email')).first()
     if user.pass_reset_token != token:
-        flash('Your put wrong email.')
+        flash('You put wrong email.')
         return redirect(url_for('auth.password_resets'))
     def check_fields():
         form = request.form
