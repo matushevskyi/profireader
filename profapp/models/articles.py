@@ -16,7 +16,7 @@ from sqlalchemy.sql import or_, and_
 import re
 from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 from flask import redirect, url_for
 from .files import ImageCroped
@@ -48,7 +48,7 @@ class ArticlePortalDivision(Base, PRBase):
     status = Column(TABLE_TYPES['status'], default='SUBMITTED')
     STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED'}
 
-    visibility = Column(TABLE_TYPES['status'], default='REGISTERED')
+    visibility = Column(TABLE_TYPES['status'], default='OPEN')
     like_count = Column(TABLE_TYPES['int'], default=0)
     VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
 
@@ -412,20 +412,20 @@ class ArticlePortalDivision(Base, PRBase):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
-        print(self.publishing_tm)
 
-        if not self.publishing_tm:
-            ret['errors']['publishing_tm'] = 'Please select publication date'
-
+        # if not self.publishing_tm:
+        #     ret['errors']['publishing_tm'] = 'Please select publication date'
+        self.publishing_tm = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S %Z")
         if not self.portal_division_id:
             ret['errors']['portal_division_id'] = 'Please select portal division'
         else:
             portalDivision = PortalDivision.get(self.portal_division_id)
             if portalDivision.portal_division_type_id == 'events':
-                if not self.event_tm:
-                    ret['errors']['event_tm'] = 'Please select event date'
-                elif self.event_tm and datetime.now() > self.event_tm:
-                    ret['warnings']['event_tm'] = 'Event time in past'
+                self.event_tm = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S %Z")
+                # if not self.event_tm:
+                #     ret['errors']['event_tm'] = 'Please select event date'
+                # elif self.event_tm and datetime.now() > self.event_tm:
+                #     ret['warnings']['event_tm'] = 'Event time in past'
 
         if ret['errors']:
             ret['errors']['_'] = 'You have some error'
@@ -694,10 +694,8 @@ class ArticleCompany(Base, PRBase):
 
         for file_id in filesintext:
             filesintext[file_id] = \
-                File.get(file_id).copy_file(company_id=company.id,
-                                            root_folder_id=company.system_folder_file_id,
-                                            parent_id=company.system_folder_file_id,
-                                            article_portal_division_id=article_portal_division.id).save().id
+                File.get(file_id).copy_from_cropped_file().id
+
 
         if self.image_file_id:
             article_portal_division.image_file_id = filesintext[self.image_file_id]

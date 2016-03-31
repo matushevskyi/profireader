@@ -87,14 +87,13 @@
                                 type="radio"> {{ division.name }}
                     </label>
                 </div>
-                {{ _('Select publication date') }}<span
+             <!--   {{ _('Select publication date') }}<span
                     ></span><br/>
-                {{ data.publication.publishing_tm }}
                 <input pr-date-timepicker ng-model="data.publication.publishing_tm" pr-element-class="form-control" style="width: 15em;" placeholder="mm/dd/yyyy">
                 <div ng-if="is_selection_division_event()">
                     {{ _('Select event date') }}<span af-validation-answer="data_validation:event_tm"></span><br/>
                     <input pr-date-timepicker ng-model="data.publication.publishing_tm" pr-element-class="form-control" style="width: 15em;" placeholder="mm/dd/yyyy">
-                </div>
+                </div>-->
                 <div ng-if="object_name === 'material'">
                     <hr/>
                     <label ng-class="{disabled: !data.can_material_also_be_published}"><input
