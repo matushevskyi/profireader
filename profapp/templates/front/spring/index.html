@@ -35,9 +35,21 @@
 </head>
 
 <body>
-
-!!!
-
+<div class="container-fluid portal-body">
+        {% include 'header.html' %}
+    <div class="row content-block">
+        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
+            {% include 'menu_portal.html' %}
+        </div>
+        <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8">
+            {% include 'news.html' %}
+        </div>
+        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
+            {% include 'advertising.html' %}
+        </div>
+    </div>
+ {% include 'footer.html' %}
+</div>
 
 </body>
 </html>
