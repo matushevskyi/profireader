@@ -22,9 +22,11 @@
             $scope.data = {};
 
             {% if publication_id %}
+                $scope.see = 'see_publication';
                 $scope.title = 'Update publication at portal `%(data.article.portal.name)s` in division `%(data.article.division.name)s`';
             {% else %}
                 {% if material_id %}
+                    $scope.see = 'see_material';
                     $scope.title = 'Update material';
                 {% else%}
                     $scope.title = 'Create new material';
@@ -40,6 +42,14 @@
                 add_message($scope._('article was saved'), 'info', 3000);
 
             };
+
+            $scope.goToArticle = function(article){
+                if($scope.see === 'see_material'){
+                    window.location.href = {{ raw_url_for('article.material_details')|safe }}({material_id: article.id})
+                }else if($scope.see === 'see_publication'){
+                    window.location.href = ('//' + article.portal.host + {{ raw_url_for('front.details')|safe }}({article_portal_division_id: article.id}))
+                }
+            }
 
             $scope.getData = function (model, deff) {
                 model.portal_division.insert_after = model.portal_division.positioned_articles[model.portal_division.current].id;
@@ -233,7 +243,7 @@
     {% raw %}
 
     <div ng-init="init()" ng-controller="article_edit" ng-cloak class="create-material">
-    <div class="row link-page create-new-material"><h5>{{ _(title) }}</h5></div></br>
+    <div class="row link-page create-new-material"><h5>{{ _(title) }}</h5></div><button ng-click="goToArticle(data.article)" ng-if="see">{{ _(see) }}</button></br>
         <form name="newMaterial">
             <!-- <h1 class="nice-title">{{ _(title) }}<span></span></h1> -->
 

@@ -672,7 +672,6 @@ class File(Base, PRBase):
         if not image_cropped:
             # if article have no record in ImageCroped table we
             # create one with copied file as `original file for croping`
-            print(self.id)
             new_cropped_from_file = File.get(self.id).copy_file(self.parent_id)
             image_pil = Image.open(BytesIO(new_cropped_from_file.file_content.content))
             image_cropped = ImageCroped(original_image_id=new_cropped_from_file.id,
