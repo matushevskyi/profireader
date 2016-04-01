@@ -10,7 +10,9 @@
   min-height: 100vh;
 }
 .search-block {
-  margin-top: 15px;
+  padding-top: 15px;
+  background-color: #FCFCFC;
+  padding-bottom: 15px;
 }
 .search-block input {
   border-radius: 0;
@@ -25,7 +27,7 @@
 }
 .search-block i {
   background-color: #FF5963;
-  padding: 10px;
+  padding: 10px 22px;
   color: #fff;
 }
 .search-block .icon-search {
@@ -42,7 +44,11 @@
 .left-menu {
   color: #fff;
   background-color: #ff5252;
-  height: 92vh;
+  height: 100%;
+  position: fixed;
+  overflow-y: auto;
+  width: 227px;
+  z-index: 100;
 }
 .left-menu a {
   display: block;
@@ -79,6 +85,7 @@
   box-shadow: 0 -3px 4px -2px rgba(0, 0, 0, 0.5);
 }
 .news-block {
+  margin-left: 30px;
   box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
   margin-bottom: 30px;
   padding: 0;
@@ -89,13 +96,27 @@
   background-position-x: center;
   background-position-y: center;
   padding: 50%;
+  background-size: cover;
+}
+.news-block .publications:hover {
+  background-color: rgba(255, 82, 82, 0.61);
+  background-blend-mode: color-dodge;
+  transition: all 0.2s ease-out;
 }
 .news-block .content-in-block {
   background-color: rgba(0, 0, 0, 0.75);
   padding: 10px;
-  margin-top: -27%;
+  margin-top: -21%;
   min-height: 80px;
   max-height: 80px;
   color: #FFFFFF;
+}
+.news-content {
+  margin-bottom: 100px;
+  width: 100%;
+  padding-left: 227px;
+}
+.advertising-block {
+  background-color: #0a4b3e;
 }
 /*# sourceMappingURL=style.css.map */

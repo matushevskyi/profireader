@@ -38,14 +38,12 @@
 <div class="container-fluid portal-body">
         {% include 'header.html' %}
     <div class="row content-block">
-        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
+        <div>
             {% include 'menu_portal.html' %}
         </div>
-        <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8">
+        <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8 news-content">
             {% include 'news.html' %}
-        </div>
-        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
-            {% include 'advertising.html' %}
+{#            {% include 'advertising.html' %}#}
         </div>
     </div>
  {% include 'footer.html' %}
