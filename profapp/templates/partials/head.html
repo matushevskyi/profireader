@@ -40,5 +40,5 @@
 <script src="//static.profireader.com/static/js/front.js"></script>
 
 <script src="//static.profireader.com/static/new/moment/moment.min.js"></script>
-<script src="//static.profireader.com/static/new/moment/uk.js"></script>
+{% if g.lang != 'en' %}<script src="//static.profireader.com/static/new/moment/{{ g.lang }}.js"></script>{% endif %}
 
