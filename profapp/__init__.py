@@ -306,19 +306,22 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
 
 def moment(value, out_format = None):
     if isinstance(value, datetime.datetime):
-        value = value.strftime("%a, %d %b %Y %H:%M:%S %Z")
+
+        value = value.isoformat(' ') + ' GMT'
         return Markup(
             "<script> document.write(moment(new Date('{}')).format('{}')) </script><noscript>{}</noscript>".format(
-                value, out_format if out_format else 'dddd, LL hh:mm', value))
+                value, out_format if out_format else 'dddd, LL (HH:mm)', value))
     elif isinstance(value, datetime.date):
+        print(2)
         value = value.strftime('%Y-%m-%d')
         return Markup(
             "<script> document.write(moment('{}').format('{}')) </script><noscript>{}</noscript>".format(
                 value, out_format if out_format else 'dddd, LL', value))
     else:
+        print(3)
         return Markup(
             "<script> document.write(moment(new Date('{}')).format('{}')) </script><noscript>{}</noscript>".format(
-                value, out_format if out_format else 'dddd, LL hh:mm', value))
+                value, out_format if out_format else 'dddd, LL (HH:mm)', value))
 
 
 @jinja2.contextfunction
