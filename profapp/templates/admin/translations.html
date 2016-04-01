@@ -9,19 +9,19 @@
 
 
     <script type="text/ng-template" id="translation_tinymce.html">
-            <div class="modal-header"><h3 class="modal-title">Edit translate with HTML tag!</h3></div>
+            <div class="modal-header"><h3 class="modal-title">{{ _('Edit translate with HTML tag!') }}</h3></div>
             <div class="modal-body"><textarea class='modal-content' ui-tinymce="tinymceImageOptions"
                                               ng-model='EdittextWithHtml'></textarea></div>
             <div class="modal-footer">
-                <button id='buttonDelete' class='btn btn-warning' ng-click='save()'>Save</button>
-                <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+                <button id='buttonDelete' class='btn btn-warning' ng-click='save()'>{{ _('Save') }}</button>
+                <button class="btn btn-warning" ng-click="cancel()">{{ _('Cancel') }}</button>
             </div>
     </script>
     <script type="text/ng-template" id="delete_translation.html">
-        <div class='modal-header'><h4>Do you want delete this rows?</h4></div>
+        <div class='modal-header'><h4>{{ _('Do you want delete this rows?') }}</h4></div>
         <div class='modal-footer'>
-            <button id='buttonDelete' class='btn btn-warning' ng-click='deleteItems()'>Delete</button>
-            <button id='buttonClose' class='btn btn-primary' ng-click='cancel()'>Close</button>
+            <button id='buttonDelete' class='btn btn-warning' ng-click='deleteItems()'>{{ _('Delete') }}</button>
+            <button id='buttonClose' class='btn btn-primary' ng-click='cancel()'>{{ _('Close') }}</button>
         </div>
     </script>
 
