@@ -75,6 +75,48 @@ function resolveDictForAngularController(dict) {
     }))
 }
 
+var prDatePicker_and_DateTimePicker = function (name, $timeout) {
+            return {
+                require: 'ngModel',
+                restrict: 'A',
+                scope: {
+                    ngModel: '=',
+                },
+                link: function (scope, element, attrs, ngModelController) {
+
+                    var defformat = (name === 'prDatePicker') ? 'dddd, LL' : 'dddd, LL HH:mm';
+
+                    var format = (attrs[name] ? attrs[name] : defformat);
+                    element.addClass((name === 'prDatePicker') ? "pr-datepicker" : "pr-datetimepicker");
+
+                    ngModelController.$formatters = [function (d) {
+                        var m = moment(d);
+                        return m.isValid() ? m.format(format) : "";
+                    }];
+
+                    scope.$watch('ngModel', function (newdate, olddate) {
+                        element.data("DateTimePicker").date(newdate ? moment(newdate) : null);
+                    });
+
+                    element.datetimepicker({
+                        locale: window._LANG,
+                        keepInvalid: true,
+                        useCurrent: false,
+                        format: format
+                    }).on("dp.change", function (e) {
+                        $timeout(function () {
+                            scope['ngModel'] = e.date?
+                                ((name === 'prDatePicker') ? moment(e.date).format('YYYY-MM-DD') : e.date.toISOString()):
+                            null;
+                        }, 0)
+
+                    })
+
+                }
+
+            }
+        }
+
 angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip'])
     .factory('$publish', ['$http', '$uibModal', function ($http, $uibModal) {
         return function (dict) {
@@ -793,66 +835,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
         };
     })
     .directive('prDateTimePicker', function ($timeout) {
-        return {
-            require: 'ngModel',
-            restrict: 'A',
-            scope: {
-                ngModel: '=',
-            },
-            link: function (scope, element, attrs, ngModelController) {
-
-                var format = (attrs['prDt']?attrs['prDt']:'dddd, LL hh:mm');
-                element.addClass("pr-datetimepicker");
-
-                ngModelController.$formatters = [function (d) {
-                    return moment(d).format(format);
-                }];
-
-                element.datetimepicker({
-                    locale: window._LANG,
-                    format: format,
-
-                }).on("dp.change", function (e) {
-                    $timeout(function () {
-                        scope['ngModel'] = e.date.toISOString();
-                    },0)
-
-                })
-
-            }
-
-        }
+        return prDatePicker_and_DateTimePicker('prDateTimePicker', $timeout);
     }).directive('prDatePicker', function ($timeout) {
-        return {
-            require: 'ngModel',
-            restrict: 'A',
-            scope: {
-                ngModel: '=',
-            },
-            link: function (scope, element, attrs, ngModelController) {
-
-                var format = (attrs['prDatePicker']?attrs['prDatePicker']:'dddd, LL');
-                element.addClass("pr-datetimepicker");
-
-                ngModelController.$formatters = [function (d) {
-                    return moment(d).format(format);
-                }];
-
-                element.datetimepicker({
-                    locale: window._LANG,
-                    format: format,
-
-                }).on("dp.change", function (e) {
-                    $timeout(function () {
-                        console.log(scope['ngModel']);
-                        // scope['ngModel'] = moment(e.date).format();
-                    },0)
-
-                })
-
-            }
-
-        }
+        return prDatePicker_and_DateTimePicker('prDatePicker', $timeout);
     })
     .directive('prDatepicker', function () {
         return {

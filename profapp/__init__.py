@@ -29,6 +29,7 @@ from .models.translate import TranslateTemplate
 from .models.tools import HtmlHelper
 from .models.pr_base import MLStripper
 import os.path
+import datetime
 from profapp.utils import fileUrl
 
 from flask.sessions import SessionInterface
@@ -182,7 +183,6 @@ def load_user(apptype):
 
     user_dict = INFO_ITEMS_NONE.copy()
     user_dict['logged_via'] = None
-    user_dict['birth_tm'] = None
     user_dict['registered_tm'] = None
     user_dict['lang'] = 'uk'
     #  ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
@@ -304,10 +304,22 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
                     translate_phrase_or_html(context, 'help tooltip ' + phrase, None, '*')) + '\'"></span>')
 
 
-def moment(value, format):
+def moment(value, out_format = None):
+    if isinstance(value, datetime.datetime):
+        value = value.strftime("%a, %d %b %Y %H:%M:%S %Z")
+        return Markup(
+            "<script> document.write(moment(new Date('{}')).format('{}')) </script><noscript>{}</noscript>".format(
+                value, out_format if out_format else 'dddd, LL hh:mm', value))
+    elif isinstance(value, datetime.date):
+        value = value.strftime('%Y-%m-%d')
+        return Markup(
+            "<script> document.write(moment('{}').format('{}')) </script><noscript>{}</noscript>".format(
+                value, out_format if out_format else 'dddd, LL', value))
+    else:
+        return Markup(
+            "<script> document.write(moment(new Date('{}')).format('{}')) </script><noscript>{}</noscript>".format(
+                value, out_format if out_format else 'dddd, LL hh:mm', value))
 
-    return Markup("<script> document.write(moment(new Date({})).format('{}')) </script><noscript>{}</noscript>".format(
-        value, format if format else 'dddd, LL hh:mm', value))
 
 @jinja2.contextfunction
 def nl2br(value):

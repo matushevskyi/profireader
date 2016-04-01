@@ -66,7 +66,6 @@
         <div class="item-additional-info">
             <a href="{{ url_for('front.subportal', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}"
                class="item-company">{{ article['company']['name']|safe }}</a>
-            {{ article['publishing_tm'] }}
             <div class="item-publication-date">{{ moment(article['publishing_tm']) }}</div>
             <div><br>
                 <script type="text/javascript">getSearchBlock({{ article|tojson }})</script>
