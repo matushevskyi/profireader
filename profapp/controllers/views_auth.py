@@ -80,7 +80,8 @@ def login_signup_general(*soc_network_names):
                     return redirect(url_for('general.index'))
 
                 login_user(user)
-                flash('You have successfully logged in!!!!', 'danger')
+                flash('You have successfully logged in!', 'success')
+
 
                 # session['user_id'] = user.id assignment
                 # is automatically executed by login_user(user)
@@ -320,20 +321,20 @@ def help_message(json):
         return True
 
 
-@auth_bp.route('/change-password', methods=['GET', 'POST'])
-@login_required
-def change_password():
-    form = ChangePasswordForm()
-    if form.validate_on_submit():
-        if current_user.verify_password(form.old_password.data):
-            current_user.password = form.password.data
-            g.db.add(current_user)
-            g.db.commit()
-            flash('Your password has been updated.')
-            return redirect(url_for('general.index'))
-        else:
-            flash('Invalid password.')
-    return render_template("auth/change_password.html", form=form)
+# @auth_bp.route('/change-password', methods=['GET', 'POST'])
+# @login_required
+# def change_password():
+#     form = ChangePasswordForm()
+#     if form.validate_on_submit():
+#         if current_user.verify_password(form.old_password.data):
+#             current_user.password = form.password.data
+#             g.db.add(current_user)
+#             g.db.commit()
+#             flash('Your password has been updated.')
+#             return redirect(url_for('general.index'))
+#         else:
+#             flash('Invalid password.')
+#     return render_template("auth/change_password.html", form=form)
 
 @auth_bp.route('/reset_password', methods=['GET'])
 def password_resets():
