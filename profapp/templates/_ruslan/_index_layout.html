@@ -80,7 +80,7 @@
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-touch.js"></script>
 
     <script src="//static.profireader.com/static/new/moment/moment.min.js"></script>
-    <script src="//static.profireader.com/static/new/moment/uk.js"></script>
+    {% if g.lang != 'en' %}<script src="//static.profireader.com/static/new/moment/{{ g.lang }}.js"></script>{% endif %}
     <script type="text/javascript"  src="//static.profireader.com/static/new/eonasdan-bootstrap-datetimepicker/bootstrap-datetimepicker.min.js"></script>
     <link rel="stylesheet"          href="//static.profireader.com/static/new/eonasdan-bootstrap-datetimepicker/bootstrap-datetimepicker.min.css" />
 

@@ -76,46 +76,57 @@ function resolveDictForAngularController(dict) {
 }
 
 var prDatePicker_and_DateTimePicker = function (name, $timeout) {
-            return {
-                require: 'ngModel',
-                restrict: 'A',
-                scope: {
-                    ngModel: '=',
-                },
-                link: function (scope, element, attrs, ngModelController) {
+    return {
+        require: 'ngModel',
+        restrict: 'A',
+        scope: {
+            ngModel: '=',
+        },
+        link: function (scope, element, attrs, ngModelController) {
 
-                    var defformat = (name === 'prDatePicker') ? 'dddd, LL' : 'dddd, LL HH:mm';
+            var defformat = (name === 'prDatePicker') ? 'dddd, LL' : 'dddd, LL HH:mm';
 
-                    var format = (attrs[name] ? attrs[name] : defformat);
-                    element.addClass((name === 'prDatePicker') ? "pr-datepicker" : "pr-datetimepicker");
+            var format = (attrs[name] ? attrs[name] : defformat);
+            element.addClass((name === 'prDatePicker') ? "pr-datepicker" : "pr-datetimepicker");
 
-                    ngModelController.$formatters = [function (d) {
-                        var m = moment(d);
-                        return m.isValid() ? m.format(format) : "";
-                    }];
+            ngModelController.$formatters = [function (d) {
+                var m = moment(d);
+                return m.isValid() ? m.format(format) : "";
+            }];
 
-                    scope.$watch('ngModel', function (newdate, olddate) {
-                        element.data("DateTimePicker").date(newdate ? moment(newdate) : null);
-                    });
-
-                    element.datetimepicker({
-                        locale: window._LANG,
-                        keepInvalid: true,
-                        useCurrent: false,
-                        format: format
-                    }).on("dp.change", function (e) {
-                        $timeout(function () {
-                            scope['ngModel'] = e.date?
-                                ((name === 'prDatePicker') ? moment(e.date).format('YYYY-MM-DD') : e.date.toISOString()):
-                            null;
-                        }, 0)
-
-                    })
-
+            scope.$watch('ngModel', function (newdate, olddate) {
+                var setdate = null;
+                if (newdate) {
+                    setdate = moment(newdate);
+                    if (setdate.isValid() && (!olddate) && name === 'prDateTimePicker') {
+                        var now = moment();
+                        setdate.minutes(now.minutes());
+                        setdate.hour(now.hour());
+                    }
                 }
 
-            }
+
+                element.data("DateTimePicker").date(setdate);
+            });
+
+            element.datetimepicker({
+                locale: window._LANG,
+                keepInvalid: true,
+                useCurrent: false,
+                format: format
+            }).on("dp.change", function (e) {
+                $timeout(function () {
+                    scope['ngModel'] = e.date ?
+                        ((name === 'prDatePicker') ? moment(e.date).format('YYYY-MM-DD') : e.date.toISOString()) :
+                        null;
+                }, 0)
+
+            })
+
         }
+
+    }
+}
 
 angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip'])
     .factory('$publish', ['$http', '$uibModal', function ($http, $uibModal) {
