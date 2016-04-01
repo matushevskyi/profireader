@@ -13,6 +13,7 @@ var dst = 'new/';
 var watch = require('gulp-watch');
 var runSequence = require('run-sequence');
 var gutil = require('gulp-util');
+var taskListing = require('gulp-task-listing');
 
 //var ext_replace = require('gulp-ext-replace');
 
@@ -131,8 +132,26 @@ gulp.task('less', function () {
 
 });
 
+gulp.task('install_jquery_datetimepicker', function () {
+    return gulp.src([src + 'jquery-datetimepicker/jquery.datetimepicker.*'])
+        .pipe(gulp.dest(dst + 'jquery-datetimepicker/'));
+});
 
-gulp.task('default', ['clean', 'install_fileuploader', 'install_angular', 'install_angular_translate', 'install_angular_cookies',
-    'install_angular_ui_tinymce', 'install_tinymce', 'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
-    'install_slider', 'install_bootstrap', 'install_angular_crop']);
+gulp.task('install_eonasdan-bootstrap-datetimepicker', function () {
+    return gulp.src([src + 'eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js',
+    src + 'eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css'])
+        .pipe(gulp.dest(dst + 'eonasdan-bootstrap-datetimepicker/'));
+});
+
+gulp.task('install_moment', function () {
+    return gulp.src([src + 'moment/min/moment.min.js', src + 'moment/locale/uk.js'])
+        .pipe(gulp.dest(dst + 'moment/'));
+});
+
+
+gulp.task('default', taskListing);
+
+gulp.task('all', ['install_fileuploader', 'install_angular', 'install_angular_translate', 'install_angular_cookies',
+'install_angular_ui_tinymce', 'install_tinymce', 'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
+'install_slider','install_bootstrap', 'install_angular_crop', 'install_eonasdan-bootstrap-datetimepicker', 'install_moment']);
 

@@ -8,7 +8,7 @@ from authomatic import Authomatic
 from profapp.utils.redirect_url import url_page
 from flask import url_for
 from flask.ext.bootstrap import Bootstrap
-from flask.ext.moment import Moment
+# from flask.ext.moment import Moment
 from flask.ext.login import LoginManager, \
     current_user
 from flask.ext.mail import Mail
@@ -29,6 +29,7 @@ from .models.translate import TranslateTemplate
 from .models.tools import HtmlHelper
 from .models.pr_base import MLStripper
 import os.path
+import datetime
 from profapp.utils import fileUrl
 
 from flask.sessions import SessionInterface
@@ -182,7 +183,6 @@ def load_user(apptype):
 
     user_dict = INFO_ITEMS_NONE.copy()
     user_dict['logged_via'] = None
-    user_dict['birth_tm'] = None
     user_dict['registered_tm'] = None
     user_dict['lang'] = 'uk'
     #  ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
@@ -208,7 +208,6 @@ def load_user(apptype):
                 user_dict[attr] = \
                     user.attribute_getter(logged_via, attr)
         user_dict['id'] = id
-        user_dict['birth_tm'] = user.birth_tm
         user_dict['registered_tm'] = user.registered_tm
         user_dict['lang'] = user.lang
         user_dict['tos'] = user.tos
@@ -286,6 +285,10 @@ def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):
 def translate_phrase(context, phrase, dictionary=None):
     return MLStripper().strip_tags(translate_phrase_or_html(context, phrase, dictionary, ''))
 
+@jinja2.contextfunction
+def translate_phrase(context, phrase, dictionary=None):
+    return MLStripper().strip_tags(translate_phrase_or_html(context, phrase, dictionary, ''))
+
 
 @jinja2.contextfunction
 def translate_html(context, phrase, dictionary=None):
@@ -301,10 +304,22 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
                     translate_phrase_or_html(context, 'help tooltip ' + phrase, None, '*')) + '\'"></span>')
 
 
-@jinja2.contextfunction
-def localtime(value):
-    print(value)
-    return Markup("<script> document.write(prFormatDate('{}')) </script><noscript>{}</noscript>".format(value, value))
+def moment(value, out_format = None):
+    if isinstance(value, datetime.datetime):
+        value = value.strftime("%a, %d %b %Y %H:%M:%S %Z")
+        return Markup(
+            "<script> document.write(moment(new Date('{}')).format('{}')) </script><noscript>{}</noscript>".format(
+                value, out_format if out_format else 'dddd, LL hh:mm', value))
+    elif isinstance(value, datetime.date):
+        value = value.strftime('%Y-%m-%d')
+        return Markup(
+            "<script> document.write(moment('{}').format('{}')) </script><noscript>{}</noscript>".format(
+                value, out_format if out_format else 'dddd, LL', value))
+    else:
+        return Markup(
+            "<script> document.write(moment(new Date('{}')).format('{}')) </script><noscript>{}</noscript>".format(
+                value, out_format if out_format else 'dddd, LL hh:mm', value))
+
 
 @jinja2.contextfunction
 def nl2br(value):
@@ -351,7 +366,7 @@ def config_variables():
         else:
             ret[var_id] = '\'' + variable.value.replace('\\', '\\\\').replace('\n', '\\n').replace('\'', '\\\'') + '\''
 
-    return "<script>\nConfig = {};\n" + ''.join(
+    return "<script>\n_LANG = '" + g.lang + "'; \nConfig = {};\n" + ''.join(
             [("Config['%s']=%s;\n" % (var_id, ret[var_id])) for var_id in ret]) + '</script>'
 
 
@@ -390,7 +405,7 @@ def pre(value):
 
 
 mail = Mail()
-moment = Moment()
+# moment = Moment()
 bootstrap = Bootstrap()
 
 login_manager = LoginManager()
@@ -523,7 +538,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     bootstrap.init_app(app)
     mail.init_app(app)
-    moment.init_app(app)
+    # moment.init_app(app)
     login_manager.init_app(app)
     login_manager.session_protection = 'basic'
 
@@ -544,12 +559,13 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.jinja_env.globals.update(url_page=url_page)
     app.jinja_env.globals.update(config_variables=config_variables)
     app.jinja_env.globals.update(_=translate_phrase)
+    app.jinja_env.globals.update(moment=moment)
     app.jinja_env.globals.update(__=translate_html)
     app.jinja_env.globals.update(tinymce_format_groups=HtmlHelper.tinymce_format_groups)
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
 
     app.jinja_env.filters['nl2br'] = nl2br
-    app.jinja_env.filters['localtime'] = localtime
+    # app.jinja_env.filters['localtime'] = localtime
 
     # see: http://flask.pocoo.org/docs/0.10/patterns/sqlalchemy/
     # Flask will automatically remove database sessions at the end of the

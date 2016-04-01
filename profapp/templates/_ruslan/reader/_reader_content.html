@@ -26,7 +26,7 @@
             var trusted = {};
 
             $scope.get_local_time = function (date) {
-                return prFormatDate(date)
+                return moment(date).format();
             };
 
 {#            $scope.getPopoverContent = function(article) {#}
