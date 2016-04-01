@@ -339,6 +339,8 @@ class ArticlePortalDivision(Base, PRBase):
             companies[article.company.id] = article.company.name
         return companies
 
+# TODO: SS by OZ: contition `if datetime(*localtime[:6]) > article['publishing_tm']:` should be checked by sql (passed
+# to search function)
     @staticmethod
     def get_list_reader_articles(articles):
         list_articles = []
@@ -413,19 +415,18 @@ class ArticlePortalDivision(Base, PRBase):
     def validate(self, is_new):
         ret = super().validate(is_new)
 
-        # if not self.publishing_tm:
-        #     ret['errors']['publishing_tm'] = 'Please select publication date'
-        self.publishing_tm = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S %Z")
+        if not self.publishing_tm:
+            ret['errors']['publishing_tm'] = 'Please select publication date'
+
         if not self.portal_division_id:
             ret['errors']['portal_division_id'] = 'Please select portal division'
         else:
             portalDivision = PortalDivision.get(self.portal_division_id)
             if portalDivision.portal_division_type_id == 'events':
-                self.event_tm = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S %Z")
-                # if not self.event_tm:
-                #     ret['errors']['event_tm'] = 'Please select event date'
-                # elif self.event_tm and datetime.now() > self.event_tm:
-                #     ret['warnings']['event_tm'] = 'Event time in past'
+                if not self.event_tm:
+                    ret['errors']['event_tm'] = 'Please select event date'
+                elif self.event_tm and datetime.now() > self.event_tm:
+                    ret['warnings']['event_tm'] = 'Event time in past'
 
         if ret['errors']:
             ret['errors']['_'] = 'You have some error'
