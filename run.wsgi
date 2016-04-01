@@ -18,5 +18,5 @@ from profapp import create_app
 
 print(mod_wsgi.process_group)
 
-application=create_app(apptype = mod_wsgi.process_group, debug=False)
+application=create_app(apptype = mod_wsgi.process_group)
 
