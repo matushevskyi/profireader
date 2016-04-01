@@ -88,10 +88,10 @@
                     </label>
                 </div>
              {{ _('Select publication date') }}<span af-validation-answer="data_validation:publishing_tm"></span><br/>
-                <input pr-date-time-picker ng-model="data.publication.publishing_tm"/>
+                <input pr-date-time-picker class="form-control" ng-model="data.publication.publishing_tm"/>
                 <div ng-if="is_selection_division_event()">
                     {{ _('Select event date') }}<span af-validation-answer="data_validation:event_tm"></span><br/>
-                    <input pr-date-time-picker ng-model="data.publication.event_tm"/>
+                    <input pr-date-time-picker class="form-control" ng-model="data.publication.event_tm"/>
                 </div>
                 <div ng-if="object_name === 'material'">
                     <hr/>
