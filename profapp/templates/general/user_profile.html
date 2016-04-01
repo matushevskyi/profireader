@@ -5,14 +5,20 @@
 {% endblock head %}
 
 {% block portal_content %}
-
-    <div class="container" ng-controller="UserLoginController" ng-cloak>
-        <div class="row link-page"><h5>User profile</h5>
+<script>
+    module.controller('user_profile',  function($scope, $ok){
+      $scope.$$translate = {{ translates('user_profile')|safe }};
+      $scope.user = {{ user.get_client_side_dict()|tojson|safe}}
+    });
+</script>
+    {{ raw }}
+    <div class="container" ng-controller="user_profile" ng-cloak>
+        <div class="row link-page"><h5>{{ _('User profile') }}</h5>
             <a title="edit" pr_test="EditProfile" href="{{ url_for('user.edit_profile', user_id=user.id) }}">
                 <i class="fa fa-pencil fa-2x"></i>
             </a>
         </div>
-        <div class="row" ng-controller="UserLoginController">
+        <div class="row">
             <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-6 col-sm-offset-2 col-sm-8 col-xs-12 ">
                 <div class="thumbnail profile-window">
                     <div class="avatar-user">
@@ -72,7 +78,7 @@
         </div>
     </div>
 
-
+{{ endraw }}
 {% endblock portal_content %}
 
 {% block scripts %}

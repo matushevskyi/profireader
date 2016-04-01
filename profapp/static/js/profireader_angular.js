@@ -1530,7 +1530,6 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     if (typeof phrase !== 'string') {
         return '';
     }
-
     if (!scope.$$translate) {
         scope.$$translate = {};
     }
@@ -1541,13 +1540,13 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
     if (scope.$$translate[phrase] === undefined) {
         scope.$$translate[phrase] = {'lang': phrase, 'time': t};
+        console.log(phrase)
         $ok('/tools/save_translate/', {
             template: CtrlName,
             phrase: phrase,
             allow_html: allow_html,
             url: window.location.href
         }, function (resp) {
-
 
         });
     }

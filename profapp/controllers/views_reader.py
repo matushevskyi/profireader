@@ -167,7 +167,7 @@ def reader_subscribe_registered(json):
     portal_id = json['portal_id']
     portal = Portal.get(portal_id)
     if not portal:
-        return False
+        return 'Portal doesn`t exist!'
 
     user_portal_reader = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
     if not user_portal_reader:
@@ -182,8 +182,10 @@ def reader_subscribe_registered(json):
                                                                             for division in portal.divisions]])
         g.db.add(user_portal_reader)
         g.db.commit()
+        return True
+    else:
+        return 'You already subscribed on this portal!'
 
-    return True
 
 
 @reader_bp.route('/profile/')

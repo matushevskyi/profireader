@@ -263,7 +263,7 @@
                     <pr_help_tooltip>article_title</pr_help_tooltip>
                     <input class="form-control" style="width: 100%" type="text" ng-model="data.article.title" name="article_title" ng-pattern="/[\wа-яёі']{3}/">
                     <div ng-show="newMaterial.article_title.$error.pattern" class="error-input">
-                        The title name should be longer!
+                        {{ _('The title name should be longer!') }}
                     </div>
 
                     {{ _('Article subtitle') }}
