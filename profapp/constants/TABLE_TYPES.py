@@ -1,5 +1,5 @@
 from sqlalchemy import Integer, String, TIMESTAMP, SMALLINT, BOOLEAN, Column, ForeignKey, UnicodeText, BigInteger, \
-    Binary, Float
+    Binary, Float, Date
 from sqlalchemy.dialects.postgresql import BIGINT, INTEGER, JSON
 from functools import reduce
 from profapp.utils import fileUrl, fileID
@@ -108,6 +108,8 @@ class IMAGE(String):
 TABLE_TYPES = {
     'binary_rights': RIGHTS,
     'image': IMAGE,
+    'date': Date,
+
 
 
     'id_profireader': String(36),

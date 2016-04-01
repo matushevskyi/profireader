@@ -46,7 +46,7 @@ class User(Base, UserMixin, PRBase):
     confirmed = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
     _banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
 
-    birth_tm = Column(TABLE_TYPES['timestamp'])
+    birth_tm = Column(TABLE_TYPES['date'])
     registered_tm = Column(TABLE_TYPES['timestamp'],
                            default=datetime.datetime.utcnow)
     last_seen = Column(TABLE_TYPES['timestamp'],

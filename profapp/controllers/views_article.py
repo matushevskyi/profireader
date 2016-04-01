@@ -80,7 +80,8 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
             if type(articleVersion) == ArticlePortalDivision:
                 tag_names = json['article']['tags']
                 articleVersion.manage_article_tags(tag_names)
-            article_dict = articleVersion.set_image_client_side_dict(json['article']['image']).save().get_client_side_dict(more_fields='long|company')
+            article_dict = articleVersion.set_image_client_side_dict(
+                json['article']['image']).save().get_client_side_dict(more_fields='long|company')
             if publication_id:
                 articleVersion.insert_after(json['portal_division']['insert_after'],
                                             articleVersion.position_unique_filter())
@@ -101,7 +102,7 @@ def material_details(material_id):
 
 def get_portal_dict_for_material(portal, company, material=None, publication=None):
     ret = portal.get_client_side_dict(
-            fields='id, name, host, logo_file_id, divisions.id|name|portal_division_type_id, own_company.name|id|logo_file_id')
+        fields='id, name, host, logo_file_id, divisions.id|name|portal_division_type_id, own_company.name|id|logo_file_id')
 
     # ret['rights'] = MemberCompanyPortal.get(company_id=company_id, portal_id=ret['id']).rights
     ret['divisions'] = PRBase.get_ordered_dict([d for d in ret['divisions'] if (
@@ -109,14 +110,14 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
 
     if material:
         publication_in_portal = db(ArticlePortalDivision).filter_by(article_company_id=material.id).filter(
-                ArticlePortalDivision.portal_division_id.in_(
-                        [div_id for div_id, div in ret['divisions'].items()])).first()
+            ArticlePortalDivision.portal_division_id.in_(
+                [div_id for div_id, div in ret['divisions'].items()])).first()
     else:
         publication_in_portal = publication
 
     if publication_in_portal:
         ret['publication'] = publication_in_portal.get_client_side_dict(
-                'id,position,title,status,visibility,portal_division_id,publishing_tm')
+            'id,position,title,status,visibility,portal_division_id,publishing_tm')
         ret['publication']['division'] = ret['divisions'][ret['publication']['portal_division_id']]
         ret['publication']['counts'] = '0/0/0/0'
 
@@ -131,7 +132,7 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
             canbesubmited = membership.has_rights(MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH)
             if not canbesubmited is True:
                 canbesubmited = "Membership need right `{}` to perform action `{}`".format(
-                        MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH, ArticleCompany.ACTIONS['SUBMIT'])
+                    MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH, ArticleCompany.ACTIONS['SUBMIT'])
         ret['actions'] = {ArticleCompany.ACTIONS['SUBMIT']: canbesubmited}
 
     return ret
@@ -194,8 +195,8 @@ def submit_publish(json, article_action):
     else:
 
         publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
-        publication.publishing_tm = json['publication'].get('publishing_tm')#PRBase.parseDate(json['publication'].get('publishing_tm'))
-        publication.event_tm = PRBase.parseDate(json['publication'].get('event_tm'))
+        publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
+        publication.event_tm = PRBase.parse_timestamp(json['publication'].get('event_tm'))
         if 'also_publish' in json and json['also_publish']:
             publication.status = ArticlePortalDivision.STATUSES['PUBLISHED']
         else:
@@ -351,7 +352,6 @@ def list_reader(page=1):
                            portals=portals,
                            favorite=favorite
                            )
-
 
 # @article_bp.route('add_to_favorite/', methods=['POST'])
 # def add_delete_favorite():
