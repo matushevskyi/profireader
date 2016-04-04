@@ -111,7 +111,7 @@ class ArticlePortalDivision(Base, PRBase):
             ACTIONS['DELETE']: delete_rights
         },
         STATUSES['DELETED']: {
-            ACTIONS['UNPUBLISH']: delete_rights,
+            ACTIONS['UNDELETE']: delete_rights,
         }
     }
 
