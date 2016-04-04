@@ -284,7 +284,7 @@ def index(page=1):
         items_per_page=items_per_page)
     session['original_search_text'] = search_text
 
-    return render_template('front/' + g.portal_layout_path + 'index.html',
+    return render_template('front/' + g.portal_layout_path + 'division.html',
                            articles=articles,
                            portal=portal_and_settings(portal),
                            current_division=division.get_client_side_dict(),

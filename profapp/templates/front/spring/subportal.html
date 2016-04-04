@@ -1,0 +1,6 @@
+{% extends 'layout.html' %}
+{% block portal_content %}
+    <h2>{{ member_company['name'] }}</h2>
+    {{ member_company['about']|safe }}
+
+{% endblock portal_content %}

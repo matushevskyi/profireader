@@ -21,7 +21,7 @@
 <link href="//static.profireader.com/static/css/article.css" rel="stylesheet">
 <link href="//static.profireader.com/static/front/spring/css/article.css" rel="stylesheet">
 <link href="//static.profireader.com/static/front/spring/css/style.css" rel="stylesheet">
-
+<link rel="icon" href="//static.profireader.com/static/favicon.ico" type="image/gif"/>
 
 <script src="//static.profireader.com/static/jquery/jquery.min.js"></script>
 <script src="//static.profireader.com/static/jquery/jquery-ui.min.js"></script>
@@ -36,13 +36,15 @@
 
 <body>
 <div class="container-fluid portal-body">
-        {% include 'header.html' %}
+
     <div class="row content-block">
+
         <div>
             {% include 'menu_portal.html' %}
         </div>
         <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8 news-content">
-            {% include 'news.html' %}
+        {% include 'header.html' %}
+            {% block portal_content %}{% endblock %}
 {#            {% include 'advertising.html' %}#}
         </div>
     </div>

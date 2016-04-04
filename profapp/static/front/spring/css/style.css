@@ -10,9 +10,11 @@
   min-height: 100vh;
 }
 .search-block {
+  display: block;
+  margin: 0 auto;
   padding-top: 15px;
   background-color: #FCFCFC;
-  padding-bottom: 15px;
+  padding-bottom: 21px;
 }
 .search-block input {
   border-radius: 0;
@@ -27,16 +29,25 @@
 }
 .search-block i {
   background-color: #FF5963;
-  padding: 10px 22px;
+  padding: 10px 15px;
   color: #fff;
 }
 .search-block .icon-search {
   padding-left: 0;
 }
 .logo-portal {
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+  z-index: 500;
+  margin-top: -70px;
+  width: 225px;
+  position: fixed;
   background-color: #212121;
   color: #fff;
-  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+}
+.logo-portal img {
+  height: 70px;
+  margin: 0 auto;
+  display: block;
 }
 .content-block {
   margin-top: 70px;
@@ -49,13 +60,20 @@
   overflow-y: auto;
   width: 227px;
   z-index: 100;
+  padding-bottom: 200px;
 }
-.left-menu a:not(:first-child) {
+.left-menu ul {
+  padding-left: 0;
+}
+.left-menu a:not(:first-child),
+.left-menu li {
+  list-style: none;
   display: block;
   padding: 12px 16px;
 }
-.left-menu a:not(:first-child):hover {
-  background-color: #0a0a0a;
+.left-menu a:not(:first-child):hover,
+.left-menu li:hover {
+  background-color: #212121;
   transition: all 0.2s ease-out;
 }
 .left-menu .user-prof {
@@ -121,7 +139,7 @@
 }
 .fixed-nav {
   background-color: #FCFCFC;
-  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+  margin-left: 225px;
   border: 0;
 }
 /*# sourceMappingURL=style.css.map */
