@@ -39,7 +39,7 @@
   box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
 }
 .content-block {
-  margin-top: 65px;
+  margin-top: 70px;
 }
 .left-menu {
   color: #fff;
@@ -50,11 +50,11 @@
   width: 227px;
   z-index: 100;
 }
-.left-menu a {
+.left-menu a:not(:first-child) {
   display: block;
   padding: 12px 16px;
 }
-.left-menu a:hover {
+.left-menu a:not(:first-child):hover {
   background-color: #0a0a0a;
   transition: all 0.2s ease-out;
 }
@@ -118,5 +118,10 @@
 }
 .advertising-block {
   background-color: #0a4b3e;
+}
+.fixed-nav {
+  background-color: #FCFCFC;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+  border: 0;
 }
 /*# sourceMappingURL=style.css.map */
