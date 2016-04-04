@@ -69,7 +69,7 @@
          af-after-save="afterSave"
          af-amid-load="amidLoad"
          af-watch="data.publication" ng-cloak>
-        <div class="modal-header">
+    <div class="modal-header">
             <h3 class="modal-title">{{ _(action + ' ' + object_name + ' at portal') }}</h3>
         </div>
         <div class="modal-body">
@@ -87,18 +87,17 @@
                                 type="radio"> {{ division.name }}
                     </label>
                 </div>
-             <!--   {{ _('Select publication date') }}<span
-                    ></span><br/>
-                <input pr-date-timepicker ng-model="data.publication.publishing_tm" pr-element-class="form-control" style="width: 15em;" placeholder="mm/dd/yyyy">
+             {{ _('Select publication date') }}<span af-validation-answer="data_validation:publishing_tm"></span><br/>
+                <input pr-date-time-picker class="form-control" ng-model="data.publication.publishing_tm"/>
                 <div ng-if="is_selection_division_event()">
                     {{ _('Select event date') }}<span af-validation-answer="data_validation:event_tm"></span><br/>
-                    <input pr-date-timepicker ng-model="data.publication.publishing_tm" pr-element-class="form-control" style="width: 15em;" placeholder="mm/dd/yyyy">
-                </div>-->
+                    <input pr-date-time-picker class="form-control" ng-model="data.publication.event_tm"/>
+                </div>
                 <div ng-if="object_name === 'material'">
                     <hr/>
                     <label ng-class="{disabled: !data.can_material_also_be_published}"><input
                             ng-disabled="!data.can_material_also_be_published"
-                            ng-model="$parent.$parent.$parent.also_publish"
+                            ng-model="$parent.$parent.data.also_publish"
                             type="checkbox">&nbsp;{{
                         _('also publish material') }}</label><br/>
                     <div ng-if="!data.can_material_also_be_published">
@@ -115,8 +114,8 @@
         <div class="modal-footer">
             <button ng-if="action === 'SUBMIT'" class="btn btn-primary"
                     ng-disabled="!$af.isActionAllowed(data, 'save')"
-                    type="button" ng-click="$af.save(data)"><span ng-if="!also_publish">{{ _('Do submit') }}</span>
-                <span ng-if="also_publish">{{ _('Do submit & publish') }}</span>
+                    type="button" ng-click="$af.save(data)"><span ng-if="!data.also_publish">{{ _('Do submit') }}</span>
+                <span ng-if="data.also_publish">{{ _('Do submit & publish') }}</span>
             </button>
 
             <button ng-if="action !== 'SUBMIT' " class="btn btn-primary"

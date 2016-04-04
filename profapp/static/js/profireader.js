@@ -11,10 +11,5 @@ function switch_something(element, url, selector_off, selector_on, replace_key_s
             })
     })
 }
-function prFormatDate(str) {
-    console.log(str)
-    var a = new Date(str);
-    console.log(a.toLocaleString())
-    return a.toLocaleString();   
-}
+
  

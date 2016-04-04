@@ -75,6 +75,67 @@ function resolveDictForAngularController(dict) {
     }))
 }
 
+var prDatePicker_and_DateTimePicker = function (name, $timeout) {
+    return {
+        require: 'ngModel',
+        restrict: 'A',
+        scope: {
+            ngModel: '=',
+        },
+        link: function (scope, element, attrs, ngModelController) {
+
+            var defformat = (name === 'prDatePicker') ? 'dddd, LL' : 'dddd, LL (HH:mm)';
+
+            var format = (attrs[name] ? attrs[name] : defformat);
+            element.addClass((name === 'prDatePicker') ? "pr-datepicker" : "pr-datetimepicker");
+
+            ngModelController.$formatters = [function (d) {
+                var m = moment(d);
+                return m.isValid() ? m.format(format) : "";
+            }];
+
+            scope.$watch('ngModel', function (newdate, olddate) {
+                var setdate = null;
+                if (newdate) {
+                    setdate = moment(newdate);
+                    if (setdate.isValid() && (!olddate) && name === 'prDateTimePicker') {
+                        var now = moment();
+                        setdate.minutes(now.minutes());
+                        setdate.hour(now.hour());
+                    }
+                }
+
+
+                element.data("DateTimePicker").date(setdate);
+            });
+
+            var opt = {
+                locale: window._LANG,
+                keepInvalid: true,
+                useCurrent: false,
+                widgetPositioning: {
+                    horizontal: 'left',
+                    vertical: 'bottom'
+                },
+                format: format
+            };
+            if (name === 'prDateTimePicker') {
+                opt['sideBySide'] = true;
+            }
+            element.datetimepicker(opt).on("dp.change", function (e) {
+                $timeout(function () {
+                    scope['ngModel'] = e.date ?
+                        ((name === 'prDatePicker') ? moment(e.date).format('YYYY-MM-DD') : e.date.toISOString()) :
+                        null;
+                }, 0)
+
+            })
+
+        }
+
+    }
+}
+
 angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip'])
     .factory('$publish', ['$http', '$uibModal', function ($http, $uibModal) {
         return function (dict) {
@@ -578,8 +639,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     options['cropmove'] = function (e) {
                         //console.log(e.width);
-                        console.log(e.originalEvent.x, (e.originalEvent.x - scope.click_data.x)/(e.originalEvent.y - scope.click_data.y));
-                        if ((e.originalEvent.x - scope.click_data.x)/(e.originalEvent.y - scope.click_data.y) > 1.0) {
+                        console.log(e.originalEvent.x, (e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y));
+                        if ((e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y) > 1.0) {
                             e.originalEvent.x = e.originalEvent.y - scope.click_data.y + scope.click_data.x;
 
                         }
@@ -603,7 +664,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                     optionsa['crop'] = function (e) {
 
-                        if (e.width/ e.height>1) {
+                        if (e.width / e.height > 1) {
                             e.width = e.height;
 
                             $image.cropper('setData', {width: e.width});
@@ -792,47 +853,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             }
         };
     })
-    .directive('prDateTimepicker', function ($timeout) {
-        return {
-            require: 'ngModel',
-            restrict: 'A',
-            scope: {
-                ngModel: '=',
-                prElementClass: '='
-            },
-            link: function (scope, element, attrs, model) {
-                scope.$watch('ngModel', function (nv, ov) {
-                    scope.setdate = scope['ngModel'];
-                });
-                var property = {};
-                //minDate:'-1970/01/02',//yesterday is minimum date(for today use 0 or -1970/01/01)
-                //maxDate:'+1970/01/02'//tomorrow is maximum date calendar
-
-                property['startDate'] = '+1971/05/01';
-                if(attrs['prMode']){
-                    property['timepicker'] = attrs['prMode'] === 'time'? true:false
-                    property['datepicker'] = attrs['prMode'] === 'date'? true:false
-                }
-                //$timeout(function() {
-                //    scope['ngModel'] = getGMT(scope['ngModel']);
-                //}, 500)
-
-                //var offset = new Date().getTimezoneOffset();
-                //scope['ngModel']
-                //new Date(date-(offset * 60000))
-                //$timeout(function(){
-                //    var dd = new Date(scope['ngModel']).getTime();
-                //    scope['ngModel'] = property['timepicker'] || !attrs['prMode']?getLocalTime(dd, true):getLocalTime(dd)
-                //}, 500);
-
-                element.datetimepicker(property);
-
-                if(attrs["prElementClass"]){
-                    element.addClass(attrs["prElementClass"])
-                }
-            }
-
-        }
+    .directive('prDateTimePicker', function ($timeout) {
+        return prDatePicker_and_DateTimePicker('prDateTimePicker', $timeout);
+    }).directive('prDatePicker', function ($timeout) {
+        return prDatePicker_and_DateTimePicker('prDatePicker', $timeout);
     })
     .directive('prDatepicker', function () {
         return {
@@ -1530,7 +1554,6 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     if (typeof phrase !== 'string') {
         return '';
     }
-
     if (!scope.$$translate) {
         scope.$$translate = {};
     }
@@ -1541,13 +1564,13 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
     if (scope.$$translate[phrase] === undefined) {
         scope.$$translate[phrase] = {'lang': phrase, 'time': t};
+        console.log(phrase)
         $ok('/tools/save_translate/', {
             template: CtrlName,
             phrase: phrase,
             allow_html: allow_html,
             url: window.location.href
         }, function (resp) {
-
 
         });
     }
@@ -2015,8 +2038,8 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                 }
             });
-            $timeout(function(){
-                if(scope.data.end === false && ($(document).height() - $(window).height() === 0)){
+            $timeout(function () {
+                if (scope.data.end === false && ($(document).height() - $(window).height() === 0)) {
                     scope.next_page += 1;
                     load()
                 }
@@ -2123,13 +2146,15 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 // }
 
 
-function getLocalTime(date, needtime){
-    var monthdict = {1:"January", 2:"February",  3:"March", 4:"April" , 5:"May",
-        6:"June", 7:"July", 8:"August", 9:"September", 10:"October", 11:"November", 12:"December" }
+function getLocalTime(date, needtime) {
+    var monthdict = {
+        1: "January", 2: "February", 3: "March", 4: "April", 5: "May",
+        6: "June", 7: "July", 8: "August", 9: "September", 10: "October", 11: "November", 12: "December"
+    }
     var time = new Date(date);
     // var month = monthdict[time.getMonth() + 1];
     // var minutes = time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes();
-    if(needtime){
+    if (needtime) {
         return time.toLocaleString()
         // return time.getDate()+' '+month+' '+time.getFullYear()+', '+ time.getHours()+':'+minutes
     }

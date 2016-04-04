@@ -126,7 +126,7 @@ class TranslateTemplate(Base, PRBase):
         i = datetime.datetime.now()
         obj = db(TranslateTemplate, template=template, name=phrase).first()
         obj.updates({'ac_tm': i})
-        return 'True'
+        return True
 
     @staticmethod
     def change_allowed_html(template, phrase, allow_html):
@@ -135,7 +135,7 @@ class TranslateTemplate(Base, PRBase):
         return 'True'
 
     @staticmethod
-    def delete(objects):
+    def delete_translates(objects):
         for obj in objects:
             f = db(TranslateTemplate, template=obj['template'], name=obj['name']).first()
             f.delete()

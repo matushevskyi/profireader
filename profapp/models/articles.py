@@ -111,7 +111,7 @@ class ArticlePortalDivision(Base, PRBase):
             ACTIONS['DELETE']: delete_rights
         },
         STATUSES['DELETED']: {
-            ACTIONS['UNPUBLISH']: delete_rights,
+            ACTIONS['UNDELETE']: delete_rights,
         }
     }
 
@@ -163,12 +163,12 @@ class ArticlePortalDivision(Base, PRBase):
                 self.ACTIONS_FOR_STATUSES[self.status]}
 
     def check_favorite_status(self, user_id=None):
-        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user_id,
+        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user.id if g.user else None,
                   article_portal_division_id=self.id,
                   favorite=True).count() > 0
 
     def check_liked_status(self, user_id=None):
-        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user_id,
+        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user.id if g.user else None,
                   article_portal_division_id=self.id,
                   liked=True).count() > 0
 
@@ -177,7 +177,7 @@ class ArticlePortalDivision(Base, PRBase):
 
     def like_dislike_user_article(self, liked):
         article = db(ReaderArticlePortalDivision, article_portal_division_id=self.id,
-                     user_id=g.user_id).one()
+                     user_id=g.user.id if g.user else None).one()
         article.favorite = True if liked else False
         self.like_count += 1
 
@@ -339,6 +339,8 @@ class ArticlePortalDivision(Base, PRBase):
             companies[article.company.id] = article.company.name
         return companies
 
+# TODO: SS by OZ: contition `if datetime(*localtime[:6]) > article['publishing_tm']:` should be checked by sql (passed
+# to search function)
     @staticmethod
     def get_list_reader_articles(articles):
         list_articles = []
@@ -413,19 +415,18 @@ class ArticlePortalDivision(Base, PRBase):
     def validate(self, is_new):
         ret = super().validate(is_new)
 
-        # if not self.publishing_tm:
-        #     ret['errors']['publishing_tm'] = 'Please select publication date'
-        self.publishing_tm = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S %Z")
+        if not self.publishing_tm:
+            ret['errors']['publishing_tm'] = 'Please select publication date'
+
         if not self.portal_division_id:
             ret['errors']['portal_division_id'] = 'Please select portal division'
         else:
             portalDivision = PortalDivision.get(self.portal_division_id)
             if portalDivision.portal_division_type_id == 'events':
-                self.event_tm = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S %Z")
-                # if not self.event_tm:
-                #     ret['errors']['event_tm'] = 'Please select event date'
-                # elif self.event_tm and datetime.now() > self.event_tm:
-                #     ret['warnings']['event_tm'] = 'Event time in past'
+                if not self.event_tm:
+                    ret['errors']['event_tm'] = 'Please select event date'
+                elif self.event_tm and datetime.now() > self.event_tm:
+                    ret['warnings']['event_tm'] = 'Event time in past'
 
         if ret['errors']:
             ret['errors']['_'] = 'You have some error'
@@ -983,7 +984,7 @@ class ReaderArticlePortalDivision(Base, PRBase):
     @staticmethod
     def add_delete_favorite_user_article(article_portal_division_id, favorite):
         articleReader = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id,
-                     user_id=g.user_id).first()
+                     user_id=g.user.id).first()
         if not articleReader:
             articleReader = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
         articleReader.favorite = True if favorite else False
@@ -993,7 +994,7 @@ class ReaderArticlePortalDivision(Base, PRBase):
     @staticmethod
     def add_delete_liked_user_article(article_portal_division_id, liked):
         articleReader = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id,
-                     user_id=g.user_id).first()
+                     user_id=g.user.id).first()
 
         if not articleReader:
             articleReader = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
@@ -1034,8 +1035,8 @@ class ReaderArticlePortalDivision(Base, PRBase):
     @staticmethod
     def add_to_table_if_not_exists(article_portal_division_id):
         if not db(ReaderArticlePortalDivision,
-                  user_id=g.user_id, article_portal_division_id=article_portal_division_id).count():
-            return ReaderArticlePortalDivision(user_id=g.user_id,
+                  user_id=g.user.id, article_portal_division_id=article_portal_division_id).count():
+            return ReaderArticlePortalDivision(user_id=g.user.id,
                                                article_portal_division_id=article_portal_division_id,
                                                favorite=False).save()
 

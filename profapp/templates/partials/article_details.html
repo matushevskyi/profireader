@@ -3,12 +3,11 @@
     <h2 class="item-title">{{ article['title']|safe }}</h2>
 
     <h3 class="item-subtitle">{{ article['subtitle']|safe }}</h3>
-
+    <div class="s-cover-l" style="padding-bottom: 10px"><img width="300px" {{ prImage(article['image_file_id']) }}></div>
     <div class="article-short">
         {{ article['short']|safe }}
     </div>
     <div class="article-content">
-        <div class="s-cover-l" {{ prImage(article['image_file_id']) }}></div>
         {{ article['long'] | safe }}
     </div>
 

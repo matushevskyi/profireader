@@ -1024,12 +1024,13 @@ body {
 .create-material .create-new-material {
   margin-left: 0;
 }
-.create-material button.ng-binding {
+.create-material button.pr-button {
   background-color: #00c853;
   color: #fff;
   border: none;
   border-radius: 3px;
   margin-top: 15px;
+  margin-left: 15px;
   float: right;
   padding: 10px 50px;
 }
