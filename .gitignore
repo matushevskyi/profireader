@@ -87,6 +87,8 @@ database_full.*
 database.*.bak
 *.sql
 *.bak
+*.js.map
+*.css.map
 .venv/
 
 tmp*
