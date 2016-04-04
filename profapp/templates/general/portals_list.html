@@ -14,7 +14,7 @@
             $scope.search_text = '';
             $scope.scroll_data = {};
             $scope.subscribe = function (portal_id) {
-                {% if g.user_id %}
+                {% if g.user.id %}
                     $ok('{{ url_for('reader.reader_subscribe_registered')|safe }}', {portal_id: portal_id}, function (resp) {
                         if (resp) {
                             _.map($scope.data, function (portal) {
@@ -22,6 +22,14 @@
                                     portal['subscribed'] = true;
                                 }
                             })
+                        }
+                        if(resp === true){
+                            add_message('You have successfully subscribed to this portal', 'info', 3000)
+                            $timeout(function(){
+                                window.location.href = '{{ url_for('reader.list_reader') }}'
+                            }, 1500)
+                        }else {
+                            add_message(resp, 'warning', 3000)
                         }
                     });
                 {% else %}
