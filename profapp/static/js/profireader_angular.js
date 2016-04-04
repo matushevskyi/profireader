@@ -109,12 +109,20 @@ var prDatePicker_and_DateTimePicker = function (name, $timeout) {
                 element.data("DateTimePicker").date(setdate);
             });
 
-            element.datetimepicker({
+            var opt = {
                 locale: window._LANG,
                 keepInvalid: true,
                 useCurrent: false,
+                widgetPositioning: {
+                    horizontal: 'left',
+                    vertical: 'bottom'
+                },
                 format: format
-            }).on("dp.change", function (e) {
+            };
+            if (name === 'prDateTimePicker') {
+                opt['sideBySide'] = true;
+            }
+            element.datetimepicker(opt).on("dp.change", function (e) {
                 $timeout(function () {
                     scope['ngModel'] = e.date ?
                         ((name === 'prDatePicker') ? moment(e.date).format('YYYY-MM-DD') : e.date.toISOString()) :
