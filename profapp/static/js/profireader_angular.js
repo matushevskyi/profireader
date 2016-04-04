@@ -84,7 +84,7 @@ var prDatePicker_and_DateTimePicker = function (name, $timeout) {
         },
         link: function (scope, element, attrs, ngModelController) {
 
-            var defformat = (name === 'prDatePicker') ? 'dddd, LL' : 'dddd, LL HH:mm';
+            var defformat = (name === 'prDatePicker') ? 'dddd, LL' : 'dddd, LL (HH:mm)';
 
             var format = (attrs[name] ? attrs[name] : defformat);
             element.addClass((name === 'prDatePicker') ? "pr-datepicker" : "pr-datetimepicker");
