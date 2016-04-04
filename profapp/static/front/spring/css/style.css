@@ -1,3 +1,8 @@
+/*CONST*/
+.block-center {
+  display: block;
+  margin: 0 auto;
+}
 .link-no-style,
 .link-no-style:hover,
 .link-no-style:active,
@@ -5,15 +10,14 @@
   text-decoration: none;
   color: inherit;
 }
+/*CONST end*/
 .portal-body {
   background-color: #FCFCFC;
   min-height: 100vh;
 }
 .search-block {
-  display: block;
-  margin: 0 auto;
   padding-top: 15px;
-  background-color: #FCFCFC;
+  background: url("../../../images/vertical_cloth.png");
   padding-bottom: 21px;
 }
 .search-block input {
@@ -28,7 +32,7 @@
   padding-right: 0;
 }
 .search-block i {
-  background-color: #FF5963;
+  background-color: #FF5252;
   padding: 10px 15px;
   color: #fff;
 }
@@ -40,27 +44,27 @@
   z-index: 500;
   margin-top: -70px;
   width: 225px;
+  border-right: 2px solid #2E3137;
   position: fixed;
-  background-color: #212121;
+  background: url("../../../images/vertical_cloth.png");
   color: #fff;
 }
 .logo-portal img {
   height: 70px;
-  margin: 0 auto;
-  display: block;
 }
 .content-block {
   margin-top: 70px;
 }
 .left-menu {
   color: #fff;
-  background-color: #ff5252;
+  background-color: #FF5252;
   height: 100%;
   position: fixed;
   overflow-y: auto;
-  width: 227px;
+  width: 225px;
   z-index: 100;
   padding-bottom: 200px;
+  border-right: 1px solid #CCC;
 }
 .left-menu ul {
   padding-left: 0;
@@ -78,20 +82,19 @@
 }
 .left-menu .user-prof {
   padding-top: 15px;
+  background-color: #FCFCFC;
   background: url("../../../images/kindajean.png");
 }
 .left-menu .user-prof img {
   border-radius: 50%;
   width: 50%;
-  display: block;
-  margin: 0 auto;
 }
 .left-menu .user-prof p {
   margin-bottom: 0;
   text-align: center;
   margin-top: 10px;
   background-color: #212121;
-  color: #FFFFFF;
+  color: #fff;
 }
 .footer-portal {
   margin-top: 50px;
@@ -127,7 +130,7 @@
   margin-top: -21%;
   min-height: 80px;
   max-height: 80px;
-  color: #FFFFFF;
+  color: #fff;
 }
 .news-content {
   margin-bottom: 100px;
@@ -138,8 +141,9 @@
   background-color: #0a4b3e;
 }
 .fixed-nav {
-  background-color: #FCFCFC;
+  background: url("../../../images/vertical_cloth.png");
   margin-left: 225px;
   border: 0;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
 }
 /*# sourceMappingURL=style.css.map */
