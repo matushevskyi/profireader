@@ -31,7 +31,13 @@ module.controller('grid_reader', function ($scope, $uibModal, $ok, $sce, uiGridC
         $scope.$$translate = {{ translates('grid_reader')|safe }};
         $scope.url_search_translations = {{ raw_url_for('reader.profile')|safe }}
         $scope.reader_edit_profile = {{ raw_url_for('reader.edit_portal_subscription')|safe }};
+        $scope.subscribe_to = '{{ url_for('general.portals_list')|safe }}';
         {% raw %}
+
+        $scope.portal_lists = function(){
+            console.log($scope.subscribe_to)
+            window.location.href = $scope.subscribe_to
+        }
 
         $scope.portal_link = function(link){
             return 'http://' + link;
@@ -87,9 +93,7 @@ module.controller('grid_reader', function ($scope, $uibModal, $ok, $sce, uiGridC
               <i class="fa fa-spin fa-spinner"></i><div>{{ _('Data Loading...') }}</div>
             </div>
         </div>
-        <a ng-show="!areAllEmpty(datas.grid_data)" class="btn btn-danger"
-           ng-class="{'disabled': ( isSelectedRows === false )}" style="text-align: center"
-           ng-click="showModalDelete()">Delete selected rows</a>
+        <div><button class="btn btn-default go-portal" ng-click="portal_lists()">{{ _('Subscribe to another portal') }}</button></div>
     </div>
 {% endraw %}
 {% endblock portal_content %}

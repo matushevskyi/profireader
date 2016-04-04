@@ -256,7 +256,7 @@ def subportal_contacts(member_company_id, member_company_name):
 def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
     send_email(send_to.profireader_email, 'New message',
-               'messenger/email_send_message', user_to=send_to, user_from=g.user_dict,
+               'messenger/email_send_message', user_to=send_to, user_from=g.user.get_client_side_dict(),
                in_company=Company.get(member_company_id), message=json['message'])
     return {}
 
@@ -310,6 +310,8 @@ def division(division_name, page=1):
             ArticlePortalDivision().search_filter_default(division.id),
             search_text=search_text, page=page, order_by=order, pagination=True,
             items_per_page=items_per_page)
+
+
 
         current_division = division.get_client_side_dict()
 

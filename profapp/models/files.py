@@ -382,7 +382,7 @@ class File(Base, PRBase):
     def ext(oldname):
         name = oldname[::-1]
         b = name.find('.')
-        c = name[0:(b + 1):1]
+        c = name[0:b+1]
         c = c[::-1]
         return c
 
@@ -393,7 +393,7 @@ class File(Base, PRBase):
             name = File.if_copy(name)
             list = []
             for n in db(File, parent_id=parent_id, mime=mime):
-                if re.match(r'^' + name + '\(\d+\)' + '' + ext + '', n.name):
+                if re.match(r'^' + name + '\(\d+\)' + '' + ext+'$', n.name):
                     pos = (len(n.name) - 2) - len(ext)
                     list.append(int(n.name[pos:pos + 1]))
             if list == []:
@@ -531,7 +531,7 @@ class File(Base, PRBase):
         from PIL import Image
         from config import Config
         from io import BytesIO
-        file_ = db(File, id=file_id).one()
+        file_ = db(File, id=file_id).first()
         file_mime = re.findall(r'/(\w+)', file_.mime)[0].upper()
         if file_mime in Config.ALLOWED_IMAGE_FORMATS:
             try:
@@ -672,7 +672,6 @@ class File(Base, PRBase):
         if not image_cropped:
             # if article have no record in ImageCroped table we
             # create one with copied file as `original file for croping`
-            print(self.id)
             new_cropped_from_file = File.get(self.id).copy_file(self.parent_id)
             image_pil = Image.open(BytesIO(new_cropped_from_file.file_content.content))
             image_cropped = ImageCroped(original_image_id=new_cropped_from_file.id,
@@ -999,7 +998,7 @@ class YoutubeApi(GoogleAuthorize):
                                 mime='video/*')
                     youtube = YoutubeVideo(file=file, authorization=session['authorization'].split(' ')[-1],
                                            size=self.chunk_info.get('total_size'),
-                                           user_id=g.user_dict['id'],
+                                           user_id=g.user.id,
                                            video_id=session['video_id'],
                                            status='uploaded',
                                            playlist=playlist)
@@ -1018,7 +1017,7 @@ class YoutubeApi(GoogleAuthorize):
                             mime='video/*')
                 youtube = YoutubeVideo(file=file, authorization=session['authorization'].split(' ')[-1],
                                        size=int(e.headers.get('Range').split('-')[-1]) + 1,
-                                       user_id=g.user_dict['id'],
+                                       user_id=g.user.id,
                                        video_id=session['video_id'],
                                        playlist=playlist
                                        )

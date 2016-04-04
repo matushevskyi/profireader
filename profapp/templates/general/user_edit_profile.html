@@ -117,18 +117,19 @@
                                placeholder="comfirm password" ng-model="data.change_password.password2"
                                pr-validation-answer="data_validation:password2">
 
-                    </div>
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                        <span class="input-group-addon" id="sizing-addon1">{{ _('Phone') }}</span>
-                        <input class="form-control" aria-describedby="sizing-addon1" placeholder="your phone">
-                    </div>
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                        <span class="input-group-addon" id="sizing-addon1">{{ _('Location') }}</span>
-                        <input class="form-control" aria-describedby="sizing-addon1" type="text"
-                               placeholder="your city" ng-model="data.user.location">
-                    </div>
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
-                        <span class="input-group-addon" id="sizing-addon1">{{ _('About me') }}</span>
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Phone') }}</span>
+                    <input class="form-control" ng-model="data.user.profireader_phone" aria-describedby="sizing-addon1"
+                           placeholder="your phone" pr-validation-answer="data_validation:profireader_phone">
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('Location') }}</span>
+                    <input class="form-control" aria-describedby="sizing-addon1" type="text"
+                           placeholder="your city" ng-model="data.user.location">
+                </div>
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
+                    <span class="input-group-addon" id="sizing-addon1">{{ _('About me') }}</span>
                         <textarea class="form-control" style="height: 100px;" aria-describedby="sizing-addon1"
                                   type="text" name="about" placeholder="Give us some information about you please"
                                   rows="8"
