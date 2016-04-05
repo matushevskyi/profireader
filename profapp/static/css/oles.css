@@ -346,7 +346,6 @@
     text-decoration: underline;
 }
 
-<<<<<<< HEAD
 .ng-crop-rect {
     cursor: move;
     position: absolute;
@@ -410,6 +409,15 @@
 .ng-crop-rect-w {
     cursor: w-resize;
     }
+
+.ng-crop-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.ng-crop-container img {
+    position: absolute;
+}
 
 .form-control.pr-datetimepicker, .form-control.pr-datepicker {
     background-position: 4px center;
