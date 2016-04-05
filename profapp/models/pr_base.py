@@ -12,17 +12,14 @@ from ..controllers import errors
 from utils.db_utils import db
 from html.parser import HTMLParser
 from ..constants.SEARCH import RELEVANCE
-import math
 from config import Config
 import collections
 from sqlalchemy.sql import expression, functions, update
-from utils.validators import validators
 from sqlalchemy import and_
 import datetime
 import time
 import operator
 from collections import OrderedDict
-from functools import reduce
 import base64
 
 from ..utils import fileUrl, fileID
@@ -417,11 +414,18 @@ class PRBase:
         return True if (what >= fromr) and (what <= tor) else False
 
     @staticmethod
-    def parseDate(str):
+    def parse_timestamp(str):
         try:
             return datetime.datetime.strptime(str, "%a, %d %b %Y %H:%M:%S %Z")
         except:
             return None
+
+        @staticmethod
+        def parse_date(str):
+            try:
+                return datetime.date.strptime(str, "%Y-%m-%d")
+            except:
+                return None
 
     def position_unique_filter(self):
         return self.__class__.position != None
@@ -536,7 +540,7 @@ class PRBase:
             'no_selection_url': parameters.get('no_selection_url'),
             'selected_by_user': {'type': 'none'}
         }
-
+        print(croped_image_file_id)
         if croped_image_file_id:
             ret['selected_by_user'] = {'type': 'browse', 'image_file_id': croped_image_file_id.original_image_id}
             if ret['cropper']:
@@ -603,6 +607,8 @@ class PRBase:
         if isinstance(object_property, datetime.datetime):
             return object_property.replace(object_property.year, object_property.month, object_property.day,
                                            object_property.hour, object_property.minute, object_property.second, 0)
+        elif isinstance(object_property, datetime.date):
+            return object_property.strftime('%Y-%m-%d')
         elif isinstance(object_property, dict):
             return object_property
         else:

@@ -15,7 +15,7 @@ from sqlalchemy.sql import expression, and_
 def help():
     email = None
     if g.user:
-        email = g.user_dict['email']
+        email = g.user.profireader_email
     return render_template('help.html', data={'email':email})
 
 
