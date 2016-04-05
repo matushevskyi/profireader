@@ -267,12 +267,18 @@ body {
 .microsoft-icon {
   display: inline;
 }
+.microsoft-icon a:hover {
+  text-decoration: none;
+}
 .microsoft-icon i {
   color: #26AAE1;
 }
 .google-icon {
   display: inline;
   margin-right: 10px;
+}
+.google-icon a:hover {
+  text-decoration: none;
 }
 .google-icon i {
   color: #C70000;
@@ -281,12 +287,18 @@ body {
   display: inline;
   margin-right: 10px;
 }
+.linkedin-icon a:hover {
+  text-decoration: none;
+}
 .linkedin-icon i {
   color: #0177B5;
 }
 .facebook-icon {
   display: inline;
   margin-right: 10px;
+}
+.facebook-icon a:hover {
+  text-decoration: none;
 }
 .facebook-icon i {
   color: #3B569D;
