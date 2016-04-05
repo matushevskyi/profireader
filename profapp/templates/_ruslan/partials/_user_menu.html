@@ -98,7 +98,7 @@
             <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
                         data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-                    <span class="sr-only">Toggle navigation</span>
+                    <span class="sr-only">{{ _('Toggle navigation') }}</span>
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
@@ -123,10 +123,10 @@
                         <li ng-if="user"><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
                                ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
                                 class="fa fa-folder-open-o"></i></a></li>
-                        <li class="info-padding"><a pr_test="UserInfo" href="{{ url_general_help() }}" title="{{ _('Інформація') }}"
+                        <li class="info-padding"><a pr_test="UserInfo" href="{{ url_general_help() }}" title="{{ _('Help information') }}"
                                ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-info"></i></a></li>
 
-                        <li class="dropdown"><a class="dropbtn" title="{{ _('Мова') }}"><i class="fa fa-language"></i></a>
+                        <li class="dropdown"><a class="dropbtn" title="{{ _('Language') }}"><i class="fa fa-language"></i></a>
                         <div class="dropdown-content">
                             <a ng-repeat="language in languages" ng-class="{'selected': language.name == lang}" style="cursor: pointer" ng-click="changeLanguage(language.name)">{{language.display}}</a>
                           </div>

@@ -35,9 +35,19 @@
 </head>
 
 <body>
-
-!!!
-
+<div class="container-fluid portal-body">
+        {% include 'header.html' %}
+    <div class="row content-block">
+        <div>
+            {% include 'menu_portal.html' %}
+        </div>
+        <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8 news-content">
+            {% include 'news.html' %}
+{#            {% include 'advertising.html' %}#}
+        </div>
+    </div>
+ {% include 'footer.html' %}
+</div>
 
 </body>
 </html>
