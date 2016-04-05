@@ -1,6 +1,6 @@
 <script>
     module.controller('CompanyMenuController', ['$scope', '$timeout', function ($scope, $timeout) {
-        $scope.user = {{ g.user_dict|tojson|safe }};
+        $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
         $scope.company = {{ company.get_client_side_dict()|tojson|safe }};
 
         $scope.$$translate = {{ translates('CompanyMenuController')|safe }};

@@ -25,7 +25,6 @@ from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 import random
 import time
 
-
 class User(Base, UserMixin, PRBase):
     __tablename__ = 'user'
 
@@ -47,7 +46,7 @@ class User(Base, UserMixin, PRBase):
     confirmed = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
     _banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
 
-    birth_tm = Column(TABLE_TYPES['timestamp'])
+    birth_tm = Column(TABLE_TYPES['date'])
     registered_tm = Column(TABLE_TYPES['timestamp'],
                            default=datetime.datetime.utcnow)
     last_seen = Column(TABLE_TYPES['timestamp'],
@@ -267,6 +266,8 @@ class User(Base, UserMixin, PRBase):
             ret['errors']['profireader_first_name'] = 'pls enter a bit longer name'
         if not re.match(r'[^\s]{3}', str(self.profireader_last_name)):
             ret['errors']['profireader_last_name'] = 'pls enter a bit longer name'
+        if self.profireader_phone and not self.profireader_phone.isdigit():
+            ret['errors']['profireader_phone'] = 'pls enter only digits'
         return ret
 
     def logo_file_properties(self):
@@ -579,7 +580,7 @@ class User(Base, UserMixin, PRBase):
     #    return self.can(Permission.ADMINISTER)
 
     def get_client_side_dict(self,
-                             fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url|profireader_email|profireader_first_name|profireader_last_name|birth_tm|profireader_link|profireader_phone|location|profireader_gender|lang|about_me|country_id',
+                             fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url|profireader_email|profireader_first_name|profireader_last_name|profireader_link|profireader_phone|location|profireader_gender|lang|about_me|country_id|tos|profireader_phone',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 

@@ -21,9 +21,13 @@
                 $ok($scope.add_delete_like, {'article': article}, function (resp) {
                     article.liked = resp
                 })
-            }
+            };
             $scope.loadNextPage('');
             var trusted = {};
+
+            $scope.get_local_time = function (date) {
+                return moment(date).format();
+            };
 
 {#            $scope.getPopoverContent = function(article) {#}
 {#                var tool = '\n';#}
@@ -58,7 +62,7 @@
                                href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
                                class="item-company">{{ article.portal.name}}</a>
                             <div style=""
-                                 class="item-publication-date">{{ article.publishing_tm }}
+                                 class="item-publication-date">{{ get_local_time(article.publishing_tm) }}
                             </div>
                             <div class="pull-right item-read_count"><i class="fa fa-eye"></i> {{ article.read_count }}</div>
                         </div>
