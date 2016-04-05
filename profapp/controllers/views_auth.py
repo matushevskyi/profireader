@@ -28,6 +28,7 @@ EMAIL_REGEX = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
 
 def login_signup_general(*soc_network_names):
+    print('registry')
     if current_user.is_authenticated():
         flash('You are already logged in. Logout first to login as another user.')
         return redirect(redirect_url())
