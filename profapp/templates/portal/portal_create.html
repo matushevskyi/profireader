@@ -47,7 +47,7 @@
              ng-model="data">
             <div class="row company">
                 <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 link-page">
-                    <h5>Launch portal</h5>
+                    <h5>{{ _('Launch portal') }}</h5>
                 </div>
                 <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 create-new-company">
 
@@ -65,13 +65,13 @@
                 </div>
                 <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12 edit-company">
                     <div class="edit-block col-lg-12">
-                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 name-form"><span>Name:</span></div>
+                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 name-form"><span>{{ _('Name') }}:</span></div>
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10 edit-data">
                             <input type="text" class="form-control border-radius" id="basic-url"
                                    aria-describedby="basic-addon3" pr-validation-answer="data_validation:name"
                                    ng-model="data.portal.name" name="portal_name" ng-pattern="/[\wа-яёі']{4}/">
-                            <div ng-show="formPortal.portal_name.$error.pattern" class="error-input">The
-                                        portal name should be longer!</div>
+                            <div ng-show="formPortal.portal_name.$error.pattern" class="error-input"><span>{{ _('The
+                                        portal name should be longer!') }}</span></div>
                         </div>
                         <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 name-form"><span>Host:</span></div>
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10 edit-data form-portal-edit">
@@ -95,7 +95,7 @@
                                                           pr-validation-answer="data_validation:host"
                                                           ng-model="data.portal.host_own"/>
                         </div>
-                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 name-form"><span>Layout:</span></div>
+                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 name-form"><span>{{ _('Layout') }}:</span></div>
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10 edit-data">
                             <select class="form-control" ng-model="data.portal.portal_layout_id"
                                     ng-options="layout.id as layout.name for layout in data.layouts"></select>
@@ -104,7 +104,7 @@
                 </div>
             </div>
             <div class="row add-division-style">
-                <div class="col-lg-3 col-md-3 col-sm-3 col-xs-4"><h3>Portal divisions</h3></div>
+                <div class="col-lg-3 col-md-3 col-sm-3 col-xs-4"><h3>{{ _('Portal divisions') }}</h3></div>
                 <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8 label-division">
                     <button class="pull-right" type="button" ng-click="addDivision()"><i class="fa fa-plus"></i> {{
                         _('add division') }}

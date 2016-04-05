@@ -15,7 +15,7 @@
 {#    </script>#}
 <h3 ng-controller="UserLoginController">{{ _('or Simple registration') }}</h3>
 
-<form name="formLogin" class="register-form-profirider" action="{{ url_for('auth.signup') }}" method="post">
+<form name="formLogin" class="register-form-profireader" action="{{ url_for('auth.signup') }}" method="post">
     <input pr-test="RegEmail" class="form-control" type="email" placeholder="email" required name="email" ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/">
         <div ng-show="formLogin.email.$error.pattern" class="error-input">The email not validate!</div>
     <input pr-test="RegName" class="form-control" type="text" placeholder="display name" required name="display_name">
