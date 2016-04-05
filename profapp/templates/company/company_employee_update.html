@@ -27,7 +27,7 @@
     {% raw %}
 
     <div ng-controller="company_employee_update" ng-cloak>
-        <div style="text-align: center" ng-if="!user_right"><h2>Sorry!!!You haven't got appropriate rights!</h2></div>
+        <div style="text-align: center" ng-if="!user_right"><h2><div>{{ _('Sorry!!!You haven't got appropriate rights!') }}</div></h2></div>
         <div af af-after-save="after_save" af-watch="data.employment" ng-model="data" pr-user-rights="user_right">
             <h2>
                 <img class="person-small-cover" pr-image
