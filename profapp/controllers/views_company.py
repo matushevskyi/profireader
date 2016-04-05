@@ -20,7 +20,7 @@ from ..models.pr_base import Search, PRBase, Grid
 @login_required
 # @check_rights(simple_permissions(Right[RIGHTS.SUBMIT_PUBLICATIONS()]))
 def search_to_submit_article(json):
-    companies = Company().search_for_company(g.user_dict['id'], json['search'])
+    companies = Company().search_for_company(g.user.id, json['search'])
     return companies
 
 
@@ -42,7 +42,7 @@ def companies_load(json):
             Company.id == db(UserCompany, user_id=g.user.id).subquery().c.company_id), page=1,
             items_per_page=6 * json.get('next_page') if json.get('next_page') else 6)
     return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],
-            'user_id': g.user_dict['id'], 'end': True if pages == 1 or pages == 0 else False}
+            'user_id': g.user.id, 'end': True if pages == 1 or pages == 0 else False}
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
@@ -130,7 +130,7 @@ def employees(company_id):
 @ok
 def employees_load(json, company_id):
     company = Company.get(company_id)
-    usercompa = UserCompany.get(user_id=g.user_id, company_id=company_id)
+    usercompa = UserCompany.get(user_id=g.user.id, company_id=company_id)
     employees_list = [
         PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                            {'actions': employment.actions(usercompa)})
@@ -216,7 +216,7 @@ def employment_action(json, company_id, employment_id, action):
 
     return PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                               {'actions': employment.actions(
-                                      UserCompany.get(user_id=g.user_id, company_id=company_id))})
+                                      UserCompany.get(user_id=g.user.id, company_id=company_id))})
 
 
 @company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_position/', methods=['POST'])
@@ -231,7 +231,7 @@ def employment_change_position(json, company_id, employment_id):
 
     return PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                               {'actions': employment.actions(
-                                      UserCompany.get(user_id=g.user_id, company_id=company_id))})
+                                      UserCompany.get(user_id=g.user.id, company_id=company_id))})
 
 
 @company_bp.route('/update_rights', methods=['POST'])
@@ -339,7 +339,7 @@ def profile_load_validate_save(json, company_id=None):
 # @check_rights(simple_permissions([]))
 def search_for_company_to_join(json):
     companies, pages, page, count = pagination(
-            query=Company().search_for_company_to_join(g.user_dict['id'], json['search']), page=1,
+            query=Company().search_for_company_to_join(g.user.id, json['search']), page=1,
             items_per_page=5 * json.get('next_page') if json.get('next_page') else 5)
     return {'company_list': [company.get_client_side_dict() for company in
                              companies], 'end': pages == 1}
@@ -367,7 +367,7 @@ def send_article_to_user(json):
 @ok
 # @check_rights(simple_permissions([]))
 def join_to_company(json, company_id):
-    UserCompany(user_id=g.user_dict['id'], company_id=json.get('company_id')).save()
+    UserCompany(user_id=g.user.id, company_id=json.get('company_id')).save()
     return {'companies': [employer.get_client_side_dict() for employer in current_user.employers]}
 
 

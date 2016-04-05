@@ -4,6 +4,7 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_grid.html' %}
+    {% include '_ruslan/partials/_header_files_articles.html' %}
 {% endblock head %}
 {% block portal_content %}
 
@@ -52,7 +53,7 @@
 
                     $scope.url_search_translations = {{ raw_url_for('admin.translations_load')|safe }};
                     $scope.url_save_translations = {{ raw_url_for('admin.translations_save')|safe }};
-                    $scope.url_delete_translations = {{ raw_url_for('admin.delete')|safe }}
+                    $scope.url_delete_translations = {{ raw_url_for('admin.delete_translates')|safe }}
                     $scope.$$translate = {{ translates('translation_list')|safe }};
                             {% raw %}
                     $scope.noData = 'No translations';

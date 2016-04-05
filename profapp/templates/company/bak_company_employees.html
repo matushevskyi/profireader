@@ -19,7 +19,7 @@
 <script>
     module.controller('CompanyEmployees', ['$scope', function ($scope) {
         angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_employees')
-        $scope.user = {{ g.user_dict|tojson|safe }};
+        $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
         $scope.$$translate = {{ translates('CompanyEmployees')|safe }};
     }]);
     change_pos = function(){
@@ -30,7 +30,7 @@
 
 </script>
 <div ng-controller="CompanyEmployees" ng-cloak>
-    <span ng-cloak ng-show="'{{ g.user_dict['id'] }}'">
+    <span ng-cloak ng-show="'{{ g.user.id }}'">
         {% for user_id in company_user_rights %}
             {% if not curr_user %}
                 <a href="{{ url_for('company.subscribe', company_id=company.id)}}">{{ '{{' }}_('Subscribe to this company'){{ '}}' }}</a>
@@ -46,7 +46,7 @@
                 <input type="hidden" name="company_id" id="company_id" value="{{ company.id }}">
                 <dt>
                     <img src="{{ company_user_rights[user_id]['user'].profireader_small_avatar_url }}" style="width:100px;height:100px;border:0">
-                    {{ company_user_rights[user_id]['name'] }} {% if g.user_dict['id']==user_id %} - {{ '{{' }}_('you'){{ '}}' }} {% endif %}{% if company_user_rights[user_id]['status']=='suspended' %} {{ '{{' }}_('- Suspended'){{ '}}' }}<br>{% for c_user in curr_user %}{% if curr_user[c_user]['rights'][Right['suspend_employee']] %}<a href="{{ url_for('company.unsuspend', user_id=user_id, company_id=company_id) }}">{{ '{{' }}_('Unsuspend'){{ '}}' }}</a>{% endif %}{% endfor %}{% endif %}<br>
+                    {{ company_user_rights[user_id]['name'] }} {% if g.user.id==user_id %} - {{ '{{' }}_('you'){{ '}}' }} {% endif %}{% if company_user_rights[user_id]['status']=='suspended' %} {{ '{{' }}_('- Suspended'){{ '}}' }}<br>{% for c_user in curr_user %}{% if curr_user[c_user]['rights'][Right['suspend_employee']] %}<a href="{{ url_for('company.unsuspend', user_id=user_id, company_id=company_id) }}">{{ '{{' }}_('Unsuspend'){{ '}}' }}</a>{% endif %}{% endfor %}{% endif %}<br>
                     {{ '{{' }}_('Phone number'){{ '}}' }} : {{ company_user_rights[user_id]['user'].phone_number }}<br/>
                     {{ '{{' }}_('Email'){{ '}}' }} : {{ company_user_rights[user_id]['user'].show_email }}<br/>
                     {{ '{{' }}_('Subscribed'){{ '}}' }} : {{ company_user_rights[user_id]['date'] }}<br/>
@@ -66,9 +66,9 @@
                             <dt> {{ '{{' }}_('Rights in this company:'){{ '}}' }} </dt>
                                 {% if curr_user[c_user]['rights'][Right['manage_rights_company']]==true %}
                                         {% for right in company_user_rights[user_id]['rights'] %}
-                                        {% if company_user_rights[user_id]['rights'][right]==true and g.user_dict['id']!=user_id and company_user_rights[user_id]['status']=='active' %}
+                                        {% if company_user_rights[user_id]['rights'][right]==true and g.user.id!=user_id and company_user_rights[user_id]['status']=='active' %}
                                             <input type="checkbox" id="right" name="right" value="{{ right }}" checked="checked">{{ RightHumnReadible[right] }}<br>
-                                        {% elif company_user_rights[user_id]['rights'][right]==true and (g.user_dict['id']==user_id or company_user_rights[user_id]['status']=='suspended') %}
+                                        {% elif company_user_rights[user_id]['rights'][right]==true and (g.user.id==user_id or company_user_rights[user_id]['status']=='suspended') %}
                                             <input type="checkbox" id="right" name="right" value="{{ right }}" disabled="disabled" checked="checked">{{ RightHumnReadible[right] }}<br>
                                         {% else %}
                                             <input type="checkbox" id="right" name="right" value="{{ right }}">{{ RightHumnReadible[right] }}<br>
@@ -127,7 +127,7 @@
 {% for user_id in company_user_rights %}
     {% if curr_user %}
         {% for c_user in curr_user %}
-            {% if curr_user[c_user]['rights'][Right['manage_rights_company']]==true or company.author_user_id==g.user_dict['id'] %}
+            {% if curr_user[c_user]['rights'][Right['manage_rights_company']]==true or company.author_user_id==g.user.id %}
                 {% if company_user_rights[user_id]['status'] == 'nonactive' %}
                     {{ '{{' }}_('User %(name)s send query to your company', {'name': '{{company_user_rights[user_id]['name'] }}'}){{ '}}' }}<br>
                     <!--{{ '{{' }}_('User'){{ '}}' }} {{ company_user_rights[user_id]['name'] }} {{ '{{' }}_('send query to your company'){{ '}}' }}<br>-->

@@ -111,7 +111,7 @@ class ArticlePortalDivision(Base, PRBase):
             ACTIONS['DELETE']: delete_rights
         },
         STATUSES['DELETED']: {
-            ACTIONS['UNPUBLISH']: delete_rights,
+            ACTIONS['UNDELETE']: delete_rights,
         }
     }
 
@@ -163,12 +163,12 @@ class ArticlePortalDivision(Base, PRBase):
                 self.ACTIONS_FOR_STATUSES[self.status]}
 
     def check_favorite_status(self, user_id=None):
-        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user_id,
+        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user.id if g.user else None,
                   article_portal_division_id=self.id,
                   favorite=True).count() > 0
 
     def check_liked_status(self, user_id=None):
-        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user_id,
+        return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user.id if g.user else None,
                   article_portal_division_id=self.id,
                   liked=True).count() > 0
 
@@ -177,7 +177,7 @@ class ArticlePortalDivision(Base, PRBase):
 
     def like_dislike_user_article(self, liked):
         article = db(ReaderArticlePortalDivision, article_portal_division_id=self.id,
-                     user_id=g.user_id).one()
+                     user_id=g.user.id if g.user else None).one()
         article.favorite = True if liked else False
         self.like_count += 1
 
@@ -984,7 +984,7 @@ class ReaderArticlePortalDivision(Base, PRBase):
     @staticmethod
     def add_delete_favorite_user_article(article_portal_division_id, favorite):
         articleReader = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id,
-                     user_id=g.user_id).first()
+                     user_id=g.user.id).first()
         if not articleReader:
             articleReader = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
         articleReader.favorite = True if favorite else False
@@ -994,7 +994,7 @@ class ReaderArticlePortalDivision(Base, PRBase):
     @staticmethod
     def add_delete_liked_user_article(article_portal_division_id, liked):
         articleReader = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id,
-                     user_id=g.user_id).first()
+                     user_id=g.user.id).first()
 
         if not articleReader:
             articleReader = ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
@@ -1035,8 +1035,8 @@ class ReaderArticlePortalDivision(Base, PRBase):
     @staticmethod
     def add_to_table_if_not_exists(article_portal_division_id):
         if not db(ReaderArticlePortalDivision,
-                  user_id=g.user_id, article_portal_division_id=article_portal_division_id).count():
-            return ReaderArticlePortalDivision(user_id=g.user_id,
+                  user_id=g.user.id, article_portal_division_id=article_portal_division_id).count():
+            return ReaderArticlePortalDivision(user_id=g.user.id,
                                                article_portal_division_id=article_portal_division_id,
                                                favorite=False).save()
 

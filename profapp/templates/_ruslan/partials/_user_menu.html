@@ -23,14 +23,14 @@
     });
 
     module.controller('UserLoginController', function ($scope, $uibModal, $ok, $timeout) {
-        $scope.user = {{ g.user_dict|tojson|safe }};
+        $scope.user = {{ g.user.get_client_side_dict()| tojson|safe if g.user else 'null'}};
         $scope.languages = {{ g.languages|tojson|safe }}
         $scope.lang = {{ g.lang|tojson|safe }}
         $scope.tos = function () {
-            if (!$scope.user.id || $scope.user.tos) {
+            if (!$scope.user || $scope.user.tos) {
                 return;
             }
-            if ($scope.user.id && $scope.user.tos != true) {
+            if ($scope.user && $scope.user.tos != true) {
                 var modalInstance = $uibModal.open({
                             templateUrl: 'tos_dialog.html',
                             controller: 'tos_dialog_controller',
@@ -45,7 +45,7 @@
 
         $scope.url_list_reader = {{ raw_url_for('reader.list_reader')|safe }}
                 $scope.url_general = function(){
-                    if ($scope.user.id){
+                    if ($scope.user){
                         return'{{ url_for('reader.list_reader')|safe }}'
                     }
                     else {
@@ -64,11 +64,11 @@
         login_signup = '{{ login_signup }}';  // login_signup = 'login' or 'signup' or None
         $scope.login_signup = (login_signup === 'signup') ? 'signup' : 'login';
         $scope.login_or_none_href = function(){
-            return $scope.user.id?'#':$scope.login_url;
+            return $scope.user?'#':$scope.login_url;
         };
         $scope.$$translate = {{ translates('UserLoginController')|safe }};
         $scope.open_filemanager = function () {
-            if ($scope.user.id) {
+            if ($scope.user) {
                 window.location.href = '/filemanager/';
             }
         };
@@ -94,7 +94,7 @@
     <div class="container" ng-cloak>
 
         <div class="row">
-            <button pr-test="HeaderAcceptLicence" type="button" ng-click="tos()" class="btn btn-info btn-lg" ng-if="user.id && !user.tos">{{ _('Accept licence') }}</button>
+            <button pr-test="HeaderAcceptLicence" type="button" ng-click="tos()" class="btn btn-info btn-lg" ng-if="user && !user.tos">{{ _('Accept licence') }}</button>
             <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
                         data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
@@ -112,15 +112,15 @@
 
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <ul>
-                        <li ng-if="user.id"><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="{{ _('Readers list') }}" ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
+                        <li ng-if="user"><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="{{ _('Стрічкa читача') }}" ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
                                 class="fa fa-newspaper-o"></i></a></li>
-                        <li ng-if="user.id"><a pr_test="UserMassages" href="{{ url_messenger }}" title="{{ _('All messages') }}"
+                        <li ng-if="user"><a pr_test="UserMassages" href="{{ url_messenger }}" title="{{ _('Всі повідомлення') }}"
                                ng-class="{'selected': selected_user_menu == 'messages'}"><i
                                 class="fa fa-envelope-o"></i></a></li>
-                        <li ng-if="user.id"><a pr_test="CompaniesList" href="{{ url_company_companies() }}" title="{{ _('Companies') }}"
+                        <li ng-if="user"><a pr_test="CompaniesList" href="{{ url_company_companies() }}" title="{{ _('Компанії') }}"
                                ng-class="{'selected': selected_user_menu == 'companies'}"><i
                                 class="fa fa-building-o"></i></a></li>
-                        <li ng-if="user.id"><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('File manager') }}"
+                        <li ng-if="user"><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
                                ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
                                 class="fa fa-folder-open-o"></i></a></li>
                         <li class="info-padding"><a pr_test="UserInfo" href="{{ url_general_help() }}" title="{{ _('Help information') }}"
@@ -132,11 +132,11 @@
                           </div>
                         </li>
 
-                        <li ng-if="user.id" role="presentation" class="menu-profile">
+                        <li ng-if="user" role="presentation" class="menu-profile">
                             <a pr_test="UserProfile"  href="{{ url_user_profile({user_id:user.id}) }}" role="button" aria-haspopup="true"
                                aria-expanded="false">
                                 <img class="person-small-cover" pr-image="" pr-no-image="{{ user_avatar_url }}">
-                                {{user.name}}
+                                {{user.profireader_name}}
                             </a>
                             <a pr_test="LogOut" class="login-profile" href="{{ url_auth_logout() }}">{{ _('Log out') }}</a>
                             <!--<ul class="dropdown-menu">
@@ -147,8 +147,8 @@
                             </ul>-->
                         </li>
 
-                        <li ng-if="!user.id" role="presentation" class="menu-profile">
-                            <a pr_test="LogIn" class="login-profile" href="{{ login_url }}?login_signup=login"><span>{{ _('Login') }}</span></a>
+                        <li ng-if="!user" role="presentation" class="menu-profile">
+                            <a pr_test="LogIn" class="login-profile" href="{{ login_url }}?login_signup=login">{{ _('Login') }}</a>
                         </li>
                     </ul>
                 </div>

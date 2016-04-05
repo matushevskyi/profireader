@@ -28,7 +28,7 @@ EMAIL_REGEX = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
 
 def login_signup_general(*soc_network_names):
-    if g.user_init and g.user_init.is_authenticated():
+    if current_user.is_authenticated():
         flash('You are already logged in. Logout first to login as another user.')
         return redirect(redirect_url())
 
@@ -80,8 +80,7 @@ def login_signup_general(*soc_network_names):
                     return redirect(url_for('general.index'))
 
                 login_user(user)
-                flash('You have successfully logged in!', 'success')
-
+                flash('You have successfully logged in.')
 
                 # session['user_id'] = user.id assignment
                 # is automatically executed by login_user(user)
@@ -115,21 +114,14 @@ def login_signup_general(*soc_network_names):
 def before_request():
     if current_user.is_authenticated():
         current_user.ping()
-        if not current_user.confirmed and request.endpoint[:5] != 'auth.' and request.endpoint != 'static':
+        if not current_user.confirmed and request.endpoint[:5] != 'auth.' and request.endpoint != 'static' and \
+                not (request.endpoint == 'tools.save_translate' or request.endpoint == 'tools.change_allowed_html' or request.endpoint == 'tools.update_last_accessed'):
             return redirect(url_for('auth.unconfirmed'))
-
-
-@auth_bp.route('/unconfirmed')
-def unconfirmed():
-    if current_user.confirmed:
-        return redirect(url_for('general.index'))
-    return render_template('auth/unconfirmed.html')
-
 
 @auth_bp.route('/login_signup/', methods=['GET'])
 def login_signup_endpoint():
     # if g.user_init and g.user_init.is_authenticated():
-    if g.user_init.is_authenticated():
+    if current_user.is_authenticated():
         if session.get('portal_id'):
             return redirect(url_for('reader.reader_subscribe', portal_id=session['portal_id']))
         elif session.get('back_to'):
@@ -146,14 +138,13 @@ def login_signup_endpoint():
 @auth_bp.route('/signup/', methods=['POST'])
 def signup():
     # if g.user_init and g.user_init.is_authenticated():
-    if g.user_init.is_authenticated():
+    if current_user.is_authenticated():
         # raise BadDataProvided
         flash('You are already logged in. To sign up Profireader with new account you should logout first')
         return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=signup')
     email = request.form.get('email')
     display_name = request.form.get('display_name')
     password = request.form.get('password')
-
     def check_fields():
         form = request.form
         required_fields = ['email', 'display_name', 'password', 'password1']
@@ -165,7 +156,6 @@ def signup():
                     return False
                 elif form.get('password') != form.get('password1'):
                     return False
-
         if db(User, profireader_email=request.form.get('email')).first():
             flash('User with this email already exist')
             return False
@@ -229,7 +219,7 @@ def login():
     # portal_id = request.args.get('subscribe', None)
     portal_id = session.get('portal_id')
     back_to = session.get('back_to')
-    if g.user_init.is_authenticated():
+    if current_user.is_authenticated():
         if portal_id:
             session.pop('portal_id')
             return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
@@ -274,16 +264,22 @@ def logout():
     # flash('You have been logged out.')
     return redirect(url_for('general.index'))
 
+@auth_bp.route('/unconfirmed', methods=['GET'])
+def unconfirmed():
+    if current_user.confirmed:
+        return redirect(url_for('general.index'))
+    return render_template('auth/unconfirmed.html')
 
-@auth_bp.route('/resend_confirmation/')
+@auth_bp.route('/resend_confirmation/', methods=["POST"])
 @login_required
-def resend_confirmation():
+@ok
+def resend_confirmation(json):
     current_user.generate_confirmation_token().save()
     SendEmail().send_email(subject='Confirm Your Account',
                            html=render_template('auth/email/resend_confirmation.html', user=current_user),
                            send_to=(current_user.profireader_email, ))
     flash('A new confirmation email has been sent to you by email.')
-    return redirect(url_for('general.index'))
+    return True
 
 
 @auth_bp.route('/confirm_email/<token>/')
@@ -334,7 +330,7 @@ def help_message(json):
 #             return redirect(url_for('general.index'))
 #         else:
 #             flash('Invalid password.')
-#     return render_template("auth/change_password.html", form=form)
+#     return render_template("auth/bak_change_password.html", form=form)
 
 @auth_bp.route('/reset_password', methods=['GET'])
 def password_resets():
@@ -370,34 +366,33 @@ def password_reset(token):
     return render_template('auth/reset_password_token.html', token=token)
 
 @auth_bp.route('/reset/<token>', methods=['POST'])
-def password_reset_change(token):
-    form = request.form
+@ok
+def password_reset_change(json, token):
     user = g.db.query(User).\
-        filter_by(profireader_email=request.form.get('email')).first()
-    if user.pass_reset_token != token:
-        flash('You put wrong email.')
-        return redirect(url_for('auth.password_resets'))
+        filter_by(profireader_email=json['data'].get('email')).first()
+    if not user or user.pass_reset_token != token:
+        return 'Your put wrong email.'
     def check_fields():
-        form = request.form
         required_fields = ['email', 'password', 'password1']
         for field in required_fields:
-            if field not in form.keys():
-                return False
+            if field not in json['data'].keys():
+                return 'Data is wrong.'
             else:
-                if not form.get(field):
-                    return False
-                elif form.get('password') != form.get('password1'):
-                    return False
+                if not json['data'].get(field):
+                    return 'Fill all fields.'
+                elif json['data'].get('password') != json['data'].get('password1'):
+                    return 'Put the same passwords.'
         return True
-    if check_fields():
+    check = check_fields()
+    if check == True:
         if (user is None) or user.is_banned():
-            return redirect(url_for('general.index'))
-        if user.reset_password(form.get('password')):
-            flash('Your password has been updated.')
-            return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
+            return 'You cannot update password.You are baned.'
+        if user.reset_password(json['data'].get('password')):
+            return True
         else:
-            return redirect(url_for('general.index'))
-    return ''
+            return 'Something wrong.'
+    else:
+        return check
 
 #  наразі не використовується але потрібна в майбутньому
 # @auth_bp.route('/change-email', methods=['GET', 'POST'])
