@@ -318,12 +318,13 @@ class Company(Base, PRBase):
     @staticmethod
     def get_members_for_company():
         dict_members = {}
+        main_companies =[]
         for user_company in g.user.employer_assoc:
-            print(user_company.employer.id)
+            main_companies.append(user_company.employer.name)
             if user_company.employer.own_portal:
-                dict_members[user_company.employer.name] = db(MemberCompanyPortal, portal_id=user_company.employer.own_portal.id).filter(MemberCompanyPortal.company_id != user_company.employer.id).all()
-        print(dict_members)
-        return dict_members
+                dict_members[user_company.employer.name] = db(MemberCompanyPortal,
+                    portal_id=user_company.employer.own_portal.id).filter(MemberCompanyPortal.company_id != user_company.employer.id).all()
+        return dict_members, main_companies
 
 
 class UserCompany(Base, PRBase):

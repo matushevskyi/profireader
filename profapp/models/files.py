@@ -206,13 +206,11 @@ class File(Base, PRBase):
     def if_action_allowed(action, company_id):
         from ..models.company import UserCompany
         user_company = UserCompany.get(user_id=g.user.id, company_id=company_id)
-
-        if user_company :
+        if user_company:
             if not user_company.has_rights(File.ACTIONS[action], True):
                 return False
-        if not user_company and action != 'show':
+        elif not user_company and action != 'show':
             return False
-        print('true')
         return True
 
     @staticmethod
@@ -246,7 +244,7 @@ class File(Base, PRBase):
             ret = search_files
         else:
             # 'cropable': True if File.is_cropable(file) else False,
-            size = (int(Config.IMAGE_EDITOR_RATIO * 100), 100)
+            size = (100, 100)
             str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
             ret = list({'size': file.size, 'name': file.name, 'id': file.id,
                         'parent_id': file.parent_id, 'type': File.type(file),
@@ -280,7 +278,7 @@ class File(Base, PRBase):
             if not self.get_thumbnail(size=str_size):
                 try:
                     image_pil = Image.open(BytesIO(self.file_content.content))
-                    resized = image_pil.resize(size)
+                    resized = image_pil.resize(size, Image.ANTIALIAS)
                     bytes_file = BytesIO()
                     resized.save(bytes_file, self.mime.split('/')[-1].upper())
                     thumbnail = File(md_tm=self.md_tm, size=sys.getsizeof(bytes_file.getvalue()),
@@ -297,19 +295,11 @@ class File(Base, PRBase):
                             croped_image_id=thumbnail.id,
                             width=image_pil.width,
                             height=image_pil.height).save()
-
-
-                except Exception as e:  # truncated png/gif
-                    # from ..controllers.errors import BadFormatFile
+                except Exception as e:
                     self.remove()
-
-                    #     details = e.args[0]
-                    #     print(details['message'])
-                    # resized = image_pil.resize(size)
-
         return self
 
-    def get_thumbnail_url(self, size='133x100'):
+    def get_thumbnail_url(self, size='100x100'):
         thumbnail = self.get_thumbnail(size=size)
 
         return thumbnail.url() if thumbnail else self.url()
@@ -755,6 +745,7 @@ class File(Base, PRBase):
             left, top, right, bottom = File.get_correct_coordinates(left, top, right, bottom, params)
 
             wider = (right-left)/(bottom-top) / (params['image_size'][0]/params['image_size'][1])
+
             if wider>1:
                 newwidth = params['image_size'][0]
                 newheight = params['image_size'][1]/wider
@@ -867,7 +858,6 @@ class ImageCroped(Base, PRBase):
         if (round(self.x) == round(left)) and round(self.y) == round(top) \
                 and (int(right-left) == self.croped_width and int(bottom-top)
                     == self.croped_height):
-            print('true')
             return True
         else:
             return False

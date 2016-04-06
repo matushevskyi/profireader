@@ -46,21 +46,23 @@ def filemanager():
     # {'name': 'My personal files',
     # 'icon': current_user.gravatar(size=18)}}
     library = []
-    members = Company.get_members_for_company()
+    members, main_companies = Company.get_members_for_company()
+    uniq = set()
     for n, user_company in enumerate(g.user.employer_assoc):
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE):
+            library.insert(n, File.folder_dict(user_company.employer,
+                                               {'can_upload': File.if_action_allowed('upload', user_company.company_id)}))
+            uniq.update({user_company.employer.name})
+            if user_company.employer.journalist_folder_file_id == last_root_id:
+                last_visit_root_name = user_company.employer.name + " files"
             if user_company.employer.name in members:
                 for member in members[user_company.employer.name]:
-                    if member.company.name == user_company.employer.name:
-                        library.insert(n, File.folder_dict(member.company,
-                                                           {'can_upload': File.if_action_allowed('upload', user_company.company_id)}))
-                    else:
+                    if member.company.name not in uniq and member.company.name not in main_companies:
                         library.append(File.folder_dict(member.company,
-                                                        {'can_upload': File.if_action_allowed('upload', None)}))
-                    print(member.company.name)
-                    if member.company.journalist_folder_file_id == last_root_id:
-                        last_visit_root_name = member.company.name + " files"
-
+                                                        {'can_upload': File.if_action_allowed('upload', member.company.id)}))
+                        uniq.update({member.company.name})
+                        if member.company.journalist_folder_file_id == last_root_id:
+                            last_visit_root_name = member.company.name + " files"
     # library.sort(key=lambda k: k['name'])
     file_manager_called_for = request.args[
         'file_manager_called_for'] if 'file_manager_called_for' in request.args else ''
@@ -89,7 +91,7 @@ def filemanager():
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
     company = db(Company, journalist_folder_file_id=ancestors[0]).first()
-    if json['params'].get('search_text'):
+    if len(json['params'].get('search_text'))>0:
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],
                          json['params']['search_text'], company_id=company.id)
     else:
