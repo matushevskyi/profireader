@@ -96,7 +96,7 @@
                     <div ng-if="editing">
                         <div style="width: 400px; height: 300px; position: relative" pr-cropa="data.logo"
                              pr-crop-coordinates="coordinates"
-                             pr-crop-image-url="fileUrl(data.logo.selected_by_user.image_file_id)"></div>
+                             pr-crop-image-url="{{ fileUrl(data.logo.selected_by_user.image_file_id) }}"></div>
                         {{ rect }}
                     </div>
 
