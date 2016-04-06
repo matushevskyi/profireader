@@ -206,8 +206,13 @@ class File(Base, PRBase):
     def if_action_allowed(action, company_id):
         from ..models.company import UserCompany
         user_company = UserCompany.get(user_id=g.user.id, company_id=company_id)
-        if not user_company.has_rights(File.ACTIONS[action], True):
+
+        if user_company :
+            if not user_company.has_rights(File.ACTIONS[action], True):
+                return False
+        if not user_company and action != 'show':
             return False
+        print('true')
         return True
 
     @staticmethod
@@ -763,6 +768,16 @@ class File(Base, PRBase):
             return bytes_file, [left, top, right, bottom,newwidth, newheight]
         except ValueError:
             return False
+
+
+    @staticmethod
+    def folder_dict(company, dict):
+        res = {'id': company.journalist_folder_file_id,
+               'name': "%s files" % (company.name.replace(
+                   '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),),
+               'icon': ''}
+        res.update(dict)
+        return res
 
 
 class FileContent(Base, PRBase):
