@@ -9,7 +9,7 @@
 <link rel="icon" href="{{ fileUrl(portal.favicon_file_id, if_no_file='//static.profireader.com/static/favicon.ico') }}" type="image/gif"/>
 
 <title>
-    {% block title %}{{ portal.name }}{% if current_division and current_division.name %} - {{ current_division.name }}
+    {% block title %}Profireader{% if current_division and current_division.name %} - {{ current_division.name }}
     {% endif %}{% endblock %}</title>
 
 <link rel="stylesheet" href="//static.profireader.com/static/jquery/smoothness/jquery-ui.css">

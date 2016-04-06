@@ -149,8 +149,8 @@
                                            class="form-control border-radius"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.name"
                                            oles_name="company_name" oles_oles_ng-pattern="/[\wа-яёі']{3}/">
-                                    <div ng-if=" 0 && formCompany.company_name.$error.pattern" class="error-input">The
-                                        company name should be longer!
+                                    <div ng-if=" 0 && formCompany.company_name.$error.pattern" class="error-input">{{ _('The
+                                        company name should be longer!') }}
                                     </div>
                                 </div>
 
@@ -161,8 +161,7 @@
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.country"
                                            oles_name="company_country" oles_ng-pattern="/[\wа-яёі]{2}/">
                                     <div ng-if=" 0 && formCompany.company_country.$error.pattern" class="error-input">
-                                        The
-                                        country name should be longer!
+                                        {{ _('The country name should be longer!') }}
                                     </div>
                                 </div>
                                 <div class="col-lg-2">{{ _('Region:') }}</div>
@@ -177,9 +176,8 @@
                                            class="form-control border-radius" oles_name="company_city"
                                            oles_ng-pattern="/[\wа-яёі]{2}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.city">
-                                    <div ng-if=" 0 && formCompany.company_city.$error.pattern" class="error-input">The
-                                        city
-                                        name should be longer!
+                                    <div ng-if=" 0 && formCompany.company_city.$error.pattern" class="error-input">{{ _('The
+                                        city name should be longer!') }}
                                     </div>
 
                                 </div>
@@ -190,8 +188,7 @@
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.postcode"
                                            oles_name="company_postcode">
                                     <div ng-if=" 0 && formCompany.company_postcode.$error.pattern" class="error-input">
-                                        The
-                                        postcode should be longer!
+                                        {{ _('The postcode should be longer!') }}
                                     </div>
 
                                 </div>
@@ -202,8 +199,7 @@
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.address"
                                            oles_name="company_address">
                                     <div ng-if=" 0 && formCompany.company_address.$error.pattern" class="error-input">
-                                        The
-                                        address should be longer!
+                                        {{ _('The address should be longer!') }}
                                     </div>
 
                                 </div>
@@ -214,8 +210,8 @@
                                            class="form-control border-radius" oles_ng-pattern="/[0-9]{6}/"
                                            placeholder="+38(098)7654321" id="basic-url" aria-describedby="basic-addon3"
                                            ng-model="data.phone" oles_name="company_phone">
-                                    <div  ng-if=" 0 && formCompany.company_phone.$error.pattern" class="error-input">The
-                                        phone should be longer!
+                                    <div  ng-if=" 0 && formCompany.company_phone.$error.pattern" class="error-input">{{ _('The
+                                        phone should be longer!') }}
                                     </div>
 
                                 </div>
@@ -232,8 +228,8 @@
                                            oles_ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.email"
                                            oles_name="company_email">
-                                    <div ng-if=" 0 && formCompany.company_email.$error.pattern" class="error-input">The
-                                        email not validate!
+                                    <div ng-if=" 0 && formCompany.company_email.$error.pattern" class="error-input">{{ _('The
+                                        email not validate!') }}
                                     </div>
 
                                 </div>
