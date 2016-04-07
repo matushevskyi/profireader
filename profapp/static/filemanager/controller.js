@@ -38,6 +38,7 @@
 
 
             $scope.changeRoot = function (root) {
+                console.log(root)
                 $scope.can_upload=root.can_upload
                 $scope.fileNavigator.setRoot(root.id);
                 $cookies.last_root = root.id;
@@ -463,9 +464,8 @@
             };
 
             $scope.errMsg = "You do not belong to any company!";
-            $scope.changeRoots();//(_.keys($scope.rootdirs)[0], _.values($scope.rootdirs)[0]['name']);
+            $scope.changeRoots();
             $scope.isWindows = $scope.getQueryParam('server') === 'Windows';
-            $scope.fileNavigator.refresh();
 
         }]);
 })(window, angular, jQuery);

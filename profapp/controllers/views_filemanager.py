@@ -13,12 +13,8 @@ import json as jsonmodule
 from flask import session, redirect, request, url_for
 from ..models.google import GoogleAuthorize, GoogleToken
 from utils.db_utils import db
-from ..models.company import Company, UserCompany, MemberCompanyPortal
-from ..models.users import User
-from ..models.translate import TranslateTemplate
+from ..models.company import Company, UserCompany
 import urllib.parse
-import collections
-import http.cookies
 
 
 def parent_folder(func):

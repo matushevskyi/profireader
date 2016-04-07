@@ -323,7 +323,9 @@ class Company(Base, PRBase):
             main_companies.append(user_company.employer.name)
             if user_company.employer.own_portal:
                 dict_members[user_company.employer.name] = db(MemberCompanyPortal,
-                    portal_id=user_company.employer.own_portal.id).filter(MemberCompanyPortal.company_id != user_company.employer.id).all()
+                    portal_id=user_company.employer.own_portal.id).\
+                    filter(MemberCompanyPortal.company_id != user_company.employer.id and MemberCompanyPortal.status == MemberCompanyPortal.STATUSES['ACTIVE'])\
+                    .join(Company).filter(Company.status == Company.STATUSES['ACTIVE']).all()
         return dict_members, main_companies
 
 

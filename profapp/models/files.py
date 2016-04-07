@@ -204,8 +204,10 @@ class File(Base, PRBase):
 
     @staticmethod
     def if_action_allowed(action, company_id):
-        from ..models.company import UserCompany
+        from ..models.company import UserCompany, Company
         user_company = UserCompany.get(user_id=g.user.id, company_id=company_id)
+        if Company.get(company_id).status != Company.STATUSES['ACTIVE']:
+            return False
         if user_company:
             if not user_company.has_rights(File.ACTIONS[action], True):
                 return False
@@ -278,7 +280,7 @@ class File(Base, PRBase):
             if not self.get_thumbnail(size=str_size):
                 try:
                     image_pil = Image.open(BytesIO(self.file_content.content))
-                    resized = image_pil.resize(size, Image.ANTIALIAS)
+                    resized = File.scale(image_pil, size)
                     bytes_file = BytesIO()
                     resized.save(bytes_file, self.mime.split('/')[-1].upper())
                     thumbnail = File(md_tm=self.md_tm, size=sys.getsizeof(bytes_file.getvalue()),
@@ -291,17 +293,33 @@ class File(Base, PRBase):
                     content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
                     g.db.add_all([thumbnail, content])
                     g.db.flush()
+                    exist = db(ImageCroped, original_image_id=self.id)
+                    if exist:
+                        exist.delete()
                     ImageCroped(original_image_id=self.id,
                             croped_image_id=thumbnail.id,
                             width=image_pil.width,
                             height=image_pil.height).save()
                 except Exception as e:
-                    self.remove()
+                    self.delete()
         return self
+
+    @staticmethod
+    def scale(image, max_size, method=Image.ANTIALIAS):
+        im_aspect = float(image.size[0]) / float(image.size[1])
+        out_aspect = float(max_size[0]) / float(max_size[1])
+        if im_aspect >= out_aspect:
+            scaled = image.resize((max_size[0], int((float(max_size[0]) / im_aspect) + 0.5)), method)
+        else:
+            scaled = image.resize((int((float(max_size[1]) * im_aspect) + 0.5), max_size[1]), method)
+
+        offset = (int(((max_size[0] - scaled.size[0]) / 2)), int(((max_size[1] - scaled.size[1]) / 2)))
+        back = Image.new("RGB", max_size, "white")
+        back.paste(scaled, offset)
+        return back
 
     def get_thumbnail_url(self, size='100x100'):
         thumbnail = self.get_thumbnail(size=size)
-
         return thumbnail.url() if thumbnail else self.url()
 
     def get_thumbnail(self, size=None, any=False):
@@ -310,7 +328,7 @@ class File(Base, PRBase):
         if any and image_cropped:
             thumbnail = db(File, id=image_cropped.croped_image_id).first()
         elif image_cropped:
-            thumbnail = db(File, id=image_cropped.croped_image_id, name=self.name + '_thumbnail_' + size).first()
+            thumbnail = db(File, id=image_cropped.croped_image_id).first()
         return thumbnail
 
     def type(self):
