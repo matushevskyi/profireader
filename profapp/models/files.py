@@ -242,7 +242,7 @@ class File(Base, PRBase):
         actions = {act: default_actions[act] for act in default_actions}
         actions['remove'] = lambda file: None if file.mime == "root" else File.if_action_allowed('remove', company_id)
         actions['copy'] = lambda file: None if file.mime == "root" else True
-        actions['paste'] = lambda file: None if file == None else True
+        actions['paste'] = lambda file: None if file == None else File.if_action_allowed('upload', company_id)
         actions['cut'] = lambda file: None if file.mime == "root" else True
         actions['properties'] = lambda file: None if file.mime == "root" else True
 

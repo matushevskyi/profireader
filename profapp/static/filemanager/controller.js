@@ -222,6 +222,8 @@
 
             $scope.take_action = function (item, actionname, permitted) {
                 $scope.modal = '';
+                if(!permitted)
+                    return false
                 if ($scope.file_manager_on_action[actionname] !== '' && actionname === 'download') {
                     try {
                         eval('item' + '.' + actionname + '();');//$scope.file_manager_on_action[actionname] + '(item);');
