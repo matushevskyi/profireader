@@ -29,16 +29,14 @@
             $scope.name = '';
             $scope.upload_file_id = '';
             $scope.uploadingProgress = false;
-            $scope.can_upload = false
+            $scope.can_upload = false;
             $scope.last_visit = document.referrer;
 
             $scope.setTemplate = function (name) {
                 $scope.viewTemplate = $cookies.viewTemplate = name;
             };
-
-
+            
             $scope.changeRoot = function (root) {
-                console.log(root)
                 $scope.can_upload=root.can_upload
                 $scope.fileNavigator.setRoot(root.id);
                 $cookies.last_root = root.id;
@@ -122,7 +120,6 @@
                 }
             };
 
-
             $scope.cut = function (item) {
                 $scope.cut_file_id = $cookies.cut_file_id = item.model.id;
                 $scope.copy_file_id = $cookies.copy_file_id = '';
@@ -145,8 +142,7 @@
                     $scope.timer = false
                 }, 2000);
             };
-
-
+            
             $scope.paste = function (item) {
                 if ($scope.copy_file_id !== '' && $scope.cut_file_id === '') {
                     item.tempModel.mode = 'copy';

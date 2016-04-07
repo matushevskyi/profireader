@@ -1,20 +1,21 @@
 import os
 import re
 from flask import render_template, g, make_response
-from flask.ext.login import current_user
 from profapp.models.files import File, YoutubeApi
 from .blueprints_declaration import filemanager_bp
-from .request_wrapers import ok
+from .request_wrapers import ok, tos_required
 from functools import wraps
 from time import sleep
 from flask import jsonify, json
 
 import json as jsonmodule
+from flask.ext.login import login_required
 from flask import session, redirect, request, url_for
 from ..models.google import GoogleAuthorize, GoogleToken
 from utils.db_utils import db
 from ..models.company import Company, UserCompany
 import urllib.parse
+
 
 
 def parent_folder(func):
@@ -32,15 +33,15 @@ json_result = {"result": {"success": True, "error": None}}
 
 
 @filemanager_bp.route('/')
+@login_required
+@tos_required
 def filemanager():
     last_visit_root_name = ''
     if 'last_root' in request.cookies:
         last_root_id = request.cookies['last_root']
     else:
         last_root_id = ''
-    # library = {g.user.personal_folder_file_id:
-    # {'name': 'My personal files',
-    # 'icon': current_user.gravatar(size=18)}}
+
     library = []
     members, main_companies = Company.get_members_for_company()
     uniq = set()
@@ -136,7 +137,7 @@ def cut(json):
 @filemanager_bp.route('/auto_remove/', methods=['POST'])
 @ok
 def auto_remove(json):
-    return File.auto_remove(json.get('list'), json.get('folder_id'))
+    return File.auto_remove(json.get('list'))
 
 
 

@@ -2134,33 +2134,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
     })
 });
 
-// function getGMT(date){
-//     console.log(date)
-//     var prdate = new Date(date).getTime()
-//     var offset = new Date().getTimezoneOffset();
-//     console.log(prdate)
-//     console.log(offset)
-//     var ptTime = new Date(prdate+(offset * 60000))
-//     console.log(ptTime)
-//     return ptTime
-// }
-
-
-function getLocalTime(date, needtime) {
-    var monthdict = {
-        1: "January", 2: "February", 3: "March", 4: "April", 5: "May",
-        6: "June", 7: "July", 8: "August", 9: "September", 10: "October", 11: "November", 12: "December"
-    }
-    var time = new Date(date);
-    // var month = monthdict[time.getMonth() + 1];
-    // var minutes = time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes();
-    if (needtime) {
-        return time.toLocaleString()
-        // return time.getDate()+' '+month+' '+time.getFullYear()+', '+ time.getHours()+':'+minutes
-    }
-    return new time.toDateString()
-}
-
 
 function cleanup_html(html) {
     normaltags = '^(span|a|br|div|table)$';

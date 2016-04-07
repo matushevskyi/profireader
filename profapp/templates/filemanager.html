@@ -20,29 +20,6 @@
         var last_visit_root = '{{ last_visit_root|safe }}';
         var last_root_id = '{{ last_root_id|safe }}';
 
-        {#    console.log(file_manager_on_action);#}
-        {#    var app = angular.module('FileUpload', ['ngFileUpload']);#}
-        {#    angular.module('FileManagerApp').controller('MyCtrl', ['$scope', 'Upload', function ($scope, Upload) {#}
-        {#        // upload later on form submit or something similar#}
-        {#        $scope.submit = function () {#}
-        {#            $scope.upload($scope.files);#}
-        {#        };#}
-        {##}
-        {##}
-        {#        // for multiple files:#}
-        {#        $scope.upload = function (files) {#}
-        {#            if (files && files.length) {#}
-        {#                for (var i = 0; i < files.length; i++) {#}
-        {#                    Upload.upload({#}
-        {#                                url: '/filemanager/upload/',#}
-        {#                                file: files[i]#}
-        {#                            }#}
-        {#                    );#}
-        {#                }#}
-        {#            }#}
-        {#        }#}
-        {#    }]);#}
-
     </script>
 
     <script src="//static.profireader.com/static/jquery/jquery.min.js"></script>
@@ -55,10 +32,17 @@
     <script src="//static.profireader.com/static/angular-bootstrap/ui-bootstrap.min.js"></script>
     <script src="//static.profireader.com/static/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
     <script src="//static.profireader.com/static/angular-animate/angular-animate.min.js"></script>
-    {##}
-    {##}
+
+
     <link rel="stylesheet"
           href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"/>
+
+
+
+    <script src="//static.profireader.com/static/new/moment/moment.min.js"></script>
+    {% if g.lang != 'en' %}<script src="//static.profireader.com/static/new/moment/{{ g.lang }}.js"></script>{% endif %}
+    <script type="text/javascript"  src="//static.profireader.com/static/new/eonasdan-bootstrap-datetimepicker/bootstrap-datetimepicker.min.js"></script>
+    <link rel="stylesheet"          href="//static.profireader.com/static/new/eonasdan-bootstrap-datetimepicker/bootstrap-datetimepicker.min.css" />
 
 
 
