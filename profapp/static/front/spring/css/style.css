@@ -27,6 +27,8 @@ body a:hover {
   padding-top: 15px;
   background-color: #FCFCFC;
   padding-bottom: 21px;
+  margin-left: 15px;
+  padding-right: 58px;
 }
 .search-block input {
   font-family: 'Roboto', sans-serif;
@@ -45,8 +47,9 @@ body a:hover {
   padding: 10px 15px;
   color: #fff;
 }
-.search-block .icon-search {
-  padding-left: 0;
+.search-block button {
+  padding: 0;
+  border: none;
 }
 .logo-portal {
   border-bottom: 2px solid #FF5252;
@@ -182,11 +185,19 @@ body a:hover {
   border-bottom: 1px solid #191818;
 }
 .block-item {
-  margin-left: 30px;
-  margin-top: 30px;
   border: 1px solid #fff;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position-x: center;
+  background-position-y: center;
+  min-height: 400px;
+}
+.block-item:hover {
+  background-color: rgba(255, 82, 82, 0.75);
+  transition: all 0.2s ease-out;
 }
 .block-item-img {
+  background-position-y: center;
   width: 30%;
   background-size: contain;
   background-repeat: no-repeat;
@@ -204,6 +215,55 @@ body a:hover {
 .subportal-about .logo-sub {
   width: 10%;
   float: right;
+}
+.company-about {
+  margin-top: 50%;
+  background-color: #000;
+  padding-bottom: 17%;
+  max-height: 100px;
+  overflow: hidden;
+}
+.company-img {
+  min-height: 220px;
+  background-image: url(/images/drop-bg.jpg);
+  background-size: cover;
+  background-position: center;
+}
+.company-blocks {
+  cursor: pointer;
+}
+.company-blocks h2 {
+  background-color: rgba(0, 0, 0, 0.5);
+  margin-top: 0;
+  padding-top: 150px;
+  padding-bottom: 70px;
+  color: #fff;
+  text-transform: uppercase;
+  padding-left: 30px;
+  margin-bottom: 0;
+}
+.company-blocks h2:hover {
+  background-color: rgba(0, 0, 0, 0);
+  color: #FF5252;
+  text-shadow: 2px 2px 3px #212121;
+  transition: all 0.2s ease-out;
+}
+.company-blocks .thumbnail:hover {
+  box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+.about-comp {
+  min-height: 100px;
+  background-color: #212121;
+  max-height: 100px;
+  overflow: hidden;
+}
+.about-comp p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 5px 15px 5px 15px;
+  color: #DDD;
+  margin-bottom: 0;
+  transition: transform 5s ease;
 }
 @media (max-width: 970px) {
   .subportal-about .logo-sub {
