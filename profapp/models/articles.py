@@ -344,19 +344,16 @@ class ArticlePortalDivision(Base, PRBase):
     @staticmethod
     def get_list_reader_articles(articles):
         list_articles = []
-        localtime = time.localtime(time.time())
         for article_id, article in articles.items():
-            if datetime(*localtime[:6]) > article['publishing_tm']:
-                # article['publishing_tm'] = PRBase.datetime_from_utc_to_local(article['publishing_tm'], "%d %B %Y, %H:%M")
-                article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
-                article['liked'] = ReaderArticlePortalDivision.count_likes(g.user.id, article_id)
-                article['list_liked_reader'] = []#ReaderArticlePortalDivision.get_list_reader_liked(article_id)
-                article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
-                    articles[article_id]['company']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
-                article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-                    articles[article_id]['portal']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
-                del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
-                list_articles.append(article)
+            article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
+            article['liked'] = ReaderArticlePortalDivision.count_likes(g.user.id, article_id)
+            article['list_liked_reader'] = ReaderArticlePortalDivision.get_list_reader_liked(article_id)
+            article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
+                articles[article_id]['company']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
+            article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
+                articles[article_id]['portal']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
+            del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
+            list_articles.append(article)
         return list_articles
 
     # def clone_for_company(self, company_id):
@@ -1025,11 +1022,19 @@ class ReaderArticlePortalDivision(Base, PRBase):
 
     @staticmethod
     def get_list_reader_liked(article_portal_division_id):
-        liked_users = [User.get(article.user_id).profireader_name for article in db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id)]
-        if g.user.profireader_name in liked_users:
-            index = liked_users.index(g.user.profireader_name)
-            del liked_users[index]
+        me = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id, user_id=g.user.id, liked=True).first()
+        limit = 15
+        articles = db(ReaderArticlePortalDivision, article_portal_division_id=article_portal_division_id, liked=True)
+        liked_users = [User.get(article.user_id).profireader_name for article in articles.limit(limit)]
+        if me:
+            if g.user.profireader_name in liked_users:
+                index = liked_users.index(g.user.profireader_name)
+                del liked_users[index]
+            else:
+                del liked_users[-1]
             liked_users.insert(0, g.user.profireader_name)
+        if articles.count()>limit:
+            liked_users.append('and '+ str((articles.count()-limit))+' more...')
         return liked_users
 
     @staticmethod

@@ -48,7 +48,7 @@ def filemanager():
     for n, user_company in enumerate(g.user.employer_assoc):
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE):
             library.insert(n, File.folder_dict(user_company.employer,
-                                               {'can_upload': File.if_action_allowed('upload', user_company.company_id)}))
+                                               {'can_upload': File.if_action_allowed(File.ACTIONS['upload'], user_company.company_id)}))
             uniq.update({user_company.employer.name})
             if user_company.employer.journalist_folder_file_id == last_root_id:
                 last_visit_root_name = user_company.employer.name + " files"
@@ -56,7 +56,7 @@ def filemanager():
                 for member in members[user_company.employer.name]:
                     if member.company.name not in uniq and member.company.name not in main_companies:
                         library.append(File.folder_dict(member.company,
-                                                        {'can_upload': File.if_action_allowed('upload', member.company.id)}))
+                                                        {'can_upload': File.if_action_allowed(File.ACTIONS['upload'], member.company.id)}))
                         uniq.update({member.company.name})
                         if member.company.journalist_folder_file_id == last_root_id:
                             last_visit_root_name = member.company.name + " files"

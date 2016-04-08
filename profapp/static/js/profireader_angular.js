@@ -1117,14 +1117,16 @@ areAllEmpty = function () {
     return are;
 };
 
+
 function file_choose(selectedfile) {
+    console.log(selectedfile)
     var args = top.tinymce.activeEditor.windowManager.getParams();
     var win = (args.window);
     var input = (args.input);
     if (selectedfile['type'] === 'file_video') {
         win.document.getElementById(input).value = "https://youtu.be/" + selectedfile['youtube_data']['id'] + "?list=" + selectedfile['youtube_data']['playlist_id'];
     } else {
-        win.document.getElementById(input).value = selectedfile['url'];
+        win.document.getElementById(input).value = selectedfile['file_url'];
     }
     top.tinymce.activeEditor.windowManager.close();
 }
@@ -2076,6 +2078,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             //    console.log('init_instance_callback', arguments);
             //},
             file_browser_callback: function (field_name, url, type, win) {
+                console.log(url)
                 var cmsURL = '/filemanager/?file_manager_called_for=file_browse_' + type +
                     '&file_manager_default_action=choose&file_manager_on_action=' + encodeURIComponent(angular.toJson({choose: 'parent.file_choose'}));
                 tinymce.activeEditor.windowManager.open({
@@ -2179,6 +2182,24 @@ $.fn.scrollTo = function () {
             scrollTop: $(this).offset().top
         }, 1000);
     });
+}
+
+function getPopoverContent(content_list, width) {
+    if(content_list.length === 0){
+        return '';
+    }
+    $('.liked-favorite-band .popover').css({'background-color':'black','color':'white',
+        'width':width?width.toString():'160'+'px','overflow': 'hidden'})
+    var content = '';
+    var limit = width?width:160/10;
+    for(var i =0;i<content_list.length;i+=1){
+        if(content_list[i].length>limit){
+            content += '<spam class="ellipsis">'+content_list[i].substring(0,limit)+'...'+'</spam><br>';
+        }else{
+            content += '<spam class="ellipsis">'+content_list[i]+'</spam><br>';
+        }
+    }
+    return content
 }
 
 function scrool($el) {

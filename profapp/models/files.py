@@ -136,7 +136,6 @@ class File(Base, PRBase):
     def can_paste_in_dir(id_file, id_folder):
         if id_file == id_folder:
             return False
-        folder = File.get(id_folder)
         dirs_in_dir = [file for file in db(File, parent_id=id_file, mime='directory')]
         for dir in dirs_in_dir:
             for f in db(File, parent_id=dir.id, mime='directory'):
@@ -208,7 +207,6 @@ class File(Base, PRBase):
     @staticmethod
     def if_action_allowed(action, company_id):
         from ..models.company import UserCompany, Company
-
         user_company = UserCompany.get(user_id=g.user.id, company_id=company_id)
         if g.user._banned:
             return False
@@ -217,14 +215,14 @@ class File(Base, PRBase):
         if user_company:
             if not user_company.has_rights(File.ACTIONS[action], True):
                 return False
-        elif not user_company and action != 'show':
+        elif not user_company and action != File.ACTIONS['show']:
             return False
         return True
 
     @staticmethod
     def list(parent_id=None, file_manager_called_for='', name=None, company_id=None):
         folder = File.get(parent_id)
-        show = lambda file: True if File.if_action_allowed('show', company_id) else False
+        show = lambda file: True if File.if_action_allowed(File.ACTIONS['show'], company_id) else False
         actions = {}
         default_actions = {}
         # default_actions['choose'] = lambda file: None
@@ -240,11 +238,11 @@ class File(Base, PRBase):
             default_actions['choose'] = lambda file: True
             actions['choose'] = lambda file: True
         actions = {act: default_actions[act] for act in default_actions}
-        actions['remove'] = lambda file: None if file.mime == "root" else File.if_action_allowed('remove', company_id)
+        actions['remove'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['remove'], company_id)
         actions['copy'] = lambda file: None if file.mime == "root" else True
-        actions['paste'] = lambda file: None if file == None else File.if_action_allowed('upload', company_id)
-        actions['cut'] = lambda file: None if file.mime == "root" else True
-        actions['properties'] = lambda file: None if file.mime == "root" else True
+        actions['paste'] = lambda file: None if file == None else File.if_action_allowed(File.ACTIONS['upload'], company_id)
+        actions['cut'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['upload'], company_id)
+        actions['properties'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['upload'], company_id)
 
         search_files = File.search(name, parent_id, actions, file_manager_called_for)
         if search_files != None:

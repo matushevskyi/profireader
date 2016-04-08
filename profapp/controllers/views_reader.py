@@ -10,6 +10,7 @@ from .request_wrapers import ok
 from utils.db_utils import db
 from flask.ext.login import login_required
 import datetime
+import time
 from ..models.pr_base import PRBase
 from ..models.files import File
 
@@ -49,6 +50,7 @@ def list_reader_load(json):
     article_fields = 'title|id|subtitle|short|image_file_id|subtitle|publishing_tm|read_count,company.name|logo_file_id|id,' \
                      'division.name,portal.name|host|logo_file_id|id'
     favorite = request.args.get('favorite') == 'True'
+    localtime = time.gmtime(time.time())
     if not favorite:
         articles, pages, page = Search().search({'class': ArticlePortalDivision,
                                                  'filter': and_(ArticlePortalDivision.portal_division_id ==
@@ -58,7 +60,9 @@ def list_reader_load(json):
                                                                        user_id=g.user.id).subquery().
                                                                     c.portal_id).subquery().c.id,
                                                                 ArticlePortalDivision.status ==
-                                                                ArticlePortalDivision.STATUSES['PUBLISHED']),
+                                                                ArticlePortalDivision.STATUSES['PUBLISHED'],
+                                                                ArticlePortalDivision.publishing_tm < datetime.datetime(
+                                                                    *localtime[:6])),
                                                  'tags': True, 'return_fields': article_fields}, page=1,
                                                 items_per_page=5*next_page)
     else:
@@ -131,8 +135,9 @@ def add_delete_favorite(json):
 @reader_bp.route('/add_to_like/', methods=['POST'])
 @ok
 def add_delete_like(json):
-    liked = ReaderArticlePortalDivision.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
-    return ReaderArticlePortalDivision.count_likes(g.user.id, json.get('article')['id'])
+    ReaderArticlePortalDivision.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
+    return {'liked':ReaderArticlePortalDivision.count_likes(g.user.id, json.get('article')['id']),
+            'list_liked_reader':ReaderArticlePortalDivision.get_list_reader_liked(json.get('article')['id'])}
 
 
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
