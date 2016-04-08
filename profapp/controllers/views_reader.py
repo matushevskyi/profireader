@@ -32,6 +32,19 @@ def details_reader(article_portal_division_id):
                            favorite=favorite
                            )
 
+@reader_bp.route('/list_reader_from_front/<string:portal_id>', methods=['GET'])
+def list_reader_from_front(portal_id):
+    portal = Portal.get(portal_id)
+    if g.user:
+        portals = db(Portal).filter((Portal.id.in_(db(UserPortalReader.portal_id, user_id=g.user.id)))).all()
+        if portal in portals:
+            return redirect(url_for('reader.list_reader'))
+        else:
+            return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
+    else:
+        return redirect(url_for('general.auth_before_subscribe_to_portal', portal_id=portal_id))
+    return redirect(url_for('general.portals_list'))
+
 
 @reader_bp.route('/list_reader', methods=['GET'])
 @tos_required
@@ -136,7 +149,6 @@ def add_delete_like(json):
 
 
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
-@tos_required
 def reader_subscribe(portal_id):
     user_dict = g.user.get_client_side_dict()
     portal = Portal.get(portal_id)
@@ -170,6 +182,7 @@ def reader_subscribe_registered(json):
         return 'Portal doesn`t exist!'
 
     user_portal_reader = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
+
     if not user_portal_reader:
         free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
                                ReaderUserPortalPlan.amount).filter_by(name='free').one()
