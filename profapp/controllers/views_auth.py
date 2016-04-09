@@ -229,7 +229,6 @@ def login():
         return redirect(url_for('general.index'))
     email = request.form.get('email')
     password = request.form.get('password')
-    print(email,    password)
 
     if email and password:
 

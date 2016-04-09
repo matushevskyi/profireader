@@ -93,10 +93,8 @@
             self.error = '';
             self.list = [];
             $http.post(fileManagerConfig.listUrl, data).success(function(resp) {
-
                 self.fileList = [];
                 self.ancestors = resp.data.ancestors;
-                self.can_upload = resp.data.can_upload;
                 angular.forEach(resp.data.list, function(file) {
                     self.fileList.push(new Item(file, self.currentPath));
                 });
