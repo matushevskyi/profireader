@@ -434,7 +434,7 @@ def portals_partners_load(json, company_id):
     partners_g, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     partner_list = [
         PRBase.merge_dicts(partner.get_client_side_dict(fields='id,status,portal.own_company,portal,rights'),
-                           {'actions': partner.actions(company_id, 'membership')}, {'who':'membership'})
+                           {'actions': partner.actions(company_id, MemberCompanyPortal.MEMBERSHIP)}, {'who': MemberCompanyPortal.MEMBERSHIP})
         for partner in partners_g]
     return {'page': current_page,
             'grid_data': partner_list,
@@ -451,7 +451,8 @@ def portals_partners_load(json, company_id):
 def portals_partners_change_status(json, partner_id, portal_id):
     partner = MemberCompanyPortal.get(portal_id=portal_id, company_id=partner_id)
     employee = UserCompany.get(company_id=json.get('company_id'))
-    action_for_status = UserCompany.ACTION_FOR_STATUSES_MEMBER if json.get('who') == 'member' else UserCompany.ACTION_FOR_STATUSES_MEMBERSHIP
+    action_for_status = UserCompany.ACTION_FOR_STATUSES_MEMBER if json.get('who') == MemberCompanyPortal.MEMBER\
+        else UserCompany.ACTION_FOR_STATUSES_MEMBERSHIP
     if partner.action_is_allowed(json.get('action'), employee,
                                  action_for_status[partner.status]):
         partner.set_client_side_dict(
@@ -529,7 +530,7 @@ def companies_partners_load(json, company_id):
     members, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [PRBase.merge_dicts({'member': member.get_client_side_dict(more_fields='company'),
                            'company_id': company_id, 'portal_id': db(Portal, company_owner_id=company_id).first().id},
-                           {'actions': member.actions(company_id, 'member')},{'who':'member'})
+                           {'actions': member.actions(company_id, MemberCompanyPortal.MEMBER)},{'who':MemberCompanyPortal.MEMBER})
                           for member in members],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'member.status': [{'value': status, 'label': status} for status in MemberCompanyPortal.STATUSES]}.items()},

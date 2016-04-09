@@ -315,6 +315,19 @@ class Company(Base, PRBase):
             sub_query = Grid.subquery_grid(sub_query, list_filters)
         return sub_query
 
+    @staticmethod
+    def get_members_for_company():
+        dict_members = {}
+        main_companies =[]
+        for user_company in g.user.employer_assoc:
+            main_companies.append(user_company.employer.name)
+            if user_company.employer.own_portal:
+                dict_members[user_company.employer.name] = db(MemberCompanyPortal,
+                    portal_id=user_company.employer.own_portal.id).\
+                    filter(MemberCompanyPortal.company_id != user_company.employer.id and MemberCompanyPortal.status == MemberCompanyPortal.STATUSES['ACTIVE'])\
+                    .join(Company).filter(Company.status == Company.STATUSES['ACTIVE']).all()
+        return dict_members, main_companies
+
 
 class UserCompany(Base, PRBase):
     __tablename__ = 'user_company'
