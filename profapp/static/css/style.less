@@ -26,7 +26,7 @@ body {
 }
 
 .navbar-brand img {
-  width: 60%;
+  width: 200px;
 }
 
 .ellipsis {
@@ -219,6 +219,7 @@ body {
 .menu-profile {
   a {
     text-decoration: none;
+    font-size: 13px;
   }
   .login-profile {
     background-color: @color-red-btn;
@@ -238,6 +239,9 @@ body {
 }
 
 .menu-site {
+  span {
+    display: none;
+  }
   a {
     color: #fff;
   }
@@ -330,32 +334,32 @@ body {
 }
 
 .microsoft-icon {
-   a:hover{
-      text-decoration: none;
+  a:hover {
+    text-decoration: none;
   }
   display: inline;
-  i{
+  i {
     color: #26AAE1;
   }
 }
 
 .google-icon {
-  a:hover{
-      text-decoration: none;
+  a:hover {
+    text-decoration: none;
   }
-  i{
-      color: @color-red-btn;
+  i {
+    color: @color-red-btn;
   }
   display: inline;
   margin-right: 10px;
 }
 
 .linkedin-icon {
-   a:hover{
-      text-decoration: none;
+  a:hover {
+    text-decoration: none;
   }
   display: inline;
-  i{
+  i {
     color: #0177B5;
   }
   margin-right: 10px;
@@ -363,11 +367,11 @@ body {
 }
 
 .facebook-icon {
-   a:hover{
-      text-decoration: none;
+  a:hover {
+    text-decoration: none;
   }
   display: inline;
-  i{
+  i {
     color: #3B569D;
   }
   margin-right: 10px;
@@ -1229,23 +1233,6 @@ body {
   }
 }
 
-@media screen and (max-width: 764px) {
-  .menu-site ul {
-    float: right;
-    margin-right: 0;
-    position: static;
-
-  }
-
-  body {
-    padding-top: 150px;
-  }
-
-  .company-portal a {
-    float: none;
-  }
-}
-
 @media screen and (max-width: 991px) {
   .company-logo {
     margin-top: 15px;
@@ -1266,7 +1253,65 @@ body {
     text-align: center;
   }
 
-  .navbar-brand {
-    width: 60%;
+}
+
+@media screen and (max-width: 764px) {
+  .menu-site {
+    ul {
+      margin-right: 0;
+      position: static;
+    }
+    li {
+      display: block;
+
+    }
+    span {
+      display: inline-block;
+      font-size: 18px;
+      &:hover {
+        border-bottom: 1px solid @color-links;
+      }
+    }
+    i {
+      font-size: 18px;
+      margin-right: 5px;
+      width: 20px;
+    }
+    .menu-profile {
+      a {
+        font-size: 15px;
+      }
+      .login-profile {
+        position: absolute;
+        top: 10px;
+        right: 25px;
+      }
+    }
+    .dropbtn {
+      padding-left: 0;
+    }
+    .dropdown-content {
+      display: block;
+      box-shadow: none;
+      position: static;
+      a {
+        padding: 0;
+        &:hover{
+          background-color: transparent;
+        }
+      }
+    }
+    .dropdown:hover .dropbtn {
+      color: #fff;
+    }
   }
+
+  body {
+    padding-top: 150px;
+  }
+
+  .company-portal a {
+    float: none;
+  }
+
 }

@@ -16,7 +16,7 @@ body {
   color: #00BBA1;
 }
 .navbar-brand img {
-  width: 60%;
+  width: 200px;
 }
 .ellipsis {
   overflow: hidden;
@@ -180,6 +180,7 @@ body {
 /*end change language*/
 .menu-profile a {
   text-decoration: none;
+  font-size: 13px;
 }
 .menu-profile .login-profile {
   background-color: #C70000;
@@ -193,6 +194,9 @@ body {
 }
 .info-padding {
   padding-right: 0px !IMPORTANT;
+}
+.menu-site span {
+  display: none;
 }
 .menu-site a {
   color: #fff;
@@ -1056,19 +1060,6 @@ body {
     /* 50% */
   }
 }
-@media screen and (max-width: 764px) {
-  .menu-site ul {
-    float: right;
-    margin-right: 0;
-    position: static;
-  }
-  body {
-    padding-top: 150px;
-  }
-  .company-portal a {
-    float: none;
-  }
-}
 @media screen and (max-width: 991px) {
   .company-logo {
     margin-top: 15px;
@@ -1085,8 +1076,57 @@ body {
   .edit-company button {
     text-align: center;
   }
-  .navbar-brand {
-    width: 60%;
+}
+@media screen and (max-width: 764px) {
+  .menu-site ul {
+    margin-right: 0;
+    position: static;
+  }
+  .menu-site li {
+    display: block;
+  }
+  .menu-site span {
+    display: inline-block;
+    font-size: 18px;
+  }
+  .menu-site span:hover {
+    border-bottom: 1px solid #00BBA1;
+  }
+  .menu-site i {
+    font-size: 18px;
+    margin-right: 5px;
+    width: 20px;
+  }
+  .menu-site .menu-profile a {
+    font-size: 15px;
+  }
+  .menu-site .menu-profile .login-profile {
+    position: absolute;
+    top: 10px;
+    right: 25px;
+  }
+  .menu-site .dropbtn {
+    padding-left: 0;
+  }
+  .menu-site .dropdown-content {
+    display: block;
+    box-shadow: none;
+    position: static;
+  }
+  .menu-site .dropdown-content a {
+    padding: 0;
+  }
+  .menu-site .dropdown-content a:hover {
+    background-color: transparent;
+  }
+  .menu-site .dropdown:hover .dropbtn {
+    color: #fff;
+  }
+  body {
+    padding-top: 150px;
+  }
+  .company-portal a {
+    float: none;
   }
 }
 /*# sourceMappingURL=style.css.map */
