@@ -374,6 +374,10 @@ class MemberCompanyPortal(Base, PRBase):
     plan = relationship('MemberCompanyPortalPlan'
                         # , backref='partner_portals'
                         )
+
+    MEMBER = 'member'
+    MEMBERSHIP = 'membership'
+
     ACTIONS = {
         'UNSUBSCRIBE': 'UNSUBSCRIBE',
         'FREEZE': 'FREEZE',
@@ -397,20 +401,20 @@ class MemberCompanyPortal(Base, PRBase):
 
     def actions(self, company_id, who):
         from .company import UserCompany
-        employment = UserCompany.get(company_id=company_id)
+        employee = UserCompany.get(company_id=company_id)
         action_for_status = UserCompany.ACTION_FOR_STATUSES_MEMBER if who == 'member' else UserCompany.ACTION_FOR_STATUSES_MEMBERSHIP
-        return {action_name: self.action_is_allowed(action_name, employment,
+        return {action_name: self.action_is_allowed(action_name, employee,
                                                     action_for_status[self.status]) for action_name in
                 action_for_status[self.status]}
 
-    def action_is_allowed(self, action_name, employment, actions):
-        if not employment:
+    def action_is_allowed(self, action_name, employee, actions):
+        if not employee:
             return "Unconfirmed employment"
 
         if not action_name in actions:
             return "Unrecognized action `{}`".format(action_name)
 
-        if employment.status != MemberCompanyPortal.STATUSES['ACTIVE']:
+        if employee.status != MemberCompanyPortal.STATUSES['ACTIVE']:
             return "User need employment with status `{}` to perform action `{}`".format(
                     MemberCompanyPortal.STATUSES['ACTIVE'], action_name)
 
@@ -420,7 +424,8 @@ class MemberCompanyPortal(Base, PRBase):
         if self.portal.company_owner_id == self.company_id:
             return 'You can`t {0} portal of your own company'.format(action_name)
 
-        if not employment.has_rights(actions[action_name]):
+
+        if not employee.has_rights(actions[action_name]):
             return "Employment need right `{}` to perform action `{}`".format(actions[action_name],action_name)
 
         return True
@@ -437,7 +442,7 @@ class MemberCompanyPortal(Base, PRBase):
         return True
 
 
-    def get_client_side_dict(self, fields='id,status,rights', more_fields=None):
+    def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id', more_fields=None):
         return self.to_dict(fields, more_fields)
 
     def __init__(self, company_id=None, portal=None, company=None, plan=None, status=None):

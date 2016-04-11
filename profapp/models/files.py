@@ -136,7 +136,6 @@ class File(Base, PRBase):
     def can_paste_in_dir(id_file, id_folder):
         if id_file == id_folder:
             return False
-        folder = File.get(id_folder)
         dirs_in_dir = [file for file in db(File, parent_id=id_file, mime='directory')]
         for dir in dirs_in_dir:
             for f in db(File, parent_id=dir.id, mime='directory'):
@@ -186,14 +185,17 @@ class File(Base, PRBase):
         sort_d = File.sort_search(name, sort_dirs)
         sort_f = File.sort_search(name, sort_files)
         s = sort_d + sort_f
-        ret = list({'size': file.size, 'name': file.name, 'id': file.id, 'parent_id': file.parent_id,
-                    'type': File.type(file),
-                    'date': str(file.md_tm).split('.')[0],
-                    'url': file.url(),
+        ret = list({'size': file.size, 'name': file.name, 'id': file.id,
+                    'parent_id': file.parent_id, 'type': File.type(file),
+                    'date': str(file.md_tm),
+                    'url': file.get_thumbnail_url(),
+                    'file_url': file.url(),
+                    'youtube_data': {'id': file.youtube_video.video_id,
+                                     'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
                     'path_to': File.path(file),
                     'author_name': file.copyright_author_name,
                     'description': file.description,
-                    'actions': {action: actions[action](file) for action in actions}
+                    'actions': {action: actions[action](file) for action in actions},
                     }
                    for file in s if file.mime != 'image/thumbnail')
         return ret
@@ -204,16 +206,23 @@ class File(Base, PRBase):
 
     @staticmethod
     def if_action_allowed(action, company_id):
-        from ..models.company import UserCompany
+        from ..models.company import UserCompany, Company
         user_company = UserCompany.get(user_id=g.user.id, company_id=company_id)
-        if not user_company.has_rights(File.ACTIONS[action], True):
+        if g.user._banned:
+            return False
+        if Company.get(company_id).status != Company.STATUSES['ACTIVE']:
+            return False
+        if user_company:
+            if not user_company.has_rights(File.ACTIONS[action], True):
+                return False
+        elif not user_company and action != File.ACTIONS['show']:
             return False
         return True
 
     @staticmethod
     def list(parent_id=None, file_manager_called_for='', name=None, company_id=None):
         folder = File.get(parent_id)
-        show = lambda file: True if File.if_action_allowed('show', company_id) else False
+        show = lambda file: True if File.if_action_allowed(File.ACTIONS['show'], company_id) else False
         actions = {}
         default_actions = {}
         # default_actions['choose'] = lambda file: None
@@ -229,24 +238,21 @@ class File(Base, PRBase):
             default_actions['choose'] = lambda file: True
             actions['choose'] = lambda file: True
         actions = {act: default_actions[act] for act in default_actions}
-        actions['remove'] = lambda file: None if file.mime == "root" else File.if_action_allowed('remove', company_id)
+        actions['remove'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['remove'], company_id)
         actions['copy'] = lambda file: None if file.mime == "root" else True
-        actions['paste'] = lambda file: None if file == None else True
-        actions['cut'] = lambda file: None if file.mime == "root" else True
-        actions['properties'] = lambda file: None if file.mime == "root" else True
-        # actions['upload'] = lambda file: None if file.mime == "root" else File.if_action_allowed(user_company, UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD)
+        actions['paste'] = lambda file: None if file == None else File.if_action_allowed(File.ACTIONS['upload'], company_id)
+        actions['cut'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['upload'], company_id)
+        actions['properties'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['upload'], company_id)
 
         search_files = File.search(name, parent_id, actions, file_manager_called_for)
         if search_files != None:
             ret = search_files
         else:
-            # 'cropable': True if File.is_cropable(file) else False,
-            size = (int(Config.IMAGE_EDITOR_RATIO * 100), 100)
-            str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
-            ret = list({'size': file.size, 'name': file.name, 'id': file.id,
+            size = Config.THUMBNAILS_SIZE
+            ret = [{'size': file.size, 'name': file.name, 'id': file.id,
                         'parent_id': file.parent_id, 'type': File.type(file),
-                        'date': str(file.md_tm).split('.')[0],
-                        'url': file.get_thumbnail_url(size=str_size),
+                        'date': str(file.md_tm),
+                        'url': file.get_thumbnail_url(),
                         'file_url' : file.url(),
                         'youtube_data': {'id': file.youtube_video.video_id,
                                          'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
@@ -257,8 +263,7 @@ class File(Base, PRBase):
                         }
                        for file in [file.get_thumbnails(size=size)
                                     for file in db(File, parent_id=parent_id)] if show(file) and
-                       file.mime != 'image/thumbnail')
-            # we need all records from the table "file"
+                       file.mime != 'image/thumbnail']
             ret.append({'id': folder.id, 'parent_id': folder.parent_id,
                         'type': 'parent',
                         'date': str(folder.md_tm).split('.')[0],
@@ -272,10 +277,10 @@ class File(Base, PRBase):
     def get_thumbnails(self, size):
         if self.mime.split('/')[0] == 'image' and self.mime != 'image/thumbnail':
             str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
-            if not self.get_thumbnail(size=str_size):
+            if not self.get_thumbnail():
                 try:
                     image_pil = Image.open(BytesIO(self.file_content.content))
-                    resized = image_pil.resize(size)
+                    resized = File.scale(image_pil, size)
                     bytes_file = BytesIO()
                     resized.save(bytes_file, self.mime.split('/')[-1].upper())
                     thumbnail = File(md_tm=self.md_tm, size=sys.getsizeof(bytes_file.getvalue()),
@@ -288,35 +293,38 @@ class File(Base, PRBase):
                     content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
                     g.db.add_all([thumbnail, content])
                     g.db.flush()
+                    exist = db(ImageCroped, original_image_id=self.id)
+                    if exist:
+                        exist.delete()
                     ImageCroped(original_image_id=self.id,
                             croped_image_id=thumbnail.id,
                             width=image_pil.width,
                             height=image_pil.height).save()
-
-
-                except Exception as e:  # truncated png/gif
-                    # from ..controllers.errors import BadFormatFile
-                    self.remove()
-
-                    #     details = e.args[0]
-                    #     print(details['message'])
-                    # resized = image_pil.resize(size)
-
+                except Exception as e:
+                    self.delete()
         return self
 
-    def get_thumbnail_url(self, size='133x100'):
-        thumbnail = self.get_thumbnail(size=size)
+    @staticmethod
+    def scale(image, max_size, method=Image.ANTIALIAS):
+        im_aspect = float(image.size[0]) / float(image.size[1])
+        out_aspect = float(max_size[0]) / float(max_size[1])
+        if im_aspect >= out_aspect:
+            scaled = image.resize((max_size[0], int((float(max_size[0]) / im_aspect) + 0.5)), method)
+        else:
+            scaled = image.resize((int((float(max_size[1]) * im_aspect) + 0.5), max_size[1]), method)
 
+        offset = (int(((max_size[0] - scaled.size[0]) / 2)), int(((max_size[1] - scaled.size[1]) / 2)))
+        back = Image.new("RGB", max_size, "white")
+        back.paste(scaled, offset)
+        return back
+
+    def get_thumbnail_url(self):
+        thumbnail = self.get_thumbnail()
         return thumbnail.url() if thumbnail else self.url()
 
-    def get_thumbnail(self, size=None, any=False):
+    def get_thumbnail(self):
         image_cropped = db(ImageCroped, original_image_id=self.id).first()
-        thumbnail = None
-        if any and image_cropped:
-            thumbnail = db(File, id=image_cropped.croped_image_id).first()
-        elif image_cropped:
-            thumbnail = db(File, id=image_cropped.croped_image_id, name=self.name + '_thumbnail_' + size).first()
-        return thumbnail
+        return db(File, id=image_cropped.croped_image_id).first() if image_cropped else None
 
     def type(self):
         if self.mime == 'root' or self.mime == 'directory':
@@ -375,8 +383,7 @@ class File(Base, PRBase):
     def get_name(oldname):
         ex = File.ext(oldname)
         l = len(ex)
-        name = oldname[:-l]
-        return name
+        return oldname[:-l]
 
     @staticmethod
     def ext(oldname):
@@ -454,7 +461,7 @@ class File(Base, PRBase):
             return True
 
     @staticmethod
-    def auto_remove(list, folder_id):
+    def auto_remove(list):
         list.append(session['f_id'])
         for file in [db(File, id=id).first() for id in list]:
             file.delete()
@@ -485,30 +492,26 @@ class File(Base, PRBase):
                 file.youtube_video = file_content
             else:
                 file.file_content = file_content
-        return files
 
     @staticmethod
     def save_all(id_f, attr, new_id):
-        del attr['name']
-        lists = File.get_all_dir(id_f, new_id)
+        dirs = File.get_all_dir(id_f, new_id)
         files = [file for file in db(File, parent_id=id_f) if file.mime != 'directory']
-        f = File.save_files(files, new_id, attr)
+        File.save_files(files, new_id, attr)
         new_list = []
         old_list = []
-        for dir in lists:
+        for dir in dirs:
             old_list.append(dir.id)
             files = [file for file in db(File, parent_id=dir.id) if file.mime != 'directory']
             if dir.parent_id == id_f:
                 attr['parent_id'] = new_id
             else:
-                parent = File.get(dir.parent_id)
-                index = File.get_index(parent, old_list)
+                index = File.get_index(File.get(dir.parent_id), old_list)
                 attr['parent_id'] = new_list[index].id
             dir.detach().attr(attr)
             dir.save()
             new_list.append(dir)
             File.save_files(files, dir.id, attr)
-        return old_list, new_list
 
     @staticmethod
     def uploadLogo(content, name, type, directory, root=None):
@@ -568,38 +571,27 @@ class File(Base, PRBase):
             return id
 
     @staticmethod
-    def update_files(files, attr):
-        for file in files:
-            file.updates(attr)
-        return files
-
-    @staticmethod
     def update_all_in_dir(id, attr):
-        lists = [file for file in db(File, parent_id=id) if file.mime == 'directory']
+        dirs = [file for file in db(File, parent_id=id) if file.mime == 'directory']
         files = [file for file in db(File, parent_id=id) if file.mime != 'directory']
-        c = len(lists)
-        c_ = 1
-        File.update_files(files, attr)
-        new_list = []
-        for list in lists:
-            if c_ <= c:
-                list.updates(attr)
-                new_list.append(list)
-            for file in db(File, parent_id=list.id):
+        len_dirs = len(dirs)
+        increment = 1
+        [file.updates(attr) for file in files]
+        for dir in dirs:
+            if increment <= len_dirs:
+                dir.updates(attr)
+            for file in db(File, parent_id=dir.id):
                 if file.mime == 'directory':
-                    lists.append(file)
+                    dirs.append(file)
                     file.updates(attr)
-                    new_list.append(file)
-                elif file.mime != 'directory':
+                else:
                     file.updates(attr)
-            c_ += 1
-        return lists
+            increment += 1
+        return dirs
 
     @staticmethod
     def update_all(id, attr):
         files_in_parent = [file for file in db(File, parent_id=id)]
-        del attr['name']
-        del attr['parent_id']
         for file in files_in_parent:
             if file.mime == 'directory':
                 file.updates(attr)
@@ -614,14 +606,11 @@ class File(Base, PRBase):
             return False
         id = self.id
         root = folder.root_folder_id if folder.root_folder_id == None else folder.id
-        # newobject = File.get(self.id)
         copy_file = File(parent_id=parent_id, name=File.get_unique_name(self.name, self.mime, parent_id),
                          mime=self.mime, size=self.size,
-                 root_folder_id=root,
-                         # youtube_id=self.youtube_id,
-                 company_id=self.company_id, copyright_author_name=self.copyright_author_name,
+                         root_folder_id=root,
+                         company_id=self.company_id, copyright_author_name=self.copyright_author_name,
                          author_user_id=self.author_user_id)
-
         attr = {f: kwargs[f] for f in kwargs}
         copy_file.attr(attr)
         copy_file.save()
@@ -650,6 +639,8 @@ class File(Base, PRBase):
                      'root_folder_id': root})
         self.updates(attr)
         if self.mime == 'directory':
+            del attr['name']
+            del attr['parent_id']
             File.update_all(self.id, attr)
         return self.id
 
@@ -765,6 +756,16 @@ class File(Base, PRBase):
             return False
 
 
+    @staticmethod
+    def folder_dict(company, dict):
+        res = {'id': company.journalist_folder_file_id,
+               'name': "%s files" % (company.name.replace(
+                   '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),),
+               'icon': ''}
+        res.update(dict)
+        return res
+
+
 class FileContent(Base, PRBase):
     __tablename__ = 'file_content'
     id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), primary_key=True)
@@ -852,7 +853,6 @@ class ImageCroped(Base, PRBase):
         if (round(self.x) == round(left)) and round(self.y) == round(top) \
                 and (int(right-left) == self.croped_width and int(bottom-top)
                     == self.croped_height):
-            print('true')
             return True
         else:
             return False

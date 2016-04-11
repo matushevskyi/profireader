@@ -17,27 +17,23 @@
                     article.is_favorite = resp
                 })
             };
+
+            $scope.loadNextPage('');
+
             $scope.like = function(article){
                 $ok($scope.add_delete_like, {'article': article}, function (resp) {
-                    article.liked = resp
+                    article.liked = resp.liked;
+                    article.list_liked_reader = resp.list_liked_reader
                 })
             };
-            $scope.loadNextPage('');
-            var trusted = {};
 
             $scope.get_local_time = function (date) {
-                return moment(date).format();
+                return moment(date).format('Do MMMM YYYY, H:mm:ss');
             };
 
-{#            $scope.getPopoverContent = function(article) {#}
-{#                var tool = '\n';#}
-{#                for(var i =0;i<article.list_liked_reader.length;i+=1){#}
-{#                    tool += article.list_liked_reader[i]+'\n';#}
-{#                }#}
-{#                var content = tool;#}
-{#                content = '<span style="width:10px">'+tool+'</span>';#}
-{#              return trusted[content] || (trusted[content] = $sce.trustAsHtml(content));#}
-{#            }#}
+            $scope.getPopoverContent = function(content_list, width) {
+                return getPopoverContent(content_list, width)
+            }
         });
 
     </script>
@@ -81,11 +77,11 @@
                     <div class="item-short-content">
                         <p>{{ article.short}}</p>
                 </h3>
-                    <div class="row">
+                    <div class="row liked-favorite-band">
                         <ul style="list-style: none; border-top: 1px solid #E3E3E3; padding-top: 15px;">
                             <li style="display: inline-block; margin-right: 85px; cursor: pointer" ng-click="add_to_favorite(article)"><i ng-if="!article.is_favorite" class="fa fa-bookmark-o"></i><i ng-if="article.is_favorite" class="fa fa-bookmark"></i>
                              {{_('Favorite') }}</li>
-                            <li class="liked" style=" display: inline-block; margin-right: 85px;cursor: pointer" ng-click="like(article)" popover-popup-delay="50" popover-trigger="mouseenter" popover-placement="top" uib-popover-html="getPopoverContent(article)"><i class="fa fa-thumbs-o-up"></i>{{ article.liked }}</li>
+                            <li class="liked" style=" display: inline-block; margin-right: 85px;cursor: pointer" ng-click="like(article)" popover-trigger="mouseenter" popover-placement="top" uib-popover-html="getPopoverContent(article.list_liked_reader)"><i class="fa fa-thumbs-o-up"></i>{{ article.liked }}</li>
                             <li style=" display: inline-block; margin-right: 85px;"><i class="fa fa-comments-o"></i>604</li>
                             <li style=" display: inline-block; margin-right: 30px;"><i class="fa fa-share"></i>{{ _('Share') }}</li>
                         </ul>
