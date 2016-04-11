@@ -1122,11 +1122,12 @@ body {
   .menu-site .dropdown:hover .dropbtn {
     color: #fff;
   }
-  body {
-    padding-top: 150px;
-  }
   .company-portal a {
     float: none;
+  }
+  .block-resp {
+    margin-right: 15px;
+    margin-left: 15px;
   }
 }
 /*# sourceMappingURL=style.css.map */
