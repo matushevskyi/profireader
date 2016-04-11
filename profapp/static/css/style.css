@@ -1051,6 +1051,19 @@ body {
   float: right;
   padding: 10px 50px;
 }
+/*reset password*/
+.reset-pass {
+  padding: 10px 15px;
+  background-color: #00c853;
+  border: none;
+  color: #fff;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+}
+.reset-pass:hover {
+  background-color: #00e676;
+  transition: all 0.2s ease-out;
+  box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
 /* ---MEDIA--- */
 @media screen and (max-width: 1024px) {
   /* Specific to this particular image */
