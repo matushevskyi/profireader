@@ -3,7 +3,7 @@ from flask import render_template, request, url_for, redirect, g, current_app, s
 from ..models.articles import Article, ArticlePortalDivision, ReaderArticlePortalDivision
 from flask import jsonify
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
-    PortalDivisionSettingsCompanySubportal, PortalConfig
+    PortalDivisionSettingsCompanySubportal, PortalConfig, UserPortalReader
 from ..models.company import Company
 from utils.db_utils import db
 from ..models.users import User
@@ -31,6 +31,18 @@ def get_division_for_subportal(portal_id, member_company_id):
     else:
         return g.db().query(PortalDivision).filter_by(portal_id=portal_id,
                                                       portal_division_type_id='index').one()
+@front_bp.route('subscribe_to_portal/')
+def subscribe_to_portal():
+    portal = g.db().query(Portal).filter_by(host=request.host).first()
+    if g.user:
+        portals = UserPortalReader.get_portals_for_user()
+        if portal in portals:
+            redirect(url_for('reader.list_reader'))
+        else:
+            url = '//profireader.com/subscribe/'+portal.id
+            print(url)
+            redirect(url)
+    return ''
 
 
 def get_params(**argv):

@@ -38,6 +38,7 @@ from beaker.middleware import SessionMiddleware
 
 def req(name, allowed=None, default=None, exception=True):
     ret = request.args.get(name)
+    print(exception)
     if allowed and (ret in allowed):
         return ret
     elif default is not None:
@@ -178,50 +179,19 @@ def setup_authomatic(app):
 
 
 def load_user(apptype):
-    user = None
-    user_dict = INFO_ITEMS_NONE.copy()
-    user_dict['logged_via'] = None
-    user_dict['registered_tm'] = None
-    user_dict['lang'] = 'uk'
-    #  ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
+    g.user = current_user if current_user.is_authenticated() else None
 
-    if current_user.is_authenticated():
-        from profapp.models.users import User
-
-        id = current_user.get_id()
-        # user = g.db.query(User).filter_by(id=id).first()
-        user = current_user
-        logged_via = REGISTERED_WITH[user.logged_in_via()]
-        user_dict['logged_via'] = logged_via
-
-        user_dict['profile_completed'] = user.profile_completed()
-
-        for attr in SOC_NET_FIELDS:
-            if attr == 'link' or attr == 'phone':
-                user_dict[attr] = \
-                    str(user.attribute_getter(logged_via, attr))
-            else:
-                user_dict[attr] = \
-                    user.attribute_getter(logged_via, attr)
-        user_dict['id'] = id
-        user_dict['registered_tm'] = user.registered_tm
-        user_dict['lang'] = user.lang
-        user_dict['tos'] = user.tos
-
-    g.user = user
-    if 'language' in session:
-        lang = session['language']
-    else:
-        lang = 'uk'
-    g.lang = user.lang if user else lang
+    lang = session['language'] if 'language' in session else 'uk'
+    g.lang = g.user.lang if g.user else lang
     g.languages = Configure.LANGUAGES
+
     g.portal = None
     g.portal_id = None
     g.portal_layout_path = ''
+
     g.debug = current_app.debug
 
     for variable in g.db.query(Config).filter_by(server_side=1).all():
-
         var_id = variable.id
         if variable.type == 'int':
             current_app.config[var_id] = int(variable.value)
