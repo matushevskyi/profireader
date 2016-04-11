@@ -1,23 +1,21 @@
 import os
 import re
 from flask import render_template, g, make_response
-from flask.ext.login import current_user
 from profapp.models.files import File, YoutubeApi
 from .blueprints_declaration import filemanager_bp
-from .request_wrapers import ok
+from .request_wrapers import ok, tos_required
 from functools import wraps
 from time import sleep
-from flask import jsonify
+from flask import jsonify, json
+
 import json as jsonmodule
+from flask.ext.login import login_required
 from flask import session, redirect, request, url_for
 from ..models.google import GoogleAuthorize, GoogleToken
 from utils.db_utils import db
 from ..models.company import Company, UserCompany
-from ..models.users import User
-from ..models.translate import TranslateTemplate
 import urllib.parse
-import collections
-import http.cookies
+
 
 
 def parent_folder(func):
@@ -35,28 +33,34 @@ json_result = {"result": {"success": True, "error": None}}
 
 
 @filemanager_bp.route('/')
+@login_required
+@tos_required
 def filemanager():
     last_visit_root_name = ''
     if 'last_root' in request.cookies:
         last_root_id = request.cookies['last_root']
     else:
         last_root_id = ''
-    # library = {g.user.personal_folder_file_id:
-    # {'name': 'My personal files',
-    # 'icon': current_user.gravatar(size=18)}}
+
     library = []
-    for user_company in g.user.employer_assoc:
-        # TODO VK by OZ: we need function that get all emploees with specific right
-        # Company.get_emploees('can_read', status = 'active')
-        # Company.get_emploees(['can_read', 'can_write'], status = ['active','banned'])
-        # similar function User.get_emploers ...
+    members, main_companies = Company.get_members_for_company()
+    uniq = set()
+    for n, user_company in enumerate(g.user.employer_assoc):
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE):
-            library.append({'id': user_company.employer.journalist_folder_file_id,
-            'name': "%s files" % (user_company.employer.name.replace(
-        '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),), 'icon': ''})
+            library.insert(n, File.folder_dict(user_company.employer,
+                                               {'can_upload': File.if_action_allowed(File.ACTIONS['upload'], user_company.company_id)}))
+            uniq.update({user_company.employer.name})
             if user_company.employer.journalist_folder_file_id == last_root_id:
                 last_visit_root_name = user_company.employer.name + " files"
-    library.sort(key=lambda k: k['name'])
+            if user_company.employer.name in members:
+                for member in members[user_company.employer.name]:
+                    if member.company.name not in uniq and member.company.name not in main_companies:
+                        library.append(File.folder_dict(member.company,
+                                                        {'can_upload': File.if_action_allowed(File.ACTIONS['upload'], member.company.id)}))
+                        uniq.update({member.company.name})
+                        if member.company.journalist_folder_file_id == last_root_id:
+                            last_visit_root_name = member.company.name + " files"
+    # library.sort(key=lambda k: k['name'])
     file_manager_called_for = request.args[
         'file_manager_called_for'] if 'file_manager_called_for' in request.args else ''
     file_manager_on_action = jsonmodule.loads(
@@ -70,7 +74,7 @@ def filemanager():
         last_visit_root_name = (root.name + " files") if root else ''
         last_root_id = root.journalist_folder_file_id if root else ''
     err = True if len(library) == 0 else False
-    return render_template('filemanager.html', library=library, err=err, last_visit_root=last_visit_root_name.replace(
+    return render_template('filemanager.html', library=json.dumps(library), err=err, last_visit_root=last_visit_root_name.replace(
         '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),
                            last_root_id=last_root_id,
                            file_manager_called_for=file_manager_called_for,
@@ -84,12 +88,12 @@ def filemanager():
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
     company = db(Company, journalist_folder_file_id=ancestors[0]).first()
-    if json['params'].get('search_text'):
+    if len(json['params'].get('search_text'))>0:
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],
                          json['params']['search_text'], company_id=company.id)
     else:
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=company.id)
-    return {'list': list, 'ancestors': ancestors, 'can_upload': File.if_action_allowed('upload', company.id)}
+    return {'list': list, 'ancestors': ancestors}
 
 
 @filemanager_bp.route('/createdir/', methods=['POST'])
@@ -133,7 +137,7 @@ def cut(json):
 @filemanager_bp.route('/auto_remove/', methods=['POST'])
 @ok
 def auto_remove(json):
-    return File.auto_remove(json.get('list'), json.get('folder_id'))
+    return File.auto_remove(json.get('list'))
 
 
 

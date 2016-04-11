@@ -46,11 +46,10 @@
                 <ul class="nav navbar-nav navbar-right">
                     <li ng-cloak ng-show="!user.id">
                         <ul class="user-auth">
-                            <li><a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=login' }}">{{ '{{' }}_('Log
-                                In'){{ '}}' }}</a></li>
-                            <li>
-                                <a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=signup' }}">{{ '{{' }}_('Sign
-                                    Up'){{ '}}' }}</a></li>
+                            <li><a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=login' }}">{{ _('Log
+                                In') }}</a></li>
+                            <li><a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=signup' }}">{{ _('Sign
+                                    Up') }}</a></li>
                         </ul>
                     </li>
                     <li class="dropdown" ng-cloak ng-show="user.id">
@@ -69,13 +68,13 @@
                                 </a>
                                 <ul class="dropdown-menu">
                                     <li>
-                                        <a href="{{ url_for('user.profile', user_id=g.user.id) }}">{{ '{{' }}_('My
-                                            Profile'){{ '}}' }}</a></li>
+                                        <a href="{{ url_for('user.profile', user_id=g.user.id) }}">{{ _('My
+                                            Profile') }}</a></li>
                                     {#                                    <li><a href="{{ url_for('auth.change_password') }}">{{ '{{' }}_('Change Password'){{ '}}' }}</a></li>#}
                                     {#                                    <li><a href="{{ url_for('auth.change_email_request') }}">{{ '{{' }}_('Change Email'){{ '}}' }}</a></li>#}
                                     {#                                    <li><a href="{{ url_for('company.companies') }}">{{ '{{' }}_('Company'){{ '}}' }}</a></li>#}
                                     {#                                    <li><a href="{{ url_for('article.show_mine') }}">{{ '{{' }}_('My articles'){{ '}}' }}</a></li>#}
-                                    <li><a href="{{ url_for('auth.logout') }}">{{ '{{' }}_('Log Out'){{ '}}' }}</a></li>
+                                    <li><a href="{{ url_for('auth.logout') }}">{{ _('Log Out') }}</a></li>
                                     {#                                    <li><a href="#" ng-click="open_filemanager()">{{ '{{' }}_('File manager'){{ '}}' }}</a>#}
                                     {#                                    </li>#}
                                 </ul>
@@ -87,18 +86,18 @@
                 </ul>
                 <ul class="top-menu">
                     <li><a class="read_btn" href="{{ url_for('reader.list_reader') }}" title="{{ _('Read my feed') }}"><span
-                            class="tooltip">{{ '{{' }}_('Read my feed'){{ '}}' }}</span></a></li>
+                            class="tooltip">{{ _('Read my feed') }}</span></a></li>
                     <li><a class="messages_btn" href="#" title="{{ _('All Messages') }}"><span
-                            class="tooltip">{{ '{{' }}_('All Messages'){{ '}}' }}</span></a></li>
+                            class="tooltip">{{ _('All Messages') }}</span></a></li>
                     <li><a class="company_btn" href="{{ url_for('company.companies') }}" title="{{ _('Company') }}"><span
-                            class="tooltip">{{ '{{' }}_('Company'){{ '}}' }}</span></a></li>
+                            class="tooltip">{{ _('Company') }}</span></a></li>
 {#                    <li><a class="article_btn" href="{{ url_for('article.show_mine') }}" title="{{ _('My articles') }}"><span#}
 {#                            class="tooltip">{{ '{{' }}_('My articles'){{ '}}' }}</span></a></li>#}
                     <li><a class="filemanager_btn" href="#" ng-click="open_filemanager()"
                            title="{{ _('File manager') }}"><span
-                            class="tooltip">{{ '{{' }}_('File manager'){{ '}}' }}</span></a></li>
+                            class="tooltip">{{ _('File manager') }}</span></a></li>
                     <li><a class="help_btn" href="{{ url_for('general.help') }}" title="{{ _('Read help') }}"><span
-                            class="tooltip">{{ '{{' }}_('Read help'){{ '}}' }}</span></a></li>
+                            class="tooltip">{{ _('Read help') }}</span></a></li>
 
                 </ul>
             </div>

@@ -29,18 +29,18 @@
             $scope.name = '';
             $scope.upload_file_id = '';
             $scope.uploadingProgress = false;
-
+            $scope.can_upload = false;
             $scope.last_visit = document.referrer;
 
             $scope.setTemplate = function (name) {
                 $scope.viewTemplate = $cookies.viewTemplate = name;
             };
-
-
-            $scope.changeRoot = function (root_id, root_name) {
-                $scope.fileNavigator.setRoot(root_id);
-                $cookies.last_root = root_id;
-                $scope.root_name = root_name;
+            
+            $scope.changeRoot = function (root) {
+                $scope.can_upload=root.can_upload
+                $scope.fileNavigator.setRoot(root.id);
+                $cookies.last_root = root.id;
+                $scope.root_name = root.name;
             };
 
             $scope.touch = function (item) {
@@ -120,7 +120,6 @@
                 }
             };
 
-
             $scope.cut = function (item) {
                 $scope.cut_file_id = $cookies.cut_file_id = item.model.id;
                 $scope.copy_file_id = $cookies.copy_file_id = '';
@@ -143,8 +142,7 @@
                     $scope.timer = false
                 }, 2000);
             };
-
-
+            
             $scope.paste = function (item) {
                 if ($scope.copy_file_id !== '' && $scope.cut_file_id === '') {
                     item.tempModel.mode = 'copy';
@@ -224,6 +222,8 @@
 
             $scope.take_action = function (item, actionname, permitted) {
                 $scope.modal = '';
+                if(!permitted)
+                    return false
                 if ($scope.file_manager_on_action[actionname] !== '' && actionname === 'download') {
                     try {
                         eval('item' + '.' + actionname + '();');//$scope.file_manager_on_action[actionname] + '(item);');
@@ -244,7 +244,6 @@
             };
 
             $scope.auto_remove = function(list, folder){
-                console.log(list)
                 var data = {
                     'list':list,
                     'folder_id':folder
@@ -267,7 +266,6 @@
 
             $scope.abort = function(){
                 if($scope.uploadFileList.length>0){
-                    console.log($scope.list_file_id)
                     if($scope.f){
                         $scope.f.upload.abort();
                         $scope.f.progress = 0;
@@ -452,21 +450,20 @@
                     if($scope.last_visit_root && $scope.rootdirs){
                         for(var n = 0;n < $scope.rootdirs.length;n++){
                             if($scope.rootdirs[n]['name'] === $scope.last_visit_root){
-                                $scope.changeRoot($scope.rootdirs[n]['id'], $scope.rootdirs[n]['name']);
+                                $scope.changeRoot($scope.rootdirs[n]);
                             }
                         }
                     }else{
-                        $scope.changeRoot($scope.rootdirs[0]['id'], $scope.rootdirs[0]['name'])
+                        $scope.changeRoot($scope.rootdirs[0])
                     }
                 } else {
-                    $scope.changeRoot('', '')
+                    $scope.changeRoot('')
                 }
             };
 
             $scope.errMsg = "You do not belong to any company!";
-            $scope.changeRoots();//(_.keys($scope.rootdirs)[0], _.values($scope.rootdirs)[0]['name']);
+            $scope.changeRoots();
             $scope.isWindows = $scope.getQueryParam('server') === 'Windows';
-            $scope.fileNavigator.refresh();
 
         }]);
 })(window, angular, jQuery);

@@ -21,6 +21,8 @@ from ..utils.redirect_url import redirect_url
 from utils.pr_email import SendEmail
 from .request_wrapers import ok
 from datetime import datetime
+import urllib
+from urllib.parse import urlencode
 # def _session_saver():
 #    session.modified = True
 
@@ -28,9 +30,7 @@ EMAIL_REGEX = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
 
 def login_signup_general(*soc_network_names):
-    if current_user.is_authenticated():
-        flash('You are already logged in. Logout first to login as another user.')
-        return redirect(redirect_url())
+
 
     response = make_response()
     registred_via_soc = False
@@ -137,11 +137,9 @@ def login_signup_endpoint():
 
 @auth_bp.route('/signup/', methods=['POST'])
 def signup():
+
     # if g.user_init and g.user_init.is_authenticated():
-    if current_user.is_authenticated():
-        # raise BadDataProvided
-        flash('You are already logged in. To sign up Profireader with new account you should logout first')
-        return redirect(url_for('auth.login_signup_endpoint') + '?login_signup=signup')
+
     email = request.form.get('email')
     display_name = request.form.get('display_name')
     password = request.form.get('password')
@@ -173,8 +171,12 @@ def signup():
         user.generate_confirmation_token()
         g.db.add(user)
         g.db.commit()
+        addtourl = {}
+        if session.get('portal_id'):
+            addtourl['subscribe_to_portal'] = session['portal_id']
+            session.pop('portal_id')
         SendEmail().send_email(subject='Confirm Your Account',
-                               html=render_template('auth/email/resend_confirmation.html', user=user),
+                               html=render_template('auth/email/resend_confirmation.html', user=user, addtourl=addtourl),
                                send_to=(user.profireader_email, ))
         flash('A confirmation email has been sent to you by email.')
         return redirect(url_for('auth.login_signup_endpoint'))
@@ -227,7 +229,6 @@ def login():
         return redirect(url_for('general.index'))
     email = request.form.get('email')
     password = request.form.get('password')
-    print(email,    password)
 
     if email and password:
 
@@ -285,6 +286,7 @@ def resend_confirmation(json):
 @auth_bp.route('/confirm_email/<token>/')
 def confirm(token):
     user = db(User, email_conf_token=token).first()
+    portal_id = request.args.get('subscribe_to_portal')
     if user and user.confirmed:
         return render_template("error.html", message='Your account has been already confirmed!')
     elif not user or not user.confirm_email():
@@ -295,6 +297,8 @@ def confirm(token):
         user.confirmed = True
         user.save()
         login_user(user)
+        if portal_id:
+            return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
         return render_template("auth/confirm_email.html")
 
 
@@ -317,20 +321,20 @@ def help_message(json):
         return True
 
 
-@auth_bp.route('/change-password', methods=['GET', 'POST'])
-@login_required
-def change_password():
-    form = ChangePasswordForm()
-    if form.validate_on_submit():
-        if current_user.verify_password(form.old_password.data):
-            current_user.password = form.password.data
-            g.db.add(current_user)
-            g.db.commit()
-            flash('Your password has been updated.')
-            return redirect(url_for('general.index'))
-        else:
-            flash('Invalid password.')
-    return render_template("auth/bak_change_password.html", form=form)
+# @auth_bp.route('/change-password', methods=['GET', 'POST'])
+# @login_required
+# def change_password():
+#     form = ChangePasswordForm()
+#     if form.validate_on_submit():
+#         if current_user.verify_password(form.old_password.data):
+#             current_user.password = form.password.data
+#             g.db.add(current_user)
+#             g.db.commit()
+#             flash('Your password has been updated.')
+#             return redirect(url_for('general.index'))
+#         else:
+#             flash('Invalid password.')
+#     return render_template("auth/bak_change_password.html", form=form)
 
 @auth_bp.route('/reset_password', methods=['GET'])
 def password_resets():
@@ -394,31 +398,31 @@ def password_reset_change(json, token):
     else:
         return check
 
-
-@auth_bp.route('/change-email', methods=['GET', 'POST'])
-@login_required
-def change_email_request():
-    form = ChangeEmailForm()
-    if form.validate_on_submit():
-        if current_user.verify_password(form.password.data):
-            new_email = form.email.data
-            token = current_user.generate_email_change_token(new_email)
-            SendEmail().send_email(subject='Confirm your email address', template='auth/email/change_email',
-                                   send_to=(new_email, ), user=current_user, token=token)
-            flash('An email with instructions to confirm your new email address has been sent to you.')
-            return redirect(url_for('general.index'))
-        else:
-            flash('Invalid email or password.')
-    return render_template("auth/change_email.html", form=form)
-
-
-@auth_bp.route('/change-email/<token>')
-@login_required
-def change_email(token):
-    if current_user.change_email(token):
-        flash('Your email address has been updated.')
-        g.db.add(current_user)
-        g.db.commit()
-    else:
-        flash('Invalid request.')
-    return redirect(url_for('general.index'))
+#  наразі не використовується але потрібна в майбутньому
+# @auth_bp.route('/change-email', methods=['GET', 'POST'])
+# @login_required
+# def change_email_request():
+#     form = ChangeEmailForm()
+#     if form.validate_on_submit():
+#         if current_user.verify_password(form.password.data):
+#             new_email = form.email.data
+#             token = current_user.generate_email_change_token(new_email)
+#             SendEmail().send_email(subject='Confirm your email address', template='auth/email/change_email',
+#                                    send_to=(new_email, ), user=current_user, token=token)
+#             flash('An email with instructions to confirm your new email address has been sent to you.')
+#             return redirect(url_for('general.index'))
+#         else:
+#             flash('Invalid email or password.')
+#     return render_template("auth/change_email.html", form=form)
+#
+#
+# @auth_bp.route('/change-email/<token>')
+# @login_required
+# def change_email(token):
+#     if current_user.change_email(token):
+#         flash('Your email address has been updated.')
+#         g.db.add(current_user)
+#         g.db.commit()
+#     else:
+#         flash('Invalid request.')
+#     return redirect(url_for('general.index'))
