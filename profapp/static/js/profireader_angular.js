@@ -1117,14 +1117,16 @@ areAllEmpty = function () {
     return are;
 };
 
+
 function file_choose(selectedfile) {
+    console.log(selectedfile)
     var args = top.tinymce.activeEditor.windowManager.getParams();
     var win = (args.window);
     var input = (args.input);
     if (selectedfile['type'] === 'file_video') {
         win.document.getElementById(input).value = "https://youtu.be/" + selectedfile['youtube_data']['id'] + "?list=" + selectedfile['youtube_data']['playlist_id'];
     } else {
-        win.document.getElementById(input).value = selectedfile['url'];
+        win.document.getElementById(input).value = selectedfile['file_url'];
     }
     top.tinymce.activeEditor.windowManager.close();
 }
@@ -1564,7 +1566,6 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
     if (scope.$$translate[phrase] === undefined) {
         scope.$$translate[phrase] = {'lang': phrase, 'time': t};
-        console.log(phrase)
         $ok('/tools/save_translate/', {
             template: CtrlName,
             phrase: phrase,
@@ -2077,6 +2078,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             //    console.log('init_instance_callback', arguments);
             //},
             file_browser_callback: function (field_name, url, type, win) {
+                console.log(url)
                 var cmsURL = '/filemanager/?file_manager_called_for=file_browse_' + type +
                     '&file_manager_default_action=choose&file_manager_on_action=' + encodeURIComponent(angular.toJson({choose: 'parent.file_choose'}));
                 tinymce.activeEditor.windowManager.open({
@@ -2134,33 +2136,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
     })
 });
 
-// function getGMT(date){
-//     console.log(date)
-//     var prdate = new Date(date).getTime()
-//     var offset = new Date().getTimezoneOffset();
-//     console.log(prdate)
-//     console.log(offset)
-//     var ptTime = new Date(prdate+(offset * 60000))
-//     console.log(ptTime)
-//     return ptTime
-// }
-
-
-function getLocalTime(date, needtime) {
-    var monthdict = {
-        1: "January", 2: "February", 3: "March", 4: "April", 5: "May",
-        6: "June", 7: "July", 8: "August", 9: "September", 10: "October", 11: "November", 12: "December"
-    }
-    var time = new Date(date);
-    // var month = monthdict[time.getMonth() + 1];
-    // var minutes = time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes();
-    if (needtime) {
-        return time.toLocaleString()
-        // return time.getDate()+' '+month+' '+time.getFullYear()+', '+ time.getHours()+':'+minutes
-    }
-    return new time.toDateString()
-}
-
 
 function cleanup_html(html) {
     normaltags = '^(span|a|br|div|table)$';
@@ -2207,6 +2182,24 @@ $.fn.scrollTo = function () {
             scrollTop: $(this).offset().top
         }, 1000);
     });
+}
+
+function getPopoverContent(content_list, width) {
+    if(content_list.length === 0){
+        return '';
+    }
+    $('.liked-favorite-band .popover').css({'background-color':'black','color':'white',
+        'width':width?width.toString():'160'+'px','overflow': 'hidden'})
+    var content = '';
+    var limit = width?width:160/10;
+    for(var i =0;i<content_list.length;i+=1){
+        if(content_list[i].length>limit){
+            content += '<spam class="ellipsis">'+content_list[i].substring(0,limit)+'...'+'</spam><br>';
+        }else{
+            content += '<spam class="ellipsis">'+content_list[i]+'</spam><br>';
+        }
+    }
+    return content
 }
 
 function scrool($el) {
