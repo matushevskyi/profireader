@@ -1,8 +1,2 @@
-
-{% if g.user %}
-    <a target="profireader_subscribe" href={{ "//profireader.com/company/560b9f54-1727-4001-bda8-784be5762873/profile/"}}><img
+<a target="profireader_subscribe" href="//profireader.com/reader/list_reader_from_front/{{ g.portal.id }}"><img
      style="width: 35px" src="//static.profireader.com/static/front/img/profireader_simple_logo.png" /></a>
-{% else %}
-    <a target="profireader_subscribe" href={{ "//profireader.com/auth/login_signup/?login_signup=login"}}><img
-     style="width: 35px" src="//static.profireader.com/static/front/img/profireader_simple_logo.png" /></a>
-{% endif %}
