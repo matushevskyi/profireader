@@ -92,7 +92,8 @@ class File(Base, PRBase):
         'download': 'download',
         'remove': 'remove',
         'show': 'show',
-        'upload': 'upload'
+        'upload': 'upload',
+        'cut': 'cut'
     }
 
     # CHECKING
@@ -239,7 +240,8 @@ class File(Base, PRBase):
         actions['remove'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['remove'], company_id)
         actions['copy'] = lambda file: None if file.mime == "root" else True
         actions['paste'] = lambda file: None if file == None else File.if_action_allowed(File.ACTIONS['upload'], company_id)
-        actions['cut'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['upload'], company_id)
+        actions['cut'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['cut'], company_id) \
+                                                                       and File.if_action_allowed(File.ACTIONS['upload'], company_id)
         actions['properties'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['upload'], company_id)
 
         search_files = File.search(name, parent_id, actions, file_manager_called_for)
