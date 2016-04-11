@@ -5,9 +5,7 @@ from profapp.models.files import File, YoutubeApi
 from .blueprints_declaration import filemanager_bp
 from .request_wrapers import ok, tos_required
 from functools import wraps
-from time import sleep
 from flask import jsonify, json
-
 import json as jsonmodule
 from flask.ext.login import login_required
 from flask import session, redirect, request, url_for
@@ -93,7 +91,6 @@ def list(json):
     else:
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=company.id)
     return {'list': list, 'ancestors': ancestors}
-
 
 @filemanager_bp.route('/createdir/', methods=['POST'])
 @ok

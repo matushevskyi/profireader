@@ -1,6 +1,9 @@
 (function(angular) {
     "use strict";
     angular.module('FileManagerApp').config(['$translateProvider', function($translateProvider) {
+        // $translateProvider.preferredLanguage('en');
+        //
+        console.log(angular)
         $translateProvider.translations('en', {
             filemanager: "File Manager",
             language: "Language",
@@ -56,6 +59,9 @@
             remove: "Delete",
             edit: "Edit",
             copy: "Copy",
+            cut: "Cut",
+            properties: "Properties",
+            paste: "Paste",
             rename: "Rename",
             extract: "Extract",
             compress: "Compress",

@@ -1619,7 +1619,6 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
         return phrase
     }
 }
-
 module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $templateCache) {
     //$rootScope.theme = 'bs3'; // bootstrap3 theme. Can be also 'bs2', 'default'
     angular.extend($rootScope, {
