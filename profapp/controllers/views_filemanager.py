@@ -84,7 +84,6 @@ def filemanager():
 
 @filemanager_bp.route('/list/', methods=['POST'])
 @ok
-# @parent_folder
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
     company = db(Company, journalist_folder_file_id=ancestors[0]).first()
@@ -98,40 +97,39 @@ def list(json):
 
 @filemanager_bp.route('/createdir/', methods=['POST'])
 @ok
-def createdir(json, parent_id=None):
-    return File.createdir(name=request.json['params']['name'],
-                          root_folder_id=request.json['params']['root_id'],
-                          parent_id=request.json['params']['folder_id'])
+def createdir(json):
+    return File.createdir(name=json['params']['name'],
+                          root_folder_id=json['params']['root_id'],
+                          parent_id=json['params']['folder_id'])
 
 
 @filemanager_bp.route('/properties/', methods=['POST'])
 @ok
 def set_properties(json):
-    file = File.get(request.json['params']['id'], )
-    return File.set_properties(file, request.json['params']['add_all'], name=request.json['params']['name'],
-                               copyright_author_name=request.json['params']['author_name'],
-                               description=request.json['params']['description'])
-
-
-@filemanager_bp.route('/rename/', methods=['POST'])
-@ok
-def rename(json):
-    file = File.get(request.json['params']['id'], )
-    return File.rename(file, request.json['params']['name'])
+    file = File.get(json['params']['id'])
+    if not file:
+        return False
+    return File.set_properties(file, json['params']['add_all'], name=json['params']['name'],
+                               copyright_author_name=json['params']['author_name'],
+                               description=json['params']['description'])
 
 
 @filemanager_bp.route('/copy/', methods=['POST'])
 @ok
 def copy(json):
-    file = File.get(request.json['params']['id'])
-    return file.copy_file(request.json['params']['folder_id']).id
+    file = File.get(json['params']['id'])
+    if not file:
+        return False
+    return file.copy_file(json['params']['folder_id']).id
 
 
 @filemanager_bp.route('/cut/', methods=['POST'])
 @ok
 def cut(json):
-    file = File.get(request.json['params']['id'])
-    return File.move_to(file, request.json['params']['folder_id'])
+    file = File.get(json['params']['id'])
+    if not file:
+        return False
+    return file.move_to(json['params']['folder_id'])
 
 
 @filemanager_bp.route('/auto_remove/', methods=['POST'])
@@ -145,6 +143,8 @@ def auto_remove(json):
 @ok
 def remove(json, file_id):
     file = File.get(file_id)
+    if not file:
+        return False
     ancestors = File.ancestors(file.parent_id)
     return file.remove(db(Company, journalist_folder_file_id=ancestors[0]).first().id)
 
