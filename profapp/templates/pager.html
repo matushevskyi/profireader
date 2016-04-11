@@ -7,6 +7,59 @@
                     last-text="&raquo;"></uib-pagination>
 </script>
 
+<script type="text/ng-template" id="pr-crop-buttons.html">
+    {% raw %}
+    <div class="btn-group">
+        <span ng-if="zoomable" ng-disabled="!zoom_by(1.1, true)" ng-click="zoom_by(1.1)" class="btn
+        btn-primary"
+              type="button" title="Zoom In">
+                  <span class="docs-tooltip" data-toggle="tooltip"><span
+                          class="glyphicon glyphicon-zoom-in"></span></span>
+        </span>
+
+        <span ng-if="zoomable" ng-disabled="!zoom_by(0.9, true)" ng-click="zoom_by(0.9)" class="btn
+        btn-primary"
+              type="button"
+              title="Zoom Out">
+                 <span class="glyphicon glyphicon-zoom-out"></span>
+        </span>
+
+        <span ng-if="browsable" ng-click="chooseImage(true)" class="btn btn-primary docs-tooltip"
+                      ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'browse'}"
+                      title="Chose image"><span class="glyphicon glyphicon-folder-open"></span></span>
+
+
+        <label ng-if="uploadable" class="btn btn-primary btn-upload"
+               ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'upload'}"
+               title="Upload image file">
+            <input pr-file-change="fileUploaded" type="file" class="sr-only pr-cropper-input-image" name="file"
+                   accept="image/*">
+            <span class="glyphicon glyphicon-upload"></span>
+        </label>
+
+
+        <span ng-repeat="(url_class_name, url) in prCrop.preset_urls" class="btn btn-primary" type="button"
+              ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'preset' &&
+              prCrop['selected_by_user']['class'] == url_class_name}"
+              ng-click="selectPresetUrl(url_class_name)">
+                <span title="{{ url_class_name }}" class="glyphicon {{ url_class_name }}"></span>
+        </span>
+
+        <span ng-if="noneurl" class="btn btn-primary" type="button"
+              ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'none'}" ng-click="selectNone()">
+                <span title="none" class="glyphicon glyphicon-remove-circle"></span>
+        </span>
+
+        <span ng-if="resetable"
+              ng-click="resetModel()" class="btn btn-primary" title="Reset image"><span
+                class="glyphicon glyphicon-repeat"></span></span>
+
+    </div>
+    {{ zoom }}
+    <input type="hidden" ng-model="data.article.image_file_id">
+    {% endraw %}
+
+</script>
 
 <script type="text/ng-template" id="cropper.html">
     {% raw %}
@@ -59,8 +112,8 @@
         </span>
 
         <span ng-if="resetable"
-            ng-click="resetModel()" class="btn btn-primary" title="Reset image"><span
-            class="glyphicon glyphicon-repeat"></span></span>
+              ng-click="resetModel()" class="btn btn-primary" title="Reset image"><span
+                class="glyphicon glyphicon-repeat"></span></span>
 
     </div>
     <input type="hidden" ng-model="data.article.image_file_id">

@@ -837,6 +837,190 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
         }
             ;
     }])
+    .directive('prCropperaa', function ($compile, $templateCache, $timeout) {
+        return {
+            restrict: 'A',
+            replace: false,
+            terminal: true,
+            priority: 1000,
+            scope: {
+                prCropperaa: '='
+            },
+            link: function link(scope, element, attrs) {
+
+
+                scope.constrains = function (constrains) {
+                    scope.ctr = constrains;
+                };
+
+                scope.statechanged = function (state) {
+                    scope.state = state;
+                };
+
+
+                element.attr('ng-crop', '{{ selectedurl }}');
+                element.attr('ng-crop-coordinates', 'coordinates');
+                element.attr('ng-crop-options', 'options');
+                element.attr('ng-crop-zoom', 'zoom');
+                element.attr('ng-crop-disabled', 'disabled');
+
+                element.attr('ng-crop-on-state', 'statechanged');
+                element.attr('ng-crop-on-constrains', 'constrains');
+
+
+                element.removeAttr("pr-cropperaa");
+
+                scope.zoomable = true;
+                scope.disabled = false;
+
+                // element.removeAttr("pr-cropper-options");
+                // element.removeAttr("pr-cropper-state");
+                // element.removeAttr("pr-cropper-coordinates");
+                // scope.original_data = scope.prCropper;
+                $(element).after($templateCache.get('pr-crop-buttons.html'));
+
+                scope.$watch('prCropperaa', function (newv, oldv) {
+                    console.log(newv);
+                    scope.original_model = newv;
+                    scope.coordinates = [];
+                    scope.state = {};
+                    scope.browsable = newv['browse'] ? true : false;
+                    scope.uploadable = newv['upload'] ? true : false;
+                    scope.noneurl = newv['none'];
+                    scope.resetable = true;
+                    scope.options = {}
+                    if (newv.min_size) scope.options['min_width'] = newv.min_size[0];
+                    if (newv.min_size) scope.options['min_height'] = newv.min_size[1];
+                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['min_aspect'] = newv.cropper.aspect_ratio[0];
+                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['max_aspect'] = newv.cropper.aspect_ratio[1];
+                    scope.selectedurl = fileUrl(newv['selected_by_user']['image_file_id']);
+
+                });
+
+                var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
+
+                window[callback_name] = function (item) {
+                    scope.selectedurl = fileUrl(item.id);
+                    closeFileManager();
+                };
+
+                scope.selectNone = function () {
+                    console.log(scope.prCropperaa);
+                    scope.disabled = true;
+                    scope.selectedurl = scope.prCropperaa.no_selection_url;
+                }
+
+                scope.fileUploaded = function (event) {
+                    var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
+                    if (the_file) {
+                        var fr = new FileReader();
+                        if (/^image\/\w+$/.test(the_file.type)) {
+                            fr.onload = function (e) {
+                                var uploaded_file = (window.URL || window.webkitURL).createObjectURL(the_file);
+                                scope.prCropperaa.selected_by_user = {
+                                    'type': 'upload',
+                                    'file': {
+                                        'mime': the_file.type,
+                                        'name': the_file.name,
+                                        'content': fr.result
+                                    },
+                                    'crop_coordinates': {zoom: null, 'rotate': 0}
+                                }
+                                scope.selectedurl =fr.result;
+                            }
+                            fr.onerror = function (e) {
+                                // loadImage(false);
+                                add_message('File loading error', 'warning');
+                            }
+                            // loadImage(true);
+                            fr.readAsDataURL(the_file);
+                        }
+                        else {
+                            add_message('Please choose an image file', 'warning');
+                        }
+                    }
+                };
+
+
+                scope.zoom_by = function (by, check_only) {
+                    console.log(scope.zoom)
+                    if (!scope.ctr) return false;
+                    var ok = false;
+                    if (by > 1 && scope.zoom * by <= scope.ctr.max_zoom) ok = true;
+                    if (by < 1 && scope.zoom * by >= scope.ctr.min_zoom) ok = true;
+                    if (!check_only)  scope.zoom *= by;
+                    console.log(ok, check_only, scope.zoom)
+                    return ok;
+
+                }
+
+                scope.chooseImage = function (setImage) {
+                    console.log(setImage);
+                    scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.original_model['browse']);
+                };
+
+                $compile(element)(scope);
+                $compile($(element).next())(scope);
+            }
+        };
+    })
+    .directive('prCropper', function ($compile, $templateCache) {
+        return {
+            restrict: 'A',
+            replace: false,
+            terminal: true,
+            priority: 1000,
+            scope: {
+                prCropper: '='
+            },
+            link: function link(scope, element, attrs) {
+
+                scope.original_data = scope.prCropper;
+
+
+                element.attr('ng-crop', '{{ selectedurl }}');
+                element.attr('ng-crop-coordinates', 'coordinates');
+                element.attr('ng-crop-state', 'state');
+                // if (element.attr('pr-cropper-state')) element.attr('ng-crop-state', element.attr('pr-cropper-state'));
+                // element.attr('ng-crop-coordinates', element.attr('pr-cropper-coordinates'));
+                // element.removeAttr("pr-cropper");
+                // element.removeAttr("pr-cropper-options");
+                // element.removeAttr("pr-cropper-state");
+                // element.removeAttr("pr-cropper-coordinates");
+                $(element).after($templateCache.get('pr-crop-buttons.html'));
+
+                scope.$watch('prCropper', function (newv, oldv) {
+
+                    scope.coordinates = [];
+                    scope.state = {};
+                    scope.browsable = scope.original_data['browse'] ? true : false;
+                    scope.selectedurl = fileUrl(scope.original_data['selected_by_user']['image_file_id']);
+                });
+
+
+                var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
+
+                window[callback_name] = function (item) {
+                    closeFileManager();
+                    // restartCropper(fileUrl(item.id), {
+                    //     'type': 'browse',
+                    //     'image_file_id': item.id,
+                    //     'crop_coordinates': {
+                    //         'zoom': null,
+                    //         'rotate': 0
+                    //     }
+                    // });
+                };
+
+                scope.chooseImage = function (setImage) {
+                    scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.prCrop['browse']);
+                };
+
+                $compile(element)(scope);
+
+            }
+        };
+    })
     .directive('dateTimestampFormat', function () {
         return {
             require: 'ngModel',
@@ -2190,18 +2374,20 @@ $.fn.scrollTo = function () {
 }
 
 function getPopoverContent(content_list, width) {
-    if(content_list.length === 0){
+    if (content_list.length === 0) {
         return '';
     }
-    $('.liked-favorite-band .popover').css({'background-color':'black','color':'white',
-        'width':width?width.toString():'160'+'px','overflow': 'hidden'})
+    $('.liked-favorite-band .popover').css({
+        'background-color': 'black', 'color': 'white',
+        'width': width ? width.toString() : '160' + 'px', 'overflow': 'hidden'
+    })
     var content = '';
-    var limit = width?width:160/10;
-    for(var i =0;i<content_list.length;i+=1){
-        if(content_list[i].length>limit){
-            content += '<spam class="ellipsis">'+content_list[i].substring(0,limit)+'...'+'</spam><br>';
-        }else{
-            content += '<spam class="ellipsis">'+content_list[i]+'</spam><br>';
+    var limit = width ? width : 160 / 10;
+    for (var i = 0; i < content_list.length; i += 1) {
+        if (content_list[i].length > limit) {
+            content += '<spam class="ellipsis">' + content_list[i].substring(0, limit) + '...' + '</spam><br>';
+        } else {
+            content += '<spam class="ellipsis">' + content_list[i] + '</spam><br>';
         }
     }
     return content
