@@ -372,7 +372,8 @@ class UserCompany(Base, PRBase):
         'download': RIGHT_AT_COMPANY.FILES_BROWSE,
         'remove': RIGHT_AT_COMPANY.FILES_DELETE_OTHERS,
         'show': RIGHT_AT_COMPANY.FILES_BROWSE,
-        'upload': RIGHT_AT_COMPANY.FILES_UPLOAD
+        'upload': RIGHT_AT_COMPANY.FILES_UPLOAD,
+        'cut': RIGHT_AT_COMPANY.FILES_DELETE_OTHERS
     }
 
     ACTION_FOR_STATUSES_MEMBERSHIP = {
