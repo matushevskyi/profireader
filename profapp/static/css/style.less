@@ -347,7 +347,9 @@ body {
     color: #26AAE1;
   }
 }
-
+.tab-link a{
+  cursor: pointer;
+}
 .google-icon {
   a:hover {
     text-decoration: none;
@@ -1321,6 +1323,9 @@ body {
 }
 
 @media screen and (max-width: 764px) {
+  h3{
+    font-size: 20px;
+  }
   .menu-site {
     ul {
       margin-right: 0;
@@ -1362,6 +1367,7 @@ body {
       position: static;
       a {
         padding: 0;
+        margin-left: 12px;
         &:hover {
           background-color: transparent;
         }
@@ -1372,9 +1378,7 @@ body {
     }
   }
 
-  .serch-portal h3 {
-    font-size: 22px;
-  }
+
 
   .edit-block {
     margin-top: 70px;
@@ -1404,6 +1408,11 @@ body {
   .image-company-profile {
     margin-top: 30px;
   }
+  .join-company{
+    input{
+      height: 35px;
+    }
+  }
 }
 
 @media screen and (max-width: 500px) {
@@ -1430,9 +1439,7 @@ body {
     .liked-favorite-band ul {
       text-align: center;
     }
-    h3 {
-      font-size: 20px;
-    }
+
   }
 
   .join-new-company button {

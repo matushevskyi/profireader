@@ -281,6 +281,9 @@ body {
 .microsoft-icon i {
   color: #26AAE1;
 }
+.tab-link a {
+  cursor: pointer;
+}
 .google-icon {
   display: inline;
   margin-right: 10px;
@@ -1131,6 +1134,9 @@ body {
   }
 }
 @media screen and (max-width: 764px) {
+  h3 {
+    font-size: 20px;
+  }
   .menu-site ul {
     margin-right: 0;
     position: static;
@@ -1170,15 +1176,13 @@ body {
   }
   .menu-site .dropdown-content a {
     padding: 0;
+    margin-left: 12px;
   }
   .menu-site .dropdown-content a:hover {
     background-color: transparent;
   }
   .menu-site .dropdown:hover .dropbtn {
     color: #fff;
-  }
-  .serch-portal h3 {
-    font-size: 22px;
   }
   .edit-block {
     margin-top: 70px;
@@ -1202,6 +1206,9 @@ body {
   .image-company-profile {
     margin-top: 30px;
   }
+  .join-company input {
+    height: 35px;
+  }
 }
 @media screen and (max-width: 500px) {
   .block-portal .subscribe-portal-logo {
@@ -1217,9 +1224,6 @@ body {
   }
   .reader-content .liked-favorite-band ul {
     text-align: center;
-  }
-  .reader-content h3 {
-    font-size: 20px;
   }
   .join-new-company button {
     width: 100%;
