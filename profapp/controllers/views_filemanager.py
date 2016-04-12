@@ -5,9 +5,7 @@ from profapp.models.files import File, YoutubeApi
 from .blueprints_declaration import filemanager_bp
 from .request_wrapers import ok, tos_required
 from functools import wraps
-from time import sleep
 from flask import jsonify, json
-
 import json as jsonmodule
 from flask.ext.login import login_required
 from flask import session, redirect, request, url_for
@@ -84,7 +82,6 @@ def filemanager():
 
 @filemanager_bp.route('/list/', methods=['POST'])
 @ok
-# @parent_folder
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
     company = db(Company, journalist_folder_file_id=ancestors[0]).first()
@@ -95,43 +92,43 @@ def list(json):
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=company.id)
     return {'list': list, 'ancestors': ancestors}
 
-
 @filemanager_bp.route('/createdir/', methods=['POST'])
 @ok
-def createdir(json, parent_id=None):
-    return File.createdir(name=request.json['params']['name'],
-                          root_folder_id=request.json['params']['root_id'],
-                          parent_id=request.json['params']['folder_id'])
+def createdir(json):
+    if not File.if_action_allowed('upload', get_company_from_folder(json['params']['root_id']).id):
+        return False
+    return File.createdir(name=json['params']['name'],
+                          root_folder_id=json['params']['root_id'],
+                          parent_id=json['params']['folder_id'])
 
 
 @filemanager_bp.route('/properties/', methods=['POST'])
 @ok
 def set_properties(json):
-    file = File.get(request.json['params']['id'], )
-    return File.set_properties(file, request.json['params']['add_all'], name=request.json['params']['name'],
-                               copyright_author_name=request.json['params']['author_name'],
-                               description=request.json['params']['description'])
-
-
-@filemanager_bp.route('/rename/', methods=['POST'])
-@ok
-def rename(json):
-    file = File.get(request.json['params']['id'], )
-    return File.rename(file, request.json['params']['name'])
+    file = File.get(json['params']['id'])
+    if not file or not File.if_action_allowed('upload', get_company_from_folder(json['params']['id']).id):
+        return False
+    return File.set_properties(file, json['params']['add_all'], name=json['params']['name'],
+                               copyright_author_name=json['params']['author_name'],
+                               description=json['params']['description'])
 
 
 @filemanager_bp.route('/copy/', methods=['POST'])
 @ok
 def copy(json):
-    file = File.get(request.json['params']['id'])
-    return file.copy_file(request.json['params']['folder_id']).id
+    file = File.get(json['params']['id'])
+    if not file or not File.if_action_allowed('upload', get_company_from_folder(json['params']['id']).id):
+        return False
+    return file.copy_file(json['params']['folder_id']).id
 
 
 @filemanager_bp.route('/cut/', methods=['POST'])
 @ok
 def cut(json):
-    file = File.get(request.json['params']['id'])
-    return File.move_to(file, request.json['params']['folder_id'])
+    file = File.get(json['params']['id'])
+    if not file or not File.if_action_allowed('upload', get_company_from_folder(json['params']['id']).id):
+        return False
+    return file.move_to(json['params']['folder_id'])
 
 
 @filemanager_bp.route('/auto_remove/', methods=['POST'])
@@ -139,12 +136,16 @@ def cut(json):
 def auto_remove(json):
     return File.auto_remove(json.get('list'))
 
-
+def get_company_from_folder(file_id):
+    ancestors = File.ancestors(file_id)
+    return db(Company, journalist_folder_file_id=ancestors[0]).first()
 
 @filemanager_bp.route('/remove/<string:file_id>', methods=['POST'])
 @ok
 def remove(json, file_id):
     file = File.get(file_id)
+    if not file:
+        return False
     ancestors = File.ancestors(file.parent_id)
     return file.remove(db(Company, journalist_folder_file_id=ancestors[0]).first().id)
 
