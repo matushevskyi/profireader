@@ -18,7 +18,7 @@
             $scope.fileNavigator = new FileNavigator($scope.last_root_id? $scope.last_root_id:($scope.rootdirs[0]?$scope.rootdirs[0]['id']: ""), file_manager_called_for);
             $scope.fileUploader = fileUploader;
             $scope.uploadFileList = [];
-            $scope.viewTemplate = $cookies.viewTemplate || 'main-table.html';
+            $scope.viewTemplate = $cookies.get('viewTemplate');
             $scope.error = error;
             $scope.file_manager_called_for = file_manager_called_for;
             $scope.file_manager_on_action = file_manager_on_action;
@@ -40,14 +40,15 @@
             };
 
             $scope.setTemplate = function (name) {
-                $scope.viewTemplate = $cookies.viewTemplate = name;
+                $cookies.put('viewTemplate', name)
+                $scope.viewTemplate = name;
             };
             
             $scope.changeRoot = function (root) {
                 $scope.can_upload=root.can_upload;
-                $scope.fileNavigator.setRoot(root.id);
-                $cookies.last_root = root.id;
+                $cookies.put('last_root' ,root.id);
                 $scope.root_name = root.name;
+                $scope.fileNavigator.setRoot(root.id);
             };
 
             $scope.touch = function (item) {
