@@ -26,7 +26,7 @@ body {
 }
 
 .navbar-brand img {
-  width: 60%;
+  width: 200px;
 }
 
 .ellipsis {
@@ -219,6 +219,7 @@ body {
 .menu-profile {
   a {
     text-decoration: none;
+    font-size: 13px;
   }
   .login-profile {
     background-color: @color-red-btn;
@@ -238,11 +239,15 @@ body {
 }
 
 .menu-site {
+  span {
+    display: none;
+  }
   a {
     color: #fff;
   }
   a:hover {
     transition: @transition;
+    color: #FFF;
   }
   ul {
     position: absolute;
@@ -329,26 +334,46 @@ body {
 }
 
 .microsoft-icon {
+  a:hover {
+    text-decoration: none;
+  }
   display: inline;
-  color: #26AAE1;
+  i {
+    color: #26AAE1;
+  }
 }
 
 .google-icon {
-  color: @color-red-btn;
+  a:hover {
+    text-decoration: none;
+  }
+  i {
+    color: @color-red-btn;
+  }
   display: inline;
   margin-right: 10px;
 }
 
 .linkedin-icon {
+  a:hover {
+    text-decoration: none;
+  }
   display: inline;
-  color: #0177B5;
+  i {
+    color: #0177B5;
+  }
   margin-right: 10px;
 
 }
 
 .facebook-icon {
+  a:hover {
+    text-decoration: none;
+  }
   display: inline;
-  color: #3B569D;
+  i {
+    color: #3B569D;
+  }
   margin-right: 10px;
 
 }
@@ -386,7 +411,7 @@ body {
   }
 }
 
-.register-form-profirider {
+.register-form-profireader {
   margin-top: 15px;
   input {
     margin-bottom: 10px;
@@ -726,10 +751,25 @@ body {
     display: block;
     margin: 0 auto;
   }
+  .liked-favorite-band {
+    ul {
+      list-style: none;
+      border-top: 1px solid #E3E3E3;
+      padding-top: 15px;
+    }
+    li {
+      display: inline-block;
+      margin-right: 85px;
+      cursor: pointer;
+    }
+    i {
+      margin-right: 5px;
+    }
+  }
 }
 
 .logo-portal-news {
-  width: 100%;
+  width: 65px;
 }
 
 /* ---reader--- */
@@ -880,6 +920,7 @@ body {
 }
 
 .edit-grup {
+  padding-left: 360px;
   .input-group {
     margin-bottom: 5px;
   }
@@ -916,6 +957,11 @@ body {
 
     }
   }
+
+}
+
+.profile-thumbnail {
+  position: absolute;
 }
 
 .add-division-style {
@@ -1199,29 +1245,26 @@ body {
   }
 }
 
+/*reset password*/
+.reset-pass {
+  padding: 10px 15px;
+  background-color: @color-btn;
+  border: none;
+  color: #fff;
+  box-shadow: @shadow;
+  &:hover {
+    background-color: @color-btn-hover;
+    transition: @transition;
+    box-shadow: @shadow-hover;
+  }
+}
+
 /* ---MEDIA--- */
 @media screen and (max-width: 1024px) {
   /* Specific to this particular image */
   .mess-bg {
     left: 50%;
     margin-left: -512px; /* 50% */
-  }
-}
-
-@media screen and (max-width: 764px) {
-  .menu-site ul {
-    float: right;
-    margin-right: 0;
-    position: static;
-
-  }
-
-  body {
-    padding-top: 150px;
-  }
-
-  .company-portal a {
-    float: none;
   }
 }
 
@@ -1244,8 +1287,108 @@ body {
   .edit-company button {
     text-align: center;
   }
+  .edit-grup{
+    width: 100%;
+    margin-top: 364px;
+    margin-left: 10px;
+    padding: 0;
+  }
+}
 
-  .navbar-brand {
-    width: 60%;
+@media screen and (max-width: 764px) {
+  .menu-site {
+    ul {
+      margin-right: 0;
+      position: static;
+    }
+    li {
+      display: block;
+    }
+    span {
+      display: inline-block;
+      font-size: 18px;
+      &:hover {
+        border-bottom: 1px solid @color-links;
+      }
+    }
+    i {
+      font-size: 18px;
+      margin-right: 5px;
+      width: 20px;
+    }
+    .menu-profile {
+      a {
+        font-size: 15px;
+      }
+      .login-profile {
+        position: absolute;
+        top: 10px;
+        right: 25px;
+      }
+    }
+    .dropbtn {
+      padding-left: 0;
+    }
+    .dropdown-content {
+      display: block;
+      box-shadow: none;
+      position: static;
+      a {
+        padding: 0;
+        &:hover {
+          background-color: transparent;
+        }
+      }
+    }
+    .dropdown:hover .dropbtn {
+      color: #fff;
+    }
+  }
+
+  .company-portal a {
+    float: none;
+  }
+
+  .block-resp {
+    margin-right: 15px;
+    margin-left: 15px;
+  }
+
+  .btn-search-portal {
+    margin-bottom: 10px;
+  }
+
+  .company-thumbnail img {
+    margin-top: 10px;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .block-portal {
+    .subscribe-portal-logo {
+      margin-left: 50%;
+      margin-top: 10px;
+    }
+    .portal-block-resp {
+      width: 100%;
+      text-align: center;
+    }
+  }
+
+  .logo-portal-news {
+    width: 45px;
+  }
+
+  .reader-content {
+    .liked-favorite-band ul {
+      text-align: center;
+    }
+    h3 {
+      font-size: 20px;
+    }
+  }
+
+  .join-new-company button {
+    width: 100%;
   }
 }

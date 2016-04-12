@@ -77,15 +77,16 @@
             <h4 ng-if="data.list_portals.length==0 && search_text.length>0" style="color: red">{{ _('For your search no
                 results!') }}</h4>
         </div>
+
         <div ng-repeat="portal in data.list_portals" class="row block-portal">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-6">
                 <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
             </div>
-            <div class="col-lg-7 col-md-6 col-sm-6 col-xs-6">
+            <div class="col-lg-7 col-md-6 col-sm-6 col-xs-6 portal-block-resp">
                 <h3><span pr-test="SearchResults-PortalsName" ng-bind-html="highlight(portal.name, search_text)"></span></h3>
                 <span class="address-portal" ng-bind-html="highlight(portal.host, search_text)"></span>
             </div>
-            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-6">
+            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-6 portal-block-resp">
                 <button pr-test-portal-id="{{ portal.id }}" pr-test="SearchAndSubscribeBtn" ng-disabled="portal.subscribed" class="btn-search-portal" ng-click="subscribe(portal.id)">
                     {{ _('Subscribe') }}
                 </button>
