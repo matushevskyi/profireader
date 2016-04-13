@@ -44,7 +44,6 @@ def list_reader_from_front(portal_id):
             return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
     else:
         return redirect(url_for('general.auth_before_subscribe_to_portal', portal_id=portal_id))
-    return redirect(url_for('general.portals_list'))
 
 
 @reader_bp.route('/list_reader', methods=['GET'])
@@ -64,30 +63,17 @@ def list_reader_load(json):
                      'division.name,portal.name|host|logo_file_id|id'
     favorite = request.args.get('favorite') == 'True'
     localtime = time.gmtime(time.time())
-    if not favorite:
-        articles, pages, page = Search().search({'class': ArticlePortalDivision,
-                                                 'filter': and_(ArticlePortalDivision.portal_division_id ==
-                                                                db(PortalDivision).filter(
-                                                                    PortalDivision.portal_id ==
-                                                                    db(UserPortalReader,
-                                                                       user_id=g.user.id).subquery().
-                                                                    c.portal_id).subquery().c.id,
-                                                                ArticlePortalDivision.status ==
-                                                                ArticlePortalDivision.STATUSES['PUBLISHED'],
-                                                                ArticlePortalDivision.publishing_tm < datetime.datetime(
-                                                                    *localtime[:6])),
-                                                 'tags': True, 'return_fields': article_fields}, page=1,
-                                                items_per_page=5*next_page)
-    else:
-        articles, pages, page = Search().search({'class': ArticlePortalDivision,
-                                                 'filter': (ArticlePortalDivision.id == db(ReaderArticlePortalDivision,
-                                                                                           user_id=g.user.id,
-                                                                                           favorite=True).subquery().c.
-                                                            article_portal_division_id),
-                                                 'tags': True, 'return_fields': article_fields}, page=1,
+    filter = and_(ArticlePortalDivision.portal_division_id == db(PortalDivision).filter(
+                      PortalDivision.portal_id ==db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id).subquery().c.id,
+                      ArticlePortalDivision.status ==ArticlePortalDivision.STATUSES['PUBLISHED'],
+                      ArticlePortalDivision.publishing_tm < datetime.datetime(*localtime[:6])) if not favorite\
+            else (ArticlePortalDivision.id == db(ReaderArticlePortalDivision, user_id=g.user.id,
+                                        favorite=True).subquery().c.article_portal_division_id)
+    articles, pages, page = Search().search({'class': ArticlePortalDivision,
+                                             'filter': filter,
+                                             'tags': True, 'return_fields': article_fields}, page=1,
                                                 items_per_page=5*next_page,
                                                 search_text=search_text)
-    # portals = UserPortalReader.get_portals_for_user() if not articles else None
     list_articles = ArticlePortalDivision.get_list_reader_articles(articles)
     return {
         'end': True if pages == 1 or pages == 0 else False,

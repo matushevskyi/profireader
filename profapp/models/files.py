@@ -229,7 +229,7 @@ class File(Base, PRBase):
             (file.mime == 'directory') or (file.mime == 'root')) else True
         if file_manager_called_for == 'file_browse_image':
             default_actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
-            actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
+            actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True.bit_length()
         elif file_manager_called_for == 'file_browse_media':
             default_actions['choose'] = lambda file: False if None == re.search('^video/.*', file.mime) else True
             actions['choose'] = lambda file: False if None == re.search('^video/.*', file.mime) else True

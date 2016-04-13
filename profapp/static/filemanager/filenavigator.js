@@ -187,6 +187,9 @@
 
         FileNavigator.prototype.goTo = function(index) {
             var self = this;
+            if(index === -1 && self.history.length>0){
+                self.buildTree('/');
+            }
             $('.navbar-right').find('input[type=text]').val('');
             self.search_text = '';
             self.currentPath = self.currentPath.slice(0, index + 1);
