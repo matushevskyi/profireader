@@ -92,7 +92,8 @@ class File(Base, PRBase):
         'download': 'download',
         'remove': 'remove',
         'show': 'show',
-        'upload': 'upload'
+        'upload': 'upload',
+        'cut': 'cut'
     }
 
     # CHECKING
@@ -138,8 +139,7 @@ class File(Base, PRBase):
             return False
         dirs_in_dir = [file for file in db(File, parent_id=id_file, mime='directory')]
         for dir in dirs_in_dir:
-            for f in db(File, parent_id=dir.id, mime='directory'):
-                dirs_in_dir.append(f)
+            [dirs_in_dir.append(f) for f in db(File, parent_id=dir.id, mime='directory')]
             if dir.id == id_folder:
                 return False
         return True
@@ -225,12 +225,11 @@ class File(Base, PRBase):
         show = lambda file: True if File.if_action_allowed(File.ACTIONS['show'], company_id) else False
         actions = {}
         default_actions = {}
-        # default_actions['choose'] = lambda file: None
         default_actions['download'] = lambda file: None if (
             (file.mime == 'directory') or (file.mime == 'root')) else True
         if file_manager_called_for == 'file_browse_image':
             default_actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
-            actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
+            actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True.bit_length()
         elif file_manager_called_for == 'file_browse_media':
             default_actions['choose'] = lambda file: False if None == re.search('^video/.*', file.mime) else True
             actions['choose'] = lambda file: False if None == re.search('^video/.*', file.mime) else True
@@ -241,7 +240,8 @@ class File(Base, PRBase):
         actions['remove'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['remove'], company_id)
         actions['copy'] = lambda file: None if file.mime == "root" else True
         actions['paste'] = lambda file: None if file == None else File.if_action_allowed(File.ACTIONS['upload'], company_id)
-        actions['cut'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['upload'], company_id)
+        actions['cut'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['cut'], company_id) \
+                                                                       and File.if_action_allowed(File.ACTIONS['upload'], company_id)
         actions['properties'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['upload'], company_id)
 
         search_files = File.search(name, parent_id, actions, file_manager_called_for)
@@ -352,21 +352,11 @@ class File(Base, PRBase):
         return '//file' + server + '.profireader.com/' + self.id + '/'
 
     @staticmethod
-    def get_index(file, lists):
-        i = 0
-        for f in lists:
-            if file.id == f:
-                return i
-            i += 1
-        return False
-
-    @staticmethod
     def get_all_in_dir_rev(id):
         files_in_parent = [file for file in db(File, parent_id=id) if file.mime != 'image/thumbnail']
         for file in files_in_parent:
             if file.mime == 'directory':
-                for fil in db(File, parent_id=file.id).filter(File.mime != 'image/thumbnail'):
-                    files_in_parent.append(fil)
+                [files_in_parent.append(nfile) for nfile in db(File, parent_id=file.id).filter(File.mime != 'image/thumbnail')]
         files_in_parent = files_in_parent[::-1]
         return files_in_parent
 
@@ -375,8 +365,7 @@ class File(Base, PRBase):
         files_in_parent = [file for file in db(File, parent_id=f_id) if file.mime == 'directory' and file.id != copy_id]
         for file in files_in_parent:
             if file.mime == 'directory':
-                for fil in db(File, parent_id=file.id, mime='directory'):
-                    files_in_parent.append(fil) if fil.id != copy_id else None
+                [files_in_parent.append(fil) for fil in db(File, parent_id=file.id, mime='directory') if fil.id != copy_id]
         return files_in_parent
 
     @staticmethod
@@ -447,8 +436,7 @@ class File(Base, PRBase):
             if 'name' in attr.keys():
                 del attr['name']
             files = File.get_all_in_dir_rev(self.id)
-            for file in files:
-                file.updates(attr)
+            [file.updates(attr) for file in files]
         return check
 
     def rename(self, name):
@@ -463,8 +451,7 @@ class File(Base, PRBase):
     @staticmethod
     def auto_remove(list):
         list.append(session['f_id'])
-        for file in [db(File, id=id).first() for id in list]:
-            file.delete()
+        [file.delete() for file in [db(File, id=id).first() for id in list]]
 
     def remove(self, company_id=None):
         if company_id and not File.if_action_allowed(File.ACTIONS['remove'], company_id):
@@ -473,8 +460,7 @@ class File(Base, PRBase):
             return False
         if self.mime == 'directory':
             list = File.get_all_in_dir_rev(self.id)
-            for f in list:
-                f.delete()
+            [f.delete() for f in list]
             self.delete()
         else:
             self.delete()
@@ -506,7 +492,7 @@ class File(Base, PRBase):
             if dir.parent_id == id_f:
                 attr['parent_id'] = new_id
             else:
-                index = File.get_index(File.get(dir.parent_id), old_list)
+                index = old_list.index(File.get(dir.parent_id).id)
                 attr['parent_id'] = new_list[index].id
             dir.detach().attr(attr)
             dir.save()

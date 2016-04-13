@@ -294,7 +294,7 @@ def index(page=1):
         items_per_page=items_per_page)
     session['original_search_text'] = search_text
 
-    return render_template('front/' + g.portal_layout_path + 'index.html',
+    return render_template('front/' + g.portal_layout_path + 'division.html',
                            articles=articles,
                            portal=portal_and_settings(portal),
                            current_division=division.get_client_side_dict(),
@@ -310,6 +310,7 @@ def index(page=1):
 def division(division_name, page=1):
     search_text, portal, _ = get_params()
     division = g.db().query(PortalDivision).filter_by(portal_id=portal.id, name=division_name).one()
+    print(division.portal_division_type_id)
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
                                                   division_name=division.name)
     if division.portal_division_type_id == 'catalog' and search_text:

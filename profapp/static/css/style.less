@@ -26,7 +26,7 @@ body {
 }
 
 .navbar-brand img {
-  width: 60%;
+  width: 200px;
 }
 
 .ellipsis {
@@ -132,6 +132,11 @@ body {
   padding: 15px;
 }
 
+.menu-company-img {
+  height: 60px;
+  margin-top: -20px;
+}
+
 .menu-company .selected {
   color: #fff;
   text-decoration: none;
@@ -219,6 +224,7 @@ body {
 .menu-profile {
   a {
     text-decoration: none;
+    font-size: 13px;
   }
   .login-profile {
     background-color: @color-red-btn;
@@ -238,11 +244,15 @@ body {
 }
 
 .menu-site {
+  span {
+    display: none;
+  }
   a {
     color: #fff;
   }
   a:hover {
     transition: @transition;
+    color: #FFF;
   }
   ul {
     position: absolute;
@@ -329,26 +339,48 @@ body {
 }
 
 .microsoft-icon {
+  a:hover {
+    text-decoration: none;
+  }
   display: inline;
-  color: #26AAE1;
+  i {
+    color: #26AAE1;
+  }
 }
-
+.tab-link a{
+  cursor: pointer;
+}
 .google-icon {
-  color: @color-red-btn;
+  a:hover {
+    text-decoration: none;
+  }
+  i {
+    color: @color-red-btn;
+  }
   display: inline;
   margin-right: 10px;
 }
 
 .linkedin-icon {
+  a:hover {
+    text-decoration: none;
+  }
   display: inline;
-  color: #0177B5;
+  i {
+    color: #0177B5;
+  }
   margin-right: 10px;
 
 }
 
 .facebook-icon {
+  a:hover {
+    text-decoration: none;
+  }
   display: inline;
-  color: #3B569D;
+  i {
+    color: #3B569D;
+  }
   margin-right: 10px;
 
 }
@@ -386,7 +418,7 @@ body {
   }
 }
 
-.register-form-profirider {
+.register-form-profireader {
   margin-top: 15px;
   input {
     margin-bottom: 10px;
@@ -581,7 +613,7 @@ body {
 
 .company .edit-company button {
   width: 115px;
-  padding: 0;
+  padding: 5px 15px;
   margin-left: 25px;
   margin-right: -15px;
 }
@@ -601,6 +633,7 @@ body {
     background-color: @color-red-hover;
     border-color: @color-red-hover;
     color: #fff;
+    box-shadow: @shadow;
   }
 }
 
@@ -625,6 +658,7 @@ body {
   &:hover, &:focus, &:active {
     background-color: @color-links-hover;
     border-color: @color-links-hover;
+    box-shadow: @shadow;
     color: #fff;
   }
 }
@@ -652,16 +686,14 @@ body {
   }
 }
 
-.image-company-profile img {
-  width: 100%;
-}
-
 /* ---Reader-list--- */
 
 .reader-list-nav {
   border-bottom: 1px solid @color-bg;
   padding-bottom: 8px;
-
+  a {
+    display: inline !important;
+  }
   li {
     display: inline;
   }
@@ -726,10 +758,25 @@ body {
     display: block;
     margin: 0 auto;
   }
+  .liked-favorite-band {
+    ul {
+      list-style: none;
+      border-top: 1px solid #E3E3E3;
+      padding-top: 15px;
+    }
+    li {
+      display: inline-block;
+      margin-right: 85px;
+      cursor: pointer;
+    }
+    i {
+      margin-right: 5px;
+    }
+  }
 }
 
 .logo-portal-news {
-  width: 100%;
+  width: 65px;
 }
 
 /* ---reader--- */
@@ -817,11 +864,11 @@ body {
 }
 
 .name-subscriptions h5 {
-  background-color: @color-links;
-  color: #fff;
-  float: left;
-  padding: 10px;
-  border-radius: 3px;
+  //background-color: @color-links;
+  //color: #fff;
+  //float: left;
+  //padding: 10px;
+  //border-radius: 3px;
 }
 
 /* ---USER--- */
@@ -880,6 +927,7 @@ body {
 }
 
 .edit-grup {
+  padding-left: 360px;
   .input-group {
     margin-bottom: 5px;
   }
@@ -916,6 +964,11 @@ body {
 
     }
   }
+
+}
+
+.profile-thumbnail {
+  position: absolute;
 }
 
 .add-division-style {
@@ -1088,7 +1141,7 @@ body {
     color: #fff;
     border: 0;
     border-radius: 3px;
-    padding: 5px 15px;
+    padding: 5px 35px;
   }
 }
 
@@ -1164,7 +1217,7 @@ body {
 }
 
 .mess-bg {
-  background-image: url('/static/images/develop-img.jpeg');
+  background-image: url("/static/images/develop-img.jpeg");
   min-height: 100%;
   min-width: 1024px;
   width: 100%;
@@ -1199,29 +1252,26 @@ body {
   }
 }
 
+/*reset password*/
+.reset-pass {
+  padding: 10px 15px;
+  background-color: @color-btn;
+  border: none;
+  color: #fff;
+  box-shadow: @shadow;
+  &:hover {
+    background-color: @color-btn-hover;
+    transition: @transition;
+    box-shadow: @shadow-hover;
+  }
+}
+
 /* ---MEDIA--- */
 @media screen and (max-width: 1024px) {
   /* Specific to this particular image */
   .mess-bg {
     left: 50%;
     margin-left: -512px; /* 50% */
-  }
-}
-
-@media screen and (max-width: 764px) {
-  .menu-site ul {
-    float: right;
-    margin-right: 0;
-    position: static;
-
-  }
-
-  body {
-    padding-top: 150px;
-  }
-
-  .company-portal a {
-    float: none;
   }
 }
 
@@ -1236,7 +1286,7 @@ body {
   }
 
   .company-portal {
-    margin-top: 40px;
+    margin-top: 5px;
     text-align: center;
     margin-bottom: 15px;
   }
@@ -1245,7 +1295,158 @@ body {
     text-align: center;
   }
 
-  .navbar-brand {
-    width: 60%;
+  .edit-grup {
+    width: 100%;
+    margin-top: 364px;
+    margin-left: 10px;
+    padding: 0;
+    .save-profile {
+      width: 100%;
+    }
+  }
+
+  .menu-company-img {
+    margin-top: -30px;
+  }
+
+  .menu-company a {
+    display: block;
+    padding: 5px;
+    &:hover {
+      padding: 5px;
+    }
+  }
+
+  .menu-company .selected {
+    padding: 5px;
+  }
+}
+
+@media screen and (max-width: 764px) {
+  h3{
+    font-size: 20px;
+  }
+  .menu-site {
+    ul {
+      margin-right: 0;
+      position: static;
+    }
+    li {
+      display: block;
+    }
+    span {
+      display: inline-block;
+      font-size: 18px;
+      padding: 6px;
+      border-bottom: 1px solid #212121;
+      &:hover {
+        border-bottom: 1px solid @color-links;
+      }
+    }
+    i {
+      font-size: 18px;
+      margin-right: 5px;
+      width: 20px;
+    }
+    .menu-profile {
+      a {
+        font-size: 15px;
+      }
+      .login-profile {
+        position: absolute;
+        top: 10px;
+        right: 35px;
+      }
+    }
+    .dropbtn {
+      padding-left: 0;
+    }
+    .dropdown-content {
+      display: block;
+      box-shadow: none;
+      position: static;
+      a {
+        padding: 0;
+        margin-left: 12px;
+        &:hover {
+          background-color: transparent;
+        }
+      }
+    }
+    .dropdown:hover .dropbtn {
+      color: #fff;
+    }
+  }
+
+
+
+  .edit-block {
+    margin-top: 70px;
+  }
+
+  .company-portal a {
+    float: none;
+  }
+
+  .block-resp {
+    margin-right: 15px;
+    margin-left: 15px;
+  }
+
+  .btn-search-portal {
+    margin-bottom: 10px;
+  }
+
+  .company-thumbnail img {
+    margin-top: 10px;
+  }
+
+  .help-page button {
+    width: 100%;
+  }
+
+  .image-company-profile {
+    margin-top: 30px;
+  }
+  .join-company{
+    input{
+      height: 35px;
+    }
+  }
+}
+
+@media screen and (max-width: 500px) {
+
+  //.image-company-profile img {
+  //  width: 300px !important;
+  //}
+  .block-portal {
+    .subscribe-portal-logo {
+      margin-left: 50%;
+      margin-top: 10px;
+    }
+    .portal-block-resp {
+      width: 100%;
+      text-align: center;
+    }
+  }
+
+  .logo-portal-news {
+    width: 45px;
+  }
+
+  .reader-content {
+    .liked-favorite-band ul {
+      text-align: center;
+    }
+
+  }
+
+  .join-new-company button {
+    width: 100%;
+  }
+
+  .help-page {
+    margin-top: 20%;
   }
 }

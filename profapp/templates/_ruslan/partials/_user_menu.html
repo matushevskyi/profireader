@@ -77,7 +77,6 @@
             $ok('{{ url_for('user.change_language') }}', {'language': lang}, function(resp) {
                 location.reload();
             });
-            console.log(lang)
         }
 
         $scope.selected_user_menu = '';
@@ -90,7 +89,7 @@
 
 </script>
 {% raw %}
-<nav ng-init="tos()" ng-controller="UserLoginController" class="navbar navbar-fixed-top nav-bg">
+<nav ng-controller="UserLoginController" class="navbar navbar-fixed-top nav-bg">
     <div class="container" ng-cloak>
 
         <div class="row">
@@ -113,20 +112,20 @@
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <ul>
                         <li ng-if="user"><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="{{ _('Стрічкa читача') }}" ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
-                                class="fa fa-newspaper-o"></i></a></li>
+                                class="fa fa-newspaper-o"></i><span>{{ _('Стрічкa читача') }}</span></a></li>
                         <li ng-if="user"><a pr_test="UserMassages" href="{{ url_messenger }}" title="{{ _('Всі повідомлення') }}"
                                ng-class="{'selected': selected_user_menu == 'messages'}"><i
-                                class="fa fa-envelope-o"></i></a></li>
+                                class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span></a></li>
                         <li ng-if="user"><a pr_test="CompaniesList" href="{{ url_company_companies() }}" title="{{ _('Компанії') }}"
                                ng-class="{'selected': selected_user_menu == 'companies'}"><i
-                                class="fa fa-building-o"></i></a></li>
+                                class="fa fa-building-o"></i><span>{{ _('Компанії') }}</span></a></li>
                         <li ng-if="user"><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
                                ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
-                                class="fa fa-folder-open-o"></i></a></li>
+                                class="fa fa-folder-open-o"></i><span>{{ _('Менеджер файлів') }}</span></a></li>
                         <li class="info-padding"><a pr_test="UserInfo" href="{{ url_general_help() }}" title="{{ _('Help information') }}"
-                               ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-info"></i></a></li>
+                               ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-info"></i><span>{{ _('Help information') }}</span></a></li>
 
-                        <li class="dropdown"><a class="dropbtn" title="{{ _('Language') }}"><i class="fa fa-language"></i></a>
+                        <li class="dropdown"><a class="dropbtn" title="{{ _('Language') }}"><i class="fa fa-language"></i><span>{{ _('Language') }}</span></a>
                         <div class="dropdown-content">
                             <a ng-repeat="language in languages" ng-class="{'selected': language.name == lang}" style="cursor: pointer" ng-click="changeLanguage(language.name)">{{language.display}}</a>
                           </div>
@@ -153,9 +152,7 @@
                     </ul>
                 </div>
             </div>
-            </ul>
         </div>
-    </div>
     </div>
 </nav>
 {% endraw %}

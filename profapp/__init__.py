@@ -216,7 +216,6 @@ def translates(template):
         html_or_text = getattr(ph, g.lang)
         html_or_text = MLStripper().strip_tags(html_or_text) if ph.allow_html == '' else html_or_text
         ret[ph.name] = {'lang': html_or_text, 'time': tim, 'allow_html': ph.allow_html}
-
     return json.dumps(ret)
 
 

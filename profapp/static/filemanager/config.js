@@ -20,6 +20,7 @@
             compressUrl: "bridges/php/handler.php",
             extractUrl: "bridges/php/handler.php",
             permissionsUrl: "bridges/php/handler.php",
+            getTranslate: "/filemanager/get_translate/",
 
             sidebar: true,
             breadcrumb: true,
