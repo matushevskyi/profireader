@@ -1,24 +1,15 @@
 <div class="block-item full-block-info" style="height: auto;">
 
-        <h2 class="item-title">{{ article['title']|safe }}</h2>
+    <h2 class="item-title">{{ article['title']|safe }}</h2>
 
-        <h3 class="item-subtitle">{{ article['subtitle']|safe }}</h3>
-
-        <div class="item-additional-info-top"
-             style="display: block; width: 100%; padding-bottom: 5px; border-bottom: 1px #ccc solid; margin-bottom: 15px;">
-            <div class="item-company"><a
-                    href="{{ url_for('front.subportal', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}">{{ article['company']['name']|safe }}</a>
-            </div>
-            <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
-            <div class="item-comments">{{_('Comments')}} 0</div>
-        </div>
-        <div class="article-short">
-            {{ article['short']|safe }}
-        </div>
-        <div class="article-content">
-            <div class="s-cover-l" {{ prImage(article['image_file_id']) }}></div>
-            {{ article['long'] | safe }}
-        </div>
+    <h3 class="item-subtitle">{{ article['subtitle']|safe }}</h3>
+    <div class="s-cover-l" style="padding-bottom: 10px"><img width="300px" {{ prImage(article['image_file_id']) }}></div>
+    <div class="article-short">
+        {{ article['short']|safe }}
+    </div>
+    <div class="article-content">
+        {{ article['long'] | safe }}
+    </div>
 
     {% if article['tags'] %}
         <div class="tag-list">

@@ -4,12 +4,30 @@
 
         $scope.alerts = [];
 
-        $scope.add_message = function (amessage, atype, atime) {
+        $scope.add_message = function (amessage, atype, atime, aunique_id) {
 
-            var msg = {type: atype ? atype : 'warning', msg: amessage, hash: randomHash()};
+            if (['danger', 'success', 'warning', 'info'].indexOf(atype) === -1) {
+                console.warn("Unknow message type `" + atype +
+                        "` passed (is restricted to 'danger', 'success', 'warning', 'info'");
+                atype = 'info';
+            }
 
+            if (aunique_id === true) {
+                aunique_id = atype + '_' + amessage;
+            }
 
-            $scope.alerts.push(msg);
+            var msg = {type: atype ? atype : 'info', msg: amessage, hash: randomHash(), unique_id: aunique_id};
+
+            if (aunique_id) {
+                _.filter($scope.alerts, function (msg) {
+                    return msg.unique_id !== aunique_id;
+                });
+            }
+
+            $timeout(function () {
+                $scope.alerts.push(msg);
+            },0);
+
 
             if (atime && atime > 0) {
                 $timeout(function () {
@@ -26,6 +44,7 @@
 
         $scope.closeAlert = function (index) {
             $scope.alerts.splice(index, 1);
+
         };
 
 
@@ -35,9 +54,21 @@
 
     }]);
 </script>
+
 {#  TODO: MY BY OZ: #}
-<div ng-controller="message-controller" id="controller-message-controller" style="position: fixed; top: 0px;z-index: 1; width: 1000px; ">
+<div ng-controller="message-controller" id="controller-message-controller" ng-cloak>
     {% raw %}
-    <uib-alert ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">{{alert.msg}}</uib-alert>
+    <div ng-repeat="alert in alerts" class="row">
+        <div class="col-lg-offset-3 col-md-offset-3 col-lg-6 col-md-6 col-sm-10 col-xs-12 flash-message flash-message-{{ alert.type }}" onclick="this.style.bottom='60px'">
+            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 img-message" >
+                <img src="//static.profireader.com/static/images/0.gif" width="128" height="129" alt="{{ alert.type }}">
+            </div>
+            <div class="col-lg-8 col-md-8 col-xs-8 col-sm-8">
+                <i class="fa fa-times" ng-click="closeAlert($index)"></i>
+                <h3>{{ _(alert.type + '!') }}</h3>
+                <p>{{ alert.msg }}</p>
+            </div>
+        </div>
+    </div>
     {% endraw %}
 </div>

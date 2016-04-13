@@ -4,10 +4,6 @@
     {{ super() }}
 {% endblock head %}
 
-{% block portal_base %}
-    {% include 'partials/portal_base_Profireader_auth_user.html' %}
-{% endblock portal_base %}
-
 {% block portal_content %}
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}
@@ -119,7 +115,7 @@
 
     </script>
     {% raw %}
- <div ng-init="loadData(null, null, null, loadPortalDivisionTags4)" ng-controller="PortalProfileController">
+ <div ng-cloak ng-init="loadData(null, null, null, loadPortalDivisionTags4)" ng-controller="PortalProfileController">
 
     <!-- !!!{{ data.PortalDivisionTagsName }}<br/><br/> -->
     <!-- {{ loadPortalDivisionTags2() }} -->

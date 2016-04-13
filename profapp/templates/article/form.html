@@ -13,7 +13,7 @@
 
     {#TODO: VH by OZ remove below line#}
     {% from 'macros.html' import scripts %}
-    {{ scripts(names=['croper']) }}
+    {{ scripts(names=['cropper']) }}
 
     <script>
         module.controller('article_edit', ['$scope', function ($scope) {
@@ -22,11 +22,14 @@
             $scope.data = {};
 
             {% if publication_id %}
+                $scope.article_type = 'publication';
                 $scope.title = 'Update publication at portal `%(data.article.portal.name)s` in division `%(data.article.division.name)s`';
             {% else %}
                 {% if material_id %}
+                    $scope.article_type = 'material';
                     $scope.title = 'Update material';
                 {% else%}
+                    $scope.article_type = false;
                     $scope.title = 'Create new material';
                 {% endif %}
             {% endif %}
@@ -37,9 +40,21 @@
                 if (!$scope.data.article.id && resp.article.id) {
                     window.location.href = {{ raw_url_for('article.article_show_form')|safe }}({material_id: resp.article.id})
                 }
-                add_message($scope._('article was saved'), 'info', 3000);
+                else {
+                    add_message($scope._($scope.article_type + ' was saved'), 'success', 3000);
+                }
 
             };
+
+            $scope.goToArticle = function (article) {
+                if ($scope.article_type === 'material') {
+                    url = {{ raw_url_for('article.material_details')|safe }}({material_id: article.id})
+                } else if ($scope.article_type === 'publication') {
+                    url = ('//' + article.portal.host + {{ raw_url_for('front.details')|safe }}({article_portal_division_id: article.id}))
+                }
+                var win = window.open(url, '_blank');
+                win.focus();
+            }
 
             $scope.getData = function (model, deff) {
                 model.portal_division.insert_after = model.portal_division.positioned_articles[model.portal_division.current].id;
@@ -63,11 +78,11 @@
             {% endif %}
 
             tinyArticleOptions['formats'] =
-                    _.chain($.extend({}, {{ tinymce_format_groups()|tojson }}, custom_formats)). // here we have dict in form {group_label: {format: format_properties}}
-                    reduce(_.extend, {}). // flatten groups
+                    _.chain($.extend({}, {{ tinymce_format_groups()|tojson }}, custom_formats)).// here we have dict in form {group_label: {format: format_properties}}
+                    reduce(_.extend, {}).// flatten groups
                     map(function (format_properties, format_name) { // convert each format to tinymce in flat dictionary
                         return [format_name, convert_python_format_to_tinymce_format(format_properties)]; // form list of [key, val] pairs
-                    }).object(). // convert each [key, val] pair to {key: val} element
+                    }).object().// convert each [key, val] pair to {key: val} element
                     value(); // get result
 
             tinyArticleOptions['pr_formats'] = _.size(custom_formats) ? get_array_for_menu_build(custom_formats) : [];
@@ -144,169 +159,78 @@
 
         }]);
 
-        {#            $scope.cleanUpHtml = function (data) {#}
-        {#                data.long = cleanup_html(data.long);#}
-        {#                return data;#}
-        {#            };#}
-
-
-        /**
-         * AngularJS default filter with the following expression:
-         * "tag in tags | filter: {name: $select.search, age: $select.search}"
-         * performs a AND between 'name: $select.search' and 'age: $select.search'.
-         * We want to perform a OR.
-         */
-        /* module.filter('propsFilter', function () {
-         return function (items, props) {
-         var out = [];
-
-         if (angular.isArray(items)) {
-         items.forEach(function (item) {
-         var itemMatches = false;
-
-         var keys = Object.keys(props);
-         for (var i = 0; i < keys.length; i++) {
-         var prop = keys[i];
-         var text = props[prop].toLowerCase();
-         if (item[prop].toString().toLowerCase().indexOf(text) !== -1) {
-         itemMatches = true;
-         break;
-         }
-         }
-
-         if (itemMatches) {
-         out.push(item);
-         }
-         });
-         } else {
-         // Let the output be the input untouched
-         out = items;
-         }
-
-         return out;
-         };
-         });
-
-
-         module.controller('SelectTagsCtrl', ['$scope', '$http', '$ok', function ($scope, $http, $ok) {
-
-         $scope.disabled = undefined;
-         $scope.searchEnabled = undefined;
-         $scope.selected_portal_to_unpublish = '';
-         $scope.$$translate = {{ translates('SelectTagsCtrl')|safe }};
-
-
-         $scope.getData = function () {
-         $scope.loading = true;
-         };
-
-         $scope.respData = function () {
-         $scope.loading = false;
-         return true;
-         };
-
-         $scope.enable = function () {
-         $scope.disabled = false;
-         };
-
-         $scope.disable = function () {
-         $scope.disabled = true;
-         };
-
-         $scope.enableSearch = function () {
-         $scope.searchEnabled = true;
-         };
-
-         $scope.disableSearch = function () {
-         $scope.searchEnabled = false;
-         };
-
-         $scope.availableTags = [];
-         $scope.selectedTags = [];
-
-         }]);
-         */
-
-
     </script>
 
     {% raw %}
 
-    <div ng-init="init()" ng-controller="article_edit">
-        <h1 class="nice-title">{{ _(title) }}<span></span></h1>
+    <div ng-init="init()" ng-controller="article_edit" ng-cloak class="create-material">
+        <div class="row link-page create-new-material"><h5>{{ _(title) }}</h5></div>
+        <form name="newMaterial">
+            <!-- <h1 class="nice-title">{{ _(title) }}<span></span></h1> -->
 
-        <div af af-amid-load="amidLoad" af-amid-save="amidSave" af-before-save="getData"
-             af-beforeValidate="getData" af-watch="data.article" ng-model="data">
+            <div af af-amid-load="amidLoad" af-amid-save="amidSave" af-before-save="getData"
+                 af-beforeValidate="getData" af-watch="data.article" ng-model="data">
 
-            <div class="update_col1">
-                <!-- TODO: OK by OZ:   this block form should share same classes with layout to look MAXIMUM like in portal
-                                        maybe layout selector is apporpriate here-->
-                {{ _('Article title') }}
-                <pr_help_tooltip>article_title</pr_help_tooltip> <span
-                    af-validation-answer="data_validation:title"></span>
-                <input style="width: 100%" type="text" ng-model="data.article.title">
+                <div style="padding-bottom: 50px">
+                    <div>
+                        <div style="width: 400px; height: 300px; position: relative" pr-crop="data.article.image"></div>
+                    </div>
+                </div>
 
-                {{ _('Article subtitle') }}
-                <pr_help_tooltip>article_subtitle</pr_help_tooltip> <span
-                    af-validation-answer="data_validation:subtitle"></span>
-                <input style="width: 100%" type="text" ng-model="data.article.subtitle">
+                <div class="update_col1">
+                    <!-- TODO: OK by OZ:   this block form should share same classes with layout to look MAXIMUM like in portal
+                                            maybe layout selector is apporpriate here-->
+                    {{ _('Article title') }}
+                    <pr_help_tooltip>article_title</pr_help_tooltip>
+                    <input class="form-control" style="width: 100%" type="text" ng-model="data.article.title"
+                           name="article_title" ng-pattern="/[\wа-яёі']{3}/">
+                    <div ng-show="newMaterial.article_title.$error.pattern" class="error-input">
+                        {{ _('The title name should be longer!') }}
+                    </div>
 
-                {{ _('Keywords') }} <span af-validation-answer="data_validation:keywords"></span>
-                <input style="width: 100%" ng-model="data.article.keywords"/>
-            </div>
+                    {{ _('Article subtitle') }}
+                    <pr_help_tooltip>article_subtitle</pr_help_tooltip> <span
+                        af-validation-answer="data_validation:subtitle"></span>
+                    <input class="form-control" style="width: 100%" type="text" ng-model="data.article.subtitle">
 
-
-            <div class="update_col1">
-                {{ _('Select picture') }}
-                <div ng-model="data.image" pr-cropper="cropper" pr-company-id="{{ data.article.company.id }}"></div>
-            </div>
-
-{% endraw %}
-{#            <div ng-if="data.article.division" class="update_col1">#}
-{#                <!-- TODO: MY BY OZ: please uncoment time (comented by ng-if=0 now), move date and time to one line, and move this layout in some angular template (e.g. 'datetimepicker.html') -->#}
-{#                {{ _('Select publication date and time') }}<br/>#}
-{#            <div pr-datepicker ng-model="material_or_publication.event_tm"></div>#}
-{#            </div>#}
-{##}
-{#            <div ng-if="data.article.division" class="update_col1">#}
-{#                {{ _('Select publication priority') }}<br/>#}
-{##}
-{#                <div style="width: 20em" ui-slider min="{{ data.portal_division.min }}"#}
-{#                     max="{{ data.portal_division.max }}" step="1" ng-model="data.portal_division.current"></div>#}
-{#                <div class="nowrap">#}
-{#                    <span>{{ ArticlePositionTitle() }}</span>#}
-{#                </div>#}
-{##}
-{#            </div>#}
-{% raw %}
+                    {{ _('Keywords') }}
+                    <input class="form-control" style="width: 100%" ng-model="data.article.keywords"
+                           name="article_keywords" ng-pattern="/[\wа-яёі']{2}/">
+                    <div ng-show="newMaterial.article_keywords.$error.pattern" class="error-input">
+                        The keywords should be longer!
+                    </div>
+                </div>
 
 
-            <div class="update_col1">
-                <!-- TODO: OZ by OZ move this code to one file -->
-                <link href="//static.profireader.com/static/css/article.css" rel="stylesheet">
-                <link href="//static.profireader.com/static/front/bird/css/article.css" rel="stylesheet">
+                <div class="update_col1">
+                    <!-- TODO: OZ by OZ move this code to one file -->
+                    <link href="//static.profireader.com/static/css/article.css" rel="stylesheet">
+                    <!-- TODO: OZ by OZ: select css for current theme. also look for another place with same todo-->
+                    <link href="//static.profireader.com/static/front/bird/css/article.css" rel="stylesheet">
 
-                {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
-                <textarea style="width: 100%" placeholder="{{_('short')}}" ng-model="data.article.short"></textarea>
+                    {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
+                    <textarea class="form-control" style="width: 100%" placeholder="{{_('short')}}"
+                              ng-model="data.article.short"></textarea>
 
-                {{ _('Full text') }}
+                    {{ _('Full text') }}
             <textarea ui-tinymce="tinymceImageOptions" style="width: 400px;"
                       ng-model="data.article.long"></textarea>
+                </div>
 
+
+                <div class="update_col1">
+                    *{{ _('All fields are required') }}
+
+                    <button class="pr-button" ng-disabled="!$af.isActionAllowed(data, 'save')"
+                            ng-click="$af.save(data)">&nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;{{
+                        data.article.id ? _('save') : _('create') }}
+                    </button>
+                    <button class="pr-button" ng-click="goToArticle(data.article)" ng-if="article_type"><span class="fa
+                    fa-external-link">{{ _(article_type +
+                        ' preview') }}</span></button>
+                </div>
             </div>
-
-            <!-- TODO: AA by OZ -->
-            <div ng-if="data.article.division" class="update_col1" pr-tags="data['portal_division']['availableTags']"
-                 ng-model="data.article.tags"></div>
-
-            <div class="update_col1">
-                <button class="create_button" ng-disabled="!$af.isActionAllowed(data, 'save')"
-                        ng-click="$af.save(data)">&nbsp;<span style="color: green"
-                                                              class="glyphicon glyphicon-save-file"></span>&nbsp;{{
-                    data.article.id ? _('save') : _('create') }}
-                </button>
-            </div>
-        </div>
+        </form>
     </div>
     {% endraw %}
 

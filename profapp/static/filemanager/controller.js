@@ -1,8 +1,9 @@
+
 (function (window, angular, $) {
     "use strict";
     angular.module('FileManagerApp').controller('FileManagerCtrl', ['$http',
-        '$scope', '$translate', '$cookies', '$timeout', 'fileManagerConfig', 'item', 'Upload', 'fileNavigator', 'fileUploader','$q','$filter',
-        function ($http, $scope, $translate, $cookies, $timeout, fileManagerConfig, Item, Upload, FileNavigator, fileUploader, $q, $filter) {
+        '$scope', '$translate', '$cookies', '$timeout', 'fileManagerConfig', 'item', 'Upload', 'fileNavigator', 'fileUploader','$q','$filter','$ok',
+        function ($http, $scope, $translate, $cookies, $timeout, fileManagerConfig, Item, Upload, FileNavigator, fileUploader, $q, $filter, $ok) {
 
             $scope.config = fileManagerConfig;
             $scope.appName = fileManagerConfig.appName;
@@ -12,11 +13,12 @@
             $scope.rootdirs = library;
             $scope.last_visit_root = last_visit_root;
             $scope.last_root_id = last_root_id;
+            $scope.$$translate = translates;
             $scope.temp = new Item();
             $scope.fileNavigator = new FileNavigator($scope.last_root_id? $scope.last_root_id:($scope.rootdirs[0]?$scope.rootdirs[0]['id']: ""), file_manager_called_for);
             $scope.fileUploader = fileUploader;
             $scope.uploadFileList = [];
-            $scope.viewTemplate = $cookies.viewTemplate || 'main-table.html';
+            $scope.viewTemplate = $cookies.get('viewTemplate');
             $scope.error = error;
             $scope.file_manager_called_for = file_manager_called_for;
             $scope.file_manager_on_action = file_manager_on_action;
@@ -29,18 +31,24 @@
             $scope.name = '';
             $scope.upload_file_id = '';
             $scope.uploadingProgress = false;
-
+            $scope.can_upload = false;
             $scope.last_visit = document.referrer;
-
-            $scope.setTemplate = function (name) {
-                $scope.viewTemplate = $cookies.viewTemplate = name;
+            
+            $scope._ = function(phrase){
+                var args = [].slice.call(arguments);
+                return pr_dictionary(args.shift(), args, '', $scope, $ok, 'FileManagerCtrl');
             };
 
-
-            $scope.changeRoot = function (root_id, root_name) {
-                $scope.fileNavigator.setRoot(root_id);
-                $cookies.last_root = root_id;
-                $scope.root_name = root_name;
+            $scope.setTemplate = function (name) {
+                $cookies.put('viewTemplate', name)
+                $scope.viewTemplate = name;
+            };
+            
+            $scope.changeRoot = function (root) {
+                $scope.can_upload=root.can_upload;
+                $cookies.put('last_root' ,root.id);
+                $scope.root_name = root.name;
+                $scope.fileNavigator.setRoot(root.id);
             };
 
             $scope.touch = function (item) {
@@ -110,16 +118,15 @@
             };
 
             $scope.search = function (query) {
-                if(query){
+                if(query && query !== ''){
                    $scope.fileNavigator.search(query, $scope.fileNavigator.getCurrentFolder());
                 }else{
                     if($scope.fileNavigator.is_search){
                        self.search_text = '';
-                       $scope.fileNavigator.refresh();
+                       $scope.fileNavigator.goTo(-1);
                     }
                 }
             };
-
 
             $scope.cut = function (item) {
                 $scope.cut_file_id = $cookies.cut_file_id = item.model.id;
@@ -143,17 +150,16 @@
                     $scope.timer = false
                 }, 2000);
             };
-
-
+            
             $scope.paste = function (item) {
                 if ($scope.copy_file_id !== '' && $scope.cut_file_id === '') {
                     item.tempModel.mode = 'copy';
                     item.tempModel.id = $scope.copy_file_id;
-                    item.tempModel.error = $translate.instant('error_copy');
+                    item.tempModel.error = $scope._('error_copy');
                 } else if ($scope.copy_file_id == '' && $scope.cut_file_id != '') {
                     item.tempModel.mode = 'cut';
                     item.tempModel.id = $scope.cut_file_id;
-                    item.tempModel.error = $translate.instant('error_cut');
+                    item.tempModel.error = $scope._('error_cut');
                 }
                 item.tempModel.len = $scope.fileNavigator.fileList.length;
                 item.tempModel.time_o = $scope.time_out();
@@ -184,16 +190,17 @@
             };
 
             $scope.remove = function (item) {
-                item.tempModel.error = $translate.instant('error_remove');
+                item.tempModel.error = $scope._('error_remove');
                 item.remove(function () {
                     $scope.fileNavigator.refresh();
                     $('#remove').modal('hide');
                 });
+
             };
 
             $scope.set_property = function (item) {
                 if ($scope.fileNavigator.fileNameExists(item.tempModel.name) && item.tempModel.name.trim() !== item.model.name.trim()) {
-                    item.error = $translate.instant('error_invalid_filename');
+                    item.error = $scope._('error_invalid_filename');
                     return false;
                 }
                 item.set_properties(function () {
@@ -216,13 +223,15 @@
                         $('#newfolder').modal('hide');
                     });
                 } else {
-                    $scope.temp.error = $translate.instant('error_invalid_filename');
+                    $scope.temp.error = $scope._('error_invalid_filename');
                     return false;
                 }
             };
 
-            $scope.take_action = function (item, actionname) {
+            $scope.take_action = function (item, actionname, permitted) {
                 $scope.modal = '';
+                if(!permitted)
+                    return false
                 if ($scope.file_manager_on_action[actionname] !== '' && actionname === 'download') {
                     try {
                         eval('item' + '.' + actionname + '();');//$scope.file_manager_on_action[actionname] + '(item);');
@@ -242,9 +251,9 @@
                 }
             };
 
-            $scope.auto_remove = function(name, folder,success, error){
+            $scope.auto_remove = function(list, folder){
                 var data = {
-                    'name':name,
+                    'list':list,
                     'folder_id':folder
                 };
                 return $http.post(fileManagerConfig.auto_removeUrl, data).success(function(data) {
@@ -253,15 +262,6 @@
                     })['finally'](function() {
                         self.inprocess = false;
                     });
-            };
-
-            $scope.can_action = function (item, actionname, defaultpermited) {
-                if (actionname === 'paste') {
-                    if (defaultpermited === true) {
-                        return ($scope.copied_files.length > 0)
-                    }
-                }
-                return defaultpermited
             };
 
             $scope.showModal = function(){
@@ -277,9 +277,8 @@
                     if($scope.f){
                         $scope.f.upload.abort();
                         $scope.f.progress = 0;
-                        $scope.auto_remove($scope.uploadFileList, $scope.fileNavigator.getCurrentFolder());
+                        $scope.auto_remove($scope.list_file_id, $scope.fileNavigator.getCurrentFolder());
                     }
-                    console.log('s')
                     $('#uploadfile').find('input[type=file], input[type=number], textarea').val('');
                 }
             };
@@ -300,6 +299,7 @@
                 var url = '/filemanager/send/' + $scope.fileNavigator.getCurrentFolder() + '/';
                 var count = 0
                 var total = 0
+                $scope.list_file_id = []
                 for(var i=0;i<$scope.uploadFileList.length;i++){
                     total += $scope.uploadFileList[i].size
                 }
@@ -311,7 +311,6 @@
                         resumeSizeUrl: '/filemanager/resumeupload/',
                         resumeChunkSize: $scope.config['chunkSize'],
                         ftype: file.type,
-                        upload_file_id: $scope.upload_file_id,
                         headers: {
                             'optional-header': 'header-value'
                         },
@@ -320,18 +319,19 @@
                     });
                     $scope.f.upload.progress(function (evt) {
                         $scope.thisprogress = Math.min(100, parseInt(100.0 *
-                            evt.loaded / total))
+                            evt.loaded / total));
                         $scope.f.progress = Math.min(100, parseInt(100.0 *
                             evt.loaded / total)) + oldprogress;
                     }).success(function (data) {
+                        $scope.list_file_id.push(data.file_id)
+                        if(data.error){
+                            $scope.fileNavigator.refresh();
+                        }
                         count += 1;
                         oldprogress += $scope.thisprogress;
-                        console.log(oldprogress);
                         if($scope.uploadFileList[count]){
-
                             $scope.f = $scope.uploadFileList[count];
                             uploading($scope.uploadFileList[count])
-
                         }else {
                             close()
                         }
@@ -340,7 +340,7 @@
                         $scope.uploadingProgress = false;
                         $scope.thisprogress = 0
                         $scope.f.progress = 0;
-                        var errorMsg =  $translate.instant('error_uploading_files');
+                        var errorMsg =  $scope._('error_uploading_files');
                         //for(var i=0;i<$scope.uploadFileList.length;i++){
                         //    $scope.auto_remove($scope.uploadFileList[i].name, $scope.fileNavigator.getCurrentFolder());
                         //}
@@ -379,7 +379,8 @@
                 return found;
             };
 
-            $scope.isDisable = function (actionname, len, type) {
+            $scope.isDisable = function (actionname, len, type, permited) {
+
                 var style;
                 if (actionname === 'paste' && ($scope.copy_file_id != '' || $scope.cut_file_id != '') && type === 'parent') {
                     style = ''
@@ -439,9 +440,13 @@
                     var re = new RegExp($scope.fileNavigator.search_text, "gi");
                     name = name.length <= limit ? name: $filter('limitTo')(name, limit) + '...';
                     var result = name.match(re);
-                    var res =  name.replace(re, '<span style="color:red">' + result[0] + '</span>');
-                    $('#highlightT_'+id).html(res);
-                    return name;
+                    if(result){
+                        var res =  name.replace(re, '<span style="color:red">' + result[0] + '</span>');
+                        $('#highlightT_'+id).html(res);
+                        return name;
+                    }else {
+                        return name;
+                    }
                 }else {
                     name = name.length <= limit ? name: $filter('limitTo')(name, limit) + '...';
                     return name
@@ -453,21 +458,20 @@
                     if($scope.last_visit_root && $scope.rootdirs){
                         for(var n = 0;n < $scope.rootdirs.length;n++){
                             if($scope.rootdirs[n]['name'] === $scope.last_visit_root){
-                                $scope.changeRoot($scope.rootdirs[n]['id'], $scope.rootdirs[n]['name']);
+                                $scope.changeRoot($scope.rootdirs[n]);
                             }
                         }
                     }else{
-                        $scope.changeRoot($scope.rootdirs[0]['id'], $scope.rootdirs[0]['name'])
+                        $scope.changeRoot($scope.rootdirs[0])
                     }
                 } else {
-                    $scope.changeRoot('', '')
+                    $scope.changeRoot('')
                 }
             };
 
-            $scope.errMsg = "You do not belong to any company!";
-            $scope.changeRoots();//(_.keys($scope.rootdirs)[0], _.values($scope.rootdirs)[0]['name']);
+            $scope.errMsg = $scope._("You do not belong to any company!");
+            $scope.changeRoots();
             $scope.isWindows = $scope.getQueryParam('server') === 'Windows';
-            $scope.fileNavigator.refresh();
 
         }]);
 })(window, angular, jQuery);

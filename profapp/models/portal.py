@@ -1,5 +1,5 @@
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, or_
 from sqlalchemy.orm import relationship, remote
 from ..controllers import errors
 from flask import g, jsonify
@@ -15,7 +15,9 @@ from sqlalchemy import orm
 import itertools
 from config import Config
 import simplejson
-from .files import File
+from .files import File, ImageCroped
+from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+from ..utils import fileUrl
 from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
@@ -142,6 +144,11 @@ class Portal(Base, PRBase):
     #                        secondaryjoin="ArticleCompany.company_id == Company.id",
     #                        viewonly=True, uselist=False)
 
+    ALLOWED_STATUSES_TO_JOIN = {
+        'DELETED': 'DELETED',
+        'REJECTED': 'REJECTED'
+    }
+
     def __init__(self, name=None,
                  # portal_plan_id=None,
                  logo_file_id=None,
@@ -154,17 +161,15 @@ class Portal(Base, PRBase):
         self.logo_file_id = logo_file_id
         self.favicon_file_id = favicon_file_id
 
-        # self.company_owner_id = company_owner_id
-        # self.articles = articles
         self.host = host
         self.divisions = divisions
-        # self.portal_plan_id = portal_plan_id if portal_plan_id else db(MemberCompanyPortalPlan).first().id
         self.portal_layout_id = portal_layout_id if portal_layout_id else db(PortalLayout).first().id
 
         self.own_company = company_owner
 
         self.company_members = [
-            MemberCompanyPortal(portal=self, company=company_owner, plan=db(MemberCompanyPortalPlan).first())]
+            MemberCompanyPortal(portal=self, company=company_owner, status=MemberCompanyPortal.STATUSES['ACTIVE'],
+                                plan=db(MemberCompanyPortalPlan).first())]
 
         # self.own_company.company_portals = db(MemberCompanyPortalPlan).first()
 
@@ -180,19 +185,35 @@ class Portal(Base, PRBase):
 
         pass
 
+    def logo_file_properties(self):
+        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
+        return {
+            'browse': self.id,
+            'upload': True,
+            'crop': True,
+            'image_size': [450, 450],
+            'min_size': [100, 100],
+            'aspect_ratio': [0.5, 3.0],
+            'preset_urls': {'glyphicon-remove-circle': nologo_url},
+            'no_selection_url': nologo_url
+    }
+
+    def get_logo_client_side_dict(self):
+        return self.get_image_cropped_file(self.logo_file_properties(),
+                                             db(ImageCroped, croped_image_id=self.logo_file_id).first())
+
+    def set_logo_client_side_dict(self, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user'] = {'type': 'none'}
+        self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+                                                          client_data, self.logo_file_id, self.own_company.system_folder_file_id)
+        return self
+
     def setup_created_portal(self, logo_file_id=None):
         # TODO: OZ by OZ: move this to some event maybe
         """This method create portal in db. Before define this method you have to create
         instance of class with parameters: name, host, portal_layout_id, company_owner_id,
         divisions. Return portal)"""
-
-        # except errors.PortalAlreadyExist as e:
-        #     details = e.args[0]
-        #     print(details['message'])
-
-
-        # self.company_assoc.portal =
-        # self.company_assoc.company =
 
         for division in self.divisions:
             if division.portal_division_type_id == 'company_subportal':
@@ -237,42 +258,64 @@ class Portal(Base, PRBase):
                 self.host):
             ret['errors']['host'] = 'pls enter valid host name'
         if not 'host' in ret['errors'] and db(Portal, host=self.host).filter(Portal.id != self.id).count():
-            ret['warnings']['host'] = 'host already taken by another portal'
+            ret['errors']['host'] = 'host already taken by another portal'
 
-        import socket
-        name = self.host
-        valid_IP = ['192.168.0.0/24', '127.0.0.1', '136.243.204.62']
-        try:
-            host = socket.gethostbyname(self.host)
-            x = str(host)
-        except Exception as e:
-            print("cannot resolve hostname: ", e)
+        if not 'host' in ret['errors']:
+            import socket
 
-        if not 'host' in ret['warnings'] and not x in valid_IP:
-            ret['warnings']['host'] = 'Wrong Ip-address'
+            try:
+                host = socket.gethostbyname(self.host)
+                host_ip = str(host)
+            except Exception as e:
+                ret['warnings']['host'] = 'cannot resolve hostname. maybe unregistered'
 
-        grouped = {}
+            if not 'host' in ret['errors'] and 'host' in ret['warnings'] and not host_ip in ['136.243.204.62']:
+                ret['warnings']['host'] = 'Wrong Ip-address'
+
+        grouped = {'by_company_member': {}, 'by_division_type': {}}
 
         for inddiv, div in enumerate(self.divisions):
             if not re.match('[^\s]{3,}', div.name):
                 if not 'divisions' in ret['errors']:
                     ret['errors']['divisions'] = {}
                 ret['errors']['divisions'][inddiv] = 'pls enter valid name'
-            if div.portal_division_type_id in grouped:
-                grouped[div.portal_division_type_id] += 1
+
+            # number of division of some type
+            if div.portal_division_type_id in grouped['by_division_type']:
+                grouped['by_division_type'][div.portal_division_type_id] += 1
             else:
-                grouped[div.portal_division_type_id] = 1
+                grouped['by_division_type'][div.portal_division_type_id] = 1
+
+            if div.portal_division_type_id == 'company_subportal':
+                member_company_id = div.settings['member_company_portal'].company_id
+                if member_company_id in grouped['by_company_member']:
+                    grouped['by_company_member'][member_company_id] += 1
+                else:
+                    grouped['by_company_member'][member_company_id] = 1
 
         for check_division in db(PortalDivisionType).all():
-            if check_division.id not in grouped:
-                grouped[check_division.id] = 0
-            if check_division.min > grouped[check_division.id]:
+            if check_division.id not in grouped['by_division_type']:
+                grouped['by_division_type'][check_division.id] = 0
+            if check_division.min > grouped['by_division_type'][check_division.id]:
                 ret['errors']['add_division'] = 'you need at least %s `%s`' % (check_division.min, check_division.id)
-                if grouped[check_division.id] == 0:
+                if grouped['by_division_type'][check_division.id] == 0:
                     ret['errors']['add_division'] = 'add at least one `%s`' % (check_division.id,)
-            if check_division.max < grouped[check_division.id]:
-                ret['errors']['add_division'] = 'you you can have only %s `%s`' % (
-                    check_division.max, check_division.id)
+            if check_division.max < grouped['by_division_type'][check_division.id]:
+                for inddiv, div in enumerate(self.divisions):
+                    if div.portal_division_type_id == check_division.id:
+                        if not 'remove_division' in ret['errors']:
+                            ret['errors']['remove_division'] = {}
+                        ret['errors']['remove_division'][inddiv] = 'you can have only %s `%s`' % (check_division.max,
+                                                                                                  check_division.id)
+
+        for inddiv, div in enumerate(self.divisions):
+            if div.portal_division_type_id == 'company_subportal':
+                if div.settings['member_company_portal'].company_id in grouped['by_company_member'] and grouped[
+                    'by_company_member'][div.settings['member_company_portal'].company_id] > 1:
+                    if not 'remove_division' in ret['warnings']:
+                        ret['warnings']['remove_division'] = {}
+                    ret['warnings']['remove_division'][inddiv] = 'you have more that one subportal for this company'
+
         return ret
 
     def get_client_side_dict(self,
@@ -283,11 +326,14 @@ class Portal(Base, PRBase):
     @staticmethod
     def search_for_portal_to_join(company_id, searchtext):
         """This method return all portals which are not partners current company"""
-        return [port.get_client_side_dict() for port in
-                db(Portal).filter(~db(MemberCompanyPortal,
-                                      company_id=company_id,
-                                      portal_id=Portal.id).exists()
-                                  ).filter(Portal.name.ilike("%" + searchtext + "%")).all()]
+        portals = []
+        for portal in db(Portal).filter(Portal.name.ilike("%" + searchtext + "%")).all():
+            member = db(MemberCompanyPortal, company_id=company_id, portal_id=portal.id).first()
+            if member and member.status in Portal.ALLOWED_STATUSES_TO_JOIN:
+                portals.append(portal.get_client_side_dict())
+            elif not member:
+                portals.append(portal.get_client_side_dict())
+        return portals
 
 
 class MemberCompanyPortal(Base, PRBase):
@@ -305,12 +351,14 @@ class MemberCompanyPortal(Base, PRBase):
                     default={RIGHT_AT_PORTAL.PUBLICATION_EDIT: True, RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: True},
                     nullable=False)
 
-
     member_company_portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
 
-    status = Column(TABLE_TYPES['status'], default='APPLICANT')
-    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'SUSPENDED': 'SUSPENDED',
-                'CANCELED': 'CANCELED'}
+    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
+                'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
+
+    INITIALLY_FILTERED_OUT_STATUSES = [STATUSES['DELETED'], STATUSES['REJECTED']]
+
+    status = Column(TABLE_TYPES['status'], default=STATUSES['APPLICANT'], nullable=False)
 
     portal = relationship(Portal
                           # ,back_populates = 'company_members'
@@ -327,10 +375,77 @@ class MemberCompanyPortal(Base, PRBase):
                         # , backref='partner_portals'
                         )
 
-    def get_client_side_dict(self, fields='id,status,rights', more_fields=None):
+    MEMBER = 'member'
+    MEMBERSHIP = 'membership'
+
+    ACTIONS = {
+        'UNSUBSCRIBE': 'UNSUBSCRIBE',
+        'FREEZE': 'FREEZE',
+        'WITHDRAW': 'WITHDRAW',
+        'RESTORE': 'RESTORE',
+        'REJECT': 'REJECT',
+        'SUSPEND': 'SUSPEND',
+        'ENLIST': 'ENLIST',
+        'ALLOW': 'ALLOW'
+    }
+
+    STATUS_FOR_ACTION = {
+        ACTIONS['UNSUBSCRIBE']: STATUSES['DELETED'],
+        ACTIONS['FREEZE']: STATUSES['FROZEN'],
+        ACTIONS['WITHDRAW']: STATUSES['DELETED'],
+        ACTIONS['REJECT']: STATUSES['REJECTED'],
+        ACTIONS['SUSPEND']: STATUSES['SUSPENDED'],
+        ACTIONS['ENLIST']: STATUSES['ACTIVE'],
+        ACTIONS['RESTORE']: STATUSES['ACTIVE']
+    }
+
+    def actions(self, company_id, who):
+        from .company import UserCompany
+        employee = UserCompany.get(company_id=company_id)
+        action_for_status = UserCompany.ACTION_FOR_STATUSES_MEMBER if who == 'member' else UserCompany.ACTION_FOR_STATUSES_MEMBERSHIP
+        return {action_name: self.action_is_allowed(action_name, employee,
+                                                    action_for_status[self.status]) for action_name in
+                action_for_status[self.status]}
+
+    def action_is_allowed(self, action_name, employee, actions):
+        if not employee:
+            return "Unconfirmed employment"
+
+        if not action_name in actions:
+            return "Unrecognized action `{}`".format(action_name)
+
+        if employee.status != MemberCompanyPortal.STATUSES['ACTIVE']:
+            return "User need employment with status `{}` to perform action `{}`".format(
+                    MemberCompanyPortal.STATUSES['ACTIVE'], action_name)
+
+        if self.portal.own_company.status != 'ACTIVE' and action_name == MemberCompanyPortal.ACTIONS['FREEZE']:
+            return "Company `{}` with status `{}` need status ACTIVE to perform action `{}`".format(self.portal.own_company.name,
+                    self.portal.own_company.status, action_name)
+        if self.portal.company_owner_id == self.company_id:
+            return 'You can`t {0} portal of your own company'.format(action_name)
+
+
+        if not employee.has_rights(actions[action_name]):
+            return "Employment need right `{}` to perform action `{}`".format(actions[action_name],action_name)
+
+        return True
+
+    def can_update_company_partner(self, user_right):
+        if self.status == MemberCompanyPortal.STATUSES['FROZEN'] and not user_right:
+            return 'Sorry!You can not manage company {}!It was frozen!'.format(self.company.name)
+        if self.status == MemberCompanyPortal.STATUSES['DELETED']:
+            return 'Sorry!Company {} was unsubscribed!'.format(self.company.name)
+        if self.company.status != MemberCompanyPortal.STATUSES['ACTIVE']:
+            return 'Sorry!Company {} is not active!'.format(self.company.name)
+        if not user_right:
+                return 'You haven\'t got aproriate rights!'
+        return True
+
+
+    def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id', more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    def __init__(self, company_id=None, portal=None, company=None, plan=None):
+    def __init__(self, company_id=None, portal=None, company=None, plan=None, status=None):
         if company_id and company:
             raise BadDataProvided
         if company_id:
@@ -339,25 +454,44 @@ class MemberCompanyPortal(Base, PRBase):
             self.company = company
         self.portal = portal
         self.plan = plan
+        self.status = status
+
 
     @staticmethod
     def apply_company_to_portal(company_id, portal_id):
         """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
-        g.db.add(MemberCompanyPortal(company_id=company_id,
-                                     portal=db(Portal, id=portal_id).one(),
-                                     plan=db(MemberCompanyPortalPlan).first()))
-        g.db.flush()
+        member = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
+        if member:
+            member.set_client_side_dict(MemberCompanyPortal.STATUSES['APPLICANT'])
+            member.save()
+        else:
+            g.db.add(MemberCompanyPortal(company_id=company_id,
+                                         portal=db(Portal, id=portal_id).one(),
+                                         plan=db(MemberCompanyPortalPlan).first()))
+            g.db.flush()
 
     @staticmethod
     def get(portal_id=None, company_id=None):
         return db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).one()
 
-    def set_client_side_dict(self, status, rights):
-        self.status = status
-        self.rights = rights
+    @staticmethod
+    def get_members(company_id, *args):
+        subquery = db(MemberCompanyPortal).filter(
+            MemberCompanyPortal.portal_id == db(Portal, company_owner_id=company_id).subquery().c.id).filter(MemberCompanyPortal.status != MemberCompanyPortal.STATUSES['REJECTED'])
+        return subquery
+
+    @staticmethod
+    def get_avaliable_statuses():
+        return PRBase.del_attr_by_keys(MemberCompanyPortal.STATUSES,
+                                      ['DELETED', 'FROZEN'])
+
+    def set_client_side_dict(self, status=None, rights=None):
+        if status:
+            self.status = status
+        if rights:
+            self.rights = rights
 
     def has_rights(self, rightname):
-
         if self.portal.own_company.id == self.company_id:
             return True
 
@@ -366,7 +500,6 @@ class MemberCompanyPortal(Base, PRBase):
 
         if rightname == '_ANY':
             return True if self.status == self.STATUSES['ACTIVE'] else False
-
         return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else False
 
 
@@ -574,7 +707,7 @@ class UserPortalReader(Base, PRBase):
     start_tm = Column(TABLE_TYPES['timestamp'])
     end_tm = Column(TABLE_TYPES['timestamp'])
     amount = Column(TABLE_TYPES['int'], default=99999)
-    portal = relationship('Portal')
+    portal = relationship('Portal', uselist=False)
     user = relationship('User')
     show_divisions_and_comments = relationship('ReaderDivision', back_populates='user_portal_reader')
 
@@ -597,13 +730,13 @@ class UserPortalReader(Base, PRBase):
 
     @staticmethod
     def get_portals_for_user():
-        portals = db(Portal).filter(~(Portal.id.in_(db(UserPortalReader.portal_id, user_id=g.user_dict['id'])))).all()
+        portals = db(Portal).filter(~(Portal.id.in_(db(UserPortalReader.portal_id, user_id=g.user.id)))).all()
         for portal in portals:
             yield (portal.id, portal.name,)
 
     @staticmethod
     def get(user_id=None, portal_id=None):
-        return db(UserPortalReader).filter_by(user_id=user_id if user_id else g.user.id, portal_id=portal_id).first()
+        return db(UserPortalReader).filter_by(user_id=user_id , portal_id=portal_id).first()
 
     @staticmethod
     def get_portals_and_plan_info_for_user(user_id, page, items_per_page, filter_params):
@@ -634,7 +767,7 @@ class UserPortalReader(Base, PRBase):
                                   UserPortalReader.start_tm <= to_tm])
         if package_name:
             filter_params.append(UserPortalReader.portal_plan_id == db(ReaderUserPortalPlan.id).filter(
-                ReaderUserPortalPlan.name.ilike('%' + package_name + '%')))
+                    ReaderUserPortalPlan.name.ilike('%' + package_name + '%')))
         return filter_params
 
 
@@ -659,6 +792,9 @@ class ReaderDivision(Base, PRBase):
 
     @property
     def show_divisions_and_comments(self):
+        print('aaa')
+        print([[sn, True if self._show_division_and_comments & 2 ** ind else False] for ind, sn in
+               enumerate(['show_articles', 'show_comments', 'show_favorite_comments', 'show_liked_comments'])])
         return [[sn, True if self._show_division_and_comments & 2 ** ind else False] for ind, sn in
                 enumerate(['show_articles', 'show_comments', 'show_favorite_comments', 'show_liked_comments'])]
 

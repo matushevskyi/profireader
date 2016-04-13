@@ -13,6 +13,7 @@ Virtualenviroment/
 .Python
 env/
 env2/
+profapp/__init__.py
 venv/
 build/
 develop-eggs/
@@ -86,6 +87,8 @@ database_full.*
 database.*.bak
 *.sql
 *.bak
+*.js.map
+*.css.map
 .venv/
 
 tmp*

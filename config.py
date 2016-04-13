@@ -38,6 +38,7 @@ class Config(object):
                               '<profireader.service@gmail.com>'
     PROFIREADER_ADMIN = os.environ.get('PROFIREADER_ADMIN') or 'Oles'
     PROFIREADER_ADMINS = secret_data.PROFIREADER_ADMINS
+    WTF_CSRF_ENABLED = False
 
     # Application threads. A common general assumption is
     # using 2 per available processor cores - to handle
@@ -47,6 +48,7 @@ class Config(object):
 
 # Ratio for image_editor, can be :
 # 1.7777777777777777, 1.3333333333333333, 0.6666666666666666, 1
+    THUMBNAILS_SIZE = (100, 100)
     IMAGE_EDITOR_RATIO = 1.3333333333333333
     HEIGHT_IMAGE = 300   # px
     ALLOWED_IMAGE_FORMATS = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG',
@@ -104,10 +106,9 @@ class Config(object):
     # PRESERVE_CONTEXT_ON_EXCEPTION = False
 
     BABEL_DEFAULT_LOCALE = 'uk'
-#     LANGUAGES = {
-#     'en': 'English',
-#     'uk': 'Ukrainian'
-# }
+    LANGUAGES = [{'name':'uk', 'display':'Ukrainian'},
+                 {'name':'en', 'display':'English'}]
+
 
 
 class ProductionDevelopmentConfig(Config):
@@ -140,6 +141,7 @@ class ProductionDevelopmentConfig(Config):
 #                                Config.CONSUMER_KEY_FB)
 #    CONSUMER_SECRET_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_SECRET',
 #                                   Config.CONSUMER_SECRET_FB)
+
 
     if 'PRODUCTION_SERVER_DB_HOST' not in os.environ.keys():
 

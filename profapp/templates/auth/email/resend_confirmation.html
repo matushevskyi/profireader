@@ -1,0 +1,2 @@
+{{ _('Welcome %(user_name)s. Plese click %(url)s for email confirmation', {'user_name': user.profireader_name,
+'url': url_for('auth.confirm', token=user.email_conf_token,_external = True, **addtourl)}) }}

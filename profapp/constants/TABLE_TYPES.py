@@ -1,7 +1,9 @@
 from sqlalchemy import Integer, String, TIMESTAMP, SMALLINT, BOOLEAN, Column, ForeignKey, UnicodeText, BigInteger, \
-    Binary, Float
+    Binary, Float, Date
 from sqlalchemy.dialects.postgresql import BIGINT, INTEGER, JSON
 from functools import reduce
+from profapp.utils import fileUrl, fileID
+
 
 
 class BinaryRightsMetaClass1(type):
@@ -75,12 +77,41 @@ class RIGHTS(BIGINT):
     def adapt(self, impltype):
         return RIGHTS(self._rights_class)
 
+class IMAGE(String):
+
+    def __init__(self, min_size=[40, 30], max_size=[4000, 3000], resize_to=[400, 300, 'stretch'], thumbnail_sizes=[]):
+
+        self.min_size = min_size
+        self.max_size = max_size
+
+        self.resize_to = resize_to
+        self.thumbnail_sizes = thumbnail_sizes
+        super(IMAGE, self).__init__()
+
+    def result_processor(self, dialect, coltype):
+        def process(file_id):
+            return file_id
+        return process
+
+    def bind_processor(self, dialect):
+        def process(file_url):
+            return fileID(file_url)
+        return process
+
+    def adapt(self, impltype):
+        return IMAGE(self.min_size, self.max_size, self.resize_to, self.thumbnail_sizes)
+
 
 # read this about UUID:
 # http://stackoverflow.com/questions/183042/how-can-i-use-uuids-in-sqlalchemy
 # http://stackoverflow.com/questions/20532531/how-to-set-a-column-default-to-a-postgresql-function-using-sqlalchemy
 TABLE_TYPES = {
     'binary_rights': RIGHTS,
+    'image': IMAGE,
+    'date': Date,
+
+
+
     'id_profireader': String(36),
 
     'password_hash': String(128),  # String(128) SHA-256
@@ -118,6 +149,10 @@ TABLE_TYPES = {
     'text': UnicodeText(length=65535),
     'gender': String(6),
     'language': String(3),
+    'iso': String(2),
+    'iso3': String(3),
+    'numcode': String(6),
+    'phonecode': String(5),
     'url': String(1000),  # URLType,
     'binary': Binary,
     'json': JSON

@@ -3,47 +3,21 @@
     <div class="container">
         <div class="row index-about">
             <div class="col-lg-offset-1 col-lg-10">
-                <h3>Profireader.com </h3><small>- сервіс для видавців нішевих онлайн медіа, який виконує для видавців усю технічну
-                    роботу, дозволяючи сконцентруватись на основному - підготовці якісної інформаціїї та модерації
-                    спільноти своїх читачів. Profireader.com ідеально підходить для створення та підтримки:
-                <ul>
-                    <li>
-                        локальних та регіональних новинних порталів,
-                    </li>
-                    <li>
-                        професіональних та спеціалізованих b2b та b2c порталів,
-                    </li>
-                    <li>
-                        корпоративних порталів університетів, торгівельних центрів, великих компаній, тощо.
-                    </li>
-                </ul>
-                </small>
+                {{ __('index top text about profireader') }}
             </div>
         </div>
-        <div class="row">
+        <div class="row block-resp">
             <a href="{{ url_for('general.send_email_create_portal') }}">
-            <div class="col-lg-5 col-md-5 col-sm-5 col-xs-12 index-links">
+            <div pr-test="CreatePortal" class="col-lg-6 col-md-6 col-sm-6 col-xs-12 index-links">
                 <span><i class="fa fa-pencil fa-3x"></i></span>
-                <h3>Для видавців</h3>
-                <p>Миттєво створити портал (веб+мобайл) для свого медіа, без початкових інвестицій та технічних
-                    знань.</p>
-                <p>Зконфігурувати свою унікальну модель поширення корисної читачам інформації як комбінацію відкритого
-                    змісту, безкоштовного змісту для зареєстрованих читачів, преміального змісту для платних
-                    підписників.</p>
-                <p>Запропонувати рекламодавцям ефективні рекламні рішення побудовані на глибокому розумінні потреб
-                    читачів і тісній комунікації з читачами.</p>
+                {{ __('index left text to publishers') }}
             </div>
             </a>
 
             <a href="{{ url_for('general.portals_list') }}">
-                <div class="col-lg-5 col-md-5 col-sm-5 col-xs-12 pull-right index-links">
+                <div pr-test="PortalList" class="col-lg-6 col-md-6 col-sm-6 col-xs-12 pull-right index-links">
                     <span><i class="fa fa-book fa-3x"></i></span>
-                    <h3>Для читачів</h3>
-                    <p>Підписатись на улюблене медіа, портал якого створений на основі сервісу Profireader.com</p>
-                    <p>Стати учасником спільноти читачіів підписаного порталу та обговорювати з ними вподобані статті та
-                        новини.</p>
-                    <p>Впливати на формування новинної стрічки підписаного порталу.</p>
-
+                    {{ __('index right text to readers') }}
                 </div>
             </a>
         </div>
@@ -54,9 +28,7 @@
         <div class="row">
             <div class="col-lg-12">
                 <h4>Profireader.com
-                    <small>- місце де новини зустрічаються з читачами, читачі з редактором, а редактори з
-                        новинами.
-                    </small>
+                    {{ __('index bottom text to readers') }}
                 </h4>
             </div>
         </div>

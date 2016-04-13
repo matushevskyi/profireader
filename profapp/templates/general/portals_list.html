@@ -1,4 +1,4 @@
-{% extends "index_lazy_layout.html" %}
+{% extends "_ruslan/_index_layout.html" %}
 
 {% block title %}{{ _('Portal list') }}{% endblock title %}
 
@@ -9,15 +9,12 @@
 
 {% block portal_content %}
     <script>
-        module.controller('portals_list', function ($scope, $ok) {
+        module.controller('portals_list', function ($scope, $ok, $timeout) {
             $scope.$$translate = {{ translates('portals_list')|safe }};
             $scope.search_text = '';
-            $scope.loading = false;
-            $scope.dirty = true;
-            $scope.data = [];
-
+            $scope.scroll_data = {};
             $scope.subscribe = function (portal_id) {
-                {% if g.user_id %}
+                {% if g.user.id %}
                     $ok('{{ url_for('reader.reader_subscribe_registered')|safe }}', {portal_id: portal_id}, function (resp) {
                         if (resp) {
                             _.map($scope.data, function (portal) {
@@ -26,65 +23,97 @@
                                 }
                             })
                         }
+                        if(resp === true){
+                            add_message('You have successfully subscribed to this portal', 'info', 3000)
+                            $timeout(function(){
+                                window.location.href = '{{ url_for('reader.list_reader') }}'
+                            }, 1500)
+                        }else {
+                            add_message(resp, 'warning', 3000)
+                        }
                     });
                 {% else %}
-                    window.location.href = {{ raw_url_for('reader.reader_subscribe')|safe }}({portal_id: portal_id});
+                    window.location.href = {{ raw_url_for('general.auth_before_subscribe_to_portal')|safe }}({portal_id: portal_id});
                 {% endif %}
             };
 
             $scope.search_for_portal = function () {
-                if ($scope.loading) {
-                    $scope.dirty = true;
-                    return false;
-                }
                 $scope.loading = true;
-                $scope.data = [];
-                $scope.dirty = false;
-                $ok('', {text: $scope.search_text}, function (resp) {
-                    $scope.loading = false;
-                    if ($scope.dirty) {
-                        $scope.search_for_portal();
-                    }
-                    else {
-                        $scope.data = resp;
-
-                    }
-
+                if ('text' in $scope.scroll_data && $scope.search_text !== $scope.scroll_data.text) {
+                    $scope.next_page = 1;
+                }
+                $scope.scroll_data = {text: $scope.search_text, next_page: $scope.next_page};
+                $ok('', $scope.scroll_data, function (resp) {
+                    $scope.data = resp;
                 }).finally(function () {
-                    $scope.loading = false;
+                    $timeout(function () {
+                        $scope.loading = false;
+                        if ($(document).height() - $(window).height() === 0 && !$scope.data.end) {
+                            $scope.next_page += 1;
+                            $scope.search_for_portal()
+                        }
+                    }, 500)
                 });
-            }
+            };
+
+            $scope.loadNextPage('')
         });
 
     </script>
 
     {% raw %}
-    <div ng-controller="portals_list" ng-init="search_for_portal()">
-        <h2>{{ _('Please, subscribe to any portal') }}</h2>
-        </br>
-        {{ _('Search') }} <input ng-model="search_text" ng-change="search_for_portal()" id="portal_search" type="text">
-        <table>
-            <tr ng-repeat="portal in data">
-
-                <td class="p4px">
-                    <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
-                </td>
-                <td class="p4px">
-                    <span ng-bind-html="highlight(portal.name, search_text)"></span><br/>
-                    <span ng-bind-html="highlight(portal.host, search_text)"></span>
-                </td>
-                <td class="p4px">
-                    <button ng-disabled="portal.subscribed" class="btn" ng-click="subscribe(portal.id)">{{
-                        _('Subscribe') }}
-                    </button>
-                </td>
-
-            </tr>
-
-        </table>
-        <div ng-if="loading">
-            {{ _('Loading...') }}
+    <div class="container serch-portal" ng-controller="portals_list" ng-init="search_for_portal()" ng-cloak>
+        <div class="row">
+            <h3 pr-test="SearchAndSubscribeTitle">{{ _('Please, search and subscribe to any portal') }}</h3>
         </div>
+        <div class="row">
+            <input pr-test="SearchForPortals" placeholder="Search" class="form-control" ng-model="search_text" ng-change="search_for_portal()"
+                   id="portal_search" type="text">
+        </div>
+        <div class=" row link-page">
+            <h5 pr-test="PortalSearchingResults" ng-if="search_text.length>0">{{ _('Searching results') }}:</h5>
+        </div>
+        <div class="row">
+            <h4 ng-if="data.list_portals.length==0 && search_text.length>0" style="color: red">{{ _('For your search no
+                results!') }}</h4>
+        </div>
+
+        <div ng-repeat="portal in data.list_portals" class="row block-portal">
+            <div class="col-lg-3 col-md-4 col-sm-4 col-xs-6">
+                <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
+            </div>
+            <div class="col-lg-7 col-md-6 col-sm-6 col-xs-6 portal-block-resp">
+                <h3><span pr-test="SearchResults-PortalsName" ng-bind-html="highlight(portal.name, search_text)"></span></h3>
+                <span class="address-portal" ng-bind-html="highlight(portal.host, search_text)"></span>
+            </div>
+            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-6 portal-block-resp">
+                <button pr-test-portal-id="{{ portal.id }}" pr-test="SearchAndSubscribeBtn" ng-disabled="portal.subscribed" class="btn-search-portal" ng-click="subscribe(portal.id)">
+                    {{ _('Subscribe') }}
+                </button>
+            </div>
+        </div>
+
+
+        <!--
+                <table>
+                    <tr ng-repeat="portal in data.list_portals">
+
+                        <td class="p4px">
+                            <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
+                        </td>
+                        <td class="p4px">
+                            <span ng-bind-html="highlight(portal.name, search_text)"></span><br/>
+                            <span ng-bind-html="highlight(portal.host, search_text)"></span>
+                        </td>
+                        <td class="p4px">
+                            <button ng-disabled="portal.subscribed" class="btn" ng-click="subscribe(portal.id)">{{
+                                _('Subscribe') }}
+                            </button>
+                        </td>
+
+                    </tr>
+
+                </table>-->
     </div>
     {% endraw %}
 {% endblock portal_content %}

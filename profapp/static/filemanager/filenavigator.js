@@ -47,14 +47,14 @@
                 search_text: query,
                 root_id: self.root_id,
                 file_manager_called_for: self.file_manager_called_for,
-                folder: folder_id //? folder_id : self.ancestors[self.ancestors.length - 1]
+                folder_id: folder_id //? folder_id : self.ancestors[self.ancestors.length - 1]
             }};
             self.requesting = true;
             self.is_search = true;
             self.searchList = [];
             self.error = '';
             self.list = [];
-            $http.post(fileManagerConfig.search_Url, data).success(function(resp) {
+            $http.post(fileManagerConfig.listUrl, data).success(function(resp) {
                 self.searchList = [];
                 self.ancestors = resp.data.ancestors;
                 angular.forEach(resp.data.list, function(file) {
@@ -80,6 +80,7 @@
             var data = {params: {
                 mode: "list",
                 onlyFolders: false,
+                search_text: '',
                 path: '/' + path,
                 file_manager_called_for: self.file_manager_called_for,
                 root_id: self.root_id,
@@ -186,6 +187,9 @@
 
         FileNavigator.prototype.goTo = function(index) {
             var self = this;
+            if(index === -1 && self.history.length>0){
+                self.buildTree('/');
+            }
             $('.navbar-right').find('input[type=text]').val('');
             self.search_text = '';
             self.currentPath = self.currentPath.slice(0, index + 1);

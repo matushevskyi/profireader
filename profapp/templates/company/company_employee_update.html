@@ -17,7 +17,7 @@
             $scope.after_save = function () {
                 window.location.href = $scope.url_company_employee_list({
                     'company_id': $scope.data.employer.id
-{#                    'user_id': $scope.data.employee.id#}
+                    {#                    'user_id': $scope.data.employee.id#}
                 });
             };
 
@@ -26,8 +26,8 @@
     </script>
     {% raw %}
 
-    <div ng-controller="company_employee_update">
-        <div style="text-align: center" ng-if="!user_right"><h2>Sorry!!!You haven't got  appropriate rights!</h2></div>
+    <div ng-controller="company_employee_update" ng-cloak>
+        <div style="text-align: center" ng-if="!user_right"><h2><div>{{ _('Sorry!!!You haven\'t got appropriate rights!') }}</div></h2></div>
         <div af af-after-save="after_save" af-watch="data.employment" ng-model="data" pr-user-rights="user_right">
             <h2>
                 <img class="person-small-cover" pr-image
@@ -36,16 +36,13 @@
                 {{ _('Employee `%(data.employee.profireader_name)s` at company `%(data.employer.name)s`') }}</h2>
 
             <img pr-image="employer.logo_file_id"/>
-            {{ data.employment.status }}
-            {{ _('status') }} {{ data.employment.status }}
-            {{ _('position') }} <input ng-model="data.employment.position"/><br>
             {{ _('permissions') }}<br>
             <div ng-class="{disabled: !permitted}" ng-repeat="(right_name, permitted) in data.employment.rights">
                 <img src="//static.profireader.com/static/images/0.gif"
                      class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"/>
                 <label>
                     <i class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"></i>
-                    <input ng-model="data.employment.rights[right_name]" type="checkbox"/> {{ right_name }}</label>
+                   <input ng-model="data.employment.rights[right_name]" type="checkbox"/> {{ right_name }}</label>
             </div>
             <button class="btn fr" type="button" ng-disabled="!$af.isActionAllowed(data, 'save')"
                     ng-click="$af.save(data)">{{ _('Save') }}

@@ -1,4 +1,4 @@
-{% extends 'front/bird/layout-wbg.html' %}
+{% extends 'layout-wbg.html' %}
 
 {% block content %}
     <h2>{{ member_company['name'] }}</h2>
@@ -19,20 +19,14 @@
 
         function sendMessage() {
             $("#send-message-form input").attr('disabled', 'disabled');
+            $ok('{{ url_for('front.send_message', member_company_id = member_company['id']) }}',
+                    {
+                        message: $("#send-message-form textarea").val(),
+                        user_id: $('#send-message-user-id').val()
+                    }, function (resp) {
+                        $("#send-message-form").dialog("close");
+                    });
 
-            $.ajax({
-                url: '{{ url_for('front.send_message', member_company_id = member_company['id']) }}',
-                type: "POST",
-                data: JSON.stringify({
-                    message: $("#send-message-form textarea").val(),
-                    user_id: $('#send-message-user-id').val()
-                }),
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
-                success: function () {
-                    $("#send-message-form").dialog("close");
-                }
-            });
         }
         $(function () {
             var dialog = $("#send-message-form").dialog({

@@ -1,4 +1,4 @@
-{# see: https://github.com/mbr/flask-bootstrap/blob/master/flask_bootstrap/templates/bootstrap/base.html #}
+ see: https://github.com/mbr/flask-bootstrap/blob/master/flask_bootstrap/templates/bootstrap/base.html
 {% extends "bootstrap/base.html" %}
 
 {% block html_attribs %} lang="en"{% endblock %}
@@ -10,15 +10,15 @@
 {% endblock metas %}
 
 {% block styles %}
-    {#    {{ super() }}#}
-    {#    <link rel="stylesheet" type="text/css" href="//static.profireader.com/static/filemanager/angular-filemanager.css">#}
-    {#<link href="//static.profireader.com/static/image_editor/assets/css/bootstrap.min.css" rel="stylesheet">#}
-    {#<link href="//static.profireader.com/static/image_editor/demo/css/main.css" rel="stylesheet">#}
-    {#
+        {{ super() }}
+        <link rel="stylesheet" type="text/css" href="//static.profireader.com/static/filemanager/angular-filemanager.css">
+    <link href="//static.profireader.com/static/image_editor/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="//static.profireader.com/static/image_editor/demo/css/main.css" rel="stylesheet">
+
     <link rel="shortcut icon" href="//static.profireader.com/static/favicon.ico" type="image/x-icon">
     <link rel="icon" href="//static.profireader.com/static/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" type="text/css" href="//static.profireader.com/static/styles.css">
-    #}
+
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.css">
     <link rel="stylesheet" href="//static.profireader.com/static/css/profireader_responsive.css">
     <link rel="stylesheet" href="//static.profireader.com/static/css/profireader.css">
@@ -32,13 +32,13 @@
 
 
 
-{%- endblock styles %}
+{% endblock styles %}
 
-{%- block head %}
+{% block head %}
     {{ super() }}
 
     <script>
-    var pr_angular_modules = ['ui.bootstrap', 'profireaderdirectives', 'ngSanitize', 'ajaxFormModule', 'profireaderdirectives', 'ui.grid', 'ui.grid.pagination', 'ui.grid.edit', 'ngAnimate', 'ngTouch', 'ui.grid.selection', 'ui.grid.grouping', 'ui.grid.treeView', 'ui.slider', 'ui.tinymce'];
+        var pr_angular_modules = ['ui.bootstrap', 'profireaderdirectives', 'ngSanitize', 'profireaderdirectives', 'ui.grid', 'ui.grid.pagination', 'ui.grid.edit', 'ngAnimate', 'ngTouch', 'ui.grid.selection', 'ui.grid.grouping', 'ui.grid.treeView', 'ui.slider', 'ui.tinymce'];
     </script>
 
     <link rel="shortcut icon" href="//static.profireader.com/static/favicon.ico" type="image/x-icon"/>
@@ -46,11 +46,11 @@
 
     {{ config_variables()|safe }}
 
-    {#    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.js"></script>#}
-    {#    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.js"></script>#}
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.js"></script>
 
 
-{#    <script src="{{ bootstrap_find_resource('jquery.js', cdn='jquery') }}"></script>#}
+        <script src="{{ bootstrap_find_resource('jquery.js', cdn='jquery') }}"></script>
     <script src="//static.profireader.com/static/jquery/jquery.min.js"></script>
     <script src="//static.profireader.com/static/jquery/jquery-ui.min.js"></script>
     <script src="//static.profireader.com/static/angular/angular.min.js"></script>
@@ -61,25 +61,25 @@
     <script src="//static.profireader.com/static/angular-ui-slider/slider.js"></script>
     <script src="//static.profireader.com/static/angular-ajax-validator/ngAjaxValidator.js"></script>
 
-    {#TODO: SS by OZ: remove this two lines when ng-grid is up and running #}
-{#    <link rel="stylesheet" href="//static.profireader.com/static/angular-xeditable/xeditable.css">#}
-{#    <script src="//static.profireader.com/static/angular-xeditable/xeditable.js"></script>#}
+    TODO: SS by OZ: remove this two lines when ng-grid is up and running
+        <link rel="stylesheet" href="//static.profireader.com/static/angular-xeditable/xeditable.css">
+        <script src="//static.profireader.com/static/angular-xeditable/xeditable.js"></script>
 
     <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js"></script>
-    {#    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js"></script>#}
+        <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js"></script>
 
-    {#    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.18/angular.js"></script>#}
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.18/angular.js"></script>
 
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.20/angular-sanitize.js"></script>
 
     {% if angular_ui_bootstrap_version %}
         <script src="{{ angular_ui_bootstrap_version }}"></script>
     {% endif %}
-    {#<script src="//static.profireader.com/static/image_editor/demo/js/main.js"></script>#}
-    {#    <script src="//static.profireader.com/static/filemanager/angular-filemanager.min.js"></script><!-- Comment if you need to use raw source code -->#}
+    <script src="//static.profireader.com/static/image_editor/demo/js/main.js"></script>
+        <script src="//static.profireader.com/static/filemanager/angular-filemanager.min.js"></script><!-- Comment if you need to use raw source code -->
 
-    {#    <script src="//static.profireader.com/static/filemanager/cached-templates.js"></script><!-- Comment if you need to use raw source code -->#}
-    {#    <script src="{{bootstrap_find_resource('js/bootstrap.js', cdn='bootstrap')}}"></script>#}
+        <script src="//static.profireader.com/static/filemanager/cached-templates.js"></script><!-- Comment if you need to use raw source code -->
+        <script src="{{bootstrap_find_resource('js/bootstrap.js', cdn='bootstrap')}}"></script>
 
     <script src="//static.profireader.com/static/js/underscore-min.js"></script>
 
@@ -94,9 +94,9 @@
     <!---!GRID!---->
     <link rel="styleSheet" href="//static.profireader.com/static/css/ui-grid.css"/>
     <script src="//static.profireader.com/static/js/ui-grid.min.js"></script>
-{#    <script src="//static.profireader.com/static/ui-grid/csv.js"></script>#}
-{#    <script src="//static.profireader.com/static/ui-grid/pdfmake.js"></script>#}
-{#    <script src="//static.profireader.com/static/ui-grid/vfs_fonts.js"></script>#}
+        <script src="//static.profireader.com/static/ui-grid/csv.js"></script>
+        <script src="//static.profireader.com/static/ui-grid/pdfmake.js"></script>
+        <script src="//static.profireader.com/static/ui-grid/vfs_fonts.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-touch.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-animate.js"></script>
 
@@ -124,7 +124,7 @@
 {% endblock navbar %}
 
 {% block portal_base %}
-    {% include 'partials/portal_base_Profireader.html' %}
+    {% include 'partials/bak.portal_base_Profireader.html' %}
 {% endblock portal_base %}
 
 {% block content %}
@@ -134,7 +134,6 @@
     <div class="container widewrapper">
         {% block portal_content %}
             {% include 'flashed-messages.html' %}
-            {% include 'partials/Profireader_content' %}
         {% endblock portal_content %}
         <br/>
         {% if pages is defined %}

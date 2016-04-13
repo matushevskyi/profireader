@@ -1,0 +1,76 @@
+{% extends 'layout.html' %}
+
+{% block portal_content %}
+    <h2>{{ member_company['name'] }}</h2>
+
+    {% for user_id in company_users %}
+        <div class="person-item" id="company_employees">
+            <img width="50" height="50" class="round-avatar"
+                 style="background-image: url({{ company_users[user_id]['profireader_small_avatar_url'] }})"/>
+            <b>{{ company_users[user_id]['profireader_name'] }}</b><br/>
+            {% if company_users[user_id]['position'] %}
+                <div class="role">{{ company_users[user_id]['position'] }}&nbsp;</div>{% endif %}
+            <a data-user-id="{{ user_id }}" style="clear: both" href="#"><span
+                    class="glyphicon glyphicon-envelope"></span>&nbsp;{{ _('send message') }}</a>
+        </div>
+    {% endfor %}
+
+    <script>
+
+        function sendMessage() {
+            $("#send-message-form input").attr('disabled', 'disabled');
+            $ok('{{ url_for('front.send_message', member_company_id = member_company['id']) }}',
+                    {
+                        message: $("#send-message-form textarea").val(),
+                        user_id: $('#send-message-user-id').val()
+                    }, function (resp) {
+                        $("#send-message-form").dialog("close");
+                    });
+
+        }
+        $(function () {
+            var dialog = $("#send-message-form").dialog({
+                autoOpen: false,
+                height: 300,
+                width: 350,
+                modal: false,
+                dialogClass: "notitledialog",
+                appendTo: '#company_employees',
+                buttons: {
+                    "{{ _('Send message') }}": sendMessage,
+                    "{{ _('Cancel') }}": function () {
+                        dialog.dialog("close");
+                    }
+                },
+                close: function () {
+                    $("#send-message-form")[0].reset();
+                }
+            });
+
+            $("#send-message-form").on("submit", function (event) {
+                event.preventDefault();
+                sendMessage();
+            });
+
+            $("#company_employees a").on("click", function () {
+                $("#send-message-form").dialog("option", "position", {
+                    my: "left top",
+                    at: "left bottom",
+                    of: this
+                }).dialog("open");
+                $('#send-message-user-id').val($(this).attr('data-user-id'));
+                $("#send-message-form textarea").focus();
+                return false;
+            });
+        });
+    </script>
+
+    <form id="send-message-form" style="display: none">
+        <input type="hidden" id="send-message-user-id"/>
+        <textarea style="width: 100%; height: 100%; resize: none; border-width: 1px;" name="message" id="message"
+                  class="text ui-widget-content ui-corner-all"></textarea>
+        <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+
+    </form>
+
+{% endblock portal_content %}

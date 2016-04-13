@@ -1,0 +1,260 @@
+/*CONST*/
+body a {
+  color: #039be5;
+}
+body a:hover {
+  color: #0c6dc4;
+  text-decoration: none;
+}
+.block-center {
+  display: block;
+  margin: 0 auto;
+}
+.link-no-style,
+.link-no-style:hover,
+.link-no-style:active,
+.link-no-style:visited {
+  text-decoration: none;
+  color: inherit;
+}
+/*CONST end*/
+.portal-body {
+  background-color: #FCFCFC;
+  min-height: 100vh;
+  font-family: 'Roboto', sans-serif;
+}
+.search-block {
+  padding-top: 15px;
+  background-color: #FCFCFC;
+  padding-bottom: 21px;
+  margin-left: 15px;
+  padding-right: 58px;
+}
+.search-block input {
+  font-family: 'Roboto', sans-serif;
+  border-radius: 0;
+}
+.search-block input:active,
+.search-block input:hover,
+.search-block input:focus {
+  border-color: #FF5252;
+}
+.search-block .search {
+  padding-right: 0;
+}
+.search-block i {
+  background-color: #FF5252;
+  padding: 10px 15px;
+  color: #fff;
+}
+.search-block button {
+  padding: 0;
+  border: none;
+}
+.logo-portal {
+  border-bottom: 2px solid #FF5252;
+  z-index: 500;
+  margin-top: -70px;
+  width: 225px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  position: fixed;
+  background-color: #FCFCFC;
+  color: #fff;
+}
+.logo-portal img {
+  height: 70px;
+}
+.content-block {
+  margin-top: 70px;
+}
+.left-menu {
+  color: #fff;
+  background-color: #212121;
+  height: 100%;
+  position: fixed;
+  overflow-y: auto;
+  width: 225px;
+  z-index: 100;
+  padding-bottom: 200px;
+  border-right: 1px solid #CCC;
+}
+.left-menu ul {
+  padding-left: 0;
+}
+.left-menu .spec {
+  list-style: none;
+  display: block;
+  padding: 12px 16px;
+  font-family: 'Roboto', sans-serif;
+}
+.left-menu .spec:hover {
+  background-color: #FF5252;
+  transition: all 0.2s ease-out;
+}
+.left-menu .user-prof {
+  padding-top: 15px;
+  background-color: #FCFCFC;
+}
+.left-menu .user-prof img {
+  border-radius: 50%;
+  width: 50%;
+}
+.left-menu .user-prof p {
+  font-family: 'Roboto', sans-serif;
+  padding: 5px;
+  margin-bottom: 0;
+  text-align: center;
+  margin-top: 10px;
+  background-color: #FF5252;
+  color: #fff;
+  border-bottom: 1px solid #191818;
+}
+.footer-portal {
+  margin-top: 50px;
+  background-color: #212121;
+  color: #FF5252;
+  font-size: 10px;
+  text-align: center;
+  padding: 20px 0;
+  box-shadow: 0 -3px 4px -2px rgba(0, 0, 0, 0.5);
+}
+.news-block {
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+  margin: 15px 0 15px 30px;
+  padding: 0;
+}
+.news-block .publications {
+  background: url('../../../images/yo.jpg');
+  background-repeat: no-repeat;
+  background-position-x: center;
+  background-position-y: center;
+  padding: 50%;
+  background-size: cover;
+}
+.news-block .publications:hover {
+  background-color: rgba(255, 82, 82, 0.61);
+  background-blend-mode: color-dodge;
+  transition: all 0.2s ease-out;
+}
+.news-block .content-in-block {
+  background-color: rgba(0, 0, 0, 0.75);
+  padding: 10px;
+  margin-top: -21%;
+  min-height: 80px;
+  max-height: 80px;
+  color: #fff;
+}
+.news-content {
+  margin-bottom: 100px;
+  width: 100%;
+  padding-left: 227px;
+  margin-top: -70px;
+}
+.advertising-block {
+  background-color: #0a4b3e;
+}
+.fixed-nav {
+  margin-left: 225px;
+  border: 0;
+  background-color: #FCFCFC;
+  border-bottom: 2px solid #FF5252;
+}
+.spec {
+  padding: 0;
+}
+.no-login-user {
+  padding-top: 15px;
+  background-color: #FCFCFC;
+  text-align: center;
+}
+.no-login-user i {
+  color: #FCFCFC;
+  border-radius: 50%;
+  border: 2px solid #FF5252;
+  padding: 20px 25px;
+  background-color: #FF5252;
+}
+.no-login-user p {
+  font-family: 'Roboto', sans-serif;
+  padding: 5px;
+  margin-bottom: 0;
+  text-align: center;
+  margin-top: 10px;
+  background-color: #FF5252;
+  color: #fff;
+  border-bottom: 1px solid #191818;
+}
+.block-item-img {
+  background-position-y: center;
+  width: 30%;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.subportal-about {
+  padding: 30px;
+}
+.subportal-about h2 {
+  color: #FF5252;
+}
+.subportal-about img {
+  width: 100%;
+  height: auto;
+}
+.subportal-about .logo-sub {
+  width: 10%;
+  float: right;
+}
+.company-img {
+  min-height: 300px;
+  background-image: url('../../../images/company_no_logo.png');
+  background-size: cover;
+  background-position: center;
+}
+.company-blocks {
+  cursor: pointer;
+}
+.company-blocks h2 {
+  background-color: rgba(0, 0, 0, 0.5);
+  margin-top: 0;
+  padding-top: 150px;
+  padding-bottom: 70px;
+  color: #fff;
+  text-transform: uppercase;
+  padding-left: 30px;
+  margin-bottom: 0;
+  display: none;
+}
+.company-blocks h2:hover {
+  background-color: rgba(0, 0, 0, 0);
+  color: #FF5252;
+  text-shadow: 2px 2px 3px #212121;
+  transition: all 0.2s ease-out;
+}
+.company-blocks .thumbnail:hover {
+  box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+.about-comp {
+  min-height: 100px;
+  max-height: 100px;
+  overflow: hidden;
+}
+.about-comp p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 5px 15px 5px 15px;
+  color: #DDD;
+  margin-bottom: 0;
+  transition: transform 5s ease;
+}
+@media (max-width: 970px) {
+  .subportal-about .logo-sub {
+    width: 20%;
+  }
+}
+@media (max-width: 750px) {
+  .subportal-about .logo-sub {
+    width: 100%;
+    float: none;
+  }
+}
+/*# sourceMappingURL=style.css.map */

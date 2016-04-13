@@ -1,0 +1,44 @@
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="">
+<meta name="author" content="">
+
+<link rel="shortcut icon" href="{{ fileUrl(portal.favicon_file_id, if_no_file='//static.profireader.com/static/favicon.ico') }}"
+      type="image/x-icon"/>
+<link rel="icon" href="{{ fileUrl(portal.favicon_file_id, if_no_file='//static.profireader.com/static/favicon.ico') }}" type="image/gif"/>
+
+<title>
+    {% block title %}Profireader{% if current_division and current_division.name %} - {{ current_division.name }}
+    {% endif %}{% endblock %}</title>
+
+<link rel="stylesheet" href="//static.profireader.com/static/jquery/smoothness/jquery-ui.css">
+<!-- Bootstrap Core CSS -->
+<link href="//static.profireader.com/static/front/css/bootstrap.css" rel="stylesheet">
+
+
+<!-- Custom CSS -->
+<link href='https://fonts.googleapis.com/css?family=Droid+Serif:400,400italic,700,700italic' rel='stylesheet'
+      type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,300italic,400italic,600,600italic,700,700italic,800,800italic&subset=latin,cyrillic,cyrillic-ext,latin-ext'
+      rel='stylesheet' type='text/css'>
+
+<link href="//static.profireader.com/static/front/css/bootstrap-social.css" rel="stylesheet">
+<link href="//static.profireader.com/static/front/css/font-awesome.css" rel="stylesheet">
+<link href="//static.profireader.com/static/front/css/style.css" rel="stylesheet">
+<link rel="stylesheet" href="//static.profireader.com/static/css/oles.css">
+<link href="//static.profireader.com/static/css/article.css" rel="stylesheet">
+<link href="//static.profireader.com/static/front/bird/css/article.css" rel="stylesheet">
+<link href="//static.profireader.com/static/front/bird/css/style.css" rel="stylesheet">
+
+{{ config_variables()|safe }}
+
+<script src="//static.profireader.com/static/jquery/jquery.min.js"></script>
+<script src="//static.profireader.com/static/jquery/jquery-ui.min.js"></script>
+
+<script src="//static.profireader.com/static/js/profireader.js"></script>
+<script src="//static.profireader.com/static/js/front.js"></script>
+
+<script src="//static.profireader.com/static/new/moment/moment.min.js"></script>
+{% if g.lang != 'en' %}<script src="//static.profireader.com/static/new/moment/{{ g.lang }}.js"></script>{% endif %}
+

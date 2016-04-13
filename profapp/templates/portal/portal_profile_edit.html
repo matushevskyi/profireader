@@ -4,10 +4,6 @@
     {{ super() }}
 {% endblock head %}
 
-{% block portal_base %}
-    {% include 'partials/portal_base_Profireader_auth_user.html' %}
-{% endblock portal_base %}
-
 {% block portal_content %}
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}
@@ -17,7 +13,7 @@
     {% include 'portal/tag_edit.html' %}
     {#    <script src="//static.profireader.com/static/js/tag_edit.js"></script>#}
     {% raw %}
-    <div ng-init="loadData(null, null, null, loadPortalDivisionTags4)" ng-controller="PortalProfileEditController">
+    <div ng-cloak ng-init="loadData(null, null, null, loadPortalDivisionTags4)" ng-controller="PortalProfileEditController">
 
         <!-- !!!{{ data.PortalDivisionTagsName }}<br/><br/> -->
         <!-- {{ loadPortalDivisionTags2() }} -->

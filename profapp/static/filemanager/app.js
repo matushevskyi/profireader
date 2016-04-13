@@ -5,8 +5,9 @@
  */
 
 (function(window, angular, $) {
-    "use strict";
-    var app = angular.module('FileManagerApp', ['pascalprecht.translate', 'ngCookies','ngFileUpload']);
+    // "use strict";
+    // var app = module;
+    var app = angular.module('FileManagerApp', ['pascalprecht.translate', 'ngCookies','ngFileUpload', 'profireaderdirectives']);
 
     app.directive('angularFilemanager', ['$parse', 'fileManagerConfig', function($parse, fileManagerConfig) {
         return {
@@ -69,7 +70,7 @@
     app.filter('formatDate', ['$filter', function($filter) {
         return function(input, limit) {
             return input instanceof Date ?
-                input.toISOString().substring(0, 19).replace('T', ' '):
+                moment(input).format('Do MMMM YYYY, H:mm:ss'):
                 input.toString();
         };
     }]);

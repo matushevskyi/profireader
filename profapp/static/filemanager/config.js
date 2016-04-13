@@ -10,7 +10,6 @@
             uploadUrl: "/filemanager/upload/",
             renameUrl: "/filemanager/rename/",
             set_properties: "/filemanager/properties/",
-            search_Url: "/filemanager/search/",
             copyUrl: "/filemanager/copy/",
             cutUrl: "/filemanager/cut/",
             removeUrl: "/filemanager/remove/",
@@ -21,6 +20,7 @@
             compressUrl: "bridges/php/handler.php",
             extractUrl: "bridges/php/handler.php",
             permissionsUrl: "bridges/php/handler.php",
+            getTranslate: "/filemanager/get_translate/",
 
             sidebar: true,
             breadcrumb: true,
@@ -41,7 +41,7 @@
             error_msg_exist:'file_is_not_exist',
 
             enablePermissionsRecursive: true,
-            chunkSize: '64KB',
+            chunkSize: '4096KB',
 
             isEditableFilePattern: /\.(txt|html?|aspx?|ini|pl|py|md|css|js|log|htaccess|htpasswd|json|sql|xml|xslt?|sh|rb|as|bat|cmd|coffee|php[3-6]?|java|c|cbl|go|h|scala|vb)$/i,
             isImageFilePattern: /\.(jpe?g|gif|bmp|png|svg|tiff?)$/i,

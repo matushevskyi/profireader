@@ -41,16 +41,23 @@
 
 
             $scope.loadMaterialDetails = function (data, callback) {
+                $scope.loading = true
                 $ok('', data, function (resp) {
                     callback(resp.portals);
                     $scope.data = resp;
-                }).finally();
+                }).finally(function(){
+                    $scope.loading = false
+                });
 
             };
 
 
             $scope.updateMaterial = function (material_id) {
                 window.location.href = $scope.url_update_material({'material_id': material_id})
+            };
+
+            $scope.get_local_time = function (date) {
+                return moment(date).format('Do MMMM YYYY, H:mm:ss');
             };
 
 
@@ -139,11 +146,11 @@
         }
     </style>
 
-    <div ng-controller="material_details">
+    <div ng-controller="material_details" ng-cloak>
         {% raw %}
         <h2>{{ _('Material details `%(title)s`', {title: data.material.title}) }}</h2>
-        <h4>{{ _('Created at') }} {{data.material.cr_tm}}</h4>
-        <h4>{{ _('Last modified at') }} {{data.material.md_tm}}</h4>
+        <h4>{{ _('Created at') }} {{get_local_time(data.material.cr_tm)}}</h4>
+        <h4>{{ _('Last modified at') }} {{get_local_time(data.material.md_tm)}}</h4>
         <hr/>
         <button pr-user-can="data.actions.EDIT" class="btn fr" ng-click="updateMaterial(data.material.id)
         ">{{ _('Update material') }}</button>
@@ -156,7 +163,11 @@
         <hr/>
 
         <h2>{{ _('Material is published or can be published at portals') }}</h2>
-        <div class="grid" id="grid1" ui-grid-edit ui-grid="gridOptions1"></div>
+        <div class="grid" id="grid1" ui-grid-edit ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+              <i class="fa fa-spin fa-spinner"></i><div>{{ _('Data Loading...') }}</div>
+            </div>
+        </div>
         {% endraw %}
 
     </div>

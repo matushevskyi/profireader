@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+    <meta charset="utf-8">
+
+
+{#<link rel="stylesheet" href="//static.profireader.com/static/jquery/smoothness/jquery-ui.css">#}
+<link href="//static.profireader.com/static/front/css/bootstrap.css" rel="stylesheet">
+
+
+<!-- Custom CSS -->
+{#<link href='https://fonts.googleapis.com/css?family=Droid+Serif:400,400italic,700,700italic' rel='stylesheet'#}
+{#      type='text/css'>#}
+{#<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,300italic,400italic,600,600italic,700,700italic,800,800italic&subset=latin,cyrillic,cyrillic-ext,latin-ext'#}
+{#      rel='stylesheet' type='text/css'>#}
+<link href='https://fonts.googleapis.com/css?family=Roboto:400,500,700,500italic,400italic,300&subset=latin,cyrillic-ext,cyrillic' rel='stylesheet' type='text/css'>
+{#<link href="//static.profireader.com/static/front/css/bootstrap-social.css" rel="stylesheet">#}
+<link href="//static.profireader.com/static/front/css/font-awesome.css" rel="stylesheet">
+{#<link href="//static.profireader.com/static/front/css/style.css" rel="stylesheet">#}
+{#<link rel="stylesheet" href="//static.profireader.com/static/css/oles.css">#}
+<link href="//static.profireader.com/static/css/article.css" rel="stylesheet">
+<link href="//static.profireader.com/static/front/spring/css/article.css" rel="stylesheet">
+<link href="//static.profireader.com/static/front/spring/css/style.css" rel="stylesheet">
+<link rel="icon" href="//static.profireader.com/static/favicon.ico" type="image/gif"/>
+
+<script src="//static.profireader.com/static/jquery/jquery.min.js"></script>
+<script src="//static.profireader.com/static/jquery/jquery-ui.min.js"></script>
+
+<script src="//static.profireader.com/static/js/profireader.js"></script>
+<script src="//static.profireader.com/static/js/front.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+
+</head>
+
+<body>
+<div class="container-fluid portal-body">
+
+    <div class="row content-block">
+
+        <div>
+            {% include 'menu_portal.html' %}
+        </div>
+        <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8">
+        {% include 'header.html' %}
+{#            {% block portal_content %}{% endblock %}#}
+{#            {% include 'advertising.html' %}#}
+        </div>
+    </div>
+
+<div class="row content-block">
+<div class="col-lg-8 col-md-8 col-sm-8 col-xs-8 news-content">
+            {% block portal_content %}{% endblock %}
+{#            {% include 'advertising.html' %}#}
+        </div>
+</div>
+ {% include 'footer.html' %}
+</div>
+{#  <script>#}
+{#        $(".block-item").mouseover(function () {#}
+{#            $(".company-about").css("display", "block");#}
+{#        });#}
+{#      $(".block-item").mouseout(function () {#}
+{#            $(".company-about").css("display", "none");#}
+{#        });#}
+{#    </script>#}
+</body>
+</html>

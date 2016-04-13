@@ -26,17 +26,19 @@
             $scope.url_material_update = {{ raw_url_for('article.article_show_form')|safe }};
             $scope.url_publication_update = {{ raw_url_for('article.article_show_form')|safe }};
 
-
-            {% raw %}
-            $scope.noData = 'No materials';
-
-            $scope.sendData = function (grid_data, setdatafuctions) {
-                $ok($scope.url_search_article({company_id: $scope.company.id}), grid_data, setdatafuctions)
+            $scope.getBackground = function(row){
+                if(row.entity['portal.name'] === ''){
+                    return {'background': 'white', 'color': '#18bc9c'}
+                }else{
+                    return {'background': '#18bc9c', 'color': 'white'}
+                }
             };
 
+
+            {% raw %}
+
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                loadGridData: $scope.sendData,
-             //   rowTemplate: '<div ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.colDef.name" class="ui-grid-cell" ng-class="{ \'ui-grid-row-header-cell\': col.isRowHeader, \'custom\': true }" ui-grid-cell></div>',
+                urlLoadGridData: $scope.url_search_article({company_id: $scope.company.id}),
                 category: [{
                     name: 'searching',
                     field: 'title&editor.profireader_name',
@@ -47,7 +49,7 @@
                 columnDefs: [
                     {
                         name: 'title', category:"searching",  width: '30%',
-                        type: 'link',
+                        type: 'link', cellStyle:"getBackground(row)",
                         href: 'url_material_details({company_id:grid.appScope.company.id,material_id:row.entity.id})'
                     },{
                         name: 'editor.profireader_name', category:"searching"
@@ -74,10 +76,14 @@
     </script>
 
     {% raw %}
-    <div ng-controller="materials_list">
+    <div ng-controller="materials_list" ng-cloak>
         <h2>{{ _('Materials of company `%(company.name)s`')}}</h2>
         <a href="{{ url_material_create({company_id: company.id}) }}">{{ _('Create new material') }}</a>
-        <div class="grid" id="grid1" ui-grid-edit ui-grid-grouping ui-grid-pagination ui-grid="gridOptions1"></div>
+        <div class="grid" id="grid1" ui-grid-edit ui-grid-grouping ui-grid-pagination ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+              <i class="fa fa-spin fa-spinner"></i><div>{{ _('Data Loading...') }}</div>
+            </div>
+        </div>
     </div>
     {% endraw %}
 

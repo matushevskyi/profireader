@@ -1,0 +1,153 @@
+{% extends "_ruslan/_index_layout.html" %}
+
+{% block title %}Profireader{% endblock title %}
+{% block head %}
+    {{ super() }}
+    {% include 'partials/empty_page.html' %}
+{% endblock head %}
+
+{% block portal_base %}
+{% endblock portal_base %}
+
+{% block portal_content %}
+<div class="container-fluid" ng-cloak>
+<div class="mess-bg row">
+    <div class="msg-message-user">
+        <h3>Messenger in develop</h3>
+    </div>
+</div>
+</div>
+{#    <div class="container" ng-cloak>#}
+{#        <div class="row link-page">#}
+{#            <h5>Messenger</h5>#}
+{#        </div>#}
+{#        <div class="row search-friends">#}
+{#            <div class="col-xs-3 input-group">#}
+{#                <input type="text" class="form-control input-sm" id="exampleInputAmount" placeholder="Search">#}
+{#                <div class="input-group-addon input-sm"><a href="#"><i class="fa fa-search"></i></a></div>#}
+{#            </div>#}
+{#        </div>#}
+{#        <div class="row messenger-block">#}
+{#            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 friends-block">#}
+{#                <a href="#">#}
+{#                    <div class="row friend-contact">#}
+{#                        <div class="col-lg-2">#}
+{#                            <img src="../../static/images/PZf5Q.png" alt="photo">#}
+{#                        </div>#}
+{#                        <div class="col-lg-6 name">#}
+{#                            <span>Name friend</span>#}
+{#                        </div>#}
+{#                        <div class="col-lg-3 date">#}
+{#                            <span>07/03/2016</span>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </a>#}
+{##}
+{#                <a href="#">#}
+{#                    <div class="row friend-contact">#}
+{#                        <div class="col-lg-2">#}
+{#                            <img src="../../static/images/PZf5Q.png" alt="photo">#}
+{#                        </div>#}
+{#                        <div class="col-lg-6 name">#}
+{#                            <span>Name friend</span>#}
+{#                        </div>#}
+{#                        <div class="col-lg-3 date">#}
+{#                            <span>07/03/2016</span>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </a>#}
+{#                <a href="#">#}
+{#                    <div class="row friend-contact">#}
+{#                        <div class="col-lg-2">#}
+{#                            <img src="../../static/images/PZf5Q.png" alt="photo">#}
+{#                        </div>#}
+{#                        <div class="col-lg-6 name">#}
+{#                            <span>Name friend</span>#}
+{#                        </div>#}
+{#                        <div class="col-lg-3 date">#}
+{#                            <span>07/03/2016</span>#}
+{#                        </div>#}
+{#                    </div>#}
+{#                </a>#}
+{##}
+{#            </div>#}
+{#            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 message-block">#}
+{##}
+{#                <div class="row">#}
+{#                    <div class="col-lg-2">#}
+{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
+{#                    </div>#}
+{#                    <div class="col-lg-7 message-text">#}
+{#                        <span>Name User</span>#}
+{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla </p>#}
+{#                    </div>#}
+{#                    <div class="col-lg-1">#}
+{#                        <span>07/03/2016 22:13</span>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="row">#}
+{#                    <div class="col-lg-2">#}
+{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
+{#                    </div>#}
+{#                    <div class="col-lg-7 message-text">#}
+{#                        <span>Name User</span>#}
+{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
+{#                    </div>#}
+{#                    <div class="col-lg-1">#}
+{#                        <span>07/03/2016 22:13</span>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="row">#}
+{#                    <div class="col-lg-2">#}
+{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
+{#                    </div>#}
+{#                    <div class="col-lg-7 message-text">#}
+{#                        <span>Name User</span>#}
+{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla#}
+{#                            bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla#}
+{#                            bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
+{#                    </div>#}
+{#                    <div class="col-lg-1">#}
+{#                        <span>07/03/2016 22:13</span>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="row">#}
+{#                    <div class="col-lg-2">#}
+{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
+{#                    </div>#}
+{#                    <div class="col-lg-7 message-text">#}
+{#                        <span>Name User</span>#}
+{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
+{#                    </div>#}
+{#                    <div class="col-lg-1">#}
+{#                        <span>07/03/2016 22:13</span>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="row">#}
+{#                    <div class="col-lg-2">#}
+{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
+{#                    </div>#}
+{#                    <div class="col-lg-7 message-text">#}
+{#                        <span>Name User</span>#}
+{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
+{#                    </div>#}
+{#                    <div class="col-lg-1">#}
+{#                        <span>07/03/2016 22:13</span>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <form>#}
+{#                    <div class="row add-message">#}
+{#                        <textarea rows="4" placeholder="Write a message..."></textarea>#}
+{#                        <button>Add message</button>#}
+{#                    </div>#}
+{#                </form>#}
+{#            </div>#}
+{#            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3">#}
+{#                <p>SOME TEXT ORE PHOTO</p>#}
+{#                <p>does not matter</p>#}
+{#                <p>some advertising</p>#}
+{#                <p>anti facebook, but such as facebook ))</p>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{% endblock portal_content %}

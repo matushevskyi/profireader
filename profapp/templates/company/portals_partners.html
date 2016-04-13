@@ -15,18 +15,19 @@
     <script>
     module.controller('portals_partners', function ($scope, $ok, $sce)  {
         angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portals_partners');
+        $scope.$$translate = {{ translates('portals_partners')|safe }};
         $scope.url_portals_partners = '{{ url_for('portal.portals_partners', company_id=company.id)}}';
         $scope.company_id = '{{ company.id|safe }}';
         $scope.url_search_for_portal = function () {
                 return ( '/portal/search_for_portal_to_join/' );
             };
+        $scope.url_change_status = {{ raw_url_for('portal.portals_partners_change_status')|safe }};
         $scope.url_join = {{ raw_url_for('portal.apply_company')|safe }};
         $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
         $scope.selectedPortal_name = '';
         $scope.selectedPortal = null;
         $scope.selectedPortal_sending = false;
         $scope.user_right = {{ rights_user_in|safe }}
-
 
         {% raw %}
 
@@ -63,35 +64,45 @@
                 $scope.selectedPortal_sending = false;
             }) : add_message('Sorry!!!You haven\'t got  appropriate rights!', 'danger', 8000)
         };
-        $scope.sendData = function (grid_data, callback) {
-            return $ok($scope.url_portals_partners, grid_data, callback);
-            };
+
+        $scope.grid_action = function (id, action, row, column_name) {
+            if(row.actions[action] == true){
+                return $ok($scope.url_change_status({partner_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action, who:row.who,company_id:$scope.company_id}, function(resp){}).finally(function () {
+                    $scope.gridApi.grid.setGridData();
+                })
+            }else{
+                add_message(row.actions[action], 'danger', 3000)
+            }
+        };
 
         $scope.portal_link = function(link){
             return 'http://' + link;
         };
 
         $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                        loadGridData: $scope.sendData,
+                        urlLoadGridData: $scope.url_portals_partners,
                         columnDefs: [
                             {
                                 name: 'portal.name', type: 'link',
                                 href: 'portal_link(row.entity.portal.host)', img:'portal.logo_file_id', link: true
                             }, {
-                                name: 'company.name', type: 'link',
-                                href: 'url_company_profile({company_id: row.entity.company.id})',img:"company.logo_file_id"
+                                name: 'portal.own_company.name', type: 'link',
+                                href: 'url_company_profile({company_id: row.entity.portal.own_company.id})',img:"portal.own_company.logo_file_id"
                             }, {
-                                name: 'status', width: '10%', afilter: {type: 'input'}
+                                name: 'status', width: '20%', filter: {type: 'multi_select',default_selected:true} //we can default select all and deselect that we need, 'exception' can be string or array of string
                             }, {
-                                name: 'rights', width: '300', type: 'icons', afilter: {type: 'input'}}
+                                name: 'rights', width: '200', type: 'icons', afilter: {type: 'input'}},
+                            {
+                                name:'actions', type: 'actions', onclick: 'grid_action'}
                         ]
                     });
+        console.log($scope)
         {% endraw %}
     })
     </script>
 
     {% raw %}
-       <div ng-controller="portals_partners">
+       <div ng-controller="portals_partners" ng-cloak>
        <h3> {{ _('Join to portal') }} </h3>
             <input pr-user-rights="user_right" typeahead-on-select="onSelect($item, $model, $label)"
                    uib-typeahead-template-url="typeaheadTemplate.html"
@@ -105,7 +116,11 @@
             </button>
             <i ng-show="loadingPortals" class="glyphicon glyphicon-refresh"></i>
 
-        <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1"></div>
+        <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+              <i class="fa fa-spin fa-spinner"></i><div>{{ _('Data Loading...') }}</div>
+            </div>
+        </div>
         </div>
     {% endraw %}
 {% endblock portal_content %}

@@ -3,166 +3,279 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_articles.html' %}
+    {#    {% include '_ruslan/partials/_header_files_crop.html' %}#}
 {% endblock head %}
-
-{% block portal_base %}
-    {% include 'partials/portal_base_Profireader_auth_user.html' %}
-{% endblock portal_base %}
 
 {% block portal_content %}
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
     {% from 'macros.html' import scripts %}
-    {{ scripts(names=['croper']) }}
+    {{ scripts(names=['cropper']) }}
     <script>
-        module.controller('CompanyProfile', ['$scope', function ($scope) {
+        module.controller('CompanyProfile', function ($scope, $timeout) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');
-            $scope.user = {{ g.user_dict|tojson|safe }};
-            $scope.$$translate = {{ translates('CompanyProfile')|safe }};
-            $scope.company = {{ company.get_client_side_dict()|tojson|safe }};
-            $scope.url_back = {{ raw_url_for('company.show')|safe }};
+            $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
+            $scope.$$translate = {{translates('CompanyProfile') | safe}};
+            $scope.cropper_for_copmany = true;
+            $scope.user_have_company = true;
+            {#            $scope.company = {{company.get_client_side_dict() | tojson | safe}};#}
+
+            $scope.url_back = {{raw_url_for('company.companies') | safe}};
+            $scope.url_portal_profile = {{raw_url_for('portal.profile') | safe}};
+
             $scope.data = {};
-            $scope.rights_user_in_company = {{ rights_user_in_company|tojson|safe }};
-            $scope.edit = false;
+            $scope.rights_user_in_company = {{rights_user_in_company | tojson | safe}};
+
+            $scope.editing = false;
 
             $scope.go_to_portal = function (host) {
                 window.location.href = 'http://' + host;
             };
 
-            $scope.change = function () {
-                $scope.edit = $scope.rights_user_in_company['COMPANY_EDIT_PROFILE'] ? true : false;
-                $scope.save = true
+            $scope.portal_create = function (company_id) {
+                window.location.href =
+                        $scope.url_portal_profile({'create_or_update': 'create', 'company_id': company_id});
+            };
+
+            $scope.portal_update = function (company_id, portal_id) {
+                window.location.href =
+                        $scope.url_portal_profile({
+                            'create_or_update': 'update', 'company_id': company_id,
+                            'portal_id': portal_id
+                        });
+            };
+
+
+            $scope.edit = function () {
+                $scope.editing = $scope.can_edit;
             };
 
             $scope.afterSave = function (resp, deff) {
                 if (resp && !$scope.data.id) {
-                    window.location.href = '{{ url_for('company.show') |safe }}';
+                    window.location.href = '{{ url_for('company.companies') |safe }}';
                 }
-                $scope.edit = false;
-                $scope.save = false;
+                $scope.editing = false;
                 deff(resp);
-                $scope.company = $scope.data_saved;
+                $scope.data = resp
             };
 
             $scope.afterLoad = function (resp, deff) {
-                $scope.edit_rights = $scope.rights_user_in_company['COMPANY_EDIT_PROFILE']
+                $scope.can_edit = resp['actions']['edit'];
+                $scope.editing = resp.id ? false : true;
                 deff(resp);
-                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
+//                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
             };
-
-
-        }]);
+            //company value
+            {#            $scope.company_name = {{data.get_client_side_dict().name | tojson | safe}};#}
+            {#            $scope.company_country = {{data.get_client_side_dict().country | tojson | safe}};#}
+            {#            $scope.company_city = {{data.get_client_side_dict().city | tojson | safe}};#}
+            {#            $scope.company_postcode = {{ data.get_client_side_dict().postcode | tojson | safe }};#}
+            {#            $scope.company_address = {{ data.get_client_side_dict().address | tojson | safe }};#}
+            {#            $scope.company_phone = {{ data.get_client_side_dict().phone | tojson | safe  }};#}
+            {#            $scope.company_phone2 = {{ data.get_client_side_dict().phone2 | tojson | safe  }};#}
+            {#            $scope.company_email = {{ data.get_client_side_dict().email | tojson | safe  }};#}
+            {#            $scope.company_lat = {{ data.get_client_side_dict().lat | tojson | safe }};#}
+            {#            $scope.company_lon = {{ data.get_client_side_dict().lon | tojson | safe }};#}
+        });
     </script>
     {% raw %}
-    <div ng-controller="CompanyProfile">
+    <div ng-controller="CompanyProfile" ng-cloak>
         <div class="container list-form" af
              af-after-save="afterSave"
              af-after-load="afterLoad"
              ng-model="data">
-            <div class="row company">
-                <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12 image-company-profile">
-
-                    <img pr-image="company.logo_file_id" alt="image" ng-show="!edit">
-                    <div style="width: 400px;" ng-if="edit">
-                        <div ng-model="data.image" pr-cropper="cropper" pr-company-id="{{ company.id }}"></div>
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 edit-company">
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <div ng-if="data.id">
+                        <button class="btn btn-default go-portal pull-right border-radius" type="button"
+                                ng-if="data.own_portal" ng-click="portal_update(data.id, data.own_portal.id)">
+                            {{_('Portal profile') }}
+                        </button>
+                        <button class="btn btn-default go-portal pull-right border-radius" type="button"
+                                ng-if="!data.own_portal" ng-click="portal_create(data.id)">{{
+                            _('Launch portal') }}
+                        </button>
+                        <button ng-if="editing" class="btn btn-default save-profile pull-right border-radius"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save profile') }}
+                        </button>
+                        <button class="btn btn-default edit-profile pull-right border-radius" type="button"
+                                ng-click="edit()" ng-if="can_edit && !editing">{{ _('Edit profile') }}
+                        </button>
+                    </div>
+                    <div ng-if="!data.id">
+                        <button class="btn btn-default save-profile pull-right border-radius"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
+                        </button>
                     </div>
                 </div>
 
-                <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12 edit-company">
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                        <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                ng-show="company.own_portal" ng-click="go_to_portal(company.own_portal.host)">{{
-                            _('Portal') }}
-                        </button>
-                        <button ng-show="save" class="btn btn-default save-profile pull-right border-radius"
-                                type="button" ng-click="$af.save(data)"
-                                ng-disabled="!$af.isActionAllowed(data, 'save') "
-                        >{{ _('Save profile') }}
-                        </button>
-                        <button class="btn btn-default edit-profile pull-right border-radius" type="button"
-                                ng-click="change()" ng-if="edit_rights">{{ _('Edit profile') }}
-                        </button>
+                <div class="row company">
+                    <div class="col-lg-5 col-md-5 col-sm-7 col-xs-12 image-company-profile">
+
+                        <!-- TODO: MY by OZ: 400x300 -> some class -->
+                        <img ng-show="!editing" style="width: 400px; height: 300px; position: relative"
+                             pr-image="data.logo_file_id" alt="image">
+
+                        <div ng-if="editing">
+                            <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
+                        </div>
                     </div>
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                        <ul class="edit-block" ng-show="!edit">
-                            <li ng-show="company.name"><h3>{{ company.name }}</h3></li>
-                            <li ng-show="company.country">Country: {{ company.country }}</li>
-                            <li ng-show="company.region">Region: {{ company.region }}</li>
-                            <li ng-show="company.address">Address: {{ company.address }}</li>
-                            <li ng-show="company.phone">Phone: {{ company.phone }}</li>
-                            <li ng-show="company.phone2">Fax: {{ company.phone2 }}</li>
-                            <li ng-show="company.email">Email: {{ company.email }}</li>
+
+
+                    <div class="col-lg-7 col-md-7 col-sm-5 col-xs-12">
+                        <ul class="edit-block" ng-if="!editing">
+                            <li ng-show="data.name"><h3>{{ data.name }}</h3></li>
+                            <li ng-show="data.country">{{ _('Country:') }} {{ data.country }}</li>
+                            <li ng-show="data.region">{{ _('Region:') }} {{ data.region }}</li>
+                            <li ng-show="data.city">{{ _('City:') }} {{ data.city }}</li>
+                            <li ng-show="data.postcode">{{ _('Postcode:') }} {{ data.postcode }}</li>
+                            <li ng-show="data.address">{{ _('Address:') }} {{ data.address }}</li>
+                            <li ng-show="data.phone">{{ _('Phone:') }} {{ data.phone }}</li>
+                            <li ng-show="data.phone2">{{ _('Fax:') }} {{ data.phone2 }}</li>
+                            <li ng-show="data.email">{{ _('Email:') }} {{ data.email }}</li>
                             <li ng-show="">Long??</li>
-                            <li ng-show="company.own_portal.host">Portal: {{ company.own_portal.host }}</li>
+                            <li ng-show="data.own_portal.host">{{ _('Portal:') }} {{ data.own_portal.host }}</li>
                         </ul>
-                        <div class="edit-block" ng-if="edit">
-                            <div class="col-lg-2">Name:</div>
-                            <div class="col-lg-10 edit-data">
-                                <input type="text" class="form-control border-radius" value="{{ company.name }}"
-                                       id="basic-url" aria-describedby="basic-addon3" ng-model="data.name">
-                            </div>
-                            <div class="col-lg-2">Country:</div>
-                            <div class="col-lg-10 edit-data">
-                                <input type="text" class="form-control border-radius" value="{{ company.country }}"
-                                       id="basic-url" aria-describedby="basic-addon3" ng-model="data.country">
-                            </div>
-                            <div class="col-lg-2">Region:</div>
-                            <div class="col-lg-10 edit-data">
-                                <input type="text" class="form-control border-radius" value="{{ company.region }}"
-                                       id="basic-url" aria-describedby="basic-addon3" ng-model="data.region">
-                            </div>
-                            <div class="col-lg-2">Address:</div>
-                            <div class="col-lg-10 edit-data">
-                                <input type="text" class="form-control border-radius" value="{{ company.address }}"
-                                       id="basic-url" aria-describedby="basic-addon3" ng-model="data.address">
-                            </div>
-                            <div class="col-lg-2">Phone:</div>
-                            <div class="col-lg-10 edit-data">
-                                <input type="text" class="form-control border-radius" value="{{ company.phone }}"
-                                       id="basic-url" aria-describedby="basic-addon3" ng-model="data.phone">
-                            </div>
-                            <div class="col-lg-2">Fax:</div>
-                            <div class="col-lg-10 edit-data">
-                                <input type="text" class="form-control border-radius" value="{{ company.phone2 }}"
-                                       id="basic-url" aria-describedby="basic-addon3" ng-model="data.phone2">
-                            </div>
-                            <div class="col-lg-2">Email:</div>
-                            <div class="col-lg-10 edit-data">
-                                <input type=text class="form-control border-radius" value="{{ company.email }}"
-                                       id="basic-url" aria-describedby="basic-addon3" ng-model="data.email">
-                            </div>
-                            <div class="col-lg-3">Lang and long:</div>
-                            <div class="col-lg-4 edit-data">
-                                <input type="text" class="form-control border-radius" value="{{ company.lat }}"
-                                       id="basic-url" aria-describedby="basic-addon3" ng-model="data.lat">
-                            </div>
-                            <div class="col-lg-4 edit-data">
-                                <input type="text" class="form-control border-radius" value="{{ company.lon }}"
-                                       id="basic-url" aria-describedby="basic-addon3" ng-model="data.lon">
-                            </div>
+                        <div class="edit-block" ng-if="editing">
+
+                            <form oles_name="formCompany">
+
+                                <div class="col-lg-2">{{ _('Name:') }}</div>
+                                <div class="col-lg-10 edit-data">
+                                    <input pr-validation-answer="data_validation:name" oles_type="text"
+                                           class="form-control border-radius"
+                                           id="basic-url" aria-describedby="basic-addon3" ng-model="data.name"
+                                           oles_name="company_name" oles_oles_ng-pattern="/[\wа-яёі']{3}/">
+                                    <div ng-if=" 0 && formCompany.company_name.$error.pattern" class="error-input">{{
+                                        _('The
+                                        company name should be longer!') }}
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-2">{{ _('Country:') }}</div>
+                                <div class="col-lg-10 edit-data">
+                                    <input pr-validation-answer="data_validation:country" oles_type="text"
+                                           class="form-control border-radius"
+                                           id="basic-url" aria-describedby="basic-addon3" ng-model="data.country"
+                                           oles_name="company_country" oles_ng-pattern="/[\wа-яёі]{2}/">
+                                    <div ng-if=" 0 && formCompany.company_country.$error.pattern" class="error-input">
+                                        {{ _('The country name should be longer!') }}
+                                    </div>
+                                </div>
+                                <div class="col-lg-2">{{ _('Region:') }}</div>
+                                <div class="col-lg-10 edit-data">
+                                    <input pr-validation-answer="data_validation:region" oles_type="text"
+                                           class="form-control border-radius"
+                                           id="basic-url" aria-describedby="basic-addon3" ng-model="data.region">
+                                </div>
+                                <div class="col-lg-2">{{ _('City:') }}</div>
+                                <div class="col-lg-10 edit-data">
+                                    <input pr-validation-answer="data_validation:city" oles_type="text"
+                                           class="form-control border-radius" oles_name="company_city"
+                                           oles_ng-pattern="/[\wа-яёі]{2}/"
+                                           id="basic-url" aria-describedby="basic-addon3" ng-model="data.city">
+                                    <div ng-if=" 0 && formCompany.company_city.$error.pattern" class="error-input">{{
+                                        _('The
+                                        city name should be longer!') }}
+                                    </div>
+
+                                </div>
+                                <div class="col-lg-2">{{ _('Postcode:') }}</div>
+                                <div class="col-lg-10 edit-data">
+                                    <input pr-validation-answer="data_validation:postcode" oles_type="number"
+                                           class="form-control border-radius" oles_ng-pattern="/[0-9]{3}/"
+                                           id="basic-url" aria-describedby="basic-addon3" ng-model="data.postcode"
+                                           oles_name="company_postcode">
+                                    <div ng-if=" 0 && formCompany.company_postcode.$error.pattern" class="error-input">
+                                        {{ _('The postcode should be longer!') }}
+                                    </div>
+
+                                </div>
+                                <div class="col-lg-2">{{ _('Address:') }}</div>
+                                <div class="col-lg-10 edit-data">
+                                    <input pr-validation-answer="data_validation:address" oles_type="text"
+                                           class="form-control border-radius" oles_ng-pattern="/[\wа-яёі\0-9]{4}/"
+                                           id="basic-url" aria-describedby="basic-addon3" ng-model="data.address"
+                                           oles_name="company_address">
+                                    <div ng-if=" 0 && formCompany.company_address.$error.pattern" class="error-input">
+                                        {{ _('The address should be longer!') }}
+                                    </div>
+
+                                </div>
+                                <div class="col-lg-2">{{ _('Phone:') }}</div>
+                                <div class="col-lg-10 edit-data">
+                                    <input pr-validation-answer="data_validation:phone" oles_type="number"
+                                           ng-maxlength="12"
+                                           class="form-control border-radius" oles_ng-pattern="/[0-9]{6}/"
+                                           placeholder="+38(098)7654321" id="basic-url" aria-describedby="basic-addon3"
+                                           ng-model="data.phone" oles_name="company_phone">
+                                    <div ng-if=" 0 && formCompany.company_phone.$error.pattern" class="error-input">{{
+                                        _('The
+                                        phone should be longer!') }}
+                                    </div>
+
+                                </div>
+                                <div class="col-lg-2">{{ _('Fax:') }}</div>
+                                <div class="col-lg-10 edit-data">
+                                    <input pr-validation-answer="data_validation:phone2" oles_type="number"
+                                           class="form-control border-radius" oles_name="company_phone2"
+                                           id="basic-url" aria-describedby="basic-addon3" ng-model="data.phone2">
+                                </div>
+                                <div class="col-lg-2">{{ _('Email:') }}</div>
+                                <div class="col-lg-10 edit-data">
+                                    <input pr-validation-answer="data_validation:email" oles_type="text"
+                                           class="form-control border-radius"
+                                           oles_ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/"
+                                           id="basic-url" aria-describedby="basic-addon3" ng-model="data.email"
+                                           oles_name="company_email">
+                                    <div ng-if=" 0 && formCompany.company_email.$error.pattern" class="error-input">{{
+                                        _('The
+                                        email not validate!') }}
+                                    </div>
+
+                                </div>
+                                <div class="col-lg-3">{{ _('Lang and Long:') }}</div>
+                                <div class="col-lg-4 edit-data">
+                                    <input pr-validation-answer="data_validation:lat" oles_type="number"
+                                           class="form-control border-radius"
+                                           id="basic-url" aria-describedby="basic-addon3" ng-model="data.lat"
+                                           oles_name="company_lat">
+                                </div>
+                                <div class="col-lg-4 edit-data">
+                                    <input pr-validation-answer="data_validation:lon" oles_type="number"
+                                           class="form-control border-radius"
+                                           id="basic-url" aria-describedby="basic-addon3" ng-model="data.lon"
+                                           oles_name="company_lon">
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
             </div>
-            <div ng-if="edit">
-                <h3>Short description:</h3>
+            <div ng-if="editing">
+                <h3>{{ _('Short description:') }}</h3>
                 <textarea ui-tinymce="tinymceImageOptions" ng-model="data.short_description" ng-if="edit"></textarea>
-                <h3>About company:</h3>
-                <textarea ng-if="edit" ui-tinymce="tinymceImageOptions" ng-model="data.about"></textarea>
+
+                <h3>{{ _('About company:') }}</h3>
+                <textarea ng-if="editing" ui-tinymce="tinymceImageOptions" ng-model="data.about"></textarea>
             </div>
-            <div class="row" ng-if="!edit && company.short_description">
+            </form>
+            <div class="row" ng-if="!editing && data.short_description">
                 <div class="col-lg-12 about-company-text">
-                    <h3>Short description:</h3>
-                    <p ng-bind-html="company.short_description"></p>
+                    <h3>{{ _('Short description:') }}</h3>
+                    <p ng-bind-html="data.short_description"></p>
                 </div>
 
             </div>
 
-            <div class="row" ng-if="!edit && company.about">
+            <div class="row" ng-if="!editing && data.about">
                 <div class="col-lg-12">
-                    <h3>About company:</h3>
-                    <p ng-bind-html="company.about"></p>
+                    <h3>{{ _('About company:') }}</h3>
+
+                    <p ng-bind-html="data.about"></p>
                 </div>
             </div>
         </div>

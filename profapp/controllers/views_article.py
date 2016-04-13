@@ -7,13 +7,12 @@ from .blueprints_declaration import article_bp
 from .request_wrapers import ok, tos_required
 from .pagination import pagination
 from config import Config
-from .views_file import crop_image, update_croped_image
+from .views_file import crop_image
 from ..models.files import ImageCroped
 from ..models.company import Company, UserCompany
 
 from utils.db_utils import db
 from sqlalchemy.orm.exc import NoResultFound
-from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from sqlalchemy.sql import expression, and_
 from sqlalchemy import text
 import time
@@ -60,59 +59,34 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
     elif publication_id:  # updating portal version
         articleVersion = ArticlePortalDivision.get(publication_id)
         portal_division_id = articleVersion.portal_division_id
-
         article_tag_names = articleVersion.tags
         available_tags = PortalDivision.get(portal_division_id).portal_division_tags
         available_tag_names = list(map(lambda x: getattr(x, 'name', ''), available_tags))
 
     if action == 'load':
         article_dict = articleVersion.get_client_side_dict(more_fields='long|company')
-
+        article_dict['image'] = articleVersion.get_image_client_side_dict()
         if publication_id:
             article_dict = dict(list(article_dict.items()) + [('tags', article_tag_names)])
-
-        image_dict = {'ratio': Config.IMAGE_EDITOR_RATIO, 'coordinates': None,
-                      'image_file_id': article_dict['image_file_id'],
-                      'no_image_url': g.fileUrl(FOLDER_AND_FILE.no_article_image())
-                      }
-        # article_dict['long'] = '<table><tr><td><em>cell</em> 1</td><td><strong>cell<strong> 2</td></tr></table>'
-        # TODO: VK by OZ: this code should be moved to model
-        try:
-            if article_dict.get('image_file_id'):
-                image_dict['image_file_id'], image_dict['coordinates'] = ImageCroped. \
-                    get_coordinates_and_original_img(article_dict.get('image_file_id'))
-            else:
-                image_dict['image_file_id'] = None
-        except Exception as e:
-            pass
-
         return {'article': article_dict,
-                'image': image_dict,
                 'portal_division': portal_division_dict(articleVersion, available_tag_names)}
     else:
-        parameters = g.filter_json(json, 'article.title|subtitle|short|long|keywords, image.*')
+        parameters = g.filter_json(json, 'article.title|subtitle|short|long|keywords')
         articleVersion.attr(parameters['article'])
-
         if action == 'validate':
             articleVersion.detach()
             return articleVersion.validate(articleVersion.id is not None)
         else:
-            image_id = parameters['image'].get('image_file_id')
-            # TODO: VK by OZ: this code dont work if ArticlePortalDivision updated
-            if image_id:
-                articleVersion.image_file_id = crop_image(image_id, parameters['image']['coordinates'])
-            else:
-                articleVersion.image_file_id = None
-
             if type(articleVersion) == ArticlePortalDivision:
                 tag_names = json['article']['tags']
                 articleVersion.manage_article_tags(tag_names)
-
-            articleVersion.save()
+            article_dict = articleVersion.set_image_client_side_dict(
+                json['article']['image']).save().get_client_side_dict(more_fields='long|company')
             if publication_id:
                 articleVersion.insert_after(json['portal_division']['insert_after'],
                                             articleVersion.position_unique_filter())
-            return {'article': articleVersion.save().get_client_side_dict(more_fields='long'), 'image': json['image'],
+            article_dict['image'] = articleVersion.get_image_client_side_dict()
+            return {'article': article_dict,
                     'portal_division': portal_division_dict(articleVersion)}
 
 
@@ -128,7 +102,7 @@ def material_details(material_id):
 
 def get_portal_dict_for_material(portal, company, material=None, publication=None):
     ret = portal.get_client_side_dict(
-            fields='id, name, host, logo_file_id, divisions.id|name|portal_division_type_id, own_company.name|id|logo_file_id')
+        fields='id, name, host, logo_file_id, divisions.id|name|portal_division_type_id, own_company.name|id|logo_file_id')
 
     # ret['rights'] = MemberCompanyPortal.get(company_id=company_id, portal_id=ret['id']).rights
     ret['divisions'] = PRBase.get_ordered_dict([d for d in ret['divisions'] if (
@@ -136,14 +110,14 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
 
     if material:
         publication_in_portal = db(ArticlePortalDivision).filter_by(article_company_id=material.id).filter(
-                ArticlePortalDivision.portal_division_id.in_(
-                        [div_id for div_id, div in ret['divisions'].items()])).first()
+            ArticlePortalDivision.portal_division_id.in_(
+                [div_id for div_id, div in ret['divisions'].items()])).first()
     else:
         publication_in_portal = publication
 
     if publication_in_portal:
         ret['publication'] = publication_in_portal.get_client_side_dict(
-                'id,position,title,status,visibility,portal_division_id,publishing_tm')
+            'id,position,title,status,visibility,portal_division_id,publishing_tm')
         ret['publication']['division'] = ret['divisions'][ret['publication']['portal_division_id']]
         ret['publication']['counts'] = '0/0/0/0'
 
@@ -156,6 +130,9 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
         if canbesubmited is True:
             membership = MemberCompanyPortal.get(portal_id=portal.id, company_id=company.id)
             canbesubmited = membership.has_rights(MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH)
+            if not canbesubmited is True:
+                canbesubmited = "Membership need right `{}` to perform action `{}`".format(
+                    MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH, ArticleCompany.ACTIONS['SUBMIT'])
         ret['actions'] = {ArticleCompany.ACTIONS['SUBMIT']: canbesubmited}
 
     return ret
@@ -218,8 +195,8 @@ def submit_publish(json, article_action):
     else:
 
         publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
-        publication.publishing_tm = PRBase.parseDate(json['publication'].get('publishing_tm'))
-        publication.event_tm = PRBase.parseDate(json['publication'].get('event_tm'))
+        publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
+        publication.event_tm = PRBase.parse_timestamp(json['publication'].get('event_tm'))
         if 'also_publish' in json and json['also_publish']:
             publication.status = ArticlePortalDivision.STATUSES['PUBLISHED']
         else:
@@ -321,23 +298,23 @@ def details_load(json, article_id):
 #     return {'article': a.save().get_client_side_dict()}
 
 
-@article_bp.route('/details_reader/<string:article_portal_division_id>')
-@tos_required
-def details_reader(article_portal_division_id):
-    article = ArticlePortalDivision.get(article_portal_division_id)
-    article.add_recently_read_articles_to_session()
-    article_dict = article.get_client_side_dict(fields='id, title,short, cr_tm, md_tm, '
-                                                       'publishing_tm, keywords, status, long, image_file_id,'
-                                                       'division.name, division.portal.id,'
-                                                       'company.name|id')
-    article_dict['tags'] = article.tags
-    ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
-    favorite = article.check_favorite_status(user_id=g.user.id)
-
-    return render_template('partials/reader/reader_details.html',
-                           article=article_dict,
-                           favorite=favorite
-                           )
+# @article_bp.route('/details_reader/<string:article_portal_division_id>')
+# @tos_required
+# def details_reader(article_portal_division_id):
+#     article = ArticlePortalDivision.get(article_portal_division_id)
+#     article.add_recently_read_articles_to_session()
+#     article_dict = article.get_client_side_dict(fields='id, title,short, cr_tm, md_tm, '
+#                                                        'publishing_tm, keywords, status, long, image_file_id,'
+#                                                        'division.name, division.portal.id,'
+#                                                        'company.name|id')
+#     article_dict['tags'] = article.tags
+#     ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
+#     favorite = article.check_favorite_status(user_id=g.user.id)
+#
+#     return render_template('partials/reader/reader_details.html',
+#                            article=article_dict,
+#                            favorite=favorite
+#                            )
 
 
 @article_bp.route('/list_reader')
@@ -376,10 +353,9 @@ def list_reader(page=1):
                            favorite=favorite
                            )
 
-
-@article_bp.route('add_to_favorite/', methods=['POST'])
-def add_delete_favorite():
-    favorite = json.loads(request.form.get('favorite'))
-    article_portal_division_id = request.form.get('article_portal_division_id')
-    ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, favorite)
-    return jsonify({'favorite': favorite})
+# @article_bp.route('add_to_favorite/', methods=['POST'])
+# def add_delete_favorite():
+#     favorite = json.loads(request.form.get('favorite'))
+#     article_portal_division_id = request.form.get('article_portal_division_id')
+#     ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, favorite)
+#     return jsonify({'favorite': favorite})

@@ -21,6 +21,7 @@
                 parent_id: model && model.parent_id || '',
                 recursive: false,
                 url: model && model.url || '',
+                file_url: model && model.file_url || '',
                 sizeKb: function() {
                     return Math.round(this.size / 1024, 1);
                 },
@@ -274,7 +275,12 @@
             self.inprocess = true;
             self.error = '';
             return $http.post(fileManagerConfig.removeUrl+self.model.id, data).success(function(data) {
-                self.defineCallback(data, success, error);
+                if(data.data.error){
+                    self.error = data.data.error
+                }else{
+                   self.defineCallback(data, success, error);
+                }
+
             }).error(function(data) {
                 self.error = data.result && data.result.error ?
                     data.result.error:

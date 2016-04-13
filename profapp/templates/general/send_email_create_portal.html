@@ -25,10 +25,10 @@
         };
 
     </script>
-    <div id="send_email_wrapper">
-        <label for="send_message_text">{{ _('Send message to profireader.Create Portal') }}</label></br>
+    <div id="send_email_wrapper" class="block-resp" ng-cloak>
+        <label for="send_message_text">{{ _('Send message to profireader') }}</label></br>
 <textarea id='send_message_text'
-          style="width: 500px; height: 200px">{{ _('Send message to profireader. Default input text') }}
+          style="width: 500px; height: 200px">{{ _('Default input text') }}
     </textarea>
         </br>
         <input type="submit" placeholder="{{ _('Send email') }}" onclick="send_email()">

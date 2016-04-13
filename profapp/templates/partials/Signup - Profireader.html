@@ -1,16 +1,41 @@
-<h3 ng-controller="UserLoginController">{{ '{{' }}_('or Simple registration'){{ '}}' }}</h3>
+{# <script>#}
+{#      $(function () {#}
+{#        $('#register-form-profirider').on('submit', function (e) {#}
+{#          e.preventDefault();#}
+{#          $.ajax({#}
+{#            type: 'post',#}
+{#            url: '{{ url_for('auth.signup') }}',#}
+{#            data: $('#register-form-profirider').serialize(),#}
+{#            success: function (data) {#}
+{#                console.log(data);#}
+{#            }#}
+{#          });#}
+{#        });#}
+{#      });#}
+{#    </script>#}
+<h3 ng-controller="UserLoginController">{{ _('or Simple registration') }}</h3>
 
-<div class="simple-register">
-    <form style="background: transparent; border: none;" action="{{ url_for('auth.signup') }}" method="POST"/>
-    {{ signup_form.email(placeholder='yourname@email.com', size="30", maxlength="100", type="email") }} <br/>
-    {{ signup_form.displayname(placeholder="{{_('Name (your public display name)')}}", size="30", maxlength="100", type="text") }}<br/>
-    {{ signup_form.password(placeholder="{{_('Password')}}", value="", type="password") }} <br/>
-    {{ signup_form.password2(placeholder="{{_('Confirm password')}}", value="", type="password") }} <br/>
-    {{ signup_form.submit_register(type="submit", value="{{_('Sign Up')}}") }} {# <br/>#}
-    <!-- <input name="submit" type="submit" value="Sign Up" /> <br/> -->
-    {{ signup_form.csrf_token }}
-    </form>
-</div>
+<form name="formLogin" class="register-form-profireader" action="{{ url_for('auth.signup') }}" method="post">
+    <input pr-test="RegEmail" class="form-control" type="email" placeholder="email" required name="email" ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/">
+        <div ng-show="formLogin.email.$error.pattern" class="error-input">The email not validate!</div>
+    <input pr-test="RegName" class="form-control" type="text" placeholder="display name" required name="display_name">
+    <input pr-test="RegPass" class="form-control" type="password" placeholder="password" required name="password">
+    <input pr-test="RegRepeatPass" class="form-control" type="password" placeholder="repeat password" required
+           name="password1">
+    <input pr-test="RegSubmit" class="sabmit-form" type="submit">
+</form>
+
+{#<div class="simple-register">#}
+{#    <form style="background: transparent; border: none;" action="{{ url_for('auth.signup') }}" method="POST"/>#}
+{#    {{ signup_form.email(placeholder='yourname@email.com', size="30", maxlength="100", type="email") }} <br/>#}
+{#    {{ signup_form.displayname(placeholder="{{_('Name (your public display name)')}}", size="30", maxlength="100", type="text") }}<br/>#}
+{#    {{ signup_form.password(placeholder="{{_('Password')}}", value="", type="password") }} <br/>#}
+{#    {{ signup_form.password2(placeholder="{{_('Confirm password')}}", value="", type="password") }} <br/>#}
+{#    {{ signup_form.submit_register(type="submit", value="{{_('Sign Up')}}") }} {# <br/>#}
+{#    <!-- <input name="submit" type="submit" value="Sign Up" /> <br/> -->#}
+{#    {{ signup_form.csrf_token }}#}
+{#    </form>#}
+{#</div>#}
 
 {#<form action="{{ url_for('auth.signup') }}" method="POST" />#}
 {#            {{ form.email(placeholder='yourname@email.com', size="30", maxlength="100", type="email") }} <br/>#}

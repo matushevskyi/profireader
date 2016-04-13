@@ -65,7 +65,6 @@ def check_rights(*rights_business_rule):
 
     return decorator
 
-
 def convert_col_to_arrays(*args):
     pass
 
@@ -92,9 +91,9 @@ def need_we_column(name, arr, is_relationship=False):
 def tos_required(func):
     @wraps(func)
     def decorated_view(*args, **kwargs):
-        # if not g.user or not g.user.tos:
-        #     flash('You have not accept licence and terms')
-        #     return redirect(url_for('general.index'))
+        if not g.user or not g.user.tos:
+            # flash('You have not accept licence and terms')
+            return redirect(url_for('general.index'))
         return func(*args, **kwargs)
     return decorated_view
 # def object_to_dict(obj, *args, prefix=''):

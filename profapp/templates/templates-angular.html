@@ -37,11 +37,11 @@
             portal: {id: portal_id},
             company: {id: company_id}
         };
-        $scope.data[(action === 'SUBMIT') ? 'material' : 'publication'] = {id: material_or_publication_id}
+        $scope.data[(action === 'SUBMIT') ? 'material' : 'publication'] = {id: material_or_publication_id};
 
         $scope.afterSave = function (resp, defcallback) {
             $uibModalInstance.close(resp)
-        }
+        };
 
         $scope.amidLoad = function (resp, defaultcallback) {
             if (resp.publication.publishing_tm)
@@ -68,8 +68,8 @@
     <div af ng-model="data" af-url="{{ url_submit_to_portal({'article_action': action}) }}"
          af-after-save="afterSave"
          af-amid-load="amidLoad"
-         af-watch="data.publication">
-        <div class="modal-header">
+         af-watch="data.publication" ng-cloak>
+    <div class="modal-header">
             <h3 class="modal-title">{{ _(action + ' ' + object_name + ' at portal') }}</h3>
         </div>
         <div class="modal-body">
@@ -79,23 +79,25 @@
                 <br/>
                 {{ _('Select portal division') }}<span
                     af-validation-answer="data_validation:portal_division_id"></span><br/>
-                <div ng-repeat="division in data.portal.divisions"><label><input
-                        name="material_details_publish_dialog_division"
-                        ng-value="division.id" ng-model="data.publication.portal_division_id"
-                        type="radio"> {{ division.name }}</label></div>
-
-                {{ _('Select publication date') }}<span
-                    af-validation-answer="data_validation:publishing_tm"></span><br/>
-                <div pr-datepicker ng-model="data.publication.publishing_tm"></div>
+                <div ng-repeat="division in data.portal.divisions">
+                    <label>
+                        <input
+                                name="material_details_publish_dialog_division"
+                                ng-value="division.id" ng-model="data.publication.portal_division_id"
+                                type="radio"> {{ division.name }}
+                    </label>
+                </div>
+             {{ _('Select publication date') }}<span af-validation-answer="data_validation:publishing_tm"></span><br/>
+                <input pr-date-time-picker class="form-control" ng-model="data.publication.publishing_tm"/>
                 <div ng-if="is_selection_division_event()">
                     {{ _('Select event date') }}<span af-validation-answer="data_validation:event_tm"></span><br/>
-                    <div pr-datepicker ng-model="data.publication.event_tm"></div>
+                    <input pr-date-time-picker class="form-control" ng-model="data.publication.event_tm"/>
                 </div>
                 <div ng-if="object_name === 'material'">
                     <hr/>
                     <label ng-class="{disabled: !data.can_material_also_be_published}"><input
                             ng-disabled="!data.can_material_also_be_published"
-                            ng-model="$parent.$parent.$parent.also_publish"
+                            ng-model="$parent.$parent.data.also_publish"
                             type="checkbox">&nbsp;{{
                         _('also publish material') }}</label><br/>
                     <div ng-if="!data.can_material_also_be_published">
@@ -112,8 +114,8 @@
         <div class="modal-footer">
             <button ng-if="action === 'SUBMIT'" class="btn btn-primary"
                     ng-disabled="!$af.isActionAllowed(data, 'save')"
-                    type="button" ng-click="$af.save(data)"><span ng-if="!also_publish">{{ _('Do submit') }}</span>
-                <span ng-if="also_publish">{{ _('Do submit & publish') }}</span>
+                    type="button" ng-click="$af.save(data)"><span ng-if="!data.also_publish">{{ _('Do submit') }}</span>
+                <span ng-if="data.also_publish">{{ _('Do submit & publish') }}</span>
             </button>
 
             <button ng-if="action !== 'SUBMIT' " class="btn btn-primary"

@@ -4,11 +4,6 @@
     {{ super() }}
 {% endblock head %}
 
-{% block portal_base %}
-    {% include 'partials/portal_base_Profireader_auth_user.html' %}
-{% endblock portal_base %}
-
-
 {% block content %}
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}
@@ -17,11 +12,13 @@
 
         module.controller('company_edit', ['$scope', '$modal', function ($scope, $modal) {
 
-{#            $scope.details_article = {{ raw_url_for('article.details')|safe }};#}
+            {#            $scope.details_article = {{ raw_url_for('article.details')|safe }};#}
             {% if article_company_id %}#}
-                $scope.save_company = '{{ url_for('company.confirm_add', article_company_id = article_company_id)|safe }}';#}
+            $scope.save_company = '{{ url_for('company.confirm_add', article_company_id = article_company_id)|safe }}';
+            #}
             {% else %}#}
-                $scope.save_company = '{{ url_for('company.confirm_edit')|safe }}';#}
+            $scope.save_company = '{{ url_for('company.confirm_edit')|safe }}';
+            #}
             {% endif %}#}
 
 
@@ -70,51 +67,51 @@
     </script>
     {% raw %}
 
-<div ng-init="loadData(null,{},null,setImageUrl)" ng-controller="company_edit">
+    <div ng-init="loadData(null,{},null,setImageUrl)" ng-controller="company_edit" ng-cloak>
 
-    <form class="edit" enctype="multipart/form-data"
-          action="{{ url_for('company.confirm_edit', company_id=company.id) }}"
-          onsubmit="return AjaxPost()" id="edit" method="post">
-        <h3><p>Edit Company</p></h3>
-        <p>Logo
+        <form class="edit" enctype="multipart/form-data"
+              action="{{ url_for('company.confirm_edit', company_id=company.id) }}"
+              onsubmit="return AjaxPost()" id="edit" method="post">
+            <h3><p>Edit Company</p></h3>
+            <p>Logo
 
-        <div ng-click="chooseImage()"
-             style="float: left; margin-left: 50px; width: 300px; height: 240px; border: 1px solid #aaa;
+            <div ng-click="chooseImage()"
+                 style="float: left; margin-left: 50px; width: 300px; height: 240px; border: 1px solid #aaa;
                      background-size: cover; background-image:url({{ image_file_url }});">
-            {{ _('Select main article image') }}
-        </div>
-        </p>
-        <p>Company name<input type="text" id="name" placeholder="name" name="name"
-                              value="{{ company.name }}"></p>
+                {{ _('Select main article image') }}
+            </div>
+            </p>
+            <p>Company name<input type="text" id="name" placeholder="name" name="name"
+                                  value="{{ company.name }}"></p>
 
-        <p>Country<input type="text" id="country" placeholder="country" name="country"
-                         value="{{ company.country }}"></p>
+            <p>Country<input type="text" id="country" placeholder="country" name="country"
+                             value="{{ company.country }}"></p>
 
-        <p>Region<input type="text" id="region" placeholder="region" name="region"
-                        value="{{ company.region }}"></p>
+            <p>Region<input type="text" id="region" placeholder="region" name="region"
+                            value="{{ company.region }}"></p>
 
-        <p>Adress<input type="text" id="address" placeholder="address" name="address"
-                        value="{{ company.address }}"></p>
+            <p>Adress<input type="text" id="address" placeholder="address" name="address"
+                            value="{{ company.address }}"></p>
 
-        <p>Phone<input type="text" id="phone" placeholder="phone" name="phone"
-                       value="{{ company.phone }}"></p>
+            <p>Phone<input type="text" id="phone" placeholder="phone" name="phone"
+                           value="{{ company.phone }}"></p>
 
-        <p>Fax<input type="text" id="phone2" placeholder="fax" name="phone2"
-                     value="{{ company.phone2 }}"></p>
+            <p>Fax<input type="text" id="phone2" placeholder="fax" name="phone2"
+                         value="{{ company.phone2 }}"></p>
 
-        <p>Email<input type="text" id="email" placeholder="email" name="email"
-                       value="{{ company.email }}"></p>
+            <p>Email<input type="text" id="email" placeholder="email" name="email"
+                           value="{{ company.email }}"></p>
 
-        <p>Short Description<input type="text" id="short_description" placeholder="text"
-                                   name="short_description" value="{{ company.short_description }}">
-        </p>
-        <input type="submit" value="submit">
-    </form>
-    <form action="{{ url_for('company.profile', company_id=company.id) }}" id="cancel">
-        <input type="submit" name="cancel" value="cancel">
-    </form>
+            <p>Short Description<input type="text" id="short_description" placeholder="text"
+                                       name="short_description" value="{{ company.short_description }}">
+            </p>
+            <input type="submit" value="submit">
+        </form>
+        <form action="{{ url_for('company.profile', company_id=company.id) }}" id="cancel">
+            <input type="submit" name="cancel" value="cancel">
+        </form>
 
-</div>
+    </div>
 
     <script type="text/javascript">
 

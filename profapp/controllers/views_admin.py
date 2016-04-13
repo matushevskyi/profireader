@@ -70,8 +70,8 @@ def translations_save(json):
 
 @admin_bp.route('/delete', methods=['POST'])
 @ok
-def delete(json):
-    return TranslateTemplate.delete(json['objects'])
+def delete_translates(json):
+    return TranslateTemplate.delete_translates(json['objects'])
 
 # Greckas ips
 
@@ -88,7 +88,7 @@ def ips_load(json):
     params['sort'] = {}
     params['filter'] = {}
     params['search_text'] = {}
-    print(json)
+
     if json.get('sort'):
         for n in json.get('sort'):
             params['sort'][n] = json.get('sort')[n]

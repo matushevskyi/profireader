@@ -2,7 +2,6 @@ from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Table, Column, Integer, Text, ForeignKey, String, Boolean, or_, and_, text, desc, asc, join
 from sqlalchemy.orm import relationship, backref, make_transient, class_mapper, aliased
 from sqlalchemy.sql import func
-import datetime
 import re
 import sys
 import traceback
@@ -13,16 +12,17 @@ from ..controllers import errors
 from utils.db_utils import db
 from html.parser import HTMLParser
 from ..constants.SEARCH import RELEVANCE
-import math
 from config import Config
 import collections
 from sqlalchemy.sql import expression, functions, update
-from utils.validators import validators
 from sqlalchemy import and_
 import datetime
+import time
 import operator
 from collections import OrderedDict
-from functools import reduce
+import base64
+
+from ..utils import fileUrl, fileID
 
 Base = declarative_base()
 
@@ -209,15 +209,16 @@ class Search(Base):
             joined = db(Search.index, func.min(Search.text).label('text'),
                         func.min(Search.table_name).label('table_name'),
                         index=subquery_search.subquery().c.index).filter(
-                Search.kind.in_(tuple(field_name))).group_by(Search.index)
+                    Search.kind.in_(tuple(field_name))).group_by(Search.index)
             return joined
+
         subquery_search = db(Search.index.label('index'),
                              func.sum(Search.relevance).label('relevance'),
                              func.min(Search.table_name).label('table_name'),
                              func.min(Search.md_tm).label('md_tm'),
                              func.max(Search.position).label('position'),
                              func.max(Search.text).label('text')).filter(
-            or_(*self.__get_search_params(*args))).group_by('index')
+                or_(*self.__get_search_params(*args))).group_by('index')
         if type(ord_by) in (str, list, tuple):
             order = self.__get_order('text', 'text')
             subquery_search = add_joined_search(ord_by)
@@ -230,49 +231,49 @@ class Search(Base):
             subquery_search = subquery_search.order_by(order)
         else:
             subquery_search = subquery_search.order_by(order).order_by(
-                self.__get_order('md_tm', 'md_tm'))
+                    self.__get_order('md_tm', 'md_tm'))
         return subquery_search
 
     def __get_order(self, order_name, field):
         order_name += '+' if self.__desc_asc == 'desc' else '-'
         result = {'text+': lambda field_name: desc(func.max(getattr(Search, field_name, Search.text))),
                   'text-': lambda field_name: asc(func.max(
-                      getattr(Search, field_name, Search.text))),
+                          getattr(Search, field_name, Search.text))),
                   'md_tm+': lambda field_name: desc(func.min(
-                      getattr(Search, field_name, Search.md_tm))),
+                          getattr(Search, field_name, Search.md_tm))),
                   'md_tm-': lambda field_name: asc(func.min(
-                      getattr(Search, field_name, Search.md_tm))),
+                          getattr(Search, field_name, Search.md_tm))),
                   'relevance+': lambda field_name: desc(func.sum(
-                      getattr(Search, field_name, Search.relevance))),
+                          getattr(Search, field_name, Search.relevance))),
                   'relevance-': lambda field_name: asc(func.sum(
-                      getattr(Search, field_name, Search.relevance))),
+                          getattr(Search, field_name, Search.relevance))),
                   'position+': lambda field_name: desc(func.max(
-                      getattr(Search, field_name, Search.position))),
+                          getattr(Search, field_name, Search.position))),
                   'position-': lambda field_name: asc(func.max(
-                      getattr(Search, field_name, Search.position)))
+                          getattr(Search, field_name, Search.position)))
                   }[order_name](field)
         return result
 
     def __get_objects_from_db(self, *args, ordered_objects_list=None):
-            items = dict()
-            for cls in args:
-                fields = cls.get('return_fields') or 'id'
-                tags = cls.get('tags')
-                assert type(fields) is str, \
-                    'Arg parameter return_fields must be string but %s given' % fields
-                for a in db(cls['class']).filter(cls['class'].id.in_(
-                        list(map(lambda x: x[0], ordered_objects_list)))).all():
-                    if fields != 'default_dict' and not tags:
-                        items[a.id] = a.get_client_side_dict(fields=fields)
-                    elif fields != 'default_dict' and tags:
-                        items[a.id] = a.get_client_side_dict(fields=fields)
-                        items[a.id].update(dict(tags=a.tags))
-                    elif fields == 'default_dict' and not tags:
-                        items[a.id] = a.get_client_side_dict()
-                    else:
-                        items[a.id] = a.get_client_side_dict()
-                        items[a.id].update(dict(tags=a.tags))
-            return collections.OrderedDict((id, items[id]) for id, val in ordered_objects_list)
+        items = dict()
+        for cls in args:
+            fields = cls.get('return_fields') or 'id'
+            tags = cls.get('tags')
+            assert type(fields) is str, \
+                'Arg parameter return_fields must be string but %s given' % fields
+            for a in db(cls['class']).filter(cls['class'].id.in_(
+                    list(map(lambda x: x[0], ordered_objects_list)))).all():
+                if fields != 'default_dict' and not tags:
+                    items[a.id] = a.get_client_side_dict(fields=fields)
+                elif fields != 'default_dict' and tags:
+                    items[a.id] = a.get_client_side_dict(fields=fields)
+                    items[a.id].update(dict(tags=a.tags))
+                elif fields == 'default_dict' and not tags:
+                    items[a.id] = a.get_client_side_dict()
+                else:
+                    items[a.id] = a.get_client_side_dict()
+                    items[a.id].update(dict(tags=a.tags))
+        return collections.OrderedDict((id, items[id]) for id, val in ordered_objects_list)
 
     def __get_search_params(self, *args: dict):
         search_params = []
@@ -307,7 +308,7 @@ class Search(Base):
                 'Parameter page is not integer, or page < 1 .'
             assert (getattr(args[0]['class'], str(ord_by), False) is not False) or \
                    (type(ord_by) is int) or type(
-                ord_by is (list or tuple)), \
+                    ord_by is (list or tuple)), \
                 'Bad value for parameter "order_by".' \
                 'You requested attribute which is not in class %s or give bad kwarg type.' \
                 'Can be string, list or tuple %s given' % \
@@ -320,7 +321,7 @@ class Search(Base):
             tb_info = traceback.extract_tb(tb)
             filename_, line_, func_, text_ = tb_info[-1]
             message = 'An error occurred on File "{file}" line {line}\n {assert_message}'.format(
-                line=line_, assert_message=e.args, file=filename_)
+                    line=line_, assert_message=e.args, file=filename_)
             raise errors.BadDataProvided({'message': message})
 
 
@@ -368,7 +369,7 @@ class Grid:
                 elif filter['type'] == 'select':
                     query = query.filter(filter['field'] == filter['value'])
                 elif filter['type'] == 'date_range':
-                    fromm = datetime.datetime.utcfromtimestamp((filter['value']['from'] + 1) / 1000)
+                    fromm = datetime.datetime.utcfromtimestamp((filter['value']['from']) / 1000)
                     to = datetime.datetime.utcfromtimestamp((filter['value']['to'] + 86399999) / 1000)
                     query = query.filter(filter['field'].between(fromm, to))
                 elif filter['type'] == 'range':
@@ -395,11 +396,36 @@ class PRBase:
         self.query = g.db.query_property()
 
     @staticmethod
-    def parseDate(str):
+    def str2float(str, onfail=None):
+        try:
+            return float(str)
+        except Exception:
+            return onfail
+
+    @staticmethod
+    def str2int(str, onfail=None):
+        try:
+            return int(str)
+        except Exception:
+            return onfail
+
+    @staticmethod
+    def inRange(what, fromr, tor):
+        return True if (what >= fromr) and (what <= tor) else False
+
+    @staticmethod
+    def parse_timestamp(str):
         try:
             return datetime.datetime.strptime(str, "%a, %d %b %Y %H:%M:%S %Z")
         except:
             return None
+
+        @staticmethod
+        def parse_date(str):
+            try:
+                return datetime.date.strptime(str, "%Y-%m-%d")
+            except:
+                return None
 
     def position_unique_filter(self):
         return self.__class__.position != None
@@ -411,7 +437,9 @@ class PRBase:
             ret.update(d)
         return ret
 
-
+    @staticmethod
+    def del_attr_by_keys(dict, keys):
+        return {key: dict[key] for key in dict if key not in keys}
 
     # if insert_after_id == False - insert at top
     # if insert_after_id == True - insert at bottom
@@ -458,10 +486,72 @@ class PRBase:
 
         return self
 
-    def validate(self, is_new):
+    def set_image_cropped_file(self, column_data, user_data, old_croped_image_id, folder_id):
+        from ..models.files import File, ImageCroped
+        selected_by_user = user_data['selected_by_user']
+        selected_by_user_type = selected_by_user['type']
+        old_image_cropped = db(ImageCroped, croped_image_id=old_croped_image_id).first()
+
+        if selected_by_user_type == 'browse':
+            if old_image_cropped:
+                if selected_by_user['image_file_id'] == \
+                        old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
+                        selected_by_user['crop_coordinates'], column_data):
+                    return old_croped_image_id
+                elif selected_by_user[
+                    'image_file_id'] == old_image_cropped.original_image_id and not old_image_cropped.same_coordinates(
+                        selected_by_user['crop_coordinates'], column_data):
+                    original_image = File.get(selected_by_user['image_file_id'])
+                    return original_image.crop(selected_by_user['crop_coordinates'],
+                                               folder_id, column_data, old_image_cropped)
+                else:
+                    original_image = File.get(selected_by_user['image_file_id'])
+            else:
+                original_image = File.get(selected_by_user['image_file_id'])
+            content = original_image.file_content.content
+            new_orginal_image = File.uploadLogo(content, original_image.name, original_image.mime, folder_id)
+        if old_image_cropped:
+            old_original_image = File.get(old_image_cropped.original_image_id)
+            if old_original_image:
+                old_original_image.delete()
+        if selected_by_user_type == 'none':
+            # todo: SS by OZ: is old file removed on this selection?
+            return None
+        if selected_by_user_type == 'upload':
+            imgdataContent = selected_by_user['file']['content']
+            image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
+            content = base64.b64decode(image_data)
+            new_orginal_image = File.uploadLogo(content, selected_by_user['file']['name'], selected_by_user['file']['mime'],
+                                                folder_id)
+            if 'error' in File.check_image_mime(new_orginal_image.id):
+                resp = self.get_client_side_dict()
+                resp.update({'error': True})
+                return resp
+        return new_orginal_image.crop(selected_by_user['crop_coordinates'], folder_id, column_data)
+
+    def get_image_cropped_file(self, parameters={}, croped_image_file_id=None):
+        ret = {
+            'upload': parameters.get('upload'),
+            'browse': parameters.get('browse'),
+            'none': parameters.get('none'),
+            'cropper': {'aspect_ratio': parameters.get('aspect_ratio')} if parameters.get('crop') else False,
+            'min_size': parameters.get('min_size'),
+            'preset_urls': parameters.get('preset_urls'),
+            'no_selection_url': parameters.get('no_selection_url'),
+            'selected_by_user': {'type': 'none'}
+        }
+        print(croped_image_file_id)
+        if croped_image_file_id:
+            ret['selected_by_user'] = {'type': 'browse', 'image_file_id': croped_image_file_id.original_image_id}
+            if ret['cropper']:
+                ret['selected_by_user']['crop_coordinates'] = croped_image_file_id.get_coordinates()
+
+        return ret
+
+    def validate(self, is_new=False):
         return {'errors': {}, 'warnings': {}, 'notices': {}}
 
-    def delfile(self):
+    def delete(self):
         g.db.delete(self)
         g.db.commit()
 
@@ -517,6 +607,8 @@ class PRBase:
         if isinstance(object_property, datetime.datetime):
             return object_property.replace(object_property.year, object_property.month, object_property.day,
                                            object_property.hour, object_property.minute, object_property.second, 0)
+        elif isinstance(object_property, datetime.date):
+            return object_property.strftime('%Y-%m-%d')
         elif isinstance(object_property, dict):
             return object_property
         else:
@@ -698,6 +790,12 @@ class PRBase:
         event.listen(cls, 'after_update', cls.update_search_table)
         event.listen(cls, 'after_delete', cls.delete_from_search)
 
+    @staticmethod
+    def datetime_from_utc_to_local(utc_datetime, format):
+        now_timestamp = time.time()
+        offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
+        utc_datetime = utc_datetime + offset
+        return datetime.datetime.strftime(utc_datetime, format)
 
 #
 #
@@ -724,4 +822,3 @@ class PRBase:
 # event.listen(ArticlePortal, 'before_insert', set_long_striped)
 # event.listen(ArticleCompany, 'before_update', set_long_striped)
 # event.listen(ArticleCompany, 'before_insert', set_long_striped)
-
