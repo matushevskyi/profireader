@@ -4,6 +4,9 @@
     padding-bottom: 10px;
 }
 
+.ui-grid-filter-container .form-control{
+    height: 5px;
+}
 .nav-bg li {
     list-style: none;
     display: inline;
