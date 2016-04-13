@@ -85,47 +85,47 @@
              af-after-save="afterSave"
              af-after-load="afterLoad"
              ng-model="data">
-            <div class="row company">
-                <div class="col-lg-5 col-md-5 col-sm-12 col-xs-12 image-company-profile">
-
-                    <!-- TODO: MY by OZ: 400x300 -> some class -->
-                    <img ng-show="!editing" style="width: 400px; height: 300px; position: relative"
-                         pr-image="data.logo_file_id" alt="image">
-
-                    <div ng-if="editing">
-                        <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 edit-company">
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <div ng-if="data.id">
+                        <button class="btn btn-default go-portal pull-right border-radius" type="button"
+                                ng-if="data.own_portal" ng-click="portal_update(data.id, data.own_portal.id)">
+                            {{_('Portal profile') }}
+                        </button>
+                        <button class="btn btn-default go-portal pull-right border-radius" type="button"
+                                ng-if="!data.own_portal" ng-click="portal_create(data.id)">{{
+                            _('Launch portal') }}
+                        </button>
+                        <button ng-if="editing" class="btn btn-default save-profile pull-right border-radius"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save profile') }}
+                        </button>
+                        <button class="btn btn-default edit-profile pull-right border-radius" type="button"
+                                ng-click="edit()" ng-if="can_edit && !editing">{{ _('Edit profile') }}
+                        </button>
+                    </div>
+                    <div ng-if="!data.id">
+                        <button class="btn btn-default save-profile pull-right border-radius"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
+                        </button>
                     </div>
                 </div>
 
-                <div class="col-lg-7 col-md-7 col-sm-12 col-xs-12 edit-company">
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                        <div ng-if="data.id">
-                            <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                    ng-if="data.own_portal" ng-click="portal_update(data.id, data.own_portal.id)">
-                                {{_('Portal profile') }}
-                            </button>
-                            <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                    ng-if="!data.own_portal" ng-click="portal_create(data.id)">{{
-                                _('Launch portal') }}
-                            </button>
-                            <button ng-if="editing" class="btn btn-default save-profile pull-right border-radius"
-                                    type="button" ng-click="$af.save(data)"
-                                    ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save profile') }}
-                            </button>
-                            <button class="btn btn-default edit-profile pull-right border-radius" type="button"
-                                    ng-click="edit()" ng-if="can_edit && !editing">{{ _('Edit profile') }}
-                            </button>
-                        </div>
-                        <div ng-if="!data.id">
-                            <button class="btn btn-default save-profile pull-right border-radius"
-                                    type="button" ng-click="$af.save(data)"
-                                    ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
-                            </button>
-                        </div>
+                <div class="row company">
+                    <div class="col-lg-5 col-md-5 col-sm-7 col-xs-12 image-company-profile">
 
+                        <!-- TODO: MY by OZ: 400x300 -> some class -->
+                        <img ng-show="!editing" style="width: 400px; height: 300px; position: relative"
+                             pr-image="data.logo_file_id" alt="image">
 
+                        <div ng-if="editing">
+                            <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
+                        </div>
                     </div>
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+
+
+                    <div class="col-lg-7 col-md-7 col-sm-5 col-xs-12">
                         <ul class="edit-block" ng-if="!editing">
                             <li ng-show="data.name"><h3>{{ data.name }}</h3></li>
                             <li ng-show="data.country">{{ _('Country:') }} {{ data.country }}</li>
@@ -149,7 +149,8 @@
                                            class="form-control border-radius"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.name"
                                            oles_name="company_name" oles_oles_ng-pattern="/[\wа-яёі']{3}/">
-                                    <div ng-if=" 0 && formCompany.company_name.$error.pattern" class="error-input">{{ _('The
+                                    <div ng-if=" 0 && formCompany.company_name.$error.pattern" class="error-input">{{
+                                        _('The
                                         company name should be longer!') }}
                                     </div>
                                 </div>
@@ -176,7 +177,8 @@
                                            class="form-control border-radius" oles_name="company_city"
                                            oles_ng-pattern="/[\wа-яёі]{2}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.city">
-                                    <div ng-if=" 0 && formCompany.company_city.$error.pattern" class="error-input">{{ _('The
+                                    <div ng-if=" 0 && formCompany.company_city.$error.pattern" class="error-input">{{
+                                        _('The
                                         city name should be longer!') }}
                                     </div>
 
@@ -210,7 +212,8 @@
                                            class="form-control border-radius" oles_ng-pattern="/[0-9]{6}/"
                                            placeholder="+38(098)7654321" id="basic-url" aria-describedby="basic-addon3"
                                            ng-model="data.phone" oles_name="company_phone">
-                                    <div  ng-if=" 0 && formCompany.company_phone.$error.pattern" class="error-input">{{ _('The
+                                    <div ng-if=" 0 && formCompany.company_phone.$error.pattern" class="error-input">{{
+                                        _('The
                                         phone should be longer!') }}
                                     </div>
 
@@ -228,7 +231,8 @@
                                            oles_ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.email"
                                            oles_name="company_email">
-                                    <div ng-if=" 0 && formCompany.company_email.$error.pattern" class="error-input">{{ _('The
+                                    <div ng-if=" 0 && formCompany.company_email.$error.pattern" class="error-input">{{
+                                        _('The
                                         email not validate!') }}
                                     </div>
 
@@ -246,7 +250,7 @@
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.lon"
                                            oles_name="company_lon">
                                 </div>
-
+                            </form>
                         </div>
                     </div>
                 </div>

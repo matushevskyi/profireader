@@ -132,6 +132,11 @@ body {
   padding: 15px;
 }
 
+.menu-company-img {
+  height: 60px;
+  margin-top: -20px;
+}
+
 .menu-company .selected {
   color: #fff;
   text-decoration: none;
@@ -342,7 +347,9 @@ body {
     color: #26AAE1;
   }
 }
-
+.tab-link a{
+  cursor: pointer;
+}
 .google-icon {
   a:hover {
     text-decoration: none;
@@ -606,7 +613,7 @@ body {
 
 .company .edit-company button {
   width: 115px;
-  padding: 0;
+  padding: 5px 15px;
   margin-left: 25px;
   margin-right: -15px;
 }
@@ -626,6 +633,7 @@ body {
     background-color: @color-red-hover;
     border-color: @color-red-hover;
     color: #fff;
+    box-shadow: @shadow;
   }
 }
 
@@ -650,6 +658,7 @@ body {
   &:hover, &:focus, &:active {
     background-color: @color-links-hover;
     border-color: @color-links-hover;
+    box-shadow: @shadow;
     color: #fff;
   }
 }
@@ -677,16 +686,14 @@ body {
   }
 }
 
-.image-company-profile img {
-  width: 100%;
-}
-
 /* ---Reader-list--- */
 
 .reader-list-nav {
   border-bottom: 1px solid @color-bg;
   padding-bottom: 8px;
-
+  a {
+    display: inline !important;
+  }
   li {
     display: inline;
   }
@@ -857,11 +864,11 @@ body {
 }
 
 .name-subscriptions h5 {
-  background-color: @color-links;
-  color: #fff;
-  float: left;
-  padding: 10px;
-  border-radius: 3px;
+  //background-color: @color-links;
+  //color: #fff;
+  //float: left;
+  //padding: 10px;
+  //border-radius: 3px;
 }
 
 /* ---USER--- */
@@ -1134,7 +1141,7 @@ body {
     color: #fff;
     border: 0;
     border-radius: 3px;
-    padding: 5px 15px;
+    padding: 5px 35px;
   }
 }
 
@@ -1210,7 +1217,7 @@ body {
 }
 
 .mess-bg {
-  background-image: url('/static/images/develop-img.jpeg');
+  background-image: url("/static/images/develop-img.jpeg");
   min-height: 100%;
   min-width: 1024px;
   width: 100%;
@@ -1279,7 +1286,7 @@ body {
   }
 
   .company-portal {
-    margin-top: 40px;
+    margin-top: 5px;
     text-align: center;
     margin-bottom: 15px;
   }
@@ -1287,15 +1294,38 @@ body {
   .edit-company button {
     text-align: center;
   }
-  .edit-grup{
+
+  .edit-grup {
     width: 100%;
     margin-top: 364px;
     margin-left: 10px;
     padding: 0;
+    .save-profile {
+      width: 100%;
+    }
+  }
+
+  .menu-company-img {
+    margin-top: -30px;
+  }
+
+  .menu-company a {
+    display: block;
+    padding: 5px;
+    &:hover {
+      padding: 5px;
+    }
+  }
+
+  .menu-company .selected {
+    padding: 5px;
   }
 }
 
 @media screen and (max-width: 764px) {
+  h3{
+    font-size: 20px;
+  }
   .menu-site {
     ul {
       margin-right: 0;
@@ -1307,6 +1337,8 @@ body {
     span {
       display: inline-block;
       font-size: 18px;
+      padding: 6px;
+      border-bottom: 1px solid #212121;
       &:hover {
         border-bottom: 1px solid @color-links;
       }
@@ -1323,7 +1355,7 @@ body {
       .login-profile {
         position: absolute;
         top: 10px;
-        right: 25px;
+        right: 35px;
       }
     }
     .dropbtn {
@@ -1335,6 +1367,7 @@ body {
       position: static;
       a {
         padding: 0;
+        margin-left: 12px;
         &:hover {
           background-color: transparent;
         }
@@ -1343,6 +1376,12 @@ body {
     .dropdown:hover .dropbtn {
       color: #fff;
     }
+  }
+
+
+
+  .edit-block {
+    margin-top: 70px;
   }
 
   .company-portal a {
@@ -1361,9 +1400,26 @@ body {
   .company-thumbnail img {
     margin-top: 10px;
   }
+
+  .help-page button {
+    width: 100%;
+  }
+
+  .image-company-profile {
+    margin-top: 30px;
+  }
+  .join-company{
+    input{
+      height: 35px;
+    }
+  }
 }
 
 @media screen and (max-width: 500px) {
+
+  //.image-company-profile img {
+  //  width: 300px !important;
+  //}
   .block-portal {
     .subscribe-portal-logo {
       margin-left: 50%;
@@ -1383,12 +1439,14 @@ body {
     .liked-favorite-band ul {
       text-align: center;
     }
-    h3 {
-      font-size: 20px;
-    }
+
   }
 
   .join-new-company button {
     width: 100%;
+  }
+
+  .help-page {
+    margin-top: 20%;
   }
 }
