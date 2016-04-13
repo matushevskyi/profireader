@@ -654,8 +654,8 @@ body {
 }
 .reader-content .liked-favorite-band li {
   display: inline-block;
-  margin-right: 85px;
   cursor: pointer;
+  margin-left: 25px;
 }
 .reader-content .liked-favorite-band i {
   margin-right: 5px;
@@ -1221,9 +1221,6 @@ body {
   }
   .logo-portal-news {
     width: 45px;
-  }
-  .reader-content .liked-favorite-band ul {
-    text-align: center;
   }
   .join-new-company button {
     width: 100%;
