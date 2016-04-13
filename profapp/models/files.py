@@ -703,7 +703,7 @@ class File(Base, PRBase):
             return self.id
 
     def update_croped_image(self, old_image_cropped, coordinates ,bytes_file, area, folder_id):
-        File.get(old_image_cropped.croped_image_id).delete()
+        # old_image = old_image_cropped.croped_image_id
         new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
         old_image_cropped.croped_image_id = new_cropped_image.id
         old_image_cropped.x = float(round(area[0], 6))
@@ -713,6 +713,7 @@ class File(Base, PRBase):
         old_image_cropped.croped_width = float(area[4])
         old_image_cropped.croped_height = float(area[5])
         old_image_cropped.zoom = coordinates['zoom']
+        # File.get(old_image).delete()
         return new_cropped_image.save()
 
     @staticmethod
