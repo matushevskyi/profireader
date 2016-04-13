@@ -487,18 +487,21 @@ body {
   margin-left: 15px;
 }
 .list-company {
-  border: 1px solid #F5EFEF;
-  background-color: #FFFDFD;
-  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
-  margin-bottom: 10px;
+  border: 1px solid #fff;
+  background-color: #F9F9F9;
+  color: #000000;
+  margin-bottom: 3px;
 }
 .list-company:hover {
-  background-color: #EFEFEF;
+  background-color: #fff;
   transition: all 0.2s ease-out;
-  box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
 }
-.list-company p {
+.list-company h5 {
   color: #00BBA1;
+}
+.list-company a {
+  color: inherit;
 }
 .company-thumbnail {
   border-radius: 3px;
