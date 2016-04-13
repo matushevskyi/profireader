@@ -347,9 +347,11 @@ body {
     color: #26AAE1;
   }
 }
-.tab-link a{
+
+.tab-link a {
   cursor: pointer;
 }
+
 .google-icon {
   a:hover {
     text-decoration: none;
@@ -450,10 +452,6 @@ body {
 }
 
 /* ---New company--- */
-.create-img {
-  //margin-top: 95px;
-}
-
 .create-new-company {
   margin-bottom: 30px;
   button {
@@ -568,13 +566,33 @@ body {
 
 .company-list {
   margin-top: 30px;
-  h2 {
+  h3 {
     color: #383838;
     margin-bottom: 15px;
+    margin-left: -15px;
   }
   h4 {
     text-align: center;
     color: @color-red-btn;
+  }
+  i {
+    margin-top: 30px;
+    margin-left: 15px;
+  }
+}
+
+.list-company {
+  border: 1px solid #F5EFEF;
+  background-color: #FFFDFD;
+  box-shadow: @shadow;
+  margin-bottom: 10px;
+  &:hover {
+    background-color: #EFEFEF;
+    transition: @transition;
+    box-shadow: @shadow-hover;
+  }
+  p {
+    color: @color-links;
   }
 }
 
@@ -841,7 +859,6 @@ body {
   color: #fff;
   margin-top: 10px;
   padding: 5px;
-
   &:hover {
     color: #fff;
     background-color: @color-btn-hover;
@@ -914,7 +931,6 @@ body {
   }
   p {
     line-height: 10px;
-
   }
   .line-user-info {
     color: #000;
@@ -964,7 +980,6 @@ body {
 
     }
   }
-
 }
 
 .profile-thumbnail {
@@ -983,7 +998,6 @@ body {
   .label-division {
     margin-top: 23px;
   }
-
 }
 
 .portal-division-block {
@@ -1020,7 +1034,6 @@ body {
   bottom: -30px;
   margin-bottom: 50px;
   padding-left: 0;
-
   h3 {
     margin-top: 30px;
   }
@@ -1125,7 +1138,6 @@ body {
 .help-page {
   margin-top: 15%;
   h3 {
-
     text-align: center;
   }
   .form-for-message {
@@ -1268,7 +1280,6 @@ body {
 
 /* ---MEDIA--- */
 @media screen and (max-width: 1024px) {
-  /* Specific to this particular image */
   .mess-bg {
     left: 50%;
     margin-left: -512px; /* 50% */
@@ -1323,9 +1334,10 @@ body {
 }
 
 @media screen and (max-width: 764px) {
-  h3{
+  h3 {
     font-size: 20px;
   }
+
   .menu-site {
     ul {
       margin-right: 0;
@@ -1378,8 +1390,6 @@ body {
     }
   }
 
-
-
   .edit-block {
     margin-top: 70px;
   }
@@ -1408,18 +1418,15 @@ body {
   .image-company-profile {
     margin-top: 30px;
   }
-  .join-company{
-    input{
+
+  .join-company {
+    input {
       height: 35px;
     }
   }
 }
 
 @media screen and (max-width: 500px) {
-
-  //.image-company-profile img {
-  //  width: 300px !important;
-  //}
   .block-portal {
     .subscribe-portal-logo {
       margin-left: 50%;
@@ -1434,8 +1441,6 @@ body {
   .logo-portal-news {
     width: 45px;
   }
-
-
 
   .join-new-company button {
     width: 100%;
