@@ -1,4 +1,5 @@
 {% extends "index_lazy_layout.html" %}
+{% block title %}{{ _('Profireader filemanager') }}{% endblock %}
 {% block head %}
     {{ super() }}
     <script>
@@ -37,7 +38,9 @@
 {%- endblock head %}
 
 {% block navbar %}
+    {% if file_manager_called_for == "" %}
     {% include '_ruslan/partials/_user_menu.html' %}
+    {% endif %}
 {% endblock navbar %}
 
 {% block content %}

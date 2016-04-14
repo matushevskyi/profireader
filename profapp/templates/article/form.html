@@ -182,8 +182,8 @@
                                             maybe layout selector is apporpriate here-->
                     {{ _('Article title') }}
                     <pr_help_tooltip>article_title</pr_help_tooltip>
-                    <input class="form-control" style="width: 100%" type="text" ng-model="data.article.title"
-                           name="article_title" ng-pattern="/[\wа-яёі']{3}/">
+                    <input class="form-control" style="width: 100%" type="text" ng-model="data.article.title" pr-validation-answer="data_validation:title"
+                           name="article_title" jng-pattern="/[\wа-яёі']{3}/i">
                     <div ng-show="newMaterial.article_title.$error.pattern" class="error-input">
                         {{ _('The title name should be longer!') }}
                     </div>
@@ -194,8 +194,8 @@
                     <input class="form-control" style="width: 100%" type="text" ng-model="data.article.subtitle">
 
                     {{ _('Keywords') }}
-                    <input class="form-control" style="width: 100%" ng-model="data.article.keywords"
-                           name="article_keywords" ng-pattern="/[\wа-яёі']{2}/">
+                    <input class="form-control" style="width: 100%" ng-model="data.article.keywords" pr-validation-answer="data_validation:keywords"
+                           name="article_keywords" jng-pattern="/[\wа-яёі']{2}/i">
                     <div ng-show="newMaterial.article_keywords.$error.pattern" class="error-input">
                         The keywords should be longer!
                     </div>
