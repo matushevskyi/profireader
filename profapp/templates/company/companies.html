@@ -163,30 +163,27 @@
                 </div>
             </div>
 
-{# LIST COMPANIES #}
             <div ng-if="data.companies" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 list-company"
                  ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
                 <a href="{{ url_company_profile({company_id: my_employer.id}) }}">
                     <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
                         <img pr-image="my_employer.logo_file_id" alt="image" style="width: 100%;">
                     </div>
-                    <div class="col-lg-5 col-md-5 col-sm-5 col-xs-5">
+                    <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">
                         <h5 class="ellipsis">{{ _('%(name)s' , my_employer) }}</h5>
-                    </div>
-                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
                         <p class="join-own">{{ _((my_employer.author_user_id==data.user_id? 'own':'joined') ,
                             my_employer) }}</p>
                     </div>
                     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
-                        <p ng-if="!my_employer.own_portal.host">{{_('Portals')}}: {{_('No')}}</p>
-                        <button class="btn" ng-if="my_employer.own_portal.host" type="button"
+                        <p class="portal" ng-if="!my_employer.own_portal.host">{{_('Portals')}}: {{_('No')}}</p>
+                        <button class="portal btn" ng-if="my_employer.own_portal.host" type="button"
                                 ng-click="goToPortal(my_employer.own_portal.host)">
                             {{_("Go to portal") }}
                         </button>
                     </div>
                 </a>
             </div>
-{# LIST COMPANIES END #}
+
 
 
             <div ng-if="data.companies" class="col-lg-4 col-md-4 col-sm-6 col-xs-12"
