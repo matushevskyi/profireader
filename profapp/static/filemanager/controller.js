@@ -4,7 +4,7 @@
     angular.module('FileManagerApp').controller('FileManagerCtrl', ['$http',
         '$scope', '$translate', '$cookies', '$timeout', 'fileManagerConfig', 'item', 'Upload', 'fileNavigator', 'fileUploader','$q','$filter','$ok',
         function ($http, $scope, $translate, $cookies, $timeout, fileManagerConfig, Item, Upload, FileNavigator, fileUploader, $q, $filter, $ok) {
-
+            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('file_manager');
             $scope.config = fileManagerConfig;
             $scope.appName = fileManagerConfig.appName;
             $scope.path_profireader = 'http://profireader.com';
@@ -18,7 +18,7 @@
             $scope.fileNavigator = new FileNavigator($scope.last_root_id? $scope.last_root_id:($scope.rootdirs[0]?$scope.rootdirs[0]['id']: ""), file_manager_called_for);
             $scope.fileUploader = fileUploader;
             $scope.uploadFileList = [];
-            $scope.viewTemplate = $cookies.get('viewTemplate');
+            $scope.viewTemplate = $cookies.get('viewTemplate') || 'main-table.html';
             $scope.error = error;
             $scope.file_manager_called_for = file_manager_called_for;
             $scope.file_manager_on_action = file_manager_on_action;
@@ -51,6 +51,7 @@
                 $scope.fileNavigator.setRoot(root.id);
             };
 
+            
             $scope.touch = function (item) {
                 item = item instanceof Item ? item : new Item();
                 item.revert && item.revert();
@@ -129,16 +130,20 @@
             };
 
             $scope.cut = function (item) {
-                $scope.cut_file_id = $cookies.cut_file_id = item.model.id;
-                $scope.copy_file_id = $cookies.copy_file_id = '';
+                $cookies.put('cut_file_id' , item.model.id);
+                $cookies.put('copy_file_id' , '');
+                $scope.cut_file_id = $cookies.get('cut_file_id');
+                $scope.copy_file_id = $cookies.get('copy_file_id');
                 item.cut(function () {
                     $scope.fileNavigator.refresh();
                 });
             };
 
             $scope.copy = function (item) {
-                $scope.copy_file_id = $cookies.copy_file_id = item.model.id;
-                $scope.cut_file_id = $cookies.cut_file_id = '';
+                $cookies.put('copy_file_id' , item.model.id);
+                $cookies.put('cut_file_id' , '');
+                $scope.cut_file_id = $cookies.get('cut_file_id');
+                $scope.copy_file_id = $cookies.get('copy_file_id');
                 item.copy(function () {
                     $scope.fileNavigator.refresh();
                 });
@@ -166,8 +171,10 @@
                 item.tempModel.folder_id = $scope.fileNavigator.getCurrentFolder();
                 item.paste(function () {
                     $scope.fileNavigator.refresh();
-                    $scope.cut_file_id = $cookies.cut_file_id = '';
-                    $scope.copy_file_id = $cookies.copy_file_id = ''
+                    $cookies.put('cut_file_id' , '');
+                    $cookies.put('copy_file_id' , '');
+                    $scope.cut_file_id = $cookies.get('cut_file_id');
+                    $scope.copy_file_id = $cookies.get('copy_file_id');
                 });
             };
 

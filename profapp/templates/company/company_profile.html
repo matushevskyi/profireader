@@ -156,10 +156,9 @@
                                     <input pr-validation-answer="data_validation:name" oles_type="text"
                                            class="form-control border-radius"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.name"
-                                           oles_name="company_name" oles_oles_ng-pattern="/[\wа-яёі']{3}/">
+                                           oles_name="company_name" oles_ng-pattern="/[\wа-яёі']{3}/i">
                                     <div ng-if=" 0 && formCompany.company_name.$error.pattern" class="error-input">{{
-                                        _('The
-                                        company name should be longer!') }}
+                                        _('The company name should be longer!') }}
                                     </div>
                                 </div>
 
@@ -168,7 +167,7 @@
                                     <input pr-validation-answer="data_validation:country" oles_type="text"
                                            class="form-control border-radius"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.country"
-                                           oles_name="company_country" oles_ng-pattern="/[\wа-яёі]{2}/">
+                                           oles_name="company_country" oles_ng-pattern="/[\wа-яёі]{2}/i">
                                     <div ng-if=" 0 && formCompany.company_country.$error.pattern" class="error-input">
                                         {{ _('The country name should be longer!') }}
                                     </div>

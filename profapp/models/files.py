@@ -115,16 +115,11 @@ class File(Base, PRBase):
             return True
         return False
 
+
     @staticmethod
-    def if_copy(name):
+    def is_copy(name):
         ext = File.ext(name)
-        if len(ext) > 0 and re.search('\(\d+\)' + ext, name):
-            return File.get_name(name)[0:-3]
-        elif re.search('\(\d+\)$', name):
-            return name[0:-3]
-        else:
-            name = name if len(ext) == 0 else name[0:-len(ext)]
-            return name
+        return re.match('\(\d+\)'+ext, name[-(len(ext)+3):])
 
     @staticmethod
     def is_name(name, mime, parent_id):
@@ -199,10 +194,6 @@ class File(Base, PRBase):
                     }
                    for file in s if file.mime != 'image/thumbnail')
         return ret
-
-    @staticmethod
-    def get_action(action):
-        return action
 
     @staticmethod
     def if_action_allowed(action, company_id):
@@ -369,12 +360,6 @@ class File(Base, PRBase):
         return files_in_parent
 
     @staticmethod
-    def get_name(oldname):
-        ex = File.ext(oldname)
-        l = len(ex)
-        return oldname[:-l]
-
-    @staticmethod
     def ext(oldname):
         name = oldname[::-1]
         b = name.find('.')
@@ -386,18 +371,20 @@ class File(Base, PRBase):
     def get_unique_name(name, mime, parent_id):
         if File.is_name(name, mime, parent_id):
             ext = File.ext(name)
-            name = File.if_copy(name)
+            fromname = name[:-(len(ext)+3)] if File.is_copy(name) else name[:-len(ext)]
             list = []
             for n in db(File, parent_id=parent_id, mime=mime):
-                if re.match(r'^' + name + '\(\d+\)' + '' + ext+'$', n.name):
-                    pos = (len(n.name) - 2) - len(ext)
-                    list.append(int(n.name[pos:pos + 1]))
+                clearName = n.name[:-(len(ext)+3)] if File.is_copy(n.name) else n.name[:-len(ext)]
+                if fromname == clearName:
+                    pos = (len(n.name) - 2) - len(ext) if File.is_copy(n.name) else None
+                    if pos:
+                        list.append(int(n.name[pos:pos + 1]))
             if list == []:
-                return name + '(1)' + ext
+                return fromname + '(1)' + ext
             else:
                 list.sort()
                 index = list[-1] + 1
-                return name + '(' + str(index) + ')' + ext
+                return fromname + '(' + str(index) + ')' + ext
         else:
             return name
 
