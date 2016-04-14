@@ -473,13 +473,53 @@ body {
 .company-list {
   margin-top: 30px;
 }
-.company-list h2 {
+.company-list h3 {
   color: #383838;
   margin-bottom: 15px;
+  margin-left: -15px;
 }
 .company-list h4 {
   text-align: center;
   color: #C70000;
+}
+.company-list i {
+  margin-top: 30px;
+  margin-left: 15px;
+}
+.list-company {
+  border-bottom: 1px solid #F9F9F9;
+  color: #000000;
+}
+.list-company:hover {
+  transition: all 0.2s ease-out;
+}
+.list-company h5 {
+  color: #0a0a0a;
+}
+.list-company a {
+  color: inherit;
+}
+.list-company button {
+  padding: 5px;
+  background-color: #00BBA1;
+  color: #fff;
+  border-radius: 3px;
+}
+.list-company p,
+.list-company button {
+  z-index: 100;
+  font-size: 13px;
+}
+.list-company .join-own {
+  background-color: #A7E6F5;
+  display: inline-block;
+  padding: 3px 15px;
+  border-radius: 5px;
+  color: #383838;
+}
+.list-company .portal {
+  margin-top: 20px;
+  float: right;
 }
 .company-thumbnail {
   border-radius: 3px;
@@ -654,8 +694,8 @@ body {
 }
 .reader-content .liked-favorite-band li {
   display: inline-block;
-  margin-right: 85px;
   cursor: pointer;
+  margin-left: 25px;
 }
 .reader-content .liked-favorite-band i {
   margin-right: 5px;
@@ -1087,7 +1127,6 @@ body {
 }
 /* ---MEDIA--- */
 @media screen and (max-width: 1024px) {
-  /* Specific to this particular image */
   .mess-bg {
     left: 50%;
     margin-left: -512px;
@@ -1221,9 +1260,6 @@ body {
   }
   .logo-portal-news {
     width: 45px;
-  }
-  .reader-content .liked-favorite-band ul {
-    text-align: center;
   }
   .join-new-company button {
     width: 100%;
