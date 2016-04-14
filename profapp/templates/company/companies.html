@@ -170,17 +170,19 @@
                     <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
                         <img pr-image="my_employer.logo_file_id" alt="image" style="width: 100%;">
                     </div>
-                    <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
+                    <div class="col-lg-5 col-md-5 col-sm-5 col-xs-5">
                         <h5 class="ellipsis">{{ _('%(name)s' , my_employer) }}</h5>
-                        <p>{{ _((my_employer.author_user_id==data.user_id? 'OWN
-                            COMPANY':'JOINED COMPANY') ,
+                    </div>
+                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+                        <p>{{ _((my_employer.author_user_id==data.user_id? 'own':'joined') ,
                             my_employer) }}</p>
-                        <span ng-if="!my_employer.own_portal.host"><b>{{_('Portals')}}: </b>{{_('No')}}</span>
-                        <div ng-if="my_employer.own_portal.host">
-                            <button class="btn btn-default" type="button"
-                                    ng-click="goToPortal(my_employer.own_portal.host)">{{ _("Go to portal") }}
-                            </button>
-                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
+                        <p ng-if="!my_employer.own_portal.host">{{_('Portals')}}: {{_('No')}}</p>
+                        <button class="btn btn-default" ng-if="my_employer.own_portal.host" type="button"
+                                ng-click="goToPortal(my_employer.own_portal.host)">
+                            {{_("Go to portal") }}
+                        </button>
                     </div>
                 </a>
 

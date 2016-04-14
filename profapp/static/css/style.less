@@ -582,20 +582,23 @@ body {
 }
 
 .list-company {
-  border: 1px solid #fff;
-  background-color: #F9F9F9;
+  border-bottom: 1px solid #F9F9F9;
+  //background-color: #F9F9F9;
   color: #000000;
-  margin-bottom: 3px;
+  //margin-bottom: 3px;
   &:hover {
-    background-color: #fff;
     transition: @transition;
-    box-shadow: @shadow;
+    //box-shadow: @shadow;
   }
   h5 {
-    color: @color-links;
+    color: #0a0a0a;
   }
-  a{
+  a {
     color: inherit;
+  }
+  p, button{
+    float: right;
+    z-index: 100;
   }
 }
 

@@ -487,21 +487,22 @@ body {
   margin-left: 15px;
 }
 .list-company {
-  border: 1px solid #fff;
-  background-color: #F9F9F9;
+  border-bottom: 1px solid #F9F9F9;
   color: #000000;
-  margin-bottom: 3px;
 }
 .list-company:hover {
-  background-color: #fff;
   transition: all 0.2s ease-out;
-  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
 }
 .list-company h5 {
-  color: #00BBA1;
+  color: #0a0a0a;
 }
 .list-company a {
   color: inherit;
+}
+.list-company p,
+.list-company button {
+  float: right;
+  z-index: 100;
 }
 .company-thumbnail {
   border-radius: 3px;
