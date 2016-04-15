@@ -347,9 +347,11 @@ body {
     color: #26AAE1;
   }
 }
-.tab-link a{
+
+.tab-link a {
   cursor: pointer;
 }
+
 .google-icon {
   a:hover {
     text-decoration: none;
@@ -450,10 +452,6 @@ body {
 }
 
 /* ---New company--- */
-.create-img {
-  //margin-top: 95px;
-}
-
 .create-new-company {
   margin-bottom: 30px;
   button {
@@ -568,13 +566,57 @@ body {
 
 .company-list {
   margin-top: 30px;
-  h2 {
+  h3 {
     color: #383838;
     margin-bottom: 15px;
+    margin-left: -15px;
   }
   h4 {
     text-align: center;
     color: @color-red-btn;
+  }
+  i {
+    margin-top: 30px;
+    margin-left: 15px;
+  }
+}
+
+.list-company {
+  border-bottom: 1px solid #F9F9F9;
+  //background-color: #F9F9F9;
+  color: #000000;
+  //margin-bottom: 3px;
+  &:hover {
+    transition: @transition;
+    //box-shadow: @shadow;
+  }
+  h5 {
+    color: #0a0a0a;
+  }
+  a {
+    color: inherit;
+  }
+  button {
+    padding: 5px;
+    background-color: #00BBA1;
+    color: #fff;
+    border-radius: 3px;
+  }
+  p, button {
+    //float: right;
+    z-index: 100;
+    font-size: 13px;
+  }
+  .join-own {
+    background-color: #A7E6F5;
+    display: inline-block;
+    padding: 3px 15px;
+    border-radius: 5px;
+    color: #383838;
+  }
+  .portal{
+    margin-top: 20px;
+    float: right;
   }
 }
 
@@ -766,8 +808,8 @@ body {
     }
     li {
       display: inline-block;
-      margin-right: 85px;
       cursor: pointer;
+      margin-left: 25px;
     }
     i {
       margin-right: 5px;
@@ -841,7 +883,6 @@ body {
   color: #fff;
   margin-top: 10px;
   padding: 5px;
-
   &:hover {
     color: #fff;
     background-color: @color-btn-hover;
@@ -914,7 +955,6 @@ body {
   }
   p {
     line-height: 10px;
-
   }
   .line-user-info {
     color: #000;
@@ -964,7 +1004,6 @@ body {
 
     }
   }
-
 }
 
 .profile-thumbnail {
@@ -983,7 +1022,6 @@ body {
   .label-division {
     margin-top: 23px;
   }
-
 }
 
 .portal-division-block {
@@ -1020,7 +1058,6 @@ body {
   bottom: -30px;
   margin-bottom: 50px;
   padding-left: 0;
-
   h3 {
     margin-top: 30px;
   }
@@ -1125,7 +1162,6 @@ body {
 .help-page {
   margin-top: 15%;
   h3 {
-
     text-align: center;
   }
   .form-for-message {
@@ -1268,7 +1304,6 @@ body {
 
 /* ---MEDIA--- */
 @media screen and (max-width: 1024px) {
-  /* Specific to this particular image */
   .mess-bg {
     left: 50%;
     margin-left: -512px; /* 50% */
@@ -1323,9 +1358,10 @@ body {
 }
 
 @media screen and (max-width: 764px) {
-  h3{
+  h3 {
     font-size: 20px;
   }
+
   .menu-site {
     ul {
       margin-right: 0;
@@ -1378,8 +1414,6 @@ body {
     }
   }
 
-
-
   .edit-block {
     margin-top: 70px;
   }
@@ -1408,18 +1442,15 @@ body {
   .image-company-profile {
     margin-top: 30px;
   }
-  .join-company{
-    input{
+
+  .join-company {
+    input {
       height: 35px;
     }
   }
 }
 
 @media screen and (max-width: 500px) {
-
-  //.image-company-profile img {
-  //  width: 300px !important;
-  //}
   .block-portal {
     .subscribe-portal-logo {
       margin-left: 50%;
@@ -1433,13 +1464,6 @@ body {
 
   .logo-portal-news {
     width: 45px;
-  }
-
-  .reader-content {
-    .liked-favorite-band ul {
-      text-align: center;
-    }
-
   }
 
   .join-new-company button {
