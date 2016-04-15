@@ -306,7 +306,9 @@ def profile_load_validate_save(json, company_id=None):
             if company_id is None:
                 company.setup_new_company()
 
-            company_dict = company.set_logo_client_side_dict(json['logo']).save().get_client_side_dict()
+            company.set_logo_client_side_dict(json['logo'])
+            company.save()
+            company_dict = company.get_client_side_dict()
             company_dict['logo'] = company.get_logo_client_side_dict()
             company_dict['actions'] = {'edit': True if company_id else False}
             return company_dict

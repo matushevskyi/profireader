@@ -25,6 +25,7 @@
             $scope.url_portal_profile = {{raw_url_for('portal.profile') | safe}};
 
             $scope.data = {};
+            $scope.coordinates = [];
             $scope.rights_user_in_company = {{rights_user_in_company | tojson | safe}};
 
             $scope.editing = false;
@@ -110,6 +111,7 @@
                                 ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
                         </button>
                     </div>
+
                 </div>
                 <div class="row company">
                     <div class="col-lg-5 col-md-5 col-sm-7 col-xs-12 image-company-profile">
@@ -119,7 +121,13 @@
                              pr-image="data.logo_file_id" alt="image">
 
                         <div ng-if="editing">
-                            <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
+                        <div style="width: 400px; height: 300px; position: relative"
+                                                       pr-cropperaa="data.logo"
+                                                       ang-crop-state="state"
+                                                       ang-crop-coordinates="state"
+                                                       apr-cropper-coordinates="coordinates"
+                                                       apr-cropper-options="{min_aspect: 0.5, max_aspect: 2, min_width: 150, min_height: 50,
+                                                       max_width: 200, max_height: 200}"></div>
                         </div>
                     </div>
 

@@ -324,7 +324,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 var $image = $('img', element);
                 var $outer_container = $('.img-container', element);
-                var $inner_container = $('.img-container-cropper', element);
+                var $inner_container = $('.ng-crop-canvas', element);
 
 
                 scope.fileUploaded = function (event) {
@@ -611,7 +611,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         }
                         if (zoomed) {
                             $image.cropper('setData', scope.previous_data)
-                            updateCoordinates({'x': data.x, 'y': data.y, 'width': data.width, 'height': data.height});
+                            updateCoordinates({
+                                'x': data.x,
+                                'y': data.y,
+                                'width': data.width,
+                                'height': data.height
+                            });
                         }
 
 
@@ -832,6 +837,182 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
         }
             ;
     }])
+    .directive('prCropperaa', function ($compile, $templateCache, $timeout) {
+        return {
+            restrict: 'A',
+            replace: false,
+            terminal: true,
+            priority: 1000,
+            scope: {
+                prCropperaa: '='
+            },
+            link: function link(scope, element, attrs) {
+
+
+                scope.constrains = function (constrains) {
+                    scope.ctr = constrains;
+                };
+
+                scope.statechanged = function (state) {
+                    scope.state = state;
+                };
+
+
+                element.attr('ng-crop', 'selectedurl');
+                element.attr('ng-crop-coordinates', 'coordinates');
+                element.attr('ng-crop-options', 'options');
+                element.attr('ng-crop-zoom', 'zoom');
+                element.attr('ng-crop-disabled', 'disabled');
+                element.attr('ng-crop-loaded', 'loaded');
+
+                 element.attr('ng-crop-on-error', 'onerror');
+                 element.attr('ng-crop-on-load', 'onload');
+                // element.attr('ng-crop-on-state', 'statechanged');
+                // element.attr('ng-crop-on-constrains', 'constrains');
+
+
+                element.removeAttr("pr-cropperaa");
+
+                scope.zoomable = true;
+                scope.disabled = false;
+                scope.loaded = false;
+                scope.original_model = null;
+
+                scope.onerror = add_message
+
+
+                $(element).after($templateCache.get('pr-crop-buttons.html'));
+
+                scope.$watchGroup(['coordinates', 'zoom'], function (newv, oldv) {
+                    // console.log('coordinates', 'zoom', newv, oldv);
+                    // if (!scope.prCropperaa) return;
+                    // scope.prCropperaa['selected_by_user']['crop_coordinates'] = newv[0] ? {
+                    //     x: newv[0][0],
+                    //     y: newv[0][1],
+                    //     width: newv[0][2] - newv[0][0],
+                    //     height: newv[0][3] - newv[0][1],
+                    //     zoom: newv[1]
+                    // } : null;
+                });
+
+                scope.$watch('prCropperaa', function (newv, oldv) {
+                    console.log('prCropperaa', newv, oldv);
+                    if (!newv) return;
+
+                    var selected_by_user = newv['selected_by_user'];
+                    if (!scope.original_model) {
+                        scope.original_model = selected_by_user;
+                    }
+                    scope.coordinates = [];
+                    scope.state = {};
+                    scope.browsable = newv['browse'] ? true : false;
+                    scope.uploadable = newv['upload'] ? true : false;
+                    scope.resetable = true;
+                    scope.noneurl = newv['no_selection_url'];
+                    scope.options = {}
+                    if (newv.min_size) scope.options['min_width'] = newv.min_size[0];
+                    if (newv.min_size) scope.options['min_height'] = newv.min_size[1];
+                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['min_aspect'] = newv.cropper.aspect_ratio[0];
+                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['max_aspect'] = newv.cropper.aspect_ratio[1];
+                    scope.setModel(selected_by_user, false);
+                });
+
+                var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
+
+
+                window[callback_name] = function (item) {
+                    scope.setModel({'type': 'browse', 'image_file_id': item.id, crop_coordinates: null});
+                    closeFileManager();
+                };
+
+                scope.selectNone = function () {
+                    scope.setModel({'type': 'none'});
+                }
+
+                scope.resetModel = function () {
+                    scope.setModel(scope.original_model);
+                }
+
+
+                scope.setModel = function (model, do_not_set_ng_crop) {
+                    if (!do_not_set_ng_crop) {
+                        var oldmodel = scope.prCropperaa['selected_by_user'];
+                        scope.prCropperaa['selected_by_user'] = model;
+                        scope.onerror = function (m) {
+                            scope.prCropperaa['selected_by_user'] = oldmodel;
+                            add_message(m);
+                            scope.onerror = add_message;
+                        };
+                    }
+
+
+                    switch (model['type']) {
+                        case 'browse':
+                            var crd = model.crop_coordinates;
+                            scope.selectedurl = fileUrl(model['image_file_id']);
+                            scope.disabled = false;
+                            scope.coordinates = crd ? [crd.x, crd.y, crd.width + crd.x, crd.height + crd.y] : null;
+                            scope.zoom = crd ? crd.zoom : null;
+                            break;
+                        case 'none':
+                            scope.selectedurl = scope.noneurl;
+                            scope.coordinates = null;
+                            scope.disabled = true;
+                            break;
+                        case 'upload':
+                            // debugger;
+                            scope.selectedurl = model['file']['content'];
+                            scope.disabled = false;
+                            scope.coordinates = null;
+                            scope.zoom = null;
+                            break;
+                        case 'preset':
+                            scope.selectedurl = model['file']['content'];
+                            scope.disabled = false;
+                            scope.coordinates = null;
+                            break;
+                    }
+                }
+
+                scope.fileUploaded = function (event) {
+                    var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
+                    if (the_file) {
+                        var fr = new FileReader();
+                        fr.onload = function (e) {
+                            scope.setModel({
+                                'type': 'upload',
+                                'file': {'mime': the_file.type, 'name': the_file.name, 'content': fr.result}
+                            })
+                        }
+                        fr.onerror = function (e) {
+                            add_message('File loading error', 'warning');
+                        }
+                        fr.readAsDataURL(the_file);
+                    }
+                };
+
+                scope.chooseImage = function (setImage) {
+                    scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.original_model['browse']);
+                };
+
+
+                scope.zoom_by = function (by, check_only) {
+                    if (!scope.loaded || scope.disabled) return false;
+                    var ok = false;
+                    if (by > 1 && scope.zoom * by <= scope.ctr.max_zoom) ok = true;
+                    if (by < 1 && scope.zoom * by >= scope.ctr.min_zoom) ok = true;
+                    if (!check_only && ok)  scope.zoom *= by;
+                    return ok;
+
+                }
+
+
+                $compile(element)(scope);
+                $compile($(element).next())(scope);
+            }
+        };
+    })
+
     .directive('dateTimestampFormat', function () {
         return {
             require: 'ngModel',
@@ -2183,18 +2364,20 @@ $.fn.scrollTo = function () {
 }
 
 function getPopoverContent(content_list, width) {
-    if(content_list.length === 0){
+    if (content_list.length === 0) {
         return '';
     }
-    $('.liked-favorite-band .popover').css({'background-color':'black','color':'white',
-        'width':width?width.toString():'160'+'px','overflow': 'hidden'})
+    $('.liked-favorite-band .popover').css({
+        'background-color': 'black', 'color': 'white',
+        'width': width ? width.toString() : '160' + 'px', 'overflow': 'hidden'
+    })
     var content = '';
-    var limit = width?width:160/10;
-    for(var i =0;i<content_list.length;i+=1){
-        if(content_list[i].length>limit){
-            content += '<spam class="ellipsis">'+content_list[i].substring(0,limit)+'...'+'</spam><br>';
-        }else{
-            content += '<spam class="ellipsis">'+content_list[i]+'</spam><br>';
+    var limit = width ? width : 160 / 10;
+    for (var i = 0; i < content_list.length; i += 1) {
+        if (content_list[i].length > limit) {
+            content += '<spam class="ellipsis">' + content_list[i].substring(0, limit) + '...' + '</spam><br>';
+        } else {
+            content += '<spam class="ellipsis">' + content_list[i] + '</spam><br>';
         }
     }
     return content
