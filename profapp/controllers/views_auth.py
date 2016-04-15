@@ -288,7 +288,7 @@ def confirm(token):
     user = db(User, email_conf_token=token).first()
     portal_id = request.args.get('subscribe_to_portal')
     if user and user.confirmed:
-        return render_template("error.html", message='Your account has been already confirmed!')
+        return render_template("auth/confirm_email.html", message='Your account has been already confirmed!')
     elif not user or not user.confirm_email():
         return render_template("auth/unconfirmed.html", message='Wrong or expired token',
                                email=user.profireader_email if user else '')
