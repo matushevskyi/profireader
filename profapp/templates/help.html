@@ -8,11 +8,10 @@
 <script>
 
     module.controller('info',  function($scope, $ok){
-      angularControllerFunction('set_selected_user_menu')('info');
+      angularControllerFunction('UserLoginController', 'set_selected_user_menu')('info');
       $scope.$$translate = {{ translates('info')|safe }};
-      $scope.help_message = '{{ url_for('auth.help_message') }}'
+      $scope.help_message = '{{ url_for('auth.help_message') }}';
       $scope.data = {{ data | tojson}}
-              console.log($scope.data)
 
       $scope.isDisabled = false;
       $scope.disableButton = function() {
@@ -23,7 +22,7 @@
           $scope.disableButton()
           return $ok($scope.help_message, {data:data}, function(help_message){
               if (help_message =True) {
-                    window.location.href = '{{ url_for('reader.list_reader') }}'
+                    window.location.href = '{{ url_for('reader.list_reader') }}';
                     add_message('Your message has been sent', 'warning')
                 } else {
                     add_message('Try again', 'danger')

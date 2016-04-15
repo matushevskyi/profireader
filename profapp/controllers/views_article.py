@@ -26,6 +26,23 @@ import datetime
 def article_show_form(material_id=None, publication_id=None, company_id=None):
     company = Company.get(company_id if company_id else (
         ArticlePortalDivision.get(publication_id) if publication_id else ArticleCompany.get(material_id)).company.id)
+    if company_id:
+        user_company = UserCompany.get(user_id=g.user.id, company_id=company_id)
+        if not user_company:
+            return redirect(url_for('reader.list_reader'))
+        if user_company.status != UserCompany.STATUSES['ACTIVE']:
+            return redirect(url_for('reader.list_reader'))
+    elif material_id:
+        articleVersion = ArticleCompany.get(material_id)
+        user_company = UserCompany.get(user_id=g.user.id, company_id=articleVersion.company_id)
+        if articleVersion.action_is_allowed(ArticleCompany.ACTIONS['EDIT'], user_company) != True:
+            return redirect(url_for('reader.list_reader'))
+    elif publication_id:  # updating portal version
+        publication_in_portal = ArticlePortalDivision.get(publication_id)
+        actions = publication_in_portal.actions(publication_in_portal.company)
+        if actions['EDIT'] != True:
+            return redirect(url_for('reader.list_reader'))
+
     return render_template('article/form.html', material_id=material_id, company_id=company_id,
                            publication_id=publication_id, company=company)
 

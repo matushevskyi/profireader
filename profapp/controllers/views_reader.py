@@ -55,6 +55,7 @@ def list_reader():
 
 
 @reader_bp.route('/list_reader', methods=['POST'])
+@tos_required
 @ok
 def list_reader_load(json):
     next_page = json.get('next_page') if json.get('next_page') else 1
@@ -127,11 +128,13 @@ def list_reader_load(json):
 
 
 @reader_bp.route('/add_to_favorite/', methods=['POST'])
+@tos_required
 @ok
 def add_delete_favorite(json):
     return ReaderArticlePortalDivision.add_delete_favorite_user_article(json.get('article')['id'], json.get('article')['is_favorite'])
 
 @reader_bp.route('/add_to_like/', methods=['POST'])
+@tos_required
 @ok
 def add_delete_like(json):
     ReaderArticlePortalDivision.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
@@ -142,9 +145,6 @@ def add_delete_like(json):
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
 def reader_subscribe(portal_id):
     user_dict = g.user.get_client_side_dict()
-    print(user_dict)
-    if g.user and g.user.tos:
-        return 'Please confirm tos!'
     portal = Portal.get(portal_id)
     if not portal:
         raise BadDataProvided
@@ -197,11 +197,13 @@ def reader_subscribe_registered(json):
 
 
 @reader_bp.route('/profile/')
+@tos_required
 def profile():
     return render_template('partials/reader/reader_profile.html')
 
 
 @reader_bp.route('/profile/', methods=['POST'])
+@tos_required
 @ok
 def profile_load(json):
     pagination_params = list()
@@ -227,11 +229,13 @@ def profile_load(json):
 
 
 @reader_bp.route('/edit_portal_subscription/<string:reader_portal_id>')
+@tos_required
 def edit_portal_subscription(reader_portal_id):
     return render_template('partials/reader/edit_portal_subscription.html')
 
 
 @reader_bp.route('/edit_portal_subscription/<string:reader_portal_id>', methods=['POST'])
+@tos_required
 @ok
 def edit_portal_subscription_load(json, reader_portal_id):
     user_portal_reader = db(UserPortalReader, id=reader_portal_id).one()
@@ -251,6 +255,7 @@ def edit_portal_subscription_load(json, reader_portal_id):
 
 
 @reader_bp.route('/edit_profile_/<string:reader_portal_id>', methods=['POST'])
+@tos_required
 @ok
 def edit_profile_submit(json, reader_portal_id):
     divisions_and_comments = db(UserPortalReader, id=reader_portal_id).one().show_divisions_and_comments

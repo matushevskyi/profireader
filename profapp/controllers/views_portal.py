@@ -9,7 +9,7 @@ from utils.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
     PortalDivisionSettingsCompanySubportal, PortalConfig
 from ..models.tag import Tag, TagPortal, TagPortalDivision
-from .request_wrapers import ok, check_rights, tos_required
+from .request_wrapers import ok, check_rights, tos_required, exist_user_company
 from ..models.articles import ArticlePortalDivision, ArticleCompany, Article
 from ..models.company import UserCompany
 from profapp.models.rights import RIGHTS
@@ -26,6 +26,7 @@ from config import Config
                  methods=['GET'])
 @tos_required
 @login_required
+@exist_user_company
 def profile(create_or_update, company_id, portal_id=None):
     return render_template('portal/portal_create.html', company=Company.get(company_id))
 
@@ -193,6 +194,7 @@ def apply_company(json):
 @portal_bp.route('/profile_edit/<string:portal_id>/', methods=['GET'])
 @tos_required
 @login_required
+
 # @check_rights(simple_permissions([]))
 def profile_edit(portal_id):
     return render_template('portal/portal_profile_edit.html', company=Portal.get(portal_id).own_company)
@@ -417,6 +419,7 @@ def profile_edit_load(json, portal_id):
 @portal_bp.route('/portals_partners/<string:company_id>/', methods=['GET'])
 @tos_required
 @login_required
+@exist_user_company
 # @check_rights(simple_permissions([]))
 def portals_partners(company_id):
     return render_template('company/portals_partners.html',
@@ -472,14 +475,16 @@ def portals_partners_change_status(json, partner_id, portal_id):
 #                            user_right_in=UserCompany.get(company_id=employeer_id).has_rights(UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES)
 #                            )
 
-@portal_bp.route('/<string:employeer_id>/company_partner_update/<string:member_id>/', methods=['GET'])
+@portal_bp.route('/<string:company_id>/company_partner_update/<string:member_id>/', methods=['GET'])
 @login_required
-def company_partner_update(employeer_id, member_id):
+@tos_required
+@exist_user_company
+def company_partner_update(company_id, member_id):
     return render_template('company/company_partner_update.html',
-                           company=Company.get(employeer_id),
-                           rights_user_in=UserCompany.get(company_id=employeer_id).has_rights(
+                           company=Company.get(company_id),
+                           rights_user_in=UserCompany.get(company_id=company_id).has_rights(
                                    UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES),
-                           member=MemberCompanyPortal.get(Company.get(employeer_id).own_portal.id,
+                           member=MemberCompanyPortal.get(Company.get(company_id).own_portal.id,
                                                           company_id=member_id).company.get_client_side_dict('id, status'))
 
 
@@ -514,6 +519,7 @@ def company_update_load(json, employeer_id, member_id):
 @portal_bp.route('/companies_partners/<string:company_id>/', methods=['GET'])
 @tos_required
 @login_required
+@exist_user_company
 # @check_rights(simple_permissions([]))
 def companies_partners(company_id):
     return render_template('company/companies_partners.html', company=Company.get(company_id),
@@ -551,6 +557,7 @@ def search_for_portal_to_join(json):
 @portal_bp.route('/company/<string:company_id>/publications/', methods=['GET'])
 @tos_required
 @login_required
+@exist_user_company
 # @check_rights(simple_permissions([]))
 def publications(company_id):
     return render_template('portal/portal_publications.html', company=Company.get(company_id))
@@ -588,6 +595,8 @@ def publications_load(json, company_id):
 
 
 @portal_bp.route('/publication_delete_unpublish/', methods=['POST'])
+@login_required
+@tos_required
 @ok
 # @check_rights(simple_permissions([]))
 def publication_delete_unpublish(json):
@@ -609,6 +618,7 @@ def publication_details(article_id, company_id):
 
 @portal_bp.route('/publication_details/<string:article_id>/<string:company_id>', methods=['POST'])
 @login_required
+@tos_required
 @ok
 def publication_details_load(json, article_id, company_id):
     article = db(ArticlePortalDivision, id=article_id).one().get_client_side_dict()
@@ -621,6 +631,7 @@ def publication_details_load(json, article_id, company_id):
 
 @portal_bp.route('/update_article_portal/<string:article_id>', methods=['POST'])
 @login_required
+@tos_required
 @ok
 def update_article_portal(json, article_id):
     db(ArticlePortalDivision, id=article_id).update({'status': json.get('new_status')})

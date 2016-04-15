@@ -7,6 +7,9 @@
 .ui-grid-filter-container .form-control{
     height: 5px;
 }
+.join-company .input-group .dropdown-menu{
+    display: none;
+}
 .nav-bg li {
     list-style: none;
     display: inline;

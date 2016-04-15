@@ -371,7 +371,8 @@ class File(Base, PRBase):
     def get_unique_name(name, mime, parent_id):
         if File.is_name(name, mime, parent_id):
             ext = File.ext(name)
-            fromname = name[:-(len(ext)+3)] if File.is_copy(name) else name[:-len(ext)]
+
+            fromname = name[:-(len(ext)+3)] if File.is_copy(name) else name[:-len(ext)if ext else -1]
             list = []
             for n in db(File, parent_id=parent_id, mime=mime):
                 clearName = n.name[:-(len(ext)+3)] if File.is_copy(n.name) else n.name[:-len(ext)]

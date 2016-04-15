@@ -25,6 +25,7 @@ def profile(user_id):
 
 
 @user_bp.route('/avatar_update')
+@tos_required
 @ok
 def avatar_update(json):
     image = json.get('update_image')
@@ -72,6 +73,7 @@ def edit_profile_load(json, user_id):
             return ret
 
 @user_bp.route('/change_lang', methods=['POST'])
+@tos_required
 @ok
 def change_language(json):
     if g.user:

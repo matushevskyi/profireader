@@ -2,6 +2,8 @@ from .blueprints_declaration import admin_bp
 from flask import g, request, url_for, render_template, flash, current_app
 from .request_wrapers import ok
 from .pagination import pagination
+from .request_wrapers import tos_required
+from flask.ext.login import login_required
 from ..models.translate import TranslateTemplate
 from ..models.ip import Ips
 from utils.db_utils import db
@@ -12,6 +14,8 @@ from flask import session
 from ..models.pr_base import PRBase, Grid
 
 @admin_bp.route('/translations', methods=['GET'])
+@login_required
+@tos_required
 def translations():
     return render_template('admin/translations.html',
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
@@ -41,6 +45,8 @@ def set_session_b(json):
     return {'old_value': z.__repr__(), 'new_value': session['test'].__repr__()}
 
 @admin_bp.route('/translations', methods=['POST'])
+@login_required
+@tos_required
 @ok
 def translations_load(json):
     subquery = TranslateTemplate.subquery_search(json.get('filter'), json.get('sort') , json.get('editItem'))
@@ -63,12 +69,16 @@ def translations_load(json):
 
 
 @admin_bp.route('/translations_save', methods=['POST'])
+@login_required
+@tos_required
 @ok
 def translations_save(json):
     exist = db(TranslateTemplate, template=json['row'], name=json['col']).first()
     return TranslateTemplate.get(exist.id).attr({json['lang']: json['val']}).save().get_client_side_dict()
 
 @admin_bp.route('/delete', methods=['POST'])
+@login_required
+@tos_required
 @ok
 def delete_translates(json):
     return TranslateTemplate.delete_translates(json['objects'])

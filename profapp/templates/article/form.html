@@ -62,6 +62,12 @@
             };
 
             $scope.amidLoad = function (resp) {
+
+                if(typeof resp  === 'string'){
+                    location.href = '/'
+                    add_message(resp, 'warning', 2000)
+                    console.log(resp)
+                }
                 resp.article.publishing_tm = new Date(resp.article.publishing_tm);
                 resp.portal_division = $scope.setPositioning(resp.portal_division, resp.article.id);
                 return resp;

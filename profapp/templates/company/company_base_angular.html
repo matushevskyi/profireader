@@ -2,7 +2,7 @@
     module.controller('CompanyMenuController', ['$scope', '$timeout', function ($scope, $timeout) {
         $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
         $scope.company = {{ company.get_client_side_dict()|tojson|safe }};
-
+        $scope.user_exist = {{ user_company_exist }}
         $scope.$$translate = {{ translates('CompanyMenuController')|safe }};
 
         $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
@@ -23,7 +23,7 @@
 </script>
 {% raw %}
 <div ng-controller="CompanyMenuController" class="topbar-menu-links" ng-cloak>
-    <div ng-if="user.id && company.id" ng-cloak>
+    <div ng-if="user.id && company.id && user_exist" ng-cloak>
         <div class="container">
             <div class="row menu-company-inside">
                 <div class="col-lg-6 col-md-6 col-sm-4 col-xs-4 menu-company">

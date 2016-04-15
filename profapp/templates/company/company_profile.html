@@ -61,7 +61,7 @@
             };
 
             $scope.afterLoad = function (resp, deff) {
-                $scope.can_edit = resp['actions']['edit'];
+                $scope.can_edit = resp['actions']?resp['actions']['edit']:false;
                 $scope.editing = resp.id ? false : true;
                 deff(resp);
 //                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
@@ -111,7 +111,6 @@
                         </button>
                     </div>
                 </div>
-
                 <div class="row company">
                     <div class="col-lg-5 col-md-5 col-sm-7 col-xs-12 image-company-profile">
 
