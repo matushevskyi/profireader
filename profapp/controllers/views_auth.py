@@ -312,6 +312,11 @@ def tos(json):
 @auth_bp.route('/help', methods=["POST"])
 @ok
 def help_message(json):
+        print(json)
+        if not 'email' in json['data']:
+            return 'Please enter valid email!'
+        if not 'message' in json['data']:
+            return 'Please write message!'
 
         SendEmail().send_email(subject='Send help message', send_to=("profireader.service@gmail.com", ''),
                                html=('From '+json['data']['email']+': '+json['data']['message']))

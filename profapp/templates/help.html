@@ -21,11 +21,12 @@
       $scope.sendMessage = function(data) {
           $scope.disableButton()
           return $ok($scope.help_message, {data:data}, function(help_message){
-              if (help_message =True) {
+              if (help_message === true) {
                     window.location.href = '{{ url_for('reader.list_reader') }}';
                     add_message('Your message has been sent', 'warning')
                 } else {
-                    add_message('Try again', 'danger')
+                    $scope.isDisabled = false;
+                    add_message(help_message, 'info')
                 }
           })
       }
