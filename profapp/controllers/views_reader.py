@@ -142,6 +142,9 @@ def add_delete_like(json):
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
 def reader_subscribe(portal_id):
     user_dict = g.user.get_client_side_dict()
+    print(user_dict)
+    if g.user and g.user.tos:
+        return 'Please confirm tos!'
     portal = Portal.get(portal_id)
     if not portal:
         raise BadDataProvided
@@ -163,10 +166,11 @@ def reader_subscribe(portal_id):
 
 
 @reader_bp.route('/subscribe/', methods=['POST'])
-@tos_required
 @ok
 def reader_subscribe_registered(json):
     user_dict = g.user.get_client_side_dict()
+    if g.user and not g.user.tos:
+        return 'Please confirm tos!'
     portal_id = json['portal_id']
     portal = Portal.get(portal_id)
     if not portal:
