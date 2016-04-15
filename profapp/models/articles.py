@@ -564,11 +564,9 @@ class ArticleCompany(Base, PRBase):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
-        # TODO: (AA to OZ): regexp doesn't work
-
-        if not re.match('.*\S{3,}.*', self.title):
-            ret['errors']['title'] = 'pls enter title longer than 3 letters'
-        if not re.match('\S+.*', self.keywords):
+        if not re.match('.*\S{2}.*', self.title, re.IGNORECASE):
+            ret['errors']['title'] = 'pls enter tite longer than 2 letters'
+        if not re.match('\S+.*', self.keywords, re.IGNORECASE):
             ret['warnings']['keywords'] = 'pls enter at least one keyword'
         return ret
 

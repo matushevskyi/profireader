@@ -124,6 +124,9 @@
 
         Item.prototype.cut = function(success, error){
             var self = this;
+
+
+
             var id = $cookies.cut_file_id = self.model.id;
         };
 
