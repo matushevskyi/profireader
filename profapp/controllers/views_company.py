@@ -3,7 +3,7 @@ from flask.ext.login import login_required, current_user
 from flask import render_template, request, url_for, g, redirect
 from ..models.company import Company, UserCompany
 from ..models.translate import TranslateTemplate
-from .request_wrapers import ok, tos_required
+from .request_wrapers import ok, tos_required, exist_user_company
 from flask.ext.login import login_required
 from ..models.articles import Article
 from ..models.portal import PortalDivision
@@ -48,12 +48,14 @@ def companies_load(json):
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
 @tos_required
 @login_required
+@exist_user_company
 # @check_rights(simple_permissions([]))
 def materials(company_id):
     return render_template('company/materials.html', company=db(Company, id=company_id).one())
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['POST'])
+@exist_user_company
 @ok
 def materials_load(json, company_id):
     subquery = ArticleCompany.subquery_company_materials(company_id, json.get('filter'), json.get('sort'))
@@ -121,6 +123,7 @@ def update_material_status(json, company_id, article_id):
 @company_bp.route('/<string:company_id>/employees/', methods=['GET'])
 @tos_required
 @login_required
+@exist_user_company
 # @check_rights(simple_permissions([]))
 def employees(company_id):
     return render_template('company/company_employees.html', company=Company.get(company_id))
@@ -266,11 +269,12 @@ def update():
 @company_bp.route('/<string:company_id>/profile/', methods=['GET'])
 @tos_required
 @login_required
-# @check_rights(simple_permissions([]))
 def profile(company_id=None):
     company = db(Company, id=company_id).first()
+    user_company = UserCompany.get(company_id=company_id)
     return render_template('company/company_profile.html',
-                           rights_user_in_company=UserCompany.get(company_id=company_id).rights,
+                           rights_user_in_company = user_company.rights if user_company else None,
+                           user_company_exist = True if user_company else False,
                            company=company)
 
 
@@ -279,7 +283,6 @@ def profile(company_id=None):
 @login_required
 @ok
 def profile_load_validate_save(json, company_id=None):
-    user_can_edit = UserCompany.get(company_id=company_id).rights['PORTAL_EDIT_PROFILE'] if company_id else None
     # if not user_can_edit:
     #     raise Exception('no PORTAL_EDIT_PROFILE')
     action = g.req('action', allowed=['load', 'validate', 'save'])
@@ -287,8 +290,10 @@ def profile_load_validate_save(json, company_id=None):
     if action == 'load':
         company_dict = company.get_client_side_dict()
         company_dict['logo'] = company.get_logo_client_side_dict()
-        company_dict['actions'] = {'edit': True if company_id and UserCompany.get(
-                company_id=company_id).rights['PORTAL_EDIT_PROFILE'] else False}
+        user_company = UserCompany.get(company_id=company_id)
+        if user_company:
+            company_dict['actions'] = {'edit': True if company_id and UserCompany.get(
+                    company_id=company_id).rights['PORTAL_EDIT_PROFILE'] else False}
         return company_dict
     else:
         company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
@@ -335,6 +340,7 @@ def profile_load_validate_save(json, company_id=None):
 
 @company_bp.route('/search_for_company_to_join/', methods=['POST'])
 @login_required
+@tos_required
 @ok
 # @check_rights(simple_permissions([]))
 def search_for_company_to_join(json):
@@ -364,6 +370,7 @@ def send_article_to_user(json):
 
 @company_bp.route('/join_to_company/<string:company_id>/', methods=['POST'])
 @login_required
+@tos_required
 @ok
 # @check_rights(simple_permissions([]))
 def join_to_company(json, company_id):
@@ -438,6 +445,7 @@ def confirm_subscriber():
 @company_bp.route('/readers/<string:company_id>/<int:page>/', methods=['GET'])
 @tos_required
 @login_required
+@exist_user_company
 # @check_rights(simple_permissions([]))
 def readers(company_id, page=1):
     company = Company.get(company_id)

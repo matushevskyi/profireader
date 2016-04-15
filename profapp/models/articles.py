@@ -303,7 +303,7 @@ class ArticlePortalDivision(Base, PRBase):
     def get_client_side_dict(self, fields='id|image_file_id|read_count|title|subtitle|short|long_stripped|'
                                           'portal_division_id|image_file_id|position|keywords|cr_tm|md_tm|status|'
                                           'visibility|publishing_tm|event_tm,company.id|name, division.id|'
-                                          'name, portal.id|name|host',
+                                          'name|portal_id, portal.id|name|host',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 

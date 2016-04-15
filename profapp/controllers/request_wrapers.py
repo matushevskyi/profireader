@@ -96,6 +96,17 @@ def tos_required(func):
             return redirect(url_for('general.index'))
         return func(*args, **kwargs)
     return decorated_view
+
+def exist_user_company(func):
+    from ..models.company import UserCompany
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if 'company_id' in kwargs:
+            if not UserCompany.get(company_id=kwargs['company_id']):
+                return redirect(url_for('general.index'))
+        return func(*args, **kwargs)
+    return decorated_view
+
 # def object_to_dict(obj, *args, prefix=''):
 #     ret = {}
 #

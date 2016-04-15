@@ -2215,12 +2215,11 @@ function highlight($el) {
 function highLightSubstring(substring, block, element) {
     var elements = element.split('&');
     var re = new RegExp(substring, "gi");
-    $("." + block).find(".search-highlight").remove()
+    $("." + block).find(".search-highlight").remove();
     $.each(elements, function (index) {
-        var el = elements[index]
-        console.log(el);
+        var el = elements[index];
         $("." + block).find("#" + el).each(function () {
-            var rex = $(this).html().match(re)
+            var rex = $(this).html().match(re);
             $(this).html($(this).html().replace(re, '<span class="search-highlight">' + rex[0] + '</span>'));
         })
     })

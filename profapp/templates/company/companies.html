@@ -148,8 +148,7 @@
                 </div>
             </div>
         </div>
-
-        <div ng-if="data_search.company_list.length>0 && !data_search.end" class="show-more"><h4><a class="link"
+        <div ng-if="data_search.company_list.length>0 && !data_search.end && selectedCompany_name" class="show-more"><h4><a class="link"
                                                                                                     ng-click="show_more()">{{
             _('Show more search results') }}</a></h4></div>
         <div class="row company-list">
