@@ -442,7 +442,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     # babel = Babel(app)
 
     app.teardown_request(close_database)
-    app.debug = False
+    app.debug = True
 
 
     app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))
@@ -474,11 +474,12 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
             #         return os.path.join(os.path.dirname(parent), template)
 
             from profapp.models.portal import Portal
-            portal = g.db.query(Portal).filter_by(host=request.host).one()
-            g.portal = portal
-            g.portal_id = portal.id
-            g.portal_layout_path = portal.layout.path
-            g.lang = g.portal.lang if g.portal else g.user.lang
+            portal = g.db.query(Portal).filter_by(host=request.host).first()
+            # portal = g.db.query(Portal).filter_by(host=request.host).one()
+            g.portal = portal if portal else None
+            g.portal_id = portal.id if portal else None
+            g.portal_layout_path = portal.layout.path if portal else ''
+            g.lang = g.portal.lang if g.portal else g.user_dict['lang'] if portal else 'en'
 
         app.before_request(load_portal)
         from profapp.controllers.blueprints_register import register_front as register_blueprints_front

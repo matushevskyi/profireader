@@ -40,7 +40,7 @@
 
     <script>
         var pr_angular_modules = ['ui.bootstrap', 'profireaderdirectives', 'ngSanitize', 'ajaxFormModule',
-            'ngAnimate', 'ngTouch'];
+            'ngAnimate', 'ngTouch', 'ngCrop'];
     </script>
 
     {{ config_variables()|safe }}
@@ -78,6 +78,9 @@
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-sanitize.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-animate.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-touch.js"></script>
+
+    <link href="//static.profireader.com/static/bower_components_dev/ng-crop/src/ng-crop.css" rel="stylesheet">
+    <script src="//static.profireader.com/static/bower_components_dev/ng-crop/src/ng-crop.js"></script>
 
     <script src="//static.profireader.com/static/new/moment/moment.min.js"></script>
     {% if g.lang != 'en' %}<script src="//static.profireader.com/static/new/moment/{{ g.lang }}.js"></script>{% endif %}

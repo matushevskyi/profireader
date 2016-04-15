@@ -206,632 +206,821 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             }
         };
     })
-    .directive('prCrop', ['$compile', '$templateCache', '$timeout', function ($compile, $templateCache, $timeout) {
+    //     .directive('prCropzzz', ['$compile', '$templateCache', '$timeout', function ($compile, $templateCache,
+    // $timeout) {
+    //         return {
+    //             restrict: 'A',
+    //             scope: {
+    //                 prCrop: '='
+    //             },
+    //
+    //             link: function (scope, element, attrs, model) {
+    //
+    //                 //TODO: OZ by OZ: move it to angular attrs
+    //                 scope.zoomable = true;
+    //                 scope.resetable = true;
+    //                 scope.noneurl = true;
+    //                 scope.aspect_ratio = false;
+    //                 //scope.minimal = 0.1;
+    //
+    //                 scope.croper_loaded = false;
+    //                 //scope.originalModel = $.extend(true, {}, scope.prCrop);
+    //                 scope.fallback_url = '//static.profireader.com/static/images/0.png';
+    //
+    //
+    //                 scope.setModel = function () {
+    //                     scope.uploadable = false;
+    //                     scope.browsable = false;
+    //                     scope.noneurl = false;
+    //                     scope.cropable = false;
+    //                     scope.aspect_ratio = false;
+    //                     scope.no_selection_url = scope.fallback_url;
+    //                     if (scope.prCrop) {
+    //                         scope.noneurl = scope.prCrop['none'] ? scope.prCrop['none'] : false;
+    //                         scope.uploadable = scope.prCrop['upload'] ? true : false;
+    //                         scope.browsable = scope.prCrop['browse'] ? true : false;
+    //                         scope.cropable = scope.prCrop['cropper'] ? scope.prCrop['cropper'] : false;
+    //                         scope.no_selection_url = scope.prCrop['no_selection_url'];
+    //
+    //                     }
+    //                 };
+    //
+    //
+    //                 var updateCoordinates = function (dict) {
+    //                     if (!scope.prCrop['selected_by_user']['crop_coordinates']) {
+    //                         scope.prCrop['selected_by_user']['crop_coordinates'] = {}
+    //                     }
+    //                     $.extend(scope.prCrop['selected_by_user']['crop_coordinates'], dict);
+    //                 }
+    //
+    //                 var getFromCoordinates = function (key, ifnotset) {
+    //                     return (!scope.prCrop['selected_by_user']['crop_coordinates']
+    //                     || scope.prCrop['selected_by_user']['crop_coordinates'][key] === undefined
+    //                     || scope.prCrop['selected_by_user']['crop_coordinates'][key] === null) ?
+    //                         (ifnotset === undefined ? null : ifnotset) :
+    //                         scope.prCrop['selected_by_user']['crop_coordinates'][key];
+    //                 }
+    //
+    //
+    //                 scope.setModel();
+    //
+    //                 element.html($templateCache.get('cropper.html'));
+    //
+    //                 $compile(element.contents())(scope);
+    //
+    //
+    //                 var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
+    //
+    //                 window[callback_name] = function (item) {
+    //                     closeFileManager();
+    //                     restartCropper(fileUrl(item.id), {
+    //                         'type': 'browse',
+    //                         'image_file_id': item.id,
+    //                         'crop_coordinates': {
+    //                             'zoom': null,
+    //                             'rotate': 0
+    //                         }
+    //                     });
+    //                 };
+    //
+    //                 scope.zoom = function (ratio, only_check_posibility) {
+    //                     if (!scope.croper_loaded) return false;
+    //                     var curent_zoom = getFromCoordinates('zoom', null);
+    //
+    //                     if (ratio < 0 && curent_zoom <= scope.minzoom) return false;
+    //                     if (ratio > 0 && curent_zoom >= scope.maxzoom) return false;
+    //
+    //                     if (!only_check_posibility) {
+    //                         $image.cropper('zoom', ratio);
+    //                     }
+    //                     return true;
+    //                 };
+    //
+    //                 scope.selectPresetUrl = function (className) {
+    //                     if (scope.prCrop['preset_urls'] && scope.prCrop['preset_urls'][className]) {
+    //                         restartCropper(scope.prCrop['preset_urls'][className], {
+    //                             'type': 'preset',
+    //                             'class': className
+    //                         }, true);
+    //
+    //                     }
+    //                 };
+    //
+    //                 scope.selectNone = function () {
+    //                     if (scope.noneurl) {
+    //                         restartCropper(scope.noneurl, {'type': 'none'}, true);
+    //                     }
+    //                 };
+    //
+    //                 scope.chooseImage = function (setImage) {
+    //                     if (setImage) {
+    //                         scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.prCrop['browse']);
+    //                     }
+    //                 };
+    //
+    //                 scope.resetModel = function () {
+    //                     scope.prCrop = $.extend(true, {}, scope.originalModel);
+    //                     scope.setModel();
+    //                 };
+    //
+    //                 var $image = $('img', element);
+    //                 var $outer_container = $('.img-container', element);
+    //                 var $inner_container = $('.ng-crop-canvas', element);
+    //
+    //
+    //                 scope.fileUploaded = function (event) {
+    //                     var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
+    //                     if (the_file) {
+    //                         var fr = new FileReader();
+    //                         if (/^image\/\w+$/.test(the_file.type)) {
+    //                             fr.onload = function (e) {
+    //                                 var uploaded_file = (window.URL || window.webkitURL).createObjectURL(the_file);
+    //                                 restartCropper(uploaded_file, {
+    //                                     'type': 'upload',
+    //                                     'file': {
+    //                                         'mime': the_file.type,
+    //                                         'name': the_file.name,
+    //                                         'content': fr.result
+    //                                     },
+    //                                     'crop_coordinates': {zoom: null, 'rotate': 0}
+    //                                 });
+    //                             }
+    //                             fr.onerror = function (e) {
+    //                                 loadImage(false);
+    //                                 add_message('File loading error', 'warning');
+    //                             }
+    //                             loadImage(true);
+    //                             fr.readAsDataURL(the_file);
+    //                         }
+    //                         else {
+    //                             add_message('Please choose an image file', 'warning');
+    //                         }
+    //                     }
+    //                 };
+    //
+    //                 var resizeContainer = function (loadedimg) {
+    //
+    //                     if (!loadedimg) {
+    //                         $inner_container.css({
+    //                             'width': '100%',
+    //                             'height': '100%',
+    //                             'top': '0px',
+    //                             'left': '0px'
+    //                         });
+    //                         return;
+    //                     }
+    //
+    //
+    //                     if (scope.prCrop['min_size'] &&
+    //                         (scope.prCrop['min_size'][0] && loadedimg.width < scope.prCrop['min_size'][0] ||
+    //                         scope.prCrop['min_size'][1] && loadedimg.height < scope.prCrop['min_size'][1])) {
+    //                         return scope.$root._('Image too small. minimum size is %(0)sx%(1)s', scope.prCrop['min_size'])
+    //                     }
+    //
+    //
+    //                     var options = {};
+    //
+    //                     var image_wider = loadedimg.width * $outer_container.height() / loadedimg.height / $outer_container.width()
+    //                     if (image_wider > 1) {
+    //                         $inner_container.css({
+    //                             'width': $outer_container.width() + 'px',
+    //                             'height': $outer_container.height() / image_wider + 'px',
+    //                             'top': $outer_container.height() * (1 - 1 / image_wider) / 2 + 'px',
+    //                             'left': '0px'
+    //                         });
+    //                         options['minContainerWidth'] = $outer_container.width();
+    //                         options['minContainerHeight'] = $outer_container.height() / image_wider;
+    //                         scope.minzoom = 1.0 * $inner_container.width() / loadedimg.width;
+    //                     }
+    //                     else {
+    //                         $inner_container.css({
+    //                             'width': $outer_container.width() * image_wider + 'px',
+    //                             'height': $outer_container.height() + 'px',
+    //                             'top': '0px',
+    //                             'left': $outer_container.width() * (1 - image_wider ) / 2 + 'px'
+    //
+    //                         });
+    //                         options['minContainerWidth'] = $outer_container.width() * image_wider;
+    //                         options['minContainerHeight'] = $outer_container.height();
+    //                         scope.minzoom = 1.0 * $inner_container.height() / loadedimg.height;
+    //                     }
+    //
+    //                     scope.maxzoom = 1.0;
+    //
+    //                     if (scope.minzoom > scope.maxzoom) {
+    //                         scope.minzoom = scope.maxzoom;
+    //                     }
+    //
+    //                     if (scope.prCrop['cropper']) {
+    //                         options['minCanvasWidth'] = options['minContainerWidth'];
+    //                         options['minCanvasHeight'] = options['minContainerHeight'];
+    //                         //if (scope.prCrop) {
+    //                         //    console.log(scope.prCrop['min_size']);
+    //                         //    options['minCropBoxWidth'] = scope.prCrop['min_size'][0] * scope.maxzoom;
+    //                         //    options['minCropBoxHeight'] = scope.prCrop['min_size'][1] * scope.maxzoom;
+    //                         //}
+    //                         scope.aspect_ratio = false;
+    //                         scope.previous_data = null;
+    //                         if (_.isArray(scope.prCrop['cropper']['aspect_ratio']) && scope.prCrop['cropper']['aspect_ratio'].length == 2
+    //                             && scope.prCrop['cropper']['aspect_ratio'][0] > 0 && scope.prCrop['cropper']['aspect_ratio'][1] > 0 &&
+    //                             scope.prCrop['cropper']['aspect_ratio'][0] <= scope.prCrop['cropper']['aspect_ratio'][1]) {
+    //                             scope.aspect_ratio = [scope.prCrop['cropper']['aspect_ratio'][0], scope.prCrop['cropper']['aspect_ratio'][1]]
+    //                         }
+    //                     }
+    //                     return options;
+    //                 }
+    //
+    //                 var normalize_coordinates = function (coordinates, size, aspect, east, west, north, south) {
+    //                     var changed = false;
+    //                     if (!coordinates) {
+    //                         coordinates = {};
+    //                         changed = true;
+    //                     }
+    //
+    //                     if (!(coordinates.x >= 0 && coordinates.x <= size[0] - 1 && coordinates.width >= 1 && coordinates.width <= size[0] - coordinates.x)) {
+    //
+    //                         coordinates.x = size[0] / 10.
+    //                         coordinates.width = 8 * size[0] / 10.
+    //                         changed = true;
+    //                     }
+    //
+    //                     if (!(coordinates.y >= 0 && coordinates.y <= size[1] - 1 && coordinates.height >= 1 && coordinates.height <= size[1] - coordinates.y)) {
+    //                         coordinates.y = size[1] / 10.
+    //                         coordinates.height = 8 * size[1] / 10.
+    //                         changed = true;
+    //                     }
+    //
+    //                     if (aspect) {
+    //                         var img_aspect = coordinates.width / coordinates.height;
+    //                         if (img_aspect < aspect[0]) {
+    //                             coordinates.y += (coordinates.height - coordinates.width / aspect[0]) / 2.
+    //                             coordinates.height -= (coordinates.height - coordinates.width / aspect[0])
+    //                             changed = true;
+    //                         }
+    //                         if (img_aspect > aspect[1]) {
+    //                             coordinates.x += (coordinates.width - coordinates.height * aspect[1]) / 2.
+    //                             coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
+    //                             changed = true;
+    //                         }
+    //                     }
+    //                     return changed;
+    //
+    //                 }
+    //
+    //                 var normalize_coordinates1 = function (x1, y1, x2, y2, size, container_size, minsize, aspect, corner_action) {
+    //                     console.log(aspect);
+    //
+    //                     coordinates = {
+    //                         x: Math.min(x1, x2) / container_size[0] * size[0],
+    //                         y: Math.min(y1, y2) / container_size[1] * size[1]
+    //                     }
+    //                     coordinates['width'] = coordinates.x + Math.max(x1, x2) / container_size[0] * size[0];
+    //                     coordinates['height'] = coordinates.y + Math.max(y1, y2) / container_size[1] * size[1];
+    //
+    //                     //console.log(coordinates);
+    //
+    //
+    //                     var changed = false;
+    //                     //if (!coordinates) {
+    //                     //    coordinates = {
+    //                     //        x: size[0] / 10.,
+    //                     //        y: size[1] / 10.,
+    //                     //        width: 9. * size[0] / 10.,
+    //                     //        height: 9. * size[1] / 10.
+    //                     //    };
+    //                     //}
+    //
+    //                     //coordinates.x = coordinates.x >= 0 ? coordinates.x : 0;
+    //                     //coordinates.y = coordinates.y >= 0 ? coordinates.y : 0;
+    //                     //coordinates.width = coordinates.x + coordinates.width <= size[0] ? coordinates.width : size[0] - coordinates.x;
+    //                     //coordinates.height = coordinates.y + coordinates.height <= size[1] ? coordinates.height : size[1] - coordinates.y;
+    //
+    //                     //if (!(coordinates.x >= 0))
+    //                     //
+    //                     //    coordinates.x = size[0] / 10.
+    //                     //    coordinates.width = 8 * size[0] / 10.
+    //                     //    changed = true;
+    //                     //}
+    //                     //
+    //                     //if (!(coordinates.y >= 0 && coordinates.y <= size[1] - 1 && coordinates.height >= 1 && coordinates.height <= size[1] - coordinates.y)) {
+    //                     //    coordinates.y = size[1] / 10.
+    //                     //    coordinates.height = 8 * size[1] / 10.
+    //                     //    changed = true;
+    //                     //}
+    //
+    //                     var xmove = 0;
+    //                     var ymove = 0;
+    //                     switch (corner_action) {
+    //                         case 'nw':
+    //                             xmove = 1.;
+    //                             ymove = 1.;
+    //                             break;
+    //                         case 'n':
+    //                             xmove = 0.5;
+    //                             ymove = 1.;
+    //                             break;
+    //                         case 'ne':
+    //                             xmove = 0;
+    //                             ymove = 1.;
+    //                             break;
+    //                         case 'e':
+    //                             xmove = 0;
+    //                             ymove = 0.5;
+    //                             break;
+    //                         case 'se':
+    //                             xmove = 0;
+    //                             ymove = 0;
+    //                             break;
+    //                         case 's':
+    //                             xmove = 0.5;
+    //                             ymove = 0;
+    //                             break;
+    //                         case 'sw':
+    //                             xmove = 0;
+    //                             ymove = 1;
+    //                             break;
+    //                         case 'w':
+    //                             xmove = 1;
+    //                             ymove = 0.5;
+    //                             break;
+    //                     }
+    //
+    //                     if (aspect) {
+    //                         var img_aspect = coordinates.width / coordinates.height;
+    //                         if (img_aspect < aspect[0]) {
+    //                             console.log(img_aspect, aspect, 'to wide', coordinates);
+    //                             coordinates.y += (coordinates.height - coordinates.width / aspect[0]) * ymove;
+    //                             coordinates.height -= (coordinates.height - coordinates.width / aspect[0])
+    //                             changed = true;
+    //                         }
+    //                         else if (img_aspect > aspect[1]) {
+    //                             console.log(img_aspect, aspect, 'to tall', coordinates);
+    //                             coordinates.x += (coordinates.width - coordinates.height * aspect[1]) * xmove;
+    //                             coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
+    //                             changed = true;
+    //                         }
+    //                     }
+    //                     return coordinates;
+    //
+    //                 }
+    //
+    //                 var runCropper = function (options, image_size) {
+    //
+    //                     var optionsa = {};
+    //
+    //                     options['strict'] = true;
+    //                     options['viewMode'] = 3;
+    //                     //options['aspectRatio'] = 1;
+    //                     options['zoomable'] = scope.zoomable;
+    //
+    //                     options['zoom'] = function (e) {
+    //                         if (e.ratio < scope.minzoom * 1.01 && e.ratio !== scope.minzoom) {
+    //                             e.preventDefault();
+    //                             if (Math.abs(e.oldRatio - scope.minzoom) / scope.minzoom > 0.01) {
+    //                                 $(this).cropper('zoomTo', scope.minzoom);
+    //                             }
+    //                             return false;
+    //                         }
+    //
+    //                         if (e.ratio > scope.maxzoom * 0.99 && e.ratio !== scope.maxzoom) {
+    //                             e.preventDefault();
+    //                             if (Math.abs(e.oldRatio !== scope.maxzoom) / scope.maxzoom > 0.01) {
+    //                                 $(this).cropper('zoomTo', scope.maxzoom);
+    //                             }
+    //                             return false;
+    //                         }
+    //
+    //                         updateCoordinates({'zoom': e.ratio});
+    //
+    //
+    //                         var data = $image.cropper('getData');
+    //                         var zoomed = false;
+    //
+    //                         if (data.width < scope.prCrop['min_size'][0] * scope.maxzoom) {
+    //                             data.width = scope.prCrop['min_size'][0] * scope.maxzoom;
+    //                             if (data.width + data.x > image_size[0]) {
+    //                                 data.x = image_size[0] - data.width;
+    //                             }
+    //                             zoomed = true;
+    //                         }
+    //                         if (data.height < scope.prCrop['min_size'][1] * scope.maxzoom) {
+    //                             data.height = scope.prCrop['min_size'][1] * scope.maxzoom;
+    //                             if (data.height + data.y > image_size[1]) {
+    //                                 data.y = image_size[1] - data.height;
+    //                             }
+    //                             zoomed = true;
+    //                         }
+    //                         if (zoomed) {
+    //                             $image.cropper('setData', scope.previous_data)
+    //                             updateCoordinates({
+    //                                 'x': data.x,
+    //                                 'y': data.y,
+    //                                 'width': data.width,
+    //                                 'height': data.height
+    //                             });
+    //                         }
+    //
+    //
+    //                     }
+    //
+    //                     options['built'] = function (e) {
+    //                         scope.croper_loaded = true;
+    //                         if (scope.zoomable) {
+    //                             $(this).cropper('zoomTo', getFromCoordinates('zoom', scope.minzoom));
+    //                         }
+    //                     }
+    //
+    //                     options['cropstart'] = function (e) {
+    //                         console.log(e);
+    //                         scope.click_data = {'action': e.action, 'x': e.originalEvent.x, 'y': e.originalEvent.y};
+    // //'e': resize the east side of the crop box
+    // //'w': resize the west side of the crop box
+    // //'s': resize the south side of the crop box
+    // //'n': resize the north side of the crop box
+    // //'se': resize the southeast side of the crop box
+    // //'sw': resize the southwest side of the crop box
+    // //'ne': resize the northeast side of the crop box
+    // //'nw': resize the northwest side of the crop box
+    //                     }
+    //
+    //                     options['cropmove'] = function (e) {
+    //                         //console.log(e.width);
+    //                         console.log(e.originalEvent.x, (e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y));
+    //                         if ((e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y) > 1.0) {
+    //                             e.originalEvent.x = e.originalEvent.y - scope.click_data.y + scope.click_data.x;
+    //
+    //                         }
+    //                         e.originalEvent.x = 100;
+    //                         console.log(e.originalEvent.x);
+    //                         return;
+    //                         var data = {x: e.x, y: e.y, width: e.width, height: e.height}
+    //                         console.log(e.originalEvent.x);
+    //                         var new_data = normalize_coordinates1(scope.click_data.x, scope.click_data.y,
+    //                             e.originalEvent.x, e.originalEvent.y, image_size,
+    //                             [options['minCanvasWidth'], options['minCanvasHeight']],
+    //                             [100, 100], scope.aspect_ratio, scope.click_data.action);
+    //                         if (new_data) {
+    //                             e.originalEvent.x = (new_data.x + new_data.width) / image_size[0] * options['minCanvasWidth'];
+    //                             e.originalEvent.y = (new_data.y + new_data.height) / image_size[1] * options['minCanvasHeight'];
+    //                         }
+    //                         console.log(e.originalEvent.x);
+    //
+    //                     }
+    //
+    //
+    //                     optionsa['crop'] = function (e) {
+    //
+    //                         if (e.width / e.height > 1) {
+    //                             e.width = e.height;
+    //
+    //                             $image.cropper('setData', {width: e.width});
+    //                             e.preventDefault();
+    //                         }
+    //                         return;
+    //
+    //                         var data = {x: e.x, y: e.y, width: e.width, height: e.height}
+    //
+    //                         var changed = normalize_coordinates1(data, image_size, image_size, scope.aspect_ratio, scope.corner_action);
+    //                         if (changed) {
+    //                             e.x = data.x;
+    //                             e.y = data.y;
+    //                             e.width = data.width;
+    //                             e.height = data.height;
+    //                             e.preventDefault();
+    //                             $image.cropper('setData', data);
+    //                             $timeout(function () {
+    //                                 updateCoordinates({
+    //                                     'width': data.width,
+    //                                     'height': data.height,
+    //                                     'y': data.y,
+    //                                     'x': data.x
+    //                                 });
+    //                             })
+    //                         }
+    //                         else {
+    //                             $timeout(function () {
+    //                                 updateCoordinates({
+    //                                     'width': data.width,
+    //                                     'height': data.height,
+    //                                     'y': data.y,
+    //                                     'x': data.x
+    //                                 });
+    //                             })
+    //                         }
+    //
+    //
+    //                         //if (scope.aspect_ratio) {
+    //                         //    var data = $image.cropper('getData');
+    //                         //
+    //                         //    var asp = data.width / data.height;
+    //                         //    if (asp < scope.aspect_ratio[0] || asp > scope.aspect_ratio[1]) {
+    //                         //        event.preventDefault();
+    //                         //        if (scope.previous_data) {
+    //                         //            $image.cropper('setData', scope.previous_data)
+    //                         //        }
+    //                         //        return false;
+    //                         //    }
+    //                         //    if (data.width < scope.prCrop['min_size'][0] * scope.maxzoom || data.height < scope.prCrop['min_size'][1] * scope.maxzoom) {
+    //                         //        event.preventDefault();
+    //                         //        if (scope.previous_data) {
+    //                         //            $image.cropper('setData', scope.previous_data)
+    //                         //        }
+    //                         //        return false;
+    //                         //    }
+    //                         //    else {
+    //                         //        scope.previous_data = data;
+    //                         //    }
+    //                         //}
+    //
+    //
+    //                     }
+    //                     $image.cropper(options);
+    //                 }
+    //
+    //                 var loadImage = function (load) {
+    //                     if (load) {
+    //                         $inner_container.hide();
+    //                         $outer_container.removeClass('cropper-bg');
+    //                         $outer_container.addClass('loading');
+    //                     }
+    //                     else {
+    //                         $outer_container.removeClass('loading');
+    //                         $outer_container.addClass('cropper-bg');
+    //                         $inner_container.show();
+    //                     }
+    //                 }
+    //
+    //                 var setNewModelValue = function (new_selection_by_user) {
+    //                     if (new_selection_by_user) {
+    //                         $timeout(function () {
+    //                             scope.prCrop['selected_by_user'] = new_selection_by_user;
+    //                         }, 0);
+    //                     }
+    //                 }
+    //
+    //
+    //                 var restartCropper = function (src, new_selection_by_user, force_image_src_on_error) {
+    //                     var fr = new Image();
+    //                     fr.addEventListener('load', function (e) {
+    //
+    //                         loadImage(false);
+    //                         var options = resizeContainer(fr);
+    //                         if (typeof options === 'string') {
+    //                             add_message(options, 'warning');
+    //                             return false;
+    //                         }
+    //
+    //
+    //                         scope.croper_loaded = false;
+    //                         $image.cropper('destroy');
+    //                         $image.attr('src', src);
+    //
+    //                         var selection = new_selection_by_user ? new_selection_by_user : scope.prCrop['selected_by_user'];
+    //
+    //                         options['autoCrop'] = true;
+    //
+    //                         options['data'] = normalize_coordinates(selection['crop_coordinates'], [fr.width, fr.height],
+    //                             (scope.aspect_ratio ? [scope.aspect_ratio[0], scope.aspect_ratio[1]] : false));
+    //                         if (scope.prCrop['cropper'] && ((selection['type'] === 'browse') || (selection['type'] === 'upload'))) {
+    //                             runCropper(options, [fr.width, fr.height]);
+    //                         }
+    //                         setNewModelValue(new_selection_by_user);
+    //                     }, false);
+    //                     fr.addEventListener('error', function (e) {
+    //                             if (force_image_src_on_error) {
+    //                                 $image.attr('src', src);
+    //                                 resizeContainer(false);
+    //                                 scope.croper_loaded = false;
+    //                                 $image.cropper('destroy');
+    //                                 setNewModelValue(new_selection_by_user);
+    //                             }
+    //                             loadImage(false);
+    //                             add_message('Image loading error', 'warning');
+    //                         }
+    //                     );
+    //                     loadImage(true)
+    //                     fr.src = src;
+    //                 }
+    //
+    //
+    //                 scope.$watch('prCrop', function (newv, oldv) {
+    //                     var imageUrlFromUserSelection = function () {
+    //                         if (scope.prCrop['selected_by_user']['type'] === 'browse') {
+    //                             return fileUrl(scope.prCrop['selected_by_user']['image_file_id']);
+    //                         }
+    //                         else if (scope.prCrop['selected_by_user']['type'] === 'preset') {
+    //                             var selected_classname = scope.prCrop['selected_by_user']['class'];
+    //                             if (scope.prCrop['preset_urls'] && selected_classname && scope.prCrop['preset_urls'][selected_classname]) {
+    //                                 return scope.prCrop['preset_urls'][selected_classname]
+    //                                 //restartCropper(scope.prCrop['preset_urls'][selected_classname], {
+    //                                 //    'type': 'preset',
+    //                                 //    'class': selected_classname
+    //                                 //});
+    //                             }
+    //                             else {
+    //                                 return scope.prCrop['no_selection_url'];
+    //                             }
+    //                         }
+    //                         else {
+    //                             return scope.prCrop['no_selection_url'];
+    //                         }
+    //                     }
+    //
+    //                     scope.originalModel = $.extend(true, {}, scope.prCrop);
+    //                     scope.setModel();
+    //                     if (scope.prCrop && scope.prCrop['selected_by_user']) {
+    //                         restartCropper(imageUrlFromUserSelection(), null, true);
+    //                     }
+    //                 });
+    //
+    //
+    //             }
+    //         }
+    //             ;
+    //     }])
+    .directive('prCrop', function ($compile, $templateCache, $timeout) {
         return {
             restrict: 'A',
+            replace: false,
+            terminal: true,
+            priority: 1000,
             scope: {
                 prCrop: '='
             },
+            link: function link(scope, element, attrs) {
 
-            link: function (scope, element, attrs, model) {
 
-                //TODO: OZ by OZ: move it to angular attrs
+                element.attr('ng-crop', 'selectedurl');
+                element.attr('ng-crop-coordinates', 'coordinates');
+                element.attr('ng-crop-options', 'options');
+                element.attr('ng-crop-state', 'state');
+                element.attr('ng-crop-logic', 'logic');
+                element.attr('ng-crop-disabled', 'disabled');
+                element.attr('ng-crop-loading', 'loading');
+
+                element.attr('ng-crop-on-error', 'onerror');
+                element.attr('ng-crop-on-load', 'onload');
+
+
+                element.removeAttr("pr-crop");
+
                 scope.zoomable = true;
-                scope.resetable = true;
-                scope.noneurl = true;
-                scope.aspect_ratio = false;
-                //scope.minimal = 0.1;
+                scope.disabled = false;
+                scope.original_model = null;
 
-                scope.croper_loaded = false;
-                //scope.originalModel = $.extend(true, {}, scope.prCrop);
-                scope.fallback_url = '//static.profireader.com/static/images/0.png';
+                scope.onerror = function (m) {add_message(m, 'warning')};
 
+                $(element).after($templateCache.get('pr-crop-buttons.html'));
 
-                scope.setModel = function () {
-                    scope.uploadable = false;
-                    scope.browsable = false;
-                    scope.noneurl = false;
-                    scope.cropable = false;
-                    scope.aspect_ratio = false;
-                    scope.no_selection_url = scope.fallback_url;
-                    if (scope.prCrop) {
-                        scope.noneurl = scope.prCrop['none'] ? scope.prCrop['none'] : false;
-                        scope.uploadable = scope.prCrop['upload'] ? true : false;
-                        scope.browsable = scope.prCrop['browse'] ? true : false;
-                        scope.cropable = scope.prCrop['cropper'] ? scope.prCrop['cropper'] : false;
-                        scope.no_selection_url = scope.prCrop['no_selection_url'];
-
-                    }
-                };
-
-
-                var updateCoordinates = function (dict) {
-                    if (!scope.prCrop['selected_by_user']['crop_coordinates']) {
-                        scope.prCrop['selected_by_user']['crop_coordinates'] = {}
-                    }
-                    $.extend(scope.prCrop['selected_by_user']['crop_coordinates'], dict);
-                }
-
-                var getFromCoordinates = function (key, ifnotset) {
-                    return (!scope.prCrop['selected_by_user']['crop_coordinates']
-                    || scope.prCrop['selected_by_user']['crop_coordinates'][key] === undefined
-                    || scope.prCrop['selected_by_user']['crop_coordinates'][key] === null) ?
-                        (ifnotset === undefined ? null : ifnotset) :
-                        scope.prCrop['selected_by_user']['crop_coordinates'][key];
-                }
-
-
-                scope.setModel();
-
-                element.html($templateCache.get('cropper.html'));
-
-                $compile(element.contents())(scope);
-
-
-                var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
-
-                window[callback_name] = function (item) {
-                    closeFileManager();
-                    restartCropper(fileUrl(item.id), {
-                        'type': 'browse',
-                        'image_file_id': item.id,
-                        'crop_coordinates': {
-                            'zoom': null,
-                            'rotate': 0
+                scope.$watch('state', function (newv, oldv) {
+                        if (newv) {
+                            if (!scope.prCrop['selected_by_user']['crop_coordinates'])
+                                scope.prCrop['selected_by_user']['crop_coordinates'] = {};
+                            scope.prCrop['selected_by_user']['crop_coordinates']['zoom'] = newv['zoom'];
                         }
-                    });
-                };
-
-                scope.zoom = function (ratio, only_check_posibility) {
-                    if (!scope.croper_loaded) return false;
-                    var curent_zoom = getFromCoordinates('zoom', null);
-
-                    if (ratio < 0 && curent_zoom <= scope.minzoom) return false;
-                    if (ratio > 0 && curent_zoom >= scope.maxzoom) return false;
-
-                    if (!only_check_posibility) {
-                        $image.cropper('zoom', ratio);
                     }
-                    return true;
-                };
+                );
+
+                scope.$watchCollection('coordinates', function (newv, oldv) {
+                    if (newv) {
+                        if (!scope.prCrop['selected_by_user']['crop_coordinates'])
+                            scope.prCrop['selected_by_user']['crop_coordinates'] = {};
+                        scope.prCrop['selected_by_user']['crop_coordinates']['x'] = newv[0];
+                        scope.prCrop['selected_by_user']['crop_coordinates']['y'] = newv[0];
+                        scope.prCrop['selected_by_user']['crop_coordinates']['width'] = newv[2] - newv[0];
+                        scope.prCrop['selected_by_user']['crop_coordinates']['height'] = newv[3] - newv[1];
+                    }
+                });
+
+                scope.$watch('prCrop', function (newv, oldv) {
+                    scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
+                    if (!newv) return;
+
+                    var selected_by_user = newv['selected_by_user'];
+                    if (!scope.original_model) {
+                        scope.original_model = selected_by_user;
+                    }
+                    scope.coordinates = [];
+                    scope.state = {};
+                    scope.browsable = newv['browse'] ? true : false;
+                    scope.uploadable = newv['upload'] ? true : false;
+                    scope.resetable = true;
+                    scope.noneurl = newv['no_selection_url'];
+                    scope.options = {}
+                    if (newv.min_size) scope.options['min_width'] = newv.min_size[0];
+                    if (newv.min_size) scope.options['min_height'] = newv.min_size[1];
+                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['min_aspect'] = newv.cropper.aspect_ratio[0];
+                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['max_aspect'] = newv.cropper.aspect_ratio[1];
+                    scope.setModel(selected_by_user, false);
+                });
 
                 scope.selectPresetUrl = function (className) {
                     if (scope.prCrop['preset_urls'] && scope.prCrop['preset_urls'][className]) {
-                        restartCropper(scope.prCrop['preset_urls'][className], {
-                            'type': 'preset',
-                            'class': className
-                        }, true);
-
+                        scope.setModel({'type': 'preset', 'class': className});
                     }
                 };
 
+                var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
+
+
+                window[callback_name] = function (item) {
+                    scope.setModel({'type': 'browse', 'image_file_id': item.id, crop_coordinates: null});
+                    closeFileManager();
+                };
+
                 scope.selectNone = function () {
-                    if (scope.noneurl) {
-                        restartCropper(scope.noneurl, {'type': 'none'}, true);
+                    scope.setModel({'type': 'none'});
+                }
+
+                scope.resetModel = function () {
+                    scope.setModel(scope.original_model);
+                }
+
+
+                scope.setModel = function (model, do_not_set_ng_crop) {
+
+                    // console.log('set_model',model);
+
+                    switch (model['type']) {
+                        case 'browse':
+                            var crd = model.crop_coordinates;
+                            scope.selectedurl = fileUrl(model['image_file_id']);
+                            scope.disabled = false;
+                            scope.coordinates = crd ? [crd.x, crd.y, crd.width + crd.x, crd.height + crd.y] : null;
+                            scope.state = null;
+                            break;
+                        case 'none':
+                            scope.selectedurl = scope.noneurl;
+                            scope.disabled = true;
+                            scope.coordinates = null;
+                            scope.state = null;
+                            break;
+                        case 'upload':
+                            scope.selectedurl = model['file']['content'];
+                            scope.disabled = false;
+                            scope.coordinates = null;
+                            scope.state = null;
+                            break;
+                        case 'preset':
+                            scope.selectedurl = scope.prCrop['preset_urls'][model['class']];
+                            scope.disabled = true;
+                            scope.coordinates = null;
+                            scope.state = null;
+                            break;
+                    }
+
+                    scope.onload = function () {
+                        if (!do_not_set_ng_crop) {
+                            $timeout(function () {
+                                scope.prCrop['selected_by_user'] = model;
+                            })
+                        }
+                    }
+
+                }
+
+                scope.fileUploaded = function (event) {
+                    var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
+                    $(this).val('');
+                    if (the_file) {
+                        var fr = new FileReader();
+                        fr.onload = function (e) {
+                            scope.setModel({
+                                'type': 'upload',
+                                'file': {'mime': the_file.type, 'name': the_file.name, 'content': fr.result}
+                            })
+                        }
+                        fr.onerror = function (e) {
+                            add_message('File loading error', 'warning');
+                        }
+                        fr.readAsDataURL(the_file);
                     }
                 };
 
                 scope.chooseImage = function (setImage) {
-                    if (setImage) {
-                        scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.prCrop['browse']);
-                    }
+                    scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.original_model['browse']);
                 };
 
-                scope.resetModel = function () {
-                    scope.prCrop = $.extend(true, {}, scope.originalModel);
-                    scope.setModel();
-                };
 
-                var $image = $('img', element);
-                var $outer_container = $('.img-container', element);
-                var $inner_container = $('.img-container-cropper', element);
-
-
-                scope.fileUploaded = function (event) {
-                    var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
-                    if (the_file) {
-                        var fr = new FileReader();
-                        if (/^image\/\w+$/.test(the_file.type)) {
-                            fr.onload = function (e) {
-                                var uploaded_file = (window.URL || window.webkitURL).createObjectURL(the_file);
-                                restartCropper(uploaded_file, {
-                                    'type': 'upload',
-                                    'file': {
-                                        'mime': the_file.type,
-                                        'name': the_file.name,
-                                        'content': fr.result
-                                    },
-                                    'crop_coordinates': {zoom: null, 'rotate': 0}
-                                });
-                            }
-                            fr.onerror = function (e) {
-                                loadImage(false);
-                                add_message('File loading error', 'warning');
-                            }
-                            loadImage(true);
-                            fr.readAsDataURL(the_file);
-                        }
-                        else {
-                            add_message('Please choose an image file', 'warning');
-                        }
+                scope.zoom_by = function (by, check_only) {
+                    if (scope.loading || scope.disabled || !scope.state) return false;
+                    var ok = false;
+                    if (by > 1 && scope.state.zoom * by <= scope.logic.ctr.max_zoom) ok = true;
+                    if (by < 1 && scope.state.zoom * by >= scope.logic.ctr.min_zoom) ok = true;
+                    if (!check_only && ok) {
+                        scope.state = {zoom: scope.state.zoom * by, x: scope.state.x, y: scope.state.y};
                     }
-                };
-
-                var resizeContainer = function (loadedimg) {
-
-                    if (!loadedimg) {
-                        $inner_container.css({
-                            'width': '100%',
-                            'height': '100%',
-                            'top': '0px',
-                            'left': '0px'
-                        });
-                        return;
-                    }
-
-
-                    if (scope.prCrop['min_size'] &&
-                        (scope.prCrop['min_size'][0] && loadedimg.width < scope.prCrop['min_size'][0] ||
-                        scope.prCrop['min_size'][1] && loadedimg.height < scope.prCrop['min_size'][1])) {
-                        return scope.$root._('Image too small. minimum size is %(0)sx%(1)s', scope.prCrop['min_size'])
-                    }
-
-
-                    var options = {};
-
-                    var image_wider = loadedimg.width * $outer_container.height() / loadedimg.height / $outer_container.width()
-                    if (image_wider > 1) {
-                        $inner_container.css({
-                            'width': $outer_container.width() + 'px',
-                            'height': $outer_container.height() / image_wider + 'px',
-                            'top': $outer_container.height() * (1 - 1 / image_wider) / 2 + 'px',
-                            'left': '0px'
-                        });
-                        options['minContainerWidth'] = $outer_container.width();
-                        options['minContainerHeight'] = $outer_container.height() / image_wider;
-                        scope.minzoom = 1.0 * $inner_container.width() / loadedimg.width;
-                    }
-                    else {
-                        $inner_container.css({
-                            'width': $outer_container.width() * image_wider + 'px',
-                            'height': $outer_container.height() + 'px',
-                            'top': '0px',
-                            'left': $outer_container.width() * (1 - image_wider ) / 2 + 'px'
-
-                        });
-                        options['minContainerWidth'] = $outer_container.width() * image_wider;
-                        options['minContainerHeight'] = $outer_container.height();
-                        scope.minzoom = 1.0 * $inner_container.height() / loadedimg.height;
-                    }
-
-                    scope.maxzoom = 1.0;
-
-                    if (scope.minzoom > scope.maxzoom) {
-                        scope.minzoom = scope.maxzoom;
-                    }
-
-                    if (scope.prCrop['cropper']) {
-                        options['minCanvasWidth'] = options['minContainerWidth'];
-                        options['minCanvasHeight'] = options['minContainerHeight'];
-                        //if (scope.prCrop) {
-                        //    console.log(scope.prCrop['min_size']);
-                        //    options['minCropBoxWidth'] = scope.prCrop['min_size'][0] * scope.maxzoom;
-                        //    options['minCropBoxHeight'] = scope.prCrop['min_size'][1] * scope.maxzoom;
-                        //}
-                        scope.aspect_ratio = false;
-                        scope.previous_data = null;
-                        if (_.isArray(scope.prCrop['cropper']['aspect_ratio']) && scope.prCrop['cropper']['aspect_ratio'].length == 2
-                            && scope.prCrop['cropper']['aspect_ratio'][0] > 0 && scope.prCrop['cropper']['aspect_ratio'][1] > 0 &&
-                            scope.prCrop['cropper']['aspect_ratio'][0] <= scope.prCrop['cropper']['aspect_ratio'][1]) {
-                            scope.aspect_ratio = [scope.prCrop['cropper']['aspect_ratio'][0], scope.prCrop['cropper']['aspect_ratio'][1]]
-                        }
-                    }
-                    return options;
-                }
-
-                var normalize_coordinates = function (coordinates, size, aspect, east, west, north, south) {
-                    var changed = false;
-                    if (!coordinates) {
-                        coordinates = {};
-                        changed = true;
-                    }
-
-                    if (!(coordinates.x >= 0 && coordinates.x <= size[0] - 1 && coordinates.width >= 1 && coordinates.width <= size[0] - coordinates.x)) {
-
-                        coordinates.x = size[0] / 10.
-                        coordinates.width = 8 * size[0] / 10.
-                        changed = true;
-                    }
-
-                    if (!(coordinates.y >= 0 && coordinates.y <= size[1] - 1 && coordinates.height >= 1 && coordinates.height <= size[1] - coordinates.y)) {
-                        coordinates.y = size[1] / 10.
-                        coordinates.height = 8 * size[1] / 10.
-                        changed = true;
-                    }
-
-                    if (aspect) {
-                        var img_aspect = coordinates.width / coordinates.height;
-                        if (img_aspect < aspect[0]) {
-                            coordinates.y += (coordinates.height - coordinates.width / aspect[0]) / 2.
-                            coordinates.height -= (coordinates.height - coordinates.width / aspect[0])
-                            changed = true;
-                        }
-                        if (img_aspect > aspect[1]) {
-                            coordinates.x += (coordinates.width - coordinates.height * aspect[1]) / 2.
-                            coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
-                            changed = true;
-                        }
-                    }
-                    return changed;
-
-                }
-
-                var normalize_coordinates1 = function (x1, y1, x2, y2, size, container_size, minsize, aspect, corner_action) {
-                    console.log(aspect);
-
-                    coordinates = {
-                        x: Math.min(x1, x2) / container_size[0] * size[0],
-                        y: Math.min(y1, y2) / container_size[1] * size[1]
-                    }
-                    coordinates['width'] = coordinates.x + Math.max(x1, x2) / container_size[0] * size[0];
-                    coordinates['height'] = coordinates.y + Math.max(y1, y2) / container_size[1] * size[1];
-
-                    //console.log(coordinates);
-
-
-                    var changed = false;
-                    //if (!coordinates) {
-                    //    coordinates = {
-                    //        x: size[0] / 10.,
-                    //        y: size[1] / 10.,
-                    //        width: 9. * size[0] / 10.,
-                    //        height: 9. * size[1] / 10.
-                    //    };
-                    //}
-
-                    //coordinates.x = coordinates.x >= 0 ? coordinates.x : 0;
-                    //coordinates.y = coordinates.y >= 0 ? coordinates.y : 0;
-                    //coordinates.width = coordinates.x + coordinates.width <= size[0] ? coordinates.width : size[0] - coordinates.x;
-                    //coordinates.height = coordinates.y + coordinates.height <= size[1] ? coordinates.height : size[1] - coordinates.y;
-
-                    //if (!(coordinates.x >= 0))
-                    //
-                    //    coordinates.x = size[0] / 10.
-                    //    coordinates.width = 8 * size[0] / 10.
-                    //    changed = true;
-                    //}
-                    //
-                    //if (!(coordinates.y >= 0 && coordinates.y <= size[1] - 1 && coordinates.height >= 1 && coordinates.height <= size[1] - coordinates.y)) {
-                    //    coordinates.y = size[1] / 10.
-                    //    coordinates.height = 8 * size[1] / 10.
-                    //    changed = true;
-                    //}
-
-                    var xmove = 0;
-                    var ymove = 0;
-                    switch (corner_action) {
-                        case 'nw':
-                            xmove = 1.;
-                            ymove = 1.;
-                            break;
-                        case 'n':
-                            xmove = 0.5;
-                            ymove = 1.;
-                            break;
-                        case 'ne':
-                            xmove = 0;
-                            ymove = 1.;
-                            break;
-                        case 'e':
-                            xmove = 0;
-                            ymove = 0.5;
-                            break;
-                        case 'se':
-                            xmove = 0;
-                            ymove = 0;
-                            break;
-                        case 's':
-                            xmove = 0.5;
-                            ymove = 0;
-                            break;
-                        case 'sw':
-                            xmove = 0;
-                            ymove = 1;
-                            break;
-                        case 'w':
-                            xmove = 1;
-                            ymove = 0.5;
-                            break;
-                    }
-
-                    if (aspect) {
-                        var img_aspect = coordinates.width / coordinates.height;
-                        if (img_aspect < aspect[0]) {
-                            console.log(img_aspect, aspect, 'to wide', coordinates);
-                            coordinates.y += (coordinates.height - coordinates.width / aspect[0]) * ymove;
-                            coordinates.height -= (coordinates.height - coordinates.width / aspect[0])
-                            changed = true;
-                        }
-                        else if (img_aspect > aspect[1]) {
-                            console.log(img_aspect, aspect, 'to tall', coordinates);
-                            coordinates.x += (coordinates.width - coordinates.height * aspect[1]) * xmove;
-                            coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
-                            changed = true;
-                        }
-                    }
-                    return coordinates;
-
-                }
-
-                var runCropper = function (options, image_size) {
-
-                    var optionsa = {};
-
-                    options['strict'] = true;
-                    options['viewMode'] = 3;
-                    //options['aspectRatio'] = 1;
-                    options['zoomable'] = scope.zoomable;
-
-                    options['zoom'] = function (e) {
-                        if (e.ratio < scope.minzoom * 1.01 && e.ratio !== scope.minzoom) {
-                            e.preventDefault();
-                            if (Math.abs(e.oldRatio - scope.minzoom) / scope.minzoom > 0.01) {
-                                $(this).cropper('zoomTo', scope.minzoom);
-                            }
-                            return false;
-                        }
-
-                        if (e.ratio > scope.maxzoom * 0.99 && e.ratio !== scope.maxzoom) {
-                            e.preventDefault();
-                            if (Math.abs(e.oldRatio !== scope.maxzoom) / scope.maxzoom > 0.01) {
-                                $(this).cropper('zoomTo', scope.maxzoom);
-                            }
-                            return false;
-                        }
-
-                        updateCoordinates({'zoom': e.ratio});
-
-
-                        var data = $image.cropper('getData');
-                        var zoomed = false;
-
-                        if (data.width < scope.prCrop['min_size'][0] * scope.maxzoom) {
-                            data.width = scope.prCrop['min_size'][0] * scope.maxzoom;
-                            if (data.width + data.x > image_size[0]) {
-                                data.x = image_size[0] - data.width;
-                            }
-                            zoomed = true;
-                        }
-                        if (data.height < scope.prCrop['min_size'][1] * scope.maxzoom) {
-                            data.height = scope.prCrop['min_size'][1] * scope.maxzoom;
-                            if (data.height + data.y > image_size[1]) {
-                                data.y = image_size[1] - data.height;
-                            }
-                            zoomed = true;
-                        }
-                        if (zoomed) {
-                            $image.cropper('setData', scope.previous_data)
-                            updateCoordinates({'x': data.x, 'y': data.y, 'width': data.width, 'height': data.height});
-                        }
-
-
-                    }
-
-                    options['built'] = function (e) {
-                        scope.croper_loaded = true;
-                        if (scope.zoomable) {
-                            $(this).cropper('zoomTo', getFromCoordinates('zoom', scope.minzoom));
-                        }
-                    }
-
-                    options['cropstart'] = function (e) {
-                        console.log(e);
-                        scope.click_data = {'action': e.action, 'x': e.originalEvent.x, 'y': e.originalEvent.y};
-//'e': resize the east side of the crop box
-//'w': resize the west side of the crop box
-//'s': resize the south side of the crop box
-//'n': resize the north side of the crop box
-//'se': resize the southeast side of the crop box
-//'sw': resize the southwest side of the crop box
-//'ne': resize the northeast side of the crop box
-//'nw': resize the northwest side of the crop box
-                    }
-
-                    options['cropmove'] = function (e) {
-                        //console.log(e.width);
-                        console.log(e.originalEvent.x, (e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y));
-                        if ((e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y) > 1.0) {
-                            e.originalEvent.x = e.originalEvent.y - scope.click_data.y + scope.click_data.x;
-
-                        }
-                        e.originalEvent.x = 100;
-                        console.log(e.originalEvent.x);
-                        return;
-                        var data = {x: e.x, y: e.y, width: e.width, height: e.height}
-                        console.log(e.originalEvent.x);
-                        var new_data = normalize_coordinates1(scope.click_data.x, scope.click_data.y,
-                            e.originalEvent.x, e.originalEvent.y, image_size,
-                            [options['minCanvasWidth'], options['minCanvasHeight']],
-                            [100, 100], scope.aspect_ratio, scope.click_data.action);
-                        if (new_data) {
-                            e.originalEvent.x = (new_data.x + new_data.width) / image_size[0] * options['minCanvasWidth'];
-                            e.originalEvent.y = (new_data.y + new_data.height) / image_size[1] * options['minCanvasHeight'];
-                        }
-                        console.log(e.originalEvent.x);
-
-                    }
-
-
-                    optionsa['crop'] = function (e) {
-
-                        if (e.width / e.height > 1) {
-                            e.width = e.height;
-
-                            $image.cropper('setData', {width: e.width});
-                            e.preventDefault();
-                        }
-                        return;
-
-                        var data = {x: e.x, y: e.y, width: e.width, height: e.height}
-
-                        var changed = normalize_coordinates1(data, image_size, image_size, scope.aspect_ratio, scope.corner_action);
-                        if (changed) {
-                            e.x = data.x;
-                            e.y = data.y;
-                            e.width = data.width;
-                            e.height = data.height;
-                            e.preventDefault();
-                            $image.cropper('setData', data);
-                            $timeout(function () {
-                                updateCoordinates({
-                                    'width': data.width,
-                                    'height': data.height,
-                                    'y': data.y,
-                                    'x': data.x
-                                });
-                            })
-                        }
-                        else {
-                            $timeout(function () {
-                                updateCoordinates({
-                                    'width': data.width,
-                                    'height': data.height,
-                                    'y': data.y,
-                                    'x': data.x
-                                });
-                            })
-                        }
-
-
-                        //if (scope.aspect_ratio) {
-                        //    var data = $image.cropper('getData');
-                        //
-                        //    var asp = data.width / data.height;
-                        //    if (asp < scope.aspect_ratio[0] || asp > scope.aspect_ratio[1]) {
-                        //        event.preventDefault();
-                        //        if (scope.previous_data) {
-                        //            $image.cropper('setData', scope.previous_data)
-                        //        }
-                        //        return false;
-                        //    }
-                        //    if (data.width < scope.prCrop['min_size'][0] * scope.maxzoom || data.height < scope.prCrop['min_size'][1] * scope.maxzoom) {
-                        //        event.preventDefault();
-                        //        if (scope.previous_data) {
-                        //            $image.cropper('setData', scope.previous_data)
-                        //        }
-                        //        return false;
-                        //    }
-                        //    else {
-                        //        scope.previous_data = data;
-                        //    }
-                        //}
-
-
-                    }
-                    $image.cropper(options);
-                }
-
-                var loadImage = function (load) {
-                    if (load) {
-                        $inner_container.hide();
-                        $outer_container.removeClass('cropper-bg');
-                        $outer_container.addClass('loading');
-                    }
-                    else {
-                        $outer_container.removeClass('loading');
-                        $outer_container.addClass('cropper-bg');
-                        $inner_container.show();
-                    }
-                }
-
-                var setNewModelValue = function (new_selection_by_user) {
-                    if (new_selection_by_user) {
-                        $timeout(function () {
-                            scope.prCrop['selected_by_user'] = new_selection_by_user;
-                        }, 0);
-                    }
+                    return ok;
                 }
 
 
-                var restartCropper = function (src, new_selection_by_user, force_image_src_on_error) {
-                    var fr = new Image();
-                    fr.addEventListener('load', function (e) {
-
-                        loadImage(false);
-                        var options = resizeContainer(fr);
-                        if (typeof options === 'string') {
-                            add_message(options, 'warning');
-                            return false;
-                        }
-
-
-                        scope.croper_loaded = false;
-                        $image.cropper('destroy');
-                        $image.attr('src', src);
-
-                        var selection = new_selection_by_user ? new_selection_by_user : scope.prCrop['selected_by_user'];
-
-                        options['autoCrop'] = true;
-
-                        options['data'] = normalize_coordinates(selection['crop_coordinates'], [fr.width, fr.height],
-                            (scope.aspect_ratio ? [scope.aspect_ratio[0], scope.aspect_ratio[1]] : false));
-                        if (scope.prCrop['cropper'] && ((selection['type'] === 'browse') || (selection['type'] === 'upload'))) {
-                            runCropper(options, [fr.width, fr.height]);
-                        }
-                        setNewModelValue(new_selection_by_user);
-                    }, false);
-                    fr.addEventListener('error', function (e) {
-                            if (force_image_src_on_error) {
-                                $image.attr('src', src);
-                                resizeContainer(false);
-                                scope.croper_loaded = false;
-                                $image.cropper('destroy');
-                                setNewModelValue(new_selection_by_user);
-                            }
-                            loadImage(false);
-                            add_message('Image loading error', 'warning');
-                        }
-                    );
-                    loadImage(true)
-                    fr.src = src;
-                }
-
-
-                scope.$watch('prCrop', function (newv, oldv) {
-                    var imageUrlFromUserSelection = function () {
-                        if (scope.prCrop['selected_by_user']['type'] === 'browse') {
-                            return fileUrl(scope.prCrop['selected_by_user']['image_file_id']);
-                        }
-                        else if (scope.prCrop['selected_by_user']['type'] === 'preset') {
-                            var selected_classname = scope.prCrop['selected_by_user']['class'];
-                            if (scope.prCrop['preset_urls'] && selected_classname && scope.prCrop['preset_urls'][selected_classname]) {
-                                return scope.prCrop['preset_urls'][selected_classname]
-                                //restartCropper(scope.prCrop['preset_urls'][selected_classname], {
-                                //    'type': 'preset',
-                                //    'class': selected_classname
-                                //});
-                            }
-                            else {
-                                return scope.prCrop['no_selection_url'];
-                            }
-                        }
-                        else {
-                            return scope.prCrop['no_selection_url'];
-                        }
-                    }
-
-                    scope.originalModel = $.extend(true, {}, scope.prCrop);
-                    scope.setModel();
-                    if (scope.prCrop && scope.prCrop['selected_by_user']) {
-                        restartCropper(imageUrlFromUserSelection(), null, true);
-                    }
-                });
-
-
+                $compile(element)(scope);
+                $compile($(element).next())(scope);
             }
         }
             ;
-    }])
+    })
+
     .directive('dateTimestampFormat', function () {
         return {
             require: 'ngModel',
@@ -2183,18 +2372,20 @@ $.fn.scrollTo = function () {
 }
 
 function getPopoverContent(content_list, width) {
-    if(content_list.length === 0){
+    if (content_list.length === 0) {
         return '';
     }
-    $('.liked-favorite-band .popover').css({'background-color':'black','color':'white',
-        'width':width?width.toString():'160'+'px','overflow': 'hidden'})
+    $('.liked-favorite-band .popover').css({
+        'background-color': 'black', 'color': 'white',
+        'width': width ? width.toString() : '160' + 'px', 'overflow': 'hidden'
+    })
     var content = '';
-    var limit = width?width:160/10;
-    for(var i =0;i<content_list.length;i+=1){
-        if(content_list[i].length>limit){
-            content += '<spam class="ellipsis">'+content_list[i].substring(0,limit)+'...'+'</spam><br>';
-        }else{
-            content += '<spam class="ellipsis">'+content_list[i]+'</spam><br>';
+    var limit = width ? width : 160 / 10;
+    for (var i = 0; i < content_list.length; i += 1) {
+        if (content_list[i].length > limit) {
+            content += '<spam class="ellipsis">' + content_list[i].substring(0, limit) + '...' + '</spam><br>';
+        } else {
+            content += '<spam class="ellipsis">' + content_list[i] + '</spam><br>';
         }
     }
     return content
