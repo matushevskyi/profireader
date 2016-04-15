@@ -3,15 +3,13 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_articles.html' %}
-    {#    {% include '_ruslan/partials/_header_files_crop.html' %}#}
+    {% include '_ruslan/partials/_header_files_crop.html' %}
 {% endblock head %}
 
 {% block portal_content %}
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
-    {% from 'macros.html' import scripts %}
-    {{ scripts(names=['cropper']) }}
     <script>
         module.controller('CompanyProfile', function ($scope, $timeout) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');
