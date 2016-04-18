@@ -81,6 +81,8 @@ def filemanager():
 
 
 @filemanager_bp.route('/list/', methods=['POST'])
+@login_required
+@tos_required
 @ok
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
@@ -93,6 +95,8 @@ def list(json):
     return {'list': list, 'ancestors': ancestors}
 
 @filemanager_bp.route('/createdir/', methods=['POST'])
+@login_required
+@tos_required
 @ok
 def createdir(json):
     if not File.if_action_allowed('upload', get_company_from_folder(json['params']['root_id']).id):
@@ -103,6 +107,8 @@ def createdir(json):
 
 
 @filemanager_bp.route('/properties/', methods=['POST'])
+@login_required
+@tos_required
 @ok
 def set_properties(json):
     file = File.get(json['params']['id'])
@@ -114,15 +120,20 @@ def set_properties(json):
 
 
 @filemanager_bp.route('/copy/', methods=['POST'])
+@login_required
+@tos_required
 @ok
 def copy(json):
     file = File.get(json['params']['id'])
-    if not file or not File.if_action_allowed('upload', get_company_from_folder(json['params']['id']).id):
+    if not file or not File.if_action_allowed('upload', get_company_from_folder(json['params']['folder_id']).id):
+        print()
         return False
     return file.copy_file(json['params']['folder_id']).id
 
 
 @filemanager_bp.route('/cut/', methods=['POST'])
+@login_required
+@tos_required
 @ok
 def cut(json):
     file = File.get(json['params']['id'])
@@ -132,6 +143,8 @@ def cut(json):
 
 
 @filemanager_bp.route('/auto_remove/', methods=['POST'])
+@login_required
+@tos_required
 @ok
 def auto_remove(json):
     return File.auto_remove(json.get('list'))
@@ -141,6 +154,8 @@ def get_company_from_folder(file_id):
     return db(Company, journalist_folder_file_id=ancestors[0]).first()
 
 @filemanager_bp.route('/remove/<string:file_id>', methods=['POST'])
+@login_required
+@tos_required
 @ok
 def remove(json, file_id):
     file = File.get(file_id)
@@ -166,6 +181,8 @@ def uploader(company_id=None):
 
 
 @filemanager_bp.route('/send/<string:parent_id>/', methods=['POST'])
+@login_required
+@tos_required
 def send(parent_id):
     parent = File.get(parent_id)
     root = parent.root_folder_id

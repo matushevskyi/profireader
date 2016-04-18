@@ -3,11 +3,10 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_articles.html' %}
+    {% include '_ruslan/partials/_header_files_crop.html' %}
 {% endblock head %}
 
 {% block portal_content %}
-    {% from 'macros.html' import scripts %}
-    {{ scripts(names=['cropper']) }}
     <script>
         module.controller('portal_create', ['$scope', '$uibModal', function ($scope, $uibModal) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');

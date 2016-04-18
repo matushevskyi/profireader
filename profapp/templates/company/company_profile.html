@@ -3,15 +3,13 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_articles.html' %}
-    {#    {% include '_ruslan/partials/_header_files_crop.html' %}#}
+    {% include '_ruslan/partials/_header_files_crop.html' %}
 {% endblock head %}
 
 {% block portal_content %}
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
-    {% from 'macros.html' import scripts %}
-    {{ scripts(names=['cropper']) }}
     <script>
         module.controller('CompanyProfile', function ($scope, $timeout) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');
@@ -25,6 +23,7 @@
             $scope.url_portal_profile = {{raw_url_for('portal.profile') | safe}};
 
             $scope.data = {};
+            $scope.coordinates = [];
             $scope.rights_user_in_company = {{rights_user_in_company | tojson | safe}};
 
             $scope.editing = false;
@@ -61,7 +60,7 @@
             };
 
             $scope.afterLoad = function (resp, deff) {
-                $scope.can_edit = resp['actions']['edit'];
+                $scope.can_edit = resp['actions']?resp['actions']['edit']:false;
                 $scope.editing = resp.id ? false : true;
                 deff(resp);
 //                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
@@ -110,8 +109,8 @@
                                 ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
                         </button>
                     </div>
-                </div>
 
+                </div>
                 <div class="row company">
                     <div class="col-lg-5 col-md-5 col-sm-7 col-xs-12 image-company-profile">
 
@@ -120,7 +119,8 @@
                              pr-image="data.logo_file_id" alt="image">
 
                         <div ng-if="editing">
-                            <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
+                        <div style="width: 400px; height: 300px; position: relative"
+                                                       pr-crop="data.logo"></div>
                         </div>
                     </div>
 

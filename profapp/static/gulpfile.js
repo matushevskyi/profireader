@@ -85,9 +85,14 @@ gulp.task('install_angular_xeditable', function () {
         .pipe(gulp.dest(dst + 'angular-xeditable/'));
 });
 
+// gulp.task('install_cropper', function () {
+//     return gulp.src([src + 'cropper/dist/cropper.css', src + 'cropper/dist/cropper.js'])
+//         .pipe(gulp.dest(dst + 'cropper/'));
+// });
+
 gulp.task('install_cropper', function () {
-    return gulp.src([src + 'cropper/dist/cropper.css', src + 'cropper/dist/cropper.js'])
-        .pipe(gulp.dest(dst + 'cropper/'));
+    return gulp.src(['bower_components_dev/ng-crop/src/*'])
+        .pipe(gulp.dest(dst + 'ng-crop/'));
 });
 
 gulp.task('install_slider', function () {

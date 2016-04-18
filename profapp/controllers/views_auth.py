@@ -86,6 +86,7 @@ def login_signup_general(*soc_network_names):
                 # is automatically executed by login_user(user)
 
                 if session.get('portal_id'):
+                    g.user.subscribe_to_portal(session.get('portal_id'))
                     portal_id = session['portal_id']
                     session.pop('portal_id')
                     return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
@@ -184,9 +185,9 @@ def signup():
                            login_signup='signup')
 
 
+
+# TODO: YG by OZ:
 @auth_bp.route('//', methods=['POST'])
-
-
 @auth_bp.route('/login_signup/<soc_network_name>', methods=['GET', 'POST'])
 # @auth_bp.route('/login_signup_socnet/<soc_network_name>', methods=['GET', 'POST'])
 # @auth_bp.route('/login_signup/<string:soc_network_name>/<string:portal_id>', methods=['GET', 'POST'])
@@ -288,7 +289,7 @@ def confirm(token):
     user = db(User, email_conf_token=token).first()
     portal_id = request.args.get('subscribe_to_portal')
     if user and user.confirmed:
-        return render_template("error.html", message='Your account has been already confirmed!')
+        return render_template("auth/confirm_email.html", message='Your account has been already confirmed!')
     elif not user or not user.confirm_email():
         return render_template("auth/unconfirmed.html", message='Wrong or expired token',
                                email=user.profireader_email if user else '')

@@ -1,9 +1,11 @@
 {% extends "index_lazy_layout.html" %}
 {% block title %}Profireader - {{ current_user.profireader_name }}{% endblock title %}
+{% block head %}
+    {{ super() }}
+    {% include '_ruslan/partials/_header_files_crop.html' %}
+{% endblock head %}
 
 {% block portal_content %}
-    {% from 'macros.html' import scripts %}
-    {{ scripts(names=['cropper']) }}
     <script>
         module.controller('edit_user', ['$scope', function ($scope) {
             $scope.$$translate = {{ translates('edit_user')|safe }};
@@ -44,7 +46,6 @@
                    href="{{ data.user?url_user_profile({'user_id': data.user.id}):'' }}"><i
                         class="fa fa-cog fa-2x"></i></a>
             </div>
-
             <div class="row">
                 <div class="profile-thumbnail">
                     <div style="width: 100%; height: 300px; position: relative" pr-crop="data.user.avatar"></div>

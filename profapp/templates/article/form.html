@@ -3,6 +3,7 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_articles.html' %}
+    {% include '_ruslan/partials/_header_files_crop.html' %}
 {% endblock head %}
 
 {% block portal_content %}
@@ -10,10 +11,6 @@
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
-
-    {#TODO: VH by OZ remove below line#}
-    {% from 'macros.html' import scripts %}
-    {{ scripts(names=['cropper']) }}
 
     <script>
         module.controller('article_edit', ['$scope', function ($scope) {
@@ -62,6 +59,12 @@
             };
 
             $scope.amidLoad = function (resp) {
+
+                if(typeof resp  === 'string'){
+                    location.href = '/'
+                    add_message(resp, 'warning', 2000)
+                    console.log(resp)
+                }
                 resp.article.publishing_tm = new Date(resp.article.publishing_tm);
                 resp.portal_division = $scope.setPositioning(resp.portal_division, resp.article.id);
                 return resp;

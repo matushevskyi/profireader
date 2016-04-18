@@ -33,7 +33,7 @@
             if ($scope.user && $scope.user.tos != true) {
                 var modalInstance = $uibModal.open({
                             templateUrl: 'tos_dialog.html',
-                            controller: 'tos_dialog_controller',
+                            controller: 'tos_dialog_controller'
                         });
                 modalInstance.result.then(function (accepted) {
                     $scope.user.tos = accepted;
@@ -91,10 +91,8 @@
 {% raw %}
 <nav ng-controller="UserLoginController" class="navbar navbar-fixed-top nav-bg">
     <div class="container" ng-cloak>
-
-        <div class="row">
-            <button pr-test="HeaderAcceptLicence" type="button" ng-click="tos()" class="btn btn-info btn-lg" ng-if="user && !user.tos">{{ _('Accept licence') }}</button>
             <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
+
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
                         data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
                     <span class="sr-only">{{ _('Toggle navigation') }}</span>
@@ -108,7 +106,7 @@
             </div>
 
             <div class="col-lg-offset-2 col-md-offset-1 col-lg-6 col-md-7 col-sm-8 col-xs-12 menu-site">
-
+                <button pr-test="HeaderAcceptLicence" type="button" ng-click="tos()" class="btn btn-info" style="float: left;margin-top: 15px" ng-if="user && !user.tos">{{ _('Accept licence') }}</button>
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <ul>
                         <li ng-if="user"><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="{{ _('Стрічкa читача') }}" ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
@@ -153,6 +151,5 @@
                 </div>
             </div>
         </div>
-    </div>
 </nav>
 {% endraw %}
