@@ -74,6 +74,7 @@
         };
 
         $scope.changeLanguage = function(lang){
+            console.log(lang)
             $ok('{{ url_for('user.change_language') }}', {'language': lang}, function(resp) {
                 location.reload();
             });

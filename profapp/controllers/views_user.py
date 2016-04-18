@@ -72,8 +72,7 @@ def edit_profile_load(json, user_id):
             ret['user']['avatar'] = g.user.get_avatar_client_side_dict()
             return ret
 
-@user_bp.route('/change_lang', methods=['POST'])
-@tos_required
+@user_bp.route('/change_lang/', methods=['POST'])
 @ok
 def change_language(json):
     if g.user:
