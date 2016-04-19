@@ -512,8 +512,8 @@ class PRBase:
             new_orginal_image = File.uploadLogo(content, original_image.name, original_image.mime, folder_id)
         if old_image_cropped:
             old_original_image = File.get(old_image_cropped.original_image_id)
-            if old_original_image:
-                old_original_image.delete()
+            # if old_original_image:
+            #     old_original_image.delete()
         if selected_by_user_type == 'none':
             # todo: SS by OZ: is old file removed on this selection?
             return None

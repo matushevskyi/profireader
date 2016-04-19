@@ -102,10 +102,20 @@
             return iy * state.zoom - state.y;
         };
 
-        this.canvas2imgrect = function (canvasrect, state) {
+        this.canvas2imgRect = function (canvasrect, state) {
             return canvasrect ? [
                 this.canvas2imgX(canvasrect[0], state), this.canvas2imgY(canvasrect[1], state),
                 this.canvas2imgX(canvasrect[2], state), this.canvas2imgY(canvasrect[3], state)] : null;
+        };
+
+        this.canvas2imgPoint = function (canvaspoint, state) {
+            return canvaspoint ?
+                [this.canvas2imgX(canvaspoint[0], state), this.canvas2imgY(canvaspoint[1], state)] : null;
+        };
+
+        this.img2canvasPoint = function (imgpoint, state) {
+            return imgpoint ?
+                [this.img2canvasX(imgpoint[0], state), this.img2canvasY(imgpoint[1], state)] : null;
         };
 
         this.img2canvasRect = function (imgrect, state) {
@@ -123,14 +133,49 @@
         }
 
         this.autoRect = function () {
-            return [this.ctr.canvas[0] / 10., this.ctr.canvas[1] / 10., this.ctr.canvas[0] * 9 / 10., this.ctr.canvas[1] * 9 / 10.];
+            return [this.ctr.canvas[0] * 4 / 10., this.ctr.canvas[1] * 4 / 10., this.ctr.canvas[0] * 6 / 10., this.ctr.canvas[1] * 6 / 10.];
         }
 
+        // this.scaleImgRect = function (img_rect, zoom_ratio, compass) {
+        //     var oldcx = (img_rect[2] + img_rect[0]) / 2.;
+        //     var oldcy = (img_rect[3] + img_rect[1]) / 2.;
+        //     var nw = (img_rect[2] - img_rect[0]) * zoom_ratio;
+        //     var nh = (img_rect[3] - img_rect[1]) * zoom_ratio;
+        //     return [
+        //         oldcx - nw * compass.w,
+        //         oldcy - nh * compass.n,
+        //         oldcx + nw * compass.e,
+        //         oldcy + nh * compass.s]
+        // }
 
-        this.scale = function (canvasrect, state, compass) {
+        this.scaleRect = function (rect, zoom_ratio, compass) {
+            var oldcx = (rect[2] + rect[0]) / 2.;
+            var oldcy = (rect[3] + rect[1]) / 2.;
+            var oldw = (rect[2] - rect[0]) / 1.;
+            var oldh = (rect[3] - rect[1]) / 1.;
+            var nw = oldw * zoom_ratio;
+            var nh = oldh * zoom_ratio;
+            var ret = [
+                oldcx - oldw / 2. - (nw - oldw) / 2. * compass.w,
+                oldcy - oldh / 2. - (nh - oldh) / 2. * compass.n,
+                oldcx + oldw / 2. + (nw - oldw) / 2. * compass.e,
+                oldcy + oldh / 2. + (nh - oldh) / 2. * compass.s];
+            // console.log('scaleRect old center', oldcx, oldcy);
+            // console.log('scaleRect old size', (rect[2] - rect[0]), (rect[3] - rect[1]));
+            // console.log('scaleRect old rect', rect);
+            // console.log('scaleRect zoom ratio, compass', zoom_ratio, compass);
+            // console.log('scaleRect new center', (ret[2] + ret[0]) / 2, (ret[3] + ret[1]) / 2);
+            // console.log('scaleRect new size', (ret[2] - ret[0]), (ret[3] - ret[1]));
+            // console.log('scaleRect onew rect', ret);
+            return ret;
+
+        };
+
+
+        this.fitByCanvasRect = function (canvasrect, state, compass) {
             // scale canvas rect by image constrains (min/max size, aspect) and canvas size
             var ret = [canvasrect[0], canvasrect[1], canvasrect[2], canvasrect[3]];
-            var imgrect = this.canvas2imgrect(canvasrect, state);
+            var imgrect = this.canvas2imgRect(canvasrect, state);
             var max_w = this.ctr.max_width;
             var max_h = this.ctr.max_height;
             var min_w = this.ctr.min_width;
@@ -188,7 +233,7 @@
 
         this.fitByImageRect = function (canvasrect, state, compass) {
 
-            var ret = this.scale(canvasrect, state, compass);
+            var ret = this.fitByCanvasRect(canvasrect, state, compass);
             // console.log('this.fitByImageRect',canvasrect, ret);
 
             // image scaled by max min size and aspect ratio go out of cancas
@@ -221,7 +266,7 @@
                     ret[1] = 0;
                     ret[3] = this.ctr.canvas[1];
                 }
-                ret = this.scale(ret, compass, true);
+                ret = this.fitByCanvasRect(ret, compass, true);
                 if (ret[2] - ret[0] > this.ctr.canvas[0] || ret[3] - ret[1] > this.ctr.canvas[1]) {
                     return false;
                 }
@@ -242,13 +287,82 @@
             return ret;
         };
 
-        this.normalizeState = function (newstate, oldstate) {
-            
-            return {
-                x: 0,
-                y: 0,
-                zoom: newstate['zoom'] ? newstate['zoom'] : this.ctr.min_zoom
+        this.recalculateStateForNewZoom = function (new_zoom, relative_to_canvas_point, state) {
+            // console.log(new_zoom, relative_to_canvas_point, state)
+            var zoom_multiplier = new_zoom / state.zoom;
+            if (relative_to_canvas_point) {
+                relative_to_canvas_point = [relative_to_canvas_point[0] * 2, relative_to_canvas_point[1] * 2];
             }
+            else {
+                relative_to_canvas_point = [this.ctr.canvas[0], this.ctr.canvas[1]];
+            }
+
+            // console.log('zoom_by RELATIVE TO CANVAS POINT', relative_to_canvas_point);
+
+            var float_error = 0.000001;
+
+            if ((zoom_multiplier >= 1. && this.relativeDeviation(state.zoom, this.ctr.max_zoom) < float_error) ||
+                (zoom_multiplier <= 1. && this.relativeDeviation(state.zoom, this.ctr.min_zoom) < float_error)) {
+                return state;
+            }
+
+            var rect = [0, 0, this.ctr.canvas[0], this.ctr.canvas[1]];
+
+            var compass = {
+                'w': (relative_to_canvas_point[0] - rect[0]) / (rect[2] - rect[0]),
+                'n': (relative_to_canvas_point[1] - rect[1]) / (rect[3] - rect[1])
+            };
+            compass['s'] = 1. - compass['n'];
+            compass['e'] = 1. - compass['w'];
+
+            // debugger;
+            var current_fit_img_rect = this.canvas2imgRect(rect, state);
+            var new_fit_img_rect = this.scaleRect(current_fit_img_rect, 1. / zoom_multiplier, compass);
+            var new_canvas_origin = [new_fit_img_rect[0] * new_zoom, new_fit_img_rect[1] * new_zoom];
+
+            var new_state = {
+                zoom: new_zoom,
+                x: new_canvas_origin[0],
+                y: new_canvas_origin[1]
+            };
+
+            // console.log(new_state)
+
+            return new_state;
+            // );
+
+        };
+
+        this.normalizeState = function (newstate, oldstate) {
+
+            var retstate = {zoom: newstate['zoom'] ? newstate['zoom'] : this.ctr.min_zoom};
+            retstate.zoom = inRange(retstate.zoom, this.ctr.min_zoom, this.ctr.max_zoom);
+            var maxorigin = [this.img2canvasW(this.ctr.image_size[0], retstate) - this.ctr.canvas[0],
+                this.img2canvasH(this.ctr.image_size[1], retstate) - this.ctr.canvas[1]];
+
+            if (newstate['x'] >= 0 && newstate['y'] >= 0) {
+                retstate.x = newstate['x'];
+                retstate.y = newstate['y'];
+            }
+            else {
+                if (oldstate) {
+                    var newzoomstate = this.recalculateStateForNewZoom(retstate.zoom, null, oldstate);
+                    retstate.x = newzoomstate.x;
+                    retstate.y = newzoomstate.y;
+                }
+                else {
+                    retstate.x = 0;
+                    retstate.y = 0;
+                }
+
+
+            }
+
+            retstate.x = inRange(retstate.x, 0, maxorigin[0]);
+            retstate.y = inRange(retstate.y, 0, maxorigin[1]);
+
+            return retstate;
+
         }
 
         this.resizeRect = function (current_cr, state, compass) {
@@ -412,7 +526,7 @@
 
             // 'ngCropDisabled',
             $scope.$watchGroup(['ngCrop', 'ngCropCoordinates', 'ngCropState', 'ngCropDisabled'], function (newv, oldv) {
-                console.log(newv, oldv);
+                // console.log(newv, oldv);
                 var ff = function (i, n, o) {
                     if (n !== o) {
                         // console.log(i + ': ' + o + ' => ' + n);
@@ -467,7 +581,7 @@
                             $scope.img = img;
                             $scope.img.crossOrigin = "anonymous";
                             $scope.setNewLogic(newLogic, true);
-                            var new_state = $scope.logic.normalizeState(newState ? newState : $scope.logic.autoState());
+                            var new_state = $scope.logic.normalizeState(newState ? newState : $scope.logic.autoState(), $scope.state);
                             $scope.setNewState(new_state, true);
                             if (!newCoordinatrs) {
                                 $scope.rect = $scope.logic.autoRect();
@@ -478,7 +592,7 @@
 
                             $scope.setNewImage(newCrop, true);
                             $scope.setNewDisabled(newDisabled, true);
-                            $scope.setNewCoordinates($scope.logic.canvas2imgrect($scope.rect, new_state), true);
+                            $scope.setNewCoordinates($scope.logic.canvas2imgRect($scope.rect, new_state), true);
                             $scope.setNewLoading(false, true);
                             $scope.onLoad(newCrop);
                             $scope.redraw($scope.REDRAW_NEW_IMAGE, 'new image loaded')
@@ -498,11 +612,11 @@
 
                     $scope.setNewCoordinates(newCoordinatrs, true);
                     var what_to_redraw = $scope.REDRAW_NEW_RECT;
-                    var new_state = $scope.logic.normalizeState(newState ? newState : $scope.logic.autoState());
+                    var new_state = $scope.logic.normalizeState(newState ? newState : $scope.logic.autoState(), $scope.state);
                     if (!$scope.state || $scope.state.zoom !== new_state.zoom) {
                         what_to_redraw = $scope.REDRAW_NEW_ZOOM;
                     }
-                    $scope.setNewState(newState ? newState : $scope.logic.autoState(), true);
+                    $scope.setNewState(new_state, true);
                     $scope.setNewDisabled(newDisabled, true);
 
                     $scope.redraw(what_to_redraw, 'state or coord changed')
@@ -591,7 +705,6 @@
             }
 
             $scope.redrawNewImage = function () {
-                console.log('redraw img');
                 if ($scope.img) {
                     // $scope.$element_action_move.css('background-image', 'url(' + $scope.img.src + ')');
                     // $scope.$img.attr('src', $scope.img.src);
@@ -618,7 +731,6 @@
             };
 
             $scope.redrawNewZoom = function () {
-                console.log('redraw zoom');
                 if (!$scope.img) return null;
                 var logic = $scope.logic;
                 var state = $scope.state;
@@ -643,7 +755,7 @@
 
                     $scope.$canvas.css({
                             'background-image': 'url(' + $scope.canvas_zoom.toDataURL("image/png") + ')',
-                            'background-position': 'left ' + px(-state.x - 1) + ' top ' + px(-state.y)
+                            'background-position': 'left ' + px(-state.x) + ' top ' + px(-state.y)
                         }
                     );
 
@@ -673,7 +785,6 @@
             }
 
             $scope.redrawNewRect = function () {
-                console.log('redraw rect');
                 if ($scope.loading) return;
 
                 var logic = $scope.logic;
@@ -752,40 +863,34 @@
             };
 
 
-            $scope.zoom_to = function (new_zoomratio) {
-                console.log('zoom_to', new_zoomratio);
+            $scope.zoom_to = function (new_zoomratio, new_canvas_point) {
+
+                // var imagerect = $scope.coordinates;
+
+                // console.log(new_canvas_point[0], new_canvas_point[1]);
+
+                var newstate =
+                    $scope.logic.normalizeState(
+                        {
+                            zoom: new_zoomratio,
+                            x: new_canvas_point[0],
+                            y: new_canvas_point[1]
+                        }, $scope.state
+                    );
+
                 var stick_margin = 0.01;
-                var imagerect = $scope.coordinates;
 
-                new_zoomratio = inRange(new_zoomratio, $scope.logic.ctr.min_zoom, $scope.logic.ctr.max_zoom);
-
-                if ($scope.logic.relativeDeviation(new_zoomratio, $scope.logic.ctr.max_zoom) < stick_margin) new_zoomratio = $scope.logic.ctr.max_zoom;
-                if ($scope.logic.relativeDeviation(new_zoomratio, $scope.logic.ctr.min_zoom) < stick_margin) new_zoomratio = $scope.logic.ctr.min_zoom;
+                if ($scope.logic.relativeDeviation(newstate.zoom, $scope.logic.ctr.max_zoom) < stick_margin) newstate.zoom = $scope.logic.ctr.max_zoom;
+                if ($scope.logic.relativeDeviation(newstate.zoom, $scope.logic.ctr.min_zoom) < stick_margin) newstate.zoom = $scope.logic.ctr.min_zoom;
 
 
-                var newstate = {
-                    zoom: new_zoomratio,
-                    x: (new_zoomratio * $scope.logic.ctr.image_size[0] - $scope.logic.ctr.canvas[0]) / 2,
-                    y: (new_zoomratio * $scope.logic.ctr.image_size[1] - $scope.logic.ctr.canvas[1]) / 2
-                };
-
-                var canvasrect = $scope.logic.img2canvasRect(imagerect, newstate);
-                $scope.setNewRect(canvasrect, newstate);
+                // var canvasrect = $scope.logic.img2canvasRect(imagerect, newstate);
+                // $scope.setNewState(newstate, true);
+                $scope.setNewRect($scope.logic.img2canvasRect($scope.coordinates, newstate), newstate);
+                // console.log('zoom_to', new_zoomratio, newstate);
 
                 return true;
 
-            };
-
-            $scope.zoom_by = function (zoom_multiplier) {
-                console.log('zoom_by', zoom_multiplier);
-                var float_error = 0.000001;
-
-                if ((zoom_multiplier >= 1. && $scope.logic.relativeDeviation($scope.state.zoom, $scope.logic.ctr.max_zoom) < float_error) ||
-                    (zoom_multiplier <= 1. && $scope.logic.relativeDeviation($scope.state.zoom, $scope.logic.ctr.min_zoom) < float_error)) {
-                    return false;
-                }
-
-                return $scope.zoom_to($scope.state.zoom * zoom_multiplier);
             };
 
 
@@ -796,12 +901,13 @@
                     var what_to_redraw = $scope.REDRAW_NEW_RECT;
                     if (state) {
                         if (!$scope.state || $scope.state.zoom !== state.zoom) {
+                            // console.log('redrawing zoom');
                             what_to_redraw = $scope.REDRAW_NEW_ZOOM;
                         }
                         $scope.setNewState(state, true);
                     }
                     $scope.rect = newcr;
-                    $scope.setNewCoordinates($scope.logic.canvas2imgrect(newcr, $scope.state));
+                    $scope.setNewCoordinates($scope.logic.canvas2imgRect(newcr, $scope.state));
                     $scope.redraw(what_to_redraw, 'new rect');
                     return newcr;
                 }
@@ -818,6 +924,9 @@
                         return false;
                     }
                     if (!$scope.mouse_clicked) {
+                        var canvas_point = $scope.mouseRelativeToCanvas(event);
+                        // canvas_point = [canvas_point[0] + $scope.state.x , canvas_point[1] + $scope.state.y];
+                        // console.log('mouse position', canvas_point, $scope.logic.canvas2imgPoint(canvas_point, $scope.state));
                         return false;
                     }
                     var act = $scope.mouse_clicked;
@@ -893,7 +1002,7 @@
 
                 var mouse_wheeel = function (event) {
                     event.preventDefault();
-                    if ($scope.disabled || $scope.loading || $scope.processing) {
+                    if ($scope.disabled || $scope.loading || $scope.processing || !$scope.state) {
                         return false;
                     }
                     $scope.processing = true;
@@ -906,9 +1015,13 @@
                         normalized = -(rawAmmount % 3 ? rawAmmount * 10 : rawAmmount / 3);
                     }
 
-                    var new_center = $scope.mouseRelativeToCanvas(event);
-                    console.log('normalized', normalized);
-                    var ret = $scope.zoom_by((normalized > 0) ? 10 / 9 : 9 / 10, new_center);
+                    var canvas_point = $scope.mouseRelativeToCanvas(event)
+                    // canvas_point = [canvas_point[0] + $scope.state.x , canvas_point[1] + $scope.state.y];
+
+                    var new_zoom = $scope.state.zoom * ((normalized > 0) ? 10 / 9 : 9 / 10);
+
+                    var new_zoom_state = $scope.logic.recalculateStateForNewZoom(new_zoom, canvas_point, $scope.state);
+                    $scope.zoom_to(new_zoom_state.zoom, [new_zoom_state.x, new_zoom_state.y]);
                     $scope.processing = false;
 
                 };
