@@ -101,7 +101,6 @@ class IMAGE(String):
     def adapt(self, impltype):
         return IMAGE(self.min_size, self.max_size, self.resize_to, self.thumbnail_sizes)
 
-
 # read this about UUID:
 # http://stackoverflow.com/questions/183042/how-can-i-use-uuids-in-sqlalchemy
 # http://stackoverflow.com/questions/20532531/how-to-set-a-column-default-to-a-postgresql-function-using-sqlalchemy

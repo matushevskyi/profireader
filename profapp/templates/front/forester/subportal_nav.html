@@ -8,8 +8,7 @@
 
     <ul class="nav navbar-nav">
 
-        <li {% if current_subportal_division_name == 'index' %}class="active"{% endif %}><a href="{{ url_for('front
-        .subportal',
+        <li {% if current_subportal_division_name == 'index' %}class="active"{% endif %}><a href="{{ url_for('front.subportal',
                                    member_company_id = member_company['id'] ,
                                    member_company_name = member_company['name']) }}">{{ _('About') }}</a></li>
 
