@@ -875,7 +875,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 $(element).after($templateCache.get('pr-crop-buttons.html'));
 
                 scope.$watch('state', function (newv, oldv) {
-                        console.log('prCrop state');
+                        // console.log('prCrop state');
                         if (newv) {
                             if (!scope.prCrop['selected_by_user']['crop_coordinates'])
                                 scope.prCrop['selected_by_user']['crop_coordinates'] = {};
@@ -896,7 +896,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 });
 
                 scope.$watch('prCrop', function (newv, oldv) {
-                    console.log('prCrop prCrop');
+                    // console.log('prCrop prCrop');
                     scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
                     if (!newv) return;
 
@@ -1012,7 +1012,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     if (by > 1 && scope.state.zoom * by <= scope.logic.ctr.max_zoom) ok = true;
                     if (by < 1 && scope.state.zoom * by >= scope.logic.ctr.min_zoom) ok = true;
                     if (!check_only && ok) {
-                        scope.state = {zoom: scope.state.zoom * by, x: scope.state.x, y: scope.state.y};
+                        scope.state = {zoom: scope.state.zoom * by};
                     }
                     return ok;
                 };
