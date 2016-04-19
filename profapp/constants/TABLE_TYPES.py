@@ -3,6 +3,7 @@ from sqlalchemy import Integer, String, TIMESTAMP, SMALLINT, BOOLEAN, Column, Fo
 from sqlalchemy.dialects.postgresql import BIGINT, INTEGER, JSON
 from functools import reduce
 from profapp.utils import fileUrl, fileID
+from sqlalchemy import Column, Integer, String, DateTime
 
 
 
@@ -100,7 +101,6 @@ class IMAGE(String):
 
     def adapt(self, impltype):
         return IMAGE(self.min_size, self.max_size, self.resize_to, self.thumbnail_sizes)
-
 
 # read this about UUID:
 # http://stackoverflow.com/questions/183042/how-can-i-use-uuids-in-sqlalchemy
