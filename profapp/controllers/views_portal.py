@@ -19,7 +19,7 @@ import copy
 import re
 from .pagination import pagination
 from config import Config
-
+from ..models.rights import PublishUnpublishInPortal, EployeeMembersRights, RequireMembereeAtPortalsRight
 
 @portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
 @portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/portal/<string:portal_id>/',
@@ -157,7 +157,7 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
 # @check_rights(simple_permissions([]))
 @ok
 def apply_company(json):
-    if UserCompany.get(company_id=json['company_id']).has_rights(UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS):
+    if RequireMembereeAtPortalsRight(company=json['company_id']).is_require_member_allowed():
         MemberCompanyPortal.apply_company_to_portal(company_id=json['company_id'],
                                                 portal_id=json['portal_id'])
     return {'portals_partners': [portal.get_client_side_dict(fields='name, company_owner_id,id')
@@ -433,17 +433,17 @@ def portals_partners(company_id):
 # @check_rights(simple_permissions([]))
 @ok
 def portals_partners_load(json, company_id):
-    subquery = Company.subquery_portal_partners(company_id, json.get('filter'), filters_exсept=MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES)
+    subquery = Company.subquery_portal_partners(company_id, json.get('filter'), filters_exсept=EployeeMembersRights.INITIALLY_FILTERED_OUT_STATUSES)
     partners_g, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     partner_list = [
         PRBase.merge_dicts(partner.get_client_side_dict(fields='id,status,portal.own_company,portal,rights'),
-                           {'actions': partner.actions(company_id, MemberCompanyPortal.MEMBERSHIP)}, {'who': MemberCompanyPortal.MEMBERSHIP})
+                           {'actions': EployeeMembersRights(company=company_id, membership=partner).actions(EployeeMembersRights.MEMBERSHIP)}, {'who': EployeeMembersRights.MEMBERSHIP})
         for partner in partners_g]
     return {'page': current_page,
             'grid_data': partner_list,
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
-                             (k, v) in {'status': [{'value': status, 'label': status} for status in MemberCompanyPortal.STATUSES]}.items()},
-            'grid_filters_except': list(MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES),
+                             (k, v) in {'status': [{'value': status, 'label': status} for status in EployeeMembersRights.STATUSES]}.items()},
+            'grid_filters_except': list(EployeeMembersRights.INITIALLY_FILTERED_OUT_STATUSES),
             'total': count}
 
 
@@ -454,12 +454,12 @@ def portals_partners_load(json, company_id):
 def portals_partners_change_status(json, partner_id, portal_id):
     partner = MemberCompanyPortal.get(portal_id=portal_id, company_id=partner_id)
     employee = UserCompany.get(company_id=json.get('company_id'))
-    action_for_status = UserCompany.ACTION_FOR_STATUSES_MEMBER if json.get('who') == MemberCompanyPortal.MEMBER\
-        else UserCompany.ACTION_FOR_STATUSES_MEMBERSHIP
-    if partner.action_is_allowed(json.get('action'), employee,
+    action_for_status = EployeeMembersRights.ACTION_FOR_STATUSES_MEMBER if json.get('who') == EployeeMembersRights.MEMBER\
+        else EployeeMembersRights.ACTION_FOR_STATUSES_MEMBERSHIP
+    if EployeeMembersRights(company=partner_id, membership=partner).action_is_allowed(json.get('action'), employee,
                                  action_for_status[partner.status]):
         partner.set_client_side_dict(
-                status=MemberCompanyPortal.STATUS_FOR_ACTION[json.get('action')])
+                status=EployeeMembersRights.STATUS_FOR_ACTION[json.get('action')])
         partner.save()
     return partner.get_client_side_dict()
 
@@ -496,16 +496,17 @@ def company_partner_update(company_id, member_id):
 def company_update_load(json, employeer_id, member_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     member = MemberCompanyPortal.get(Company.get(employeer_id).own_portal.id, member_id)
-    current_user_right = UserCompany.get(company_id=employeer_id).has_rights(UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES)
+    print(action)
     if action == 'load':
-        if member.can_update_company_partner(current_user_right) != True:
-            return {'errors': member.can_update_company_partner(current_user_right)}
+        if EployeeMembersRights(company=employeer_id, membership=member).can_update_company_partner() != True:
+            return {'errors': EployeeMembersRights(company=employeer_id, membership=member).can_update_company_partner()}
         else:
             return {'member': member.get_client_side_dict(more_fields='company'),
-                'statuses_available': MemberCompanyPortal.get_avaliable_statuses(),
+                'statuses_available': EployeeMembersRights.get_avaliable_statuses(),
                 'employeer': Company.get(employeer_id).get_client_side_dict()}
     else:
-        if member.can_update_company_partner(current_user_right) == True:
+        print(json)
+        if EployeeMembersRights(company=employeer_id, membership=member).can_update_company_partner() == True:
             member.set_client_side_dict(status=json['member']['status'], rights=json['member']['rights'])
             if action == 'validate':
                 member.detach()
@@ -532,15 +533,15 @@ def companies_partners(company_id):
 # @check_rights(simple_permissions([]))
 @ok
 def companies_partners_load(json, company_id):
-    subquery = Company.subquery_company_partners(company_id, json.get('filter'),filters_exсept=MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES)
+    subquery = Company.subquery_company_partners(company_id, json.get('filter'),filters_exсept=EployeeMembersRights.INITIALLY_FILTERED_OUT_STATUSES)
     members, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [PRBase.merge_dicts({'member': member.get_client_side_dict(more_fields='company'),
                            'company_id': company_id, 'portal_id': db(Portal, company_owner_id=company_id).first().id},
-                           {'actions': member.actions(company_id, MemberCompanyPortal.MEMBER)},{'who':MemberCompanyPortal.MEMBER})
+                           {'actions': EployeeMembersRights(company=company_id, membership=member).actions(EployeeMembersRights.MEMBER)},{'who':EployeeMembersRights.MEMBER})
                           for member in members],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
-                             (k, v) in {'member.status': [{'value': status, 'label': status} for status in MemberCompanyPortal.STATUSES]}.items()},
-            'grid_filters_except': list(MemberCompanyPortal.INITIALLY_FILTERED_OUT_STATUSES),
+                             (k, v) in {'member.status': [{'value': status, 'label': status} for status in EployeeMembersRights.STATUSES]}.items()},
+            'grid_filters_except': list(EployeeMembersRights.INITIALLY_FILTERED_OUT_STATUSES),
             'total': count,
             'page': current_page}
 
@@ -568,7 +569,8 @@ def get_publication_dict(publication):
     if ret.get('long'):
         del ret['long']
 
-    ret['actions'] = publication.actions(publication.division.portal.own_company)
+    ret['actions'] = PublishUnpublishInPortal(publication=publication, portal=publication.division.portal,
+                                              company=publication.division.portal.own_company).actions()
 
     return ret
 

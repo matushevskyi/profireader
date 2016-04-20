@@ -88,14 +88,6 @@ class File(Base, PRBase):
         return "<File(name='%s', mime=%s', id='%s', parent_id='%s')>" % (
             self.name, self.mime, self.id, self.parent_id)
 
-    ACTIONS = {
-        'download': 'download',
-        'remove': 'remove',
-        'show': 'show',
-        'upload': 'upload',
-        'cut': 'cut'
-    }
-
     # CHECKING
 
     @staticmethod
@@ -196,24 +188,11 @@ class File(Base, PRBase):
         return ret
 
     @staticmethod
-    def if_action_allowed(action, company_id):
-        from ..models.company import UserCompany, Company
-        user_company = UserCompany.get(user_id=g.user.id, company_id=company_id)
-        if g.user._banned:
-            return False
-        if Company.get(company_id).status != Company.STATUSES['ACTIVE']:
-            return False
-        if user_company:
-            if not user_company.has_rights(File.ACTIONS[action], True):
-                return False
-        elif not user_company and action != File.ACTIONS['show']:
-            return False
-        return True
-
-    @staticmethod
     def list(parent_id=None, file_manager_called_for='', name=None, company_id=None):
+        from ..models.rights import FilemanagerRights
+        rights_object = FilemanagerRights(company=company_id)
         folder = File.get(parent_id)
-        show = lambda file: True if File.if_action_allowed(File.ACTIONS['show'], company_id) else False
+        show = lambda file: True if rights_object.is_action_allowed(FilemanagerRights.ACTIONS['show']) else False
         actions = {}
         default_actions = {}
         default_actions['download'] = lambda file: None if (
@@ -228,12 +207,12 @@ class File(Base, PRBase):
             default_actions['choose'] = lambda file: True
             actions['choose'] = lambda file: True
         actions = {act: default_actions[act] for act in default_actions}
-        actions['remove'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['remove'], company_id)
+        actions['remove'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['remove'])
         actions['copy'] = lambda file: None if file.mime == "root" else True
-        actions['paste'] = lambda file: None if file == None else File.if_action_allowed(File.ACTIONS['upload'], company_id)
-        actions['cut'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['cut'], company_id) \
-                                                                       and File.if_action_allowed(File.ACTIONS['upload'], company_id)
-        actions['properties'] = lambda file: None if file.mime == "root" else File.if_action_allowed(File.ACTIONS['upload'], company_id)
+        actions['paste'] = lambda file: None if file == None else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['upload'])
+        actions['cut'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['cut']) \
+                                                                       and rights_object.is_action_allowed(FilemanagerRights.ACTIONS['upload'])
+        actions['properties'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['upload'])
 
         search_files = File.search(name, parent_id, actions, file_manager_called_for)
         if search_files != None:
@@ -371,7 +350,6 @@ class File(Base, PRBase):
     def get_unique_name(name, mime, parent_id):
         if File.is_name(name, mime, parent_id):
             ext = File.ext(name)
-
             fromname = name[:-(len(ext)+3)] if File.is_copy(name) else name[:-len(ext)if ext else -1]
             list = []
             for n in db(File, parent_id=parent_id, mime=mime):
@@ -441,9 +419,7 @@ class File(Base, PRBase):
         list.append(session['f_id'])
         [file.delete() for file in [db(File, id=id).first() for id in list]]
 
-    def remove(self, company_id=None):
-        if company_id and not File.if_action_allowed(File.ACTIONS['remove'], company_id):
-            return {"error": 'You haven\'t aproriate rights!'}
+    def remove(self):
         if self == None:
             return False
         if self.mime == 'directory':

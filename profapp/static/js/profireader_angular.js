@@ -1923,9 +1923,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
                     var prefix_img = '';
                     if (col.img) {
-                        //var imgwidth = col.imgwidth?col.imgwidth:'2em';
                         var prefix_img = '<img class="pr-grid-cell-img-prefix" pr-image="row.entity.' + col.img + '"/>';
-                        //classes_for_row += ' pr-grid-cell-with-img '
                     }
                     switch (col.type) {
                         case 'link':
@@ -1937,7 +1935,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         case 'actions':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '">' + prefix_img + '<button ' +
                                 ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
-                                ' ng-repeat="(action_name, enabled) in COL_FIELD" ng-disabled="enabled !== true" ' +
+                                ' ng-repeat="(action_name, enabled) in COL_FIELD" ng-disabled="enabled !== true" ng-style="{width:grid.getLengthOfAssociativeArray(COL_FIELD)>3?\'2.5em\':\'5em\'}"' +
                                 ' ng-click="grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')" ' +
                                 ' title="{{ grid.appScope._((enabled === true)?(action_name + \' grid action\'):enabled) }}">{{ grid.appScope._(action_name + \' grid action\') }}</button></div>';
                         case 'icons':
@@ -1978,6 +1976,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 gridApi.grid.options.columnDefs[i].cellTemplate = generateCellTemplate(col[i], i);
 
             }
+
+            gridApi.grid['getLengthOfAssociativeArray'] = function (array) {
+                return Object.keys(array).length
+            };
 
             gridApi.grid['searchItemGrid'] = function (col) {
                 //highLightSubstring(col.filter.text, 'ui-grid-canvas',col.field)
@@ -2449,6 +2451,11 @@ function cloneObject(o) {
 
 function add_message(amessage, atype, atime, aunique_id) {
     return angularControllerFunction('message-controller', 'add_message')(amessage, atype, atime, aunique_id);
+}
+
+
+function getLengthOfAssociativeArray(array) {
+    return Object.keys(array).length
 }
 
 function randomHash() {
