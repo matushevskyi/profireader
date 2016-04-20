@@ -142,6 +142,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             var modalInstance = $uibModal.open({
                 templateUrl: 'submit_publish_dialog.html',
                 controller: 'submit_publish_dialog',
+                backdrop: 'static',
+                keyboard: false,
                 resolve: resolveDictForAngularController(dict)
             });
             return modalInstance;
