@@ -780,7 +780,7 @@ class Article(Base, PRBase):
                                                       portal=article_portal.division.portal,
                                                       company=article_portal.division.portal.own_company)
                                        .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]
-                     }
+                     } if article_portal.status != 'SUBMITTED' and article_portal.status != "DELETED" else {}
               })
                 for article_portal in material.portal_article]
         return dict, list
