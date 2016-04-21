@@ -261,11 +261,11 @@ class User(Base, UserMixin, PRBase):
     def validate(self, is_new):
         ret = super().validate(is_new)
         if not re.match(r'[^\s]{3}', str(self.profireader_name)):
-            ret['errors']['profireader_name'] = 'pls enter a bit longer name'
+            ret['errors']['profireader_name'] = 'Your username must be at least 3 characters long.'
         if not re.match(r'[^\s]{3}', str(self.profireader_first_name)):
-            ret['errors']['profireader_first_name'] = 'pls enter a bit longer name'
+            ret['errors']['profireader_first_name'] = 'Your First name must be at least 3 characters long.'
         if not re.match(r'[^\s]{3}', str(self.profireader_last_name)):
-            ret['errors']['profireader_last_name'] = 'pls enter a bit longer name'
+            ret['errors']['profireader_last_name'] = 'Your Last name must be at least 3 characters long.'
         if self.profireader_phone and not self.profireader_phone.isdigit():
             ret['errors']['profireader_phone'] = 'pls enter only digits'
         return ret
@@ -278,8 +278,8 @@ class User(Base, UserMixin, PRBase):
             'none': noavatar_url,
             'crop': True,
             'image_size': [300, 400],
-            'min_size': [75, 100],
-            'aspect_ratio': [0.5, 2],
+            'min_size': [120, 100],
+            'aspect_ratio': [0.5, 2.0],
             'preset_urls': {'glyphicon-share': self.gravatar(size=500)},
             'no_selection_url': noavatar_url
         }
