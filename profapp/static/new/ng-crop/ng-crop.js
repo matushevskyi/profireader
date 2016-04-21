@@ -546,7 +546,43 @@
 
             // 'ngCropDisabled',
 
-            $scope.recalculateParameters = function (p, zoom_has_superior_over_coordinates, compass) {
+            $scope.recalculateParameters = function (newImageWasLoaded) {
+
+
+
+                $scope.setNewState(new_state, true);
+                                if (!newCoordinatrs) {
+                                    $scope.rect = $scope.logic.autoRect();
+                                }
+                                else {
+                                    $scope.rect = $scope.logic.resizeRect($scope.logic.img2canvasRect(newCoordinatrs, new_state), new_state);
+                                }
+                var l = $scope.lastCorrectState;
+                var p = {
+
+                                };
+
+                                if ($scope.ngCropZoom !== l.zoom) { // zoom changed
+                                    p['zoom'] = scope.ngCropZoom;
+                                }
+
+                                var o = $scope.ngCropOrigin;
+                                if (o !== l.origin) { //  origin changed
+                                    if (!o || !l.origin || o[0]!==l.origin[0] || o[1]!==l.origin[1]) {
+                                        params['origin'] = o;
+                                    }
+                                }
+
+                                if (newv.origin !== oldv.origin) { //  disabled changed
+                                    params['disabled'] = scope.ngCropDisabled;
+                                }
+
+                                var zoom_has_superior = true;
+                                if (newv.coordinates !== oldv.coordinates) { //  coords changed
+                                    params['coordinates'] = scope.ngCropCoordinates;
+                                    zoom_has_superior = false;
+                                }
+
                 var ctr = $scope.logic.ctr;
 
                 var zoom = inRange(p.zoom, ctr.min_zoom, ctr.max_zoom);
@@ -565,61 +601,141 @@
                     zoom = inRange(zoom, ctr.min_zoom, max_zoom);
                 }
 
-                return {origin: origin, zoom: zoom, coordinates: coordinates};
+                var ret = {origin: origin, zoom: zoom, coordinates: coordinates};
 
+                $scope.changeModelSynchronously(ret);
+                $scope.redraw($scope.REDRAW_NEW_IMAGE, 'no image loaded');
+
+                return {origin: origin, zoom: zoom, coordinates: coordinates};
 
 
             };
 
-            $scope.$watchGroup(['ngCropZoom', 'ngCropCoordinates', 'ngCropOrigin'], function (newv, oldv) {
-                if ($scope.loading || $scope.ngCropDisabled) return;
-                var zoom_has_superior = true;
-                var params = {
-                    zoom: $scope.ngCropZoom,
-                    origin: $scope.ngCropOrigin,
-                    coordinates: $scope.ngCropCoordinates
-                };
-                if (newv[0]!==oldv[0]) { // zoom changed
-                    params['zoom'] = newv[0];
+            // $scope.saveState = function () {
+            //     var ret = {
+            //         zoom: scope.ngCropZoom,
+            //         coordinates: scope.ngCropCoordinates,
+            //         origin: scope.ngCropOrigin,
+            //         crop: scope.ngCrop,
+            //         disabled: scope.ngCropDisabled,
+            //         loading: scope.loading
+            //     }
+            //     console.log('state saved', ret);
+            //     scope.savedState = ret;
+            // };
+
+            $scope.getState = function () {
+                return {
+                    zoom: scope.ngCropZoom,
+                    coordinates: scope.ngCropCoordinates,
+                    origin: scope.ngCropOrigin,
+                    crop: scope.ngCrop,
+                    disabled: scope.ngCropDisabled,
+                    loading: scope.loading,
+                    img: scope.img
                 }
+            }
 
-                if (newv[1][0]!==oldv[1][0] || newv[1][1]!==oldv[1][1] || newv[1][2]!==oldv[1][2] || newv[1][3]!==oldv[1][3]) { //  coords changed
-                    params['coordinates'] = newv[1];
-                    zoom_has_superior = false;
+            $scope.restoreLastCorrectState = function () {
+                scope.ngCropZoom = $scope.lastCorrectState.zoom;
+                scope.ngCropCoordinates = $scope.lastCorrectState.coordinates;
+                scope.ngCropCrop = $scope.lastCorrectState.crop;
+                scope.ngCropDisabled = $scope.lastCorrectState.disabled;
+                scope.loading = $scope.lastCorrectState.loading;
+                scope.img = scope.img,
+            };
+
+            $scope.setState = function () {
+
+                var ret = {
+                    zoom: scope.ngCropZoom,
+                    coordinates: scope.ngCropCoordinates,
+                    origin: scope.ngCropOrigin,
+                    crop: scope.ngCrop,
+                    disabled: scope.ngCropDisabled,
+                    loading: scope.loading
                 }
-
-                if (newv[2][0]!==oldv[2][0] || newv[2][1]!==oldv[2][1]) { //  origin changed
-                    params['origin'] = newv[2];
-                }
-
-                var ret = $scope.recalculateParameters(params, zoom_has_superior);
-
-                $scope.ngCropOrigin = ret.origin;
-                $scope.ngCropZoom = ret.zoom;
-                $scope.ngCropCoordinates = ret.coordinates;
-
-            });
+                console.log('state saved', ret);
+                $scope.lastCorrectState = $scope.getState();
+            };
 
 
-            // $scope.$watch('ngCropOrigin', function (newv, oldv) {
-            //     $scope.ngCropOrigin = $scope.logic.normalizeCoordinates($scope.ngCropOrigin);
-            // });
-            //
-            // $scope.$watch('ngCropZoom', function (newv, oldv) {
-            //     $scope.ngCropZoom = $scope.logic.normalizeZoom($scope.ngCropZoom);
-            // });
-            //
-            // $scope.$watch('ngCropCoordinates', function (newv, oldv) {
-            //     $scope.ngCropCoordinates = $scope.logic.normalizeCoordinates($scope.ngCropCoordinates);
-            // });
+            $scope.changeModelSynchronously = function (state) {
+                $scope.setState(state);
+                $scope.onLoad('');
+                $scope.redraw($scope.REDRAW_NEW_IMAGE, "empty image loaded");
+            };
+
+            $scope.$watchCollection(function () {
+                    var ret = getState();
+                    ret.coordinates = ret.coordinates?ret.coordinates.join(','):null;
+                    ret.origin = ret.origin?ret.origin.join(','):null;
+                    delete ret.loading;
+                    delete ret.img;
+                    return ret;
+                },
+                function (newv, oldv) {
+
+                    var err = function (e) {
+                        console.error(e);
+                        $scope.onError(typeof e === 'string' ? e : 'image loading error');
+                        $scope.restoreLastCorrectState();
+                        $scope.redraw($scope.REDRAW_NEW_RECT, 'image loading failed');
+                    }
+
+                    if (!newv['crop']) {
+                        console.log('empty image');
+                        $scope.changeModelSynchronously({
+                            loading: false, crop: null, coordinates: null, zoom: null, origin: null, disabled: true
+                        });
+                        $scope.redraw($scope.REDRAW_NEW_IMAGE, 'no image loaded');
+                    }
+                    else if (newv['crop'] === oldv['crop'] && $scope.img) {
+                        console.log('something changed. not image');
+                        if (scope.loading) {
+                            // image still loading. we can`t apply changes now beacouse constrains and logic are
+                            // unknown yet
+                            console.log('image still loading. we can`t apply changes now because constrains and' +
+                                ' logic are unknown yet');
+                        }
+                        else {
+                            try {
+                                $scope.recalculateParameters(false);
+                            }
+                            catch (e) {
+                                err(e);
+                            }
+                        }
+                    }
+                    else {
+                        scope.loading = true;
+
+                        if ($scope.img) delete $scope.img;
+                        $scope.img = new Image();
+                        $scope.img.crossOrigin = "anonymous";
+
+                        $scope.img.onload = function () {
+                            try {
+                                $scope.setNewLogic(new Logic($scope.img, $scope.options, $scope.$container), true);
+                                $scope.recalculateParameters(true);
+                                $scope.onLoad(newv['crop']);
+                            }
+                            catch (e) {
+                                err(e);
+                            }
+                        };
+
+                        img.onerror = err;
+
+                        setTimeout(function () {
+                            img.src = newCrop;
+                        });
+
+                    }
+                });
 
 
-            $scope.$watch('ngCropDisabled', function (newv, oldv) {
-
-            });
-
-
-            $scope.$watch('ngCrop', function (newv, oldv) {
+            if (0) $scope.$watch('ngCrop', function (newv, oldv) {
 
                 var oldloading = $scope.loading;
                 scope.loading = true;
