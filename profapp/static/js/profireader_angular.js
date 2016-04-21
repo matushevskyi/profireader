@@ -142,6 +142,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             var modalInstance = $uibModal.open({
                 templateUrl: 'submit_publish_dialog.html',
                 controller: 'submit_publish_dialog',
+                backdrop: 'static',
+                keyboard: false,
                 resolve: resolveDictForAngularController(dict)
             });
             return modalInstance;
@@ -868,11 +870,14 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                 scope.disabled = false;
                 scope.original_model = null;
 
-                scope.onerror = function (m) {add_message(m, 'warning')};
+                scope.onerror = function (m) {
+                    add_message(m, 'warning')
+                };
 
                 $(element).after($templateCache.get('pr-crop-buttons.html'));
 
                 scope.$watch('state', function (newv, oldv) {
+                        // console.log('prCrop state');
                         if (newv) {
                             if (!scope.prCrop['selected_by_user']['crop_coordinates'])
                                 scope.prCrop['selected_by_user']['crop_coordinates'] = {};
@@ -886,19 +891,20 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         if (!scope.prCrop['selected_by_user']['crop_coordinates'])
                             scope.prCrop['selected_by_user']['crop_coordinates'] = {};
                         scope.prCrop['selected_by_user']['crop_coordinates']['x'] = newv[0];
-                        scope.prCrop['selected_by_user']['crop_coordinates']['y'] = newv[0];
+                        scope.prCrop['selected_by_user']['crop_coordinates']['y'] = newv[1];
                         scope.prCrop['selected_by_user']['crop_coordinates']['width'] = newv[2] - newv[0];
                         scope.prCrop['selected_by_user']['crop_coordinates']['height'] = newv[3] - newv[1];
                     }
                 });
 
                 scope.$watch('prCrop', function (newv, oldv) {
+                    // console.log('prCrop prCrop');
                     scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
                     if (!newv) return;
 
                     var selected_by_user = newv['selected_by_user'];
                     if (!scope.original_model) {
-                        scope.original_model = selected_by_user;
+                        scope.original_model = $.extend(true, {}, selected_by_user);
                     }
                     scope.coordinates = [];
                     scope.state = {};
@@ -906,7 +912,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     scope.uploadable = newv['upload'] ? true : false;
                     scope.resetable = true;
                     scope.noneurl = newv['no_selection_url'];
-                    scope.options = {}
+                    scope.options = {};
                     if (newv.min_size) scope.options['min_width'] = newv.min_size[0];
                     if (newv.min_size) scope.options['min_height'] = newv.min_size[1];
                     if (newv.cropper && newv.cropper.aspect_ratio) scope.options['min_aspect'] = newv.cropper.aspect_ratio[0];
@@ -930,11 +936,11 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
 
                 scope.selectNone = function () {
                     scope.setModel({'type': 'none'});
-                }
+                };
 
                 scope.resetModel = function () {
-                    scope.setModel(scope.original_model);
-                }
+                    scope.setModel($.extend(true, {}, scope.original_model));
+                };
 
 
                 scope.setModel = function (model, do_not_set_ng_crop) {
@@ -977,7 +983,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         }
                     }
 
-                }
+                };
 
                 scope.fileUploaded = function (event) {
                     var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
@@ -989,10 +995,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                                 'type': 'upload',
                                 'file': {'mime': the_file.type, 'name': the_file.name, 'content': fr.result}
                             })
-                        }
+                        };
                         fr.onerror = function (e) {
                             add_message('File loading error', 'warning');
-                        }
+                        };
                         fr.readAsDataURL(the_file);
                     }
                 };
@@ -1008,10 +1014,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     if (by > 1 && scope.state.zoom * by <= scope.logic.ctr.max_zoom) ok = true;
                     if (by < 1 && scope.state.zoom * by >= scope.logic.ctr.min_zoom) ok = true;
                     if (!check_only && ok) {
-                        scope.state = {zoom: scope.state.zoom * by, x: scope.state.x, y: scope.state.y};
+                        scope.state = {zoom: scope.state.zoom * by};
                     }
                     return ok;
-                }
+                };
 
 
                 $compile(element)(scope);
