@@ -14,6 +14,7 @@ from ..models.files import File, ImageCroped
 from .pagination import pagination
 from config import Config
 from ..models.pr_base import Search, PRBase, Grid
+from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, PublishUnpublishInPortal
 
 
 @company_bp.route('/search_to_submit_article/', methods=['POST'])
@@ -67,7 +68,11 @@ def materials_load(json, company_id):
         'material_status': Grid.filter_for_status(ArticleCompany.STATUSES),
         'status': Grid.filter_for_status(ArticlePortalDivision.STATUSES),
         'publication_visibility': Grid.filter_for_status(ArticlePortalDivision.VISIBILITIES)
+
+
     }
+    # PublishUnpublishInPortal(publication=publication, portal=publication.division.portal,
+    #                          company=publication.division.portal.own_company).actions()
     return {'grid_data': Grid.grid_tuple_to_dict([Article.get_material_grid_data(material) for material in materials]),
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in grid_filters.items()},
@@ -133,10 +138,9 @@ def employees(company_id):
 @ok
 def employees_load(json, company_id):
     company = Company.get(company_id)
-    usercompa = UserCompany.get(user_id=g.user.id, company_id=company_id)
     employees_list = [
         PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
-                           {'actions': employment.actions(usercompa)})
+                           {'actions': EmployeesRight(company=company, employment=employment).actions()})
         for employment in company.employee_assoc]
 
     return {
@@ -208,18 +212,17 @@ def employee_update_load(json, company_id, user_id):
 def employment_action(json, company_id, employment_id, action):
     employment = db(UserCompany).filter_by(id=employment_id).one()
 
-    if action == UserCompany.ACTIONS['REJECT']:
-        employment.status = UserCompany.STATUSES['REJECTED']
-    elif action == UserCompany.ACTIONS['ENLIST']:
-        employment.status = UserCompany.STATUSES['ACTIVE']
-    elif action == UserCompany.ACTIONS['FIRE']:
-        employment.status = UserCompany.STATUSES['FIRED']
+    if action == EmployeesRight.ACTIONS['REJECT']:
+        employment.status = EmployeesRight.STATUSES['REJECTED']
+    elif action == EmployeesRight.ACTIONS['ENLIST']:
+        employment.status = EmployeesRight.STATUSES['ACTIVE']
+    elif action == EmployeesRight.ACTIONS['FIRE']:
+        employment.status = EmployeesRight.STATUSES['FIRED']
 
     employment.save()
 
     return PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
-                              {'actions': employment.actions(
-                                      UserCompany.get(user_id=g.user.id, company_id=company_id))})
+                              {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
 @company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_position/', methods=['POST'])
@@ -292,8 +295,8 @@ def profile_load_validate_save(json, company_id=None):
         company_dict['logo'] = company.get_logo_client_side_dict()
         user_company = UserCompany.get(company_id=company_id)
         if user_company:
-            company_dict['actions'] = {'edit': True if company_id and UserCompany.get(
-                    company_id=company_id).rights['PORTAL_EDIT_PROFILE'] else False}
+            company_dict['actions'] = {'edit_company_profile': EditCompanyRight(company=company).is_edit_allowed(),
+                                       'edit_portal_profile':EditPortalRight(company=company).is_edit_allowed()}
         return company_dict
     else:
         company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',

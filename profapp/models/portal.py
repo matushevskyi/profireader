@@ -353,12 +353,8 @@ class MemberCompanyPortal(Base, PRBase):
 
     member_company_portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
 
-    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
-                'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
 
-    INITIALLY_FILTERED_OUT_STATUSES = [STATUSES['DELETED'], STATUSES['REJECTED']]
-
-    status = Column(TABLE_TYPES['status'], default=STATUSES['APPLICANT'], nullable=False)
+    status = Column(TABLE_TYPES['status'], default='APPLICANT', nullable=False)
 
     portal = relationship(Portal
                           # ,back_populates = 'company_members'
@@ -374,72 +370,6 @@ class MemberCompanyPortal(Base, PRBase):
     plan = relationship('MemberCompanyPortalPlan'
                         # , backref='partner_portals'
                         )
-
-    MEMBER = 'member'
-    MEMBERSHIP = 'membership'
-
-    ACTIONS = {
-        'UNSUBSCRIBE': 'UNSUBSCRIBE',
-        'FREEZE': 'FREEZE',
-        'WITHDRAW': 'WITHDRAW',
-        'RESTORE': 'RESTORE',
-        'REJECT': 'REJECT',
-        'SUSPEND': 'SUSPEND',
-        'ENLIST': 'ENLIST',
-        'ALLOW': 'ALLOW'
-    }
-
-    STATUS_FOR_ACTION = {
-        ACTIONS['UNSUBSCRIBE']: STATUSES['DELETED'],
-        ACTIONS['FREEZE']: STATUSES['FROZEN'],
-        ACTIONS['WITHDRAW']: STATUSES['DELETED'],
-        ACTIONS['REJECT']: STATUSES['REJECTED'],
-        ACTIONS['SUSPEND']: STATUSES['SUSPENDED'],
-        ACTIONS['ENLIST']: STATUSES['ACTIVE'],
-        ACTIONS['RESTORE']: STATUSES['ACTIVE']
-    }
-
-    def actions(self, company_id, who):
-        from .company import UserCompany
-        employee = UserCompany.get(company_id=company_id)
-        action_for_status = UserCompany.ACTION_FOR_STATUSES_MEMBER if who == 'member' else UserCompany.ACTION_FOR_STATUSES_MEMBERSHIP
-        return {action_name: self.action_is_allowed(action_name, employee,
-                                                    action_for_status[self.status]) for action_name in
-                action_for_status[self.status]}
-
-    def action_is_allowed(self, action_name, employee, actions):
-        if not employee:
-            return "Unconfirmed employment"
-
-        if not action_name in actions:
-            return "Unrecognized action `{}`".format(action_name)
-
-        if employee.status != MemberCompanyPortal.STATUSES['ACTIVE']:
-            return "User need employment with status `{}` to perform action `{}`".format(
-                    MemberCompanyPortal.STATUSES['ACTIVE'], action_name)
-
-        if self.portal.own_company.status != 'ACTIVE' and action_name == MemberCompanyPortal.ACTIONS['FREEZE']:
-            return "Company `{}` with status `{}` need status ACTIVE to perform action `{}`".format(self.portal.own_company.name,
-                    self.portal.own_company.status, action_name)
-        if self.portal.company_owner_id == self.company_id:
-            return 'You can`t {0} portal of your own company'.format(action_name)
-
-
-        if not employee.has_rights(actions[action_name]):
-            return "Employment need right `{}` to perform action `{}`".format(actions[action_name],action_name)
-
-        return True
-
-    def can_update_company_partner(self, user_right):
-        if self.status == MemberCompanyPortal.STATUSES['FROZEN'] and not user_right:
-            return 'Sorry!You can not manage company {}!It was frozen!'.format(self.company.name)
-        if self.status == MemberCompanyPortal.STATUSES['DELETED']:
-            return 'Sorry!Company {} was unsubscribed!'.format(self.company.name)
-        if self.company.status != MemberCompanyPortal.STATUSES['ACTIVE']:
-            return 'Sorry!Company {} is not active!'.format(self.company.name)
-        if not user_right:
-                return 'You haven\'t got aproriate rights!'
-        return True
 
 
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id', more_fields=None):
@@ -462,7 +392,7 @@ class MemberCompanyPortal(Base, PRBase):
         """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
         member = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
         if member:
-            member.set_client_side_dict(MemberCompanyPortal.STATUSES['APPLICANT'])
+            member.set_client_side_dict('APPLICANT')
             member.save()
         else:
             g.db.add(MemberCompanyPortal(company_id=company_id,
@@ -480,11 +410,6 @@ class MemberCompanyPortal(Base, PRBase):
             MemberCompanyPortal.portal_id == db(Portal, company_owner_id=company_id).subquery().c.id).filter(MemberCompanyPortal.status != MemberCompanyPortal.STATUSES['REJECTED'])
         return subquery
 
-    @staticmethod
-    def get_avaliable_statuses():
-        return PRBase.del_attr_by_keys(MemberCompanyPortal.STATUSES,
-                                      ['DELETED', 'FROZEN'])
-
     def set_client_side_dict(self, status=None, rights=None):
         if status:
             self.status = status
@@ -499,8 +424,8 @@ class MemberCompanyPortal(Base, PRBase):
             return False
 
         if rightname == '_ANY':
-            return True if self.status == self.STATUSES['ACTIVE'] else False
-        return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else False
+            return True if self.status == 'ACTIVE' else False
+        return True if (self.status == 'ACTIVE' and self.rights[rightname]) else False
 
 
 class ReaderUserPortalPlan(Base, PRBase):

@@ -261,7 +261,7 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
 
 def moment(value, out_format = None):
     if isinstance(value, datetime.datetime):
-
+        print(out_format)
         value = value.isoformat(' ') + ' GMT'
         return Markup(
             "<script> document.write(moment(new Date('{}')).format('{}')) </script><noscript>{}</noscript>".format(
