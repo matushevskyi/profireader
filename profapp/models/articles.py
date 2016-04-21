@@ -713,8 +713,8 @@ class Article(Base, PRBase):
             'none': noimage_url,
             'crop': True,
             'image_size': [400, 300],
-            'min_size': [100, 100],
-            'aspect_ratio': [0.5, 3.0],
+            'min_size': [300, 300],
+            'aspect_ratio': [1.5, 3.0],
             'preset_urls': {},
             'no_selection_url': noimage_url
         }

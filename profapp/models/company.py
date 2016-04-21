@@ -39,8 +39,8 @@ class Company(Base, PRBase):
             'none': nologo_url,
             'crop': True,
             'image_size': [450, 450],
-            'min_size': [100, 100],
-            'aspect_ratio': [0.5, 3.0],
+            'min_size': [120, 100],
+            'aspect_ratio': [0.5, 2.0],
             'preset_urls': {},
             'no_selection_url': nologo_url
         }
@@ -114,16 +114,16 @@ class Company(Base, PRBase):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
-        if not re.match(r'[^\s]{2}', str(self.country)):
-            ret['errors']['country'] = 'pls enter a bit longer country'
-        if not re.match(r'[^\s]{2}', str(self.region)):
-            ret['errors']['region'] = 'pls enter a bit longer region'
-        if not re.match(r'[^\s]{2}', str(self.city)):
-            ret['errors']['city'] = 'pls enter a bit longer city'
+        if not re.match(r'[^\s]{3}', str(self.country)):
+            ret['errors']['country'] = 'Your Country name must be at least 3 characters long.'
+        if not re.match(r'[^\s]{3}', str(self.region)):
+            ret['errors']['region'] = 'Your Region name must be at least 3 characters long.'
+        if not re.match(r'[^\s]{3}', str(self.city)):
+            ret['errors']['city'] = 'Your City name must be at least 3 characters long.'
         if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", str(self.email)):
             ret['errors']['email'] = 'Invalid email address'
-        if not re.match('[^\s]{2}', self.name):
-            ret['errors']['name'] = 'pls enter a bit longer name'
+        if not re.match('[^\s]{3,}', self.name):
+            ret['errors']['name'] = 'Your Company name must be at least 3 characters long.'
         # phone validation
         # if not re.match('^\+?[0-9]{3}-?[0-9]{6,12}$', self.phone):
         #     ret['errors']['phone'] = 'pls enter a correct number'

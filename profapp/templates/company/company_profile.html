@@ -34,14 +34,14 @@
                 window.location.href =
                         $scope.url_portal_profile({'create_or_update': 'create', 'company_id': company_id});
             };
-
-            $scope.portal_update = function (company_id, portal_id) {
-                window.location.href =
-                        $scope.url_portal_profile({
-                            'create_or_update': 'update', 'company_id': company_id,
-                            'portal_id': portal_id
-                        });
-            };
+{#            YG--- fix creating new portal if portal of company already exist #}
+{#            $scope.portal_update = function (company_id, portal_id) {#}
+{#                window.location.href =#}
+{#                        $scope.url_portal_profile({#}
+{#                            'create_or_update': 'update', 'company_id': company_id,#}
+{#                            'portal_id': portal_id#}
+{#                        });#}
+{#            };#}
 
 
             $scope.edit = function () {
