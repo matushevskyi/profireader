@@ -57,7 +57,7 @@
             };
 
             $scope.get_local_time = function (date) {
-                return moment(date).format('Do MMMM YYYY, H:mm:ss');
+                return moment(new Date(date)).format('Do MMMM YYYY, H:mm:ss');
             };
 
 

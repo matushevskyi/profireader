@@ -17,6 +17,7 @@ from sqlalchemy.sql import expression, and_
 from sqlalchemy import text
 import time
 import datetime
+from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPortal
 
 
 @article_bp.route('/material_update/<string:material_id>/', methods=['GET'])
@@ -26,23 +27,6 @@ import datetime
 def article_show_form(material_id=None, publication_id=None, company_id=None):
     company = Company.get(company_id if company_id else (
         ArticlePortalDivision.get(publication_id) if publication_id else ArticleCompany.get(material_id)).company.id)
-    if company_id:
-        user_company = UserCompany.get(user_id=g.user.id, company_id=company_id)
-        if not user_company:
-            return redirect(url_for('reader.list_reader'))
-        if user_company.status != UserCompany.STATUSES['ACTIVE']:
-            return redirect(url_for('reader.list_reader'))
-    elif material_id:
-        articleVersion = ArticleCompany.get(material_id)
-        user_company = UserCompany.get(user_id=g.user.id, company_id=articleVersion.company_id)
-        if articleVersion.action_is_allowed(ArticleCompany.ACTIONS['EDIT'], user_company) != True:
-            return redirect(url_for('reader.list_reader'))
-    elif publication_id:  # updating portal version
-        publication_in_portal = ArticlePortalDivision.get(publication_id)
-        actions = publication_in_portal.actions(publication_in_portal.company)
-        if actions['EDIT'] != True:
-            return redirect(url_for('reader.list_reader'))
-
     return render_template('article/form.html', material_id=material_id, company_id=company_id,
                            publication_id=publication_id, company=company)
 
@@ -138,19 +122,13 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
         ret['publication']['division'] = ret['divisions'][ret['publication']['portal_division_id']]
         ret['publication']['counts'] = '0/0/0/0'
 
-        ret['actions'] = publication_in_portal.actions(company)
+        ret['actions'] = PublishUnpublishInPortal(publication=publication_in_portal, portal=portal, company=company).actions()
         ret['publication']['actions'] = ret['actions']
 
     else:
         ret['publication'] = None
-        canbesubmited = material.actions(company)[ArticleCompany.ACTIONS['SUBMIT']]
-        if canbesubmited is True:
-            membership = MemberCompanyPortal.get(portal_id=portal.id, company_id=company.id)
-            canbesubmited = membership.has_rights(MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH)
-            if not canbesubmited is True:
-                canbesubmited = "Membership need right `{}` to perform action `{}`".format(
-                    MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH, ArticleCompany.ACTIONS['SUBMIT'])
-        ret['actions'] = {ArticleCompany.ACTIONS['SUBMIT']: canbesubmited}
+        ret['actions'] = {EditOrSubmitMaterialInPortal.ACTIONS['SUBMIT']:
+            EditOrSubmitMaterialInPortal(material=material, portal=portal).actions()[EditOrSubmitMaterialInPortal.ACTIONS['SUBMIT']]}
 
     return ret
 
@@ -163,7 +141,8 @@ def material_details_load(json, material_id):
 
     return {
         'material': material.get_client_side_dict(more_fields='long'),
-        'actions': material.actions(company),
+        'actions': {EditOrSubmitMaterialInPortal.ACTIONS['EDIT']:
+                        EditOrSubmitMaterialInPortal(material=material, portal=company.own_portal).actions()[EditOrSubmitMaterialInPortal.ACTIONS['EDIT']]},
         'company': company.get_client_side_dict(),
         'portals': {
             'grid_data': [get_portal_dict_for_material(portal, company, material) for portal in
@@ -217,13 +196,13 @@ def submit_publish(json, article_action):
         if 'also_publish' in json and json['also_publish']:
             publication.status = ArticlePortalDivision.STATUSES['PUBLISHED']
         else:
-            if article_action in [ArticlePortalDivision.ACTIONS['PUBLISH'], ArticlePortalDivision.ACTIONS['REPUBLISH']]:
-                publication.status = ArticlePortalDivision.STATUSES['PUBLISHED']
-            elif article_action in [ArticlePortalDivision.ACTIONS['UNPUBLISH'], ArticlePortalDivision.ACTIONS[
+            if article_action in [PublishUnpublishInPortal.ACTIONS['PUBLISH'], PublishUnpublishInPortal.ACTIONS['REPUBLISH']]:
+                publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
+            elif article_action in [PublishUnpublishInPortal.ACTIONS['UNPUBLISH'], PublishUnpublishInPortal.ACTIONS[
                 'UNDELETE']]:
-                publication.status = ArticlePortalDivision.STATUSES['UNPUBLISHED']
-            elif article_action in [ArticlePortalDivision.ACTIONS['DELETE']]:
-                publication.status = ArticlePortalDivision.STATUSES['DELETED']
+                publication.status = PublishUnpublishInPortal.STATUSES['UNPUBLISHED']
+            elif article_action in [PublishUnpublishInPortal.ACTIONS['DELETE']]:
+                publication.status = PublishUnpublishInPortal.STATUSES['DELETED']
 
         if action == 'validate':
             publication.detach()

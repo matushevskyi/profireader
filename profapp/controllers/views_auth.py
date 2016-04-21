@@ -315,6 +315,8 @@ def tos(json):
 def help_message(json):
         if not 'email' in json['data']:
             return 'Please enter valid email!'
+        else:
+            print(json['data']['email'])
         if not 'message' in json['data']:
             return 'Please write message!'
 

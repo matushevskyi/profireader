@@ -27,7 +27,7 @@
         $scope.selectedPortal_name = '';
         $scope.selectedPortal = null;
         $scope.selectedPortal_sending = false;
-        $scope.user_right = {{ rights_user_in|safe }}
+        $scope.actions = {{ actions|safe }}
 
         {% raw %}
 
@@ -96,7 +96,6 @@
                                 name:'actions', type: 'actions', onclick: 'grid_action'}
                         ]
                     });
-        console.log($scope)
         {% endraw %}
     })
     </script>
@@ -104,13 +103,13 @@
     {% raw %}
        <div ng-controller="portals_partners" ng-cloak>
        <h3> {{ _('Join to portal') }} </h3>
-            <input pr-user-rights="user_right" typeahead-on-select="onSelect($item, $model, $label)"
+            <input pr-user-can="actions.require_memberee" typeahead-on-select="onSelect($item, $model, $label)"
                    uib-typeahead-template-url="typeaheadTemplate.html"
                    uib-typeahead-loading="loadingPortals"
                    ng-model="selectedPortal_name"
                    uib-typeahead="portal as portal.name for portal in searchForPortalToJoin($viewValue)"
                    name="portal_id"/>&nbsp;
-            <button pr-user-rights="user_right"  class="btn" ng-click="joinToPortal()"
+            <button pr-user-can="actions.require_memberee"  class="btn" ng-click="joinToPortal()"
                     ng-class="{'disabled': !selectedPortal || selectedPortal_sending}"
                     ng-disabled="!selectedPortal || selectedPortal_sending">{{ _('join to this portal') }}
             </button>

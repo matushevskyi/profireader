@@ -200,7 +200,7 @@
                     <input class="form-control" style="width: 100%" ng-model="data.article.keywords" pr-validation-answer="data_validation:keywords"
                            name="article_keywords" jng-pattern="/[\wа-яёі']{2}/i">
                     <div ng-show="newMaterial.article_keywords.$error.pattern" class="error-input">
-                        The keywords should be longer!
+                        {{ _('The keywords should be longer!') }}
                     </div>
                 </div>
 

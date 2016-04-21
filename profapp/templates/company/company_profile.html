@@ -16,8 +16,6 @@
             $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
             $scope.$$translate = {{translates('CompanyProfile') | safe}};
             $scope.cropper_for_copmany = true;
-            $scope.user_have_company = true;
-            {#            $scope.company = {{company.get_client_side_dict() | tojson | safe}};#}
 
             $scope.url_back = {{raw_url_for('company.companies') | safe}};
             $scope.url_portal_profile = {{raw_url_for('portal.profile') | safe}};
@@ -36,18 +34,18 @@
                 window.location.href =
                         $scope.url_portal_profile({'create_or_update': 'create', 'company_id': company_id});
             };
-
-            $scope.portal_update = function (company_id, portal_id) {
-                window.location.href =
-                        $scope.url_portal_profile({
-                            'create_or_update': 'update', 'company_id': company_id,
-                            'portal_id': portal_id
-                        });
-            };
+{#            YG--- fix creating new portal if portal of company already exist #}
+{#            $scope.portal_update = function (company_id, portal_id) {#}
+{#                window.location.href =#}
+{#                        $scope.url_portal_profile({#}
+{#                            'create_or_update': 'update', 'company_id': company_id,#}
+{#                            'portal_id': portal_id#}
+{#                        });#}
+{#            };#}
 
 
             $scope.edit = function () {
-                $scope.editing = $scope.can_edit;
+                $scope.editing = $scope.can_edit_company;
             };
 
             $scope.afterSave = function (resp, deff) {
@@ -60,7 +58,8 @@
             };
 
             $scope.afterLoad = function (resp, deff) {
-                $scope.can_edit = resp['actions']?resp['actions']['edit']:false;
+                $scope.can_edit_company = resp['actions']?resp['actions']['edit_company_profile'] === true:false;
+                $scope.can_edit_portal = resp['actions']?resp['actions']['edit_portal_profile'] === true:false;
                 $scope.editing = resp.id ? false : true;
                 deff(resp);
 //                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
@@ -88,23 +87,21 @@
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                     <div ng-if="data.id">
                         <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                ng-if="data.own_portal" ng-click="portal_update(data.id, data.own_portal.id)">
+                                ng-if="data.own_portal && can_edit_portal" ng-click="portal_update(data.id, data.own_portal.id)">
                             {{_('Portal profile') }}
                         </button>
                         <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                ng-if="!data.own_portal" ng-click="portal_create(data.id)">{{
-                            _('Launch portal') }}
+                                ng-if="!data.own_portal && can_edit_portal" ng-click="portal_create(data.id)">{{
+                            _('Launch portal')}}
                         </button>
                         <button ng-if="editing" class="btn btn-default save-profile pull-right border-radius"
                                 type="button" ng-click="$af.save(data)"
                                 ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save profile') }}
                         </button>
                         <button class="btn btn-default edit-profile pull-right border-radius" type="button"
-                                ng-click="edit()" ng-if="can_edit && !editing">{{ _('Edit profile') }}
+                                ng-click="edit()" ng-if="can_edit_company && !editing">{{ _('Edit profile') }}
                         </button>
-                    </div>
-                    <div ng-if="!data.id">
-                        <button class="btn btn-default save-profile pull-right border-radius"
+                        <button ng-if="!data.id" class="btn btn-default save-profile pull-right border-radius"
                                 type="button" ng-click="$af.save(data)"
                                 ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
                         </button>

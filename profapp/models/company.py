@@ -7,24 +7,16 @@ from sqlalchemy.orm import relationship
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from flask import g
 from config import Config
-from ..constants.STATUS import STATUS
 from utils.db_utils import db
 from sqlalchemy import CheckConstraint
 from flask import abort
-from .rights import Right
-from ..controllers.request_wrapers import check_rights
-from .files import File
 from .pr_base import PRBase, Base, Search, Grid
 from ..controllers import errors
-from ..constants.STATUS import STATUS_NAME
-from .rights import get_my_attributes
 from functools import wraps
 from .files import YoutubePlaylist
 from ..constants.SEARCH import RELEVANCE
 from .users import User
-from ..models.portal import Portal
-from ..models.portal import MemberCompanyPortal
-from ..models.portal import UserPortalReader
+from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from ..utils import fileUrl
 import re
 from .files import ImageCroped
@@ -47,8 +39,8 @@ class Company(Base, PRBase):
             'none': nologo_url,
             'crop': True,
             'image_size': [450, 450],
-            'min_size': [100, 100],
-            'aspect_ratio': [0.5, 3.0],
+            'min_size': [120, 100],
+            'aspect_ratio': [0.5, 2.0],
             'preset_urls': {},
             'no_selection_url': nologo_url
         }
@@ -122,16 +114,16 @@ class Company(Base, PRBase):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
-        if not re.match(r'[^\s]{2}', str(self.country)):
-            ret['errors']['country'] = 'pls enter a bit longer country'
-        if not re.match(r'[^\s]{2}', str(self.region)):
-            ret['errors']['region'] = 'pls enter a bit longer region'
-        if not re.match(r'[^\s]{2}', str(self.city)):
-            ret['errors']['city'] = 'pls enter a bit longer city'
+        if not re.match(r'[^\s]{3}', str(self.country)):
+            ret['errors']['country'] = 'Your Country name must be at least 3 characters long.'
+        if not re.match(r'[^\s]{3}', str(self.region)):
+            ret['errors']['region'] = 'Your Region name must be at least 3 characters long.'
+        if not re.match(r'[^\s]{3}', str(self.city)):
+            ret['errors']['city'] = 'Your City name must be at least 3 characters long.'
         if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", str(self.email)):
             ret['errors']['email'] = 'Invalid email address'
-        if not re.match('[^\s]{2}', self.name):
-            ret['errors']['name'] = 'pls enter a bit longer name'
+        if not re.match('[^\s]{3,}', self.name):
+            ret['errors']['name'] = 'Your Company name must be at least 3 characters long.'
         # phone validation
         # if not re.match('^\+?[0-9]{3}-?[0-9]{6,12}$', self.phone):
         #     ret['errors']['phone'] = 'pls enter a correct number'
@@ -195,7 +187,7 @@ class Company(Base, PRBase):
         query with one company """
         suspended_employees = [x.get_client_side_dict(more_fields='md_tm, employee, employee.employers')
                                for x in self.employee_assoc
-                               if x.status == STATUS.DELETED()]
+                               if x.status == 'DELETED']
         return suspended_employees
 
     @staticmethod
@@ -324,8 +316,8 @@ class Company(Base, PRBase):
             if user_company.employer.own_portal:
                 dict_members[user_company.employer.name] = db(MemberCompanyPortal,
                     portal_id=user_company.employer.own_portal.id).\
-                    filter(MemberCompanyPortal.company_id != user_company.employer.id and MemberCompanyPortal.status == MemberCompanyPortal.STATUSES['ACTIVE'])\
-                    .join(Company).filter(Company.status == Company.STATUSES['ACTIVE']).all()
+                    filter(MemberCompanyPortal.company_id != user_company.employer.id and MemberCompanyPortal.status == 'ACTIVE')\
+                    .join(Company).filter(Company.status == 'ACTIVE').all()
         return dict_members, main_companies
 
 
@@ -360,111 +352,6 @@ class UserCompany(Base, PRBase):
         PORTAL_MANAGE_READERS = 16
         PORTAL_MANAGE_COMMENTS = 18
         PORTAL_MANAGE_MEMBERS_COMPANIES = 13
-
-    ACTIONS = {
-        'ENLIST': 'ENLIST',
-        'REJECT': 'REJECT',
-        'FIRE': 'FIRE',
-        'ALLOW': 'ALLOW',
-    }
-
-    ACTIONS_FOR_FILEMANAGER = {
-        'download': RIGHT_AT_COMPANY.FILES_BROWSE,
-        'remove': RIGHT_AT_COMPANY.FILES_DELETE_OTHERS,
-        'show': RIGHT_AT_COMPANY.FILES_BROWSE,
-        'upload': RIGHT_AT_COMPANY.FILES_UPLOAD,
-        'cut': RIGHT_AT_COMPANY.FILES_DELETE_OTHERS
-    }
-
-    ACTION_FOR_STATUSES_MEMBERSHIP = {
-        MemberCompanyPortal.STATUSES['ACTIVE']: {
-            MemberCompanyPortal.ACTIONS['UNSUBSCRIBE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
-            MemberCompanyPortal.ACTIONS['FREEZE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-        MemberCompanyPortal.STATUSES['APPLICANT']: {
-            MemberCompanyPortal.ACTIONS['WITHDRAW']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-        MemberCompanyPortal.STATUSES['SUSPENDED']: {
-            MemberCompanyPortal.ACTIONS['UNSUBSCRIBE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-        MemberCompanyPortal.STATUSES['FROZEN']: {
-            MemberCompanyPortal.ACTIONS['UNSUBSCRIBE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
-            MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-        MemberCompanyPortal.STATUSES['REJECTED']: {
-            MemberCompanyPortal.ACTIONS['WITHDRAW']: RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-        MemberCompanyPortal.STATUSES['DELETED']: {}
-    }
-
-    ACTION_FOR_STATUSES_MEMBER = {
-        MemberCompanyPortal.STATUSES['ACTIVE']: {
-            MemberCompanyPortal.ACTIONS['ALLOW']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-            MemberCompanyPortal.ACTIONS['SUSPEND']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        MemberCompanyPortal.STATUSES['APPLICANT']: {
-            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-            MemberCompanyPortal.ACTIONS['ENLIST']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        MemberCompanyPortal.STATUSES['SUSPENDED']: {
-            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-            MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        MemberCompanyPortal.STATUSES['FROZEN']: {
-            MemberCompanyPortal.ACTIONS['REJECT']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        MemberCompanyPortal.STATUSES['REJECTED']: {
-            MemberCompanyPortal.ACTIONS['RESTORE']: RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        MemberCompanyPortal.STATUSES['DELETED']: {}
-    }
-
-    ACTIONS_FOR_STATUSES = {
-        STATUSES['APPLICANT']: {
-            ACTIONS['ENLIST']: {'employment': [RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-            ACTIONS['REJECT']: {'employment': [RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-        },
-        STATUSES['REJECTED']: {
-            ACTIONS['ENLIST']: {'employment': [RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-        },
-
-        STATUSES['FIRED']: {
-            ACTIONS['ENLIST']: {'employment': [RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-        },
-        STATUSES['ACTIVE']: {
-            ACTIONS['FIRE']: {'employment': [RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-            ACTIONS['ALLOW']: {'employment': [RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
-        }
-    }
-
-    def action_is_allowed(self, action_name, employment_subject):
-        if not employment_subject:
-            return "Unconfirmed employment"
-
-        if not action_name in self.ACTIONS:
-            return "Unrecognized employee action `{}`".format(action_name)
-
-        if not self.status in self.ACTIONS_FOR_STATUSES:
-            return "Unrecognized employee status `{}`".format(self.status)
-
-        if not action_name in self.ACTIONS_FOR_STATUSES[self.status]:
-            return "Action `{}` is not applicable for employee with status `{}`".format(action_name, self.status)
-
-        if employment_subject.status != UserCompany.STATUSES['ACTIVE']:
-            return "User need employment with status `{}` to perform action `{}`".format(
-                    UserCompany.STATUSES['ACTIVE'], action_name)
-
-        if action_name == 'FIRE':
-            if self.user_id == employment_subject.employer.author_user_id:
-                return 'You can`t fire company owner'
-
-        if action_name == 'ALLOW':
-            if self.user_id == employment_subject.employer.author_user_id:
-                return 'Company owner have all permissions and you can do nothing with that'
-
-        required_rights = self.ACTIONS_FOR_STATUSES[self.status][action_name]
-
-        if 'employment' in required_rights:
-            for required_right in required_rights['employment']:
-                if not employment_subject.has_rights(required_right):
-                    return "Employment need right `{}` to perform action `{}`".format(required_right, action_name)
-
-        return True
-
-    def actions(self, employment_subject):
-        return {action_name: self.action_is_allowed(action_name, employment_subject) for action_name in
-                self.ACTIONS_FOR_STATUSES[self.status]}
 
     position = Column(TABLE_TYPES['short_name'], default='')
 
@@ -558,18 +445,13 @@ class UserCompany(Base, PRBase):
         db(UserCompany, company_id=company_id, user_id=user_id,
            status=UserCompany.STATUSES['APPLICANT']).update({'status': stat})
 
-    def has_rights(self, rightname, filemanager=False):
+    def has_rights(self, rightname):
         if self.employer.user_owner.id == self.user_id:
             return True
-
         if rightname == '_OWNER':
             return False
-
         if rightname == '_ANY':
             return True if self.status == self.STATUSES['ACTIVE'] else False
-        if filemanager:
-            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[
-                UserCompany.ACTIONS_FOR_FILEMANAGER[rightname]]) else False
         else:
             return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else False
 

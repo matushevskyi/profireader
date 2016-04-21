@@ -43,7 +43,7 @@
                 if (column_name == 'actions') {
                     if (action === 'ALLOW') {
                         window.location.href = $scope.url_company_partner_details({
-                            employeer_id: row.company_id, member_id: row.member.company.id
+                            company_id: row.company_id, member_id: row.member.company.id
                         });
                         return;
                     } else {

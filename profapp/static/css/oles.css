@@ -280,6 +280,7 @@
     margin: 0px 2px;
     width: 5em;
     overflow: hidden;
+    letter-spacing: -1px;
 }
 
 .modal-filemanager-fullscreen {
