@@ -192,8 +192,8 @@ class Portal(Base, PRBase):
             'upload': True,
             'crop': True,
             'image_size': [450, 450],
-            'min_size': [100, 100],
-            'aspect_ratio': [0.5, 3.0],
+            'min_size': [120, 100],
+            'aspect_ratio': [0.5, 2.0],
             'preset_urls': {'glyphicon-remove-circle': nologo_url},
             'no_selection_url': nologo_url
     }
