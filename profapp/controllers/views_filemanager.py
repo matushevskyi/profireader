@@ -46,7 +46,7 @@ def filemanager():
     for n, user_company in enumerate(g.user.employer_assoc):
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE):
             library.insert(n, File.folder_dict(user_company.employer,
-                                               {'can_upload': FilemanagerRights(company=user_company.company_id).is_action_allowed(FilemanagerRights.ACTIONS['upload'])}))
+                                               {'can_upload': FilemanagerRights(company=user_company.company_id).is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])}))
             uniq.update({user_company.employer.name})
             if user_company.employer.journalist_folder_file_id == last_root_id:
                 last_visit_root_name = user_company.employer.name + " files"
@@ -54,7 +54,7 @@ def filemanager():
                 for member in members[user_company.employer.name]:
                     if member.company.name not in uniq and member.company.name not in main_companies:
                         library.append(File.folder_dict(member.company,
-                                                        {'can_upload': FilemanagerRights(company=member.company.id).is_action_allowed(FilemanagerRights.ACTIONS['upload'])}))
+                                                        {'can_upload': FilemanagerRights(company=member.company.id).is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])}))
                         uniq.update({member.company.name})
                         if member.company.journalist_folder_file_id == last_root_id:
                             last_visit_root_name = member.company.name + " files"
@@ -99,7 +99,7 @@ def list(json):
 @tos_required
 @ok
 def createdir(json):
-    if FilemanagerRights(company=get_company_from_folder(json['params']['root_id'])).is_action_allowed('create_folder') != True:
+    if FilemanagerRights(company=get_company_from_folder(json['params']['root_id'])).is_action_allowed(FilemanagerRights.ACTIONS['CREATE_FOLDER']) != True:
         return False
     return File.createdir(name=json['params']['name'],
                           root_folder_id=json['params']['root_id'],
@@ -112,7 +112,7 @@ def createdir(json):
 @ok
 def set_properties(json):
     file = File.get(json['params']['id'])
-    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).is_action_allowed('upload') != True:
+    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
         return False
     return File.set_properties(file, json['params']['add_all'], name=json['params']['name'],
                                copyright_author_name=json['params']['author_name'],
@@ -125,7 +125,7 @@ def set_properties(json):
 @ok
 def copy(json):
     file = File.get(json['params']['id'])
-    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['folder_id'])).is_action_allowed('upload') != True:
+    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['folder_id'])).is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
         return False
     return file.copy_file(json['params']['folder_id']).id
 
@@ -136,7 +136,7 @@ def copy(json):
 @ok
 def cut(json):
     file = File.get(json['params']['id'])
-    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).is_action_allowed('upload') != True:
+    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
         return False
     return file.move_to(json['params']['folder_id'])
 
@@ -159,7 +159,7 @@ def get_company_from_folder(file_id):
 def remove(json, file_id):
     file = File.get(file_id)
     ancestors = File.ancestors(file.parent_id)
-    if not file or FilemanagerRights(company=db(Company, journalist_folder_file_id=ancestors[0]).first()).is_action_allowed('remove') != True:
+    if not file or FilemanagerRights(company=db(Company, journalist_folder_file_id=ancestors[0]).first()).is_action_allowed(FilemanagerRights.ACTIONS['REMOVE']) != True:
         return False
     return file.remove()
 
@@ -188,7 +188,7 @@ def send(parent_id):
     if parent.mime == 'root':
         root = parent.id
     company = db(Company, journalist_folder_file_id=root).one()
-    if FilemanagerRights(company=company).is_action_allowed('upload') != True:
+    if FilemanagerRights(company=company).is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
         return jsonify({'error': True })
     data = request.form
     uploaded_file = request.files['file']

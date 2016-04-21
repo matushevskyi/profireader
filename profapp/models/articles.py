@@ -770,9 +770,19 @@ class Article(Base, PRBase):
 
     @staticmethod
     def get_material_grid_data(material):
+        from ..models.rights import PublishUnpublishInPortal
         dict = material.get_client_side_dict(fields='md_tm,title,editor.profireader_name,id')
         dict.update({'portal.name': None if len(material.portal_article) == 0 else '', 'level': True})
-        list = [portal.get_client_side_dict(fields='portal.name,status, id') for portal in material.portal_article]
+        dict.update({'actions': None if len(material.portal_article) == 0 else '', 'level': True})
+        list = [PRBase.merge_dicts(article_portal.get_client_side_dict(fields='portal.name|host,status, id, portal_division_id'),
+                {'actions':
+                    {'edit': PublishUnpublishInPortal(publication=article_portal,
+                                                      portal=article_portal.division.portal,
+                                                      company=article_portal.division.portal.own_company)
+                                       .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]
+                     }
+              })
+                for article_portal in material.portal_article]
         return dict, list
 
         # for article in articles:

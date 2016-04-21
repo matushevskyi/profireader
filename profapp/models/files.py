@@ -192,7 +192,7 @@ class File(Base, PRBase):
         from ..models.rights import FilemanagerRights
         rights_object = FilemanagerRights(company=company_id)
         folder = File.get(parent_id)
-        show = lambda file: True if rights_object.is_action_allowed(FilemanagerRights.ACTIONS['show']) else False
+        show = lambda file: True if rights_object.is_action_allowed(FilemanagerRights.ACTIONS['SHOW']) else False
         actions = {}
         default_actions = {}
         default_actions['download'] = lambda file: None if (
@@ -207,12 +207,12 @@ class File(Base, PRBase):
             default_actions['choose'] = lambda file: True
             actions['choose'] = lambda file: True
         actions = {act: default_actions[act] for act in default_actions}
-        actions['remove'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['remove'])
+        actions['remove'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['REMOVE'])
         actions['copy'] = lambda file: None if file.mime == "root" else True
-        actions['paste'] = lambda file: None if file == None else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['upload'])
-        actions['cut'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['cut']) \
-                                                                       and rights_object.is_action_allowed(FilemanagerRights.ACTIONS['upload'])
-        actions['properties'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['upload'])
+        actions['paste'] = lambda file: None if file == None else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])
+        actions['cut'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['CUT']) \
+                                                                       and rights_object.is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])
+        actions['properties'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])
 
         search_files = File.search(name, parent_id, actions, file_manager_called_for)
         if search_files != None:

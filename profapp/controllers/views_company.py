@@ -14,7 +14,7 @@ from ..models.files import File, ImageCroped
 from .pagination import pagination
 from config import Config
 from ..models.pr_base import Search, PRBase, Grid
-from ..models.rights import EditCompanyRight, RightsEmployeeInCompany, EmployeesRight
+from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, PublishUnpublishInPortal
 
 
 @company_bp.route('/search_to_submit_article/', methods=['POST'])
@@ -68,7 +68,11 @@ def materials_load(json, company_id):
         'material_status': Grid.filter_for_status(ArticleCompany.STATUSES),
         'status': Grid.filter_for_status(ArticlePortalDivision.STATUSES),
         'publication_visibility': Grid.filter_for_status(ArticlePortalDivision.VISIBILITIES)
+
+
     }
+    # PublishUnpublishInPortal(publication=publication, portal=publication.division.portal,
+    #                          company=publication.division.portal.own_company).actions()
     return {'grid_data': Grid.grid_tuple_to_dict([Article.get_material_grid_data(material) for material in materials]),
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in grid_filters.items()},
@@ -291,7 +295,8 @@ def profile_load_validate_save(json, company_id=None):
         company_dict['logo'] = company.get_logo_client_side_dict()
         user_company = UserCompany.get(company_id=company_id)
         if user_company:
-            company_dict['actions'] = {'edit': EditCompanyRight(company=company).is_edit_allowed()}
+            company_dict['actions'] = {'edit_company_profile': EditCompanyRight(company=company).is_edit_allowed(),
+                                       'edit_portal_profile':EditPortalRight(company=company).is_edit_allowed()}
         return company_dict
     else:
         company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',

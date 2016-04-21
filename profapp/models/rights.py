@@ -24,11 +24,14 @@ from .pr_base import PRBase
 #     READER: 'reader'
 # }
 class BaseRightsInProfireader:
+
     def check_objects_statuses(self, objects, action_name):
         user_active = self.check_user_status(action_name)
         if user_active != True:
             return user_active
         for key in objects:
+            if not objects[key]:
+                return "Unconfirmed {}!".format(key)
             if objects[key].status != 'ACTIVE':
                 return "{} should be with status `{}` to perform action `{}`".format(key, 'ACTIVE', action_name)
         return True
@@ -53,13 +56,8 @@ class BaseRightsInProfireader:
         return True
 
     @staticmethod
-    def is_action_for_article_allowed(self, action_name, employment, membership, check_objects, actions, actions_for_statuses):
+    def _is_action_allowed(self, action_name, check_objects_status, check_objects_rights, actions=None, actions_for_statuses=None):
         required_rights = None
-        if not employment:
-            return "Unconfirmed employment"
-
-        if not membership:
-            return "Unconfirmed membership"
 
         if not action_name in actions:
             return "Unrecognized action `{}`".format(action_name)
@@ -70,20 +68,25 @@ class BaseRightsInProfireader:
         if not action_name in actions_for_statuses[self.status]:
             return "Action `{}` is not applicable for publication with status `{}`".format(action_name,
                                                                                            self.status)
-
-        check_status_in_objects = BaseRightsInProfireader().check_objects_statuses(check_objects, action_name)
+        check_status_in_objects = BaseRightsInProfireader().check_objects_statuses(check_objects_status, action_name)
         if check_status_in_objects != True:
             return check_status_in_objects
 
         if self.status in actions_for_statuses:
             required_rights = actions_for_statuses[self.status][action_name]
 
-        result = BaseRightsInProfireader().check_rights(action_name, required_rights,
-                                   {'employment': employment, 'membership': membership})
+        result = BaseRightsInProfireader().check_rights(action_name, required_rights, check_objects_rights)
         if result != True:
             return result
 
         return True
+
+    @staticmethod
+    def base_actions(self, *args, status=None):
+        print(status)
+        return {action_name: self.action_is_allowed(action_name, *args) for action_name
+                in self.ACTIONS_FOR_STATUSES[status]}
+
 
 class PublishUnpublishInPortal(BaseRightsInProfireader):
 
@@ -139,19 +142,19 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
         }
 
         def actions(self):
-            employment = UserCompany.get(company_id=self.company.id)
-            membership = MemberCompanyPortal.get(portal_id=self.publication.division.portal_id, company_id=self.company.id)
-            company_object = self.portal.own_company
-            return {action_name: self.action_is_allowed(action_name, employment, membership, company_object) for action_name in
-                    self.ACTIONS_FOR_STATUSES[self.publication.status]}
+            return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id),
+                    MemberCompanyPortal.get(portal_id=self.publication.division.portal_id, company_id=self.company.id),
+                                                        self.portal.own_company, status=self.publication.status)
 
-        def action_is_allowed(self, action_name, employment, membership, company_object):
-            get_objects_for_check = {'employment': employment,
-                                        'membership': membership,
-                                        'company where you want update publication': company_object}
+        def action_is_allowed(self, action_name, employee, membership, company_object):
+            check_objects_status = {'employeer':self.company,
+                                    'employee': employee,
+                                    'membership': membership,
+                                    'company where you want update publication': company_object}
 
-            return BaseRightsInProfireader.is_action_for_article_allowed(self.publication, action_name,
-                                                      employment, membership, get_objects_for_check, self.ACTIONS, self.ACTIONS_FOR_STATUSES)
+            return BaseRightsInProfireader._is_action_allowed(self.publication, action_name,
+                        check_objects_status, {'employment': employee, 'membership': membership},
+                        actions=self.ACTIONS, actions_for_statuses=self.ACTIONS_FOR_STATUSES)
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
 
@@ -175,71 +178,87 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
     }
 
     def actions(self):
-        employment = UserCompany.get(company_id=self.material.company.id)
-        membership = MemberCompanyPortal.get(portal_id=self.portal.id, company_id=self.material.company.id)
-        company_object = self.portal.own_company
-        return {action_name: self.action_is_allowed(action_name, employment, membership, company_object) for action_name in
-                self.ACTIONS_FOR_STATUSES[self.material.status]}
+        return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.material.company.id),
+                                                    MemberCompanyPortal.get(portal_id=self.portal.id,
+                                                                            company_id=self.material.company.id),
+                                                    self.portal.own_company, status=self.material.status)
 
-    def action_is_allowed(self, action_name, employment, membership, company_object):
-        get_objects_for_check = {'company owner material': self.material.company,
-                         'employment': employment, 'membership': membership,
-                         'company where you want submit material': company_object}
+    def action_is_allowed(self, action_name, employee, membership, company_object):
+        check_objects_status = {'company owner material': self.material.company,
+                                'employee': employee, 'membership': membership,
+                                'company where you want submit material': company_object}
 
-        return BaseRightsInProfireader.is_action_for_article_allowed(self.material, action_name,
-                                                     employment, membership, get_objects_for_check, self.ACTIONS,
-                                                     self.ACTIONS_FOR_STATUSES)
+        return BaseRightsInProfireader._is_action_allowed(self.material, action_name,
+                check_objects_status,{'company owner material': self.material.company,'employment': employee, 'membership': membership},
+                            actions=self.ACTIONS, actions_for_statuses=self.ACTIONS_FOR_STATUSES)
 
-class RightsEmployeeInCompany(BaseRightsInProfireader):
-    def __init__(self, company, employment=None, membership=None, member=None):
+class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
+    def __init__(self, company=None, employment=None, member_company=None):
         self.company = company if isinstance(company, Company) else Company.get(company)
         self.employment = employment
-        self.membership = membership
-        self.member = member
-
-    @staticmethod
-    def is_action_for_employee_in_company_allowed(check_objects, action_name, employee, require_rights):
-        check_status_in_objects = BaseRightsInProfireader().check_objects_statuses(check_objects, action_name)
-        if check_status_in_objects != True:
-            return check_status_in_objects
-        result = BaseRightsInProfireader().check_rights(action_name, require_rights, {'employee': employee})
-        if result != True:
-            return result
-        return True
-
-class FilemanagerRights(RightsEmployeeInCompany):
+        self.member_company = member_company
 
     ACTIONS = {
-        'download': 'download',
-        'remove': 'remove',
-        'show': 'show',
-        'upload': 'upload',
-        'cut': 'cut',
-        'create_folder': 'create_folder'
+        'EDIT_COMPANY': 'EDIT_COMPANY',
+        'EDIT_PORTAL': 'EDIT_PORTAL',
+        'COMPANY_REQUIRE_MEMBEREE_AT_PORTALS':'COMPANY_REQUIRE_MEMBEREE_AT_PORTALS'
     }
-    ACTIONS_FOR_FILEMANAGER = {
-        'download': UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE,
-        'remove': UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS,
-        'show': UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE,
-        'upload': UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD,
-        'cut': UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS,
-        'create_folder': UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD
+
+    ACTIONS_FOR_EMPLOYEE_IN_COMPANY = {
+        'ACTIVE': {
+            ACTIONS['EDIT_COMPANY']: {'employee': UserCompany.RIGHT_AT_COMPANY.COMPANY_EDIT_PROFILE},
+            ACTIONS['EDIT_PORTAL']: {'employee': UserCompany.RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE},
+            ACTIONS['COMPANY_REQUIRE_MEMBEREE_AT_PORTALS']: {'employee': UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}
+        }
     }
 
     def is_action_allowed(self, action):
-        user_company = UserCompany.get(company_id=self.company.id)
-        if user_company:
-            result = EmployeesRight.is_action_for_employee_in_company_allowed({'company': self.company},action, user_company,
-                 {'employee': [FilemanagerRights.ACTIONS_FOR_FILEMANAGER[action]]})
+        employee = UserCompany.get(company_id=self.company.id)
+        get_objects_for_check = {'employee': employee,
+                                 'employeer': self.company}
+        return BaseRightsInProfireader._is_action_allowed(employee, action,
+                                                          get_objects_for_check, {'employee': employee},
+                                                          actions=BaseRightsEmployeeInCompany.ACTIONS,
+                                                          actions_for_statuses=BaseRightsEmployeeInCompany.ACTIONS_FOR_EMPLOYEE_IN_COMPANY)
+
+class FilemanagerRights(BaseRightsEmployeeInCompany):
+
+    ACTIONS = {
+        'DOWNLOAD': 'DOWNLOAD',
+        'REMOVE': 'REMOVE',
+        'SHOW': 'SHOW',
+        'UPLOAD': 'UPLOAD',
+        'CUT': 'CUT',
+        'CREATE_FOLDER': 'CREATE_FOLDER'
+    }
+    ACTIONS_FOR_FILEMANAGER = {
+        'ACTIVE': {
+            ACTIONS['DOWNLOAD']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE},
+            ACTIONS['REMOVE']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS},
+            ACTIONS['SHOW']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE},
+            ACTIONS['UPLOAD']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD},
+            ACTIONS['CUT']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS},
+            ACTIONS['CREATE_FOLDER']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD}
+        }
+    }
+
+    def is_action_allowed(self, action):
+        employee = UserCompany.get(company_id=self.company.id)
+        if employee:
+            get_objects_for_check = {'employee': employee,
+                                     'employeer': self.company}
+            result = BaseRightsInProfireader._is_action_allowed(employee, action, get_objects_for_check, {'employee': employee},
+                                                              actions=FilemanagerRights.ACTIONS,
+                                                              actions_for_statuses=FilemanagerRights.ACTIONS_FOR_FILEMANAGER)
             if result != True:
                 return result
-        elif not user_company and action != FilemanagerRights.ACTIONS['show']:
+        elif not employee and action != FilemanagerRights.ACTIONS['SHOW']:
             return "You cannot menage files in joined company!"
         return True
 
 
 
-class EmployeesRight(RightsEmployeeInCompany):
+class EmployeesRight(BaseRightsEmployeeInCompany):
 
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED'}
 
@@ -252,82 +271,59 @@ class EmployeesRight(RightsEmployeeInCompany):
 
     ACTIONS_FOR_STATUSES = {
         STATUSES['APPLICANT']: {
-            ACTIONS['ENLIST']: {'employment': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-            ACTIONS['REJECT']: {'employment': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
+            ACTIONS['ENLIST']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
+            ACTIONS['REJECT']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
         },
         STATUSES['REJECTED']: {
-            ACTIONS['ENLIST']: {'employment': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
+            ACTIONS['ENLIST']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
         },
 
         STATUSES['FIRED']: {
-            ACTIONS['ENLIST']: {'employment': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
+            ACTIONS['ENLIST']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
         },
         STATUSES['ACTIVE']: {
-            ACTIONS['FIRE']: {'employment': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-            ACTIONS['ALLOW']: {'employment': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
+            ACTIONS['FIRE']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
+            ACTIONS['ALLOW']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
         }
     }
 
     def action_is_allowed(self, action_name, employee):
-        if not employee:
-            return "Unconfirmed employment"
-
-        if not action_name in self.ACTIONS:
-            return "Unrecognized employee action `{}`".format(action_name)
-
-        if not self.employment.status in self.ACTIONS_FOR_STATUSES:
-            return "Unrecognized employee status `{}`".format(self.employment.status)
-
-        if not action_name in self.ACTIONS_FOR_STATUSES[self.employment.status]:
-            return "Action `{}` is not applicable for employee with status `{}`".format(action_name,
-                                                                                        self.employment.status)
-
-        if employee.status != UserCompany.STATUSES['ACTIVE']:
-            return "User need employment with status `{}` to perform action `{}`".format(
-                UserCompany.STATUSES['ACTIVE'], action_name)
-
         if action_name == 'FIRE':
-            if self.employment.user_id == employee.employer.author_user_id:
-                return 'You can`t fire company owner'
+                if self.employment.user_id == employee.employer.author_user_id:
+                    return 'You can`t fire company owner'
 
         if action_name == 'ALLOW':
-            if self.employment.user_id == employee.employer.author_user_id:
-                return 'Company owner have all permissions and you can do nothing with that'
-
-        required_rights = self.ACTIONS_FOR_STATUSES[self.employment.status][action_name]
-
-        if 'employment' in required_rights:
-            for required_right in required_rights['employment']:
-                if not employee.has_rights(required_right):
-                    return "Employment need right `{}` to perform action `{}`".format(required_right, action_name)
-
-        return True
+                if self.employment.user_id == employee.employer.author_user_id:
+                    return 'Company owner have all permissions and you can do nothing with that'
+        get_objects_for_check = {'employee': employee,
+                                 'employeer': self.company}
+        return BaseRightsInProfireader._is_action_allowed(self.employment, action_name,
+                get_objects_for_check, {'employee': employee},actions=self.ACTIONS,
+                                                          actions_for_statuses=self.ACTIONS_FOR_STATUSES)
 
     def actions(self):
-        employee = UserCompany.get(company_id=self.company.id)
-        return {action_name: self.action_is_allowed(action_name, employee) for action_name in
-                self.ACTIONS_FOR_STATUSES[self.employment.status]}
+        return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id), status=self.employment.status)
 
 
-class EditCompanyRight(RightsEmployeeInCompany):
+class EditCompanyRight(BaseRightsEmployeeInCompany):
+
     def is_edit_allowed(self):
-        result = EmployeesRight.is_action_for_employee_in_company_allowed({'company': self.company},
-                'edit_company_profile',UserCompany.get(company_id=self.company.id),
-                                {'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_EDIT_PROFILE]})
-        return True if result == True else False
+        return self.is_action_allowed(self.ACTIONS['EDIT_COMPANY'])
 
-class RequireMembereeAtPortalsRight(RightsEmployeeInCompany):
-        def is_require_member_allowed(self):
-            result = EmployeesRight.is_action_for_employee_in_company_allowed({'company': self.company},
-                    'require_member',UserCompany.get(company_id=self.company.id),
-                           {'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]})
-            return True if result == True else False
+class EditPortalRight(BaseRightsEmployeeInCompany):
 
-class EployeeMembersRights(RightsEmployeeInCompany):
+    def is_edit_allowed(self):
+        return self.is_action_allowed(self.ACTIONS['EDIT_PORTAL'])
 
+class RequireMembereeAtPortalsRight(BaseRightsEmployeeInCompany):
+
+    def is_require_member_allowed(self):
+        return self.is_action_allowed(self.ACTIONS['COMPANY_REQUIRE_MEMBEREE_AT_PORTALS'])
+
+
+class MembersOrMembershipBase(BaseRightsEmployeeInCompany):
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
                 'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
-
     INITIALLY_FILTERED_OUT_STATUSES = [STATUSES['DELETED'], STATUSES['REJECTED']]
     MEMBER = 'member'
     MEMBERSHIP = 'membership'
@@ -343,41 +339,6 @@ class EployeeMembersRights(RightsEmployeeInCompany):
         'ALLOW': 'ALLOW'
     }
 
-    ACTION_FOR_STATUSES_MEMBERSHIP = {
-        STATUSES['ACTIVE']: {
-            ACTIONS['UNSUBSCRIBE']: UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
-            ACTIONS['FREEZE']: UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-        STATUSES['APPLICANT']: {
-            ACTIONS['WITHDRAW']: UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-        STATUSES['SUSPENDED']: {
-            ACTIONS['UNSUBSCRIBE']: UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-        STATUSES['FROZEN']: {
-            ACTIONS['UNSUBSCRIBE']: UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS,
-            ACTIONS['RESTORE']: UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-        STATUSES['REJECTED']: {
-            ACTIONS['WITHDRAW']: UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-        STATUSES['DELETED']: {}
-    }
-
-    ACTION_FOR_STATUSES_MEMBER = {
-        STATUSES['ACTIVE']: {
-            ACTIONS['ALLOW']: UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-            ACTIONS['REJECT']: UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-            ACTIONS['SUSPEND']: UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        STATUSES['APPLICANT']: {
-            ACTIONS['REJECT']: UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-            ACTIONS['ENLIST']: UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        STATUSES['SUSPENDED']: {
-            ACTIONS['REJECT']: UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-            ACTIONS['RESTORE']: UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        STATUSES['FROZEN']: {
-            ACTIONS['REJECT']: UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        STATUSES['REJECTED']: {
-            ACTIONS['RESTORE']: UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-        STATUSES['DELETED']: {}
-    }
-
-
     STATUS_FOR_ACTION = {
         ACTIONS['UNSUBSCRIBE']: STATUSES['DELETED'],
         ACTIONS['FREEZE']: STATUSES['FROZEN'],
@@ -388,43 +349,26 @@ class EployeeMembersRights(RightsEmployeeInCompany):
         ACTIONS['RESTORE']: STATUSES['ACTIVE']
     }
 
-    def actions(self, who):
-        employee = UserCompany.get(company_id=self.company.id)
-        action_for_status = EployeeMembersRights.ACTION_FOR_STATUSES_MEMBER if who == 'member' else EployeeMembersRights.ACTION_FOR_STATUSES_MEMBERSHIP
-        return {action_name: self.action_is_allowed(action_name, employee,
-                                                    action_for_status[self.membership.status]) for action_name in
-                action_for_status[self.membership.status]}
-
-    def action_is_allowed(self, action_name, employee, actions):
-        if not employee:
-            return "Unconfirmed employment"
-
-        if not action_name in actions:
-            return "Unrecognized action `{}`".format(action_name)
-
-        if employee.status != EployeeMembersRights.STATUSES['ACTIVE']:
-            return "User need employment with status `{}` to perform action `{}`".format(
-                EployeeMembersRights.STATUSES['ACTIVE'], action_name)
-
-        if self.membership.portal.own_company.status != 'ACTIVE' and action_name == EployeeMembersRights.ACTIONS['FREEZE']:
-            return "Company `{}` with status `{}` need status ACTIVE to perform action `{}`".format(
-                self.membership.portal.own_company.name,
-                self.membership.portal.own_company.status, action_name)
-        if self.membership.portal.company_owner_id == self.membership.company_id:
+    def action_is_allowed_member_company(self, action_name, employee, add_to_check_statuses=None):
+        if self.member_company.portal.company_owner_id == self.member_company.company_id:
             return 'You can`t {0} portal of your own company'.format(action_name)
-
-        if not employee.has_rights(actions[action_name]):
-            return "Employment need right `{}` to perform action `{}`".format(actions[action_name], action_name)
-
-        return True
+        get_objects_for_check = {'employee': employee,
+                                 'employeer': self.company}
+        if add_to_check_statuses:
+            get_objects_for_check.update(add_to_check_statuses)
+        return BaseRightsInProfireader._is_action_allowed(self.member_company, action_name,
+                                                      get_objects_for_check, {'employee': employee},
+                                                      actions=self.ACTIONS,
+                                                      actions_for_statuses=self.ACTIONS_FOR_STATUSES)
 
     def can_update_company_partner(self):
-        user_right = UserCompany.get(company_id=self.company.id).has_rights(UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES)
-        if self.membership.status == EployeeMembersRights.STATUSES['FROZEN'] and not user_right:
+        user_right = UserCompany.get(company_id=self.company.id).has_rights(
+            UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES)
+        if self.member_company.status == MembersOrMembershipBase.STATUSES['FROZEN'] and not user_right:
             return 'Sorry!You can not manage company {}!It was frozen!'.format(self.company.name)
-        if self.membership.status == EployeeMembersRights.STATUSES['DELETED']:
+        if self.member_company.status == MembersOrMembershipBase.STATUSES['DELETED']:
             return 'Sorry!Company {} was unsubscribed!'.format(self.company.name)
-        if self.company.status != EployeeMembersRights.STATUSES['ACTIVE']:
+        if self.company.status != MembersOrMembershipBase.STATUSES['ACTIVE']:
             return 'Sorry!Company {} is not active!'.format(self.company.name)
         if not user_right:
             return 'You haven\'t got aproriate rights!'
@@ -432,8 +376,63 @@ class EployeeMembersRights(RightsEmployeeInCompany):
 
     @staticmethod
     def get_avaliable_statuses():
-        return PRBase.del_attr_by_keys(EployeeMembersRights.STATUSES,
+        return PRBase.del_attr_by_keys(MembersOrMembershipBase.STATUSES,
                                        ['DELETED', 'FROZEN'])
+
+class MembersRights(MembersOrMembershipBase):
+    ACTIONS_FOR_STATUSES = {
+        MembersOrMembershipBase.STATUSES['ACTIVE']: {
+            MembersOrMembershipBase.ACTIONS['ALLOW']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+            MembersOrMembershipBase.ACTIONS['SUSPEND']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES}},
+        MembersOrMembershipBase.STATUSES['APPLICANT']: {
+            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+            MembersOrMembershipBase.ACTIONS['ENLIST']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES}},
+        MembersOrMembershipBase.STATUSES['SUSPENDED']: {
+            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
+            MembersOrMembershipBase.ACTIONS['RESTORE']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES}},
+        MembersOrMembershipBase.STATUSES['FROZEN']: {
+            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES}},
+        MembersOrMembershipBase.STATUSES['REJECTED']: {
+            MembersOrMembershipBase.ACTIONS['RESTORE']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES}},
+        MembersOrMembershipBase.STATUSES['DELETED']: {}
+    }
+
+    def actions(self):
+        return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id), status=self.member_company.status)
+
+    def action_is_allowed(self, action_name, employee):
+        return self.action_is_allowed_member_company(action_name, employee, {'company members': self.member_company.company})
+
+
+
+class MembershipRights(MembersOrMembershipBase):
+
+    ACTIONS_FOR_STATUSES = {
+        MembersOrMembershipBase.STATUSES['ACTIVE']: {
+            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+            MembersOrMembershipBase.ACTIONS['FREEZE']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}},
+        MembersOrMembershipBase.STATUSES['APPLICANT']: {
+            MembersOrMembershipBase.ACTIONS['WITHDRAW']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}},
+        MembersOrMembershipBase.STATUSES['SUSPENDED']: {
+            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}},
+        MembersOrMembershipBase.STATUSES['FROZEN']: {
+            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
+            MembersOrMembershipBase.ACTIONS['RESTORE']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}},
+        MembersOrMembershipBase.STATUSES['REJECTED']: {
+            MembersOrMembershipBase.ACTIONS['WITHDRAW']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}},
+        MembersOrMembershipBase.STATUSES['DELETED']: {}
+    }
+
+    def actions(self):
+        return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id),
+                                                    status=self.member_company.status)
+
+    def action_is_allowed(self, action_name, employee):
+        add_check ={}
+        if action_name == MembersOrMembershipBase.ACTIONS['FREEZE']:
+            add_check = {'membership':self.member_company.portal.own_company}
+        return self.action_is_allowed_member_company(action_name, employee, add_check)
 
 
 
