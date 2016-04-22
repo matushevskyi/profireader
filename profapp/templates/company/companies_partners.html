@@ -47,17 +47,13 @@
                         });
                         return;
                     } else {
-                        if (row.actions[action] == true) {
                             return $ok($scope.url_change_status({
-                                partner_id: row.member.company.id,
+                                company_id: row.company_id,
                                 portal_id: row.portal_id
-                            }), {action: action, who: row.who, company_id: row.company_id}, function (resp) {
+                            }), {action: action, who: row.who, partner_id: row.member.company.id}, function (resp) {
                             }).finally(function () {
                                 $scope.gridApi.grid.setGridData();
                             })
-                        } else {
-                            add_message(row.actions[action], 'danger', 3000)
-                        }
                     }
                 }
             };
