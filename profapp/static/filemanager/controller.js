@@ -237,7 +237,7 @@
 
             $scope.take_action = function (item, actionname, permitted) {
                 $scope.modal = '';
-                if(!permitted)
+                if(permitted !== true)
                     return false
                 if ($scope.file_manager_on_action[actionname] !== '' && actionname === 'download') {
                     try {
