@@ -448,6 +448,9 @@ class UserCompany(Base, PRBase):
     def has_rights(self, rightname):
         if self.employer.user_owner.id == self.user_id:
             return True
+
+        # if rightname == 'ARTICLES_EDIT_OTHERS':
+        #     if self.editor
         if rightname == '_OWNER':
             return False
         if rightname == '_ANY':
