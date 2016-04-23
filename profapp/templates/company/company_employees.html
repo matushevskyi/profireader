@@ -72,7 +72,7 @@
             $scope.$$translate = {{ translates('employment_position_dialog')|safe }};
             $scope.url_employment_change_position = {{ raw_url_for('company.employment_change_position')|safe }};
             {% raw %}
-
+            console.log(user)
             $scope.user = user;
             $scope.company = company;
             $scope.position = position;
@@ -155,7 +155,7 @@
                         resolve: resolveDictForAngularController({
                             action: action,
                             company: $scope.company,
-                            user: row,
+                            user: row
                         })
                     });
 
@@ -166,17 +166,20 @@
             $scope.change_position = function (id, row, column_name) {
                 'use strict'
 
-                var modalInstance = $uibModal.open({
-                    templateUrl: 'employment_position_dialog.html',
-                    controller: 'employment_position_dialog',
-                    resolve: resolveDictForAngularController({
-                        position: row['position'],
-                        company: $scope.company,
-                        user: row,
-                    })
-                });
+                if(row.actions['ALLOW'] === true){
+                    var modalInstance = $uibModal.open({
+                        templateUrl: 'employment_position_dialog.html',
+                        controller: 'employment_position_dialog',
+                        resolve: resolveDictForAngularController({
+                            position: row['position'],
+                            company: $scope.company,
+                            user: row
+                        })
+                    });
 
-                modalInstance.result.then($scope.grid_update_row);
+                    modalInstance.result.then($scope.grid_update_row);
+                }
+
 
             };
 

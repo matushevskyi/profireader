@@ -85,6 +85,10 @@
              ng-model="data">
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 edit-company">
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <button ng-if="!data.id" class="btn btn-default save-profile pull-right border-radius"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
+                        </button>
                     <div ng-if="data.id">
                         <button class="btn btn-default go-portal pull-right border-radius" type="button"
                                 ng-if="data.own_portal && can_edit_portal" ng-click="portal_update(data.id, data.own_portal.id)">
@@ -101,12 +105,7 @@
                         <button class="btn btn-default edit-profile pull-right border-radius" type="button"
                                 ng-click="edit()" ng-if="can_edit_company && !editing">{{ _('Edit profile') }}
                         </button>
-                        <button ng-if="!data.id" class="btn btn-default save-profile pull-right border-radius"
-                                type="button" ng-click="$af.save(data)"
-                                ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
-                        </button>
                     </div>
-
                 </div>
                 <div class="row company">
                     <div class="col-lg-5 col-md-5 col-sm-7 col-xs-12 image-company-profile">

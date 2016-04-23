@@ -4,7 +4,7 @@ from profapp.models.tag import Tag, TagPortalDivision, TagPortalDivisionArticle
 from profapp.models.portal import PortalDivision, UserPortalReader, Portal, MemberCompanyPortal
 from ..models.pr_base import Search, PRBase, Grid
 from .blueprints_declaration import article_bp
-from .request_wrapers import ok, tos_required
+from .request_wrapers import ok, tos_required, check_right
 from .pagination import pagination
 from config import Config
 from .views_file import crop_image
@@ -17,13 +17,14 @@ from sqlalchemy.sql import expression, and_
 from sqlalchemy import text
 import time
 import datetime
-from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPortal
+from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPortal, EditMaterialRight, EditPublicationRight, UserIsEmployee
 
 
 @article_bp.route('/material_update/<string:material_id>/', methods=['GET'])
 @article_bp.route('/publication_update/<string:publication_id>/', methods=['GET'])
 @article_bp.route('/material_create/company/<string:company_id>/', methods=['GET'])
 @tos_required
+@check_right({'material_id':EditMaterialRight, 'publication_id':EditPublicationRight, 'company_id': UserIsEmployee})
 def article_show_form(material_id=None, publication_id=None, company_id=None):
     company = Company.get(company_id if company_id else (
         ArticlePortalDivision.get(publication_id) if publication_id else ArticleCompany.get(material_id)).company.id)
@@ -93,12 +94,12 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'])
 @tos_required
-# @check_rights(simple_permissions([]))
+@check_right({'material_id': UserIsEmployee})
 def material_details(material_id):
     company = Company.get(ArticleCompany.get(material_id).company.id)
     return render_template('company/material_details.html',
                            article=ArticleCompany.get(material_id).get_client_side_dict(more_fields='company|long'),
-                           company=company, user_rights_in_company=UserCompany.get(company_id=company.id).rights)
+                           company=company)
 
 
 def get_portal_dict_for_material(portal, company, material=None, publication=None):
@@ -156,7 +157,6 @@ def material_details_load(json, material_id):
 
 
 @article_bp.route('/submit_publish/<string:article_action>/', methods=['POST'])
-# @check_rights(simple_permissions([]))
 @ok
 def submit_publish(json, article_action):
     action = g.req('action', allowed=['load', 'validate', 'save'])

@@ -25,7 +25,6 @@
             $scope.url_company = {{ raw_url_for('company.profile')|safe }};
             $scope.url_front_publication_details = {{ raw_url_for('front.details')|safe }};
             $scope.url_front_publication_division = {{ raw_url_for('front.division')|safe }};
-            $scope.rights = {{ user_rights_in_company|safe }}
 
             $scope.url_front_publication_division_host = function (division_name, host) {
                 return division_name ? ('//' + host + $scope.url_front_publication_division({division_name: division_name})) : '';

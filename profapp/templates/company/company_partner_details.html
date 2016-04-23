@@ -14,20 +14,19 @@
 
             $scope.employeer  = {{ employeer|tojson|safe }};
             $scope.member = {{ member|tojson|safe }};
-            $scope.user_right = {{ user_right_in|tojson|safe }};
             $scope.url_company_partner_update = {{ raw_url_for('portal.company_partner_update')|safe }};
             $scope.update = function () {
-                $scope.user_right ? window.location.href = $scope.url_company_partner_update({
+                 window.location.href = $scope.url_company_partner_update({
                     'company_id':$scope.employeer.id,
                     'member_id': $scope.member.company.id
-                }) : add_message('Sorry!You haven\'t got  appropriate rights!', 'danger', 8000)
+                })
             }
 
         });
     </script>
     {% raw %}
 
-    <div  ng-controller="company_partner_details" ng-cloak>
+    <div ng-controller="company_partner_details" ng-cloak>
         <h2>
             <img class="person-small-cover" pr-image ="member.company.logo_file_id"/>
             <img class="logo-small-cover" pr-image="employeer.logo_file_id"/>
