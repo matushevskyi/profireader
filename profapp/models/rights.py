@@ -242,8 +242,11 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
                                                           actions=BaseRightsEmployeeInCompany.ACTIONS,
                                                           actions_for_statuses=BaseRightsEmployeeInCompany.ACTIONS_FOR_EMPLOYEE_IN_COMPANY)
 
-class UserIsActive(BaseRightsInProfireader):
+class UserIsActive(BaseRightsEmployeeInCompany):
     pass
+    # def is_allowed(self):
+    #     employee =
+    #     return True if UserCompany.get(company_id=self.company.id).status = else False
 
 class UserIsEmployee(BaseRightsEmployeeInCompany):
 
