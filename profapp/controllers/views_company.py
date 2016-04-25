@@ -1,9 +1,9 @@
 from .blueprints_declaration import company_bp
 from flask.ext.login import login_required, current_user
-from flask import render_template, request, url_for, g, redirect
+from flask import render_template, request, url_for, g, redirect, abort
 from ..models.company import Company, UserCompany
 from ..models.translate import TranslateTemplate
-from .request_wrapers import ok, tos_required, exist_user_company
+from .request_wrapers import ok, tos_required, check_right
 from flask.ext.login import login_required
 from ..models.articles import Article
 from ..models.portal import PortalDivision
@@ -14,7 +14,7 @@ from ..models.files import File, ImageCroped
 from .pagination import pagination
 from config import Config
 from ..models.pr_base import Search, PRBase, Grid
-from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, PublishUnpublishInPortal
+from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, UserIsEmployee, EmployeeAllowRight
 
 
 @company_bp.route('/search_to_submit_article/', methods=['POST'])
@@ -49,14 +49,12 @@ def companies_load(json):
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
 @tos_required
 @login_required
-@exist_user_company
-# @check_rights(simple_permissions([]))
+@check_right(UserIsEmployee)
 def materials(company_id):
     return render_template('company/materials.html', company=db(Company, id=company_id).one())
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['POST'])
-@exist_user_company
 @ok
 def materials_load(json, company_id):
     subquery = ArticleCompany.subquery_company_materials(company_id, json.get('filter'), json.get('sort'))
@@ -128,8 +126,7 @@ def update_material_status(json, company_id, article_id):
 @company_bp.route('/<string:company_id>/employees/', methods=['GET'])
 @tos_required
 @login_required
-@exist_user_company
-# @check_rights(simple_permissions([]))
+@check_right(UserIsEmployee)
 def employees(company_id):
     return render_template('company/company_employees.html', company=Company.get(company_id))
 
@@ -168,7 +165,7 @@ def employee_details(company_id, user_id):
 @company_bp.route('/<string:company_id>/employee_update/<string:user_id>/', methods=['GET'])
 @tos_required
 @login_required
-# @check_rights(simple_permissions([]))
+@check_right(EmployeeAllowRight)
 def employee_update(company_id, user_id):
     return render_template('company/company_employee_update.html',
                            company=Company.get(company_id),
@@ -236,8 +233,7 @@ def employment_change_position(json, company_id, employment_id):
     employment.save()
 
     return PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
-                              {'actions': employment.actions(
-                                      UserCompany.get(user_id=g.user.id, company_id=company_id))})
+                              {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
 @company_bp.route('/update_rights', methods=['POST'])
@@ -277,7 +273,7 @@ def profile(company_id=None):
     user_company = UserCompany.get(company_id=company_id)
     return render_template('company/company_profile.html',
                            rights_user_in_company = user_company.rights if user_company else None,
-                           user_company_exist = True if user_company else False,
+                           user_company_exist=True if user_company else False,
                            company=company)
 
 
@@ -285,6 +281,7 @@ def profile(company_id=None):
 @company_bp.route('/<string:company_id>/profile/', methods=['POST'])
 @login_required
 @ok
+# @check_right(EditCompanyRight)
 def profile_load_validate_save(json, company_id=None):
     # if not user_can_edit:
     #     raise Exception('no PORTAL_EDIT_PROFILE')
@@ -295,20 +292,21 @@ def profile_load_validate_save(json, company_id=None):
         company_dict['logo'] = company.get_logo_client_side_dict()
         user_company = UserCompany.get(company_id=company_id)
         if user_company:
-            company_dict['actions'] = {'edit_company_profile': EditCompanyRight(company=company).is_edit_allowed(),
-                                       'edit_portal_profile':EditPortalRight(company=company).is_edit_allowed()}
+            company_dict['actions'] = {'edit_company_profile': EditCompanyRight(company=company).is_allowed(),
+                                       'edit_portal_profile':EditPortalRight(company=company).is_allowed()}
         return company_dict
     else:
-        company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
-                                   'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
             if company_id is not None:
                 company.detach()
             return company.validate(company_id is None)
         else:
+            if company_id and EditCompanyRight(company=company_id).is_allowed() != True:
+                return abort(403)
+            company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
+                              'phone2', 'region', 'short_description', 'lon', 'lat'))
             if company_id is None:
                 company.setup_new_company()
-
             company.set_logo_client_side_dict(json['logo'])
             company.save()
             company_dict = company.get_client_side_dict()
@@ -450,8 +448,7 @@ def confirm_subscriber():
 @company_bp.route('/readers/<string:company_id>/<int:page>/', methods=['GET'])
 @tos_required
 @login_required
-@exist_user_company
-# @check_rights(simple_permissions([]))
+@check_right(UserIsEmployee)
 def readers(company_id, page=1):
     company = Company.get(company_id)
     company_readers, pages, page, count = pagination(query=company.readers_query, page=page)

@@ -52,27 +52,22 @@
 
         $scope.joinToPortal = function () {
             $scope.data = {};
-            $scope.user_right ? $ok($scope.url_join(), {
-                company_id: $scope.company_id,
+            return $ok($scope.url_join({company_id: $scope.company_id}), {
                 portal_id: $scope.selectedPortal.id
-            }, function (resp) {
+            }, function () {
                 $scope.gridApi.grid.setGridData();
                 $scope.selectedPortal = null;
                 $scope.selectedPortal_name = null;
             }).finally(function () {
                 delete $scope.all_grid_data['paginationOptions']['page_for_id'];
                 $scope.selectedPortal_sending = false;
-            }) : add_message('Sorry!!!You haven\'t got  appropriate rights!', 'danger', 8000)
+            })
         };
 
         $scope.grid_action = function (id, action, row, column_name) {
-            if(row.actions[action] == true){
-                return $ok($scope.url_change_status({partner_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action, who:row.who,company_id:$scope.company_id}, function(resp){}).finally(function () {
+            return $ok($scope.url_change_status({company_id:$scope.company_id, portal_id:row.portal.id}) ,{action:action, who:row.who,partner_id:$scope.company_id}, function(resp){}).finally(function () {
                     $scope.gridApi.grid.setGridData();
-                })
-            }else{
-                add_message(row.actions[action], 'danger', 3000)
-            }
+            })
         };
 
         $scope.portal_link = function(link){

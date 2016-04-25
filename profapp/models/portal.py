@@ -402,7 +402,7 @@ class MemberCompanyPortal(Base, PRBase):
 
     @staticmethod
     def get(portal_id=None, company_id=None):
-        return db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).one()
+        return db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
 
     @staticmethod
     def get_members(company_id, *args):
