@@ -296,6 +296,8 @@ def profile_load_validate_save(json, company_id=None):
                                        'edit_portal_profile':EditPortalRight(company=company).is_allowed()}
         return company_dict
     else:
+        company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
+                                   'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
             if company_id is not None:
                 company.detach()
@@ -303,8 +305,6 @@ def profile_load_validate_save(json, company_id=None):
         else:
             if company_id and EditCompanyRight(company=company_id).is_allowed() != True:
                 return abort(403)
-            company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
-                              'phone2', 'region', 'short_description', 'lon', 'lat'))
             if company_id is None:
                 company.setup_new_company()
             company.set_logo_client_side_dict(json['logo'])
