@@ -49,7 +49,7 @@ class BaseRightsInProfireader:
             for elements in necessary_rights:
                 for object in elements:
                     if isinstance(elements[object], str):
-                        if not objects_for_check[object].has_rights(elements[object]):
+                        if objects_for_check[object].has_rights(elements[object]) != True:
                             _any.append(False)
                             message = "{} need right `{}` to perform action `{}`".format(object, elements[object],
                                                                                                 action_name)
@@ -66,11 +66,15 @@ class BaseRightsInProfireader:
                 return message
         else:
             for object in necessary_rights:
-                if isinstance(necessary_rights[object], list):
+                if callable(necessary_rights[object]):
+                    result = necessary_rights[object](objects_for_check[object])
+                    if result != True:
+                        return "{} need right `{}` to perform action `{}`".format(object, result, action_name)
+                elif isinstance(necessary_rights[object], list):
                     for right in necessary_rights[object]:
-                        if not objects_for_check[object].has_rights(right):
+                        if objects_for_check[object].has_rights(right) != True:
                             return "{} need right `{}` to perform action `{}`".format(object, right, action_name)
-                elif not objects_for_check[object].has_rights(necessary_rights[object]):
+                elif objects_for_check[object].has_rights(necessary_rights[object]) != True:
                     return "{} need right `{}` to perform action `{}`".format(object, necessary_rights[object],
                                                                               action_name)
         return True
@@ -158,7 +162,6 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
                 ACTIONS['UNDELETE']: delete_rights,
             }
         }
-
         def actions(self):
             return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id),
                     MemberCompanyPortal.get(portal_id=self.division.portal.id, company_id=self.company.id),
@@ -168,7 +171,8 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
             check_objects_status = {'employeer':self.publication.company,
                                     'employee': employee,
                                     'membership': membership,
-                                    'company where you want update publication': company_object}
+                                    'company where you want update publication': company_object,
+                                    'division':self.division}
 
             return BaseRightsInProfireader._is_action_allowed(self.publication, action_name,
                         check_objects_status, {'employment': employee, 'membership': membership},
@@ -176,9 +180,10 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
 
-    def __init__(self, material, portal=None):
+    def __init__(self, material, portal=None, division=None):
         self.material = material if isinstance(material, ArticleCompany) else ArticleCompany.get(material)
         self.portal = portal if isinstance(portal, Portal) else Portal.get(portal) if portal else None
+        self.division = division
 
     ACTIONS = {
         'SUBMIT': 'SUBMIT',
@@ -189,10 +194,12 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
 
     ACTIONS_FOR_STATUSES = {
         STATUSES['NORMAL']: {
-            ACTIONS['SUBMIT']: {'employee': UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH ,
-                                'membership': MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH},
-            ACTIONS['EDIT']: ({'employee': UserCompany.RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS},
-                              {'articleowner':lambda kwarg: kwarg['material'].editor_user_id == kwarg['user'].id or False})
+            ACTIONS['SUBMIT']:
+                {'employee': lambda employee: employee.has_rights(UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH),
+                 'membership': lambda membership:membership.has_rights(MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH)},
+            ACTIONS['EDIT']: (
+                {'employee': lambda employee: employee.has_rights(UserCompany.RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS)},
+                {'articleowner':lambda kwarg: kwarg['material'].editor_user_id == kwarg['user'].id or False})
         }
     }
 

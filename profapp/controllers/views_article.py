@@ -122,8 +122,6 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
             'id,position,title,status,visibility,portal_division_id,publishing_tm')
         ret['publication']['division'] = ret['divisions'][ret['publication']['portal_division_id']]
         ret['publication']['counts'] = '0/0/0/0'
-        print(publication_in_portal.division.portal.name)
-        print(publication_in_portal.company.name)
         ret['actions'] = PublishUnpublishInPortal(publication=publication_in_portal, division=publication_in_portal.division, company=company).actions()
         ret['publication']['actions'] = ret['actions']
 

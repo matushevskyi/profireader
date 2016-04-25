@@ -463,11 +463,11 @@ class UserCompany(Base, PRBase):
         # if rightname == 'ARTICLES_EDIT_OTHERS':
         #     if self.editor
         if rightname == '_OWNER':
-            return False
+            return rightname
         if rightname == '_ANY':
-            return True if self.status == self.STATUSES['ACTIVE'] else False
+            return True if self.status == self.STATUSES['ACTIVE'] else rightname
         else:
-            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else False
+            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else rightname
 
     @staticmethod
     def search_for_user_to_join(company_id, searchtext):
