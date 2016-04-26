@@ -127,6 +127,7 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
 
     else:
         ret['publication'] = None
+        print(portal)
         ret['actions'] = {EditOrSubmitMaterialInPortal.ACTIONS['SUBMIT']:
             EditOrSubmitMaterialInPortal(material=material, portal=portal).actions()[EditOrSubmitMaterialInPortal.ACTIONS['SUBMIT']]}
 
@@ -142,7 +143,7 @@ def material_details_load(json, material_id):
     return {
         'material': material.get_client_side_dict(more_fields='long'),
         'actions': {EditOrSubmitMaterialInPortal.ACTIONS['EDIT']:
-                        EditOrSubmitMaterialInPortal(material=material, portal=company.own_portal).actions()[EditOrSubmitMaterialInPortal.ACTIONS['EDIT']]},
+                        EditMaterialRight(material=material, portal=company.own_portal).is_allowed()},
         'company': company.get_client_side_dict(),
         'portals': {
             'grid_data': [get_portal_dict_for_material(portal, company, material) for portal in

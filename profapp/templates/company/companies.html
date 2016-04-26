@@ -89,7 +89,7 @@
     <div class="container" ng-init="loadData()" ng-controller="companies_list" ng-cloak>
         <div class="row join-company">
             <div class="col-lg-3 create-company pull-right">
-                <button pr-test="CreateNewCompany" class="btn btn-default" type="button" ng-click='createCompany()'>
+                <button pr-test="CreateNewCompany" class="btn btn-default" type="button" ng-click='createCompany()' ng-disabled="data.actions.create_company !== true" title="{{ data.actions.create_company }}">
                     <div>{{
                         _('Create new company') }}
                     </div>
@@ -111,7 +111,7 @@
                                    uib-typeahead-template-url="typeaheadTemplate.html"
                                    ng-model="selectedCompany_name"
                                    uib-typeahead="company as company.name for company in searchForCompanyToJoin($viewValue)"
-                                   name="company_id"/>
+                                   name="company_id" ng-disabled='{{ data.actions.create_company !== true}}'/>
                         </div>
                     </div>
 

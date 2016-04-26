@@ -11,7 +11,6 @@ from .errors import ImproperRightsDecoratorUse
 from ..controllers import errors
 from ..models.translate import TranslateTemplate
 from utils.db_utils import db
-from ..models.rights import UserIsActive
 
 def ok(func):
     @wraps(func)
@@ -98,20 +97,34 @@ def tos_required(func):
         return func(*args, **kwargs)
     return decorated_view
 
-def check_right(check):
+def check_right(classCheck, params=None, action=None):
     def wrapped(func):
         @wraps(func)
         def decorated_view(*args, **kwargs):
             allow = True
-            if 'company_id' in kwargs:
-                if isinstance(check, dict):
-                    allow = check['company_id'](company=kwargs['company_id']).is_allowed()
+            if isinstance(params, list):
+                instance = classCheck()
+                for param in params:
+                    setattr(instance, param, kwargs[param])
+                if action:
+                    if action in kwargs:
+                        instance.action_is_allowed(kwargs[action])
+                    else:
+                        instance.action_is_allowed(action)
                 else:
-                    allow = check(company=kwargs['company_id']).is_allowed()
-            if 'material_id' in kwargs:
-                allow = check['material_id'](material=kwargs['material_id']).is_allowed()
-            if 'publication_id' in kwargs:
-                allow = check['publication_id'](publication=kwargs['publication_id']).is_allowed()
+                    allow = instance.is_allowed()
+            else:
+                if 'company_id' == params:
+                    if isinstance(classCheck, dict):
+                        allow = classCheck['company_id'](company=kwargs['company_id']).is_allowed()
+                    else:
+                        allow = classCheck(company=kwargs['company_id']).is_allowed()
+                if 'material_id' == params:
+                    allow = classCheck['material_id'](material=kwargs['material_id']).is_allowed()
+                if 'publication_id' == params:
+                    allow = classCheck['publication_id'](publication=kwargs['publication_id']).is_allowed()
+                if not params:
+                    allow = classCheck().is_allowed()
             if allow != True:
                 abort(403)
             return func(*args, **kwargs)
@@ -121,9 +134,10 @@ def check_right(check):
 def check_user_status(func):
     @wraps(func)
     def decorated_view(*args, **kwargs):
-        allow = UserIsActive().check_user_status()
+        allow = g.user.is_active()
         if allow != True:
-            abort(403)
+            flash(allow)
+            return redirect(url_for('general.index'))
         return func(*args, **kwargs)
     return decorated_view
 

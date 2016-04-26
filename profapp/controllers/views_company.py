@@ -3,7 +3,7 @@ from flask.ext.login import login_required, current_user
 from flask import render_template, request, url_for, g, redirect, abort
 from ..models.company import Company, UserCompany
 from ..models.translate import TranslateTemplate
-from .request_wrapers import ok, tos_required, check_right
+from .request_wrapers import ok, tos_required, check_right, check_user_status
 from flask.ext.login import login_required
 from ..models.articles import Article
 from ..models.portal import PortalDivision
@@ -14,7 +14,8 @@ from ..models.files import File, ImageCroped
 from .pagination import pagination
 from config import Config
 from ..models.pr_base import Search, PRBase, Grid
-from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, UserIsEmployee, EmployeeAllowRight
+from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, UserIsEmployee, EmployeeAllowRight, \
+    CanCreateCompanyRight, UserIsActive
 
 
 @company_bp.route('/search_to_submit_article/', methods=['POST'])
@@ -28,34 +29,33 @@ def search_to_submit_article(json):
 @company_bp.route('/', methods=['GET'])
 @tos_required
 @login_required
-# @check_rights(simple_permissions([]))
 def companies():
     return render_template('company/companies.html')
 
 
 @company_bp.route('/', methods=['POST'])
 @login_required
-# @check_rights(simple_permissions([]))
 @ok
 def companies_load(json):
     companies, pages, page, count = pagination(query=db(Company)
         .filter(
             Company.id == db(UserCompany, user_id=g.user.id).subquery().c.company_id), page=1,
             items_per_page=6 * json.get('next_page') if json.get('next_page') else 6)
-    return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],
+    return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],'actions':{'create_company':CanCreateCompanyRight(user=g.user).is_allowed()},
             'user_id': g.user.id, 'end': True if pages == 1 or pages == 0 else False}
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
 @tos_required
 @login_required
-@check_right(UserIsEmployee)
+@check_right(UserIsEmployee, 'company_id')
 def materials(company_id):
     return render_template('company/materials.html', company=db(Company, id=company_id).one())
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['POST'])
 @ok
+@check_right(UserIsEmployee, 'company_id')
 def materials_load(json, company_id):
     subquery = ArticleCompany.subquery_company_materials(company_id, json.get('filter'), json.get('sort'))
     materials, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
@@ -78,18 +78,19 @@ def materials_load(json, company_id):
             }
 
 
-@company_bp.route('/<string:article_portal_division_id>/', methods=['POST'])
-@login_required
-@ok
-# @check_rights(simple_permissions([]))
-def delete_atricle_from_portal(json, article_portal_division_id):
-    g.sql_connection.execute("DELETE FROM article_portal_division WHERE id='%s';"
-                             % article_portal_division_id)
-    new_json = json.copy()
-    for article in json:
-        if json[article]['id'] == article_portal_division_id:
-            del new_json[article]
-    return new_json
+# @company_bp.route('/<string:article_portal_division_id>/', methods=['POST'])
+# @login_required
+# @ok
+# @check_right(PublishUnpublishInPortal, 'article_portal_division_id', PublishUnpublishInPortal.ACTIONS['DELETE'])
+# def delete_atricle_from_portal(json, article_portal_division_id):
+#     print('here')
+#     g.sql_connection.execute("DELETE FROM article_portal_division WHERE id='%s';"
+#                              % article_portal_division_id)
+#     new_json = json.copy()
+#     for article in json:
+#         if json[article]['id'] == article_portal_division_id:
+#             del new_json[article]
+#     return new_json
 
 
 # file_author_user_id_fkey	FOREIGN KEY (author_user_id) REFERENCES "user"(id)
@@ -106,7 +107,7 @@ def get_tags(json, portal_division_id):
 
 @company_bp.route('/update_material_status/<string:company_id>/<string:article_id>',
                   methods=['POST'])
-# @login_required
+@login_required
 # @check_rights(simple_permissions([]))
 @ok
 def update_material_status(json, company_id, article_id):
@@ -126,13 +127,14 @@ def update_material_status(json, company_id, article_id):
 @company_bp.route('/<string:company_id>/employees/', methods=['GET'])
 @tos_required
 @login_required
-@check_right(UserIsEmployee)
+@check_right(UserIsEmployee, 'company_id')
 def employees(company_id):
     return render_template('company/company_employees.html', company=Company.get(company_id))
 
 
 @company_bp.route('/<string:company_id>/employees/', methods=['POST'])
 @ok
+@check_right(UserIsEmployee, 'company_id')
 def employees_load(json, company_id):
     company = Company.get(company_id)
     employees_list = [
@@ -146,32 +148,30 @@ def employees_load(json, company_id):
     }
 
 
-@company_bp.route('/<string:company_id>/employee_details/<string:user_id>/', methods=['GET'])
-@tos_required
-@login_required
-# @check_rights(simple_permissions([]))
-def employee_details(company_id, user_id):
-    employment = UserCompany.get(user_id=user_id, company_id=company_id)
-    return render_template('company/company_employee_details.html',
-                           company=Company.get(company_id),
-                           employer=employment.employer.get_client_side_dict(),
-                           employee=employment.employee.get_client_side_dict(),
-                           employment=employment.get_client_side_dict(),
-                           user_right_in=UserCompany.get(company_id=company_id).has_rights(
-                                   UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS)
-                           )
+# @company_bp.route('/<string:company_id>/employee_details/<string:user_id>/', methods=['GET'])
+# @tos_required
+# @login_required
+# # @check_rights(simple_permissions([]))
+# def employee_details(company_id, user_id):
+#     employment = UserCompany.get(user_id=user_id, company_id=company_id)
+#     return render_template('company/company_employee_details.html',
+#                            company=Company.get(company_id),
+#                            employer=employment.employer.get_client_side_dict(),
+#                            employee=employment.employee.get_client_side_dict(),
+#                            employment=employment.get_client_side_dict(),
+#                            user_right_in=UserCompany.get(company_id=company_id).has_rights(
+#                                    UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS)
+#                            )
 
 
 @company_bp.route('/<string:company_id>/employee_update/<string:user_id>/', methods=['GET'])
 @tos_required
 @login_required
-@check_right(EmployeeAllowRight)
+@check_right(EmployeeAllowRight, ['company_id', 'user_id'])
 def employee_update(company_id, user_id):
     return render_template('company/company_employee_update.html',
                            company=Company.get(company_id),
-                           employment=UserCompany.get(user_id=user_id, company_id=company_id),
-                           user_right_in=UserCompany.get(company_id=company_id).has_rights(
-                                   UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS))
+                           employment=UserCompany.get(user_id=user_id, company_id=company_id))
     # employer=employment.employer.get_client_side_dict(),
     # employee=employment.employee.get_client_side_dict())
 
@@ -180,7 +180,7 @@ def employee_update(company_id, user_id):
 @tos_required
 @login_required
 @ok
-# @check_rights(simple_permissions([]))
+@check_right(EmployeeAllowRight, ['company_id', 'user_id'])
 def employee_update_load(json, company_id, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     employment = UserCompany.get(user_id=user_id, company_id=company_id)
@@ -206,6 +206,7 @@ def employee_update_load(json, company_id, user_id):
 @tos_required
 @login_required
 @ok
+@check_right(EmployeesRight, ['company_id', 'employment_id'], action='action')
 def employment_action(json, company_id, employment_id, action):
     employment = db(UserCompany).filter_by(id=employment_id).one()
 
@@ -226,6 +227,7 @@ def employment_action(json, company_id, employment_id, action):
 @tos_required
 @login_required
 @ok
+@check_right(EmployeesRight, ['company_id', 'employment_id'], action=EmployeesRight.ACTIONS['ALLOW'])
 def employment_change_position(json, company_id, employment_id):
     employment = db(UserCompany).filter_by(id=employment_id).one()
 
@@ -256,7 +258,7 @@ def update_rights():
 @company_bp.route('/create/', methods=['GET'])
 @tos_required
 @login_required
-# @check_rights()
+@check_user_status
 def update():
     # user_companies = [user_comp for user_comp in current_user.employer_assoc]
     # user_have_comp = True if len(user_companies) > 0 else False
@@ -268,6 +270,7 @@ def update():
 @company_bp.route('/<string:company_id>/profile/', methods=['GET'])
 @tos_required
 @login_required
+@check_user_status
 def profile(company_id=None):
     company = db(Company, id=company_id).first()
     user_company = UserCompany.get(company_id=company_id)
@@ -281,7 +284,7 @@ def profile(company_id=None):
 @company_bp.route('/<string:company_id>/profile/', methods=['POST'])
 @login_required
 @ok
-# @check_right(EditCompanyRight)
+@check_user_status
 def profile_load_validate_save(json, company_id=None):
     # if not user_can_edit:
     #     raise Exception('no PORTAL_EDIT_PROFILE')
@@ -345,7 +348,7 @@ def profile_load_validate_save(json, company_id=None):
 @login_required
 @tos_required
 @ok
-# @check_rights(simple_permissions([]))
+@check_right(UserIsActive)
 def search_for_company_to_join(json):
     companies, pages, page, count = pagination(
             query=Company().search_for_company_to_join(g.user.id, json['search']), page=1,
@@ -375,7 +378,7 @@ def send_article_to_user(json):
 @login_required
 @tos_required
 @ok
-# @check_rights(simple_permissions([]))
+@check_right(UserIsActive)
 def join_to_company(json, company_id):
     UserCompany(user_id=g.user.id, company_id=json.get('company_id')).save()
     return {'companies': [employer.get_client_side_dict() for employer in current_user.employers]}
@@ -468,6 +471,7 @@ def readers(company_id, page=1):
 
 @company_bp.route('/readers/<string:company_id>/', methods=['POST'])
 @ok
+@check_right(UserIsEmployee)
 def readers_load(json, company_id):
     company = Company.get(company_id)
     company_readers, pages, page, count = pagination(query=company.get_readers_for_portal(json.get('filter')),
