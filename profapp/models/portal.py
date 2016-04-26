@@ -370,10 +370,16 @@ class MemberCompanyPortal(Base, PRBase):
     plan = relationship('MemberCompanyPortalPlan'
                         # , backref='partner_portals'
                         )
-
+    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
+                'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
 
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id', more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    def is_active(self):
+        if self.status != MemberCompanyPortal.STATUSES['ACTIVE']:
+            return False
+        return True
 
     def __init__(self, company_id=None, portal=None, company=None, plan=None, status=None):
         if company_id and company:
@@ -392,7 +398,7 @@ class MemberCompanyPortal(Base, PRBase):
         """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
         member = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
         if member:
-            member.set_client_side_dict('APPLICANT')
+            member.set_client_side_dict(MemberCompanyPortal.STATUSES['APPLICANT'])
             member.save()
         else:
             g.db.add(MemberCompanyPortal(company_id=company_id,
@@ -424,8 +430,8 @@ class MemberCompanyPortal(Base, PRBase):
             return False
 
         if rightname == '_ANY':
-            return True if self.status == 'ACTIVE' else False
-        return True if (self.status == 'ACTIVE' and self.rights[rightname]) else False
+            return True if self.status == MemberCompanyPortal.STATUSES['ACTIVE'] else False
+        return True if (self.status == MemberCompanyPortal.STATUSES['ACTIVE'] and self.rights[rightname]) else False
 
 
 class ReaderUserPortalPlan(Base, PRBase):
@@ -494,6 +500,9 @@ class PortalDivision(Base, PRBase):
     portal_division_type = relationship('PortalDivisionType', uselist=False)
 
     settings = None
+
+    def is_active(self):
+        return True
 
     def __init__(self, portal=portal,
                  portal_division_type_id=portal_division_type_id,

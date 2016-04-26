@@ -70,6 +70,8 @@ class ArticlePortalDivision(Base, PRBase):
                                     cascade="save-update, merge, delete, delete-orphan",
                                     passive_deletes=True)
 
+    def is_active(self):
+        return True
 
     def check_favorite_status(self, user_id=None):
         return db(ReaderArticlePortalDivision, user_id=user_id if user_id else g.user.id if g.user else None,
@@ -392,6 +394,9 @@ class ArticleCompany(Base, PRBase):
                      'subtitle': {'relevance': lambda field='subtitle': RELEVANCE.short},
                      'long': {'relevance': lambda field='long': RELEVANCE.long},
                      'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
+
+    def is_active(self):
+        return True
 
     def get_client_side_dict(self,
                              fields='id|title|subtitle|short|keywords|cr_tm|md_tm|article_id|image_file_id|company_id',
@@ -777,8 +782,7 @@ class Article(Base, PRBase):
         list = [PRBase.merge_dicts(article_portal.get_client_side_dict(fields='portal.name|host,status, id, portal_division_id'),
                 {'actions':
                     {'edit': PublishUnpublishInPortal(publication=article_portal,
-                                                      portal=article_portal.division.portal,
-                                                      company=article_portal.division.portal.own_company)
+                                                      division=article_portal.division, company=material.company)
                                        .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]
                      } if article_portal.status != 'SUBMITTED' and article_portal.status != "DELETED" else {}
               })

@@ -80,7 +80,7 @@ def login_signup_general(*soc_network_names):
                     return redirect(url_for('general.index'))
 
                 login_user(user)
-                flash('You have successfully logged in.')
+                flash('You were successfully logged in.')
 
                 # session['user_id'] = user.id assignment
                 # is automatically executed by login_user(user)
@@ -220,6 +220,7 @@ def login_signup_soc_network(soc_network_name):
 def login():
     # if g.user_init and g.user_init.is_authenticated():
     # portal_id = request.args.get('subscribe', None)
+
     portal_id = session.get('portal_id')
     back_to = session.get('back_to')
     if current_user.is_authenticated():
@@ -242,7 +243,7 @@ def login():
         if user and user.verify_password(password):
 
             login_user(user)
-
+            flash("You were successfully logged in")
             if portal_id:
                 session.pop('portal_id')
                 return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))

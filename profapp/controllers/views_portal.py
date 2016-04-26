@@ -555,7 +555,7 @@ def get_publication_dict(publication):
     if ret.get('long'):
         del ret['long']
 
-    ret['actions'] = PublishUnpublishInPortal(publication=publication, portal=publication.division.portal,
+    ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.division,
                                               company=publication.division.portal.own_company).actions()
 
     return ret
