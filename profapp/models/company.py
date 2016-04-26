@@ -102,6 +102,12 @@ class Company(Base, PRBase):
                                           backref='logo_owner_company',
                                           foreign_keys='Company.logo_file_id')
 
+
+    def is_active(self):
+        if self.status != Company.STATUSES['ACTIVE']:
+            return False
+        return True
+
     def get_readers_for_portal(self, filters):
         query = g.db.query(User).join(UserPortalReader).join(UserPortalReader.portal).join(Portal.own_company).filter(
                 Company.id == self.id)
@@ -382,6 +388,11 @@ class UserCompany(Base, PRBase):
         self.rights = {self.RIGHT_AT_COMPANY.FILES_BROWSE: True, self.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH:
             True} if rights is None else rights
 
+    def is_active(self):
+        if self.status != UserCompany.STATUSES['ACTIVE']:
+            return False
+        return True
+
     @staticmethod
     def get(user_id=None, company_id=None):
         return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
@@ -452,11 +463,11 @@ class UserCompany(Base, PRBase):
         # if rightname == 'ARTICLES_EDIT_OTHERS':
         #     if self.editor
         if rightname == '_OWNER':
-            return False
+            return rightname
         if rightname == '_ANY':
-            return True if self.status == self.STATUSES['ACTIVE'] else False
+            return True if self.status == self.STATUSES['ACTIVE'] else rightname
         else:
-            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else False
+            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else rightname
 
     @staticmethod
     def search_for_user_to_join(company_id, searchtext):

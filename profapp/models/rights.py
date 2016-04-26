@@ -3,8 +3,9 @@ import inspect
 from flask import g
 from utils.db_utils import db
 from ..models.company import Company, UserCompany, MemberCompanyPortal
-from ..models.portal import Portal
+from ..models.portal import Portal, PortalDivision
 from ..models.articles import ArticlePortalDivision, ArticleCompany
+from ..models.users import User
 from .pr_base import PRBase
 
 #COMPANY_OWNER = ['edit', 'publish', 'unpublish', 'upload_files', 'delete_files', 'add_employee',
@@ -25,38 +26,61 @@ from .pr_base import PRBase
 # }
 class BaseRightsInProfireader:
 
+    user_rights = UserCompany.RIGHT_AT_COMPANY
+
     def check_objects_statuses(self, objects, action_name):
-        user_active = self.check_user_status(action_name)
+        user_active = self.check_user_status()
         if user_active != True:
             return user_active
         for key in objects:
             if not objects[key]:
                 return "Unconfirmed {}!".format(key)
-            if objects[key].status != 'ACTIVE':
-                return "{} should be with status `{}` to perform action `{}`".format(key, 'ACTIVE', action_name)
+            if not objects[key].is_active():
+                return "{} should be active to perform action `{}`".format(key, action_name)
         return True
 
-    def check_user_status(self, action_name=''):
-        if g.user._banned:
-            return "User shouldn`d be baned to perform action `{}`".format(action_name)
-        if not g.user.tos:
-            return "User must confirm license first to perform action `{}`".format(action_name)
-        if not g.user.confirmed:
-            return "User must confirmed to perform action `{}`".format(action_name)
-        return True
+    def check_user_status(self):
+        return g.user.is_active()
 
-    def check_rights(self, action_name, objects_dict_with_rights, objects):
-        for object in objects_dict_with_rights:
-            if isinstance(objects_dict_with_rights[object], list):
-                for right in objects_dict_with_rights[object]:
-                    if not objects[object].has_rights(right):
-                        return "{} need right `{}` to perform action `{}`".format(object, right, action_name)
-            elif not objects[object].has_rights(objects_dict_with_rights[object]):
-                return "{} need right `{}` to perform action `{}`".format(object, objects_dict_with_rights[object], action_name)
+    def check_rights(self, action_name, necessary_rights, objects_for_check):
+        if isinstance(necessary_rights, tuple):
+            _any = []
+            message = ''
+            for elements in necessary_rights:
+                for object in elements:
+                    if isinstance(elements[object], str):
+                        if objects_for_check[object].has_rights(elements[object]) != True:
+                            _any.append(False)
+                            message = "{} need right `{}` to perform action `{}`".format(object, elements[object],
+                                                                                                action_name)
+                        else:
+                            _any.append(True)
+                    else:
+                        if not elements[object](objects_for_check[object]):
+                            _any.append(False)
+                        else:
+                            _any.append(True)
+            if any(_any):
+                return True
+            else:
+                return message
+        else:
+            for object in necessary_rights:
+                if callable(necessary_rights[object]):
+                    result = necessary_rights[object](objects_for_check[object])
+                    if result != True:
+                        return "{} need right `{}` to perform action `{}`".format(object, result, action_name)
+                elif isinstance(necessary_rights[object], list):
+                    for right in necessary_rights[object]:
+                        if objects_for_check[object].has_rights(right) != True:
+                            return "{} need right `{}` to perform action `{}`".format(object, right, action_name)
+                elif objects_for_check[object].has_rights(necessary_rights[object]) != True:
+                    return "{} need right `{}` to perform action `{}`".format(object, necessary_rights[object],
+                                                                              action_name)
         return True
 
     @staticmethod
-    def _is_action_allowed(self, action_name, check_objects_status, check_objects_rights, actions=None, actions_for_statuses=None):
+    def _is_action_allowed(self, action_name, objects_for_check_status, objects_for_check_rights, actions=None, actions_for_statuses=None):
         required_rights = None
 
         if not action_name in actions:
@@ -68,14 +92,14 @@ class BaseRightsInProfireader:
         if not action_name in actions_for_statuses[self.status]:
             return "Action `{}` is not applicable for publication with status `{}`".format(action_name,
                                                                                            self.status)
-        check_status_in_objects = BaseRightsInProfireader().check_objects_statuses(check_objects_status, action_name)
+        check_status_in_objects = BaseRightsInProfireader().check_objects_statuses(objects_for_check_status, action_name)
         if check_status_in_objects != True:
             return check_status_in_objects
 
         if self.status in actions_for_statuses:
             required_rights = actions_for_statuses[self.status][action_name]
 
-        result = BaseRightsInProfireader().check_rights(action_name, required_rights, check_objects_rights)
+        result = BaseRightsInProfireader().check_rights(action_name, required_rights, objects_for_check_rights)
         if result != True:
             return result
 
@@ -89,13 +113,12 @@ class BaseRightsInProfireader:
 
 class PublishUnpublishInPortal(BaseRightsInProfireader):
 
-        def __init__(self, publication, portal=None, company=None):
+        def __init__(self, publication, division=None, company=None):
             self.publication = publication if isinstance(publication, ArticlePortalDivision) else ArticlePortalDivision.get(publication)
-            self.portal = portal if isinstance(portal, Portal) else Portal.get(portal) if portal else None
-            self.company = company if isinstance(company, Company) else Company.get(Company) if company else None
+            self.division = division if isinstance(division, PortalDivision) else PortalDivision.get(division) if division else None
+            self.company = company if isinstance(company, Company) else Company.get(company) if company else None
 
-        STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED',
-                    'DELETED': 'DELETED'}
+        STATUSES = ArticlePortalDivision.STATUSES
         ACTIONS = {
             'PUBLISH': 'PUBLISH',
             'UNPUBLISH': 'UNPUBLISH',
@@ -139,17 +162,17 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
                 ACTIONS['UNDELETE']: delete_rights,
             }
         }
-
         def actions(self):
             return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id),
-                    MemberCompanyPortal.get(portal_id=self.publication.division.portal_id, company_id=self.company.id),
-                                                        self.portal.own_company, status=self.publication.status)
+                    MemberCompanyPortal.get(portal_id=self.division.portal.id, company_id=self.company.id),
+                                                        self.publication.company, status=self.publication.status)
 
         def action_is_allowed(self, action_name, employee, membership, company_object):
-            check_objects_status = {'employeer':self.company,
+            check_objects_status = {'employeer':self.publication.company,
                                     'employee': employee,
                                     'membership': membership,
-                                    'company where you want update publication': company_object}
+                                    'company where you want update publication': company_object,
+                                    'division':self.division}
 
             return BaseRightsInProfireader._is_action_allowed(self.publication, action_name,
                         check_objects_status, {'employment': employee, 'membership': membership},
@@ -157,9 +180,10 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
 
-    def __init__(self, material, portal=None):
+    def __init__(self, material, portal=None, division=None):
         self.material = material if isinstance(material, ArticleCompany) else ArticleCompany.get(material)
         self.portal = portal if isinstance(portal, Portal) else Portal.get(portal) if portal else None
+        self.division = division
 
     ACTIONS = {
         'SUBMIT': 'SUBMIT',
@@ -170,15 +194,14 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
 
     ACTIONS_FOR_STATUSES = {
         STATUSES['NORMAL']: {
-            ACTIONS['SUBMIT']: {'employee': UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH ,
-                                'membership': MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH},
-            ACTIONS['EDIT']: {'employee': UserCompany.RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS}
+            ACTIONS['SUBMIT']:
+                {'employee': lambda employee: employee.has_rights(UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH),
+                 'membership': lambda membership:membership.has_rights(MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH)},
+            ACTIONS['EDIT']: (
+                {'employee': lambda employee: employee.has_rights(UserCompany.RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS)},
+                {'articleowner':lambda kwarg: kwarg['material'].editor_user_id == kwarg['user'].id or False})
         }
     }
-
-    # ACTIONS['EDIT']: [{'employee': UserCompany.RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS},
-    #                   {('user', 'material'): lambda user, material: (
-    #                   user.id == material.editor_user_id or 'you cant edit others material')}]
 
     def actions(self):
         return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.material.company.id),
@@ -192,7 +215,8 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
                                 'company where you want submit material': company_object}
 
         return BaseRightsInProfireader._is_action_allowed(self.material, action_name,
-                check_objects_status,{'company owner material': self.material.company,'employee': employee, 'membership': membership},
+                check_objects_status,{'company owner material': self.material.company,
+                                      'employee': employee, 'membership': membership, 'articleowner':{'material': self.material, 'user': g.user}},
                             actions=self.ACTIONS, actions_for_statuses=self.ACTIONS_FOR_STATUSES)
 
 class EditMaterialRight(EditOrSubmitMaterialInPortal):
@@ -204,7 +228,7 @@ class EditMaterialRight(EditOrSubmitMaterialInPortal):
 class EditPublicationRight(PublishUnpublishInPortal):
     def is_allowed(self):
         self.company = self.publication.company
-        self.portal = self.publication.portal
+        self.division = self.publication.division
         return self.actions()[self.ACTIONS['EDIT']]
 
 class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
@@ -242,8 +266,11 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
                                                           actions=BaseRightsEmployeeInCompany.ACTIONS,
                                                           actions_for_statuses=BaseRightsEmployeeInCompany.ACTIONS_FOR_EMPLOYEE_IN_COMPANY)
 
-class UserIsActive(BaseRightsInProfireader):
+class UserIsActive(BaseRightsEmployeeInCompany):
     pass
+    # def is_allowed(self):
+    #     employee =
+    #     return True if UserCompany.get(company_id=self.company.id).status = else False
 
 class UserIsEmployee(BaseRightsEmployeeInCompany):
 
@@ -316,7 +343,7 @@ class FilemanagerRights(BaseRightsEmployeeInCompany):
 
 class EmployeesRight(BaseRightsEmployeeInCompany):
 
-    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED'}
+    STATUSES = UserCompany.STATUSES
 
     ACTIONS = {
         'ENLIST': 'ENLIST',
@@ -362,8 +389,7 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
 
 
 class MembersOrMembershipBase(BaseRightsEmployeeInCompany):
-    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
-                'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
+    STATUSES = MemberCompanyPortal.STATUSES
     INITIALLY_FILTERED_OUT_STATUSES = [STATUSES['DELETED'], STATUSES['REJECTED']]
     MEMBER = 'member'
     MEMBERSHIP = 'membership'
