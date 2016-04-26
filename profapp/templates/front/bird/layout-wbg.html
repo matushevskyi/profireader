@@ -2,11 +2,23 @@
 <html lang="{{ lang }}">
 <head>
     {% include 'head.html' %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
 </head>
 
 <body {% if member_company %}
     class="member-company"
 {% endif %}>
+<script>
+    window.addEventListener("message", function (messageevent) {
+        if (messageevent.data && messageevent.data.profireader_session_id) {
+            $.cookie('beaker.session.id', messageevent.data.profireader_session_id, {path: '/'});
+            window.location.reload();
+            }
+    }, false);
+    $('body').prepend('<iframe style="positin: absolute; width: 1px; height: 1px; visibility: none; left: -1px;" src="https://profireader.com/tools/SSO/'+$.cookie('beaker.session.id')+'/"></iframe>');
+
+
+</script>
 {% include 'nav.html' %}
 <br/>
 <br/>
