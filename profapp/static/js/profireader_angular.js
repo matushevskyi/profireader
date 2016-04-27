@@ -992,7 +992,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             break;
                     }
 
-                    scope.onload = function () {
+                    scope.onload = function (cropper_logic) {
                         if (!do_not_set_ng_crop) {
                             $timeout(function () {
                                 scope.prCrop['selected_by_user'] = model;
@@ -1030,8 +1030,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                     // console.log(scope.logic, scope.logic.ctr);
                     // debugger;
                     var ok = false;
-                    if (by > 1 && scope.zoom * by <= scope.logic.ctr.max_zoom) ok = true;
-                    if (by < 1 && scope.zoom * by >= scope.logic.ctr.min_zoom) ok = true;
+                    if (by > 1 && scope.zoom <= scope.logic.ctr.max_zoom*0.99) ok = true;
+                    if (by < 1 && scope.zoom >= scope.logic.ctr.min_zoom*1.01) ok = true;
                     if (!check_only && ok) $timeout(function () {
                         scope.zoom *= by;
                         console.log(scope.zoom);
