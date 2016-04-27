@@ -1,6 +1,6 @@
 from .blueprints_declaration import reader_bp
 from flask import render_template, redirect, jsonify, json, request, g, url_for, flash, session
-from .request_wrapers import tos_required
+from .request_wrapers import tos_required, check_right, check_user_status
 from sqlalchemy import and_
 from ..models.articles import ArticlePortalDivision, ReaderArticlePortalDivision, Search
 from ..models.portal import PortalDivision, UserPortalReader, Portal, ReaderUserPortalPlan, ReaderDivision
@@ -11,12 +11,11 @@ from utils.db_utils import db
 from flask.ext.login import login_required
 import datetime
 import time
-from ..models.pr_base import PRBase
-from ..models.files import File
+from ..models.rights import UserIsActive
 
 
 @reader_bp.route('/details_reader/<string:article_portal_division_id>')
-@tos_required
+@check_user_status
 def details_reader(article_portal_division_id):
     article = ArticlePortalDivision.get(article_portal_division_id)
     article.add_recently_read_articles_to_session()
@@ -47,15 +46,12 @@ def list_reader_from_front(portal_id):
 
 
 @reader_bp.route('/list_reader', methods=['GET'])
-@tos_required
 @login_required
-# @check_rights(simple_permissions([]))
 def list_reader():
     return render_template('_ruslan/reader/_reader_content.html', favorite=request.args.get('favorite') == 'True')
 
 
 @reader_bp.route('/list_reader', methods=['POST'])
-@tos_required
 @ok
 def list_reader_load(json):
     next_page = json.get('next_page') if json.get('next_page') else 1
@@ -128,13 +124,13 @@ def list_reader_load(json):
 
 
 @reader_bp.route('/add_to_favorite/', methods=['POST'])
-@tos_required
+@check_right(UserIsActive)
 @ok
 def add_delete_favorite(json):
     return ReaderArticlePortalDivision.add_delete_favorite_user_article(json.get('article')['id'], json.get('article')['is_favorite'])
 
 @reader_bp.route('/add_to_like/', methods=['POST'])
-@tos_required
+@check_right(UserIsActive)
 @ok
 def add_delete_like(json):
     ReaderArticlePortalDivision.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
@@ -197,13 +193,13 @@ def reader_subscribe_registered(json):
 
 
 @reader_bp.route('/profile/')
-@tos_required
+@check_user_status
 def profile():
     return render_template('partials/reader/reader_profile.html')
 
 
 @reader_bp.route('/profile/', methods=['POST'])
-@tos_required
+@check_right(UserIsActive)
 @ok
 def profile_load(json):
     pagination_params = list()
@@ -229,13 +225,13 @@ def profile_load(json):
 
 
 @reader_bp.route('/edit_portal_subscription/<string:reader_portal_id>')
-@tos_required
+@check_user_status
 def edit_portal_subscription(reader_portal_id):
     return render_template('partials/reader/edit_portal_subscription.html')
 
 
 @reader_bp.route('/edit_portal_subscription/<string:reader_portal_id>', methods=['POST'])
-@tos_required
+@check_right(UserIsActive)
 @ok
 def edit_portal_subscription_load(json, reader_portal_id):
     user_portal_reader = db(UserPortalReader, id=reader_portal_id).one()
@@ -255,7 +251,7 @@ def edit_portal_subscription_load(json, reader_portal_id):
 
 
 @reader_bp.route('/edit_profile_/<string:reader_portal_id>', methods=['POST'])
-@tos_required
+@check_right(UserIsActive)
 @ok
 def edit_profile_submit(json, reader_portal_id):
     divisions_and_comments = db(UserPortalReader, id=reader_portal_id).one().show_divisions_and_comments

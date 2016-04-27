@@ -111,7 +111,7 @@
                                    uib-typeahead-template-url="typeaheadTemplate.html"
                                    ng-model="selectedCompany_name"
                                    uib-typeahead="company as company.name for company in searchForCompanyToJoin($viewValue)"
-                                   name="company_id" ng-disabled='{{ data.actions.create_company !== true}}'/>
+                                   name="company_id" ng-disabled='data.actions.create_company !== true'/>
                         </div>
                     </div>
 

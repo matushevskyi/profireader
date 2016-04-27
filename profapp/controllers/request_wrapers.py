@@ -105,7 +105,10 @@ def check_right(classCheck, params=None, action=None):
             if isinstance(params, list):
                 instance = classCheck()
                 for param in params:
-                    setattr(instance, param, kwargs[param])
+                    if param in kwargs:
+                        setattr(instance, param, kwargs[param])
+                    else:
+                        abort(403)
                 if action:
                     if action in kwargs:
                         instance.action_is_allowed(kwargs[action])
@@ -114,17 +117,17 @@ def check_right(classCheck, params=None, action=None):
                 else:
                     allow = instance.is_allowed()
             else:
-                if 'company_id' == params:
-                    if isinstance(classCheck, dict):
-                        allow = classCheck['company_id'](company=kwargs['company_id']).is_allowed()
+                if params in kwargs:
+                    instance = classCheck()
+                    setattr(instance, params, kwargs[params])
+                    if action:
+                        allow = instance.action_is_allowed(action)
+                        print(allow)
                     else:
-                        allow = classCheck(company=kwargs['company_id']).is_allowed()
-                if 'material_id' == params:
-                    allow = classCheck['material_id'](material=kwargs['material_id']).is_allowed()
-                if 'publication_id' == params:
-                    allow = classCheck['publication_id'](publication=kwargs['publication_id']).is_allowed()
+                        allow = instance.is_allowed()
                 if not params:
                     allow = classCheck().is_allowed()
+
             if allow != True:
                 abort(403)
             return func(*args, **kwargs)

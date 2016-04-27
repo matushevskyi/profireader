@@ -97,7 +97,6 @@ def materials_load(json, company_id):
 
 @company_bp.route('/get_tags/<string:portal_division_id>', methods=['POST'])
 @login_required
-# @check_rights(simple_permissions([]))
 @ok
 def get_tags(json, portal_division_id):
     available_tags = g.db.query(PortalDivision).get(portal_division_id).portal_division_tags
@@ -108,7 +107,6 @@ def get_tags(json, portal_division_id):
 @company_bp.route('/update_material_status/<string:company_id>/<string:article_id>',
                   methods=['POST'])
 @login_required
-# @check_rights(simple_permissions([]))
 @ok
 def update_material_status(json, company_id, article_id):
     allowed_statuses = ArticleCompany.STATUSES.keys()
@@ -177,7 +175,6 @@ def employee_update(company_id, user_id):
 
 
 @company_bp.route('/<string:company_id>/employee_update/<string:user_id>/', methods=['POST'])
-@tos_required
 @login_required
 @ok
 @check_right(EmployeeAllowRight, ['company_id', 'user_id'])
@@ -203,7 +200,6 @@ def employee_update_load(json, company_id, user_id):
 
 
 @company_bp.route('/<string:company_id>/employment/<string:employment_id>/action/<string:action>/', methods=['POST'])
-@tos_required
 @login_required
 @ok
 @check_right(EmployeesRight, ['company_id', 'employment_id'], action='action')
@@ -224,7 +220,6 @@ def employment_action(json, company_id, employment_id, action):
 
 
 @company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_position/', methods=['POST'])
-@tos_required
 @login_required
 @ok
 @check_right(EmployeesRight, ['company_id', 'employment_id'], action=EmployeesRight.ACTIONS['ALLOW'])
@@ -270,13 +265,12 @@ def update():
 @company_bp.route('/<string:company_id>/profile/', methods=['GET'])
 @tos_required
 @login_required
-@check_user_status
+@check_right(UserIsActive)
 def profile(company_id=None):
     company = db(Company, id=company_id).first()
     user_company = UserCompany.get(company_id=company_id)
     return render_template('company/company_profile.html',
-                           rights_user_in_company = user_company.rights if user_company else None,
-                           user_company_exist=True if user_company else False,
+                           user_company_active=user_company is not None,
                            company=company)
 
 
@@ -284,7 +278,6 @@ def profile(company_id=None):
 @company_bp.route('/<string:company_id>/profile/', methods=['POST'])
 @login_required
 @ok
-@check_user_status
 def profile_load_validate_save(json, company_id=None):
     # if not user_can_edit:
     #     raise Exception('no PORTAL_EDIT_PROFILE')
@@ -346,7 +339,6 @@ def profile_load_validate_save(json, company_id=None):
 
 @company_bp.route('/search_for_company_to_join/', methods=['POST'])
 @login_required
-@tos_required
 @ok
 @check_right(UserIsActive)
 def search_for_company_to_join(json):
@@ -376,7 +368,6 @@ def send_article_to_user(json):
 
 @company_bp.route('/join_to_company/<string:company_id>/', methods=['POST'])
 @login_required
-@tos_required
 @ok
 @check_right(UserIsActive)
 def join_to_company(json, company_id):
@@ -449,9 +440,8 @@ def confirm_subscriber():
 
 @company_bp.route('/readers/<string:company_id>/', methods=['GET'])
 @company_bp.route('/readers/<string:company_id>/<int:page>/', methods=['GET'])
-@tos_required
 @login_required
-@check_right(UserIsEmployee)
+@check_right(UserIsEmployee, 'company_id')
 def readers(company_id, page=1):
     company = Company.get(company_id)
     company_readers, pages, page, count = pagination(query=company.readers_query, page=page)
@@ -471,7 +461,7 @@ def readers(company_id, page=1):
 
 @company_bp.route('/readers/<string:company_id>/', methods=['POST'])
 @ok
-@check_right(UserIsEmployee)
+@check_right(UserIsEmployee, 'company_id')
 def readers_load(json, company_id):
     company = Company.get(company_id)
     company_readers, pages, page, count = pagination(query=company.get_readers_for_portal(json.get('filter')),

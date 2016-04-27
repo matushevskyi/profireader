@@ -9,12 +9,13 @@
     module.controller('user_profile',  function($scope, $ok){
       $scope.$$translate = {{ translates('user_profile')|safe }};
       $scope.user = {{ user.get_client_side_dict()|tojson|safe}}
+      $scope.actions = {{ actions|safe}}
     });
 </script>
     {{ raw }}
     <div class="container" ng-controller="user_profile" ng-cloak>
         <div class="row block-resp link-page"><h5>{{ _('User profile') }}</h5>
-            <a title="edit" pr_test="EditProfile" href="{{ url_for('user.edit_profile', user_id=user.id) }}">
+            <a title="edit" pr_test="EditProfile" href="{{ url_for('user.edit_profile', user_id=user.id) }}" ng-if="actions.edit_user_profile">
                 <i class="fa fa-pencil fa-2x"></i>
             </a>
         </div>
