@@ -598,8 +598,9 @@ class EditMaterialRight(EditOrSubmitMaterialInPortal):
         return self.action_is_allowed(self.ACTIONS['EDIT'])
 
 class EditPublicationRight(PublishUnpublishInPortal):
+    def __init__(self, publication=None):
+        super(EditPublicationRight, self).__init__(publication=publication)
     def is_allowed(self):
-        self.company = self.publication.company
         self.division = self.publication.division
         return self.actions()[self.ACTIONS['EDIT']]
 

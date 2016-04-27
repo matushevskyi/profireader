@@ -572,11 +572,11 @@ def publications_load(json, company_id):
     #     'company': [{'value': company_id, 'label': company} for company_id, company  in
     #                 ArticlePortalDivision.get_companies_which_send_article_to_portal(portal).items()]
     # }
-    return {
-        'company': company.get_client_side_dict(),
-        'portal': portal.get_client_side_dict(),
-        'rights_user_in_company': UserCompany.get(company_id=company_id).rights,
-        'grid_data': list(map(get_publication_dict, publications))}
+    return {'company': company.get_client_side_dict(),
+            'portal': portal.get_client_side_dict(),
+            'rights_user_in_company': UserCompany.get(company_id=company_id).rights,
+            'grid_data': list(map(get_publication_dict, publications)),
+            'total': count}
 
 
 # @portal_bp.route('/publication_delete_unpublish/', methods=['POST'])
