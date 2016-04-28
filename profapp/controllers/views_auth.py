@@ -93,8 +93,7 @@ def login_signup_general(*soc_network_names):
                         return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
                     elif back_to:
                         session.pop('back_to')
-
-                    return redirect(back_to)
+                        return redirect(back_to)
                     # return redirect(request.args.get('next') or url_for('general.index'))
                     return redirect(redirect_url())
                 # return redirect(url_for('general.index'))  # #  http://profireader.com/
