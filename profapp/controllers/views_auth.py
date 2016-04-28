@@ -79,15 +79,15 @@ def login_signup_general(*soc_network_names):
 
                     return redirect(url_for('general.index'))
 
-                login_user(user)
-                flash('You were successfully logged in.')
+
 
                 # session['user_id'] = user.id assignment
                 # is automatically executed by login_user(user)
+
                 if user:
+
                     login_user(user)
                     flash("You were successfully logged in")
-
                     if portal_id:
                         session.pop('portal_id')
                         return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
