@@ -1043,7 +1043,7 @@
                     $scope.mouse_clicked = false;
                 });
 
-                window.addEventListener(('onwheel' in document ? 'wheel' : 'onmousewheel' in document ? 'mousewheel' : 'DOMMouseScroll'), mouse_wheeel);
+                // window.addEventListener(('onwheel' in document ? 'wheel' : 'onmousewheel' in document ? 'mousewheel' : 'DOMMouseScroll'), mouse_wheeel);
             }
 
             $scope.addListeners();
