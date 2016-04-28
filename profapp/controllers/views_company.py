@@ -15,7 +15,7 @@ from .pagination import pagination
 from config import Config
 from ..models.pr_base import Search, PRBase, Grid
 from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, UserIsEmployee, EmployeeAllowRight, \
-    CanCreateCompanyRight, UserIsActive
+    CanCreateCompanyRight, UserIsActive, BaseRightsEmployeeInCompany
 
 
 @company_bp.route('/search_to_submit_article/', methods=['POST'])
@@ -50,7 +50,8 @@ def companies_load(json):
 @login_required
 @check_right(UserIsEmployee, 'company_id')
 def materials(company_id):
-    return render_template('company/materials.html', company=db(Company, id=company_id).one())
+    return render_template('company/materials.html', company=db(Company, id=company_id).one(),
+            actions={'create_material': BaseRightsEmployeeInCompany(company=company_id).action_is_allowed(BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])})
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['POST'])

@@ -40,7 +40,7 @@ def article_show_form(material_id=None, publication_id=None, company_id=None):
 @ok
 @check_right(EditMaterialRight, 'material_id')
 @check_right(EditPublicationRight, 'publication_id')
-@check_right(UserIsEmployee, 'company_id')
+@check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def load_form_create(json, company_id=None, material_id=None, publication_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
@@ -166,7 +166,7 @@ def submit_publish(json, article_action):
     company = Company.get(json['company']['id'])
     if article_action == 'SUBMIT':
         material = ArticleCompany.get(json['material']['id'])
-        check = EditOrSubmitMaterialInPortal(material=material).action_is_allowed(article_action)
+        check = EditOrSubmitMaterialInPortal(material=material, portal=json['portal']['id']).action_is_allowed(article_action)
         if check != True:
             return check
         publication = ArticlePortalDivision(title=material.title, subtitle=material.subtitle,

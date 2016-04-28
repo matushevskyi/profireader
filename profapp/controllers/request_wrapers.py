@@ -117,12 +117,11 @@ def check_right(classCheck, params=None, action=None):
                 else:
                     allow = instance.is_allowed()
             else:
-                if params in kwargs:
+                if params in kwargs and kwargs[params]:
                     instance = classCheck()
                     setattr(instance, params, kwargs[params])
                     if action:
                         allow = instance.action_is_allowed(action)
-                        print(allow)
                     else:
                         allow = instance.is_allowed()
                 if not params:

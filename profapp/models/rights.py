@@ -563,9 +563,11 @@ class EditCompanyRight(BaseRightsEmployeeInCompany):
         return self.action_is_allowed(self.ACTIONS['EDIT_COMPANY'])
 
 class EditPortalRight(BaseRightsEmployeeInCompany):
+
     def __init__(self, company=None, portal=None):
         super(EditPortalRight, self).__init__(company=company)
         self.portal = portal
+
     def is_allowed(self):
         if self.company == None and self.portal:
             self.company = self.portal.own_company
@@ -577,6 +579,7 @@ class RequireMembereeAtPortalsRight(BaseRightsEmployeeInCompany):
         return self.action_is_allowed(self.ACTIONS['COMPANY_REQUIRE_MEMBEREE_AT_PORTALS'])
 
 class PortalManageMembersCompaniesRight(BaseRightsEmployeeInCompany):
+
     def is_allowed(self):
         return self.action_is_allowed(self.ACTIONS['PORTAL_MANAGE_MEMBERS_COMPANIES'])
 
@@ -587,7 +590,6 @@ class EmployeeAllowRight(EmployeesRight):
         self.user = user
 
     def is_allowed(self):
-        print(self.user)
         self.employment = UserCompany.get(user_id=self.user.id, company_id=self.company.id)
         return self.action_is_allowed(self.ACTIONS['ALLOW'])
 
@@ -598,8 +600,10 @@ class EditMaterialRight(EditOrSubmitMaterialInPortal):
         return self.action_is_allowed(self.ACTIONS['EDIT'])
 
 class EditPublicationRight(PublishUnpublishInPortal):
+
     def __init__(self, publication=None):
         super(EditPublicationRight, self).__init__(publication=publication)
+
     def is_allowed(self):
         self.division = self.publication.division
         return self.actions()[self.ACTIONS['EDIT']]
