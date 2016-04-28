@@ -61,7 +61,7 @@
 
 
             $scope.grid_action = function (id, action, row, column_name) {
-                'use strict'
+                'use strict';
                 if (action === 'EDIT') {
                     window.location.href = $scope.url_update_material({'publication_id': row['publication']['id']});
                     return;
