@@ -73,7 +73,7 @@ angular.module('ui.tinymce', [])
 
             // Update model on button click
             ed.on('ExecCommand', function() {
-              console.log(ed)
+              console.log('ExecCommand')
               ed.save();
               updateView(ed);
             });
