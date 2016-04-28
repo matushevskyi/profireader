@@ -86,7 +86,8 @@ def login_signup_general(*soc_network_names):
                 # is automatically executed by login_user(user)
 
                 if session.get('portal_id'):
-                    g.user.subscribe_to_portal(session.get('portal_id'))
+                    if g.user:
+                        g.user.subscribe_to_portal(session.get('portal_id'))
                     portal_id = session['portal_id']
                     session.pop('portal_id')
                     return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))

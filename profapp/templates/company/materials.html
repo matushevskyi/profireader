@@ -25,6 +25,7 @@
             $scope.url_material_create = {{ raw_url_for('article.article_show_form')|safe }};
             $scope.url_material_update = {{ raw_url_for('article.article_show_form')|safe }};
             $scope.url_publication_update = {{ raw_url_for('article.article_show_form')|safe }};
+            $scope.actions = {{ actions|safe }}
 
             $scope.getBackground = function(row){
                 if(row.entity['portal.name'] === ''){
@@ -93,7 +94,7 @@
     {% raw %}
     <div ng-controller="materials_list" ng-cloak>
         <h2>{{ _('Materials of company `%(company.name)s`')}}</h2>
-        <a href="{{ url_material_create({company_id: company.id}) }}">{{ _('Create new material') }}</a>
+        <a href="{{ url_material_create({company_id: company.id}) }}" ng-if="actions.create_material === true">{{ _('Create new material') }}</a>
         <div class="grid" id="grid1" ui-grid-edit ui-grid-grouping ui-grid-pagination ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
               <i class="fa fa-spin fa-spinner"></i><div>{{ _('Data Loading...') }}</div>
