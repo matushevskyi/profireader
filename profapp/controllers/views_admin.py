@@ -2,7 +2,7 @@ from .blueprints_declaration import admin_bp
 from flask import g, request, url_for, render_template, flash, current_app
 from .request_wrapers import ok
 from .pagination import pagination
-from .request_wrapers import tos_required
+from .request_wrapers import tos_required, check_right
 from flask.ext.login import login_required
 from ..models.translate import TranslateTemplate
 from ..models.ip import Ips
@@ -11,11 +11,12 @@ from sqlalchemy.sql import expression
 import datetime
 from ..models.config import Config
 from flask import session
-from ..models.pr_base import PRBase, Grid
+from ..models.pr_base import Grid
+from ..models.rights import UserIsActive
 
 @admin_bp.route('/translations', methods=['GET'])
 @login_required
-@tos_required
+@check_right(UserIsActive)
 def translations():
     return render_template('admin/translations.html',
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
@@ -28,6 +29,7 @@ class test:
 
 @admin_bp.route('/set_session_a', methods=['GET'])
 @ok
+@check_right(UserIsActive)
 def set_session_a(json):
     z = session['test'] if 'test' in session else None
     # print(z.a)
@@ -37,6 +39,7 @@ def set_session_a(json):
 
 @admin_bp.route('/set_session_b', methods=['GET'])
 @ok
+@check_right(UserIsActive)
 def set_session_b(json):
     z = session['test'] if 'test' in session else None
     # print(z.a)
@@ -46,8 +49,8 @@ def set_session_b(json):
 
 @admin_bp.route('/translations', methods=['POST'])
 @login_required
-@tos_required
 @ok
+@check_right(UserIsActive)
 def translations_load(json):
     subquery = TranslateTemplate.subquery_search(json.get('filter'), json.get('sort') , json.get('editItem'))
 
@@ -70,7 +73,7 @@ def translations_load(json):
 
 @admin_bp.route('/translations_save', methods=['POST'])
 @login_required
-@tos_required
+@check_right(UserIsActive)
 @ok
 def translations_save(json):
     exist = db(TranslateTemplate, template=json['row'], name=json['col']).first()
@@ -78,7 +81,7 @@ def translations_save(json):
 
 @admin_bp.route('/delete', methods=['POST'])
 @login_required
-@tos_required
+@check_right(UserIsActive)
 @ok
 def delete_translates(json):
     return TranslateTemplate.delete_translates(json['objects'])
@@ -86,11 +89,13 @@ def delete_translates(json):
 # Greckas ips
 
 @admin_bp.route('/ips', methods=['GET'])
+@check_right(UserIsActive)
 def ips():
     return render_template('admin/ips.html',
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
 @admin_bp.route('/ips', methods=['POST'])
 @ok
+@check_right(UserIsActive)
 def ips_load(json):
     page = json.get('paginationOptions')['pageNumber']
     pageSize = json.get('paginationOptions')['pageSize']
@@ -135,6 +140,7 @@ def ips_load(json):
 
 @admin_bp.route('/ips_save', methods=['POST'])
 @ok
+@check_right(UserIsActive)
 def ips_save(json):
     exist = db(Ips, template=json['row'], name=json['col']).first()
     return Ips.get(exist.id).attr({json['lang']: json['val']}).save().get_client_side_dict()
@@ -142,6 +148,7 @@ def ips_save(json):
 
 @admin_bp.route('/ips_add', methods=['POST'])
 @ok
+@check_right(UserIsActive)
 def ips_add(json):
 
      exist = db(Ips, template=json['row'], name=json['col']).first()
@@ -149,6 +156,7 @@ def ips_add(json):
 
 @admin_bp.route('/ips_delete', methods=['POST'])
 @ok
+@check_right(UserIsActive)
 def ips_delete(json):
     return Ips.delete(json['objects'])
 

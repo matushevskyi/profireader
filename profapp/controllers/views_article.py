@@ -17,14 +17,16 @@ from sqlalchemy.sql import expression, and_
 from sqlalchemy import text
 import time
 import datetime
-from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPortal, EditMaterialRight, EditPublicationRight, UserIsEmployee
+from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPortal, EditMaterialRight, \
+    EditPublicationRight, UserIsEmployee, UserIsActive, BaseRightsEmployeeInCompany
 
 
 @article_bp.route('/material_update/<string:material_id>/', methods=['GET'])
 @article_bp.route('/publication_update/<string:publication_id>/', methods=['GET'])
 @article_bp.route('/material_create/company/<string:company_id>/', methods=['GET'])
-@tos_required
-@check_right({'material_id':EditMaterialRight, 'publication_id':EditPublicationRight, 'company_id': UserIsEmployee})
+@check_right(EditMaterialRight, 'material_id')
+@check_right(EditPublicationRight, 'publication_id')
+@check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def article_show_form(material_id=None, publication_id=None, company_id=None):
     company = Company.get(company_id if company_id else (
         ArticlePortalDivision.get(publication_id) if publication_id else ArticleCompany.get(material_id)).company.id)
@@ -35,8 +37,10 @@ def article_show_form(material_id=None, publication_id=None, company_id=None):
 @article_bp.route('/material_update/<string:material_id>/', methods=['POST'])
 @article_bp.route('/publication_update/<string:publication_id>/', methods=['POST'])
 @article_bp.route('/material_create/company/<string:company_id>/', methods=['POST'])
-@tos_required
 @ok
+@check_right(EditMaterialRight, 'material_id')
+@check_right(EditPublicationRight, 'publication_id')
+@check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def load_form_create(json, company_id=None, material_id=None, publication_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
@@ -93,8 +97,7 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
 
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'])
-@tos_required
-@check_right({'material_id': UserIsEmployee})
+@check_right(UserIsEmployee, 'material_id')
 def material_details(material_id):
     company = Company.get(ArticleCompany.get(material_id).company.id)
     return render_template('company/material_details.html',
@@ -135,6 +138,7 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['POST'])
 @ok
+@check_right(UserIsEmployee, 'material_id')
 def material_details_load(json, material_id):
     material = ArticleCompany.get(material_id)
     company = material.company
@@ -142,7 +146,7 @@ def material_details_load(json, material_id):
     return {
         'material': material.get_client_side_dict(more_fields='long'),
         'actions': {EditOrSubmitMaterialInPortal.ACTIONS['EDIT']:
-                        EditOrSubmitMaterialInPortal(material=material, portal=company.own_portal).actions()[EditOrSubmitMaterialInPortal.ACTIONS['EDIT']]},
+                        EditMaterialRight(material=material, portal=company.own_portal).is_allowed()},
         'company': company.get_client_side_dict(),
         'portals': {
             'grid_data': [get_portal_dict_for_material(portal, company, material) for portal in
@@ -159,11 +163,12 @@ def material_details_load(json, material_id):
 @ok
 def submit_publish(json, article_action):
     action = g.req('action', allowed=['load', 'validate', 'save'])
-
     company = Company.get(json['company']['id'])
-
     if article_action == 'SUBMIT':
         material = ArticleCompany.get(json['material']['id'])
+        check = EditOrSubmitMaterialInPortal(material=material, portal=json['portal']['id']).action_is_allowed(article_action)
+        if check != True:
+            return check
         publication = ArticlePortalDivision(title=material.title, subtitle=material.subtitle,
                                             keywords=material.keywords,
                                             short=material.short, long=material.long, article_company_id=material.id)
@@ -175,6 +180,9 @@ def submit_publish(json, article_action):
         }
     else:
         publication = ArticlePortalDivision.get(json['publication']['id'])
+        check = PublishUnpublishInPortal(publication=publication, division=publication.portal_division_id).action_is_allowed(article_action)
+        if check != True:
+            return check
         more_data_to_ret = {}
 
     if action == 'load':
@@ -193,7 +201,7 @@ def submit_publish(json, article_action):
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
         publication.event_tm = PRBase.parse_timestamp(json['publication'].get('event_tm'))
         if 'also_publish' in json and json['also_publish']:
-            publication.status = ArticlePortalDivision.STATUSES['PUBLISHED']
+            publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
         else:
             if article_action in [PublishUnpublishInPortal.ACTIONS['PUBLISH'], PublishUnpublishInPortal.ACTIONS['REPUBLISH']]:
                 publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
@@ -252,17 +260,17 @@ def submit_publish(json, article_action):
 #         }
 
 
-@article_bp.route('/details/<string:article_id>/', methods=['GET'])
-@tos_required
-def details(article_id):
-    return render_template('article/details.html',
-                           article_id=article_id)
-
-
-@article_bp.route('/details/<string:article_id>/', methods=['POST'])
-@ok
-def details_load(json, article_id):
-    return Article.get(article_id).get_client_side_dict()
+# @article_bp.route('/details/<string:article_id>/', methods=['GET'])
+# @tos_required
+# def details(article_id):
+#     return render_template('article/details.html',
+#                            article_id=article_id)
+#
+#
+# @article_bp.route('/details/<string:article_id>/', methods=['POST'])
+# @ok
+# def details_load(json, article_id):
+#     return Article.get(article_id).get_client_side_dict()
 
 
 # @article_bp.route('/search_for_company_to_submit/', methods=['POST'])
@@ -314,7 +322,7 @@ def details_load(json, article_id):
 
 @article_bp.route('/list_reader')
 @article_bp.route('/list_reader/<int:page>/')
-@tos_required
+@check_right(UserIsActive)
 def list_reader(page=1):
     search_text = request.args.get('search_text') or ''
     favorite = 'favorite' in request.args

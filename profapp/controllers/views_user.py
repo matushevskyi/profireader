@@ -7,21 +7,22 @@ from flask.ext.login import current_user, login_required
 from utils.db_utils import db
 from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
 from ..forms.user import EditProfileForm
-from ..controllers.request_wrapers import tos_required
+from ..controllers.request_wrapers import tos_required, check_right
 from .request_wrapers import ok
 from config import Config
 from ..models.country import Country
 from flask import session
-
+from ..models.rights import UserIsActive, UserEditProfieRight
 
 @user_bp.route('/profile/<user_id>')
-@tos_required
 @login_required
+@check_right(UserIsActive)
 def profile(user_id):
     user = g.db.query(User).filter(User.id == user_id).first()
     if not user:
         abort(404)
-    return render_template('general/user_profile.html', user=user, avatar_size=AVATAR_SIZE)
+    return render_template('general/user_profile.html', user=user, avatar_size=AVATAR_SIZE,
+                           actions={'edit_user_profile': UserEditProfieRight(user=user).is_allowed() == True})
 
 
 @user_bp.route('/avatar_update')
@@ -35,19 +36,17 @@ def avatar_update(json):
 
 # TODO (AA to AA): Here admin must have the possibility to change user profile
 @user_bp.route('/edit-profile/<user_id>/', methods=['GET'])
-@tos_required
 @login_required
+@check_right(UserEditProfieRight, 'user_id')
 def edit_profile(user_id):
-    if current_user.get_id() != user_id:
-        abort(403)
     user_query = db(User, id=user_id)
     user = user_query.first()
     return render_template('general/user_edit_profile.html', user=user)
 
 
 @user_bp.route('/edit-profile/<user_id>/', methods=['POST'])
-@tos_required
 @login_required
+@check_right(UserEditProfieRight, 'user_id')
 @ok
 def edit_profile_load(json, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
