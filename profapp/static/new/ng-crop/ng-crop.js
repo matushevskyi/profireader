@@ -1,4 +1,5 @@
 /**
+/**
  * Created by oles on 07.04.16.
  */
 
@@ -129,8 +130,9 @@
                 this.img2canvasX(imgrect[2], state), this.img2canvasY(imgrect[3], state)] : null;
         };
 
-        this.relativeDeviation = function (v, in_respect_to) {
-            return Math.abs(v - in_respect_to) / in_respect_to;
+        this.relativeDeviationIn = function (v, in_respect_to, maxDeviation) {
+            var max = maxDeviation?maxDeviation:0.000001;
+            return Math.abs(v - in_respect_to) / in_respect_to > max;
         };
 
 
@@ -318,30 +320,39 @@
 
         this.fitByConstrains = function (imgrect, state, compass) {
 
+            // console.log('passed image rect', imgrect);
+
             var ret = this.img2canvasRect(this.fitByImageConstrains(imgrect, compass), state);
+
+            // console.log('constrains by img', ret);
 
             // image scaled by max min size and aspect ratio go out of cancas
             // let' try move it
             var ret_copy = ret.slice();
             if (ret[0] < 0) {
+                // console.log('moving right', ret[0]);
                 ret[2] = ret[2] - ret[0];
                 ret[0] = 0;
             }
             if (ret[1] < 0) {
+                // console.log('moving right', ret[1]);
                 ret[3] = ret[3] - ret[1];
                 ret[1] = 0;
             }
             if (ret[3] > this.ctr.canvas_size[1]) {
+                // console.log('moving right', ret[3], this.ctr.canvas_size[1]);
                 ret[1] = ret[1] - (ret[3] - this.ctr.canvas_size[1]);
                 ret[3] = this.ctr.canvas_size[1];
             }
             if (ret[2] > this.ctr.canvas_size[0]) {
+                // console.log('moving right', ret[2], this.ctr.canvas_size[0]);
                 ret[0] = ret[0] - (ret[2] - this.ctr.canvas_size[0]);
                 ret[2] = this.ctr.canvas_size[0];
             }
 
             // ok, still out of canvas. let's try scale it
             if (ret[0] < 0 || ret[1] < 0) {
+                // console.log('moving right', ret, this.ctr.canvas_size);
                 if (ret[2] - ret[0] > this.ctr.canvas_size[0]) {
                     ret[0] = 0;
                     ret[2] = this.ctr.canvas_size[0];
@@ -353,8 +364,10 @@
 
                 ret = this.img2canvasRect(this.fitByImageConstrains(this.canvas2imgRect(ret, state), compass), state);
 
-                if (ret[2] - ret[0] > this.ctr.canvas_size[0] || ret[3] - ret[1] > this.ctr.canvas_size[1]) {
-                    console.log('passed image rect', imgrect);
+                if (!this.relativeDeviationIn(ret[2] - ret[0] - this.ctr.canvas_size[0], this.ctr.canvas_size[0]) ||
+                !this.relativeDeviationIn(ret[3] - ret[1] - this.ctr.canvas_size[1], this.ctr.canvas_size[1])) {
+
+                // if (ret[2] - ret[0] > this.ctr.canvas_size[0] || ret[3] - ret[1] > this.ctr.canvas_size[1]) {
                     console.log('calculated canvas rect', ret);
                     console.log('current constrains', this.ctr);
                     throw "current canvas can't satisfy all constrains"
@@ -932,13 +945,16 @@
             return [(event.pageX - of.left) + $(window).scrollLeft(), (event.pageY - of.top) + $(window).scrollTop()];
         };
 
+        $scope.mouseOverCropper = function (event) {
+            var of = $scope.$canvas.offset();
+            var ret = [(event.pageX - of.left) + $(window).scrollLeft(), (event.pageY - of.top) + $(window).scrollTop()];
+            return (ret[0]>=0 && ret[1]>=0 && ret[0]<=$scope.$canvas.width() && ret[1]<=$scope.$canvas.height())?ret:false;
+        };
 
         $scope.zoom_to = function (new_zoomratio, new_canvas_point) {
 
-            var stick_margin = 0.01;
-
-            if ($scope.logic.relativeDeviation(new_zoomratio, $scope.logic.ctr.max_zoom) < stick_margin) new_zoomratio = $scope.logic.ctr.max_zoom;
-            if ($scope.logic.relativeDeviation(new_zoomratio, $scope.logic.ctr.min_zoom) < stick_margin) new_zoomratio = $scope.logic.ctr.min_zoom;
+            if ($scope.logic.relativeDeviationIn(new_zoomratio, $scope.logic.ctr.max_zoom, 0.01)) new_zoomratio = $scope.logic.ctr.max_zoom;
+            if ($scope.logic.relativeDeviationIn(new_zoomratio, $scope.logic.ctr.min_zoom, 0.01)) new_zoomratio = $scope.logic.ctr.min_zoom;
             $timeout(function () {
                 $scope.ngCropZoom = new_zoomratio;
             });
@@ -957,6 +973,7 @@
         $scope.setNewRect = function (nr) {
             var state = {zoom: $scope.ngCropZoom, origin: $scope.ngCropOrigin};
             var newir = $scope.logic.fitByConstrains($scope.logic.canvas2imgRect(nr, state), state);
+            console.log(nr, newir)
 
             if (newir) {
                 $scope.ngCropCoordinates = newir;
@@ -1053,10 +1070,14 @@
             }
 
             var mouse_wheeel = function (event) {
-                event.preventDefault();
+
                 if ($scope.ngCropDisabled || $scope.loading || $scope.processing) {
                     return false;
                 }
+                var canvas_point = $scope.mouseOverCropper(event);
+                if (!canvas_point) return false;
+
+                event.preventDefault();
                 $scope.processing = true;
                 var normalized;
 
@@ -1067,13 +1088,14 @@
                     normalized = -(rawAmmount % 3 ? rawAmmount * 10 : rawAmmount / 3);
                 }
 
-                var canvas_point = $scope.mouseRelativeToCanvas(event)
+
+                // return;
                 // canvas_point = [canvas_point[0] + $scope.state.x , canvas_point[1] + $scope.state.y];
 
                 var new_zoom = $scope.ngCropZoom * ((normalized > 0) ? 10 / 9 : 9 / 10);
 
                 // var new_zoom_state = $scope.logic.recalculateStateForNewZoom(new_zoom, canvas_point, $scope.state);
-                $scope.zoom_to(new_zoom_state.zoom, [0, 0]);
+                $scope.zoom_to(new_zoom, [0, 0]);
                 $scope.processing = false;
 
             };
@@ -1098,7 +1120,8 @@
                 $scope.mouse_clicked = false;
             });
 
-                // window.addEventListener(('onwheel' in document ? 'wheel' : 'onmousewheel' in document ? 'mousewheel' : 'DOMMouseScroll'), mouse_wheeel);
+            window.addEventListener(('onwheel' in document ? 'wheel' : 'onmousewheel' in document ? 'mousewheel' : 'DOMMouseScroll'), mouse_wheeel);
+
             }
 
         $scope.addListeners();
