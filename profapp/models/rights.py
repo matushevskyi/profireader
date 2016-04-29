@@ -72,41 +72,44 @@ class BaseRightsInProfireader:
         return True
 
     def check_rights(self, action_name, necessary_rights, objects_for_check):
-        if isinstance(necessary_rights, tuple):
-            _any = []
-            message = ''
-            for elements in necessary_rights:
-                for object in elements:
-                    if isinstance(elements[object], str):
-                        if objects_for_check[object].has_rights(elements[object]) != True:
-                            _any.append(False)
-                            message = "{} need right `{}` to perform action `{}`".format(object, elements[object],
-                                                                                                action_name)
-                        else:
-                            _any.append(True)
-                    else:
-                        if not elements[object](objects_for_check[object]):
-                            _any.append(False)
-                        else:
-                            _any.append(True)
-            if any(_any):
-                return True
-            else:
-                return message
-        else:
-            for object in necessary_rights:
-                if callable(necessary_rights[object]):
-                    result = necessary_rights[object](objects_for_check[object])
-                    if result != True:
-                        return "{} need right `{}` to perform action `{}`".format(object, result, action_name)
-                elif isinstance(necessary_rights[object], list):
-                    for right in necessary_rights[object]:
+        for object in necessary_rights:
+            if isinstance(necessary_rights[object], list):
+                for right in necessary_rights[object]:
+                    if isinstance(right, str):
                         if objects_for_check[object].has_rights(right) != True:
-                            return "{} need right `{}` to perform action `{}`".format(object, right, action_name)
-                elif objects_for_check[object].has_rights(necessary_rights[object]) != True:
-                    return "{} need right `{}` to perform action `{}`".format(object, necessary_rights[object],
-                                                                              action_name)
+                            return "{} need right `{}` to perform action `{}`".format(object, right,
+                                                                                       action_name)
+                    if callable(right):
+                        allow = right(objects_for_check)
+                        if allow != True:
+                            return allow
+            elif isinstance(necessary_rights[object], tuple):
+                allow = self._any(object, necessary_rights[object], objects_for_check, action_name)
+                if allow != True:
+                    return allow
         return True
+
+    def _any(self, object, rights, objects_for_check, action_name):
+        allow = True
+        _any = []
+        for right in rights:
+            if isinstance(right, str):
+                if objects_for_check[object].has_rights(right) != True:
+                    _any.append(False)
+                    allow = "{} need right `{}` to perform action `{}`".format(object, right,
+                                                                               action_name)
+                else:
+                    _any.append(True)
+            if callable(right):
+                allow = right(objects_for_check)
+                if allow != True:
+                    _any.append(False)
+                else:
+                    _any.append(True)
+        if any(_any):
+            return True
+        else:
+            return allow
 
     @staticmethod
     def _is_action_allowed(self, action_name, objects_for_check_status, objects_for_check_rights=None, actions=None, actions_for_statuses=None):
@@ -129,10 +132,8 @@ class BaseRightsInProfireader:
 
 
         result = BaseRightsInProfireader().check_rights(action_name, required_rights, objects_for_check_rights) if required_rights else True
-        if result != True:
-            return result
 
-        return True
+        return result if result != True else True
 
     @staticmethod
     def base_actions(self, *args, status=None):
@@ -144,7 +145,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
 
         def __init__(self, publication=None, division=None, company=None):
             self.publication = publication if isinstance(publication, ArticlePortalDivision) else ArticlePortalDivision.get(publication) if publication else None
-            self.division = division if isinstance(division, PortalDivision) else PortalDivision.get(division) if division else None
+            self.division = division if division else None
             self.company = company if isinstance(company, Company) else Company.get(company) if company else None
 
         STATUSES = ArticlePortalDivision.STATUSES
@@ -195,11 +196,13 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
             return BaseRightsInProfireader.base_actions(self, status=self.publication.status)
 
         def action_is_allowed(self, action_name):
-            company = self.company if self.company else self.division.portal.own_company if self.division else self.publication.division.portal.own_company
+            company = self.company if self.company else self.division.portal.own_company if self.division else self.publication.company
             employee = UserCompany.get(company_id=company.id)
             if not employee:
                 return "Sorry!You are not employee in this company!"
             membership = MemberCompanyPortal.get(portal_id=self.division.portal.id, company_id=company.id)
+            print(membership.company.name)
+            print(membership.portal.own_company.name)
             company_object = self.division.portal.own_company
             check_objects_status = {'employeer':company,
                                     'employee': employee,
@@ -228,11 +231,11 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
     ACTIONS_FOR_STATUSES = {
         STATUSES['NORMAL']: {
             ACTIONS['SUBMIT']:
-                {'employee': UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                 'membership': MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH},
-            ACTIONS['EDIT']: (
-                {'employee': UserCompany.RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS},
-                {'articleowner':lambda kwarg: kwarg['material'].editor_user_id == kwarg['user'].id or False})
+                {'employee': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH],
+                 'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH]},
+            ACTIONS['EDIT']:
+                {'employee': (lambda kwargs: kwargs['material'].editor_user_id == kwargs['user'].id,
+                              UserCompany.RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS)}
         }
     }
 
@@ -241,13 +244,15 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
 
     def action_is_allowed(self, action_name):
         self.employee = UserCompany.get(company_id=self.material.company.id)
+        if not self.employee:
+            return "Sorry!You are not employee in this company!"
         check_objects_status = {'company owner material': self.material.company,
                                 'employee': self.employee}
 
         check_objects_status.update({'division':self.division}) if self.division else None
 
         check_objects_rights = {'company owner material': self.material.company,
-                                'employee': self.employee, 'articleowner': {'material': self.material, 'user': g.user}}
+                                'employee': self.employee, 'material': self.material, 'user': g.user}
         if self.portal:
             check_objects_rights.update({'membership': MemberCompanyPortal.get(portal_id=self.portal.id, company_id=self.material.company.id)})
             check_objects_status.update({'membership': MemberCompanyPortal.get(portal_id=self.portal.id,
@@ -273,11 +278,11 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
 
     ACTIONS_FOR_EMPLOYEE_IN_COMPANY = {
         'ACTIVE': {
-            ACTIONS['EDIT_COMPANY']: {'employee': UserCompany.RIGHT_AT_COMPANY.COMPANY_EDIT_PROFILE},
-            ACTIONS['EDIT_PORTAL']: {'employee': UserCompany.RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE},
-            ACTIONS['COMPANY_REQUIRE_MEMBEREE_AT_PORTALS']: {'employee': UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-            ACTIONS['PORTAL_MANAGE_MEMBERS_COMPANIES']:{'employee': UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-            ACTIONS['EMPLOYEE_ALLOW_RIGHTS']: {'employee': UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS},
+            ACTIONS['EDIT_COMPANY']: {'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_EDIT_PROFILE]},
+            ACTIONS['EDIT_PORTAL']: {'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE]},
+            ACTIONS['COMPANY_REQUIRE_MEMBEREE_AT_PORTALS']: {'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]},
+            ACTIONS['PORTAL_MANAGE_MEMBERS_COMPANIES']:{'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
+            ACTIONS['EMPLOYEE_ALLOW_RIGHTS']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
             ACTIONS['CREATE_MATERIAL']: {},
         }
     }
@@ -305,12 +310,12 @@ class FilemanagerRights(BaseRightsEmployeeInCompany):
     }
     ACTIONS_FOR_FILEMANAGER = {
         'ACTIVE': {
-            ACTIONS['DOWNLOAD']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE},
-            ACTIONS['REMOVE']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS},
-            ACTIONS['SHOW']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE},
-            ACTIONS['UPLOAD']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD},
-            ACTIONS['CUT']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS},
-            ACTIONS['CREATE_FOLDER']: {'employee': UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD}
+            ACTIONS['DOWNLOAD']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE]},
+            ACTIONS['REMOVE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS]},
+            ACTIONS['SHOW']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE]},
+            ACTIONS['UPLOAD']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD]},
+            ACTIONS['CUT']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS]},
+            ACTIONS['CREATE_FOLDER']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD]}
         }
     }
 
@@ -359,8 +364,15 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
             ACTIONS['ENLIST']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
         },
         STATUSES['ACTIVE']: {
-            ACTIONS['FIRE']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-            ACTIONS['ALLOW']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
+            ACTIONS['FIRE']:
+                {'employee': [lambda kwargs: 'You can`t fire company owner'
+                                    if kwargs['employment'].user_id == kwargs['employee'].employer.author_user_id else True,
+                              UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
+                 },
+            ACTIONS['ALLOW']:
+                {'employee': [lambda kwargs: 'Company owner have all permissions and you can do nothing with that'
+                                    if kwargs['employment'].user_id == kwargs['employee'].employer.author_user_id else True,
+                              UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
         }
     }
 
@@ -368,18 +380,11 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
         employee = UserCompany.get(company_id=self.company.id)
         if not employee:
             return "Sorry!You are not employee in this company!"
-        if action_name == 'FIRE':
-                if self.employment.user_id == employee.employer.author_user_id:
-                    return 'You can`t fire company owner'
-
-        if action_name == 'ALLOW':
-                if self.employment.user_id == employee.employer.author_user_id:
-                    return 'Company owner have all permissions and you can do nothing with that'
         get_objects_for_check = {'employee': employee,
                                  'employeer': self.company,
                                  'user':self.employment.employee}
         return BaseRightsInProfireader._is_action_allowed(self.employment, action_name,
-                get_objects_for_check, {'employee': employee},actions=self.ACTIONS,
+                get_objects_for_check, {'employee': employee, 'employment': self.employment}, actions=self.ACTIONS,
                                                           actions_for_statuses=self.ACTIONS_FOR_STATUSES)
 
     def actions(self):
@@ -451,19 +456,19 @@ class MembersRights(MembersOrMembershipBase):
 
     ACTIONS_FOR_STATUSES = {
         MembersOrMembershipBase.STATUSES['ACTIVE']: {
-            MembersOrMembershipBase.ACTIONS['ALLOW']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-            MembersOrMembershipBase.ACTIONS['SUSPEND']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES}},
+            MembersOrMembershipBase.ACTIONS['ALLOW']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
+            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
+            MembersOrMembershipBase.ACTIONS['SUSPEND']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
         MembersOrMembershipBase.STATUSES['APPLICANT']: {
-            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-            MembersOrMembershipBase.ACTIONS['ENLIST']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES}},
+            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
+            MembersOrMembershipBase.ACTIONS['ENLIST']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
         MembersOrMembershipBase.STATUSES['SUSPENDED']: {
-            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES},
-            MembersOrMembershipBase.ACTIONS['RESTORE']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES}},
+            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
+            MembersOrMembershipBase.ACTIONS['RESTORE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
         MembersOrMembershipBase.STATUSES['FROZEN']: {
-            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES}},
+            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
         MembersOrMembershipBase.STATUSES['REJECTED']: {
-            MembersOrMembershipBase.ACTIONS['RESTORE']: {'employee':UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES}},
+            MembersOrMembershipBase.ACTIONS['RESTORE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
         MembersOrMembershipBase.STATUSES['DELETED']: {}
     }
 
@@ -482,17 +487,17 @@ class MembershipRights(MembersOrMembershipBase):
 
     ACTIONS_FOR_STATUSES = {
         MembersOrMembershipBase.STATUSES['ACTIVE']: {
-            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-            MembersOrMembershipBase.ACTIONS['FREEZE']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}},
+            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]},
+            MembersOrMembershipBase.ACTIONS['FREEZE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
         MembersOrMembershipBase.STATUSES['APPLICANT']: {
-            MembersOrMembershipBase.ACTIONS['WITHDRAW']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}},
+            MembersOrMembershipBase.ACTIONS['WITHDRAW']: {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
         MembersOrMembershipBase.STATUSES['SUSPENDED']: {
-            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}},
+            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
         MembersOrMembershipBase.STATUSES['FROZEN']: {
-            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS},
-            MembersOrMembershipBase.ACTIONS['RESTORE']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}},
+            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]},
+            MembersOrMembershipBase.ACTIONS['RESTORE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
         MembersOrMembershipBase.STATUSES['REJECTED']: {
-            MembersOrMembershipBase.ACTIONS['WITHDRAW']: {'employee':UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS}},
+            MembersOrMembershipBase.ACTIONS['WITHDRAW']: {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
         MembersOrMembershipBase.STATUSES['DELETED']: {}
     }
 

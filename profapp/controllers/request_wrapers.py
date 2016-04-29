@@ -111,9 +111,9 @@ def check_right(classCheck, params=None, action=None):
                         abort(403)
                 if action:
                     if action in kwargs:
-                        instance.action_is_allowed(kwargs[action])
+                        allow = instance.action_is_allowed(kwargs[action])
                     else:
-                        instance.action_is_allowed(action)
+                        allow = instance.action_is_allowed(action)
                 else:
                     allow = instance.is_allowed()
             else:
