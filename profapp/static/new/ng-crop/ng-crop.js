@@ -548,12 +548,11 @@
 
             $scope.options = opts;
 
-
         });
 
 
         $scope.setCoordinates = function (FixedPoint) {
-            // console.log('setCoordinates');
+            console.log('setCoordinates');
             if (!$scope.logic || !$scope.logic.img) return;
             // this function is called when coordinates was changed.
             // in this case zoom and origin (whatever old or new values) are preserved only if
@@ -581,10 +580,10 @@
             if (!$scope.ngCropOrigin) { // we have now coordinates and zoom. can we preserve image center?
                 $scope.ngCropOrigin = [crop_center[0] - canvas_size[0] / 2, crop_center[1] - canvas_size[1] / 2];
             }
-
+            console.log($scope.ngCropOrigin);
             $scope.ngCropOrigin = [inRange($scope.ngCropOrigin[0], $scope.ngCropCoordinates[2] - canvas_size[0], $scope.ngCropCoordinates[0]),
                 inRange($scope.ngCropOrigin[1], $scope.ngCropCoordinates[3] - canvas_size[1], $scope.ngCropCoordinates[1])];
-            $scope.ngCropOrigin = [inRange($scope.ngCropOrigin[0], 0, canvas_size[0]), inRange($scope.ngCropOrigin[1], 0, canvas_size[1])];
+            $scope.ngCropOrigin = [inRange($scope.ngCropOrigin[0], 0, ctr.image_size[0] - canvas_size[0]), inRange($scope.ngCropOrigin[1], 0, ctr.image_size[1] - canvas_size[1])];
         }
 
         $scope.setZoom = function (FixedPoint) {
