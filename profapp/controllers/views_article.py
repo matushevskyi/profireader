@@ -25,7 +25,7 @@ from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPort
 @article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['GET'])
 @article_bp.route('/<string:company_id>/material_create/', methods=['GET'])
 @check_right(EditMaterialRight, 'material_id')
-@check_right(EditPublicationRight, 'publication_id')
+@check_right(EditPublicationRight, ['publication_id', 'company_id'])
 @check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def article_show_form(material_id=None, publication_id=None, company_id=None):
     company = Company.get(company_id)
@@ -38,7 +38,7 @@ def article_show_form(material_id=None, publication_id=None, company_id=None):
 @article_bp.route('/<string:company_id>/material_create/', methods=['POST'])
 @ok
 @check_right(EditMaterialRight, 'material_id')
-@check_right(EditPublicationRight, 'publication_id')
+@check_right(EditPublicationRight, ['publication_id', 'company_id'])
 @check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def load_form_create(json, company_id=None, material_id=None, publication_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])

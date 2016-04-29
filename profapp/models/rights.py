@@ -145,7 +145,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
 
         def __init__(self, publication=None, division=None, company=None):
             self.publication = publication if isinstance(publication, ArticlePortalDivision) else ArticlePortalDivision.get(publication) if publication else None
-            self.division = division if division else None
+            self.division = division if isinstance(division, PortalDivision) else PortalDivision.get(division) if division else None
             self.company = company if isinstance(company, Company) else Company.get(company) if company else None
 
         STATUSES = ArticlePortalDivision.STATUSES
@@ -201,8 +201,6 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
             if not employee:
                 return "Sorry!You are not employee in this company!"
             membership = MemberCompanyPortal.get(portal_id=self.division.portal.id, company_id=company.id)
-            print(membership.company.name)
-            print(membership.portal.own_company.name)
             company_object = self.division.portal.own_company
             check_objects_status = {'employeer':company,
                                     'employee': employee,
@@ -530,6 +528,7 @@ class CanCreateCompanyRight(UserIsActive):
     pass
 
 class UserEditProfieRight(BaseRightsInProfireader):
+
     def __init__(self, user=None):
         self.user = user if isinstance(user, User) else User.get(user) if user else None
 
@@ -606,8 +605,8 @@ class EditMaterialRight(EditOrSubmitMaterialInPortal):
 
 class EditPublicationRight(PublishUnpublishInPortal):
 
-    def __init__(self, publication=None):
-        super(EditPublicationRight, self).__init__(publication=publication)
+    def __init__(self, publication=None, company=None):
+        super(EditPublicationRight, self).__init__(publication=publication, company=company)
 
     def is_allowed(self):
         self.division = self.publication.division

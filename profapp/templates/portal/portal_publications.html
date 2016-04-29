@@ -47,7 +47,7 @@
 
             $scope.grid_action = function (id, action, row, column_name) {
                 if (action === 'EDIT') {
-                    window.location.href = $scope.url_update_publication({'publication_id': row['id']});
+                    window.location.href = $scope.url_update_publication({'company_id': $scope.company.id,'publication_id': row['id']});
                     return;
                 }
 

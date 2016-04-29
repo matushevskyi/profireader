@@ -38,7 +38,7 @@
             $scope.grid_action = function (id, action, row, column_name) {
                 if(row.actions[action] == true){
                         console.log(row)
-                    location.href = $scope.url_publication_update({publication_id: row.id})
+                    location.href = $scope.url_publication_update({company_id:$scope.company.id, publication_id: row.id})
                 }else{
                     add_message(row.actions[action], 'danger', 3000)
                 }

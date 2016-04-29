@@ -18,7 +18,7 @@
 
         module.controller('material_details', function ($scope, $ok, $uibModal, $timeout, $publish) {
             $scope.$$translate = {{ translates('material_details')|safe }};
-            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials')
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
 
             $scope.url_search_for_user = {{ raw_url_for('company.search_for_user')|safe }};
             $scope.url_update_material = {{ raw_url_for('article.article_show_form')|safe }};
@@ -40,7 +40,7 @@
 
 
             $scope.loadMaterialDetails = function (data, callback) {
-                $scope.loading = true
+                $scope.loading = true;
                 $ok('', data, function (resp) {
                     callback(resp.portals);
                     $scope.data = resp;
@@ -52,7 +52,7 @@
 
 
             $scope.updateMaterial = function (material_id, company_id) {
-                window.location.href = $scope.url_update_material({'company_id':company_id,'material_id': material_id})
+                window.location.href = $scope.url_update_material({'company_id': company_id,'material_id': material_id})
             };
 
             $scope.get_local_time = function (date) {
@@ -62,8 +62,9 @@
 
             $scope.grid_action = function (id, action, row, column_name) {
                 'use strict';
+                console.log($scope.data)
                 if (action === 'EDIT') {
-                    window.location.href = $scope.url_update_material({'company_id':row.own_company.id,'publication_id': row['publication']['id']});
+                    window.location.href = $scope.url_update_material({'company_id':$scope.data.company.id,'publication_id': row['publication']['id']});
                     return;
                 }
 
