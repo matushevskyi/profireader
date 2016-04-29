@@ -2293,7 +2293,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             //    console.log('init_instance_callback', arguments);
             //},
             file_browser_callback: function (field_name, url, type, win) {
-                console.log(url)
                 var cmsURL = '/filemanager/?file_manager_called_for=file_browse_' + type +
                     '&file_manager_default_action=choose&file_manager_on_action=' + encodeURIComponent(angular.toJson({choose: 'parent.file_choose'}));
                 tinymce.activeEditor.windowManager.open({
