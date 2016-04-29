@@ -14,6 +14,8 @@ angular.module('ui.tinymce', [])
     return {
       require: ['ngModel', '^?form'],
       link: function(scope, element, attrs, ctrls) {
+        console.log(attrs)
+        console.log(ctrls)
         if (!$window.tinymce) {
           return;
         }
@@ -56,10 +58,12 @@ angular.module('ui.tinymce', [])
         angular.extend(expression, scope.$eval(attrs.uiTinymce));
 
         var setupOptions = {
+
           // Update model when calling setContent
           // (such as from the source editor popup)
           setup: function(ed) {
             ed.on('init', function() {
+              console.log('init')
               ngModel.$render();
               ngModel.$setPristine();
               if (form) {
@@ -69,27 +73,32 @@ angular.module('ui.tinymce', [])
 
             // Update model on button click
             ed.on('ExecCommand', function() {
+              console.log('ExecCommand')
               ed.save();
               updateView(ed);
             });
 
             // Update model on change
             ed.on('change', function() {
+              console.log('change')
               ed.save();
               updateView(ed);
             });
 
             ed.on('blur', function() {
+              console.log('blur')
               element[0].blur();
             });
 
             // Update model when an object has been resized (table, image)
             ed.on('ObjectResized', function() {
+              console.log('ObjectResized')
               ed.save();
               updateView(ed);
             });
 
             ed.on('remove', function() {
+              console.log('remove')
               element.remove();
             });
 

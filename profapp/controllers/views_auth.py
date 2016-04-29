@@ -30,8 +30,8 @@ EMAIL_REGEX = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
 
 def login_signup_general(*soc_network_names):
-
-
+    portal_id = session.get('portal_id')
+    back_to = session.get('back_to')
     response = make_response()
     registred_via_soc = False
     logged_via_soc = list(filter(lambda x: x != 'profireader', soc_network_names))[0] \
@@ -79,22 +79,23 @@ def login_signup_general(*soc_network_names):
 
                     return redirect(url_for('general.index'))
 
-                login_user(user)
-                flash('You were successfully logged in.')
+
 
                 # session['user_id'] = user.id assignment
                 # is automatically executed by login_user(user)
 
-                if session.get('portal_id'):
-                    if g.user:
-                        g.user.subscribe_to_portal(session.get('portal_id'))
-                    portal_id = session['portal_id']
-                    session.pop('portal_id')
-                    return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
-                if session.get('back_to'):
-                    back_to = session['back_to']
-                    session.pop('back_to')
-                    return redirect(back_to)
+                if user:
+
+                    login_user(user)
+                    flash("You were successfully logged in")
+                    if portal_id:
+                        session.pop('portal_id')
+                        return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
+                    elif back_to:
+                        session.pop('back_to')
+                        return redirect(back_to)
+                    # return redirect(request.args.get('next') or url_for('general.index'))
+                    return redirect(redirect_url())
                 # return redirect(url_for('general.index'))  # #  http://profireader.com/
                 # url = redirect_url()
                 # print(url)
