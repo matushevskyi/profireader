@@ -617,7 +617,7 @@ class File(Base, PRBase):
             image_pil = Image.open(BytesIO(new_cropped_from_file.file_content.content))
             image_cropped = ImageCroped(original_image_id=new_cropped_from_file.id,
                             croped_image_id=self.id,
-                            x=0, y=0,
+                            x=0, y=0, origin_x=0, origin_y=0,
                             width=image_pil.width, height=image_pil.height,
                             croped_width=image_pil.width,
                             croped_height=image_pil.height,
@@ -628,6 +628,7 @@ class File(Base, PRBase):
         ImageCroped(original_image_id=copy_from_origininal.id,
                             croped_image_id=copy_crop.id,
                             x=image_cropped.x, y=image_cropped.y,
+                            origin_x=image_cropped.origin_x, origin_y=image_cropped.origin_y,
                             width=image_cropped.width, height=image_cropped.height,
                             croped_width=image_cropped.croped_width,
                             croped_height=image_cropped.croped_height,
@@ -647,6 +648,8 @@ class File(Base, PRBase):
                             width=float(area[2]-area[0]), height=float(area[3]-area[1]),
                             croped_width=float(area[4]),
                             croped_height=float(area[5]),
+                            origin_x=float(coordinates['origin_x']),
+                            origin_y=float(coordinates['origin_y']),
                             zoom=coordinates['zoom']).save()
                 return new_cropped_image.id
         else:
@@ -658,6 +661,8 @@ class File(Base, PRBase):
         old_image_cropped.croped_image_id = new_cropped_image.id
         old_image_cropped.x = float(round(area[0], 6))
         old_image_cropped.y = float(round(area[1], 6))
+        old_image_cropped.origin_x = float(coordinates['origin_x'])
+        old_image_cropped.origin_y = float(coordinates['origin_y'])
         old_image_cropped.width = float(area[2]-area[0])
         old_image_cropped.height = float(area[3]-area[1])
         old_image_cropped.croped_width = float(area[4])
@@ -768,6 +773,8 @@ class ImageCroped(Base, PRBase):
     croped_image_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
     x = Column(TABLE_TYPES['float'], nullable=False)
     y = Column(TABLE_TYPES['float'], nullable=False)
+    origin_x = Column(TABLE_TYPES['float'], nullable=False, default=0)
+    origin_y = Column(TABLE_TYPES['float'], nullable=False, default=0)
     width = Column(TABLE_TYPES['float'], nullable=False)
     height = Column(TABLE_TYPES['float'], nullable=False)
     rotate = Column(TABLE_TYPES['int'], nullable=False)
@@ -775,13 +782,16 @@ class ImageCroped(Base, PRBase):
     croped_height = Column(TABLE_TYPES['float'], nullable=False)
     zoom = Column(TABLE_TYPES['int'], nullable=False)
 
-    def __init__(self, original_image_id=None, x=None, y=None, width=None, height=None, rotate=None,
+    def __init__(self, original_image_id=None, x=None, y=None, origin_x=0, origin_y=0, width=None, height=None,
+                 rotate=None,
                  croped_image_id=None, croped_width=None, croped_height=None, zoom=None):
         super(ImageCroped, self).__init__()
         self.original_image_id = original_image_id
         self.croped_image_id = croped_image_id
         self.x = x
         self.y = y
+        self.origin_x = origin_x
+        self.origin_y = origin_y
         self.width = width
         self.height = height
         self.rotate = rotate
@@ -794,7 +804,7 @@ class ImageCroped(Base, PRBase):
         return self.to_dict(fields, more_fields)
 
     def get_coordinates(self):
-        ret = self.to_dict('x,y,width,height,rotate,zoom')
+        ret = self.to_dict('x,y,width,height,rotate,zoom,origin_x,origin_y')
         return ret
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
