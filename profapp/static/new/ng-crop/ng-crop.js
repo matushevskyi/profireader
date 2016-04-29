@@ -1,4 +1,5 @@
 /**
+ /**
  * Created by oles on 07.04.16.
  */
 
@@ -129,8 +130,13 @@
                 this.img2canvasX(imgrect[2], state), this.img2canvasY(imgrect[3], state)] : null;
         };
 
-        this.relativeDeviation = function (v, in_respect_to) {
-            return Math.abs(v - in_respect_to) / in_respect_to;
+        this.lessThenWithDeviation = function (what, inrespectto, deviation) {
+            return (what < inrespectto || this.relativeDeviationIn(what, inrespectto, deviation)) ? true : false;
+        }
+
+        this.relativeDeviationIn = function (v, in_respect_to, maxDeviation) {
+            var max = maxDeviation ? maxDeviation : 0.000001;
+            return Math.abs(v - in_respect_to) / in_respect_to <= max;
         };
 
 
@@ -256,6 +262,7 @@
 
             compass = compass ? compass : createCompass(0.5);
 
+
             // scale canvas rect by image constrains (min/max size, aspect) and canvas size
             var ret = [imgrect[0], imgrect[1], imgrect[2], imgrect[3]];
 
@@ -318,30 +325,39 @@
 
         this.fitByConstrains = function (imgrect, state, compass) {
 
+            // console.log('passed image rect', imgrect);
+
             var ret = this.img2canvasRect(this.fitByImageConstrains(imgrect, compass), state);
+
+            // console.log('constrains by img', ret);
 
             // image scaled by max min size and aspect ratio go out of cancas
             // let' try move it
             var ret_copy = ret.slice();
             if (ret[0] < 0) {
+                // console.log('moving right', ret[0]);
                 ret[2] = ret[2] - ret[0];
                 ret[0] = 0;
             }
             if (ret[1] < 0) {
+                // console.log('moving right', ret[1]);
                 ret[3] = ret[3] - ret[1];
                 ret[1] = 0;
             }
             if (ret[3] > this.ctr.canvas_size[1]) {
+                // console.log('moving right', ret[3], this.ctr.canvas_size[1]);
                 ret[1] = ret[1] - (ret[3] - this.ctr.canvas_size[1]);
                 ret[3] = this.ctr.canvas_size[1];
             }
             if (ret[2] > this.ctr.canvas_size[0]) {
+                // console.log('moving right', ret[2], this.ctr.canvas_size[0]);
                 ret[0] = ret[0] - (ret[2] - this.ctr.canvas_size[0]);
                 ret[2] = this.ctr.canvas_size[0];
             }
 
             // ok, still out of canvas. let's try scale it
             if (ret[0] < 0 || ret[1] < 0) {
+                // console.log('moving right', ret, this.ctr.canvas_size);
                 if (ret[2] - ret[0] > this.ctr.canvas_size[0]) {
                     ret[0] = 0;
                     ret[2] = this.ctr.canvas_size[0];
@@ -353,8 +369,9 @@
 
                 ret = this.img2canvasRect(this.fitByImageConstrains(this.canvas2imgRect(ret, state), compass), state);
 
-                if (ret[2] - ret[0] > this.ctr.canvas_size[0] || ret[3] - ret[1] > this.ctr.canvas_size[1]) {
-                    console.log('passed image rect', imgrect);
+                if (!this.lessThenWithDeviation(ret[2] - ret[0], this.ctr.canvas_size[0]) || !this.lessThenWithDeviation(ret[3] - ret[1], this.ctr.canvas_size[1])) {
+
+                    // if (ret[2] - ret[0] > this.ctr.canvas_size[0] || ret[3] - ret[1] > this.ctr.canvas_size[1]) {
                     console.log('calculated canvas rect', ret);
                     console.log('current constrains', this.ctr);
                     throw "current canvas can't satisfy all constrains"
@@ -536,7 +553,7 @@
 
 
         $scope.setCoordinates = function (FixedPoint) {
-            console.log('setCoordinates');
+            // console.log('setCoordinates');
             if (!$scope.logic || !$scope.logic.img) return;
             // this function is called when coordinates was changed.
             // in this case zoom and origin (whatever old or new values) are preserved only if
@@ -605,18 +622,19 @@
                     compass.e = 1 - compass.w;
                     compass.s = 1 - compass.n;
                 }
+                console.log(FixedPoint, compass);
                 // we have compass calculate new canvas coordinates, actually we need only top left corner (origin)
 
                 var new_canvas_coordinates = [
                     FixedPoint[0] - canvas_size[0] * compass['w'], FixedPoint[1] - canvas_size[1] * compass['n'],
                     FixedPoint[0] + canvas_size[0] * compass['e'], FixedPoint[1] + canvas_size[1] * compass['s']];
-                console.log(compass, FixedPoint, canvas_size, new_canvas_coordinates);
+                // console.log(compass, FixedPoint, canvas_size, new_canvas_coordinates);
                 // ok. new canvas fit in image? we can check only one corner if it's fit another SHOULD fit by
                 // zoom/coordinates constrains
                 new_canvas_coordinates[0] = inRange(new_canvas_coordinates[0], 0, ctr.image_size[0] - (new_canvas_coordinates[2] - new_canvas_coordinates[0]))
                 new_canvas_coordinates[1] = inRange(new_canvas_coordinates[1], 0, ctr.image_size[1] - (new_canvas_coordinates[3] - new_canvas_coordinates[1]))
                 $scope.ngCropOrigin = new_canvas_coordinates;
-                console.log($scope.ngCropOrigin);
+                // console.log($scope.ngCropOrigin);
                 // we have new origin and now coordinates can be out of canvas
                 $scope.ngCropCoordinates = $scope.logic.fitByConstrains($scope.ngCropCoordinates, {
                     zoom: $scope.ngCropZoom,
@@ -746,7 +764,7 @@
                 return getCollection();
             }
             else {
-                console.log('something changed. not image');
+                // console.log('something changed. not image');
                 var coordinatesWasChanged = $scope.coordinatesWasChanged($scope.state.coordinates, $scope.ngCropCoordinates);
                 var zoomWasChanged = $scope.zoomWasChanged($scope.state.zoom, $scope.ngCropZoom);
                 var originWasChanged = $scope.originWasChanged($scope.state.origin, $scope.ngCropOrigin);
@@ -818,8 +836,6 @@
             var state = {zoom: $scope.ngCropZoom, origin: $scope.ngCropOrigin};
 
 
-
-
             $scope.canvas_for_current_zoom = document.createElement('canvas');
 
             $scope.canvas_for_current_zoom.width = logic.ctr.canvas_size[0];
@@ -830,9 +846,9 @@
                     0, 0, logic.ctr.canvas_size[0], logic.ctr.canvas_size[1]);
 
                 $scope.$canvas.css({
-                        'background-image': 'url(' + $scope.canvas_for_current_zoom.toDataURL("image/png") + ')',
-                        'background-position': 'left 0px top 0px'
-                    });
+                    'background-image': 'url(' + $scope.canvas_for_current_zoom.toDataURL("image/png") + ')',
+                    'background-position': 'left 0px top 0px'
+                });
             }
             else {
                 $scope.canvas_for_current_zoom.getContext('2d').drawImage($scope.logic.img, state.origin[0], state.origin[1],
@@ -841,15 +857,11 @@
                     0, 0, $scope.canvas_for_current_zoom.width, $scope.canvas_for_current_zoom.height);
 
                 $scope.$canvas.css({
-                        'background-image': 'url(' + $scope.canvas_for_current_zoom.toDataURL("image/png") + ')',
-                        'background-position': 'left 0px top 0px'
-                    });
+                    'background-image': 'url(' + $scope.canvas_for_current_zoom.toDataURL("image/png") + ')',
+                    'background-position': 'left 0px top 0px'
+                });
                 $scope.$element_action_move.css('background-image', 'url(' + $scope.canvas_for_current_zoom.toDataURL("image/png") + ')');
             }
-
-
-
-
 
 
         }
@@ -908,7 +920,7 @@
         }
 
         $scope.redraw = function (what_to_redraw, why) {
-            console.log(what_to_redraw, why);
+            // console.log(what_to_redraw, why);
 
             $scope.redrawNewDisableOrLoading();
 
@@ -932,36 +944,61 @@
             return [(event.pageX - of.left) + $(window).scrollLeft(), (event.pageY - of.top) + $(window).scrollTop()];
         };
 
+        $scope.mouseOverCropper = function (event) {
+            var of = $scope.$container.offset();
+            var ret = [(event.pageX - of.left) + $(window).scrollLeft(), (event.pageY - of.top) + $(window).scrollTop()];
+            console.log(ret);
+            return (ret[0] >= 0 && ret[1] >= 0 && ret[0] <= $scope.$container.outerWidth() && ret[1] <= $scope.$container.outerHeight()) ? ret : false;
+        };
 
-        $scope.zoom_to = function (new_zoomratio, new_canvas_point) {
+        $scope.zoom_to = function (new_zoomratio, canvas_fixed_point) {
 
-            var stick_margin = 0.01;
 
-            if ($scope.logic.relativeDeviation(new_zoomratio, $scope.logic.ctr.max_zoom) < stick_margin) new_zoomratio = $scope.logic.ctr.max_zoom;
-            if ($scope.logic.relativeDeviation(new_zoomratio, $scope.logic.ctr.min_zoom) < stick_margin) new_zoomratio = $scope.logic.ctr.min_zoom;
-            $timeout(function () {
-                $scope.ngCropZoom = new_zoomratio;
+            $scope.processing = true;
+
+            if ($scope.logic.relativeDeviationIn(new_zoomratio, $scope.logic.ctr.max_zoom, 0.01)) new_zoomratio = $scope.logic.ctr.max_zoom;
+            if ($scope.logic.relativeDeviationIn(new_zoomratio, $scope.logic.ctr.min_zoom, 0.01)) new_zoomratio = $scope.logic.ctr.min_zoom;
+            console.log(canvas_fixed_point);
+            var fixed_point = $scope.logic.canvas2imgPoint(canvas_fixed_point, {
+                zoom: $scope.ngCropZoom,
+                origin: $scope.ngCropOrigin
             });
 
+            $scope.ngCropZoom = new_zoomratio;
+            $scope.setZoom(fixed_point);
+            $scope.state.zoom = $scope.ngCropZoom;
+            $scope.state.coordinates = $scope.ngCropCoordinates;
+            $scope.state.origin = $scope.ngCropOrigin;
+            $scope.redraw($scope.REDRAW_NEW_ZOOM, 'new zoom');
+            $scope.processing = false;
             return true;
-
         };
 
         $scope.sr = _.debounce(function (r) {
             $timeout(function () {
-                $scope.ngCropCoordinates = r;
+
             })
         }, 100);
 
 
-        $scope.setNewRect = function (nr) {
+        $scope.new_rect = function (nr, compass) {
             var state = {zoom: $scope.ngCropZoom, origin: $scope.ngCropOrigin};
-            var newir = $scope.logic.fitByConstrains($scope.logic.canvas2imgRect(nr, state), state);
+            var newir = $scope.logic.fitByConstrains($scope.logic.canvas2imgRect(nr, state), state, compass);
 
             if (newir) {
+
                 $scope.ngCropCoordinates = newir;
+
+                // $scope.setZoom(fixed_point);
+                // $scope.state.zoom = $scope.ngCropZoom;
+                $scope.state.coordinates = $scope.ngCropCoordinates;
+                // $scope.state.origin = $scope.ngCropOrigin;
+                // $scope.redraw($scope.REDRAW_NEW_ZOOM, 'new zoom');
+                // $scope.processing = false;
                 $scope.sr(newir);
                 $scope.redraw($scope.REDRAW_NEW_RECT, 'new rect');
+
+
             }
             else {
                 return false;
@@ -986,7 +1023,7 @@
                 var mousenow = $scope.mouseRelativeToCanvas(e);
                 var dxdy = [mousenow[0] - act[0], mousenow[1] - act[1]];
                 var d = [0, 0, 0, 0];
-                var compass = createCompass(0);
+                var compass = createCompass(0.5);
                 var newcr = null;
 
                 if (act[2] === 'set') {
@@ -994,28 +1031,32 @@
                     if (dxdy[0] >= 0) {
                         d[2] = inRange(dxdy[0], 1, $scope.logic.ctr.canvas_size[0] - current[0]);
                         compass['e'] = 1;
+                        compass['w'] = 0;
                     }
                     else {
                         d[0] = inRange(dxdy[0], -current[0], -1);
                         compass['w'] = 1;
+                        compass['e'] = 0;
                     }
                     if (dxdy[1] >= 0) {
                         d[3] = inRange(dxdy[1], 1, $scope.logic.ctr.canvas_size[1] - current[1]);
                         compass['s'] = 1;
+                        compass['n'] = 0;
                     }
                     else {
                         d[1] = inRange(dxdy[1], -current[1], -1);
                         compass['n'] = 1;
+                        compass['s'] = 0;
                     }
 
-                    $scope.setNewRect($scope.logic.addDXDY(current, d));
+                    $scope.new_rect($scope.logic.addDXDY(current, d), compass);
 
                 }
                 else if (act[2] === 'move') {
                     d = [inRange(dxdy[0], -current[0], $scope.logic.ctr.canvas_size[0] - current[2]),
                         inRange(dxdy[1], -current[1], $scope.logic.ctr.canvas_size[1] - current[3])];
 
-                    $scope.setNewRect($scope.logic.addDXDY(current, d));
+                    $scope.new_rect($scope.logic.addDXDY(current, d));
                 }
                 else {
                     var w = current[0] - current[2];
@@ -1024,41 +1065,47 @@
                     if (act[2].indexOf('w') > -1) {
                         d[0] = inRange(dxdy[0], -current[0], -w);
                         compass['w'] = 1;
+                        compass['e'] = 0;
                     }
                     else if (act[2].indexOf('e') > -1) {
                         d[2] = inRange(dxdy[0], w, $scope.logic.ctr.canvas_size[0] - current[2]);
                         compass['e'] = 1;
+                        compass['w'] = 0;
                     }
-                    else {
-                        compass['e'] = 0.5;
-                        compass['w'] = 0.5;
-                    }
+
                     if (act[2].indexOf('n') > -1) {
                         d[1] = inRange(dxdy[1], -current[1], -h);
                         compass['n'] = 1;
+                        compass['s'] = 0;
                     }
                     else if (act[2].indexOf('s') > -1) {
                         d[3] = inRange(dxdy[1], h, $scope.logic.ctr.canvas_size[1] - current[3]);
+                        compass['n'] = 0;
                         compass['s'] = 1;
                     }
-                    else {
-                        compass['s'] = 0.5;
-                        compass['n'] = 0.5;
-                    }
+
                     // console.log('scale', current, d, $scope.logic.addDXDY(current, d));
-                    $scope.setNewRect($scope.logic.addDXDY(current, d));
+                    $scope.new_rect($scope.logic.addDXDY(current, d), compass);
 
                     e.preventDefault();
                 }
             }
 
             var mouse_wheeel = function (event) {
-                event.preventDefault();
+
                 if ($scope.ngCropDisabled || $scope.loading || $scope.processing) {
                     return false;
                 }
-                $scope.processing = true;
-                var normalized;
+                var canvas_point = $scope.mouseOverCropper(event);
+                console.log(canvas_point);
+                if (!canvas_point) return false;
+                canvas_point = $scope.mouseRelativeToCanvas(event);
+                canvas_point = [inRange(canvas_point[0], 0, $scope.logic.ctr.canvas_size[0]),
+                    inRange(canvas_point[1], 0, $scope.logic.ctr.canvas_size[1])]
+
+                event.preventDefault();
+
+                var normalized = 1;
 
                 if (event.wheelDelta) {
                     normalized = (event.wheelDelta % 120 - 0) == -0 ? event.wheelDelta / 120 : event.wheelDelta / 12;
@@ -1067,14 +1114,15 @@
                     normalized = -(rawAmmount % 3 ? rawAmmount * 10 : rawAmmount / 3);
                 }
 
-                var canvas_point = $scope.mouseRelativeToCanvas(event)
+
+                // return;
                 // canvas_point = [canvas_point[0] + $scope.state.x , canvas_point[1] + $scope.state.y];
 
                 var new_zoom = $scope.ngCropZoom * ((normalized > 0) ? 10 / 9 : 9 / 10);
 
                 // var new_zoom_state = $scope.logic.recalculateStateForNewZoom(new_zoom, canvas_point, $scope.state);
-                $scope.zoom_to(new_zoom_state.zoom, [0, 0]);
-                $scope.processing = false;
+                $scope.zoom_to(new_zoom, canvas_point);
+
 
             };
 
@@ -1099,6 +1147,7 @@
             });
 
             window.addEventListener(('onwheel' in document ? 'wheel' : 'onmousewheel' in document ? 'mousewheel' : 'DOMMouseScroll'), mouse_wheeel);
+
         }
 
         $scope.addListeners();
