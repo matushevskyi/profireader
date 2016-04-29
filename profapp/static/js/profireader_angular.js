@@ -891,7 +891,15 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         if (newv) {
                             if (!scope.prCrop['selected_by_user']['crop_coordinates'])
                                 scope.prCrop['selected_by_user']['crop_coordinates'] = {};
-                            scope.prCrop['selected_by_user']['crop_coordinates']['origin'] = newv ? [newv[0], newv[1]] : [0, 0];
+                            if (newv) {
+                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_x'] = newv[0];
+                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_y'] = newv[1];
+                            }
+                            else {
+                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_x'] = 0;
+                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_y'] = 0;
+                            }
+
                         }
                     }
                 );
@@ -963,6 +971,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                             scope.selectedurl = fileUrl(model['image_file_id']);
                             scope.disabled = false;
                             scope.coordinates = crd ? [crd.x, crd.y, crd.width + crd.x, crd.height + crd.y] : null;
+                            scope.origin = crd ? [crd.origin_x, crd.origin_y] : null;
                             scope.zoom = crd ? crd.zoom : null;
                             // scope.state = null;
                             break;
