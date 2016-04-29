@@ -21,25 +21,24 @@ from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPort
     EditPublicationRight, UserIsEmployee, UserIsActive, BaseRightsEmployeeInCompany
 
 
-@article_bp.route('/material_update/<string:material_id>/', methods=['GET'])
-@article_bp.route('/publication_update/<string:publication_id>/', methods=['GET'])
-@article_bp.route('/material_create/company/<string:company_id>/', methods=['GET'])
+@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['GET'])
+@article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['GET'])
+@article_bp.route('/<string:company_id>/material_create/', methods=['GET'])
 @check_right(EditMaterialRight, 'material_id')
-@check_right(EditPublicationRight, 'publication_id')
+@check_right(EditPublicationRight, ['publication_id', 'company_id'])
 @check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def article_show_form(material_id=None, publication_id=None, company_id=None):
-    company = Company.get(company_id if company_id else (
-        ArticlePortalDivision.get(publication_id) if publication_id else ArticleCompany.get(material_id)).company.id)
+    company = Company.get(company_id)
     return render_template('article/form.html', material_id=material_id, company_id=company_id,
                            publication_id=publication_id, company=company)
 
 
-@article_bp.route('/material_update/<string:material_id>/', methods=['POST'])
-@article_bp.route('/publication_update/<string:publication_id>/', methods=['POST'])
-@article_bp.route('/material_create/company/<string:company_id>/', methods=['POST'])
+@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['POST'])
+@article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['POST'])
+@article_bp.route('/<string:company_id>/material_create/', methods=['POST'])
 @ok
 @check_right(EditMaterialRight, 'material_id')
-@check_right(EditPublicationRight, 'publication_id')
+@check_right(EditPublicationRight, ['publication_id', 'company_id'])
 @check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def load_form_create(json, company_id=None, material_id=None, publication_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
@@ -58,9 +57,7 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
 
     available_tag_names = None
 
-    if company_id:  # creating material version
-        articleVersion = ArticleCompany(company_id=company_id, editor=g.user, article=Article(author_user_id=g.user.id))
-    elif material_id:  # companys version. always updating existing
+    if material_id:  # companys version. always updating existing
         articleVersion = ArticleCompany.get(material_id)
     elif publication_id:  # updating portal version
         articleVersion = ArticlePortalDivision.get(publication_id)
@@ -68,7 +65,8 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
         article_tag_names = articleVersion.tags
         available_tags = PortalDivision.get(portal_division_id).portal_division_tags
         available_tag_names = list(map(lambda x: getattr(x, 'name', ''), available_tags))
-
+    else:
+        articleVersion = ArticleCompany(company_id=company_id, editor=g.user, article=Article(author_user_id=g.user.id))
     if action == 'load':
         article_dict = articleVersion.get_client_side_dict(more_fields='long|company')
         article_dict['image'] = articleVersion.get_image_client_side_dict()

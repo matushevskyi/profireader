@@ -56,6 +56,7 @@ def edit_profile_load(json, user_id):
         ret['user']['avatar'] = g.user.get_avatar_client_side_dict()
         return ret
     else:
+        json['user']['profireader_name'] = json['user']['profireader_first_name']+' '+json['user']['profireader_last_name']
         g.user.updates(json['user'])
         if action == 'validate':
             g.user.detach()

@@ -34,8 +34,10 @@
             document.title = $scope.title;
 
             $scope.amidSave = function (resp) {
+                console.log(resp)
                 if (!$scope.data.article.id && resp.article.id) {
-                    window.location.href = {{ raw_url_for('article.article_show_form')|safe }}({material_id: resp.article.id})
+                    console.log($scope.data)
+                    window.location.href = {{ raw_url_for('article.article_show_form')|safe }}({company_id: resp.article.company_id, material_id:resp.article.id})
                 }
                 else {
                     add_message($scope._($scope.article_type + ' was saved'), 'success', 3000);
@@ -45,7 +47,7 @@
 
             $scope.goToArticle = function (article) {
                 if ($scope.article_type === 'material') {
-                    url = {{ raw_url_for('article.material_details')|safe }}({material_id: article.id})
+                    url = {{ raw_url_for('article.material_details')|safe }}({company_id:article.company_id, material_id: article.id})
                 } else if ($scope.article_type === 'publication') {
                     url = ('//' + article.portal.host + {{ raw_url_for('front.details')|safe }}({article_portal_division_id: article.id}))
                 }
@@ -61,8 +63,8 @@
             $scope.amidLoad = function (resp) {
 
                 if(typeof resp  === 'string'){
-                    location.href = '/'
-                    add_message(resp, 'warning', 2000)
+                    location.href = '/';
+                    add_message(resp, 'warning', 2000);
                     console.log(resp)
                 }
                 resp.article.publishing_tm = new Date(resp.article.publishing_tm);
