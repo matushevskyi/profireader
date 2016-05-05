@@ -48,7 +48,7 @@ def auth_before_subscribe_to_portal(portal_id):
     session['portal_id'] = portal_id
     return redirect(url_for('auth.login_signup_endpoint', login_signup='login'))
 
-
+# YG doesn`t use but will change in future
 @general_bp.route('send_email_create_portal/')
 def send_email_create_portal():
     return render_template('general/send_email_create_portal.html')
