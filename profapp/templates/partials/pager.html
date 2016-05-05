@@ -1,3 +1,4 @@
+
 {% if pages is defined %}
     {% if pages > 1 %}
         <div class="container">
@@ -11,7 +12,7 @@
                         {% endif %}
                     {% endfor %}
                     <li class="current-page">
-                        <a href="{{ url_page(page=current_page, search_text=search_text, favorite=favorite) }}">{{ current_page }}</a>
+                        <a href="{{ url_page(page=current_page, search_text=search_text, favorite=favorite) }}" style="background-color: #eee;">{{ current_page }}</a>
                     </li>
                     {% for button in range(page_buttons) %}
                         {% if current_page + (button + 1)< pages %}
