@@ -148,7 +148,7 @@ def material_details_load(json, material_id):
         'company': company.get_client_side_dict(),
         'portals': {
             'grid_data': [get_portal_dict_for_material(portal, company, material) for portal in
-                          company.get_portals_where_company_is_member()],
+                          PublishUnpublishInPortal().get_portals_where_company_is_member(company)],
             'grid_filters': {
                 'publication.status': Grid.filter_for_status(ArticlePortalDivision.STATUSES)
             }
@@ -172,9 +172,7 @@ def submit_publish(json, article_action):
                                             short=material.short, long=material.long, article_company_id=material.id)
         more_data_to_ret = {
             'material': {'id': material.id},
-            'can_material_also_be_published':
-                MemberCompanyPortal.get(portal_id=json['portal']['id'], company_id=json['company']['id'])
-                    .has_rights(MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH)
+            'can_material_also_be_published': check == True
         }
     else:
         publication = ArticlePortalDivision.get(json['publication']['id'])
@@ -184,13 +182,13 @@ def submit_publish(json, article_action):
         more_data_to_ret = {}
 
     if action == 'load':
+        portal = Portal.get(json['portal']['id'])
         ret = {
             'publication': publication.get_client_side_dict(),
             'company': company.get_client_side_dict(),
-            'portal': Portal.get(json['portal']['id']).get_client_side_dict()
+            'portal': portal.get_client_side_dict()
         }
-        ret['portal']['divisions'] = PRBase.get_ordered_dict([d for d in ret['portal']['divisions']
-                                                              if (d['portal_division_type_id'] in ['events', 'news'])])
+        ret['portal']['divisions'] = PRBase.get_ordered_dict(PublishUnpublishInPortal().get_active_division(portal.divisions))
 
         return PRBase.merge_dicts(ret, more_data_to_ret)
     else:

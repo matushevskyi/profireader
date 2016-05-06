@@ -166,12 +166,14 @@ def ips_delete(json):
 
 
 @admin_bp.route('/config', methods=['GET'])
+@check_right(UserIsActive)
 def config():
     return render_template('admin/config.html',
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
 
 
 @admin_bp.route('/config', methods=['POST'])
+@check_right(UserIsActive)
 @ok
 def config_load(json):
     page = json.get('paginationOptions')['pageNumber']

@@ -34,6 +34,8 @@ class BaseRightsInProfireader:
 
     def __setattr__(self, key, value):
 
+        # intercepts setters with preset key and rewrites them
+
         if key == 'company_id':
             key = 'company'
             if isinstance(value, str):
@@ -149,6 +151,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
             self.company = company if isinstance(company, Company) else Company.get(company) if company else None
 
         STATUSES = ArticlePortalDivision.STATUSES
+
         ACTIONS = {
             'PUBLISH': 'PUBLISH',
             'UNPUBLISH': 'UNPUBLISH',
@@ -211,6 +214,14 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
             return BaseRightsInProfireader._is_action_allowed(self.publication, action_name,
                         check_objects_status, {'employment': employee, 'membership': membership},
                         actions=self.ACTIONS, actions_for_statuses=self.ACTIONS_FOR_STATUSES)
+
+        def get_active_division(self, divisions):
+            return [division.get_client_side_dict() for division in divisions
+                                            if(division.portal_division_type_id in ['events', 'news'] and division.is_active())]
+
+        def get_portals_where_company_is_member(self, company):
+            """This method return all portals-partners current company"""
+            return [memcomport.portal for memcomport in db(MemberCompanyPortal, company_id=company.id).all()]
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
 
@@ -597,7 +608,10 @@ class EmployeeAllowRight(EmployeesRight):
         self.employment = UserCompany.get(user_id=self.user.id, company_id=self.company.id)
         return self.action_is_allowed(self.ACTIONS['ALLOW'])
 
-# rights in work with articles
+# rights for work with articles
+
+class CanMaterialBePublished(PublishUnpublishInPortal):
+    pass
 
 class EditMaterialRight(EditOrSubmitMaterialInPortal):
     def is_allowed(self):

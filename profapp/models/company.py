@@ -184,10 +184,6 @@ class Company(Base, PRBase):
 
         return self
 
-    def get_portals_where_company_is_member(self):
-        """This method return all portals-partners current company"""
-        return [memcomport.portal for memcomport in db(MemberCompanyPortal, company_id=self.id).all()]
-
     def suspended_employees(self):
         """ Show all suspended employees from company. Before define method you should have
         query with one company """

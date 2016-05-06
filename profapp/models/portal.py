@@ -502,6 +502,7 @@ class PortalDivision(Base, PRBase):
     settings = None
 
     def is_active(self):
+        print(self)
         return True
 
     def __init__(self, portal=portal,
