@@ -7,7 +7,6 @@ from ..models.company import Company, UserCompany
 from ..models.portal import PortalDivision, Portal, PortalDivisionType, MemberCompanyPortal
 from ..models.users import User
 from ..models.files import File
-from ..models.tag import Tag, TagPortalDivision, TagPortalDivisionArticle
 from .pr_base import PRBase, Base, MLStripper, Search, Grid
 # from db_init import Base
 from utils.db_utils import db
@@ -65,10 +64,7 @@ class ArticlePortalDivision(Base, PRBase):
                      'short': {'relevance': lambda field='short': RELEVANCE.short},
                      'long': {'relevance': lambda field='long': RELEVANCE.long},
                      'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
-    tag_assoc_select = relationship('TagPortalDivisionArticle',
-                                    back_populates='article_portal_division_select',
-                                    cascade="save-update, merge, delete, delete-orphan",
-                                    passive_deletes=True)
+
 
     def is_active(self):
         return True
@@ -142,14 +138,14 @@ class ArticlePortalDivision(Base, PRBase):
                           'return_fields': 'default_dict', 'tags': True}
         return filter
 
-    @property
-    def tags(self):
-        query = g.db.query(Tag.name). \
-            join(TagPortalDivision). \
-            join(TagPortalDivisionArticle). \
-            filter(TagPortalDivisionArticle.article_portal_division_id == self.id)
-        tags = list(map(lambda x: x[0], query.all()))
-        return tags
+    # @property
+    # def tags(self):
+    #     query = g.db.query(Tag.name). \
+    #         join(TagPortalDivision). \
+    #         join(TagPortalDivisionArticle). \
+    #         filter(TagPortalDivisionArticle.article_portal_division_id == self.id)
+    #     tags = list(map(lambda x: x[0], query.all()))
+    #     return tags
 
     def add_recently_read_articles_to_session(self):
         if self.id not in session.get('recently_read_articles', []):
@@ -299,22 +295,22 @@ class ArticlePortalDivision(Base, PRBase):
         sub_query = Grid.subquery_grid(sub_query, list_filters, list_sorts)
         return sub_query
 
-    def manage_article_tags(self, new_tags):
-        self.tag_assoc_select = []
-        g.db.add(self)
-        g.db.commit()  # TODO (AA to AA): this solution solves the problem but we MUST find another one to avoid commit on this stage!
-        tags_portal_division_article = []
-        for i in range(len(new_tags)):
-            tag_portal_division_article = TagPortalDivisionArticle(position=i + 1)
-            tag_portal_division = \
-                g.db.query(TagPortalDivision). \
-                    select_from(TagPortalDivision). \
-                    join(Tag). \
-                    filter(TagPortalDivision.portal_division_id == self.portal_division_id). \
-                    filter(Tag.name == new_tags[i]).one()
-            tag_portal_division_article.tag_portal_division = tag_portal_division
-            tags_portal_division_article.append(tag_portal_division_article)
-        self.tag_assoc_select = tags_portal_division_article
+    # def manage_article_tags(self, new_tags):
+    #     self.tag_assoc_select = []
+    #     g.db.add(self)
+    #     g.db.commit()  # TODO (AA to AA): this solution solves the problem but we MUST find another one to avoid commit on this stage!
+    #     tags_portal_division_article = []
+    #     for i in range(len(new_tags)):
+    #         tag_portal_division_article = TagPortalDivisionArticle(position=i + 1)
+    #         tag_portal_division = \
+    #             g.db.query(TagPortalDivision). \
+    #                 select_from(TagPortalDivision). \
+    #                 join(Tag). \
+    #                 filter(TagPortalDivision.portal_division_id == self.portal_division_id). \
+    #                 filter(Tag.name == new_tags[i]).one()
+    #         tag_portal_division_article.tag_portal_division = tag_portal_division
+    #         tags_portal_division_article.append(tag_portal_division_article)
+    #     self.tag_assoc_select = tags_portal_division_article
 
     def position_unique_filter(self):
         return and_(ArticlePortalDivision.portal_division_id == self.portal_division_id,
