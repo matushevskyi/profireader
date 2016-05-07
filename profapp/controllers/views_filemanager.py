@@ -3,7 +3,7 @@ import re
 from flask import render_template, g, make_response
 from profapp.models.files import File, YoutubeApi
 from .blueprints_declaration import filemanager_bp
-from .request_wrapers import ok, tos_required
+from .request_wrapers import ok, tos_required, check_right
 from functools import wraps
 from flask import jsonify, json
 import json as jsonmodule
@@ -13,7 +13,7 @@ from ..models.google import GoogleAuthorize, GoogleToken
 from utils.db_utils import db
 from ..models.company import Company, UserCompany
 import urllib.parse
-from ..models.rights import FilemanagerRights
+from ..models.rights import FilemanagerRights, UserIsActive
 
 
 def parent_folder(func):
@@ -32,7 +32,7 @@ json_result = {"result": {"success": True, "error": None}}
 
 @filemanager_bp.route('/')
 @login_required
-@tos_required
+@check_right(UserIsActive)
 def filemanager():
     last_visit_root_name = ''
     if 'last_root' in request.cookies:
@@ -82,7 +82,7 @@ def filemanager():
 
 @filemanager_bp.route('/list/', methods=['POST'])
 @login_required
-@tos_required
+@check_right(UserIsActive)
 @ok
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
