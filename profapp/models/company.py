@@ -39,8 +39,8 @@ class Company(Base, PRBase):
             'none': nologo_url,
             'crop': True,
             'image_size': [450, 450],
-            'min_size': [120, 100],
-            'aspect_ratio': [0.5, 2.0],
+            'min_size': [120, 120],
+            'aspect_ratio': [0.25, 4.0],
             'preset_urls': {},
             'no_selection_url': nologo_url
         }
