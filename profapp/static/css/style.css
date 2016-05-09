@@ -127,19 +127,24 @@ body {
   text-decoration: none;
   color: #333;
 }
+
+
+ /*TODO SS to OZ  please move this style to less*/
 .company-portal a {
   color: #525252;
   float: right;
-  margin-left: 15px;
+  margin: 1px!important;
   border-bottom: 1px solid #fff;
-  margin-top: 15px;
-  margin-bottom: 15px;
+  padding: 15px;
 }
+
+ /*TODO SS to OZ  please move this style to less*/
 .company-portal a:hover {
-  color: #00BBA1;
-  text-decoration: none;
-  border-bottom: 1px solid;
-  transition: all 0.2s ease-out;
+    color: #fff!important;
+    text-decoration: none;
+    background-color: #00ceb1;
+    transition: all 0.2s ease-out;
+    padding: 15px;
 }
 .company-logo img {
   margin-right: -15px;

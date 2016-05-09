@@ -204,6 +204,12 @@
     padding-bottom: 15px;
 }
 
+.company-portal .selected {
+    color: #fff;
+    text-decoration: none;
+    background-color: #00ceb1;
+    padding: 15px;
+}
 .join-company {
     margin-top: 15px;
 }
