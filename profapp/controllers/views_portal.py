@@ -319,7 +319,9 @@ def tags_load(json, company_id):
 
     if action == 'load':
         ret = {'company': company.get_client_side_dict(),
-               'portal': portal.get_client_side_dict(more_fields='tags')}
+               'portal': portal.get_client_side_dict(more_fields='tags,divisions.tags')}
+        for division in ret['portal']['divisions']:
+            division['tags'] = {tagdict['id']: True for tagdict in division['tags']}
         return ret
     else:
         if action == 'save':

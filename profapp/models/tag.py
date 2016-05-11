@@ -25,6 +25,26 @@ class TagPortal(Base, PRBase):
         self.tag = tag
         self.portal_id = portal_id
 
+class TagPortalDivision(Base, PRBase):
+            """ This table contains ONLY portal tags not bound to any division"""
+            __tablename__ = 'tag_portal_division'
+            id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+
+            portal_division_id = Column(TABLE_TYPES['id_profireader'],
+                               ForeignKey('portal_division.id', onupdate='CASCADE', ondelete='CASCADE'),
+                               nullable=False)
+
+            tag_portal_id = Column(TABLE_TYPES['id_profireader'],
+                                        ForeignKey('tag_portal.id', onupdate='CASCADE', ondelete='CASCADE'),
+                                        nullable=False)
+
+            # UniqueConstraint('tag', 'portal_id', name='uc_tag_id_portal_id')
+
+            def __init__(self, portal_division_id=None, tag_portal_id=None):
+                super(TagPortalDivision, self).__init__()
+                self.tag_portal_id = tag_portal_id
+                self.portal_division_id = portal_division_id
+
 
 # class TagPortalDivision(Base, PRBase):
 #     __tablename__ = 'tag_portal_division'

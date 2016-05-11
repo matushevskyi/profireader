@@ -12,7 +12,7 @@ import simplejson
 from .files import File, ImageCroped
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from ..utils import fileUrl
-from ..models.tag import TagPortal
+from ..models.tag import TagPortal, TagPortalDivision
 from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
@@ -430,11 +430,15 @@ class PortalDivision(Base, PRBase):
     name = Column(TABLE_TYPES['short_name'], default='')
     position = Column(TABLE_TYPES['int'])
 
-    # portal_division_tags = relationship('Tag', secondary='tag_portal_division')
-    # tags_assoc = relationship('TagPortalDivision', back_populates='portal_division')
 
     portal = relationship(Portal, uselist=False)
     portal_division_type = relationship('PortalDivisionType', uselist=False)
+
+    tags = relationship(TagPortal, secondary = 'tag_portal_division', uselist=True)
+
+    # secondary = 'portal_division',
+    # primaryjoin = "Portal.id == PortalDivision.portal_id",
+    # secondaryjoin = "PortalDivision.id == ArticlePortalDivision.portal_division_id",
 
     settings = None
 

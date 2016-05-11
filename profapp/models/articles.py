@@ -44,6 +44,8 @@ class ArticlePortalDivision(Base, PRBase):
     position = Column(TABLE_TYPES['position'])
     read_count = Column(TABLE_TYPES['int'], default=0)
 
+    tags = []
+
     status = Column(TABLE_TYPES['status'], default='SUBMITTED')
     STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED'}
 
