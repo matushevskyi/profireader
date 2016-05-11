@@ -1,6 +1,5 @@
 from flask import render_template, redirect, url_for, request, g, make_response, json, jsonify, session
 from profapp.models.articles import Article, ArticleCompany, ArticlePortalDivision, ReaderArticlePortalDivision
-from profapp.models.tag import Tag, TagPortalDivision, TagPortalDivisionArticle
 from profapp.models.portal import PortalDivision, UserPortalReader, Portal, MemberCompanyPortal
 from ..models.pr_base import Search, PRBase, Grid
 from .blueprints_declaration import article_bp
@@ -81,9 +80,9 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
             articleVersion.detach()
             return articleVersion.validate(articleVersion.id is not None)
         else:
-            if type(articleVersion) == ArticlePortalDivision:
-                tag_names = json['article']['tags']
-                articleVersion.manage_article_tags(tag_names)
+            # if type(articleVersion) == ArticlePortalDivision:
+            #     tag_names = json['article']['tags']
+            #     articleVersion.manage_article_tags(tag_names)
             article_dict = articleVersion.set_image_client_side_dict(
                 json['article']['image']).save().get_client_side_dict(more_fields='long|company')
             if publication_id:
@@ -162,6 +161,7 @@ def material_details_load(json, material_id):
 def submit_publish(json, article_action):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     company = Company.get(json['company']['id'])
+    print(company)
     if article_action == 'SUBMIT':
         material = ArticleCompany.get(json['material']['id'])
         check = EditOrSubmitMaterialInPortal(material=material, portal=json['portal']['id']).action_is_allowed(article_action)
@@ -176,7 +176,7 @@ def submit_publish(json, article_action):
         }
     else:
         publication = ArticlePortalDivision.get(json['publication']['id'])
-        check = PublishUnpublishInPortal(publication=publication, division=publication.portal_division_id).action_is_allowed(article_action)
+        check = PublishUnpublishInPortal(publication=publication, division=publication.portal_division_id, company=company).action_is_allowed(article_action)
         if check != True:
             return check
         more_data_to_ret = {}

@@ -37,7 +37,7 @@ def avatar_update(json):
 # TODO (AA to AA): Here admin must have the possibility to change user profile
 @user_bp.route('/edit-profile/<user_id>/', methods=['GET'])
 @login_required
-@check_right(UserEditProfieRight, 'user_id')
+@check_right(UserEditProfieRight, ['user_id'])
 def edit_profile(user_id):
     user_query = db(User, id=user_id)
     user = user_query.first()
@@ -46,7 +46,7 @@ def edit_profile(user_id):
 
 @user_bp.route('/edit-profile/<user_id>/', methods=['POST'])
 @login_required
-@check_right(UserEditProfieRight, 'user_id')
+@check_right(UserEditProfieRight, ['user_id'])
 @ok
 def edit_profile_load(json, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])

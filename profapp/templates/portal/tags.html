@@ -1,0 +1,65 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block title %}Tags - Profireader{% endblock title %}
+
+{% block portal_content %}
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+    <script>
+        module.controller('portal_tags', function ($scope) {
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portal_tags');
+            $scope.$$translate = {{translates('CompanyProfile') | safe}};
+
+            console.log($scope.$af);
+
+            $scope.data = {};
+
+
+            {#            $scope.new_tag = '';#}
+
+            $scope.add_tag = function () {
+                $scope.data.portal.tags.push({'id': null, 'tag': $scope.new_tag, 'portal_id': $scope.data.portal.id});
+                $scope.new_tag = '';
+            }
+        });
+    </script>
+    {% raw %}
+    <div ng-controller="portal_tags" ng-cloak>
+        <div class="container col-lg-12 col-md-12 col-sm-12 col-xs-12"
+             af aaf-after-save="afterSave" aaf-after-load="afterLoad" ng-model="data">
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                <button class="btn btn-default pull-right border-radius"
+                        type="button" ng-click="$af.save(data)"
+                        ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save tags') }}
+                </button>
+            </div>
+            <div class="pr-table col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                <div class="pr-row">
+                    <div class="pr-cell">tag\division</div>
+                    <div class="pr-cell" ng-repeat="division in data.portal.divisions">{{ division.name }}</div>
+                    <div class="pr-cell">actions</div>
+                </div>
+                <div class="pr-row" ng-repeat="tag in data.portal.tags">
+                    <div class="pr-cell">{{ tag.tag }}</div>
+                    <div class="pr-cell" ng-repeat="division in data.portal.divisions"><label style="width: 100%"><input
+                            ng-checked="division.tags[tag.id]"
+                            type="checkbox"/></label></div>
+                    <div class="pr-cell">
+                        <button ng-click="remove_tag()">Remove</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 ">
+                <button class="btn pull-right border-radius pull-right" ng-click="add_tag()">Add tag</button>
+                <input class="pull-right" placeholder="new tag" ng-model="new_tag"/>
+            </div>
+
+
+        </div>
+    </div>
+    {% endraw %}
+{% endblock portal_content %}
+
+

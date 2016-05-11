@@ -1,23 +1,18 @@
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
-from sqlalchemy import Column, ForeignKey, or_
-from sqlalchemy.orm import relationship, remote
-from ..controllers import errors
-from flask import g, jsonify
+from sqlalchemy import Column, ForeignKey
+from sqlalchemy.orm import relationship
+from flask import g
 from utils.db_utils import db
-# from .company import Company
 from .pr_base import PRBase, Base
 import re
-from .tag import TagPortalDivision, Tag
-from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
-import itertools
 from sqlalchemy import orm
-import itertools
 from config import Config
 import simplejson
 from .files import File, ImageCroped
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from ..utils import fileUrl
+from ..models.tag import TagPortal, TagPortalDivision
 from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
@@ -50,6 +45,8 @@ class Portal(Base, PRBase):
 
     advs = relationship('PortalAdv', uselist=True)
 
+    tags = relationship(TagPortal, uselist=True)
+
     divisions = relationship('PortalDivision',
                              # backref='portal',
                              order_by='desc(PortalDivision.position)',
@@ -81,68 +78,8 @@ class Portal(Base, PRBase):
                                    )
     search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
                      'host': {'relevance': lambda field='host': RELEVANCE.host}}
-    # see: http://docs.sqlalchemy.org/en/rel_0_9/orm/join_conditions.html#composite-secondary-joins
-    # see: http://docs.sqlalchemy.org/en/rel_0_9/orm/join_conditions.html#creating-custom-foreign-conditions
-    # see!!!: http://docs.sqlalchemy.org/en/rel_0_8/orm/relationships.html#association-object
-    # see comment: http://stackoverflow.com/questions/17473117/sqlalchemy-relationship-error-object-has-no-attribute-c
 
-    # def get_portal_bound_tags_load_func(self):
-    #     return g.db.query('portal.id').with_parent(self)
-    # .\
-    # join(PortalDivision).\
-    # join(TagPortalDivision).\
-    # all()
-    # portal_bound_tags_load_new = property(_get_portal_bound_tags_load_func)
 
-    portal_bound_tags_dynamic = relationship('TagPortalDivision',
-                                             secondary='portal_division',
-                                             # secondary='join(Portal, PortalDivision, Portal.id == PortalDivision.portal_id).'
-                                             # 'join(TagPortalDivision, TagPortalDivision.id == PortalDivision.portal_id)',
-                                             primaryjoin='Portal.id==remote(PortalDivision.portal_id)',
-                                             secondaryjoin='PortalDivision.id==remote(TagPortalDivision.portal_division_id)',
-                                             # secondaryjoin='PortalDivision.tags_assoc == TagPortalDivision.id',
-                                             # secondaryjoin='PortalDivision.portal_division_tags == TagPortalDivision.id',
-                                             # viewonly=True,
-                                             lazy='dynamic')
-
-    portal_bound_tags_noload = relationship('TagPortalDivision',
-                                            secondary='portal_division',
-                                            # secondary='join(Portal, PortalDivision, Portal.id == PortalDivision.portal_id).'
-                                            # 'join(TagPortalDivision, TagPortalDivision.id == PortalDivision.portal_id)',
-                                            primaryjoin='Portal.id == remote(PortalDivision.portal_id)',
-                                            secondaryjoin='PortalDivision.id == remote(TagPortalDivision.portal_division_id)',
-                                            # secondaryjoin='PortalDivision.tags_assoc == TagPortalDivision.id',
-                                            # secondaryjoin='PortalDivision.portal_division_tags == TagPortalDivision.id',
-                                            # viewonly=True,
-                                            lazy='noload')
-
-    portal_bound_tags_select = relationship('TagPortalDivision',
-                                            secondary='portal_division',
-                                            # secondary='join(Portal, PortalDivision, Portal.id == PortalDivision.portal_id).'
-                                            # 'join(TagPortalDivision, TagPortalDivision.id == PortalDivision.portal_id)',
-                                            primaryjoin='Portal.id == remote(PortalDivision.portal_id)',
-                                            secondaryjoin='PortalDivision.id == remote(TagPortalDivision.portal_division_id)',
-                                            # secondaryjoin='PortalDivision.tags_assoc == TagPortalDivision.id',
-                                            # secondaryjoin='PortalDivision.portal_division_tags == TagPortalDivision.id',
-                                            # viewonly=True,
-                                            )
-
-    portal_notbound_tags_select = relationship('TagPortal')
-    portal_notbound_tags_dynamic = relationship('TagPortal', lazy='dynamic')
-    portal_notbound_tags_noload = relationship('TagPortal', lazy='noload')
-
-    # d = relationship("D",
-    #             secondary="join(B, D, B.d_id == D.id)."
-    #                         "join(C, C.d_id == D.id)",
-    #             primaryjoin="and_(A.b_id == B.id, A.id == C.a_id)",
-    #             secondaryjoin="D.id == B.d_id")
-
-    # tags_assoc = relationship('TagPortalDivision', back_populates='portal_division')
-
-    # company = relationship(Company, secondary='article_company',
-    #                        primaryjoin="ArticlePortalDivision.article_company_id == ArticleCompany.id",
-    #                        secondaryjoin="ArticleCompany.company_id == Company.id",
-    #                        viewonly=True, uselist=False)
 
     ALLOWED_STATUSES_TO_JOIN = {
         'DELETED': 'DELETED',
@@ -493,11 +430,15 @@ class PortalDivision(Base, PRBase):
     name = Column(TABLE_TYPES['short_name'], default='')
     position = Column(TABLE_TYPES['int'])
 
-    portal_division_tags = relationship('Tag', secondary='tag_portal_division')
-    tags_assoc = relationship('TagPortalDivision', back_populates='portal_division')
 
     portal = relationship(Portal, uselist=False)
     portal_division_type = relationship('PortalDivisionType', uselist=False)
+
+    tags = relationship(TagPortal, secondary = 'tag_portal_division', uselist=True)
+
+    # secondary = 'portal_division',
+    # primaryjoin = "Portal.id == PortalDivision.portal_id",
+    # secondaryjoin = "PortalDivision.id == ArticlePortalDivision.portal_division_id",
 
     settings = None
 

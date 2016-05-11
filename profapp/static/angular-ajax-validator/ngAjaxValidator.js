@@ -247,12 +247,18 @@
                                 $scope.$af_original_model = cloneObject(resp);
                             });
                     }
+                    else {
+                        console.error('action `load` is not allowed now')
+                    }
                 };
 
                 $scope.reset = function () {
                     if ($scope.isActionAllowed('reset')) {
                         $scope.model = cloneObject($scope.$af_original_model);
                         $scope.$af_original_model_dirty = false;
+                    }
+                    else {
+                        console.error('action `reset` is not allowed now')
                     }
                 };
 
@@ -268,12 +274,16 @@
                     }
                     else {
                         debouncedvalidate();
+                        console.error('action `validate` is not allowed now')
                     }
                 };
 
                 $scope.save = function () {
                     if ($scope.isActionAllowed('save')) {
                         func1('Save', 'saving', 'clean', 'saving_failed')
+                    }
+                    else {
+                        console.error('action `save` is not allowed now')
                     }
                 };
 

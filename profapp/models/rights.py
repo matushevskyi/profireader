@@ -37,6 +37,9 @@ class BaseRightsInProfireader:
         key, value = self.get_allowed_attributes(key, value)
         object.__setattr__(self, key, value)
 
+    def get_allowed_attributes(self, key, value):
+        return key, value
+
     def check_objects_statuses(self, objects, action_name):
         user_active = g.user.is_active()
         if user_active != True:
@@ -111,7 +114,6 @@ class BaseRightsInProfireader:
                 return "Unrecognized status `{}`".format(self.status)
 
             if not action_name in actions_for_statuses[self.status]:
-                print(actions_for_statuses)
                 return "Action `{}` is not applicable with status `{}`".format(action_name, self.status)
             if self.status in actions_for_statuses:
                 required_rights = actions_for_statuses[self.status][action_name]
@@ -363,7 +365,17 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
         self.employment = employment if isinstance(employment, UserCompany) else \
             UserCompany.get(user_id=employment, company_id=self.company.id) if employment and company else None
 
-
+    def get_allowed_attributes(self, key, value):
+        if key == 'user_id':
+            key = 'user'
+            value = User.get(value)
+        if key == 'company_id':
+            key = 'company'
+            value = Company.get(value)
+        if key == 'employment_id':
+            key = 'employment'
+            value = db(UserCompany, id = value).first()
+        return key, value
 
     STATUSES = UserCompany.STATUSES
 
@@ -561,8 +573,14 @@ class CanCreateCompanyRight(UserIsActive):
 
 class UserEditProfieRight(BaseRightsInProfireader):
 
-    def __init__(self, user_id=None):
-        self.user = User.get(user_id) if user_id else None
+    def __init__(self, user=None):
+        self.user = user if isinstance(user, User) else User.get(user) if user else None
+
+    def get_allowed_attributes(self, key, value):
+        if key == 'user_id':
+            key = 'user'
+            value = User.get(value)
+        return key, value
 
     def is_allowed(self):
         if self.user == g.user:
@@ -620,7 +638,6 @@ class PortalManageMembersCompaniesRight(BaseRightsEmployeeInCompany):
         self.member_id = member_id
 
     def is_allowed(self):
-        print(self.company)
         if self.company.id == self.member_id:
             return False
         return self.action_is_allowed(self.ACTIONS['PORTAL_MANAGE_MEMBERS_COMPANIES'])
