@@ -71,7 +71,7 @@ class Company(Base, PRBase):
 
     portal_members = relationship('MemberCompanyPortal', uselist=False)
 
-    own_portal = relationship('Portal',
+    own_portal = relationship(Portal,
                               back_populates='own_company', uselist=False,
                               foreign_keys='Portal.company_owner_id')
 

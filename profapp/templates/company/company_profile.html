@@ -87,7 +87,7 @@
                     <button ng-if="!data.id" class="btn btn-default save-profile pull-right border-radius"
                                 type="button" ng-click="$af.save(data)"
                                 ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
-                        </button>
+                    </button>
                     <div ng-if="data.id">
                         <button class="btn btn-default go-portal pull-right border-radius" type="button"
                                 ng-if="data.own_portal && can_edit_portal" ng-click="portal_update(data.id, data.own_portal.id)">
@@ -277,7 +277,3 @@
     </div>
     {% endraw %}
 {% endblock portal_content %}
-
-{% block footer %}
-    {% include 'partials/portal_footer_Profireader.html' %}
-{% endblock footer %}
