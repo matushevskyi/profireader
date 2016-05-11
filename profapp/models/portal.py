@@ -175,6 +175,7 @@ class Portal(Base, PRBase):
         :return: variable which you want to return from config
         """
         conf = getattr(self.config, key, None)
+        print(conf)
         if not conf:
             return Config.ITEMS_PER_PAGE
         values = simplejson.loads(conf)
