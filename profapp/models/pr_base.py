@@ -515,7 +515,6 @@ class PRBase:
             # if old_original_image:
             #     old_original_image.delete()
         if selected_by_user_type == 'none':
-            # todo: SS by OZ: is old file removed on this selection?
             return None
         if selected_by_user_type == 'upload':
             imgdataContent = selected_by_user['file']['content']

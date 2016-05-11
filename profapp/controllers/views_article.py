@@ -24,9 +24,9 @@ from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPort
 @article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['GET'])
 @article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['GET'])
 @article_bp.route('/<string:company_id>/material_create/', methods=['GET'])
-@check_right(EditMaterialRight, 'material_id')
+@check_right(EditMaterialRight, ['material_id'])
 @check_right(EditPublicationRight, ['publication_id', 'company_id'])
-@check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
+@check_right(BaseRightsEmployeeInCompany, ['company_id'], BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def article_show_form(material_id=None, publication_id=None, company_id=None):
     company = Company.get(company_id)
     return render_template('article/form.html', material_id=material_id, company_id=company_id,
@@ -37,9 +37,9 @@ def article_show_form(material_id=None, publication_id=None, company_id=None):
 @article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['POST'])
 @article_bp.route('/<string:company_id>/material_create/', methods=['POST'])
 @ok
-@check_right(EditMaterialRight, 'material_id')
+@check_right(EditMaterialRight, ['material_id'])
 @check_right(EditPublicationRight, ['publication_id', 'company_id'])
-@check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
+@check_right(BaseRightsEmployeeInCompany, ['company_id'], BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def load_form_create(json, company_id=None, material_id=None, publication_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
@@ -95,7 +95,7 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
 
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'])
-@check_right(UserIsEmployee, 'material_id')
+@check_right(UserIsEmployee, ['material_id'])
 def material_details(material_id):
     company = Company.get(ArticleCompany.get(material_id).company.id)
     return render_template('company/material_details.html',
@@ -136,7 +136,7 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['POST'])
 @ok
-@check_right(UserIsEmployee, 'material_id')
+@check_right(UserIsEmployee, ['material_id'])
 def material_details_load(json, material_id):
     material = ArticleCompany.get(material_id)
     company = material.company
@@ -148,7 +148,7 @@ def material_details_load(json, material_id):
         'company': company.get_client_side_dict(),
         'portals': {
             'grid_data': [get_portal_dict_for_material(portal, company, material) for portal in
-                          PublishUnpublishInPortal().get_portals_where_company_is_member(company)],
+                          PublishUnpublishInPortal(company=company).get_portals_where_company_is_member()],
             'grid_filters': {
                 'publication.status': Grid.filter_for_status(ArticlePortalDivision.STATUSES)
             }

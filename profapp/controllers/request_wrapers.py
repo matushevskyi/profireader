@@ -102,7 +102,9 @@ def check_right(classCheck, params=None, action=None):
         @wraps(func)
         def decorated_view(*args, **kwargs):
             allow = True
-            if isinstance(params, list):
+            if not params:
+                allow = classCheck().is_allowed()
+            else:
                 instance = classCheck()
                 check = True
                 for param in params:
@@ -118,16 +120,6 @@ def check_right(classCheck, params=None, action=None):
                             allow = instance.action_is_allowed(action)
                     else:
                         allow = instance.is_allowed()
-            else:
-                if params in kwargs and kwargs[params]:
-                    instance = classCheck()
-                    setattr(instance, params, kwargs[params])
-                    if action:
-                        allow = instance.action_is_allowed(action)
-                    else:
-                        allow = instance.is_allowed()
-                if not params:
-                    allow = classCheck().is_allowed()
             if allow != True:
                 abort(403)
             return func(*args, **kwargs)

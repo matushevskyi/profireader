@@ -48,7 +48,7 @@ def companies_load(json):
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
 @tos_required
 @login_required
-@check_right(UserIsEmployee, 'company_id')
+@check_right(UserIsEmployee, ['company_id'])
 def materials(company_id):
     return render_template('company/materials.html', company=db(Company, id=company_id).one(),
             actions={'create_material': BaseRightsEmployeeInCompany(company=company_id).action_is_allowed(BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])})
@@ -56,7 +56,7 @@ def materials(company_id):
 
 @company_bp.route('/<string:company_id>/materials/', methods=['POST'])
 @ok
-@check_right(UserIsEmployee, 'company_id')
+@check_right(UserIsEmployee, ['company_id'])
 def materials_load(json, company_id):
     subquery = ArticleCompany.subquery_company_materials(company_id, json.get('filter'), json.get('sort'))
     materials, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
@@ -126,14 +126,14 @@ def update_material_status(json, company_id, article_id):
 @company_bp.route('/<string:company_id>/employees/', methods=['GET'])
 @tos_required
 @login_required
-@check_right(UserIsEmployee, 'company_id')
+@check_right(UserIsEmployee, ['company_id'])
 def employees(company_id):
     return render_template('company/company_employees.html', company=Company.get(company_id))
 
 
 @company_bp.route('/<string:company_id>/employees/', methods=['POST'])
 @ok
-@check_right(UserIsEmployee, 'company_id')
+@check_right(UserIsEmployee, ['company_id'])
 def employees_load(json, company_id):
     company = Company.get(company_id)
     employees_list = [
@@ -290,7 +290,7 @@ def profile_load_validate_save(json, company_id=None):
         user_company = UserCompany.get(company_id=company_id)
         if user_company:
             company_dict['actions'] = {'edit_company_profile': EditCompanyRight(company=company).is_allowed(),
-                                       'edit_portal_profile':EditPortalRight(company=company).is_allowed()}
+                                       'edit_portal_profile':EditPortalRight(company=company_id).is_allowed()}
         return company_dict
     else:
         company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
@@ -442,7 +442,7 @@ def confirm_subscriber():
 @company_bp.route('/readers/<string:company_id>/', methods=['GET'])
 @company_bp.route('/readers/<string:company_id>/<int:page>/', methods=['GET'])
 @login_required
-@check_right(UserIsEmployee, 'company_id')
+@check_right(UserIsEmployee, ['company_id'])
 def readers(company_id, page=1):
     company = Company.get(company_id)
     company_readers, pages, page, count = pagination(query=company.readers_query, page=page)
@@ -462,7 +462,7 @@ def readers(company_id, page=1):
 
 @company_bp.route('/readers/<string:company_id>/', methods=['POST'])
 @ok
-@check_right(UserIsEmployee, 'company_id')
+@check_right(UserIsEmployee, ['company_id'])
 def readers_load(json, company_id):
     company = Company.get(company_id)
     company_readers, pages, page, count = pagination(query=company.get_readers_for_portal(json.get('filter')),

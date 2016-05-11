@@ -352,12 +352,12 @@ class File(Base, PRBase):
             ext = File.ext(name)
             fromname = name[:-(len(ext)+3)] if File.is_copy(name) else name[:-len(ext)if ext else -1]
             list = []
-            for n in db(File, parent_id=parent_id, mime=mime):
-                clearName = n.name[:-(len(ext)+3)] if File.is_copy(n.name) else n.name[:-len(ext)]
+            for file in db(File, parent_id=parent_id, mime=mime):
+                clearName = file.name[:-(len(ext)+3)] if File.is_copy(file.name) else file.name[:-len(ext)]
                 if fromname == clearName:
-                    pos = (len(n.name) - 2) - len(ext) if File.is_copy(n.name) else None
+                    pos = (len(file.name) - 2) - len(ext) if File.is_copy(file.name) else None
                     if pos:
-                        list.append(int(n.name[pos:pos + 1]))
+                        list.append(int(file.name[pos:pos + 1]))
             if list == []:
                 return fromname + '(1)' + ext
             else:
@@ -675,7 +675,7 @@ class File(Base, PRBase):
     def get_correct_coordinates(left, top, right, bottom, column_data):
         area_aspect = (right - left) / (bottom - top)
         if column_data['aspect_ratio'][0] > column_data['aspect_ratio'][1]:
-            column_data['aspect_ratio'][0],column_data['aspect_ratio'][1] = column_data['aspect_ratio'][1], \
+            column_data['aspect_ratio'][0], column_data['aspect_ratio'][1] = column_data['aspect_ratio'][1], \
                                                                   column_data['aspect_ratio'][0]
         if column_data['aspect_ratio'] and column_data['aspect_ratio'][0] and area_aspect < column_data['aspect_ratio'][0]:
             bottom -= ((bottom - top) - (right - left) / column_data['aspect_ratio'][0]) / 2
