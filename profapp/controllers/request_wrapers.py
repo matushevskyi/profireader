@@ -98,6 +98,9 @@ def tos_required(func):
     return decorated_view
 
 def check_right(classCheck, params=None, action=None):
+    # import pstats
+    # p = pstats.Stats("/home/steve/PycharmProjects/profireader/profapp/controllers/output.txt")
+    # p.strip_dirs().sort_stats(-1).print_stats()
     def wrapped(func):
         @wraps(func)
         def decorated_view(*args, **kwargs):

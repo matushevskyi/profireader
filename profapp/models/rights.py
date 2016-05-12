@@ -132,6 +132,8 @@ class BaseRightsInProfireader:
                 in self.ACTIONS_FOR_STATUSES[status]}
 
 
+""" add profiler"""
+
 class PublishUnpublishInPortal(BaseRightsInProfireader):
 
         def __init__(self, publication=None, division=None, company=None):
