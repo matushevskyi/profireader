@@ -45,7 +45,7 @@ class Portal(Base, PRBase):
 
     advs = relationship('PortalAdv', uselist=True)
 
-    tags = relationship(TagPortal, uselist=True)
+    tags = relationship(TagPortal, uselist=True, cascade="all, delete-orphan")
 
     divisions = relationship('PortalDivision',
                              # backref='portal',
@@ -155,7 +155,7 @@ class Portal(Base, PRBase):
         for division in self.divisions:
             if division.portal_division_type_id == 'company_subportal':
                 PortalDivisionSettingsCompanySubportal(
-                        member_company_portal=division.settings['member_company_portal'],
+                        member_company_portal=division.settings.member_company_portal,
                         portal_division=division).save()
 
         if logo_file_id:
@@ -224,7 +224,7 @@ class Portal(Base, PRBase):
                 grouped['by_division_type'][div.portal_division_type_id] = 1
 
             if div.portal_division_type_id == 'company_subportal':
-                member_company_id = div.settings['member_company_portal'].company_id
+                member_company_id = div.settings.member_company_portal.company_id
                 if member_company_id in grouped['by_company_member']:
                     grouped['by_company_member'][member_company_id] += 1
                 else:
@@ -247,8 +247,8 @@ class Portal(Base, PRBase):
 
         for inddiv, div in enumerate(self.divisions):
             if div.portal_division_type_id == 'company_subportal':
-                if div.settings['member_company_portal'].company_id in grouped['by_company_member'] and grouped[
-                    'by_company_member'][div.settings['member_company_portal'].company_id] > 1:
+                if div.settings.member_company_portal.company_id in grouped['by_company_member'] and grouped[
+                    'by_company_member'][div.settings.member_company_portal.company_id] > 1:
                     if not 'remove_division' in ret['warnings']:
                         ret['warnings']['remove_division'] = {}
                     ret['warnings']['remove_division'][inddiv] = 'you have more that one subportal for this company'
@@ -430,7 +430,6 @@ class PortalDivision(Base, PRBase):
     name = Column(TABLE_TYPES['short_name'], default='')
     position = Column(TABLE_TYPES['int'])
 
-
     portal = relationship(Portal, uselist=False)
     portal_division_type = relationship('PortalDivisionType', uselist=False)
 
@@ -443,7 +442,6 @@ class PortalDivision(Base, PRBase):
     settings = None
 
     def is_active(self):
-        print(self)
         return True
 
     def __init__(self, portal=portal,
@@ -463,7 +461,7 @@ class PortalDivision(Base, PRBase):
         #     if target.portal_division_type_id == 'company_subportal':
         #         # member_company_portal = db(MemberCompanyPortal, company_id = target.settings['company_id'], portal_id = target.portal_id).one()
         #         addsettings = PortalDivisionSettingsCompanySubportal(
-        #             member_company_portal=target.settings['member_company_portal'], portal_division=target)
+        #             member_company_portal=target.settings.member_company_portal, portal_division=target)
         #         g.db.add(addsettings)
         #         # target.settings = db(PortalDivisionSettingsCompanySubportal).filter_by(
         #         #     portal_division_id=self.id).one()
@@ -668,9 +666,6 @@ class ReaderDivision(Base, PRBase):
 
     @property
     def show_divisions_and_comments(self):
-        print('aaa')
-        print([[sn, True if self._show_division_and_comments & 2 ** ind else False] for ind, sn in
-               enumerate(['show_articles', 'show_comments', 'show_favorite_comments', 'show_liked_comments'])])
         return [[sn, True if self._show_division_and_comments & 2 ** ind else False] for ind, sn in
                 enumerate(['show_articles', 'show_comments', 'show_favorite_comments', 'show_liked_comments'])]
 

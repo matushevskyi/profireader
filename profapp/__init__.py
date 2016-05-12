@@ -38,7 +38,6 @@ from beaker.middleware import SessionMiddleware
 
 def req(name, allowed=None, default=None, exception=True):
     ret = request.args.get(name)
-    print(exception)
     if allowed and (ret in allowed):
         return ret
     elif default is not None:
