@@ -198,10 +198,11 @@ def submit_publish(json, article_action):
         if 'also_publish' in json and json['also_publish']:
             publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
         else:
-            if article_action in [PublishUnpublishInPortal.ACTIONS['PUBLISH'], PublishUnpublishInPortal.ACTIONS['REPUBLISH']]:
+            if article_action in [PublishUnpublishInPortal.ACTIONS['PUBLISH'],
+                                  PublishUnpublishInPortal.ACTIONS['REPUBLISH']]:
                 publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
-            elif article_action in [PublishUnpublishInPortal.ACTIONS['UNPUBLISH'], PublishUnpublishInPortal.ACTIONS[
-                'UNDELETE']]:
+            elif article_action in [PublishUnpublishInPortal.ACTIONS['UNPUBLISH'],
+                                    PublishUnpublishInPortal.ACTIONS['UNDELETE']]:
                 publication.status = PublishUnpublishInPortal.STATUSES['UNPUBLISHED']
             elif article_action in [PublishUnpublishInPortal.ACTIONS['DELETE']]:
                 publication.status = PublishUnpublishInPortal.STATUSES['DELETED']

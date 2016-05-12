@@ -11,6 +11,7 @@ from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDiv
 from .request_wrapers import ok, tos_required, check_right
 from ..models.articles import ArticlePortalDivision, ArticleCompany, Article
 from ..models.company import UserCompany
+from ..models.tag import TagPortal, TagPortalDivision
 from profapp.models.rights import RIGHTS
 from ..controllers import errors
 from ..models.pr_base import PRBase, Grid
@@ -317,14 +318,27 @@ def tags_load(json, company_id):
     company = Company.get(company_id)
     portal = company.own_portal
 
-    if action == 'load':
+    def get_client_model(aportal):
+        portal_dict = aportal.get_client_side_dict(more_fields='tags,divisions.tags');
+        portal_dict['divisions'] = [division for division in portal_dict['divisions']
+                                    if division['portal_division_type_id'] == 'news' or division[
+                                        'portal_division_type_id'] == 'events']
         ret = {'company': company.get_client_side_dict(),
-               'portal': portal.get_client_side_dict(more_fields='tags,divisions.tags')}
+               'portal': portal_dict}
         for division in ret['portal']['divisions']:
             division['tags'] = {tagdict['id']: True for tagdict in division['tags']}
         return ret
+
+    if action == 'load':
+        return get_client_model(portal)
     else:
+        new_tags = {t['id']: t.get('tag','') for t in json['portal']['tags']}
+        validated = portal.validate_tags_for_divisions(new_tags)
         if action == 'save':
-            return {}
+            if validated['errors']:
+                raise ValueError
+            portal.set_tags_for_divisions(new_tags, json['portal']['divisions']).save()
+            return get_client_model(portal)
         else:
-            return {'errors': {}, 'warnings': {}, 'notices': {}}
+            return validated
+
