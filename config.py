@@ -57,7 +57,7 @@ class Config(object):
                              'XV Thumbnails']
 
 # Pagination
-    ITEMS_PER_PAGE = 5
+    ITEMS_PER_PAGE = 10
     PAGINATION_BUTTONS = 2
 
 # GOOGLE API

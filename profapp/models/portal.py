@@ -167,6 +167,10 @@ class Portal(Base, PRBase):
                         article_portal_division_id=None).save().id
         return self
 
+    # def fallback_default_value(self, key=None, division_name=None):
+    #
+    #     return default
+
     def get_value_from_config(self, key=None, division_name=None):
         """
         :param key: string, variable which you want to return from config
