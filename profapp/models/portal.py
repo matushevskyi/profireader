@@ -167,6 +167,10 @@ class Portal(Base, PRBase):
                         article_portal_division_id=None).save().id
         return self
 
+    # def fallback_default_value(self, key=None, division_name=None):
+    #
+    #     return default
+
     def get_value_from_config(self, key=None, division_name=None):
         """
         :param key: string, variable which you want to return from config
@@ -443,7 +447,6 @@ class PortalDivision(Base, PRBase):
     settings = None
 
     def is_active(self):
-        print(self)
         return True
 
     def __init__(self, portal=portal,
@@ -668,7 +671,7 @@ class ReaderDivision(Base, PRBase):
 
     @property
     def show_divisions_and_comments(self):
-        print('aaa')
+
         print([[sn, True if self._show_division_and_comments & 2 ** ind else False] for ind, sn in
                enumerate(['show_articles', 'show_comments', 'show_favorite_comments', 'show_liked_comments'])])
         return [[sn, True if self._show_division_and_comments & 2 ** ind else False] for ind, sn in

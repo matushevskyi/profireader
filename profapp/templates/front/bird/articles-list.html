@@ -46,7 +46,7 @@
 
 </script>
 {% set article_count = 0 %}
-{% set wide_banners = {1:'1',2:'2',3:'3',4:'4',5:'5',6:'6'} %}
+{% set wide_banners = {2:'1',6:'2'} %}
 {% for article_id, article in articles.items() %}
     {% set article_count = article_count + 1 %}
     <div class="block-item list-elements">
@@ -71,7 +71,7 @@
         <div class="item-additional-info">
             <a href="{{ url_for('front.subportal', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}"
                class="item-company">{{ article['company']['name']|safe }}</a>
-            <div class="item-publication-date">{{ article['publishing_tm'] }}</div>
+            <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
             <div><br>
                 <script type="text/javascript">getSearchBlock({{ article|tojson }})</script>
             </div>
@@ -79,7 +79,6 @@
 
         <div class="bottom-hide"></div>
         <img {{ prImage(article['image_file_id']) }} class="block-item-img"/>
-
     </div>
     {% if article_count in wide_banners and portal.advs['wide_banner_' + wide_banners[article_count]] %}
         <div class="block-item list-elements">
