@@ -534,7 +534,7 @@ class PortalDivision(Base, PRBase):
             self.settings = db(PortalDivisionSettingsCompanySubportal).filter_by(
                 portal_division_id=self.id).one()
 
-    def get_client_side_dict(self, fields='id|name',
+    def get_client_side_dict(self, fields='id|name|portal_division_type_id',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
