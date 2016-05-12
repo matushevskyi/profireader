@@ -11,7 +11,7 @@ from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDiv
 from .request_wrapers import ok, tos_required, check_right
 from ..models.articles import ArticlePortalDivision, ArticleCompany, Article
 from ..models.company import UserCompany
-from ..models.tag import TagPortal
+from ..models.tag import TagPortal, TagPortalDivision
 from profapp.models.rights import RIGHTS
 from ..controllers import errors
 from ..models.pr_base import PRBase, Grid
@@ -318,8 +318,8 @@ def tags_load(json, company_id):
     company = Company.get(company_id)
     portal = company.own_portal
 
-    if action == 'load':
-        portal_dict = portal.get_client_side_dict(more_fields='tags,divisions.tags');
+    def get_client_model(aportal):
+        portal_dict = aportal.get_client_side_dict(more_fields='tags,divisions.tags');
         portal_dict['divisions'] = [division for division in portal_dict['divisions']
                                     if division['portal_division_type_id'] == 'news' or division[
                                         'portal_division_type_id'] == 'events']
@@ -328,27 +328,17 @@ def tags_load(json, company_id):
         for division in ret['portal']['divisions']:
             division['tags'] = {tagdict['id']: True for tagdict in division['tags']}
         return ret
+
+    if action == 'load':
+        return get_client_model(portal)
     else:
-        new_tags = {t['id']: t['tag'] for t in json['portal']['tags']}
+        new_tags = {t['id']: t.get('tag','') for t in json['portal']['tags']}
+        validated = portal.validate_tags_for_divisions(new_tags)
         if action == 'save':
-            tags_to_remove = []
-            for existing_tag in portal.tags:
-                if existing_tag.id in new_tags:
-                    existing_tag.tag = new_tags[existing_tag.id]
-                    del new_tags[existing_tag.id]
-                else:
-                    tags_to_remove.append(existing_tag)
-
-            for remove_tag in tags_to_remove:
-                portal.tags.remove(remove_tag)
-
-            for add_tag_id, add_tag_name in new_tags.items():
-                new_tag = TagPortal(portal_id=portal.id, tag=add_tag_name)
-                portal.tags.append(new_tag)
-                for djson in json['portal']['divisions']:
-                    if add_tag_id in djson['tags'] and djson['tags'][add_tag_id]:
-                        portal.divisions.tags.append()
-
-            return new_tags
+            if validated['errors']:
+                raise ValueError
+            portal.set_tags_for_divisions(new_tags, json['portal']['divisions']).save()
+            return get_client_model(portal)
         else:
-            return {'errors': {}, 'warnings': {}, 'notices': {}}
+            return validated
+

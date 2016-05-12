@@ -23,7 +23,7 @@ class TagPortal(Base, PRBase):
         self.tag = tag
         self.portal_id = portal_id
 
-    def get_client_side_dict(self,fields='id|tag', more_fields=None):
+    def get_client_side_dict(self, fields='id|tag', more_fields=None):
         return self.to_dict(fields, more_fields)
 
 
@@ -40,12 +40,15 @@ class TagPortalDivision(Base, PRBase):
                            ForeignKey('tag_portal.id', onupdate='CASCADE', ondelete='CASCADE'),
                            nullable=False)
 
+    portal_division = relationship('PortalDivision', uselist=False)
+    tag_portal = relationship(TagPortal, uselist=False)
+
     # UniqueConstraint('tag', 'portal_id', name='uc_tag_id_portal_id')
 
-    def __init__(self, portal_division_id=None, tag_portal_id=None):
+    def __init__(self, portal_division=None, tag_portal=None):
         super(TagPortalDivision, self).__init__()
-        self.tag_portal_id = tag_portal_id
-        self.portal_division_id = portal_division_id
+        self.tag_portal = tag_portal
+        self.portal_division = portal_division
 
 # class TagPortalDivision(Base, PRBase):
 #     __tablename__ = 'tag_portal_division'

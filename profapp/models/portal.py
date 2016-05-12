@@ -12,7 +12,7 @@ import simplejson
 from .files import File, ImageCroped
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from ..utils import fileUrl
-from ..models.tag import TagPortal, TagPortalDivision
+from ..models.tag import TagPortal
 from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
@@ -32,7 +32,6 @@ class Portal(Base, PRBase):
     url_tweeter = Column(TABLE_TYPES['url'])
     url_linkedin = Column(TABLE_TYPES['url'])
     # url_vkontakte = Column(TABLE_TYPES['url'])
-
 
     company_owner_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), unique=True)
     # portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
@@ -78,8 +77,6 @@ class Portal(Base, PRBase):
                                    )
     search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
                      'host': {'relevance': lambda field='host': RELEVANCE.host}}
-
-
 
     ALLOWED_STATUSES_TO_JOIN = {
         'DELETED': 'DELETED',
@@ -133,17 +130,18 @@ class Portal(Base, PRBase):
             'aspect_ratio': [0.5, 2.0],
             'preset_urls': {'glyphicon-remove-circle': nologo_url},
             'no_selection_url': nologo_url
-    }
+        }
 
     def get_logo_client_side_dict(self):
         return self.get_image_cropped_file(self.logo_file_properties(),
-                                             db(ImageCroped, croped_image_id=self.logo_file_id).first())
+                                           db(ImageCroped, croped_image_id=self.logo_file_id).first())
 
     def set_logo_client_side_dict(self, client_data):
         if client_data['selected_by_user']['type'] == 'preset':
             client_data['selected_by_user'] = {'type': 'none'}
         self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-                                                          client_data, self.logo_file_id, self.own_company.system_folder_file_id)
+                                                        client_data, self.logo_file_id,
+                                                        self.own_company.system_folder_file_id)
         return self
 
     def setup_created_portal(self, logo_file_id=None):
@@ -155,16 +153,16 @@ class Portal(Base, PRBase):
         for division in self.divisions:
             if division.portal_division_type_id == 'company_subportal':
                 PortalDivisionSettingsCompanySubportal(
-                        member_company_portal=division.settings.member_company_portal,
-                        portal_division=division).save()
+                    member_company_portal=division.settings.member_company_portal,
+                    portal_division=division).save()
 
         if logo_file_id:
             originalfile = File.get(logo_file_id)
             if originalfile:
                 self.logo_file_id = originalfile.copy_file(
-                        company_id=self.company_owner_id,
-                        parent_folder_id=self.own_company.system_folder_file_id,
-                        article_portal_division_id=None).save().id
+                    company_id=self.company_owner_id,
+                    parent_folder_id=self.own_company.system_folder_file_id,
+                    article_portal_division_id=None).save().id
         return self
 
     # def fallback_default_value(self, key=None, division_name=None):
@@ -187,6 +185,58 @@ class Portal(Base, PRBase):
         else:
             ret = values
         return ret
+
+    def validate_tags_for_divisions(self, new_portal_tags):
+        ret = {'errors': {}, 'warnings': {}, 'notices': {}}
+        unique = {}
+        for tag_id, tag_name in new_portal_tags.items():
+            if not re.match(r'[^\s]{3}', tag_name):
+                if not 'tags' in ret['errors']:
+                    ret['errors']['tags'] = {}
+                ret['errors']['tags'][tag_id] = 'Pls enter correct tag name'
+            if tag_name in unique:
+                if not 'tags' in ret['errors']:
+                    ret['errors']['tags'] = {}
+                ret['errors']['tags'][tag_id] = 'Tag names should be unique'
+                ret['errors']['tags'][unique[tag_name]] = 'Tag names should be unique'
+            unique[tag_name] = tag_id
+        return ret
+
+
+    def set_tags_for_divisions(self, new_portal_tags, new_division_tags_matrix):
+        tags_to_remove = []
+        for existing_tag_portal in self.tags:
+            if existing_tag_portal.id in new_portal_tags:
+                existing_tag_portal.tag = new_portal_tags[existing_tag_portal.id]
+
+                for djson in new_division_tags_matrix:
+                    division = next(d for d in self.divisions if d.id == djson['id'])
+                    tag_is_allowed_for_division = next((tag_in_div for tag_in_div in division.tags
+                                                        if tag_in_div.id == existing_tag_portal.id), None)
+                    tag_should_be_allowed_for_division = djson['tags'].get(existing_tag_portal.id)
+
+                    if (tag_is_allowed_for_division and not tag_should_be_allowed_for_division):
+                        division.tags.remove(tag_is_allowed_for_division)
+                    elif (not tag_is_allowed_for_division and tag_should_be_allowed_for_division):
+                        division.tags.append(existing_tag_portal)
+
+                del new_portal_tags[existing_tag_portal.id]
+            else:
+                tags_to_remove.append(existing_tag_portal)
+
+        for remove_tag in tags_to_remove:
+            self.tags.remove(remove_tag)
+
+        for add_tag_id, add_tag_name in new_portal_tags.items():
+            new_tag = TagPortal(portal_id=self.id, tag=add_tag_name)
+            self.tags.append(new_tag)
+            for djson in new_division_tags_matrix:
+                division = next(d for d in self.divisions if d.id == djson['id'])
+                if djson['tags'].get(add_tag_id):
+                    division.tags.append(new_tag)
+
+        return self
+
 
     def validate(self, is_new):
         ret = super().validate(is_new)
@@ -294,7 +344,6 @@ class MemberCompanyPortal(Base, PRBase):
 
     member_company_portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
 
-
     status = Column(TABLE_TYPES['status'], default='APPLICANT', nullable=False)
 
     portal = relationship(Portal
@@ -333,7 +382,6 @@ class MemberCompanyPortal(Base, PRBase):
         self.plan = plan
         self.status = status
 
-
     @staticmethod
     def apply_company_to_portal(company_id, portal_id):
         """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
@@ -354,7 +402,8 @@ class MemberCompanyPortal(Base, PRBase):
     @staticmethod
     def get_members(company_id, *args):
         subquery = db(MemberCompanyPortal).filter(
-            MemberCompanyPortal.portal_id == db(Portal, company_owner_id=company_id).subquery().c.id).filter(MemberCompanyPortal.status != MemberCompanyPortal.STATUSES['REJECTED'])
+            MemberCompanyPortal.portal_id == db(Portal, company_owner_id=company_id).subquery().c.id).filter(
+            MemberCompanyPortal.status != MemberCompanyPortal.STATUSES['REJECTED'])
         return subquery
 
     def set_client_side_dict(self, status=None, rights=None):
@@ -437,7 +486,7 @@ class PortalDivision(Base, PRBase):
     portal = relationship(Portal, uselist=False)
     portal_division_type = relationship('PortalDivisionType', uselist=False)
 
-    tags = relationship(TagPortal, secondary = 'tag_portal_division', uselist=True)
+    tags = relationship(TagPortal, secondary='tag_portal_division', uselist=True)
 
     # secondary = 'portal_division',
     # primaryjoin = "Portal.id == PortalDivision.portal_id",
@@ -483,7 +532,7 @@ class PortalDivision(Base, PRBase):
     def init_on_load(self):
         if self.portal_division_type_id == 'company_subportal':
             self.settings = db(PortalDivisionSettingsCompanySubportal).filter_by(
-                    portal_division_id=self.id).one()
+                portal_division_id=self.id).one()
 
     def get_client_side_dict(self, fields='id|name',
                              more_fields=None):
@@ -614,7 +663,7 @@ class UserPortalReader(Base, PRBase):
 
     @staticmethod
     def get(user_id=None, portal_id=None):
-        return db(UserPortalReader).filter_by(user_id=user_id , portal_id=portal_id).first()
+        return db(UserPortalReader).filter_by(user_id=user_id, portal_id=portal_id).first()
 
     @staticmethod
     def get_portals_and_plan_info_for_user(user_id, page, items_per_page, filter_params):
@@ -637,7 +686,7 @@ class UserPortalReader(Base, PRBase):
         filter_params = []
         if portal_name:
             filter_params.append(UserPortalReader.portal_id.in_(db(Portal.id).filter(
-                    Portal.name.ilike('%' + portal_name + '%'))))
+                Portal.name.ilike('%' + portal_name + '%'))))
         if start_end_tm:
             from_tm = datetime.datetime.utcfromtimestamp(int(start_end_tm['from'] + 1) / 1000)
             to_tm = datetime.datetime.utcfromtimestamp(int(start_end_tm['to'] + 86399999) / 1000)
@@ -645,7 +694,7 @@ class UserPortalReader(Base, PRBase):
                                   UserPortalReader.start_tm <= to_tm])
         if package_name:
             filter_params.append(UserPortalReader.portal_plan_id == db(ReaderUserPortalPlan.id).filter(
-                    ReaderUserPortalPlan.name.ilike('%' + package_name + '%')))
+                ReaderUserPortalPlan.name.ilike('%' + package_name + '%')))
         return filter_params
 
 
@@ -678,5 +727,5 @@ class ReaderDivision(Base, PRBase):
         """ :param tuple_or_list, first param from 'show_divisions_and_comments_numeric',
         second True or False """
         self._show_division_and_comments = self.show_division_and_comments_numeric_all & reduce(
-                lambda x, y: int(x) + int(y), list(map(lambda item: self.show_division_and_comments_numeric[item[0]],
-                                                       filter(lambda item: item[1], tuple_or_list))), 0)
+            lambda x, y: int(x) + int(y), list(map(lambda item: self.show_division_and_comments_numeric[item[0]],
+                                                   filter(lambda item: item[1], tuple_or_list))), 0)

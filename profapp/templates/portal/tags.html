@@ -14,6 +14,8 @@
 
             $scope.data = {};
             $scope.tags_to_remove = {};
+            $scope.editing = false;
+            $scope.original_model = {};
 
             $scope.beforeSave = function (datatosave) {
                 datatosave.portal.tags = _.filter(datatosave.portal.tags, function (tag) {
@@ -22,6 +24,25 @@
                 });
                 return datatosave;
             };
+
+            $scope.afterSave = function (data_from_server) {
+                $scope.original_model = data_from_server;
+                add_message('your tags was saved', 'success');
+                $scope.edit_tags(false);
+            };
+
+            $scope.afterLoad = function (loadeddata) {
+                $scope.original_model = loadeddata;
+                return loadeddata;
+            };
+
+            $scope.edit_tags = function (edit) {
+                $scope.editing = edit;
+                if (!edit) {
+                    $scope.data = $scope.original_model;
+                    $scope.tags_to_remove = {};
+                    }
+            }
 
             $scope.add_tag = function () {
                 var newTagId = randomHash();
@@ -39,15 +60,32 @@
         });
     </script>
     {% raw %}
+    <br/>
+    <br/>
     <div ng-controller="portal_tags" ng-cloak>
         <div class="container col-lg-12 col-md-12 col-sm-12 col-xs-12"
-             af af-before-save="beforeSave" aaf-after-save="afterSave" aaf-after-load="afterLoad" ng-model="data">
+             af af-before-save="beforeSave" af-after-save="afterSave" af-after-load="afterLoad" ng-model="data">
+
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                <button class="btn btn-default pull-right border-radius"
-                        type="button" ng-click="$af.save(data)"
-                        ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save tags') }}
-                </button>
+                <div class="pull-right">
+                    <button ng-if="editing" class="btn btn-default border-radius"
+                            type="button" ng-click="$af.save(data)"
+                            ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save tags') }}
+
+                    </button>
+                    <button ng-if="editing" class="btn btn-default border-radius"
+                            type="button" ng-click="edit_tags(false)">{{ _('Cancel') }}
+
+                    </button>
+                    <button ng-if="!editing" class="btn btn-default border-radius"
+                            type="button" ng-click="edit_tags(true)">{{ _('Edit') }}
+
+                    </button>
+
+                </div>
             </div>
+            <br style="clear: both"/>
+            <br style="clear: both"/>
             <div class="pr-table col-lg-12 col-md-12 col-sm-12 col-xs-12">
                 <div class="pr-row">
                     <div class="pr-cell">tag\division</div>
@@ -55,28 +93,35 @@
                     <div class="pr-cell">actions</div>
                 </div>
                 <div class="pr-row" ng-repeat="tag in data.portal.tags">
-                    <div class="pr-cell"><input ng-disabled="tags_to_remove[tag.id]" ng-model="tag.tag"/></div>
+                    <div class="pr-cell"><input
+                            pr-validation-answer="data_validation:tags[tag.id]"
+                            ng-disabled="!editing || tags_to_remove[tag.id]" ng-model="tag.tag"/></div>
                     <div class="pr-cell" ng-repeat="division in data.portal.divisions">
                         <label
                                 style="width: 100%"><input
-                                ng-checked="division.tags[tag.id]"
-                                ng-disabled="tags_to_remove[tag.id]"
+                                ng-model="division.tags[tag.id]"
+                                ng-disabled="!editing || tags_to_remove[tag.id]"
                                 type="checkbox"/></label></div>
                     <div class="pr-cell" style="width: 10em;">
-                        <button ng-if="!tags_to_remove[tag.id]" ng-click="remove_tag(tag.id, false)">Remove</button>
-                        <button ng-if="tags_to_remove[tag.id]" ng-click="remove_tag(tag.id, true)">Undo remove</button>
+                        <button ng-disabled="!editing" ng-if="!tags_to_remove[tag.id]" ng-click="remove_tag(tag.id, false)">Remove</button>
+                        <button ng-disabled="!editing" ng-if="tags_to_remove[tag.id]" ng-click="remove_tag(tag.id,
+                        true)">Undo remove</button>
                     </div>
                 </div>
             </div>
-
+            <br style="clear: both"/>
+            <br style="clear: both"/>
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 ">
-                <button class="btn pull-right border-radius pull-right" ng-click="add_tag()">Add tag</button>
-                <input class="pull-right" placeholder="new tag" ng-model="new_tag"/>
+                <div class="pull-right">
+                    <input ng-disabled="!editing" placeholder="new tag" ng-model="new_tag"/>
+                    <button ng-disabled="!editing" class="btn border-radius" ng-click="add_tag()">Add tag</button>
+                </div>
             </div>
 
 
         </div>
     </div>
+    <br/>
     {% endraw %}
 {% endblock portal_content %}
 
