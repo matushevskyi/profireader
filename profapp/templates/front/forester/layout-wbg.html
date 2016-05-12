@@ -38,21 +38,8 @@
             </div>
         </div>
         <div class="col-md-3">
-            {{ portal.advs['right_banner']|safe }}
-            {% if articles_related %}
-                <div class="right-list-container">
-                    {% for article_related_id  in articles_related %}
-                        <div class="list-elements right-sidebar">
-                            <a href="#" class="item-title">{{ articles_related[article_related_id]['title'] }}</a>
-
-                            <div class="item-additional-info">
-                                <div class="item-company">{{ articles_related[article_related_id]['company']['name'] }}</div>
-                                <div class="item-publication-date">{{ articles_related[article_related_id]['cr_tm'] }}</div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+            {{ portal.advs['right_banner_1']|safe }}
+            {{ portal.advs['right_banner_2']|safe }}
 
         </div>
 
