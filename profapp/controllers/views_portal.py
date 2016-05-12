@@ -7,7 +7,7 @@ from ..models.files import File
 from ..models.translate import TranslateTemplate
 from utils.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
-    PortalDivisionSettingsCompanySubportal, PortalConfig
+    PortalDivisionSettingsCompanySubportal, PortalConfig, PortalAdvertisment
 from .request_wrapers import ok, tos_required, check_right
 from ..models.articles import ArticlePortalDivision, ArticleCompany, Article
 from ..models.company import UserCompany
@@ -167,6 +167,38 @@ def portals_partners_load(json, company_id):
                                                    MembershipRights.STATUSES]}.items()},
             'grid_filters_except': list(MembershipRights.INITIALLY_FILTERED_OUT_STATUSES),
             'total': count}
+
+@portal_bp.route('/portal_banners/<string:company_id>/', methods=['GET'])
+@login_required
+@check_right(UserIsEmployee, 'company_id')
+def portal_banners(company_id):
+    return render_template('company/portal_banners.html',
+                           company=Company.get(company_id))
+
+
+@portal_bp.route('/portal_banners/<string:company_id>/', methods=['POST'])
+@login_required
+@ok
+@check_right(UserIsEmployee, 'company_id')
+def portal_banners_load(json, company_id):
+    subquery = PortalAdvertisment().get_portal_advertisments(Company.get(company_id).own_portal.id, json.get('filter'))
+
+    banners, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
+    banners_list = [banner.get_client_side_dict() for banner in banners]
+    return {'page': current_page,
+            'grid_data': banners_list,
+            'grid_filters': {},
+            'total': count}
+
+@portal_bp.route('/save_portal_banner/<string:company_id>/', methods=['POST'])
+@login_required
+@ok
+@check_right(UserIsEmployee, 'company_id')
+def save_portal_banner(json, company_id):
+    advertisment = PortalAdvertisment.get(json.get('editBanners')['id'])
+    advertisment.html = json.get('editBanners')['html']
+    advertisment.save()
+    return advertisment.get_client_side_dict()
 
 
 @portal_bp.route('/portals_partners_change_status/<string:company_id>/<string:portal_id>', methods=['POST'])

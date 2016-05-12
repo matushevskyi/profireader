@@ -266,6 +266,10 @@ class Company(Base, PRBase):
         return sorted(list({partner.status for partner in sub_query}))
 
     @staticmethod
+    def subquery_portal_banners(company_id, filters):
+        sub_query = db(MemberCompanyPortal, company_id=company_id)
+
+    @staticmethod
     def subquery_portal_partners(company_id, filters, filters_exсept=None):
         sub_query = db(MemberCompanyPortal, company_id=company_id)
         list_filters = []
