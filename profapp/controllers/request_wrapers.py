@@ -1,16 +1,8 @@
 from functools import wraps
 from flask import jsonify, request, g, abort, redirect, url_for, flash
 from functools import reduce
-from sqlalchemy.orm import relationship, backref, make_transient, class_mapper
-import datetime
-from time import sleep
-from flask.ext.login import current_user
-from ..models.rights import Right
-from ..constants.STATUS import STATUS_RIGHTS
-from .errors import ImproperRightsDecoratorUse
 from ..controllers import errors
-from ..models.translate import TranslateTemplate
-from utils.db_utils import db
+
 
 def ok(func):
     @wraps(func)
@@ -98,9 +90,6 @@ def tos_required(func):
     return decorated_view
 
 def check_right(classCheck, params=None, action=None):
-    # import pstats
-    # p = pstats.Stats("/home/steve/PycharmProjects/profireader/profapp/controllers/output.txt")
-    # p.strip_dirs().sort_stats(-1).print_stats()
     def wrapped(func):
         @wraps(func)
         def decorated_view(*args, **kwargs):

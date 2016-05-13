@@ -28,11 +28,9 @@ def profile(create_or_update, company_id, portal_id=None):
     return render_template('portal/portal_create.html', company=Company.get(company_id))
 
 
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['POST'])
+@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['OK'])
 @portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/portal/<string:portal_id>/',
-                 methods=['POST'])
-@login_required
-@ok
+                 methods=['OK'])
 @check_right(EditPortalRight, ['company_id'])
 def profile_load(json, create_or_update, company_id, portal_id=None):
     action = g.req('action', allowed=['load', 'save', 'validate'])
@@ -104,9 +102,7 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
             return portal.validate(create_or_update == 'create')
 
 
-@portal_bp.route('/apply_company/<string:company_id>', methods=['POST'])
-@login_required
-@ok
+@portal_bp.route('/apply_company/<string:company_id>', methods=['OK'])
 @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def apply_company(json, company_id):
     MemberCompanyPortal.apply_company_to_portal(company_id=company_id,
@@ -117,16 +113,13 @@ def apply_company(json, company_id):
 
 
 @portal_bp.route('/profile_edit/<string:portal_id>/', methods=['GET'])
-@login_required
 @check_right(EditPortalRight, ['portal_id'])
 def profile_edit(portal_id):
     return render_template('portal/portal_profile_edit.html', company=Portal.get(portal_id).own_company)
 
 
-@portal_bp.route('/profile_edit/<string:portal_id>/', methods=['POST'])
-@login_required
+@portal_bp.route('/profile_edit/<string:portal_id>/', methods=['OK'])
 @check_right(EditPortalRight, ['portal_id'])
-@ok
 def profile_edit_load(json, portal_id):
     portal = db(Portal, id=portal_id).one()
 
@@ -135,7 +128,6 @@ def profile_edit_load(json, portal_id):
 
 
 @portal_bp.route('/portals_partners/<string:company_id>/', methods=['GET'])
-@login_required
 @check_right(UserIsEmployee, ['company_id'])
 def portals_partners(company_id):
     return render_template('company/portals_partners.html',
@@ -143,9 +135,7 @@ def portals_partners(company_id):
                            actions={'require_memberee': RequireMembereeAtPortalsRight(company=company_id).is_allowed()})
 
 
-@portal_bp.route('/portals_partners/<string:company_id>/', methods=['POST'])
-@login_required
-@ok
+@portal_bp.route('/portals_partners/<string:company_id>/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
 def portals_partners_load(json, company_id):
     subquery = Company.subquery_portal_partners(company_id, json.get('filter'),
@@ -165,9 +155,7 @@ def portals_partners_load(json, company_id):
             'total': count}
 
 
-@portal_bp.route('/portals_partners_change_status/<string:company_id>/<string:portal_id>', methods=['POST'])
-@login_required
-@ok
+@portal_bp.route('/portals_partners_change_status/<string:company_id>/<string:portal_id>', methods=['OK'])
 @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def portals_partners_change_status(json, company_id, portal_id):
     partner = MemberCompanyPortal.get(portal_id=portal_id, company_id=json.get('partner_id'))
@@ -180,7 +168,6 @@ def portals_partners_change_status(json, company_id, portal_id):
 
 
 @portal_bp.route('/<string:company_id>/company_partner_update/<string:member_id>/', methods=['GET'])
-@login_required
 @check_right(PortalManageMembersCompaniesRight, ['company_id', 'member_id'])
 def company_partner_update(company_id, member_id):
     return render_template('company/company_partner_update.html',
@@ -189,9 +176,7 @@ def company_partner_update(company_id, member_id):
                                                           company_id=member_id).company.get_client_side_dict('id, status'))
 
 
-@portal_bp.route('/<string:company_id>/company_partner_update/<string:member_id>/', methods=['POST'])
-@login_required
-@ok
+@portal_bp.route('/<string:company_id>/company_partner_update/<string:member_id>/', methods=['OK'])
 @check_right(PortalManageMembersCompaniesRight, ['company_id', 'member_id'])
 def company_update_load(json, company_id, member_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
@@ -210,9 +195,7 @@ def company_update_load(json, company_id, member_id):
             member.save()
     return member.get_client_side_dict()
 
-@portal_bp.route('/company_partners_change_status/<string:company_id>/<string:portal_id>', methods=['POST'])
-@login_required
-@ok
+@portal_bp.route('/company_partners_change_status/<string:company_id>/<string:portal_id>', methods=['OK'])
 @check_right(PortalManageMembersCompaniesRight, ['company_id'])
 def company_partners_change_status(json, company_id, portal_id):
     partner = MemberCompanyPortal.get(portal_id=portal_id, company_id=json.get('partner_id'))
@@ -224,7 +207,6 @@ def company_partners_change_status(json, company_id, portal_id):
     return partner.get_client_side_dict()
 
 @portal_bp.route('/companies_partners/<string:company_id>/', methods=['GET'])
-@login_required
 @check_right(UserIsEmployee, ['company_id'])
 def companies_partners(company_id):
     return render_template('company/companies_partners.html', company=Company.get(company_id),
@@ -232,9 +214,7 @@ def companies_partners(company_id):
                                    UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES))
 
 
-@portal_bp.route('/companies_partners/<string:company_id>/', methods=['POST'])
-@login_required
-@ok
+@portal_bp.route('/companies_partners/<string:company_id>/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
 def companies_partners_load(json, company_id):
     subquery = Company.subquery_company_partners(company_id, json.get('filter'),filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
@@ -251,7 +231,6 @@ def companies_partners_load(json, company_id):
 
 
 @portal_bp.route('/search_for_portal_to_join/', methods=['POST'])
-@ok
 @login_required
 def search_for_portal_to_join(json):
     if RequireMembereeAtPortalsRight(company=json['company_id']).is_allowed() != True:
@@ -262,7 +241,6 @@ def search_for_portal_to_join(json):
 
 
 @portal_bp.route('/company/<string:company_id>/publications/', methods=['GET'])
-@login_required
 @check_right(UserIsEmployee, ['company_id'])
 def publications(company_id):
     return render_template('portal/portal_publications.html', company=Company.get(company_id))
@@ -278,10 +256,8 @@ def get_publication_dict(publication):
     return ret
 
 
-@portal_bp.route('/company/<string:company_id>/publications/', methods=['POST'])
-@login_required
+@portal_bp.route('/company/<string:company_id>/publications/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
-@ok
 def publications_load(json, company_id):
     company = Company.get(company_id)
     portal = company.own_portal
@@ -300,16 +276,13 @@ def publications_load(json, company_id):
 
 
 @portal_bp.route('/company/<string:company_id>/tags/', methods=['GET'])
-@login_required
-# @check_right(UserIsEmployee, 'company_id')
+@check_right(UserIsEmployee, 'company_id')
 def tags(company_id):
     return render_template('portal/tags.html', company=Company.get(company_id))
 
 
-@portal_bp.route('/company/<string:company_id>/tags/', methods=['POST'])
-@login_required
-# @check_right(UserIsEmployee, 'company_id')
-@ok
+@portal_bp.route('/company/<string:company_id>/tags/', methods=['OK'])
+@check_right(UserIsEmployee, 'company_id')
 def tags_load(json, company_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
     company = Company.get(company_id)

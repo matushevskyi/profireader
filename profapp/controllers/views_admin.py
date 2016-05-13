@@ -15,7 +15,6 @@ from ..models.pr_base import Grid
 from ..models.rights import UserIsActive
 
 @admin_bp.route('/translations', methods=['GET'])
-@login_required
 @check_right(UserIsActive)
 def translations():
     return render_template('admin/translations.html',
@@ -27,8 +26,7 @@ class test:
     def __init__(self, n):
         self.a = n
 
-@admin_bp.route('/set_session_a', methods=['GET'])
-@ok
+@admin_bp.route('/set_session_a', methods=['OK'])
 @check_right(UserIsActive)
 def set_session_a(json):
     z = session['test'] if 'test' in session else None
@@ -37,8 +35,7 @@ def set_session_a(json):
     session['test'] = y
     return {'old_value': z.__repr__(), 'new_value': session['test'].__repr__()}
 
-@admin_bp.route('/set_session_b', methods=['GET'])
-@ok
+@admin_bp.route('/set_session_b', methods=['OK'])
 @check_right(UserIsActive)
 def set_session_b(json):
     z = session['test'] if 'test' in session else None
@@ -47,9 +44,7 @@ def set_session_b(json):
     session['test'] = y
     return {'old_value': z.__repr__(), 'new_value': session['test'].__repr__()}
 
-@admin_bp.route('/translations', methods=['POST'])
-@login_required
-@ok
+@admin_bp.route('/translations', methods=['OK'])
 @check_right(UserIsActive)
 def translations_load(json):
     subquery = TranslateTemplate.subquery_search(json.get('filter'), json.get('sort') , json.get('editItem'))
@@ -71,18 +66,14 @@ def translations_load(json):
             }
 
 
-@admin_bp.route('/translations_save', methods=['POST'])
-@login_required
+@admin_bp.route('/translations_save', methods=['OK'])
 @check_right(UserIsActive)
-@ok
 def translations_save(json):
     exist = db(TranslateTemplate, template=json['row'], name=json['col']).first()
     return TranslateTemplate.get(exist.id).attr({json['lang']: json['val']}).save().get_client_side_dict()
 
-@admin_bp.route('/delete', methods=['POST'])
-@login_required
+@admin_bp.route('/delete', methods=['OK'])
 @check_right(UserIsActive)
-@ok
 def delete_translates(json):
     return TranslateTemplate.delete_translates(json['objects'])
 
@@ -93,8 +84,8 @@ def delete_translates(json):
 def ips():
     return render_template('admin/ips.html',
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
-@admin_bp.route('/ips', methods=['POST'])
-@ok
+
+@admin_bp.route('/ips', methods=['OK'])
 @check_right(UserIsActive)
 def ips_load(json):
     page = json.get('paginationOptions')['pageNumber']
@@ -138,24 +129,21 @@ def ips_load(json):
             'total': subquery.count()
             }
 
-@admin_bp.route('/ips_save', methods=['POST'])
-@ok
+@admin_bp.route('/ips_save', methods=['OK'])
 @check_right(UserIsActive)
 def ips_save(json):
     exist = db(Ips, template=json['row'], name=json['col']).first()
     return Ips.get(exist.id).attr({json['lang']: json['val']}).save().get_client_side_dict()
 
 
-@admin_bp.route('/ips_add', methods=['POST'])
-@ok
+@admin_bp.route('/ips_add', methods=['OK'])
 @check_right(UserIsActive)
 def ips_add(json):
 
      exist = db(Ips, template=json['row'], name=json['col']).first()
      return Ips.get(exist.id).attr({json['lang']: json['val']}).add().get_client_side_dict()
 
-@admin_bp.route('/ips_delete', methods=['POST'])
-@ok
+@admin_bp.route('/ips_delete', methods=['OK'])
 @check_right(UserIsActive)
 def ips_delete(json):
     return Ips.delete(json['objects'])
@@ -172,9 +160,8 @@ def config():
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
 
 
-@admin_bp.route('/config', methods=['POST'])
+@admin_bp.route('/config', methods=['OK'])
 @check_right(UserIsActive)
-@ok
 def config_load(json):
     page = json.get('paginationOptions')['pageNumber']
     pageSize = json.get('paginationOptions')['pageSize']

@@ -275,7 +275,6 @@ def unconfirmed():
 
 @auth_bp.route('/resend_confirmation/', methods=["POST"])
 @login_required
-@ok
 def resend_confirmation(json):
     current_user.generate_confirmation_token().save()
     SendEmail().send_email(subject='Confirm Your Account',
@@ -304,15 +303,13 @@ def confirm(token):
         return render_template("auth/confirm_email.html")
 
 
-@auth_bp.route('/tos', methods=['POST'])
+@auth_bp.route('/tos', methods=['OK'])
 @login_required
-@ok
 def tos(json):
     g.user.tos = json['accept'] == 'accept'
     return {'tos': g.user.tos}
 
-@auth_bp.route('/help', methods=["POST"])
-@ok
+@auth_bp.route('/help', methods=["OK"])
 def help_message(json):
         if not 'email' in json['data']:
             return 'Please enter valid email!'
@@ -329,7 +326,7 @@ def help_message(json):
         return True
 
 
-# @auth_bp.route('/change-password', methods=['GET', 'POST'])
+# @auth_bp.route('/change-password', methods=['GET', 'OK'])
 # @login_required
 # def change_password():
 #     form = ChangePasswordForm()
@@ -350,8 +347,7 @@ def password_resets():
 
 
 
-@auth_bp.route('/reset_password', methods=['POST'])
-@ok
+@auth_bp.route('/reset_password', methods=['OK'])
 def password_reset_request(json):
     if not current_user.is_anonymous():
         flash('To reset your password logout first please.')
@@ -377,8 +373,7 @@ def password_reset(token):
         return redirect(url_for('auth/reset_password_token.html'))
     return render_template('auth/reset_password_token.html', token=token)
 
-@auth_bp.route('/reset/<token>', methods=['POST'])
-@ok
+@auth_bp.route('/reset/<token>', methods=['OK'])
 def password_reset_change(json, token):
     user = g.db.query(User).\
         filter_by(profireader_email=json['data'].get('email')).first()

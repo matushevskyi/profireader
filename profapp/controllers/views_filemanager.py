@@ -80,10 +80,8 @@ def filemanager():
                            file_manager_default_action=file_manager_default_action)
 
 
-@filemanager_bp.route('/list/', methods=['POST'])
-@login_required
+@filemanager_bp.route('/list/', methods=['OK'])
 @check_right(UserIsActive)
-@ok
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
     company = db(Company, journalist_folder_file_id=ancestors[0]).first()
@@ -94,10 +92,8 @@ def list(json):
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=company.id)
     return {'list': list, 'ancestors': ancestors}
 
-@filemanager_bp.route('/createdir/', methods=['POST'])
-@login_required
-@tos_required
-@ok
+@filemanager_bp.route('/createdir/', methods=['OK'])
+@check_right(UserIsActive)
 def createdir(json):
     if FilemanagerRights(company=get_company_from_folder(json['params']['root_id'])).is_action_allowed(FilemanagerRights.ACTIONS['CREATE_FOLDER']) != True:
         return False
@@ -106,10 +102,8 @@ def createdir(json):
                           parent_id=json['params']['folder_id'])
 
 
-@filemanager_bp.route('/properties/', methods=['POST'])
-@login_required
-@tos_required
-@ok
+@filemanager_bp.route('/properties/', methods=['OK'])
+@check_right(UserIsActive)
 def set_properties(json):
     file = File.get(json['params']['id'])
     if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
@@ -119,10 +113,8 @@ def set_properties(json):
                                description=json['params']['description'])
 
 
-@filemanager_bp.route('/copy/', methods=['POST'])
-@login_required
-@tos_required
-@ok
+@filemanager_bp.route('/copy/', methods=['OK'])
+@check_right(UserIsActive)
 def copy(json):
     file = File.get(json['params']['id'])
     if not file or FilemanagerRights(company=get_company_from_folder(json['params']['folder_id'])).is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
@@ -130,10 +122,8 @@ def copy(json):
     return file.copy_file(json['params']['folder_id']).id
 
 
-@filemanager_bp.route('/cut/', methods=['POST'])
-@login_required
-@tos_required
-@ok
+@filemanager_bp.route('/cut/', methods=['OK'])
+@check_right(UserIsActive)
 def cut(json):
     file = File.get(json['params']['id'])
     if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
@@ -141,10 +131,8 @@ def cut(json):
     return file.move_to(json['params']['folder_id'])
 
 
-@filemanager_bp.route('/auto_remove/', methods=['POST'])
-@login_required
-@tos_required
-@ok
+@filemanager_bp.route('/auto_remove/', methods=['OK'])
+@check_right(UserIsActive)
 def auto_remove(json):
     return File.auto_remove(json.get('list'))
 
@@ -152,10 +140,8 @@ def get_company_from_folder(file_id):
     ancestors = File.ancestors(file_id)
     return db(Company, journalist_folder_file_id=ancestors[0]).first()
 
-@filemanager_bp.route('/remove/<string:file_id>', methods=['POST'])
-@login_required
-@tos_required
-@ok
+@filemanager_bp.route('/remove/<string:file_id>', methods=['OK'])
+@check_right(UserIsActive)
 def remove(json, file_id):
     file = File.get(file_id)
     ancestors = File.ancestors(file.parent_id)
@@ -180,8 +166,7 @@ def uploader(company_id=None):
 
 
 @filemanager_bp.route('/send/<string:parent_id>/', methods=['POST'])
-@login_required
-@tos_required
+@check_right(UserIsActive)
 def send(parent_id):
     parent = File.get(parent_id)
     root = parent.root_folder_id

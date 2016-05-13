@@ -16,14 +16,12 @@ from ..models.translate import TranslateTemplate
 
 
 
-@tools_bp.route('/save_translate/', methods=['POST'])
-@ok
+@tools_bp.route('/save_translate/', methods=['OK'])
 def save_translate(json):
     return TranslateTemplate.getTranslate(request.json['template'], request.json['phrase'], request.json['url'], request.json['allow_html'])
 
 
-@tools_bp.route('/update_last_accessed/', methods=['POST'])
-@ok
+@tools_bp.route('/update_last_accessed/', methods=['OK'])
 def update_last_accessed(json):
     return TranslateTemplate.update_last_accessed(json['template'], json['phrase'])
 
@@ -32,8 +30,6 @@ def SSO(local_cookie):
     return render_template('tools/sso.html', local_cookie=local_cookie, profi_cookie=request.cookies.get('beaker.session.id'))
 
 
-
-@tools_bp.route('/change_allowed_html/', methods=['POST'])
-@ok
+@tools_bp.route('/change_allowed_html/', methods=['OK'])
 def change_allowed_html(json):
     return TranslateTemplate.change_allowed_html(json['template'], json['phrase'], json['allow_html'])

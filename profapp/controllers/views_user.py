@@ -27,7 +27,6 @@ def profile(user_id):
 
 @user_bp.route('/avatar_update')
 @tos_required
-@ok
 def avatar_update(json):
     image = json.get('update_image')
     user = json.get('user')
@@ -36,7 +35,6 @@ def avatar_update(json):
 
 # TODO (AA to AA): Here admin must have the possibility to change user profile
 @user_bp.route('/edit-profile/<user_id>/', methods=['GET'])
-@login_required
 @check_right(UserEditProfieRight, ['user_id'])
 def edit_profile(user_id):
     user_query = db(User, id=user_id)
@@ -44,10 +42,8 @@ def edit_profile(user_id):
     return render_template('general/user_edit_profile.html', user=user)
 
 
-@user_bp.route('/edit-profile/<user_id>/', methods=['POST'])
-@login_required
+@user_bp.route('/edit-profile/<user_id>/', methods=['OK'])
 @check_right(UserEditProfieRight, ['user_id'])
-@ok
 def edit_profile_load(json, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     if action == 'load':
@@ -72,8 +68,7 @@ def edit_profile_load(json, user_id):
             ret['user']['avatar'] = g.user.get_avatar_client_side_dict()
             return ret
 
-@user_bp.route('/change_lang/', methods=['POST'])
-@ok
+@user_bp.route('/change_lang/', methods=['OK'])
 def change_language(json):
     if g.user:
         g.user.lang = json.get('language')

@@ -31,8 +31,7 @@ def portals_list():
     return render_template('general/portals_list.html')
 
 
-@general_bp.route('portals_list/', methods=['POST'])
-@ok
+@general_bp.route('portals_list/', methods=['OK'])
 def portals_list_load(json):
     ret, page, page2 = Search().search(
         {'class': Portal,

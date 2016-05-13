@@ -123,15 +123,13 @@ def details(article_portal_division_id):
                            )
 
 
-@front_bp.route('_a/add_delete_favorite/<string:article_portal_division_id>/', methods=['POST'])
-@ok
+@front_bp.route('_a/add_delete_favorite/<string:article_portal_division_id>/', methods=['OK'])
 def add_delete_favorite(json, article_portal_division_id):
 
     ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, json['on'])
     return {'on': False if json['on'] else True}
 
-@front_bp.route('_a/add_delete_liked/<string:article_portal_division_id>/', methods=['POST'])
-@ok
+@front_bp.route('_a/add_delete_liked/<string:article_portal_division_id>/', methods=['OK'])
 def add_delete_liked(json, article_portal_division_id):
     article = ArticlePortalDivision.get(article_portal_division_id)
     ReaderArticlePortalDivision.add_delete_liked_user_article(article_portal_division_id, json['on'])
@@ -263,8 +261,7 @@ def subportal_contacts(member_company_id, member_company_name):
                            )
 
 
-@front_bp.route('_c/<string:member_company_id>/send_message/', methods=['POST'])
-@ok
+@front_bp.route('_c/<string:member_company_id>/send_message/', methods=['OK'])
 def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
     send_email(send_to.profireader_email, 'New message',
