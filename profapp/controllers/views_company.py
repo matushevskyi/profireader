@@ -96,14 +96,6 @@ def materials_load(json, company_id):
 
 # file_author_user_id_fkey	FOREIGN KEY (author_user_id) REFERENCES "user"(id)
 
-@company_bp.route('/get_tags/<string:portal_division_id>', methods=['POST'])
-@login_required
-@ok
-def get_tags(json, portal_division_id):
-    available_tags = g.db.query(PortalDivision).get(portal_division_id).portal_division_tags
-    available_tag_names = list(map(lambda x: getattr(x, 'name'), available_tags))
-    return {'availableTags': available_tag_names}
-
 
 @company_bp.route('/update_material_status/<string:company_id>/<string:article_id>',
                   methods=['POST'])

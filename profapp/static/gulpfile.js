@@ -64,6 +64,11 @@ gulp.task('install_angular_ui_tinymce', function () {
         .pipe(gulp.dest(dst + 'angular-ui-tinymce/'));
 });
 
+gulp.task('install_angular_ui_select', function () {
+    return gulp.src(src + 'angular-ui-select/dist/select.min.*')
+        .pipe(gulp.dest(dst + 'angular-ui-select/'));
+});
+
 
 gulp.task('install_tinymce', function () {
     return gulp.src(src + 'tinymce-dist/tinymce.jquery.min.js')
@@ -157,6 +162,7 @@ gulp.task('install_moment', function () {
 gulp.task('default', taskListing);
 
 gulp.task('all', ['install_fileuploader', 'install_angular', 'install_angular_translate', 'install_angular_cookies',
+    'install_angular_ui_select',
 'install_angular_ui_tinymce', 'install_tinymce', 'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
 'install_slider','install_bootstrap', 'install_angular_crop', 'install_eonasdan-bootstrap-datetimepicker', 'install_moment']);
 
