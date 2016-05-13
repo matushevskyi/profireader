@@ -42,7 +42,7 @@ def article_show_form(material_id=None, publication_id=None, company_id=None):
 def load_form_create(json, company_id=None, material_id=None, publication_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
-    def portal_division_dict(article, tags=None):
+    def portal_division_dict(article):
         if (not hasattr(article, 'portal_division_id')) or (article.portal_division_id is None):
             return {'positioned_articles': []}
         else:
@@ -50,29 +50,27 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
             return {'positioned_articles':
                         [pda.get_client_side_dict(fields='id|position|title') for pda in
                          db(ArticlePortalDivision).filter(filter).
-                             order_by(expression.desc(ArticlePortalDivision.position)).all()],
-                    'availableTags': tags
-                    }
+                             order_by(expression.desc(ArticlePortalDivision.position)).all()]}
 
-    available_tag_names = None
+    # available_tag_names = None
 
     if material_id:  # companys version. always updating existing
         articleVersion = ArticleCompany.get(material_id)
     elif publication_id:  # updating portal version
         articleVersion = ArticlePortalDivision.get(publication_id)
         portal_division_id = articleVersion.portal_division_id
-        article_tag_names = articleVersion.tags
-        available_tags = PortalDivision.get(portal_division_id).portal_division_tags
-        available_tag_names = list(map(lambda x: getattr(x, 'name', ''), available_tags))
+        # article_tag_names = articleVersion.tags
+        # available_tags = PortalDivision.get(portal_division_id).portal_division_tags
+        # available_tag_names = list(map(lambda x: getattr(x, 'name', ''), available_tags))
     else:
         articleVersion = ArticleCompany(company_id=company_id, editor=g.user, article=Article(author_user_id=g.user.id))
     if action == 'load':
         article_dict = articleVersion.get_client_side_dict(more_fields='long|company')
         article_dict['image'] = articleVersion.get_image_client_side_dict()
-        if publication_id:
-            article_dict = dict(list(article_dict.items()) + [('tags', article_tag_names)])
+        # if publication_id:
+        #     article_dict = dict(list(article_dict.items()) + [('tags', article_tag_names)])
         return {'article': article_dict,
-                'portal_division': portal_division_dict(articleVersion, available_tag_names)}
+                'portal_division': portal_division_dict(articleVersion)}
     else:
         parameters = g.filter_json(json, 'article.title|subtitle|short|long|keywords')
         articleVersion.attr(parameters['article'])
