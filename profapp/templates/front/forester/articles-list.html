@@ -80,7 +80,7 @@
     </div>
     {% if article_count in wide_banners and portal.advs['wide_banner_' + wide_banners[article_count]] %}
         <div class="block-item list-elements">
-            {{ portal.advs['wide_banner_' + wide_banners[article_count]]|safe }}
+            <a href="#" class="right-banner wide_banners">{{ portal.advs['wide_banner_' + wide_banners[article_count]]|safe }}</a>
         </div>
     {% endif %}
 {% else %}
