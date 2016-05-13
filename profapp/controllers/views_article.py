@@ -194,7 +194,8 @@ def submit_publish(json, article_action):
 
         publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
-        publication.event_tm = PRBase.parse_timestamp(json['publication'].get('event_tm'))
+        publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))
+        publication.event_end_tm = PRBase.parse_timestamp(json['publication'].get('event_end_tm'))
         if 'also_publish' in json and json['also_publish']:
             publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
         else:

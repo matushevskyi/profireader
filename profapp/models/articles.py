@@ -40,7 +40,8 @@ class ArticlePortalDivision(Base, PRBase):
     keywords = Column(TABLE_TYPES['keywords'], nullable=False)
     md_tm = Column(TABLE_TYPES['timestamp'])
     publishing_tm = Column(TABLE_TYPES['timestamp'])
-    event_tm = Column(TABLE_TYPES['timestamp'])
+    event_begin_tm = Column(TABLE_TYPES['timestamp'])
+    event_end_tm = Column(TABLE_TYPES['timestamp'])
     position = Column(TABLE_TYPES['position'])
     read_count = Column(TABLE_TYPES['int'], default=0)
 
@@ -211,7 +212,8 @@ class ArticlePortalDivision(Base, PRBase):
 
     def get_client_side_dict(self, fields='id|image_file_id|read_count|title|subtitle|short|long_stripped|'
                                           'portal_division_id|image_file_id|position|keywords|cr_tm|md_tm|status|'
-                                          'visibility|publishing_tm|event_tm,company.id|name, division.id|'
+                                          'visibility|publishing_tm|event_begin_tm,event_end_tm,company.id|name, '
+                                          'division.id|'
                                           'name|portal_id, portal.id|name|host',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
@@ -329,18 +331,20 @@ class ArticlePortalDivision(Base, PRBase):
         else:
             portalDivision = PortalDivision.get(self.portal_division_id)
             if portalDivision.portal_division_type_id == 'events':
-                if not self.event_tm:
-                    ret['errors']['event_tm'] = 'Please select event date'
-                elif self.event_tm and datetime.now() > self.event_tm:
-                    ret['warnings']['event_tm'] = 'Event time in past'
+                if not self.event_begin_tm:
+                    ret['errors']['event_begin_tm'] = 'Please select event start date'
+                elif self.event_begin_tm and datetime.now() > self.event_begin_tm:
+                    ret['warnings']['event_begin_tm'] = 'Event start time in past'
+
+                if not self.event_end_tm:
+                    ret['errors']['event_end_tm'] = 'Please select event end date'
+                elif self.event_end_tm and self.event_begin_tm and self.event_begin_tm > self.event_end_tm:
+                    ret['warnings']['event_end_tm'] = 'Event end time before event begin time'
 
         if ret['errors']:
             ret['errors']['_'] = 'You have some error'
         else:
             ret['notices']['_'] = 'Ok, you can click submit'
-
-        # if not self.event_tm:
-        #     ret['errors']['event_tm'] = 'Please select event date'
 
         return ret
 

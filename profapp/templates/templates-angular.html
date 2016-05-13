@@ -46,8 +46,10 @@
         $scope.amidLoad = function (resp, defaultcallback) {
             if (resp.publication.publishing_tm)
                 resp.publication.publishing_tm = new Date(resp.publication.publishing_tm);
-            if (resp.publication.event_tm)
-                resp.publication.event_tm = new Date(resp.publication.event_tm);
+            if (resp.publication.event_begin_tm)
+                resp.publication.event_begin_tm = new Date(resp.publication.event_begin_tm);
+            if (resp.publication.event_end_tm)
+                resp.publication.event_end_tm = new Date(resp.publication.event_end_tm);
             return resp;
         };
 
@@ -92,8 +94,14 @@
              {{ _('Select publication date') }}<span af-validation-answer="data_validation:publishing_tm"></span><br/>
                 <input pr-date-time-picker class="form-control" ng-model="data.publication.publishing_tm"/>
                 <div ng-if="is_selection_division_event()">
-                    {{ _('Select event date') }}<span af-validation-answer="data_validation:event_tm"></span><br/>
-                    <input pr-date-time-picker class="form-control" ng-model="data.publication.event_tm"/>
+                    {{ _('Select event begin date') }}<span
+                        af-validation-answer="data_validation:event_begin_tm"></span><br/>
+                    <input pr-date-time-picker class="form-control" ng-model="data.publication.event_begin_tm"/>
+                </div>
+                <div ng-if="is_selection_division_event()">
+                    {{ _('Select event end date') }}<span
+                        af-validation-answer="data_validation:event_end_tm"></span><br/>
+                    <input pr-date-time-picker class="form-control" ng-model="data.publication.event_end_tm"/>
                 </div>
                 <div ng-if="object_name === 'material'">
                     <hr/>

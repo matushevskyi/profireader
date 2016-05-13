@@ -94,6 +94,10 @@
     text-overflow: ellipsis;
 }
 
+.w100 {
+    width: 100%;
+}
+
 .notitledialog .ui-dialog-titlebar {
     display: none
 }
@@ -368,6 +372,7 @@ div.pr-cell {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    vertical-align: top;
 
 
     border-style: none;

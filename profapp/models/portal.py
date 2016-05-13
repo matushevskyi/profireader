@@ -186,28 +186,29 @@ class Portal(Base, PRBase):
             ret = values
         return ret
 
-    def validate_tags_for_divisions(self, new_portal_tags):
+    def validate_tags(self, new_portal_tags):
         ret = {'errors': {}, 'warnings': {}, 'notices': {}}
         unique = {}
-        for tag_id, tag_name in new_portal_tags.items():
-            if not re.match(r'[^\s]{3}', tag_name):
+        for tag_id, tag in new_portal_tags.items():
+            if not re.match(r'[^\s]{3}', tag['tag']):
                 if not 'tags' in ret['errors']:
                     ret['errors']['tags'] = {}
                 ret['errors']['tags'][tag_id] = 'Pls enter correct tag name'
-            if tag_name in unique:
+            if tag['tag'] in unique:
                 if not 'tags' in ret['errors']:
                     ret['errors']['tags'] = {}
                 ret['errors']['tags'][tag_id] = 'Tag names should be unique'
-                ret['errors']['tags'][unique[tag_name]] = 'Tag names should be unique'
-            unique[tag_name] = tag_id
+                ret['errors']['tags'][unique[tag['tag']]] = 'Tag names should be unique'
+            unique[tag['tag']] = tag_id
         return ret
 
 
-    def set_tags_for_divisions(self, new_portal_tags, new_division_tags_matrix):
+    def set_tags(self, new_portal_tags, new_division_tags_matrix):
         tags_to_remove = []
         for existing_tag_portal in self.tags:
             if existing_tag_portal.id in new_portal_tags:
-                existing_tag_portal.tag = new_portal_tags[existing_tag_portal.id]
+                existing_tag_portal.tag = new_portal_tags[existing_tag_portal.id]['tag']
+                existing_tag_portal.description = new_portal_tags[existing_tag_portal.id]['description']
 
                 for djson in new_division_tags_matrix:
                     division = next(d for d in self.divisions if d.id == djson['id'])
@@ -227,8 +228,8 @@ class Portal(Base, PRBase):
         for remove_tag in tags_to_remove:
             self.tags.remove(remove_tag)
 
-        for add_tag_id, add_tag_name in new_portal_tags.items():
-            new_tag = TagPortal(portal_id=self.id, tag=add_tag_name)
+        for add_tag_id, add_tag in new_portal_tags.items():
+            new_tag = TagPortal(portal_id=self.id, tag=add_tag['tag'], description=add_tag['description'])
             self.tags.append(new_tag)
             for djson in new_division_tags_matrix:
                 division = next(d for d in self.divisions if d.id == djson['id'])
@@ -310,7 +311,9 @@ class Portal(Base, PRBase):
         return ret
 
     def get_client_side_dict(self,
-                             fields='id|name|host, divisions.*, layout.*, logo_file_id, favicon_file_id, company_owner_id, url_facebook',
+                             fields='id|name|host|tags, divisions.*, divisions.tags.*, layout.*, logo_file_id, '
+                                    'favicon_file_id, '
+                                    'company_owner_id, url_facebook',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
@@ -534,7 +537,7 @@ class PortalDivision(Base, PRBase):
             self.settings = db(PortalDivisionSettingsCompanySubportal).filter_by(
                 portal_division_id=self.id).one()
 
-    def get_client_side_dict(self, fields='id|name|portal_division_type_id',
+    def get_client_side_dict(self, fields='id|name|portal_division_type_id|tags',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
