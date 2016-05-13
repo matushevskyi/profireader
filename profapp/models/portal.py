@@ -42,7 +42,7 @@ class Portal(Base, PRBase):
 
     layout = relationship('PortalLayout')
 
-    advs = relationship('PortalAdv', uselist=True)
+    advs = relationship('PortalAdvertisment', uselist=True)
 
     tags = relationship(TagPortal, uselist=True, cascade="all, delete-orphan")
 
@@ -329,6 +329,27 @@ class Portal(Base, PRBase):
                 portals.append(portal.get_client_side_dict())
         return portals
 
+class PortalAdvertisment(Base, PRBase):
+    __tablename__ = 'portal_adv'
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
+    place = Column(TABLE_TYPES['short_text'], nullable=False)
+    html = Column(TABLE_TYPES['text'], nullable=False)
+    portal = relationship(Portal, uselist=False)
+
+    def __init__(self, portal_id=None, place=None, html=None):
+        self.portal_id=portal_id
+        self.place=place
+        self.html=html
+
+    def get_portal_advertisments(self, portal_id=None, filters=None):
+        return db(PortalAdvertisment, portal_id=portal_id)
+
+
+    def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
+        return self.to_dict(fields, more_fields)
+
+
 
 class MemberCompanyPortal(Base, PRBase):
     __tablename__ = 'member_company_portal'
@@ -455,20 +476,6 @@ class PortalLayout(Base, PRBase):
     def get_client_side_dict(self, fields='id|name',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
-
-
-class PortalAdv(Base, PRBase):
-    __tablename__ = 'portal_adv'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
-    portal_id = Column(TABLE_TYPES['name'], ForeignKey('portal.id'), nullable=False)
-    place = Column(TABLE_TYPES['name'], nullable=False)
-    html = Column(TABLE_TYPES['text'], nullable=False)
-
-    portal = relationship(Portal, uselist=False)
-
-    def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
-        return self.to_dict(fields, more_fields)
-
 
 class MemberCompanyPortalPlan(Base, PRBase):
     __tablename__ = 'member_company_portal_plan'

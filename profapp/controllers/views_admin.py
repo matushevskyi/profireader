@@ -21,11 +21,6 @@ def translations():
     return render_template('admin/translations.html',
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
 
-class test:
-    a = 1
-
-    def __init__(self, n):
-        self.a = n
 
 @admin_bp.route('/set_session_a', methods=['GET'])
 @ok
