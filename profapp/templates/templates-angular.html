@@ -20,10 +20,17 @@
     <iframe src="{{ src }}"
             style="border: none; margin: 0px; padding: 0px; width: 100%; height: 100%"></iframe>
 </script>
+
+<style>
+    .selected_tags span:first-child>span.ui-select-match-item {
+        background-color: #9f191f;
+    }
+</style>
 {% endraw %}
 
 <script>
-    module.controller('submit_publish_dialog', function ($scope, $ok, $uibModalInstance, action, material_or_publication_id, company_id, portal_id) {
+    module.controller('submit_publish_dialog', function ($scope, $ok, $uibModalInstance, action,
+                                                         material_or_publication_id, company_id, portal_id) {
 
         $scope.$$translate = {{ translates('submit_publish_dialog')|safe }};
         $scope.url_submit_to_portal = {{ raw_url_for('article.submit_publish')|safe }};
@@ -32,11 +39,24 @@
         $scope.object_name = (action === 'SUBMIT') ? 'material' : 'publication';
         $scope.action = action;
 
+        $scope.selected_tags = [];
+
+        $scope.get_tags_for_selected_division = function (search_text) {
+            var division = $scope.get_selected_division();
+            return _.filter($scope.data.portal.tags, function (tag) {
+                var ret = $scope.tag_is_allowed_for_division(division, tag) &&
+                        ( (tag['tag'].toString().toLowerCase().indexOf(search_text) !== -1) ||
+                        (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
+                return ret;
+            })
+        };
+
         $scope.data = {
             action: action,
             portal: {id: portal_id},
             company: {id: company_id}
         };
+
         $scope.data[(action === 'SUBMIT') ? 'material' : 'publication'] = {id: material_or_publication_id};
 
         $scope.afterSave = function (resp, defcallback) {
@@ -55,12 +75,29 @@
 
         $scope.action_cancel = $uibModalInstance.dismiss;
 
+        $scope.get_selected_division = function () {
+            return (!$scope.data || !$scope.data.publication || !$scope.data.publication.portal_division_id || !$scope
+                    .data.portal.divisions[$scope.data.publication.portal_division_id]) ? null : $scope.data.portal.divisions[$scope.data.publication.portal_division_id];
+
+        }
+
         $scope.is_selection_division_event = function () {
-            console.log($scope.data.portal.divisions, $scope.data.publication.portal_division_id, $scope.data.portal
-                    .divisions[$scope.data.publication.portal_division_id]);
-            if (!$scope.data || !$scope.data.publication || !$scope.data.publication.portal_division_id || !$scope.data.portal.divisions[$scope.data.publication.portal_division_id]) return false;
-            return ($scope.data.portal.divisions[$scope.data.publication.portal_division_id]['portal_division_type_id'] === 'events');
+            var division = $scope.get_selected_division();
+            return (division && division['portal_division_type_id'] === 'events');
         };
+
+        $scope.tag_is_allowed_for_division = function (division, tag) {
+            var ret = division && division['tags'] && _.find(division['tags'], function (division_tag) {
+                        return division_tag.id === tag.id
+                    });
+            return ret;
+        };
+
+        $scope.$watch("data['publication']['portal_division_id']", function (newid, oldid) {
+            $scope.selected_tags = (newid ? _.filter($scope.selected_tags, function (tag) {
+                return $scope.tag_is_allowed_for_division($scope.get_selected_division(), tag);
+            }) : []);
+        });
 
         {% endraw %}
 
@@ -73,7 +110,7 @@
          af-after-save="afterSave"
          af-amid-load="amidLoad"
          af-watch="data.publication" ng-cloak>
-    <div class="modal-header">
+        <div class="modal-header">
             <h3 class="modal-title">{{ _(action + ' ' + object_name + ' at portal') }}</h3>
         </div>
         <div class="modal-body">
@@ -91,7 +128,20 @@
                                 type="radio"> {{ division.name }}
                     </label>
                 </div>
-             {{ _('Select publication date') }}<span af-validation-answer="data_validation:publishing_tm"></span><br/>
+                <hr/>
+                <div class="selected_tags">
+                    Tags:
+                    <ui-select ng-model="$parent.$parent.selected_tags" class="form-control" sortable="true" multiple>
+                        <ui-select-match placeholder="Select tag...">{{$item.tag}}</ui-select-match>
+                        <ui-select-choices repeat="tag in get_tags_for_selected_division($select.search)">
+                            <div ng-bind-html="(tag.tag | highlight: $select.search)"></div>
+                            <small ng-bind-html="tag.description | highlight: $select.search"></small>
+                        </ui-select-choices>
+                    </ui-select>
+                </div>
+                <hr/>
+                {{ _('Select publication date') }}<span
+                    af-validation-answer="data_validation:publishing_tm"></span><br/>
                 <input pr-date-time-picker class="form-control" ng-model="data.publication.publishing_tm"/>
                 <div ng-if="is_selection_division_event()">
                     {{ _('Select event begin date') }}<span
