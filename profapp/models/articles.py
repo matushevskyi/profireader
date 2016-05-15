@@ -1,23 +1,19 @@
 from sqlalchemy import Column, ForeignKey, text
 from sqlalchemy.orm import relationship, aliased, backref
-from sqlalchemy.sql import expression
 from ..constants.TABLE_TYPES import TABLE_TYPES
-# from db_init import db_session
 from ..models.company import Company, UserCompany
-from ..models.portal import PortalDivision, Portal, PortalDivisionType, MemberCompanyPortal
+from ..models.portal import PortalDivision, Portal
 from ..models.users import User
 from ..models.files import File
-from .pr_base import PRBase, Base, MLStripper, Search, Grid
-# from db_init import Base
+from ..models.tag import TagPortal, TagPortalDivision, TagPortalDivisionArticle
+from .pr_base import PRBase, Base, MLStripper, Grid
 from utils.db_utils import db
 from flask import g, session
 from sqlalchemy.sql import or_, and_
 import re
 from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
-from datetime import datetime, timezone
-import time
-from flask import redirect, url_for
+from datetime import datetime
 from .files import ImageCroped
 from ..utils import fileUrl
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
@@ -45,7 +41,32 @@ class ArticlePortalDivision(Base, PRBase):
     position = Column(TABLE_TYPES['position'])
     read_count = Column(TABLE_TYPES['int'], default=0)
 
-    tags = []
+    # rticle_portal_division.id = tag_portal_division_article.article_portal_division_id
+    # AND
+    # tag_portal_division_article.tag_portal_division_id = tag_portal_division.id
+    # AND
+    # tag_portal_division.tag_portal_id = tag_portal.id
+
+    tags = relationship(TagPortal,
+                        secondary='tag_portal_division_article',
+                        primaryjoin=id == TagPortalDivisionArticle.article_portal_division_id,
+                        secondaryjoin=and_(
+                            TagPortalDivisionArticle.tag_portal_division_id == TagPortalDivision.id,
+                            TagPortalDivision.tag_portal_id == TagPortal.id,)
+
+                        # primaryjoin=and_(
+                        #    id == TagPortalDivisionArticle.article_portal_division_id
+                        #    ,TagPortalDivisionArticle.tag_portal_division_id == TagPortalDivision.id
+                        #    # ,TagPortalDivisionArticle.tag_portal_division_portal_division_id == TagPortalDivision.portal_division_id
+                        #     # ,
+                        #     # TagPortalDivisionArticle.tag_portal_division_id == TagPortalDivision.id,
+                        #     # TagPortalDivisionArticle.tag_portal_division_portal_division_id == TagPortalDivision.portal_division_id
+                        # )
+                        # primaryjoin="tag_portal_division_article.article_portal_division.id == article_portal_division.id",
+                        # secondaryjoin="C.id == B.c_id",
+                        # ,viewonly=True
+                        ,uselist=True
+    )
 
     status = Column(TABLE_TYPES['status'], default='SUBMITTED')
     STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED'}
@@ -68,7 +89,6 @@ class ArticlePortalDivision(Base, PRBase):
                      'long': {'relevance': lambda field='long': RELEVANCE.long},
                      'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
 
-
     def is_active(self):
         return True
 
@@ -90,7 +110,6 @@ class ArticlePortalDivision(Base, PRBase):
                      user_id=g.user.id if g.user else None).one()
         article.favorite = True if liked else False
         self.like_count += 1
-
 
     def search_filter_default(self, division_id, company_id=None):
         """ :param division_id: string with id from table portal_division,
@@ -210,7 +229,7 @@ class ArticlePortalDivision(Base, PRBase):
                    }
         return actions[self.visibility]()
 
-    def get_client_side_dict(self, fields='id|image_file_id|read_count|title|subtitle|short|long_stripped|'
+    def get_client_side_dict(self, fields='id|image_file_id|read_count|title|subtitle|short|long_stripped|tags|'
                                           'portal_division_id|image_file_id|position|keywords|cr_tm|md_tm|status|'
                                           'visibility|publishing_tm|event_begin_tm,event_end_tm,company.id|name, '
                                           'division.id|'

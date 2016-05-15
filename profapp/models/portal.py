@@ -12,7 +12,7 @@ import simplejson
 from .files import File, ImageCroped
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from ..utils import fileUrl
-from ..models.tag import TagPortal
+from ..models.tag import TagPortal, TagPortalDivision
 from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
@@ -496,7 +496,8 @@ class PortalDivision(Base, PRBase):
     portal = relationship(Portal, uselist=False)
     portal_division_type = relationship('PortalDivisionType', uselist=False)
 
-    tags = relationship(TagPortal, secondary='tag_portal_division', uselist=True)
+    tags = relationship(TagPortal, secondary='tag_portal_division', uselist=True,
+                        foreign_keys=[TagPortalDivision.tag_portal_id])
 
     # secondary = 'portal_division',
     # primaryjoin = "Portal.id == PortalDivision.portal_id",
