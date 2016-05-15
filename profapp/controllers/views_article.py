@@ -145,7 +145,7 @@ def material_details_load(json, material_id):
         'company': company.get_client_side_dict(),
         'portals': {
             'grid_data': [get_portal_dict_for_material(portal, company, material) for portal in
-                          PublishUnpublishInPortal().get_portals_where_company_is_member(company)],
+                          PublishUnpublishInPortal.get_portals_where_company_is_member(company)],
             'grid_filters': {
                 'publication.status': Grid.filter_for_status(ArticlePortalDivision.STATUSES)
             }

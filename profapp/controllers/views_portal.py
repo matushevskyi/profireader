@@ -116,7 +116,7 @@ def apply_company(json, company_id):
     MemberCompanyPortal.apply_company_to_portal(company_id=company_id,
                                                 portal_id=json['portal_id'])
     return {'portals_partners': [portal.get_client_side_dict(fields='name, company_owner_id,id')
-                                 for portal in Company.get(company_id).get_portals_where_company_is_member()],
+                                 for portal in PublishUnpublishInPortal.get_portals_where_company_is_member(Company.get(company_id))],
             'company_id': company_id}
 
 
