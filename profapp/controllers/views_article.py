@@ -9,6 +9,7 @@ from config import Config
 from .views_file import crop_image
 from ..models.files import ImageCroped
 from ..models.company import Company, UserCompany
+from ..models.tag import Tag, TagPublication
 
 from utils.db_utils import db
 from sqlalchemy.orm.exc import NoResultFound
@@ -119,13 +120,15 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
             'id,position,title,status,visibility,portal_division_id,publishing_tm')
         ret['publication']['division'] = ret['divisions'][ret['publication']['portal_division_id']]
         ret['publication']['counts'] = '0/0/0/0'
-        ret['actions'] = PublishUnpublishInPortal(publication=publication_in_portal, division=publication_in_portal.division, company=company).actions()
+        ret['actions'] = PublishUnpublishInPortal(publication=publication_in_portal,
+                                                  division=publication_in_portal.division, company=company).actions()
         ret['publication']['actions'] = ret['actions']
 
     else:
         ret['publication'] = None
         ret['actions'] = {EditOrSubmitMaterialInPortal.ACTIONS['SUBMIT']:
-            EditOrSubmitMaterialInPortal(material=material, portal=portal).actions()[EditOrSubmitMaterialInPortal.ACTIONS['SUBMIT']]}
+                              EditOrSubmitMaterialInPortal(material=material, portal=portal).actions()[
+                                  EditOrSubmitMaterialInPortal.ACTIONS['SUBMIT']]}
 
     return ret
 
@@ -143,7 +146,7 @@ def material_details_load(json, material_id):
         'company': company.get_client_side_dict(),
         'portals': {
             'grid_data': [get_portal_dict_for_material(portal, company, material) for portal in
-                          PublishUnpublishInPortal(company=company).get_portals_where_company_is_member()],
+                          PublishUnpublishInPortal.get_portals_where_company_is_member(company)],
             'grid_filters': {
                 'publication.status': Grid.filter_for_status(ArticlePortalDivision.STATUSES)
             }
@@ -159,7 +162,8 @@ def submit_publish(json, article_action):
     company = Company.get(json['company']['id'])
     if article_action == 'SUBMIT':
         material = ArticleCompany.get(json['material']['id'])
-        check = EditOrSubmitMaterialInPortal(material=material, portal=json['portal']['id']).action_is_allowed(article_action)
+        check = EditOrSubmitMaterialInPortal(material=material, portal=json['portal']['id']).action_is_allowed(
+            article_action)
         if check != True:
             return check
         publication = ArticlePortalDivision(title=material.title, subtitle=material.subtitle,
@@ -183,7 +187,8 @@ def submit_publish(json, article_action):
             'company': company.get_client_side_dict(),
             'portal': portal.get_client_side_dict()
         }
-        ret['portal']['divisions'] = PRBase.get_ordered_dict(PublishUnpublishInPortal().get_active_division(portal.divisions))
+        ret['portal']['divisions'] = PRBase.get_ordered_dict(
+            PublishUnpublishInPortal().get_active_division(portal.divisions))
 
         return PRBase.merge_dicts(ret, more_data_to_ret)
     else:
@@ -192,6 +197,13 @@ def submit_publish(json, article_action):
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
         publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))
         publication.event_end_tm = PRBase.parse_timestamp(json['publication'].get('event_end_tm'))
+        publication.tags = []
+        # tag_position = 0
+        for tag in json['publication']['tags']:
+            publication.tags.append(Tag.get(tag['id']))
+
+        print(publication.tags)
+
         if 'also_publish' in json and json['also_publish']:
             publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
         else:
@@ -212,6 +224,13 @@ def submit_publish(json, article_action):
                 publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,
                                                                                      publication)
             publication.save()
+            tag_position = 0
+            for tag in publication.tags:
+                tag_position += 1
+                tag_pub = db(TagPublication).filter(and_(TagPublication.tag_id == tag.id,
+                                               TagPublication.article_portal_division_id == publication.id)).one()
+                tag_pub.position = tag_position
+                tag_pub.save()
             return get_portal_dict_for_material(publication.portal, company, publication=publication)
 
 
