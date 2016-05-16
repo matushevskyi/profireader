@@ -1,13 +1,7 @@
 from .pr_base import PRBase, Base
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from sqlalchemy import Column, ForeignKey, text
+from sqlalchemy import Column
 from utils.db_utils import db
-import datetime
-import re
-from flask import g, request, current_app
-from sqlalchemy.sql import expression
-from .portal import Portal
-from sqlalchemy.orm import relationship
 
 
 class Ips(Base, PRBase):

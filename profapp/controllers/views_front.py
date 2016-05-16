@@ -14,7 +14,8 @@ from config import Config
 from sqlalchemy import and_
 from .request_wrapers import ok
 from ..utils.pr_email import send_email
-import json
+from .request_wrapers import check_right
+from ..models.rights import AllowAll
 
 
 def get_division_for_subportal(portal_id, member_company_id):
@@ -32,6 +33,7 @@ def get_division_for_subportal(portal_id, member_company_id):
         return g.db().query(PortalDivision).filter_by(portal_id=portal_id,
                                                       portal_division_type_id='index').one()
 @front_bp.route('subscribe_to_portal/')
+@check_right(AllowAll)
 def subscribe_to_portal():
     portal = g.db().query(Portal).filter_by(host=request.host).first()
     if g.user:
@@ -80,6 +82,7 @@ def portal_and_settings(portal):
 # TODO OZ by OZ: portal filter, move portal filtering to decorator
 
 @front_bp.route('details/<string:article_portal_division_id>')
+@check_right(AllowAll)
 def details(article_portal_division_id):
     search_text, portal, _ = get_params()
     if search_text:
@@ -123,15 +126,15 @@ def details(article_portal_division_id):
                            )
 
 
-@front_bp.route('_a/add_delete_favorite/<string:article_portal_division_id>/', methods=['POST'])
-@ok
+@front_bp.route('_a/add_delete_favorite/<string:article_portal_division_id>/', methods=['OK'])
+@check_right(AllowAll)
 def add_delete_favorite(json, article_portal_division_id):
 
     ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, json['on'])
     return {'on': False if json['on'] else True}
 
-@front_bp.route('_a/add_delete_liked/<string:article_portal_division_id>/', methods=['POST'])
-@ok
+@front_bp.route('_a/add_delete_liked/<string:article_portal_division_id>/', methods=['OK'])
+@check_right(AllowAll)
 def add_delete_liked(json, article_portal_division_id):
     article = ArticlePortalDivision.get(article_portal_division_id)
     ReaderArticlePortalDivision.add_delete_liked_user_article(article_portal_division_id, json['on'])
@@ -141,6 +144,7 @@ def add_delete_liked(json, article_portal_division_id):
 
 @front_bp.route('<string:division_name>/_c/<string:member_company_id>/<string:member_company_name>/')
 @front_bp.route('<string:division_name>/_c/<string:member_company_id>/<string:member_company_name>/<int:page>/')
+@check_right(AllowAll)
 def subportal_division(division_name, member_company_id, member_company_name, page=1):
     member_company = Company.get(member_company_id)
     search_text, portal, _ = get_params()
@@ -185,6 +189,7 @@ def subportal_division(division_name, member_company_id, member_company_name, pa
 
 
 @front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/')
+@check_right(AllowAll)
 def subportal(member_company_id, member_company_name, page=1):
     search_text, portal, _ = get_params()
     if search_text:
@@ -208,6 +213,7 @@ def subportal(member_company_id, member_company_name, page=1):
 
 
 @front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/address/')
+@check_right(AllowAll)
 def subportal_address(member_company_id, member_company_name):
     search_text, portal, _ = get_params()
 
@@ -230,6 +236,7 @@ def subportal_address(member_company_id, member_company_name):
 
 
 @front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/contacts/')
+@check_right(AllowAll)
 def subportal_contacts(member_company_id, member_company_name):
     search_text, portal, _ = get_params()
 
@@ -263,8 +270,8 @@ def subportal_contacts(member_company_id, member_company_name):
                            )
 
 
-@front_bp.route('_c/<string:member_company_id>/send_message/', methods=['POST'])
-@ok
+@front_bp.route('_c/<string:member_company_id>/send_message/', methods=['OK'])
+@check_right(AllowAll)
 def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
     send_email(send_to.profireader_email, 'New message',
@@ -275,6 +282,7 @@ def send_message(json, member_company_id):
 
 @front_bp.route('/', methods=['GET'])
 @front_bp.route('<int:page>/', methods=['GET'])
+@check_right(AllowAll)
 def index(page=1):
     search_text, portal, _ = get_params()
     if not portal:
@@ -307,10 +315,11 @@ def index(page=1):
 
 @front_bp.route('<string:division_name>/', methods=['GET'])
 @front_bp.route('<string:division_name>/<int:page>/', methods=['GET'])
+@check_right(AllowAll)
 def division(division_name, page=1):
     search_text, portal, _ = get_params()
     division = g.db().query(PortalDivision).filter_by(portal_id=portal.id, name=division_name).one()
-    print(division.portal_division_type_id)
+
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
                                                   division_name=division.name)
     if division.portal_division_type_id == 'catalog' and search_text:

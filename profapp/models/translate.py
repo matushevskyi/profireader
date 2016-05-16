@@ -105,7 +105,7 @@ class TranslateTemplate(Base, PRBase):
 
         if translation:
             if translation.allow_html != allow_html:
-                translation.updates({'allow_html': allow_html})
+                translation.attr({'allow_html': allow_html})
             if current_app.config['DEBUG']:
 
                 # TODO: OZ by OZ change ac without changing md (md changed by trigger)
@@ -114,9 +114,9 @@ class TranslateTemplate(Base, PRBase):
                 i = datetime.datetime.now()
                 if translation.ac_tm:
                     if i.timestamp() - translation.ac_tm.timestamp() > 86400:
-                        translation.updates({'ac_tm': i})
+                        translation.attr({'ac_tm': i})
                 else:
-                    translation.updates({'ac_tm': i})
+                    translation.attr({'ac_tm': i})
             return TranslateTemplate.try_to_guess_lang(translation)
         else:
             return phrase
@@ -125,13 +125,13 @@ class TranslateTemplate(Base, PRBase):
     def update_last_accessed(template, phrase):
         i = datetime.datetime.now()
         obj = db(TranslateTemplate, template=template, name=phrase).first()
-        obj.updates({'ac_tm': i})
+        obj.attr({'ac_tm': i})
         return True
 
     @staticmethod
     def change_allowed_html(template, phrase, allow_html):
         obj = db(TranslateTemplate, template=template, name=phrase).first()
-        obj.updates({'allow_html': allow_html})
+        obj.attr({'allow_html': allow_html})
         return 'True'
 
     @staticmethod

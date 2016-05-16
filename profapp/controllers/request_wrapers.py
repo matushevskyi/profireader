@@ -1,23 +1,14 @@
 from functools import wraps
 from flask import jsonify, request, g, abort, redirect, url_for, flash
 from functools import reduce
-from sqlalchemy.orm import relationship, backref, make_transient, class_mapper
-import datetime
-from time import sleep
-from flask.ext.login import current_user
-from ..models.rights import Right
-from ..constants.STATUS import STATUS_RIGHTS
-from .errors import ImproperRightsDecoratorUse
 from ..controllers import errors
-from ..models.translate import TranslateTemplate
+import time
 from utils.db_utils import db
 
 def ok(func):
     @wraps(func)
     def function_json(*args, **kwargs):
         try:
-        # sleep(0.5)
-
             if 'json' in kwargs:
                 del kwargs['json']
             a = request.json
@@ -33,6 +24,31 @@ def ok(func):
             db.rollback()
             return jsonify({'ok': False, 'error_code': -1, 'result': e.result})
     return function_json
+
+
+def function_profiler(func):
+    from ..models.profiler import Profiler
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        if g.debug:
+            if not func.__dict__['__check_rights__']:
+                print('Please add "check_right" decorator for your func!')
+            start = time.clock()
+            ret = func(*args, **kwargs)
+            end = time.clock()
+            profiler = db(Profiler, name=func.__name__, blueprint_name=func.__dict__['__endpoint__']).first()
+            method = ','.join([method for method in func.__dict__['__method__']]) if func.__dict__['__method__'] else None
+            if profiler:
+                profiler.update_profile(end-start, method)
+            else:
+                Profiler().create_profile(func.__name__, func.__dict__['__endpoint__'], end-start, method)
+            return ret
+        else:
+            if not func.__dict__['__check_rights__']:
+                raise Exception('method not allowed! Please add "check_right" decorator for your func!')
+        return func(*args, **kwargs)
+    return wrapper
 
 
 def replace_brackets(func):
@@ -102,7 +118,9 @@ def check_right(classCheck, params=None, action=None):
         @wraps(func)
         def decorated_view(*args, **kwargs):
             allow = True
-            if isinstance(params, list):
+            if not params:
+                allow = classCheck().is_allowed()
+            else:
                 instance = classCheck()
                 check = True
                 for param in params:
@@ -118,31 +136,12 @@ def check_right(classCheck, params=None, action=None):
                             allow = instance.action_is_allowed(action)
                     else:
                         allow = instance.is_allowed()
-            else:
-                if params in kwargs and kwargs[params]:
-                    instance = classCheck()
-                    setattr(instance, params, kwargs[params])
-                    if action:
-                        allow = instance.action_is_allowed(action)
-                    else:
-                        allow = instance.is_allowed()
-                if not params:
-                    allow = classCheck().is_allowed()
             if allow != True:
                 abort(403)
             return func(*args, **kwargs)
+        decorated_view.__check_rights__ = True
         return decorated_view
     return wrapped
-
-def check_user_status(func):
-    @wraps(func)
-    def decorated_view(*args, **kwargs):
-        allow = g.user.is_active()
-        if allow != True:
-            flash(allow)
-            return redirect(url_for('general.index'))
-        return func(*args, **kwargs)
-    return decorated_view
 
 # def object_to_dict(obj, *args, prefix=''):
 #     ret = {}

@@ -1,6 +1,6 @@
 from .blueprints_declaration import reader_bp
 from flask import render_template, redirect, jsonify, json, request, g, url_for, flash, session
-from .request_wrapers import tos_required, check_right, check_user_status
+from .request_wrapers import tos_required, check_right
 from sqlalchemy import and_
 from ..models.articles import ArticlePortalDivision, ReaderArticlePortalDivision, Search
 from ..models.portal import PortalDivision, UserPortalReader, Portal, ReaderUserPortalPlan, ReaderDivision
@@ -15,7 +15,7 @@ from ..models.rights import UserIsActive
 
 
 @reader_bp.route('/details_reader/<string:article_portal_division_id>')
-@check_user_status
+@check_right(UserIsActive)
 def details_reader(article_portal_division_id):
     article = ArticlePortalDivision.get(article_portal_division_id)
     article.add_recently_read_articles_to_session()
@@ -32,27 +32,27 @@ def details_reader(article_portal_division_id):
                            favorite=favorite
                            )
 
-@reader_bp.route('/list_reader_from_front/<string:portal_id>', methods=['GET'])
-def list_reader_from_front(portal_id):
-    portal = Portal.get(portal_id)
-    if g.user:
-        portals = db(Portal).filter((Portal.id.in_(db(UserPortalReader.portal_id, user_id=g.user.id)))).all()
-        if portal in portals:
-            return redirect(url_for('reader.list_reader'))
-        else:
-            return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
-    else:
-        return redirect(url_for('general.auth_before_subscribe_to_portal', portal_id=portal_id))
+# @reader_bp.route('/list_reader_from_front/<string:portal_id>', methods=['GET'])
+# def list_reader_from_front(portal_id):
+#     portal = Portal.get(portal_id)
+#     if g.user:
+#         portals = db(Portal).filter((Portal.id.in_(db(UserPortalReader.portal_id, user_id=g.user.id)))).all()
+#         if portal in portals:
+#             return redirect(url_for('reader.list_reader'))
+#         else:
+#             return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
+#     else:
+#         return redirect(url_for('general.auth_before_subscribe_to_portal', portal_id=portal_id))
 
 
 @reader_bp.route('/list_reader', methods=['GET'])
-@login_required
+@check_right(UserIsActive)
 def list_reader():
     return render_template('_ruslan/reader/_reader_content.html', favorite=request.args.get('favorite') == 'True')
 
 
-@reader_bp.route('/list_reader', methods=['POST'])
-@ok
+@reader_bp.route('/list_reader', methods=['OK'])
+@check_right(UserIsActive)
 def list_reader_load(json):
     next_page = json.get('next_page') if json.get('next_page') else 1
     search_text = request.args.get('search_text') or ''
@@ -123,15 +123,13 @@ def list_reader_load(json):
 #                            )
 
 
-@reader_bp.route('/add_to_favorite/', methods=['POST'])
+@reader_bp.route('/add_to_favorite/', methods=['OK'])
 @check_right(UserIsActive)
-@ok
 def add_delete_favorite(json):
     return ReaderArticlePortalDivision.add_delete_favorite_user_article(json.get('article')['id'], json.get('article')['is_favorite'])
 
-@reader_bp.route('/add_to_like/', methods=['POST'])
+@reader_bp.route('/add_to_like/', methods=['OK'])
 @check_right(UserIsActive)
-@ok
 def add_delete_like(json):
     ReaderArticlePortalDivision.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
     return {'liked':ReaderArticlePortalDivision.count_likes(g.user.id, json.get('article')['id']),
@@ -139,6 +137,7 @@ def add_delete_like(json):
 
 
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
+@check_right(UserIsActive)
 def reader_subscribe(portal_id):
     user_dict = g.user.get_client_side_dict()
     portal = Portal.get(portal_id)
@@ -161,8 +160,8 @@ def reader_subscribe(portal_id):
     return redirect(url_for('reader.list_reader'))
 
 
-@reader_bp.route('/subscribe/', methods=['POST'])
-@ok
+@reader_bp.route('/subscribe/', methods=['OK'])
+@check_right(UserIsActive)
 def reader_subscribe_registered(json):
     user_dict = g.user.get_client_side_dict()
     if g.user and not g.user.tos:
@@ -192,16 +191,15 @@ def reader_subscribe_registered(json):
 
 
 
-@reader_bp.route('/profile/')
-@check_user_status
-def profile():
+@reader_bp.route('/profile/',  methods=['GET'])
+@check_right(UserIsActive)
+def reader_profile():
     return render_template('partials/reader/reader_profile.html')
 
 
-@reader_bp.route('/profile/', methods=['POST'])
+@reader_bp.route('/profile/', methods=['OK'])
 @check_right(UserIsActive)
-@ok
-def profile_load(json):
+def reader_profile_load(json):
     pagination_params = list()
     filter_params = []
     if json.get('paginationOptions'):
@@ -225,14 +223,13 @@ def profile_load(json):
 
 
 @reader_bp.route('/edit_portal_subscription/<string:reader_portal_id>')
-@check_user_status
+@check_right(UserIsActive)
 def edit_portal_subscription(reader_portal_id):
     return render_template('partials/reader/edit_portal_subscription.html')
 
 
-@reader_bp.route('/edit_portal_subscription/<string:reader_portal_id>', methods=['POST'])
+@reader_bp.route('/edit_portal_subscription/<string:reader_portal_id>', methods=['OK'])
 @check_right(UserIsActive)
-@ok
 def edit_portal_subscription_load(json, reader_portal_id):
     user_portal_reader = db(UserPortalReader, id=reader_portal_id).one()
     if request.args.get('action') == 'load':
@@ -250,9 +247,8 @@ def edit_portal_subscription_load(json, reader_portal_id):
     return user_portal_reader.validate()
 
 
-@reader_bp.route('/edit_profile_/<string:reader_portal_id>', methods=['POST'])
+@reader_bp.route('/edit_profile_/<string:reader_portal_id>', methods=['OK'])
 @check_right(UserIsActive)
-@ok
 def edit_profile_submit(json, reader_portal_id):
     divisions_and_comments = db(UserPortalReader, id=reader_portal_id).one().show_divisions_and_comments
     for item in json['divisions']:
@@ -263,5 +259,6 @@ def edit_profile_submit(json, reader_portal_id):
 
 
 @reader_bp.route('/buy_subscription')
+@check_right(UserIsActive)
 def buy_subscription():
     return render_template('partials/reader/buy_subscription.html')

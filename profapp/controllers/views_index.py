@@ -1,17 +1,14 @@
-from flask import render_template, request, session, redirect, url_for, g, flash
+from flask import render_template, request, session, redirect, url_for, g
 from .blueprints_declaration import general_bp
-from flask.ext.login import login_required, current_user
-from ..models.portal import Portal, UserPortalReader, ReaderUserPortalPlan
-from ..models.company import Company
+from ..models.portal import Portal, UserPortalReader
 from ..models.pr_base import Search, PRBase
-from profapp.controllers.errors import BadDataProvided
 from utils.pr_email import email_send
-from .request_wrapers import ok, tos_required
 from utils.db_utils import db
-from sqlalchemy.sql import expression, and_
-
+from .request_wrapers import check_right
+from ..models.rights import AllowAll
 
 @general_bp.route('help/')
+@check_right(AllowAll)
 def help():
     email = None
     if g.user:
@@ -20,6 +17,7 @@ def help():
 
 
 @general_bp.route('')
+@check_right(AllowAll)
 def index():
     if g.user and g.user.is_authenticated() and getattr(g.user, 'tos', False):
         return redirect(url_for('reader.list_reader'))
@@ -27,12 +25,13 @@ def index():
 
 
 @general_bp.route('portals_list/', methods=['GET'])
+@check_right(AllowAll)
 def portals_list():
     return render_template('general/portals_list.html')
 
 
-@general_bp.route('portals_list/', methods=['POST'])
-@ok
+@general_bp.route('portals_list/', methods=['OK'])
+@check_right(AllowAll)
 def portals_list_load(json):
     ret, page, page2 = Search().search(
         {'class': Portal,
@@ -44,16 +43,19 @@ def portals_list_load(json):
 
 
 @general_bp.route('subscribe/<string:portal_id>', methods=['GET'])
+@check_right(AllowAll)
 def auth_before_subscribe_to_portal(portal_id):
     session['portal_id'] = portal_id
     return redirect(url_for('auth.login_signup_endpoint', login_signup='login'))
 
 # YG it`s not used but it will change in future
 @general_bp.route('send_email_create_portal/')
+@check_right(AllowAll)
 def send_email_create_portal():
     return render_template('general/send_email_create_portal.html')
 
 
 @general_bp.route('send_email', methods=['POST'])
+@check_right(AllowAll)
 def send_email():
     return email_send(**{name: str(val) for name, val in request.form.items()})

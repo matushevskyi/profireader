@@ -343,7 +343,7 @@ class PortalAdvertisment(Base, PRBase):
         self.html=html
 
     def get_portal_advertisments(self, portal_id=None, filters=None):
-        return db(PortalAdvertisment, portal_id=portal_id)
+        return db(PortalAdvertisment, portal_id=portal_id).order_by(PortalAdvertisment.place)
 
 
     def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
@@ -357,13 +357,12 @@ class MemberCompanyPortal(Base, PRBase):
     class RIGHT_AT_PORTAL(BinaryRights):
         PUBLICATION_PUBLISH = 1
         PUBLICATION_UNPUBLISH = 2
-        PUBLICATION_EDIT = 3
 
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
     rights = Column(TABLE_TYPES['binary_rights'](RIGHT_AT_PORTAL),
-                    default={RIGHT_AT_PORTAL.PUBLICATION_EDIT: True, RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: True},
+                    default={RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: True},
                     nullable=False)
 
     member_company_portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))

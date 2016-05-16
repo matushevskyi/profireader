@@ -23,22 +23,21 @@ from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPort
 @article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['GET'])
 @article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['GET'])
 @article_bp.route('/<string:company_id>/material_create/', methods=['GET'])
-@check_right(EditMaterialRight, 'material_id')
+@check_right(EditMaterialRight, ['material_id'])
 @check_right(EditPublicationRight, ['publication_id', 'company_id'])
-@check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
+@check_right(BaseRightsEmployeeInCompany, ['company_id'], BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def article_show_form(material_id=None, publication_id=None, company_id=None):
     company = Company.get(company_id)
     return render_template('article/form.html', material_id=material_id, company_id=company_id,
                            publication_id=publication_id, company=company)
 
 
-@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['POST'])
-@article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['POST'])
-@article_bp.route('/<string:company_id>/material_create/', methods=['POST'])
-@ok
-@check_right(EditMaterialRight, 'material_id')
+@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['OK'])
+@article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['OK'])
+@article_bp.route('/<string:company_id>/material_create/', methods=['OK'])
+@check_right(EditMaterialRight, ['material_id'])
 @check_right(EditPublicationRight, ['publication_id', 'company_id'])
-@check_right(BaseRightsEmployeeInCompany, 'company_id', BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
+@check_right(BaseRightsEmployeeInCompany, ['company_id'], BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def load_form_create(json, company_id=None, material_id=None, publication_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
@@ -92,7 +91,7 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
 
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'])
-@check_right(UserIsEmployee, 'material_id')
+@check_right(UserIsEmployee, ['material_id'])
 def material_details(material_id):
     company = Company.get(ArticleCompany.get(material_id).company.id)
     return render_template('company/material_details.html',
@@ -131,9 +130,8 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
     return ret
 
 
-@article_bp.route('/material_details/<string:material_id>/', methods=['POST'])
-@ok
-@check_right(UserIsEmployee, 'material_id')
+@article_bp.route('/material_details/<string:material_id>/', methods=['OK'])
+@check_right(UserIsEmployee, ['material_id'])
 def material_details_load(json, material_id):
     material = ArticleCompany.get(material_id)
     company = material.company
@@ -145,7 +143,7 @@ def material_details_load(json, material_id):
         'company': company.get_client_side_dict(),
         'portals': {
             'grid_data': [get_portal_dict_for_material(portal, company, material) for portal in
-                          PublishUnpublishInPortal().get_portals_where_company_is_member(company)],
+                          PublishUnpublishInPortal(company=company).get_portals_where_company_is_member()],
             'grid_filters': {
                 'publication.status': Grid.filter_for_status(ArticlePortalDivision.STATUSES)
             }
@@ -154,8 +152,8 @@ def material_details_load(json, material_id):
     }
 
 
-@article_bp.route('/submit_publish/<string:article_action>/', methods=['POST'])
-@ok
+@article_bp.route('/submit_publish/<string:article_action>/', methods=['OK'])
+@check_right(UserIsActive)
 def submit_publish(json, article_action):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     company = Company.get(json['company']['id'])
@@ -173,7 +171,7 @@ def submit_publish(json, article_action):
         }
     else:
         publication = ArticlePortalDivision.get(json['publication']['id'])
-        check = PublishUnpublishInPortal(publication=publication, division=publication.portal_division_id).action_is_allowed(article_action)
+        check = PublishUnpublishInPortal(publication=publication, division=publication.portal_division_id, company=company).action_is_allowed(article_action)
         if check != True:
             return check
         more_data_to_ret = {}
@@ -217,13 +215,13 @@ def submit_publish(json, article_action):
             return get_portal_dict_for_material(publication.portal, company, publication=publication)
 
 
-# @article_bp.route('/material_unpublish_from_portal/', methods=['POST'])
+# @article_bp.route('/material_unpublish_from_portal/', methods=['OK'])
 # @ok
 # def publication_unpublish_from_portal(json):
 #     return {}
 
 
-# @article_bp.route('/material_details_publications/<string:material_id>/', methods=['POST'])
+# @article_bp.route('/material_details_publications/<string:material_id>/', methods=['OK'])
 # @ok
 # def material_portals_load(json, material_id):
 # article = ArticleCompany.get(material_id)
@@ -262,13 +260,13 @@ def submit_publish(json, article_action):
 #                            article_id=article_id)
 #
 #
-# @article_bp.route('/details/<string:article_id>/', methods=['POST'])
+# @article_bp.route('/details/<string:article_id>/', methods=['OK'])
 # @ok
 # def details_load(json, article_id):
 #     return Article.get(article_id).get_client_side_dict()
 
 
-# @article_bp.route('/search_for_company_to_submit/', methods=['POST'])
+# @article_bp.route('/search_for_company_to_submit/', methods=['OK'])
 # @ok
 # def search_for_company_to_submit(json):
 #     companies = Article().search_for_company_to_submit(
@@ -276,7 +274,7 @@ def submit_publish(json, article_action):
 #     return companies
 
 
-# @article_bp.route('/submit_to_company/<string:article_id>/', methods=['POST'])
+# @article_bp.route('/submit_to_company/<string:article_id>/', methods=['OK'])
 # @ok
 # def submit_to_company(json, article_id):
 #     a = Article.get(article_id)
@@ -285,7 +283,7 @@ def submit_publish(json, article_action):
 #             'company_id': json['company_id']}
 
 
-# @article_bp.route('/resubmit_to_company/<string:article_company_id>/', methods=['POST'])
+# @article_bp.route('/resubmit_to_company/<string:article_company_id>/', methods=['OK'])
 # @ok
 # def resubmit_to_company(json, article_company_id):
 #     a = ArticleCompany.get(article_company_id)
@@ -351,7 +349,7 @@ def list_reader(page=1):
                            favorite=favorite
                            )
 
-# @article_bp.route('add_to_favorite/', methods=['POST'])
+# @article_bp.route('add_to_favorite/', methods=['OK'])
 # def add_delete_favorite():
 #     favorite = json.loads(request.form.get('favorite'))
 #     article_portal_division_id = request.form.get('article_portal_division_id')
