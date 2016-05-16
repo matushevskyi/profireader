@@ -12,7 +12,7 @@ import simplejson
 from .files import File, ImageCroped
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from ..utils import fileUrl
-from ..models.tag import TagPortal, TagPortalDivision
+from ..models.tag import Tag, TagPortalDivision
 from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
@@ -44,7 +44,7 @@ class Portal(Base, PRBase):
 
     advs = relationship('PortalAdvertisment', uselist=True)
 
-    tags = relationship(TagPortal, uselist=True, cascade="all, delete-orphan")
+    tags = relationship(Tag, uselist=True, cascade="all, delete-orphan")
 
     divisions = relationship('PortalDivision',
                              # backref='portal',
@@ -190,16 +190,16 @@ class Portal(Base, PRBase):
         ret = {'errors': {}, 'warnings': {}, 'notices': {}}
         unique = {}
         for tag_id, tag in new_portal_tags.items():
-            if not re.match(r'[^\s]{3}', tag['tag']):
+            if not re.match(r'[^\s]{3}', tag['text']):
                 if not 'tags' in ret['errors']:
                     ret['errors']['tags'] = {}
                 ret['errors']['tags'][tag_id] = 'Pls enter correct tag name'
-            if tag['tag'] in unique:
+            if tag['text'] in unique:
                 if not 'tags' in ret['errors']:
                     ret['errors']['tags'] = {}
                 ret['errors']['tags'][tag_id] = 'Tag names should be unique'
-                ret['errors']['tags'][unique[tag['tag']]] = 'Tag names should be unique'
-            unique[tag['tag']] = tag_id
+                ret['errors']['tags'][unique[tag['text']]] = 'Tag names should be unique'
+            unique[tag['text']] = tag_id
         return ret
 
 
@@ -207,7 +207,7 @@ class Portal(Base, PRBase):
         tags_to_remove = []
         for existing_tag_portal in self.tags:
             if existing_tag_portal.id in new_portal_tags:
-                existing_tag_portal.tag = new_portal_tags[existing_tag_portal.id]['tag']
+                existing_tag_portal.text = new_portal_tags[existing_tag_portal.id]['text']
                 existing_tag_portal.description = new_portal_tags[existing_tag_portal.id]['description']
 
                 for djson in new_division_tags_matrix:
@@ -229,7 +229,7 @@ class Portal(Base, PRBase):
             self.tags.remove(remove_tag)
 
         for add_tag_id, add_tag in new_portal_tags.items():
-            new_tag = TagPortal(portal_id=self.id, tag=add_tag['tag'], description=add_tag['description'])
+            new_tag = Tag(portal=self, text=add_tag['text'], description=add_tag['description'])
             self.tags.append(new_tag)
             for djson in new_division_tags_matrix:
                 division = next(d for d in self.divisions if d.id == djson['id'])
@@ -496,8 +496,9 @@ class PortalDivision(Base, PRBase):
     portal = relationship(Portal, uselist=False)
     portal_division_type = relationship('PortalDivisionType', uselist=False)
 
-    tags = relationship(TagPortal, secondary='tag_portal_division', uselist=True,
-                        foreign_keys=[TagPortalDivision.tag_portal_id])
+    tags = relationship(Tag, secondary='tag_portal_division', uselist=True
+                        # ,foreign_keys=[TagPortalDivision.tag_portal_id]
+                        )
 
     # secondary = 'portal_division',
     # primaryjoin = "Portal.id == PortalDivision.portal_id",

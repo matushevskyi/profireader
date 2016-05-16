@@ -11,7 +11,7 @@ from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDiv
 from .request_wrapers import ok, tos_required, check_right
 from ..models.articles import ArticlePortalDivision, ArticleCompany, Article
 from ..models.company import UserCompany
-from ..models.tag import TagPortal, TagPortalDivision
+from ..models.tag import Tag, TagPortalDivision
 from profapp.models.rights import RIGHTS
 from ..controllers import errors
 from ..models.pr_base import PRBase, Grid
@@ -364,7 +364,7 @@ def tags_load(json, company_id):
     if action == 'load':
         return get_client_model(portal)
     else:
-        new_tags = {t['id']: {'tag': t.get('tag', ''), 'description': t.get('description', '')} for t in
+        new_tags = {t['id']: {'text': t.get('text', ''), 'description': t.get('description', '')} for t in
                     json['portal']['tags']}
         validated = portal.validate_tags(new_tags)
         if action == 'save':

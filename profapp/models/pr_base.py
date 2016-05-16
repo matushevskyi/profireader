@@ -600,7 +600,7 @@ class PRBase:
 
     @classmethod
     def get(cls, id):
-        return g.db().query(cls).get(id)
+        return g.db().query(cls).filter(cls.id == id).one()
 
     def to_dict_object_property(self, object_name):
         object_property = getattr(self, object_name)
