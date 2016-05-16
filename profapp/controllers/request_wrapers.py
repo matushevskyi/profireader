@@ -33,7 +33,7 @@ def function_profiler(func):
 
         if g.debug:
             if not func.__dict__['__check_rights__']:
-                raise Exception('method not allowed! Please add "check_right" decorator for your func!')
+                print('Please add "check_right" decorator for your func!')
             start = time.clock()
             ret = func(*args, **kwargs)
             end = time.clock()
@@ -44,6 +44,9 @@ def function_profiler(func):
             else:
                 Profiler().create_profile(func.__name__, func.__dict__['__endpoint__'], end-start, method)
             return ret
+        else:
+            if not func.__dict__['__check_rights__']:
+                raise Exception('method not allowed! Please add "check_right" decorator for your func!')
         return func(*args, **kwargs)
     return wrapper
 
