@@ -32,35 +32,13 @@ class BaseRightsInProfireader:
         'SUBSCRIBE_TO_PORTAL': 'SUBSCRIBE_TO_PORTAL'
     }
 
+
     def __setattr__(self, key, value):
-
-        # intercepts setters with preset key and rewrites them
-
-        if key == 'company_id':
-            key = 'company'
-            if isinstance(value, str):
-                value = Company.get(value)
-        elif key == 'employment_id':
-            key = 'employment'
-            if isinstance(value, str):
-                value = db(UserCompany, id=value).first()
-        elif key == 'material_id':
-            key = 'material'
-            if isinstance(value, str):
-                value = ArticleCompany.get(value)
-        elif key == 'publication_id':
-            key = 'publication'
-            if isinstance(value, str):
-                value = ArticlePortalDivision.get(value)
-        elif key == 'portal_id':
-            key = 'portal'
-            if isinstance(value, str):
-                value = Portal.get(value)
-        elif key == 'user_id':
-            key = 'user'
-            if isinstance(value, str):
-                value = User.get(value)
+        key, value = self.get_allowed_attributes(key, value)
         object.__setattr__(self, key, value)
+
+    def get_allowed_attributes(self, key, value):
+        return key, value
 
     def check_objects_statuses(self, objects, action_name):
         user_active = g.user.is_active()
@@ -68,27 +46,40 @@ class BaseRightsInProfireader:
             return user_active
         for key in objects:
             if not objects[key]:
-                return "Unconfirmed {}!".format(key)
+                return "Non existent {}!".format(key)
             if objects[key].is_active() != True:
                 return "{} should be active to perform action `{}`".format(key, action_name)
         return True
 
     def check_rights(self, action_name, necessary_rights, objects_for_check):
-        for object in necessary_rights:
-            if isinstance(necessary_rights[object], list):
-                for right in necessary_rights[object]:
+        if isinstance(necessary_rights, tuple):
+            _any = []
+            allow = True
+            for dict_rights in necessary_rights:
+                allow = self.rights_allowed(action_name, dict_rights, objects_for_check)
+                _any.append(True) if allow == True else _any.append(False)
+
+            return True if any(_any) else allow
+        else:
+            return self.rights_allowed(action_name, necessary_rights, objects_for_check)
+
+    def rights_allowed(self, action_name, rights, objects_for_check):
+        allow = True
+        for object in rights:
+            if isinstance(rights[object], list):
+                for right in rights[object]:
                     if isinstance(right, str):
                         if objects_for_check[object].has_rights(right) != True:
-                            return "{} need right `{}` to perform action `{}`".format(object, right,
-                                                                                       action_name)
+                            allow = "{} need right `{}` to perform action `{}`".format(object, right,
+                                                                                      action_name)
                     if callable(right):
                         allow = right(objects_for_check)
-                        if allow != True:
-                            return allow
-            elif isinstance(necessary_rights[object], tuple):
-                allow = self._any(object, necessary_rights[object], objects_for_check, action_name)
-                if allow != True:
-                    return allow
+            elif isinstance(rights[object], tuple):
+                allow = self._any(object, rights[object], objects_for_check, action_name)
+            elif callable(rights[object]):
+                allow = rights[object](objects_for_check)
+            if allow != True:
+                return allow
         return True
 
     def _any(self, object, rights, objects_for_check, action_name):
@@ -123,15 +114,13 @@ class BaseRightsInProfireader:
                 return "Unrecognized status `{}`".format(self.status)
 
             if not action_name in actions_for_statuses[self.status]:
-                return "Action `{}` is not applicable for publication with status `{}`".format(action_name,
-                                                                                               self.status)
+                return "Action `{}` is not applicable with status `{}`".format(action_name, self.status)
             if self.status in actions_for_statuses:
                 required_rights = actions_for_statuses[self.status][action_name]
 
         check_status_in_objects = BaseRightsInProfireader().check_objects_statuses(objects_for_check_status, action_name)
         if check_status_in_objects != True:
             return check_status_in_objects
-
 
         result = BaseRightsInProfireader().check_rights(action_name, required_rights, objects_for_check_rights) if required_rights else True
 
@@ -142,13 +131,22 @@ class BaseRightsInProfireader:
         return {action_name: self.action_is_allowed(action_name, *args) for action_name
                 in self.ACTIONS_FOR_STATUSES[status]}
 
-
 class PublishUnpublishInPortal(BaseRightsInProfireader):
 
         def __init__(self, publication=None, division=None, company=None):
-            self.publication = publication if isinstance(publication, ArticlePortalDivision) else ArticlePortalDivision.get(publication) if publication else None
+            self.publication = publication if isinstance(publication, ArticlePortalDivision) \
+                else ArticlePortalDivision.get(publication) if publication else None
             self.division = division if isinstance(division, PortalDivision) else PortalDivision.get(division) if division else None
             self.company = company if isinstance(company, Company) else Company.get(company) if company else None
+
+        def get_allowed_attributes(self, key, value):
+            if key == 'publication_id':
+                key = 'publication'
+                value = ArticlePortalDivision.get(value)
+            elif key == 'company_id':
+                key = 'company'
+                value = Company.get(value)
+            return key, value
 
         STATUSES = ArticlePortalDivision.STATUSES
 
@@ -161,13 +159,13 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
             'UNDELETE': 'UNDELETE'
         }
 
-        delete_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL._OWNER],
+        delete_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
                          'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_DELETE]}
 
-        publish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL._OWNER],
+        publish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
                           'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_DELETE]}
 
-        unpublish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH],
+        unpublish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
                             'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]}
 
         republish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH,
@@ -175,20 +173,24 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
                             'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
                                            UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
 
+        edit_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
+                       'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
+
         ACTIONS_FOR_STATUSES = {
             STATUSES['SUBMITTED']: {
                 ACTIONS['PUBLISH']: publish_rights,
                 ACTIONS['DELETE']: delete_rights,
+                ACTIONS['EDIT']: edit_rights,
             },
             STATUSES['PUBLISHED']: {
                 ACTIONS['REPUBLISH']: republish_rights,
                 ACTIONS['UNPUBLISH']: unpublish_rights,
-                ACTIONS['EDIT']: publish_rights,
+                ACTIONS['EDIT']: edit_rights,
                 ACTIONS['DELETE']: delete_rights
             },
             STATUSES['UNPUBLISHED']: {
                 ACTIONS['REPUBLISH']: publish_rights,
-                ACTIONS['EDIT']: republish_rights,
+                ACTIONS['EDIT']: edit_rights,
                 ACTIONS['DELETE']: delete_rights
             },
             STATUSES['DELETED']: {
@@ -231,6 +233,12 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
         self.portal = portal if isinstance(portal, Portal) else Portal.get(portal) if portal else None
         self.division = division if isinstance(division, PortalDivision) else PortalDivision.get(division) if division else None
 
+    def get_allowed_attributes(self, key, value):
+        if key == 'material_id':
+            key = 'material'
+            value = ArticleCompany.get(value)
+        return key, value
+
     ACTIONS = {
         'SUBMIT': 'SUBMIT',
         'EDIT': 'EDIT'
@@ -256,12 +264,12 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
         self.employee = UserCompany.get(company_id=self.material.company.id)
         if not self.employee:
             return "Sorry!You are not employee in this company!"
-        check_objects_status = {'company owner material': self.material.company,
+        check_objects_status = {'company owner material': self.material.company if self.material else None,
                                 'employee': self.employee}
 
         check_objects_status.update({'division':self.division}) if self.division else None
 
-        check_objects_rights = {'company owner material': self.material.company,
+        check_objects_rights = {'company owner material': self.material.company if self.material else None,
                                 'employee': self.employee, 'material': self.material, 'user': g.user}
         if self.portal:
             check_objects_rights.update({'membership': MemberCompanyPortal.get(portal_id=self.portal.id, company_id=self.material.company.id)})
@@ -276,6 +284,15 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
 
     def __init__(self, company=None):
         self.company = company if isinstance(company, Company) else Company.get(company) if company else None
+
+    def get_allowed_attributes(self, key, value):
+        if key == 'company_id':
+            key = 'company'
+            value = Company.get(value)
+        if key == 'material_id':
+            key = 'material'
+            value = ArticleCompany.get(value)
+        return key, value
 
     ACTIONS = {
         'EDIT_COMPANY': 'EDIT_COMPANY',
@@ -349,8 +366,20 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
 
     def __init__(self, company=None, employment=None):
         super(EmployeesRight, self).__init__(company=company)
-        self.employment = employment if isinstance(employment, UserCompany) \
-            else UserCompany.get(user_id=employment, company_id=self.company.id) if employment and company else None
+        self.employment = employment if isinstance(employment, UserCompany) else \
+            UserCompany.get(user_id=employment, company_id=self.company.id) if employment and company else None
+
+    def get_allowed_attributes(self, key, value):
+        if key == 'user_id':
+            key = 'user'
+            value = User.get(value)
+        if key == 'company_id':
+            key = 'company'
+            value = Company.get(value)
+        if key == 'employment_id':
+            key = 'employment'
+            value = db(UserCompany, id = value).first()
+        return key, value
 
     STATUSES = UserCompany.STATUSES
 
@@ -411,6 +440,9 @@ class MembersOrMembershipBase(BaseRightsInProfireader):
     MEMBER = 'member'
     MEMBERSHIP = 'membership'
 
+    def get_allowed_attributes(self, key, value):
+        return key, value
+
     ACTIONS = {
         'UNSUBSCRIBE': 'UNSUBSCRIBE',
         'FREEZE': 'FREEZE',
@@ -433,29 +465,14 @@ class MembersOrMembershipBase(BaseRightsInProfireader):
     }
 
     def action_is_allowed_member_company(self, action_name, employee, add_to_check_statuses=None):
-        if self.member_company.portal.company_owner_id == self.member_company.company_id:
-            return 'You can`t {0} portal of your own company'.format(action_name)
         get_objects_for_check = {'employee': employee,
                                  'employeer': self.company}
         if add_to_check_statuses:
             get_objects_for_check.update(add_to_check_statuses)
         return BaseRightsInProfireader._is_action_allowed(self.member_company, action_name,
-                                                      get_objects_for_check, {'employee': employee},
+                                                      get_objects_for_check, {'employee': employee, 'member': self.member_company},
                                                       actions=self.ACTIONS,
                                                       actions_for_statuses=self.ACTIONS_FOR_STATUSES)
-
-    def can_update_company_partner(self):
-        user_right = UserCompany.get(company_id=self.company.id).has_rights(
-            UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES)
-        if self.member_company.status == MembersOrMembershipBase.STATUSES['FROZEN'] and not user_right:
-            return 'Sorry!You can not manage company {}!It was frozen!'.format(self.company.name)
-        if self.member_company.status == MembersOrMembershipBase.STATUSES['DELETED']:
-            return 'Sorry!Company {} was unsubscribed!'.format(self.company.name)
-        if self.company.status != MembersOrMembershipBase.STATUSES['ACTIVE']:
-            return 'Sorry!Company {} is not active!'.format(self.company.name)
-        if not user_right:
-            return 'You haven\'t got aproriate rights!'
-        return True
 
     @staticmethod
     def get_avaliable_statuses():
@@ -466,9 +483,15 @@ class MembersRights(MembersOrMembershipBase):
 
     ACTIONS_FOR_STATUSES = {
         MembersOrMembershipBase.STATUSES['ACTIVE']: {
-            MembersOrMembershipBase.ACTIONS['ALLOW']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
-            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
-            MembersOrMembershipBase.ACTIONS['SUSPEND']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
+            MembersOrMembershipBase.ACTIONS['ALLOW']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
+                                                       'member':lambda kwargs: 'You can`t allow portal of your own company!' if
+                                                            kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
+            MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
+                                                        'member': lambda kwargs: 'You can`t reject portal of your own company!' if
+                                                            kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
+            MembersOrMembershipBase.ACTIONS['SUSPEND']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
+                                                         'member': lambda kwargs: 'You can`t suspend portal of your own company!' if
+                                                         kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True}},
         MembersOrMembershipBase.STATUSES['APPLICANT']: {
             MembersOrMembershipBase.ACTIONS['REJECT']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
             MembersOrMembershipBase.ACTIONS['ENLIST']: {'employee':[UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
@@ -497,8 +520,15 @@ class MembershipRights(MembersOrMembershipBase):
 
     ACTIONS_FOR_STATUSES = {
         MembersOrMembershipBase.STATUSES['ACTIVE']: {
-            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]},
-            MembersOrMembershipBase.ACTIONS['FREEZE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
+            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']:
+                {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS],
+                 'member': lambda kwargs: 'You can`t unsubscribe portal of your own company!' if
+                                     kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
+            MembersOrMembershipBase.ACTIONS['FREEZE']:
+                {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS],
+                 'member': lambda kwargs: 'You can`t freeze portal of your own company!' if
+                                     kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True}
+        },
         MembersOrMembershipBase.STATUSES['APPLICANT']: {
             MembersOrMembershipBase.ACTIONS['WITHDRAW']: {'employee':[UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
         MembersOrMembershipBase.STATUSES['SUSPENDED']: {
@@ -530,10 +560,21 @@ class UserIsActive(BaseRightsInProfireader):
     def __init__(self, user=None):
         self.user = user if user else g.user
 
+    def get_allowed_attributes(self, key, value):
+        if key == 'user_id':
+            key = 'user'
+            value = User.get(value)
+        return key, value
+
     def is_allowed(self):
         allow = self.user.is_active()
         if allow != True:
             return allow
+        return True
+
+class AllowAll(BaseRightsInProfireader):
+
+    def is_allowed(self):
         return True
 
 class CanCreateCompanyRight(UserIsActive):
@@ -543,6 +584,12 @@ class UserEditProfieRight(BaseRightsInProfireader):
 
     def __init__(self, user=None):
         self.user = user if isinstance(user, User) else User.get(user) if user else None
+
+    def get_allowed_attributes(self, key, value):
+        if key == 'user_id':
+            key = 'user'
+            value = User.get(value)
+        return key, value
 
     def is_allowed(self):
         if self.user == g.user:
@@ -563,8 +610,7 @@ class UserIsEmployee(BaseRightsEmployeeInCompany):
 
     def __init__(self, company=None, material=None):
         super(UserIsEmployee, self).__init__(company=company)
-        self.material = material if isinstance(material, ArticleCompany) else ArticleCompany.get(
-            material) if material else None
+        self.material = material if isinstance(material, ArticleCompany) else ArticleCompany.get(material) if material else None
 
     def is_allowed(self):
         self.company = self.company if self.company else self.material.company
@@ -596,7 +642,13 @@ class RequireMembereeAtPortalsRight(BaseRightsEmployeeInCompany):
 
 class PortalManageMembersCompaniesRight(BaseRightsEmployeeInCompany):
 
+    def __init__(self, company=None, member_id=None):
+        super(PortalManageMembersCompaniesRight, self).__init__(company=company)
+        self.member_id = member_id
+
     def is_allowed(self):
+        if self.company.id == self.member_id:
+            return False
         return self.action_is_allowed(self.ACTIONS['PORTAL_MANAGE_MEMBERS_COMPANIES'])
 
 class EmployeeAllowRight(EmployeesRight):
@@ -639,9 +691,6 @@ class EditPublicationRight(PublishUnpublishInPortal):
         #        for parts in participants:
         #            for p in parts:
         #                print(p.get_client_side_dict())
-        #                print('____________________next________________________')
-        #            print("______________________________END_____________________________")
-        #        print('THEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE ENDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD')
 
 class RIGHTS:
     @staticmethod

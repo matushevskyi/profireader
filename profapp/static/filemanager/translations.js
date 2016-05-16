@@ -3,7 +3,6 @@
     angular.module('FileManagerApp').config(['$translateProvider', function($translateProvider) {
         // $translateProvider.preferredLanguage('en');
         //
-        console.log(angular)
         $translateProvider.translations('en', {
             filemanager: "File Manager",
             language: "Language",

@@ -294,7 +294,7 @@ class Company(Base, PRBase):
     @staticmethod
     def subquery_company_partners(company_id, filters, filters_exсept=None):
         sub_query = db(MemberCompanyPortal, portal_id=db(Portal, company_owner_id=company_id).subquery().c.id)
-        list_filters = []
+        list_filters = [];list_sorts=[]
         if filters_exсept:
             if 'member.status' in filters:
                 list_filters.append(
@@ -310,7 +310,9 @@ class Company(Base, PRBase):
                 #     if 'company' in filters:
                 #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
                 #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
-            sub_query = Grid.subquery_grid(sub_query, list_filters)
+        sub_query = sub_query.join(MemberCompanyPortal.company)
+        list_sorts.append({'value': 'desc', 'field': Company.name})
+        sub_query = Grid.subquery_grid(sub_query, filters=list_filters, sorts=list_sorts)
         return sub_query
 
     @staticmethod

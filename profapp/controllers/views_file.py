@@ -2,21 +2,19 @@ from .blueprints_declaration import file_bp
 from flask import request, g, abort
 from ..models.files import File, FileContent
 from io import BytesIO
-from PIL import Image
-from time import gmtime, strftime
-import sys
+from .request_wrapers import check_right
 import re
 from sqlalchemy import or_
-from config import Config
 from utils.db_utils import db
 from flask import current_app
 from werkzeug.datastructures import Headers
 import mimetypes
 import os
-from time import time, sleep
+from time import time
 from zlib import adler32
 from flask._compat import string_types, text_type
 import urllib.parse
+from ..models.rights import UserIsActive, AllowAll
 
 try:
     from werkzeug.wsgi import wrap_file
@@ -44,6 +42,7 @@ def file_query(table, file_id):
 
 @file_bp.route('<string:file_id>/')
 @file_bp.route('<string:file_id>')
+@check_right(AllowAll)
 def get(file_id):
     image_query = file_query(File, file_id)
 

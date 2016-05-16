@@ -20,7 +20,7 @@
             $scope.url_companies_partners = '{{ url_for('portal.companies_partners_load', company_id=company.id)
          }}';
             $scope.url_company_partner_details = {{ raw_url_for('portal.company_partner_update')| safe}};
-            $scope.url_change_status = {{ raw_url_for('portal.portals_partners_change_status')|safe }};
+            $scope.url_change_status = {{ raw_url_for('portal.company_partners_change_status')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
 
             {% raw %}
@@ -34,7 +34,6 @@
             };
 
             $scope.grid_update_row = function (updated_row) {
-                console.log($scope, updated_row);
 //                    TODO: SS by OZ: how i can access grid data without data cariable in my scope?
                 $scope.grid_change_row($scope.data, updated_row);
             };

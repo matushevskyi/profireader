@@ -378,9 +378,8 @@ class Grid:
                     query = query.filter(or_(filter['field'] == v for v in filter['value']))
         if sorts:
             for sort in sorts:
-                if sort['type'] == 'date':
-                    query = query.order_by(sort['field'].asc()) if sort['value'] == 'asc' else query.order_by(
-                            sort['field'].desc())
+                query = query.order_by(sort['field'].asc()) if sort['value'] == 'asc' else query.order_by(
+                        sort['field'].desc())
         return query
 
     @staticmethod
@@ -515,7 +514,6 @@ class PRBase:
             # if old_original_image:
             #     old_original_image.delete()
         if selected_by_user_type == 'none':
-            # todo: SS by OZ: is old file removed on this selection?
             return None
         if selected_by_user_type == 'upload':
             imgdataContent = selected_by_user['file']['content']
@@ -562,12 +560,6 @@ class PRBase:
     def save(self):
         g.db.add(self)
         g.db.flush()
-        return self
-
-    # TODO: OZ by OZ: why we need two identical functions??!?!
-    def updates(self, dictionary):
-        for f in dictionary:
-            setattr(self, f, dictionary[f])
         return self
 
     def attr(self, dictionary):
