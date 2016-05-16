@@ -784,9 +784,8 @@ class Article(Base, PRBase):
         list = [PRBase.merge_dicts(article_portal.get_client_side_dict(fields='portal.name|host,status, id, portal_division_id'),
                 {'actions':
                     {'edit': PublishUnpublishInPortal(publication=article_portal,
-                                                      division=article_portal.division, company=material.company)
-                                       .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]
-                     } if article_portal.status != 'SUBMITTED' and article_portal.status != "DELETED" else {}
+                            division=article_portal.division, company=material.company)
+                                   .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]}
               })
                 for article_portal in material.portal_article]
         return dict, list

@@ -378,10 +378,8 @@ class Grid:
                     query = query.filter(or_(filter['field'] == v for v in filter['value']))
         if sorts:
             for sort in sorts:
-                print(sorts)
-                if sort['type'] == 'date':
-                    query = query.order_by(sort['field'].asc()) if sort['value'] == 'asc' else query.order_by(
-                            sort['field'].desc())
+                query = query.order_by(sort['field'].asc()) if sort['value'] == 'asc' else query.order_by(
+                        sort['field'].desc())
         return query
 
     @staticmethod

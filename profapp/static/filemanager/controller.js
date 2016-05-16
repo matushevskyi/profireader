@@ -40,7 +40,7 @@
             };
 
             $scope.setTemplate = function (name) {
-                $cookies.put('viewTemplate', name)
+                $cookies.put('viewTemplate', name);
                 $scope.viewTemplate = name;
             };
             
