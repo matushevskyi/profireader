@@ -54,6 +54,8 @@
         $scope.action_cancel = $uibModalInstance.dismiss;
 
         $scope.is_selection_division_event = function () {
+            console.log($scope.data.portal.divisions, $scope.data.publication.portal_division_id, $scope.data.portal
+                    .divisions[$scope.data.publication.portal_division_id]);
             if (!$scope.data || !$scope.data.publication || !$scope.data.publication.portal_division_id || !$scope.data.portal.divisions[$scope.data.publication.portal_division_id]) return false;
             return ($scope.data.portal.divisions[$scope.data.publication.portal_division_id]['portal_division_type_id'] === 'events');
         };

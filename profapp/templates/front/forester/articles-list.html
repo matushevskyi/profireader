@@ -44,7 +44,7 @@
 
 </script>
 {% set article_count = 0 %}
-{% set wide_banners = {1:'1',2:'2',4:'3'} %}
+{% set wide_banners = {2:'1',6:'2'} %}
 {% for article_id, article in articles.items() %}
     {% set article_count = article_count + 1 %}
     <div class="block-item list-elements">
@@ -83,7 +83,6 @@
             {{ portal.advs['wide_banner_' + wide_banners[article_count]]|safe }}
         </div>
     {% endif %}
-
 {% else %}
 <h1>{{ _('There are no articles in this division') }}</h1>
 {% endfor %}

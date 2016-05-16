@@ -2,6 +2,7 @@ from functools import wraps
 from flask import jsonify, request, g, abort, redirect, url_for, flash
 from functools import reduce
 from ..controllers import errors
+import time
 
 
 def ok(func):
@@ -25,6 +26,17 @@ def ok(func):
             db.rollback()
             return jsonify({'ok': False, 'error_code': -1, 'result': e.result})
     return function_json
+
+
+def function_profiler(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.clock()
+        ret = func(*args, **kwargs)
+        end = time.clock()
+        print(start-end)
+        return ret
+    return wrapper
 
 
 def replace_brackets(func):
@@ -115,18 +127,9 @@ def check_right(classCheck, params=None, action=None):
             if allow != True:
                 abort(403)
             return func(*args, **kwargs)
+        decorated_view.__check_rights__ = True
         return decorated_view
     return wrapped
-
-def check_user_status(func):
-    @wraps(func)
-    def decorated_view(*args, **kwargs):
-        allow = g.user.is_active()
-        if allow != True:
-            flash(allow)
-            return redirect(url_for('general.index'))
-        return func(*args, **kwargs)
-    return decorated_view
 
 # def object_to_dict(obj, *args, prefix=''):
 #     ret = {}

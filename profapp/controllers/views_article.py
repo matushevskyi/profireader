@@ -155,10 +155,10 @@ def material_details_load(json, material_id):
 
 
 @article_bp.route('/submit_publish/<string:article_action>/', methods=['OK'])
+@check_right(UserIsActive)
 def submit_publish(json, article_action):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     company = Company.get(json['company']['id'])
-    print(company)
     if article_action == 'SUBMIT':
         material = ArticleCompany.get(json['material']['id'])
         check = EditOrSubmitMaterialInPortal(material=material, portal=json['portal']['id']).action_is_allowed(article_action)
@@ -196,10 +196,11 @@ def submit_publish(json, article_action):
         if 'also_publish' in json and json['also_publish']:
             publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
         else:
-            if article_action in [PublishUnpublishInPortal.ACTIONS['PUBLISH'], PublishUnpublishInPortal.ACTIONS['REPUBLISH']]:
+            if article_action in [PublishUnpublishInPortal.ACTIONS['PUBLISH'],
+                                  PublishUnpublishInPortal.ACTIONS['REPUBLISH']]:
                 publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
-            elif article_action in [PublishUnpublishInPortal.ACTIONS['UNPUBLISH'], PublishUnpublishInPortal.ACTIONS[
-                'UNDELETE']]:
+            elif article_action in [PublishUnpublishInPortal.ACTIONS['UNPUBLISH'],
+                                    PublishUnpublishInPortal.ACTIONS['UNDELETE']]:
                 publication.status = PublishUnpublishInPortal.STATUSES['UNPUBLISHED']
             elif article_action in [PublishUnpublishInPortal.ACTIONS['DELETE']]:
                 publication.status = PublishUnpublishInPortal.STATUSES['DELETED']

@@ -570,6 +570,11 @@ class UserIsActive(BaseRightsInProfireader):
             return allow
         return True
 
+class AllowAll(BaseRightsInProfireader):
+
+    def is_allowed(self):
+        return True
+
 class CanCreateCompanyRight(UserIsActive):
     pass
 

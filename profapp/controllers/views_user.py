@@ -1,21 +1,16 @@
 from .blueprints_declaration import user_bp
 from flask import url_for, render_template, abort, request, flash, redirect, \
     request, g
-# from db_init import db_session
 from ..models.users import User
-from flask.ext.login import current_user, login_required
 from utils.db_utils import db
-from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
-from ..forms.user import EditProfileForm
-from ..controllers.request_wrapers import tos_required, check_right
-from .request_wrapers import ok
+from ..constants.UNCATEGORIZED import AVATAR_SIZE
+from ..controllers.request_wrapers import check_right
 from config import Config
 from ..models.country import Country
 from flask import session
-from ..models.rights import UserIsActive, UserEditProfieRight
+from ..models.rights import UserIsActive, UserEditProfieRight, AllowAll
 
 @user_bp.route('/profile/<user_id>')
-@login_required
 @check_right(UserIsActive)
 def profile(user_id):
     user = g.db.query(User).filter(User.id == user_id).first()
@@ -26,7 +21,7 @@ def profile(user_id):
 
 
 @user_bp.route('/avatar_update')
-@tos_required
+@check_right(UserIsActive)
 def avatar_update(json):
     image = json.get('update_image')
     user = json.get('user')
@@ -69,6 +64,7 @@ def edit_profile_load(json, user_id):
             return ret
 
 @user_bp.route('/change_lang/', methods=['OK'])
+@check_right(UserIsActive)
 def change_language(json):
     if g.user:
         g.user.lang = json.get('language')

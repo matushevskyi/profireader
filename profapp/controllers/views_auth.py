@@ -6,12 +6,8 @@ from flask.ext.login import logout_user, current_user, login_required
 from urllib.parse import quote
 from ..models.users import User
 from utils.db_utils import db
-from ..controllers.request_wrapers import tos_required
-from ..forms.auth import LoginForm, RegistrationForm, ChangePasswordForm, \
-    PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm
-from .errors import BadDataProvided
-from flask import jsonify
 import re
+from .request_wrapers import check_right
 from authomatic.adapters import WerkzeugAdapter
 from flask import redirect, make_response
 from flask.ext.login import login_user
@@ -19,12 +15,7 @@ from ..constants.SOCIAL_NETWORKS import SOC_NET_NONE
 from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
 from ..utils.redirect_url import redirect_url
 from utils.pr_email import SendEmail
-from .request_wrapers import ok
-from datetime import datetime
-import urllib
-from urllib.parse import urlencode
-# def _session_saver():
-#    session.modified = True
+from ..models.rights import AllowAll
 
 EMAIL_REGEX = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
@@ -120,23 +111,21 @@ def before_request():
             return redirect(url_for('auth.unconfirmed'))
 
 @auth_bp.route('/login_signup/', methods=['GET'])
+@check_right(AllowAll)
 def login_signup_endpoint():
-    # if g.user_init and g.user_init.is_authenticated():
     if current_user.is_authenticated():
         if session.get('portal_id'):
             return redirect(url_for('reader.reader_subscribe', portal_id=session['portal_id']))
         elif session.get('back_to'):
             return redirect(session['back_to'])
-        # flash('You are already logged in')
 
     login_signup = request.args.get('login_signup', 'login')
-
-    # return render_template('auth/signup.html', login_signup='signup', form=form)
     return render_template('auth/login_signup.html',
                            login_signup=login_signup)
 
 
 @auth_bp.route('/signup/', methods=['POST'])
+@check_right(AllowAll)
 def signup():
 
     # if g.user_init and g.user_init.is_authenticated():
@@ -189,9 +178,7 @@ def signup():
 # TODO: YG by OZ:
 @auth_bp.route('//', methods=['POST'])
 @auth_bp.route('/login_signup/<soc_network_name>', methods=['GET', 'POST'])
-# @auth_bp.route('/login_signup_socnet/<soc_network_name>', methods=['GET', 'POST'])
-# @auth_bp.route('/login_signup/<string:soc_network_name>/<string:portal_id>', methods=['GET', 'POST'])
-# def login_signup_soc_network(soc_network_name, portal_id=None):
+@check_right(AllowAll)
 def login_signup_soc_network(soc_network_name):
     ret = login_signup_general('profireader', soc_network_name)
     return ret
@@ -217,6 +204,7 @@ def login_signup_soc_network(soc_network_name):
 #
 # read this!: http://flask.pocoo.org/snippets/62/
 @auth_bp.route('/login/', methods=['POST'])
+@check_right(AllowAll)
 def login():
     # if g.user_init and g.user_init.is_authenticated():
     # portal_id = request.args.get('subscribe', None)
@@ -261,13 +249,15 @@ def login():
 
 
 @auth_bp.route('/logout/', methods=['GET'])
-@login_required   # Only logged in user can be logged out
+@login_required
+@check_right(AllowAll)
 def logout():
     logout_user()
     # flash('You have been logged out.')
     return redirect(url_for('general.index'))
 
 @auth_bp.route('/unconfirmed', methods=['GET'])
+@check_right(AllowAll)
 def unconfirmed():
     if current_user.confirmed:
         return redirect(url_for('general.index'))
@@ -275,6 +265,7 @@ def unconfirmed():
 
 @auth_bp.route('/resend_confirmation/', methods=["POST"])
 @login_required
+@check_right(AllowAll)
 def resend_confirmation(json):
     current_user.generate_confirmation_token().save()
     SendEmail().send_email(subject='Confirm Your Account',
@@ -285,6 +276,7 @@ def resend_confirmation(json):
 
 
 @auth_bp.route('/confirm_email/<token>/')
+@check_right(AllowAll)
 def confirm(token):
     user = db(User, email_conf_token=token).first()
     portal_id = request.args.get('subscribe_to_portal')
@@ -305,11 +297,13 @@ def confirm(token):
 
 @auth_bp.route('/tos', methods=['OK'])
 @login_required
+@check_right(AllowAll)
 def tos(json):
     g.user.tos = json['accept'] == 'accept'
     return {'tos': g.user.tos}
 
 @auth_bp.route('/help', methods=["OK"])
+@check_right(AllowAll)
 def help_message(json):
         if not 'email' in json['data']:
             return 'Please enter valid email!'
@@ -342,12 +336,14 @@ def help_message(json):
 #     return render_template("auth/bak_change_password.html", form=form)
 
 @auth_bp.route('/reset_password', methods=['GET'])
+@check_right(AllowAll)
 def password_resets():
     return render_template('auth/reset_password.html')
 
 
 
 @auth_bp.route('/reset_password', methods=['OK'])
+@check_right(AllowAll)
 def password_reset_request(json):
     if not current_user.is_anonymous():
         flash('To reset your password logout first please.')
@@ -368,12 +364,14 @@ def password_reset_request(json):
 
 
 @auth_bp.route('/reset/<token>', methods=['GET'])
+@check_right(AllowAll)
 def password_reset(token):
     if not current_user.is_anonymous():
         return redirect(url_for('auth/reset_password_token.html'))
     return render_template('auth/reset_password_token.html', token=token)
 
 @auth_bp.route('/reset/<token>', methods=['OK'])
+@check_right(AllowAll)
 def password_reset_change(json, token):
     user = g.db.query(User).\
         filter_by(profireader_email=json['data'].get('email')).first()

@@ -1,21 +1,34 @@
-from flask import Blueprint
+from flask import Blueprint, g
+from utils.db_utils import db
 from functools import wraps
+
+
 
 class PrBlueprint(Blueprint):
 
     bluprints = {}
+    def you_have_no_permission(self):
+        raise Exception('You have no permission')
+
 
     def route(self, rule, **options):
-        from .request_wrapers import ok
+        from .request_wrapers import ok, function_profiler
         def decorator(f):
+            if options and 'methods' in options and 'OK' in options['methods'] and f.__name__ in self.bluprints:
+                index = options['methods'].index('OK')
+                options['methods'][index] = 'POST'
             if f.__name__ in self.bluprints:
-                ret =  self.bluprints[f.__name__]
+                ret = self.bluprints[f.__name__]
             else:
                 ret = f
-                if options and 'OK' in options['methods']:
+                if options and 'methods' in options and 'OK' in options['methods']:
                     index = options['methods'].index('OK')
                     options['methods'][index] = 'POST'
                     ret = ok(f)
+                    ret = function_profiler(ret)
+                    self.bluprints[ret.__name__] = ret
+                else:
+                    ret = function_profiler(ret)
                     self.bluprints[ret.__name__] = ret
 
             endpoint = options.pop("endpoint", ret.__name__)

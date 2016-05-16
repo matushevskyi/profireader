@@ -5,8 +5,6 @@ from sqlalchemy import CheckConstraint
 from .pr_base import PRBase, Base
 
 
-
-
 class TagPortal(Base, PRBase):
     """ This table contains ONLY portal tags not bound to any division"""
     __tablename__ = 'tag_portal'
@@ -25,26 +23,32 @@ class TagPortal(Base, PRBase):
         self.tag = tag
         self.portal_id = portal_id
 
+    def get_client_side_dict(self, fields='id|tag', more_fields=None):
+        return self.to_dict(fields, more_fields)
+
+
 class TagPortalDivision(Base, PRBase):
-            """ This table contains ONLY portal tags not bound to any division"""
-            __tablename__ = 'tag_portal_division'
-            id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    """ This table contains ONLY portal tags not bound to any division"""
+    __tablename__ = 'tag_portal_division'
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
 
-            portal_division_id = Column(TABLE_TYPES['id_profireader'],
-                               ForeignKey('portal_division.id', onupdate='CASCADE', ondelete='CASCADE'),
-                               nullable=False)
+    portal_division_id = Column(TABLE_TYPES['id_profireader'],
+                                ForeignKey('portal_division.id', onupdate='CASCADE', ondelete='CASCADE'),
+                                nullable=False)
 
-            tag_portal_id = Column(TABLE_TYPES['id_profireader'],
-                                        ForeignKey('tag_portal.id', onupdate='CASCADE', ondelete='CASCADE'),
-                                        nullable=False)
+    tag_portal_id = Column(TABLE_TYPES['id_profireader'],
+                           ForeignKey('tag_portal.id', onupdate='CASCADE', ondelete='CASCADE'),
+                           nullable=False)
 
-            # UniqueConstraint('tag', 'portal_id', name='uc_tag_id_portal_id')
+    portal_division = relationship('PortalDivision', uselist=False)
+    tag_portal = relationship(TagPortal, uselist=False)
 
-            def __init__(self, portal_division_id=None, tag_portal_id=None):
-                super(TagPortalDivision, self).__init__()
-                self.tag_portal_id = tag_portal_id
-                self.portal_division_id = portal_division_id
+    # UniqueConstraint('tag', 'portal_id', name='uc_tag_id_portal_id')
 
+    def __init__(self, portal_division=None, tag_portal=None):
+        super(TagPortalDivision, self).__init__()
+        self.tag_portal = tag_portal
+        self.portal_division = portal_division
 
 # class TagPortalDivision(Base, PRBase):
 #     __tablename__ = 'tag_portal_division'

@@ -1,9 +1,9 @@
 from .blueprints_declaration import company_bp
-from flask.ext.login import current_user, login_required
+from flask.ext.login import current_user
 from flask import render_template, request, url_for, g, redirect, abort
 from ..models.company import Company, UserCompany
 from ..models.translate import TranslateTemplate
-from .request_wrapers import ok, tos_required, check_right, check_user_status
+from .request_wrapers import check_right
 from ..models.articles import Article
 from ..models.portal import PortalDivision
 
@@ -16,7 +16,7 @@ from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, U
     CanCreateCompanyRight, UserIsActive, BaseRightsEmployeeInCompany
 
 @company_bp.route('/search_to_submit_article/', methods=['POST'])
-@login_required
+@check_right(UserIsActive)
 def search_to_submit_article(json):
     companies = Company().search_for_company(g.user.id, json['search'])
     return companies
@@ -25,13 +25,12 @@ def search_to_submit_article(json):
 
 
 @company_bp.route('/', methods=['GET'])
-@tos_required
-@login_required
+@check_right(UserIsActive)
 def companies():
     return render_template('company/companies.html')
 
 @company_bp.route('/', methods=['OK'])
-@login_required
+@check_right(UserIsActive)
 def companies_load(json):
     companies, pages, page, count = pagination(query=db(Company)
         .filter(
@@ -90,7 +89,7 @@ def materials_load(json, company_id):
 # file_author_user_id_fkey	FOREIGN KEY (author_user_id) REFERENCES "user"(id)
 
 @company_bp.route('/get_tags/<string:portal_division_id>', methods=['OK'])
-@login_required
+@check_right(UserIsActive)
 def get_tags(json, portal_division_id):
     available_tags = g.db.query(PortalDivision).get(portal_division_id).portal_division_tags
     available_tag_names = list(map(lambda x: getattr(x, 'name'), available_tags))
@@ -98,7 +97,7 @@ def get_tags(json, portal_division_id):
 
 
 @company_bp.route('/update_material_status/<string:company_id>/<string:article_id>', methods=['OK'])
-@login_required
+@check_right(UserIsEmployee, ['company_id'])
 def update_material_status(json, company_id, article_id):
     allowed_statuses = ArticleCompany.STATUSES.keys()
     # ARTICLE_STATUS_IN_COMPANY.can_user_change_status_to(json['new_status'])
@@ -213,24 +212,24 @@ def employment_change_position(json, company_id, employment_id):
                               {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
-@company_bp.route('/update_rights', methods=['POST'])
-@login_required
-def update_rights():
-    data = request.form
-    company_id, user_id, position = (data.get('company_id'), data.get('user_id'), data['position'])
-    if not db(Company, id=company_id, author_user_id=user_id).count():
-        UserCompany.update_rights(user_id=data['user_id'],
-                                  company_id=data['company_id'],
-                                  new_rights=data.getlist('right'),
-                                  position=data['position'])
-    else:
-        db(UserCompany, company_id=company_id, user_id=user_id).update(dict(position=position))
-    return redirect(url_for('company.employees',
-                            company_id=data['company_id']))
+# @company_bp.route('/update_rights', methods=['POST'])
+# @check_right(UserIsActive)
+# def update_rights():
+#     data = request.form
+#     company_id, user_id, position = (data.get('company_id'), data.get('user_id'), data['position'])
+#     if not db(Company, id=company_id, author_user_id=user_id).count():
+#         UserCompany.update_rights(user_id=data['user_id'],
+#                                   company_id=data['company_id'],
+#                                   new_rights=data.getlist('right'),
+#                                   position=data['position'])
+#     else:
+#         db(UserCompany, company_id=company_id, user_id=user_id).update(dict(position=position))
+#     return redirect(url_for('company.employees',
+#                             company_id=data['company_id']))
 
 
 @company_bp.route('/create/', methods=['GET'])
-@check_user_status
+@check_right(UserIsActive)
 def update():
     # user_companies = [user_comp for user_comp in current_user.employer_assoc]
     # user_have_comp = True if len(user_companies) > 0 else False
@@ -322,14 +321,14 @@ def search_for_company_to_join(json):
 
 
 @company_bp.route('/search_for_user/<string:company_id>', methods=['OK'])
-@login_required
+@check_right(UserIsActive)
 def search_for_user(json, company_id):
     users = UserCompany().search_for_user_to_join(company_id, json['search'])
     return users
 
 
 @company_bp.route('/send_article_to_user/', methods=['OK'])
-@login_required
+@check_right(UserIsActive)
 def send_article_to_user(json):
     return {'user': json['send_to_user']}
 
@@ -342,7 +341,7 @@ def join_to_company(json, company_id):
 
 
 @company_bp.route('/add_subscriber/', methods=['POST'])
-@login_required
+@check_right(UserIsActive)
 def confirm_subscriber():
     company_role = UserCompany()
     data = request.form

@@ -149,20 +149,20 @@ def remove(json, file_id):
         return False
     return file.remove()
 
-
-@filemanager_bp.route('/uploader/', methods=['GET', 'POST'])
-@filemanager_bp.route('/uploader/<string:company_id>', methods=['GET', 'POST'])
-def uploader(company_id=None):
-    token_db_class = GoogleToken()
-    credentials_exist = token_db_class.check_credentials_exist()
-    google = GoogleAuthorize()
-    if not credentials_exist and google.check_admins():
-        if 'code' in request.args:
-            session['auth_code'] = request.args['code']
-            token_db_class.save_credentials()
-        return redirect(url_for('company.companies')) if 'code' in request.args \
-            else redirect(google.get_auth_code())
-    return render_template('file_uploader.html', company_id=company_id)
+#
+# @filemanager_bp.route('/uploader/', methods=['GET', 'POST'])
+# @filemanager_bp.route('/uploader/<string:company_id>', methods=['GET', 'POST'])
+# def uploader(company_id=None):
+#     token_db_class = GoogleToken()
+#     credentials_exist = token_db_class.check_credentials_exist()
+#     google = GoogleAuthorize()
+#     if not credentials_exist and google.check_admins():
+#         if 'code' in request.args:
+#             session['auth_code'] = request.args['code']
+#             token_db_class.save_credentials()
+#         return redirect(url_for('company.companies')) if 'code' in request.args \
+#             else redirect(google.get_auth_code())
+#     return render_template('file_uploader.html', company_id=company_id)
 
 
 @filemanager_bp.route('/send/<string:parent_id>/', methods=['POST'])
@@ -199,5 +199,6 @@ def send(parent_id):
 
 
 @filemanager_bp.route('/resumeupload/', methods=['GET'])
+@check_right(UserIsActive)
 def resumeupload():
     return jsonify({'size': 0})
