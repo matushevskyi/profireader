@@ -48,7 +48,7 @@ def edit_profile_load(json, user_id):
         return ret
     else:
         json['user']['profireader_name'] = json['user']['profireader_first_name']+' '+json['user']['profireader_last_name']
-        g.user.updates(json['user'])
+        g.user.attr(json['user'])
         if action == 'validate':
             g.user.detach()
             validate = g.user.validate(False)

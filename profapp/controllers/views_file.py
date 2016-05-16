@@ -14,7 +14,7 @@ from time import time
 from zlib import adler32
 from flask._compat import string_types, text_type
 import urllib.parse
-from ..models.rights import UserIsActive
+from ..models.rights import UserIsActive, AllowAll
 
 try:
     from werkzeug.wsgi import wrap_file
@@ -42,7 +42,7 @@ def file_query(table, file_id):
 
 @file_bp.route('<string:file_id>/')
 @file_bp.route('<string:file_id>')
-@check_right(UserIsActive)
+@check_right(AllowAll)
 def get(file_id):
     image_query = file_query(File, file_id)
 

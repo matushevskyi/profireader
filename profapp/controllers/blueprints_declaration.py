@@ -14,11 +14,13 @@ class PrBlueprint(Blueprint):
     def route(self, rule, **options):
         from .request_wrapers import ok, function_profiler
         def decorator(f):
-            if options and 'methods' in options and 'OK' in options['methods'] and f.__name__ in self.bluprints:
+            f.__endpoint__ = self.name
+            f.__method__ = options['methods'] if 'methods' in options else ["GET"]
+            if options and 'methods' in options and 'OK' in options['methods'] and self.name in self.bluprints and f.__name__ in self.bluprints[self.name]:
                 index = options['methods'].index('OK')
                 options['methods'][index] = 'POST'
-            if f.__name__ in self.bluprints:
-                ret = self.bluprints[f.__name__]
+            if self.name in self.bluprints and f.__name__ in self.bluprints[self.name]:
+                ret = self.bluprints[self.name][f.__name__]
             else:
                 ret = f
                 if options and 'methods' in options and 'OK' in options['methods']:
@@ -26,11 +28,12 @@ class PrBlueprint(Blueprint):
                     options['methods'][index] = 'POST'
                     ret = ok(f)
                     ret = function_profiler(ret)
-                    self.bluprints[ret.__name__] = ret
+                    self.bluprints[self.name] = {}
+                    self.bluprints[self.name][ret.__name__] = ret
                 else:
                     ret = function_profiler(ret)
-                    self.bluprints[ret.__name__] = ret
-
+                    self.bluprints[self.name] = {}
+                    self.bluprints[self.name][ret.__name__] = ret
             endpoint = options.pop("endpoint", ret.__name__)
             self.add_url_rule(rule, endpoint, ret, **options)
             return ret

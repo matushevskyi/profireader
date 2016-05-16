@@ -3,14 +3,12 @@ from flask import jsonify, request, g, abort, redirect, url_for, flash
 from functools import reduce
 from ..controllers import errors
 import time
-
+from utils.db_utils import db
 
 def ok(func):
     @wraps(func)
     def function_json(*args, **kwargs):
         try:
-        # sleep(0.5)
-
             if 'json' in kwargs:
                 del kwargs['json']
             a = request.json
@@ -29,13 +27,24 @@ def ok(func):
 
 
 def function_profiler(func):
+    from ..models.profiler import Profiler
     @wraps(func)
     def wrapper(*args, **kwargs):
-        start = time.clock()
-        ret = func(*args, **kwargs)
-        end = time.clock()
-        print(start-end)
-        return ret
+
+        if g.debug:
+            if not func.__dict__['__check_rights__']:
+                raise Exception('method not allowed! Please add "check_right" decorator for your func!')
+            start = time.clock()
+            ret = func(*args, **kwargs)
+            end = time.clock()
+            profiler = db(Profiler, name=func.__name__, blueprint_name=func.__dict__['__endpoint__']).first()
+            method = ','.join([method for method in func.__dict__['__method__']]) if func.__dict__['__method__'] else None
+            if profiler:
+                profiler.update_profile(end-start, method)
+            else:
+                Profiler().create_profile(func.__name__, func.__dict__['__endpoint__'], end-start, method)
+            return ret
+        return func(*args, **kwargs)
     return wrapper
 
 

@@ -42,7 +42,7 @@
                     $scope.data = $scope.original_model;
                     $scope.tags_to_remove = {};
                     }
-            }
+            };
 
             $scope.add_tag = function () {
                 var newTagId = randomHash();
@@ -51,7 +51,7 @@
                     $scope.data.portal.divisions[division_ind].tags[newTagId] = true;
                 }
                 $scope.new_tag = '';
-            }
+            };
 
             $scope.remove_tag = function (tag_id, undo_remove) {
                 if (undo_remove) delete $scope.tags_to_remove[tag_id];
@@ -88,14 +88,18 @@
             <br style="clear: both"/>
             <div class="pr-table col-lg-12 col-md-12 col-sm-12 col-xs-12">
                 <div class="pr-row">
-                    <div class="pr-cell">tag\division</div>
-                    <div class="pr-cell" ng-repeat="division in data.portal.divisions">{{ division.name }}</div>
+                    <div class="pr-cell">tag name</div>
+                    <div class="pr-cell">description</div>
+                    <div class="pr-cell" ng-repeat="division in data.portal.divisions">{{ _('show in `%(name)s`',
+                        division) }}</div>
                     <div class="pr-cell">actions</div>
                 </div>
                 <div class="pr-row" ng-repeat="tag in data.portal.tags">
-                    <div class="pr-cell"><input
+                    <div class="pr-cell"><input class="w100"
                             pr-validation-answer="data_validation:tags[tag.id]"
                             ng-disabled="!editing || tags_to_remove[tag.id]" ng-model="tag.tag"/></div>
+                    <div class="pr-cell"><textarea rows="3" class="w100"
+                            ng-disabled="!editing || tags_to_remove[tag.id]" ng-model="tag.description"></textarea></div>
                     <div class="pr-cell" ng-repeat="division in data.portal.divisions">
                         <label
                                 style="width: 100%"><input

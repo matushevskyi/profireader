@@ -9,24 +9,42 @@ class Profiler(PRBase, Base):
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     name = Column(TABLE_TYPES['name'], nullable=False)
     blueprint_name = Column(TABLE_TYPES['name'], nullable=False)
-    count_of_using = Column(TABLE_TYPES['int'])
     cr_tm = Column(TABLE_TYPES['timestamp'])
-    last_use = Column(TABLE_TYPES['timestamp'])
-    total_time_use_func = Column(TABLE_TYPES['timestamp'])
+    md_tm = Column(TABLE_TYPES['timestamp'])
+    total_time = Column(TABLE_TYPES['timestamp'])
     average_time = Column(TABLE_TYPES['timestamp'])
+    method = Column(TABLE_TYPES['string_30'])
+    total_using = Column(TABLE_TYPES['int'])
 
-    def __init__(self, name=None,  blueprint_name=None, count_of_using=None, cr_tm=None, last_use=None,
-                 total_time=None, average_time=None):
+    def __init__(self, name=None,  blueprint_name=None, total_using=None, cr_tm=None, md_tm=None,
+                 total_time=None, average_time=None, method=None):
         self.name = name
         self.blueprint_name = blueprint_name
-        self.count_of_using = count_of_using
+        self.total_using = total_using
         self.cr_tm = cr_tm
-        self.last_use = last_use
+        self.md_tm = md_tm
         self.total_time = total_time
         self.average_time = average_time
+        self.method = method
+
+    def update_profile(self, time, method):
+        self.attr({
+            'total_using': self.total_using+1,
+            'total_time': self.total_time+time,
+            'method': method
+
+        }).save()
 
 
 
-    def get_all_func(self):
-        print(self)
-        # return db(Profiler).all()
+    def create_profile(self, name, blueprint_name, time, method):
+        self.attr({
+            'name': name,
+            'blueprint_name':blueprint_name,
+            'total_using': 1,
+            'total_time': time,
+            'average_time': time,
+            'method': method
+
+        }).save()
+

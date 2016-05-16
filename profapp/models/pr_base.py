@@ -378,6 +378,7 @@ class Grid:
                     query = query.filter(or_(filter['field'] == v for v in filter['value']))
         if sorts:
             for sort in sorts:
+                print(sorts)
                 if sort['type'] == 'date':
                     query = query.order_by(sort['field'].asc()) if sort['value'] == 'asc' else query.order_by(
                             sort['field'].desc())
@@ -561,12 +562,6 @@ class PRBase:
     def save(self):
         g.db.add(self)
         g.db.flush()
-        return self
-
-    # TODO: OZ by OZ: why we need two identical functions??!?!
-    def updates(self, dictionary):
-        for f in dictionary:
-            setattr(self, f, dictionary[f])
         return self
 
     def attr(self, dictionary):

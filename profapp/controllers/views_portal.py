@@ -318,7 +318,7 @@ def tags_load(json, company_id):
     portal = company.own_portal
 
     def get_client_model(aportal):
-        portal_dict = aportal.get_client_side_dict(more_fields='tags,divisions.tags');
+        portal_dict = aportal.get_client_side_dict()
         portal_dict['divisions'] = [division for division in portal_dict['divisions']
                                     if division['portal_division_type_id'] == 'news' or division[
                                         'portal_division_type_id'] == 'events']
@@ -331,13 +331,13 @@ def tags_load(json, company_id):
     if action == 'load':
         return get_client_model(portal)
     else:
-        new_tags = {t['id']: t.get('tag','') for t in json['portal']['tags']}
-        validated = portal.validate_tags_for_divisions(new_tags)
+        new_tags = {t['id']: {'tag': t.get('tag', ''), 'description': t.get('description', '')} for t in
+                    json['portal']['tags']}
+        validated = portal.validate_tags(new_tags)
         if action == 'save':
             if validated['errors']:
                 raise ValueError
-            portal.set_tags_for_divisions(new_tags, json['portal']['divisions']).save()
+            portal.set_tags(new_tags, json['portal']['divisions']).save()
             return get_client_model(portal)
         else:
             return validated
-

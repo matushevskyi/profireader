@@ -131,9 +131,6 @@ class BaseRightsInProfireader:
         return {action_name: self.action_is_allowed(action_name, *args) for action_name
                 in self.ACTIONS_FOR_STATUSES[status]}
 
-
-""" add profiler"""
-
 class PublishUnpublishInPortal(BaseRightsInProfireader):
 
         def __init__(self, publication=None, division=None, company=None):
@@ -162,13 +159,13 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
             'UNDELETE': 'UNDELETE'
         }
 
-        delete_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL._OWNER],
+        delete_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
                          'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_DELETE]}
 
-        publish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL._OWNER],
+        publish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
                           'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_DELETE]}
 
-        unpublish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH],
+        unpublish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
                             'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]}
 
         republish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH,
@@ -176,20 +173,24 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
                             'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
                                            UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
 
+        edit_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
+                       'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
+
         ACTIONS_FOR_STATUSES = {
             STATUSES['SUBMITTED']: {
                 ACTIONS['PUBLISH']: publish_rights,
                 ACTIONS['DELETE']: delete_rights,
+                ACTIONS['EDIT']: edit_rights,
             },
             STATUSES['PUBLISHED']: {
                 ACTIONS['REPUBLISH']: republish_rights,
                 ACTIONS['UNPUBLISH']: unpublish_rights,
-                ACTIONS['EDIT']: publish_rights,
+                ACTIONS['EDIT']: edit_rights,
                 ACTIONS['DELETE']: delete_rights
             },
             STATUSES['UNPUBLISHED']: {
                 ACTIONS['REPUBLISH']: publish_rights,
-                ACTIONS['EDIT']: republish_rights,
+                ACTIONS['EDIT']: edit_rights,
                 ACTIONS['DELETE']: delete_rights
             },
             STATUSES['DELETED']: {

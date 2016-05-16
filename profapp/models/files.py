@@ -397,12 +397,12 @@ class File(Base, PRBase):
         check = File.is_name(attr['name'], self.mime, self.parent_id) if attr['name'] != 'None' else True
         if attr['name'] == 'None':
             del attr['name']
-        self.updates(attr)
+        self.attr(attr)
         if add_all:
             if 'name' in attr.keys():
                 del attr['name']
             files = File.get_all_in_dir_rev(self.id)
-            [file.updates(attr) for file in files]
+            [file.attr(attr) for file in files]
         return check
 
     def rename(self, name):
@@ -411,7 +411,7 @@ class File(Base, PRBase):
         if File.is_name(name, self.mime, self.parent_id):
             return False
         else:
-            self.updates({'name': name})
+            self.attr({'name': name})
             return True
 
     @staticmethod
@@ -515,7 +515,7 @@ class File(Base, PRBase):
             file_cont = FileContent.get(id)
             cont = bytes(file_cont.content)
             c = cont + bytes(content)
-            file_cont.updates({'content': c})
+            file_cont.attr({'content': c})
             if data.get('chunkNumber') == data.get('chunkQuantity'):
                 return File.check_image_mime(id)
             return id
@@ -526,16 +526,16 @@ class File(Base, PRBase):
         files = [file for file in db(File, parent_id=id) if file.mime != 'directory']
         len_dirs = len(dirs)
         increment = 1
-        [file.updates(attr) for file in files]
+        [file.attr(attr) for file in files]
         for dir in dirs:
             if increment <= len_dirs:
-                dir.updates(attr)
+                dir.attr(attr)
             for file in db(File, parent_id=dir.id):
                 if file.mime == 'directory':
                     dirs.append(file)
-                    file.updates(attr)
+                    file.attr(attr)
                 else:
-                    file.updates(attr)
+                    file.attr(attr)
             increment += 1
         return dirs
 
@@ -544,10 +544,10 @@ class File(Base, PRBase):
         files_in_parent = [file for file in db(File, parent_id=id)]
         for file in files_in_parent:
             if file.mime == 'directory':
-                file.updates(attr)
+                file.attr(attr)
                 File.update_all_in_dir(file.id, attr)
             else:
-                file.updates(attr)
+                file.attr(attr)
         return files_in_parent
 
     def copy_file(self, parent_id, **kwargs):
@@ -587,7 +587,7 @@ class File(Base, PRBase):
         attr = {f: kwargs[f] for f in kwargs}
         attr.update({'name': File.get_unique_name(self.name, self.mime, parent_id), 'parent_id': parent_id,
                      'root_folder_id': root})
-        self.updates(attr)
+        self.attr(attr)
         if self.mime == 'directory':
             del attr['name']
             del attr['parent_id']

@@ -189,6 +189,7 @@ def load_user(apptype):
     g.portal_layout_path = ''
 
     g.debug = current_app.debug
+    g.testing = current_app.testing
 
     for variable in g.db.query(Config).filter_by(server_side=1).all():
         var_id = variable.id
@@ -441,8 +442,9 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     # babel = Babel(app)
 
     app.teardown_request(close_database)
-    app.debug = True
 
+    app.debug = app.config['DEBUG'] if 'DEBUG' in app.config else False
+    app.testing = app.config['TESTING'] if 'TESTING' in app.config else False
 
     app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))
     app.before_request(lambda: load_user(apptype))
