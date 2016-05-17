@@ -1,5 +1,13 @@
 
     <div class="block-item full-block-info" style="height: auto;">
+        <div class="item-additional-info">
+            <a href="{{ url_for('front.subportal', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}"
+               class="item-company">{{ article['company']['name']|safe }}</a>
+            <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
+            <div><br>
+                <script type="text/javascript">getSearchBlock({{ article|tojson }})</script>
+            </div>
+        </div>
 
         <h2 class="item-title">{{ article['title']|safe }}</h2>
 
