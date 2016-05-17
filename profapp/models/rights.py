@@ -221,9 +221,10 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
             return [division.get_client_side_dict() for division in divisions
                                             if(division.portal_division_type_id in ['events', 'news'] and division.is_active())]
 
-        def get_portals_where_company_is_member(self):
+        @staticmethod
+        def get_portals_where_company_is_member(company):
             """This method return all portals-partners current company"""
-            return [memcomport.portal for memcomport in db(MemberCompanyPortal, company_id=self.company.id).all()]
+            return [memcomport.portal for memcomport in db(MemberCompanyPortal, company_id=company.id).all()]
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
 

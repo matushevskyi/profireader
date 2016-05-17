@@ -1,6 +1,6 @@
 from profapp import create_app
 import argparse
-import yappi
+
 
 # if __name__ == '__main__':
 parser = argparse.ArgumentParser(description='profireader application type')

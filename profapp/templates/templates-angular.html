@@ -22,7 +22,7 @@
 </script>
 
 <style>
-    .selected_tags span:first-child>span.ui-select-match-item {
+    .selected_tags span:first-child > span.ui-select-match-item {
         background-color: #9f191f;
     }
 </style>
@@ -38,14 +38,16 @@
 
         $scope.object_name = (action === 'SUBMIT') ? 'material' : 'publication';
         $scope.action = action;
+        $scope.a = {atags: ['Red']};
+        $scope.availableColors = ['Red', 'Green', 'Blue', 'Yellow', 'Magenta', 'Maroon', 'Umbra', 'Turquoise'];
 
-        $scope.selected_tags = [];
+        //$scope.selected_tags = [];
 
         $scope.get_tags_for_selected_division = function (search_text) {
             var division = $scope.get_selected_division();
             return _.filter($scope.data.portal.tags, function (tag) {
                 var ret = $scope.tag_is_allowed_for_division(division, tag) &&
-                        ( (tag['tag'].toString().toLowerCase().indexOf(search_text) !== -1) ||
+                        ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
                         (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
                 return ret;
             })
@@ -75,6 +77,7 @@
 
         $scope.action_cancel = $uibModalInstance.dismiss;
 
+
         $scope.get_selected_division = function () {
             return (!$scope.data || !$scope.data.publication || !$scope.data.publication.portal_division_id || !$scope
                     .data.portal.divisions[$scope.data.publication.portal_division_id]) ? null : $scope.data.portal.divisions[$scope.data.publication.portal_division_id];
@@ -94,9 +97,17 @@
         };
 
         $scope.$watch("data['publication']['portal_division_id']", function (newid, oldid) {
-            $scope.selected_tags = (newid ? _.filter($scope.selected_tags, function (tag) {
+            $scope.data.publication.tags = (newid ? _.filter($scope.data.publication.tags, function (tag) {
                 return $scope.tag_is_allowed_for_division($scope.get_selected_division(), tag);
             }) : []);
+        });
+
+        //added listener per @homerjam per https://github.com/angular-ui/ui-select/issues/974
+        $scope.$on('uiSelectSort:change', function (event, args) {
+            $scope.data.publication.tags = args.array;
+            if (!$scope.$$phase) { //http://stackoverflow.com/questions/20263118/what-is-phase-in-angularjs
+                $scope.$apply();
+            }
         });
 
         {% endraw %}
@@ -131,10 +142,11 @@
                 <hr/>
                 <div class="selected_tags">
                     Tags:
-                    <ui-select ng-model="$parent.$parent.selected_tags" class="form-control" sortable="true" multiple>
-                        <ui-select-match placeholder="Select tag...">{{$item.tag}}</ui-select-match>
+                    <ui-select ng-model="$parent.$parent.data.publication.tags" class="form-control" sortable="true"
+                               multiple>
+                        <ui-select-match placeholder="Select tag...">{{$item.text}}</ui-select-match>
                         <ui-select-choices repeat="tag in get_tags_for_selected_division($select.search)">
-                            <div ng-bind-html="(tag.tag | highlight: $select.search)"></div>
+                            <div ng-bind-html="(tag.text | highlight: $select.search)"></div>
                             <small ng-bind-html="tag.description | highlight: $select.search"></small>
                         </ui-select-choices>
                     </ui-select>
