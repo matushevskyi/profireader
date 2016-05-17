@@ -18,7 +18,7 @@ from io import BytesIO
 from .google import GoogleAuthorize, GoogleToken
 import sys
 import os, urllib
-from time import gmtime, strftime
+from time import gmtime, strftime, clock
 
 
 class File(Base, PRBase):
@@ -218,7 +218,14 @@ class File(Base, PRBase):
         if search_files != None:
             ret = search_files
         else:
-            size = Config.THUMBNAILS_SIZE
+            start = clock()
+            [file for file in db(File, parent_id=parent_id)]
+            end = clock()
+            print(end-start)
+            ss = clock()
+            g.db.execute(("SELECT * FROM file WHERE parent_id='{}'").format(parent_id))
+            ee = clock()
+            print(ee - ss)
             ret = [{'size': file.size, 'name': file.name, 'id': file.id,
                         'parent_id': file.parent_id, 'type': File.type(file),
                         'date': str(file.md_tm),
@@ -231,7 +238,7 @@ class File(Base, PRBase):
                         'description': file.description,
                         'actions': {action: actions[action](file) for action in actions},
                         }
-                       for file in [file.get_thumbnails(size=size)
+                       for file in [file.get_thumbnails(size=Config.THUMBNAILS_SIZE)
                                     for file in db(File, parent_id=parent_id)] if show(file) and
                        file.mime != 'image/thumbnail']
             ret.append({'id': folder.id, 'parent_id': folder.parent_id,
