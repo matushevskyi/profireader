@@ -7,6 +7,7 @@ from ..models.portal import Portal, PortalDivision
 from ..models.articles import ArticlePortalDivision, ArticleCompany
 from ..models.users import User
 from .pr_base import PRBase
+import re
 
 #COMPANY_OWNER = ['edit', 'publish', 'unpublish', 'upload_files', 'delete_files', 'add_employee',
 #                 'suspend_employee', 'submit_publications', 'manage_rights_company', 'manage_portal',
@@ -52,6 +53,7 @@ class BaseRightsInProfireader:
         return True
 
     def check_rights(self, action_name, necessary_rights, objects_for_check):
+
         if isinstance(necessary_rights, tuple):
             _any = []
             allow = True
@@ -73,11 +75,11 @@ class BaseRightsInProfireader:
                             allow = "{} need right `{}` to perform action `{}`".format(object, right,
                                                                                       action_name)
                     if callable(right):
-                        allow = right(objects_for_check)
+                        allow = right(objects_for_check[object])
             elif isinstance(rights[object], tuple):
                 allow = self._any(object, rights[object], objects_for_check, action_name)
             elif callable(rights[object]):
-                allow = rights[object](objects_for_check)
+                allow = rights[object](objects_for_check[object])
             if allow != True:
                 return allow
         return True
@@ -94,7 +96,7 @@ class BaseRightsInProfireader:
                 else:
                     _any.append(True)
             if callable(right):
-                allow = right(objects_for_check)
+                allow = right(objects_for_check[object])
                 if allow != True:
                     _any.append(False)
                 else:
@@ -107,13 +109,12 @@ class BaseRightsInProfireader:
     @staticmethod
     def _is_action_allowed(self, action_name, objects_for_check_status, objects_for_check_rights=None, actions=None, actions_for_statuses=None):
         required_rights = None
-        if not action_name in actions:
+        if not action_name.upper() in actions.keys():
             return "Unrecognized action `{}`".format(action_name)
         if actions_for_statuses:
             if not self.status in actions_for_statuses:
                 return "Unrecognized status `{}`".format(self.status)
-
-            if not action_name in actions_for_statuses[self.status]:
+            if not action_name in actions_for_statuses[self.status].keys():
                 return "Action `{}` is not applicable with status `{}`".format(action_name, self.status)
             if self.status in actions_for_statuses:
                 required_rights = actions_for_statuses[self.status][action_name]
@@ -127,8 +128,8 @@ class BaseRightsInProfireader:
         return result if result != True else True
 
     @staticmethod
-    def base_actions(self, *args, status=None):
-        return {action_name: self.action_is_allowed(action_name, *args) for action_name
+    def base_actions(self, *args, status=None, **kwargs):
+        return {action_name: self.action_is_allowed(action_name, *args, **kwargs) for action_name
                 in self.ACTIONS_FOR_STATUSES[status]}
 
 class PublishUnpublishInPortal(BaseRightsInProfireader):
@@ -327,36 +328,80 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
 
 class FilemanagerRights(BaseRightsEmployeeInCompany):
 
+    def __init__(self, company=None):
+        super(FilemanagerRights, self).__init__(company=company)
+        self.employee = UserCompany.get(company_id=self.company.id)
+
     ACTIONS = {
-        'DOWNLOAD': 'DOWNLOAD',
-        'REMOVE': 'REMOVE',
-        'SHOW': 'SHOW',
-        'UPLOAD': 'UPLOAD',
-        'CUT': 'CUT',
-        'CREATE_FOLDER': 'CREATE_FOLDER'
+        'DOWNLOAD': 'download',
+        'REMOVE': 'remove',
+        'SHOW': 'show',
+        'UPLOAD': 'upload',
+        'CUT': 'cut',
+        'CREATE_FOLDER': 'create_folder',
+        'PROPERTIES': 'properties',
+        'PASTE': 'paste',
+        'COPY': 'copy',
+        'CHOOSE': 'choose'
+    }
+
+    ACTIONS_FOR_STATUSES = {
+        'ACTIVE': {
+            ACTIONS['PROPERTIES']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD],
+                                    'file': lambda file: None if file.mime == "root" else True},
+            ACTIONS['PASTE']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD],
+                               'file': lambda file: None if file == None else True},
+            ACTIONS['COPY']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE],
+                              'file': lambda file: None if file.mime == "root" else True},
+            ACTIONS['REMOVE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS],
+                                'file': lambda file: None if file.mime == "root" else True},
+            ACTIONS['CUT']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS],
+                             'file': lambda file: None if file.mime == "root" else True},
+        }
     }
     ACTIONS_FOR_FILEMANAGER = {
         'ACTIVE': {
-            ACTIONS['DOWNLOAD']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE]},
-            ACTIONS['REMOVE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS]},
             ACTIONS['SHOW']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE]},
             ACTIONS['UPLOAD']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD]},
-            ACTIONS['CUT']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS]},
             ACTIONS['CREATE_FOLDER']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD]}
         }
     }
 
-    def is_action_allowed(self, action):
-        employee = UserCompany.get(company_id=self.company.id)
-        if employee:
-            get_objects_for_check = {'employee': employee,
+
+    def actions(self, file, called_for):
+        actions = BaseRightsInProfireader.base_actions(self, file, status=self.employee.status)
+        default_actions = {}
+        default_actions['download'] = None if ((file.mime == 'directory') or (file.mime == 'root')) else True
+        if called_for == 'file_browse_image':
+            default_actions['choose'] = False if None == re.search('^image/.*', file.mime) else True
+            actions['choose'] = False if None == re.search('^image/.*', file.mime) else True.bit_length()
+        elif called_for == 'file_browse_media':
+            default_actions['choose'] = False if None == re.search('^video/.*', file.mime) else True
+            actions['choose'] = False if None == re.search('^video/.*', file.mime) else True
+        elif called_for == 'file_browse_file':
+            default_actions['choose'] = True
+            actions['choose'] = True
+        actions.update({act: default_actions[act] for act in default_actions})
+        return actions
+
+    def action_is_allowed(self, action, file=None):
+
+        if self.employee:
+
+            objects_for_check_status = {'employee': self.employee,
                                      'employeer': self.company}
-            result = BaseRightsInProfireader._is_action_allowed(employee, action, get_objects_for_check, {'employee': employee},
+            objects_for_check_rights = {'employee': self.employee}
+            if file:
+                objects_for_check_rights.update({'file': file})
+                action_for_status = FilemanagerRights.ACTIONS_FOR_STATUSES
+            else:
+                action_for_status = FilemanagerRights.ACTIONS_FOR_FILEMANAGER
+            result = BaseRightsInProfireader._is_action_allowed(self.employee, action, objects_for_check_status, objects_for_check_rights,
                                                               actions=FilemanagerRights.ACTIONS,
-                                                              actions_for_statuses=FilemanagerRights.ACTIONS_FOR_FILEMANAGER)
+                                                              actions_for_statuses=action_for_status)
             if result != True:
                 return result
-        elif not employee and action != FilemanagerRights.ACTIONS['SHOW']:
+        elif not self.employee and action != FilemanagerRights.ACTIONS['SHOW']:
             return "You cannot menage files in joined company!"
         return True
 

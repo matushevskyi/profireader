@@ -158,10 +158,9 @@ class File(Base, PRBase):
         return rel_sort + sort
 
     @staticmethod
-    def search(name, folder_id, actions, file_manager_called_for=''):
+    def search(name, folder_id, rights_object,file_manager_called_for='', ):
         if name == None:
             return None
-        actions['paste'] = lambda file: None
         name = name.lower()
         all_files = File.get_all_in_dir_rev(folder_id)[::-1]
         sort_dirs = []
@@ -182,7 +181,7 @@ class File(Base, PRBase):
                     'path_to': File.path(file),
                     'author_name': file.copyright_author_name,
                     'description': file.description,
-                    'actions': {action: actions[action](file) for action in actions},
+                    'actions': rights_object.actions(file, ),
                     }
                    for file in s if file.mime != 'image/thumbnail')
         return ret
@@ -190,42 +189,13 @@ class File(Base, PRBase):
     @staticmethod
     def list(parent_id=None, file_manager_called_for='', name=None, company_id=None):
         from ..models.rights import FilemanagerRights
-        rights_object = FilemanagerRights(company=company_id)
         folder = File.get(parent_id)
-        show = lambda: True if rights_object.is_action_allowed(FilemanagerRights.ACTIONS['SHOW']) else False
-        actions = {}
-        default_actions = {}
-        default_actions['download'] = lambda file: None if (
-            (file.mime == 'directory') or (file.mime == 'root')) else True
-        if file_manager_called_for == 'file_browse_image':
-            default_actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
-            actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True.bit_length()
-        elif file_manager_called_for == 'file_browse_media':
-            default_actions['choose'] = lambda file: False if None == re.search('^video/.*', file.mime) else True
-            actions['choose'] = lambda file: False if None == re.search('^video/.*', file.mime) else True
-        elif file_manager_called_for == 'file_browse_file':
-            default_actions['choose'] = lambda file: True
-            actions['choose'] = lambda file: True
-        actions = {act: default_actions[act] for act in default_actions}
-        actions['remove'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['REMOVE'])
-        actions['copy'] = lambda file: None if file.mime == "root" else True
-        actions['paste'] = lambda file: None if file == None else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])
-        actions['cut'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['CUT']) \
-                                                                       and rights_object.is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])
-        actions['properties'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])
+        rights_object = FilemanagerRights(company=company_id)
+        search_files = File.search(name, parent_id, rights_object, file_manager_called_for)
 
-        search_files = File.search(name, parent_id, actions, file_manager_called_for)
         if search_files != None:
             ret = search_files
         else:
-            # start = clock()
-            # [file for file in db(File, parent_id=parent_id)]
-            # end = clock()
-            # print(end-start)
-            # ss = clock()
-            # g.db.execute(("SELECT * FROM file WHERE parent_id='{}'").format(parent_id))
-            # ee = clock()
-            # print(ee - ss)
             ret = [{'size': file.size, 'name': file.name, 'id': file.id,
                         'parent_id': file.parent_id, 'type': File.type(file),
                         'date': str(file.md_tm),
@@ -236,16 +206,17 @@ class File(Base, PRBase):
                         'path_to': File.path(file),
                         'author_name': file.copyright_author_name,
                         'description': file.description,
-                        'actions': {action: actions[action](file) for action in actions},
-                        }for file in db(File, parent_id=parent_id) if show() and
-                       file.mime != 'image/thumbnail']
+                        'actions': rights_object.actions(file, file_manager_called_for),
+                        }for file in db(File, parent_id=parent_id)
+                            if rights_object.action_is_allowed(rights_object.ACTIONS['SHOW'])
+                            and file.mime != 'image/thumbnail']
             ret.append({'id': folder.id, 'parent_id': folder.parent_id,
                         'type': 'parent',
                         'date': str(folder.md_tm).split('.')[0],
                         'url': folder.url(),
                         'author_name': folder.copyright_author_name,
                         'description': folder.description,
-                        'actions': {action: actions[action](folder) for action in actions},
+                        'actions': rights_object.actions(folder, file_manager_called_for),
                         })
         return ret
 
