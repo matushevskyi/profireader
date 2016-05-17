@@ -55,7 +55,6 @@ def list_reader():
 @reader_bp.route('/list_reader', methods=['OK'])
 @check_right(UserIsActive)
 def list_reader_load(json):
-    print (json)
     next_page = json.get('next_page') if json.get('next_page') else 1
     search_text = request.args.get('search_text') or ''
     article_fields = 'title|id|subtitle|short|image_file_id|subtitle|publishing_tm|read_count,company.name|logo_file_id|id,' \
