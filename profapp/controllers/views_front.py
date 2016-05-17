@@ -359,10 +359,8 @@ def division(division_name, page=1):
 
     elif division.portal_division_type_id == 'catalog':
 
-        # sub_query = Article.subquery_articles_at_portal(search_text=search_text,
-        # articles, pages, page = pagination(query=sub_query, page=page)
 
-        members = {member.id: member.company.get_client_side_dict() for
+        members = {member.id: member.get_client_side_dict(fields="id|company|tags") for
                    member in division.portal.company_members}
 
         return render_template('front/' + g.portal_layout_path + 'catalog.html',

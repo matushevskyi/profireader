@@ -381,7 +381,7 @@ class MemberCompanyPortal(Base, PRBase):
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
                 'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
 
-    def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id', more_fields=None):
+    def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
 
     def is_active(self):
