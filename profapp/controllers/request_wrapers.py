@@ -32,7 +32,7 @@ def function_profiler(func):
     def wrapper(*args, **kwargs):
 
         if g.debug or g.testing:
-            if not '__check_rights__' in func.__dict__ and not func.__dict__['__check_rights__']:
+            if not func.__dict__.get('__check_rights__'):
                 print('Please add "check_right" decorator for your func!')
             start = time.clock()
             ret = func(*args, **kwargs)

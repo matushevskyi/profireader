@@ -1,5 +1,14 @@
 <div class="block-item full-block-info" style="height: auto;">
 
+    {% if article['tags'] %}
+        <div class="item-tags fr">
+            {% for tag in article['tags'] %}
+                <span class="label label-danger"><a href="{{ url_for('front.division',
+                    division_name=article['division']['name'], page=1, search_text='', tag=tag.text) }}">{{ tag.text }}</a></span>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <h2 class="item-title">{{ article['title']|safe }}</h2>
 
     <h3 class="item-subtitle">{{ article['subtitle']|safe }}</h3>
@@ -11,11 +20,4 @@
         {{ article['long'] | safe }}
     </div>
 
-    {% if article['tags'] %}
-        <div class="tag-list">
-            {% for tag in article['tags'] %}
-                <a href="#">{{ tag }}</a>
-            {% endfor %}
-        </div>
-    {% endif %}
 </div>
