@@ -4,6 +4,7 @@ from .request_wrapers import ok
 from ..models.translate import TranslateTemplate
 from .request_wrapers import check_right
 from ..models.rights import UserIsActive, AllowAll
+from ..models.files import File
 
 
 
@@ -43,3 +44,17 @@ def change_allowed_html(json):
 @tools_bp.route('/empty/', methods=['GET'])
 def empty():
     return render_template('tools/empty.html')
+
+
+@tools_bp.route('/filecheck/', methods=['GET'])
+def filecheck():
+    return render_template('tools/filecheck.html')
+
+@tools_bp.route('/filecheck/', methods=['OK'])
+def filecheck_load():
+    files  =  File.all()
+    return [f.check(['company_id']) for f in files]
+
+@tools_bp.route('/filecheck/<string:fileid>/<string:repair>/', methods=['OK'])
+def filecheck_repair(fileid, repair):
+    return File.get(fileid).repair(repair, ['company_id'])
