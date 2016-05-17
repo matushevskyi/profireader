@@ -18,7 +18,7 @@ from io import BytesIO
 from .google import GoogleAuthorize, GoogleToken
 import sys
 import os, urllib
-from time import gmtime, strftime
+from time import gmtime, strftime, clock
 
 
 class File(Base, PRBase):
@@ -192,7 +192,7 @@ class File(Base, PRBase):
         from ..models.rights import FilemanagerRights
         rights_object = FilemanagerRights(company=company_id)
         folder = File.get(parent_id)
-        show = lambda file: True if rights_object.is_action_allowed(FilemanagerRights.ACTIONS['SHOW']) else False
+        show = lambda: True if rights_object.is_action_allowed(FilemanagerRights.ACTIONS['SHOW']) else False
         actions = {}
         default_actions = {}
         default_actions['download'] = lambda file: None if (
@@ -218,11 +218,18 @@ class File(Base, PRBase):
         if search_files != None:
             ret = search_files
         else:
-            size = Config.THUMBNAILS_SIZE
+            # start = clock()
+            # [file for file in db(File, parent_id=parent_id)]
+            # end = clock()
+            # print(end-start)
+            # ss = clock()
+            # g.db.execute(("SELECT * FROM file WHERE parent_id='{}'").format(parent_id))
+            # ee = clock()
+            # print(ee - ss)
             ret = [{'size': file.size, 'name': file.name, 'id': file.id,
                         'parent_id': file.parent_id, 'type': File.type(file),
                         'date': str(file.md_tm),
-                        'url': file.get_thumbnail_url(),
+                        'url': file.get_thumbnail_url() if file.mime.split('/')[0] == 'image' else None,
                         'file_url' : file.url(),
                         'youtube_data': {'id': file.youtube_video.video_id,
                                          'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
@@ -230,9 +237,7 @@ class File(Base, PRBase):
                         'author_name': file.copyright_author_name,
                         'description': file.description,
                         'actions': {action: actions[action](file) for action in actions},
-                        }
-                       for file in [file.get_thumbnails(size=size)
-                                    for file in db(File, parent_id=parent_id)] if show(file) and
+                        }for file in db(File, parent_id=parent_id) if show() and
                        file.mime != 'image/thumbnail']
             ret.append({'id': folder.id, 'parent_id': folder.parent_id,
                         'type': 'parent',
@@ -289,12 +294,15 @@ class File(Base, PRBase):
         return back
 
     def get_thumbnail_url(self):
-        thumbnail = self.get_thumbnail()
-        return thumbnail.url() if thumbnail else self.url()
+        thumbnail_id = self.get_thumbnail()
+        if not thumbnail_id:
+            self.get_thumbnails(size=Config.THUMBNAILS_SIZE)
+            thumbnail_id = self.get_thumbnail()
+        return File().url(thumbnail_id) if thumbnail_id else self.url()
 
     def get_thumbnail(self):
-        image_cropped = db(ImageCroped, original_image_id=self.id).first()
-        return db(File, id=image_cropped.croped_image_id).first() if image_cropped else None
+        croped_image_id = g.db.execute(("SELECT croped_image_id FROM image_croped WHERE original_image_id='{}'").format(self.id)).fetchone()
+        return croped_image_id[0] if croped_image_id else None
 
     def type(self):
         if self.mime == 'root' or self.mime == 'directory':
@@ -317,9 +325,9 @@ class File(Base, PRBase):
         path += self.name
         return path
 
-    def url(self):
-        server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', self.id)
-        return '//file' + server + '.profireader.com/' + self.id + '/'
+    def url(self, id=None):
+        server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', id if id else self.id)
+        return '//file' + server + '.profireader.com/' + id if id else self.id + '/'
 
     @staticmethod
     def get_all_in_dir_rev(id):

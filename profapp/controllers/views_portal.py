@@ -271,7 +271,7 @@ def companies_partners_load(json, company_id):
             'page': current_page}
 
 
-@portal_bp.route('/search_for_portal_to_join/', methods=['POST'])
+@portal_bp.route('/search_for_portal_to_join/', methods=['OK'])
 @check_right(UserIsActive)
 def search_for_portal_to_join(json):
     if RequireMembereeAtPortalsRight(company=json['company_id']).is_allowed() != True:
