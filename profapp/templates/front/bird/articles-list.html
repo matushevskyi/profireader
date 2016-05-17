@@ -53,7 +53,8 @@
             {% if article['tags'] %}<span
                     class="label label-danger item-tags fr"><a href="{{ url_for('front.division',
                     division_name=article['division']['name'], page=1, search_text='', tag=article.tags[0].text) }}">{{ article.tags[0]
-                    .text }}</a></span>{% endif %}
+                    .text }}</a></span>
+            {% endif %}
 
         </div>
         <h2 class="item-title">

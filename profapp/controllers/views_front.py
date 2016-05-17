@@ -101,7 +101,7 @@ def details(article_portal_division_id):
                                                        'publishing_tm, keywords, status, long, image_file_id,'
                                                        'division.name, division.portal.id,'
                                                        'company.name|id')
-    article_dict['tags'] = article.tags
+    article_dict['tags'] = [tag.get_client_side_dict() for tag in article.tags]
 
     division = g.db().query(PortalDivision).filter_by(id=article.portal_division_id).one()
     if article_visibility is not True:
