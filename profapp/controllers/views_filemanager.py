@@ -14,6 +14,7 @@ from utils.db_utils import db
 from ..models.company import Company, UserCompany
 import urllib.parse
 from ..models.rights import FilemanagerRights, UserIsActive
+import time
 
 
 def parent_folder(func):
@@ -89,7 +90,10 @@ def list(json):
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],
                          json['params']['search_text'], company_id=company.id)
     else:
+        start = time.clock()
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=company.id)
+        end = time.clock()
+        print(end - start)
     return {'list': list, 'ancestors': ancestors}
 
 @filemanager_bp.route('/createdir/', methods=['OK'])
