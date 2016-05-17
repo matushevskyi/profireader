@@ -16,6 +16,13 @@ from .request_wrapers import ok
 from ..utils.pr_email import send_email
 from .request_wrapers import check_right
 from ..models.rights import AllowAll
+from ..models.tag import Tag
+
+
+def add_tags(articles):
+    for article_id in articles:
+        articles[article_id]['tags'] = ArticlePortalDivision.get(article_id).get_client_side_dict(fields='tags')[
+            'tags']
 
 
 def get_division_for_subportal(portal_id, member_company_id):
@@ -157,6 +164,8 @@ def subportal_division(division_name, member_company_id, member_company_name, pa
     articles, pages, page = Search().search(ArticlePortalDivision().search_filter_default(
         subportal_division.id, company_id=member_company_id), search_text=search_text, page=page,
         order_by=order, pagination=True, items_per_page=items_per_page)
+
+    add_tags(articles)
 
     # sub_query = Article.subquery_articles_at_portal(
     #     search_text=search_text,
@@ -300,7 +309,10 @@ def index(page=1):
         # {'class': Company, 'filter': Company.name.ilike('ssssssss')},
         search_text=search_text, page=page, order_by=order, pagination=True,
         items_per_page=items_per_page)
+
+    add_tags(articles)
     session['original_search_text'] = search_text
+
 
     return render_template('front/' + g.portal_layout_path + 'division.html',
                            articles=articles,
@@ -330,6 +342,8 @@ def division(division_name, page=1):
             ArticlePortalDivision().search_filter_default(division.id),
             search_text=search_text, page=page, order_by=order, pagination=True,
             items_per_page=items_per_page)
+
+        add_tags(articles)
 
 
 

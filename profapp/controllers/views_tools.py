@@ -38,3 +38,8 @@ def SSO(local_cookie):
 @check_right(UserIsActive)
 def change_allowed_html(json):
     return TranslateTemplate.change_allowed_html(json['template'], json['phrase'], json['allow_html'])
+
+
+@tools_bp.route('/empty/', methods=['GET'])
+def empty():
+    return render_template('tools/empty.html')
