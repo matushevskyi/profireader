@@ -546,8 +546,12 @@ class PRBase:
 
         return ret
 
-    def validate(self, is_new=False):
+    @staticmethod
+    def DEFAULT_VALIDATION_ANSWER():
         return {'errors': {}, 'warnings': {}, 'notices': {}}
+
+    def validate(self, is_new=False):
+        return self.DEFAULT_VALIDATION_ANSWER()
 
     def delete(self):
         g.db.delete(self)

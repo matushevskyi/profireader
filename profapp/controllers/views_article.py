@@ -197,12 +197,7 @@ def submit_publish(json, article_action):
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
         publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))
         publication.event_end_tm = PRBase.parse_timestamp(json['publication'].get('event_end_tm'))
-        publication.tags = []
-        # tag_position = 0
-        for tag in json['publication']['tags']:
-            publication.tags.append(Tag.get(tag['id']))
-
-        print(publication.tags)
+        publication.tags = [Tag.get(t['id']) for t in json['publication']['tags']]
 
         if 'also_publish' in json and json['also_publish']:
             publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
@@ -223,14 +218,7 @@ def submit_publish(json, article_action):
             if article_action == 'SUBMIT':
                 publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,
                                                                                      publication)
-            publication.save()
-            tag_position = 0
-            for tag in publication.tags:
-                tag_position += 1
-                tag_pub = db(TagPublication).filter(and_(TagPublication.tag_id == tag.id,
-                                               TagPublication.article_portal_division_id == publication.id)).one()
-                tag_pub.position = tag_position
-                tag_pub.save()
+            publication.save().set_tags_positions()
             return get_portal_dict_for_material(publication.portal, company, publication=publication)
 
 

@@ -60,3 +60,21 @@ class TagPublication(Base, PRBase):
 
     position = Column(TABLE_TYPES['position'], nullable=True, default=1)
 
+
+class TagMembership(Base, PRBase):
+    __tablename__ = 'tag_membership'
+
+    member_company_portal_id = Column(TABLE_TYPES['id_profireader'],
+                                        primary_key=True, nullable=False)
+    tag_id = Column(TABLE_TYPES['id_profireader'],
+                                        ForeignKey(Tag.id),
+                                        primary_key=True, nullable=False)
+
+    portal_id = Column(TABLE_TYPES['id_profireader'],nullable=False)
+
+    ForeignKeyConstraint((member_company_portal_id, portal_id), ('member_company_portal.id',
+                                                                            'member_company_portal.portal_id'),
+                         onupdate='CASCADE', ondelete='CASCADE')
+
+    position = Column(TABLE_TYPES['position'], nullable=True, default=1)
+
