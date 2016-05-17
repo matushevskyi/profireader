@@ -712,39 +712,6 @@ class FileContent(Base, PRBase):
         self.file = file
         self.content = content
 
-        # file.save(os.path.join(root, filename))
-        # for tmp_file in os.listdir(root):
-        #     st = os.stat(root+'/'+filename)
-        #     file_db.name = filename
-        #     file_db.md_tm = time.ctime(os.path.getmtime(root+'/'+filename))
-        #     file_db.ac_tm = time.ctime(os.path.getctime(root+'/'+filename))
-        #     file_db.cr_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-        #     file_db.size = st[ST_SIZE]
-        #     if os.path.isfile(root+'/'+tmp_file):
-        #         file_db.mime = 'file'
-        #     els# e:
-        #         file_db.mime = 'dir'
-
-        #
-        # binary_out.close# ()
-        # if os.path.isfile(root+'/'+filename):
-        #     os.remove(root+'/'+filename)
-        # else:
-        #     os.removedirs(root+'/'+filename)
-        # g.db.add(file_db)
-        # try:
-        #     g.db.commit()
-        # except PermissionError:
-        #     result = {"result":  {
-        #             "success": False,
-        #             "error": "Access denied to remove file"}
-        #          }
-        #     g.db.rollback()
-        #
-        # return result
-        # return True
-
-
 class ImageCroped(Base, PRBase):
     __tablename__ = 'image_croped'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, unique=True, primary_key=True)
@@ -1131,3 +1098,23 @@ class YoutubePlaylist(Base, PRBase):
         playlist.save()
         video.playlist = playlist
         return playlist
+
+    def check(self, what_to_check):
+        ret = {}
+        for k in what_to_check:
+            if k == 'company_id':
+                ret[k] = []
+                # check company
+                ret[k].append('guess_from_parent')
+                ret[k].append('delete')
+
+            if k == 'size':
+                ret[k] = []
+                # check company
+                ret[k].append('resize')
+                ret[k].append('delete')
+
+        pass
+
+    def repair(self, what_to_do, what_to_check):
+        return self.check(what_to_check)
