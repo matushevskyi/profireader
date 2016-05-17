@@ -12,11 +12,12 @@ import simplejson
 from .files import File, ImageCroped
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from ..utils import fileUrl
-from ..models.tag import Tag, TagPortalDivision
+from ..models.tag import Tag, TagMembership
 from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
 from functools import reduce
+from sqlalchemy.sql import and_
 
 
 class Portal(Base, PRBase):
@@ -187,7 +188,7 @@ class Portal(Base, PRBase):
         return ret
 
     def validate_tags(self, new_portal_tags):
-        ret = {'errors': {}, 'warnings': {}, 'notices': {}}
+        ret = PRBase.DEFAULT_VALIDATION_ANSWER()
         unique = {}
         for tag_id, tag in new_portal_tags.items():
             if not re.match(r'[^\s]{3}', tag['text']):
@@ -365,28 +366,22 @@ class MemberCompanyPortal(Base, PRBase):
                     default={RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: True},
                     nullable=False)
 
+    tags = relationship(Tag, secondary = 'tag_membership')
+
     member_company_portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
 
     status = Column(TABLE_TYPES['status'], default='APPLICANT', nullable=False)
 
-    portal = relationship(Portal
-                          # ,back_populates = 'company_members'
-                          # , back_populates='member_companies'
-                          )
+    portal = relationship(Portal)
 
-    company = relationship('Company'
-                           # ,back_populates = 'portal_members'
-                           #                        ,backref = 'portal'
-                           #                         ,backref='member_companies'
-                           )
+    company = relationship('Company')
 
-    plan = relationship('MemberCompanyPortalPlan'
-                        # , backref='partner_portals'
-                        )
+    plan = relationship('MemberCompanyPortalPlan')
+
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
                 'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
 
-    def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id', more_fields=None):
+    def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
 
     def is_active(self):
@@ -445,6 +440,16 @@ class MemberCompanyPortal(Base, PRBase):
         if rightname == '_ANY':
             return True if self.status == MemberCompanyPortal.STATUSES['ACTIVE'] else False
         return True if (self.status == MemberCompanyPortal.STATUSES['ACTIVE'] and self.rights[rightname]) else False
+
+    def set_tags_positions(self):
+        tag_position = 0
+        for tag in self.tags:
+            tag_position += 1
+            tag_pub = db(TagMembership).filter(and_(TagMembership.tag_id == tag.id,
+                                                    TagMembership.member_company_portal_id == self.id)).one()
+            tag_pub.position = tag_position
+            tag_pub.save()
+        return self
 
 
 class ReaderUserPortalPlan(Base, PRBase):

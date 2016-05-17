@@ -360,6 +360,16 @@ class ArticlePortalDivision(Base, PRBase):
     def set_image_client_side_dict(self, client_data):
         return Article.set_image_client_side_dict(self, client_data)
 
+    def set_tags_positions(self):
+        tag_position = 0
+        for tag in self.tags:
+            tag_position += 1
+            tag_pub = db(TagPublication).filter(and_(TagPublication.tag_id == tag.id,
+                                                     TagPublication.article_portal_division_id == self.id)).one()
+            tag_pub.position = tag_position
+            tag_pub.save()
+        return self
+
 
 class ArticleCompany(Base, PRBase):
     __tablename__ = 'article_company'

@@ -137,19 +137,21 @@ def portals_partners(company_id):
                            actions={'require_memberee': RequireMembereeAtPortalsRight(company=company_id).is_allowed()})
 
 
+def membership_grid_row(membership):
+    return PRBase.merge_dicts(membership.get_client_side_dict(fields='id,status,portal.own_company,portal,rights,tags'),
+                       {'actions': MembershipRights(company=membership.company_id,
+                                                    member_company=membership).actions()},
+                       {'who': MembershipRights.MEMBERSHIP})
+
 @portal_bp.route('/portals_partners/<string:company_id>/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
 def portals_partners_load(json, company_id):
     subquery = Company.subquery_portal_partners(company_id, json.get('filter'),
                                                 filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
     partners_g, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
-    partner_list = [
-        PRBase.merge_dicts(partner.get_client_side_dict(fields='id,status,portal.own_company,portal,rights'),
-                           {'actions': MembershipRights(company=company_id, member_company=partner).actions()},
-                           {'who': MembershipRights.MEMBERSHIP})
-        for partner in partners_g]
+
     return {'page': current_page,
-            'grid_data': partner_list,
+            'grid_data': [membership_grid_row(partner) for partner in partners_g],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'status': [{'value': status, 'label': status} for status in
                                                    MembershipRights.STATUSES]}.items()},
@@ -197,6 +199,24 @@ def portals_partners_change_status(json, company_id, portal_id):
             status=MembershipRights.STATUS_FOR_ACTION[json.get('action')])
         partner.save()
     return partner.get_client_side_dict()
+
+
+@portal_bp.route('/membership_set_tags/<string:company_id>/<string:portal_id>/', methods=['OK'])
+# @check_right(RequireMembereeAtPortalsRight, ['company_id'])
+def membership_set_tags(json, company_id, portal_id):
+    membership = MemberCompanyPortal.get(portal_id=portal_id, company_id=company_id)
+    action = g.req('action', allowed=['load', 'validate', 'save'])
+    if action == 'load':
+        return membership.get_client_side_dict(fields='id,portal,portal.tags,company,tags')
+    else:
+        membership.tags = [Tag.get(t['id']) for t in json['tags']]
+
+        if action == 'validate':
+            membership.detach()
+            return PRBase.DEFAULT_VALIDATION_ANSWER()
+        else:
+            membership.save().set_tags_positions()
+            return {'membership': membership_grid_row(membership)}
 
 
 @portal_bp.route('/<string:company_id>/company_partner_update/<string:member_id>/', methods=['GET'])
