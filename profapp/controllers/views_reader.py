@@ -33,17 +33,17 @@ def details_reader(article_portal_division_id):
                            favorite=favorite
                            )
 
-# @reader_bp.route('/list_reader_from_front/<string:portal_id>', methods=['GET'])
-# def list_reader_from_front(portal_id):
-#     portal = Portal.get(portal_id)
-#     if g.user:
-#         portals = db(Portal).filter((Portal.id.in_(db(UserPortalReader.portal_id, user_id=g.user.id)))).all()
-#         if portal in portals:
-#             return redirect(url_for('reader.list_reader'))
-#         else:
-#             return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
-#     else:
-#         return redirect(url_for('general.auth_before_subscribe_to_portal', portal_id=portal_id))
+@reader_bp.route('/list_reader_from_front/<string:portal_id>', methods=['GET'])
+def list_reader_from_front(portal_id):
+    portal = Portal.get(portal_id)
+    if g.user:
+        portals = db(Portal).filter((Portal.id.in_(db(UserPortalReader.portal_id, user_id=g.user.id)))).all()
+        if portal in portals:
+            return redirect(url_for('reader.list_reader'))
+        else:
+            return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
+    else:
+        return redirect(url_for('general.auth_before_subscribe_to_portal', portal_id=portal_id))
 
 
 @reader_bp.route('/list_reader', methods=['GET'])
