@@ -30,7 +30,7 @@ def update_last_accessed(json):
     return TranslateTemplate.update_last_accessed(json['template'], json['phrase'])
 
 @tools_bp.route('/SSO/<string:local_cookie>/', methods=['GET'])
-@check_right(UserIsActive)
+@check_right(AllowAll)
 def SSO(local_cookie):
     return render_template('tools/sso.html', local_cookie=local_cookie, profi_cookie=request.cookies.get('beaker.session.id'))
 
