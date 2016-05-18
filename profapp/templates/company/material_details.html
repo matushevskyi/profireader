@@ -72,7 +72,7 @@
                         material_or_publication_id: (action === 'SUBMIT') ? $scope.data['material']['id'] :
                                 row['publication']['id'],
                         action: action,
-                        portal_id: row['id'],
+                        portal_id: row['portal']['id'],
                         company_id: row['company_id']
                     });
 
@@ -94,20 +94,20 @@
                      }
                      ,*/
                     {
-                        name: 'name',
+                        name: 'portal.name',
                         type: 'link',
                         target: 'front',
-                        href: 'url_front_publication_index_host(row.entity.host)',
-                        img: 'logo_file_id'
+                        href: 'url_front_publication_index_host(row.entity.portal.host)',
+                        img: 'portal.logo_file_id'
                     }
                     , {
                         name: 'publication.division.name', type: 'link', target: 'front',
-                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.host)'
+                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.portal.host)'
                     }
 
                     , {
                         name: 'publication.title', type: 'link', target: 'front',
-                        href: 'url_front_publication_details_host(row.entity.publication.id, row.entity.host)'
+                        href: 'url_front_publication_details_host(row.entity.publication.id, row.entity.portal.host)'
                     },
                         {
                         name: 'publication.status', afilter: {type: 'multi_select'}, width: '100'

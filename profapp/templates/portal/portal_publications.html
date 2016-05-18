@@ -38,6 +38,8 @@
                 $scope.loading = true
                 $ok($scope.url_search_article({company_id: $scope.company.id}), data, function (resp) {
                     callback(resp);
+                    $scope.data = resp;
+                    callback($scope.data);
                 }).finally(function(){
                     $scope.loading = false
                 });
@@ -53,12 +55,12 @@
                     var modalInstance = $publish({
                         material_or_publication_id: row['id'],
                         action: action,
-                        portal_id: row['portal']['id'],
-                        company_id: row['company']['id']
+                        portal_id: $scope.data.portal['id'],
+                        company_id: $scope.company['id']
                     });
 
                     modalInstance.result.then(function (updated_row) {
-                        $scope.gridApi.grid.grid_change_row(updated_row['publication']);
+                        $scope.gridApi.grid.grid_change_row(updated_row);
                     });
                 }
 
@@ -68,22 +70,22 @@
                 loadGridData: $scope.loadPublications,
                 columnDefs: [
                     {
-                        name: 'division.name', type: 'link', target: 'front',
-                        href: 'url_front_publication_division_host(row.entity.division.name, row.entity.portal.host)'
+                        name: 'publication.division.name', type: 'link', target: 'front',
+                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.portal.host)'
                     }
                     ,
                     {
-                        name: 'title', type: 'link', target: 'front',
-                        href: 'url_front_publication_details_host(row.entity.id, row.entity.portal.host)'
+                        name: 'publication.title', type: 'link', target: 'front',
+                        href: 'url_front_publication_details_host(row.entity.publication.id, row.entity.portal.host)'
                     },
                     {
-                        name: 'status', afilter: {type: 'select'}, width: 100
+                        name: 'publication.status', afilter: {type: 'select'}, width: 100
                     },
                     {
-                        name: 'visibility', afilter: {type: 'select'}, width: 100
+                        name: 'publication.visibility', afilter: {type: 'select'}, width: 100
                     },
                     {
-                        name: 'publishing_tm', afilter: {type: 'date_range'}
+                        name: 'publication.publishing_tm', afilter: {type: 'date_range'}
                     }
                     , {
                         name: 'actions', type: 'actions', onclick: 'grid_action', width: 300,

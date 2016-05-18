@@ -1431,8 +1431,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
             gridApi.grid['grid_change_row'] = function(new_row) {
                 $.each(gridApi.grid.options.data, function (index, old_row) {
-                    console.log(old_row, new_row)
                     if (old_row['id'] === new_row['id']) {
+                        if(new_row.hasOwnProperty('replace_id')){
+                            new_row['id'] = new_row['replace_id']
+                        }
                         gridApi.grid.options.data[index] = new_row;
                     }
                 });
