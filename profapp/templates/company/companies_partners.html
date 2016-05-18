@@ -50,9 +50,8 @@
                                 company_id: row.company_id,
                                 portal_id: row.portal_id
                             }), {action: action, who: row.who, partner_id: row.member.company.id}, function (resp) {
-                            }).finally(function () {
-                                $scope.gridApi.grid.setGridData();
-                            })
+                               $scope.gridApi.grid.grid_change_row(resp);
+                            }).finally(function () {})
                     }
                 }
             };

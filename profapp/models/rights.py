@@ -587,9 +587,7 @@ class MembersRights(MembersOrMembershipBase):
         return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id), object=self.member_company)
 
     def action_is_allowed(self, action_name, employee):
-        add_check = {}
-        if action_name != MembersOrMembershipBase.ACTIONS['REJECT']:
-            add_check = {'company members': self.member_company.company}
+        add_check = {'company members': self.member_company.company} if action_name != MembersOrMembershipBase.ACTIONS['REJECT'] else {}
         return self.action_is_allowed_member_company(action_name, employee, add_check)
 
 
@@ -624,9 +622,8 @@ class MembershipRights(MembersOrMembershipBase):
                                                     object=self.member_company)
 
     def action_is_allowed(self, action_name, employee):
-        add_check ={}
-        if action_name == MembersOrMembershipBase.ACTIONS['FREEZE']:
-            add_check = {'company_membership':self.member_company.portal.own_company}
+        add_check = {'company_membership':self.member_company.portal.own_company} \
+            if action_name == MembersOrMembershipBase.ACTIONS['FREEZE'] else {}
         return self.action_is_allowed_member_company(action_name, employee, add_check)
 
 
