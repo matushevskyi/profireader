@@ -407,6 +407,7 @@ class ArticleCompany(Base, PRBase):
                                               "ArticlePortalDivision."
                                               "article_company_id",
                                   backref='company_article')
+
     search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
                      'short': {'relevance': lambda field='short': RELEVANCE.short},
                      'subtitle': {'relevance': lambda field='subtitle': RELEVANCE.short},
