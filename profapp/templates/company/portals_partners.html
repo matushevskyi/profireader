@@ -51,7 +51,6 @@
             };
 
             $scope.joinToPortal = function () {
-                $scope.data = {};
                 return $ok($scope.url_join({company_id: $scope.company_id}), {
                     portal_id: $scope.selectedPortal.id
                 }, function () {
@@ -69,9 +68,8 @@
                     company_id: $scope.company_id,
                     portal_id: row.portal.id
                 }), {action: action, who: row.who, partner_id: $scope.company_id}, function (resp) {
-                }).finally(function () {
-                    $scope.gridApi.grid.setGridData();
-                })
+                    $scope.gridApi.grid.grid_change_row(resp)
+                }).finally(function () {})
             };
 
             $scope.portal_link = function (link) {
@@ -86,10 +84,8 @@
                 });
 
                 modalInstance.result.then(function (updated_row) {
-                    console.log(updated_row, $scope);
                     // TODO: scope.data is not defined! loaded data exists ONLY in grid data. yes?
-                    // $scope.data
-                    $scope.grid_change_row($scope.data, updated_row['membership']);
+                    $scope.gridApi.grid.grid_change_row(updated_row['membership']);
                 });
 
             };

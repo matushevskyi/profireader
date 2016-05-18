@@ -198,7 +198,7 @@ def portals_partners_change_status(json, company_id, portal_id):
         partner.set_client_side_dict(
             status=MembershipRights.STATUS_FOR_ACTION[json.get('action')])
         partner.save()
-    return partner.get_client_side_dict()
+    return membership_grid_row(partner)
 
 
 @portal_bp.route('/membership_set_tags/<string:company_id>/<string:portal_id>/', methods=['OK'])
@@ -259,7 +259,15 @@ def company_partners_change_status(json, company_id, portal_id):
         partner.set_client_side_dict(
             status=MembersRights.STATUS_FOR_ACTION[json.get('action')])
         partner.save()
-    return partner.get_client_side_dict()
+    return {'member': partner.get_client_side_dict(more_fields='company'),
+            'company_id': company_id,
+            'portal_id': db(Portal, company_owner_id=company_id).first().id,
+            'actions': MembersRights(company=company_id,
+                              member_company=partner).actions(),
+            'id': partner.id}
+
+
+
 
 
 @portal_bp.route('/companies_partners/<string:company_id>/', methods=['GET'])
@@ -281,7 +289,7 @@ def companies_partners_load(json, company_id):
                                               'portal_id': db(Portal, company_owner_id=company_id).first().id},
                                              {'actions': MembersRights(company=company_id,
                                                                        member_company=member).actions()},
-                                             {'who': MembersRights.MEMBER})
+                                             {'id': member.id})
                           for member in members],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'member.status': [{'value': status, 'label': status} for status in
@@ -308,9 +316,12 @@ def publications(company_id):
 
 
 def get_publication_dict(publication):
-    ret = publication.get_client_side_dict()
+    ret = {}
+    ret['publication'] = publication.get_client_side_dict()
     if ret.get('long'):
         del ret['long']
+    print(publication.division.portal.id)
+    ret['id'] = publication.id
     ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.division,
                                               company=publication.division.portal.own_company).actions()
 

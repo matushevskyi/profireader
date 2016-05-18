@@ -158,7 +158,7 @@ class File(Base, PRBase):
         return rel_sort + sort
 
     @staticmethod
-    def search(name, folder_id, rights_object,file_manager_called_for='', ):
+    def search(name, folder_id, rights_object, file_manager_called_for='', ):
         if name == None:
             return None
         name = name.lower()
@@ -181,7 +181,7 @@ class File(Base, PRBase):
                     'path_to': File.path(file),
                     'author_name': file.copyright_author_name,
                     'description': file.description,
-                    'actions': rights_object.actions(file, ),
+                    'actions': rights_object.actions(file, file_manager_called_for),
                     }
                    for file in s if file.mime != 'image/thumbnail')
         return ret
@@ -297,8 +297,10 @@ class File(Base, PRBase):
         return path
 
     def url(self, id=None):
-        server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', id if id else self.id)
-        return '//file' + server + '.profireader.com/' + id if id else self.id + '/'
+        ID = id if id else self.id
+        server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', ID)
+
+        return '//file' + server + '.profireader.com/' + ID + '/'
 
     @staticmethod
     def get_all_in_dir_rev(id):

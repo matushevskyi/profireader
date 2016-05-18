@@ -93,9 +93,11 @@
         };
 
         $scope.$watch("data['publication']['portal_division_id']", function (newid, oldid) {
-            $scope.data.publication.tags = (newid ? _.filter($scope.data.publication.tags, function (tag) {
-                return $scope.tag_is_allowed_for_division($scope.get_selected_division(), tag);
-            }) : []);
+            if($scope.data.publication){
+                $scope.data.publication.tags = (newid ? _.filter($scope.data.publication.tags, function (tag) {
+                    return $scope.tag_is_allowed_for_division($scope.get_selected_division(), tag);
+                }) : []);
+            }
         });
 
         //added listener per @homerjam per https://github.com/angular-ui/ui-select/issues/974
