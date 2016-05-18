@@ -262,6 +262,7 @@ class ArticlePortalDivision(Base, PRBase):
     def get_list_reader_articles(articles):
         list_articles = []
         for article_id, article in articles.items():
+            article['tags'] = [tag.get_client_side_dict() for tag in article['tags']]
             article['is_favorite'] = ReaderArticlePortalDivision.article_is_favorite(g.user.id, article_id)
             article['liked'] = ReaderArticlePortalDivision.count_likes(g.user.id, article_id)
             article['list_liked_reader'] = ReaderArticlePortalDivision.get_list_reader_liked(article_id)
