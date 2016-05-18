@@ -1280,13 +1280,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             }
             return $sce.trustAsHtml(text.replace(new RegExp(search, 'gi'), '<span pr-test="MachedLightedText" class="highlightedText">$&</span>'));
         },
-        grid_change_row: function (grid_data, new_row) {
-            $.each(grid_data['grid_data'], function (index, old_row) {
-                if (old_row['id'] === new_row['id']) {
-                    grid_data['grid_data'][index] = new_row;
-                }
-            });
-        },
 
         setGridExtarnals: function (gridApi) {
             var scope = this;
@@ -1434,6 +1427,14 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 gridApi.grid.all_grid_data.paginationOptions.pageNumber = 1;
                 gridApi.grid.all_grid_data['filter'][col.field] = col.filter.text;
                 gridApi.grid.setGridData()
+            };
+
+            gridApi.grid['grid_change_row'] = function(new_row) {
+                $.each(gridApi.grid.options.data, function (index, old_row) {
+                    if (old_row['id'] === new_row['id']) {
+                        gridApi.grid.options.data[index] = new_row;
+                    }
+                });
             };
 
             gridApi.grid['set_data_function'] = function (grid_data) {

@@ -35,7 +35,7 @@
 
             $scope.grid_update_row = function (updated_row) {
 //                    TODO: SS by OZ: how i can access grid data without data cariable in my scope?
-                $scope.grid_change_row($scope.data, updated_row);
+                $scope.gridApi.grid.grid_change_row(updated_row);
             };
 
             $scope.grid_action = function (id, action, row, column_name) {

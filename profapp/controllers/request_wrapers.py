@@ -121,9 +121,10 @@ def check_right(classCheck, params=None, action=None):
             if not params:
                 allow = classCheck().is_allowed()
             else:
+                set_attrs = [params] if isinstance(params, str) else params
                 instance = classCheck()
                 check = True
-                for param in params:
+                for param in set_attrs:
                     if param in kwargs and kwargs[param]:
                         setattr(instance, param, kwargs[param])
                     else:

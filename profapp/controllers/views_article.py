@@ -107,6 +107,7 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
     # ret['rights'] = MemberCompanyPortal.get(company_id=company_id, portal_id=ret['id']).rights
     ret['divisions'] = PRBase.get_ordered_dict([d for d in ret['divisions'] if (
         d['portal_division_type_id'] == 'events' or d['portal_division_type_id'] == 'news')])
+    ret['company_id'] = company.id
 
     if material:
         publication_in_portal = db(ArticlePortalDivision).filter_by(article_company_id=material.id).filter(
