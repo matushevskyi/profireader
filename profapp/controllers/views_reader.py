@@ -12,11 +12,11 @@ from utils.db_utils import db
 from flask.ext.login import login_required
 import datetime
 import time
-from ..models.rights import UserIsActive
+from ..models.rights import UserIsActive, UserNonBanned
 
 
 @reader_bp.route('/details_reader/<string:article_portal_division_id>')
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def details_reader(article_portal_division_id):
     article = ArticlePortalDivision.get(article_portal_division_id)
     article.add_recently_read_articles_to_session()
@@ -47,13 +47,13 @@ def list_reader_from_front(portal_id):
 
 
 @reader_bp.route('/list_reader', methods=['GET'])
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def list_reader():
     return render_template('_ruslan/reader/_reader_content.html', favorite=request.args.get('favorite') == 'True')
 
 
 @reader_bp.route('/list_reader', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def list_reader_load(json):
     next_page = json.get('next_page') if json.get('next_page') else 1
     search_text = request.args.get('search_text') or ''
@@ -125,12 +125,12 @@ def list_reader_load(json):
 
 
 @reader_bp.route('/add_to_favorite/', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def add_delete_favorite(json):
     return ReaderArticlePortalDivision.add_delete_favorite_user_article(json.get('article')['id'], json.get('article')['is_favorite'])
 
 @reader_bp.route('/add_to_like/', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def add_delete_like(json):
     ReaderArticlePortalDivision.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
     return {'liked':ReaderArticlePortalDivision.count_likes(g.user.id, json.get('article')['id']),
@@ -138,7 +138,7 @@ def add_delete_like(json):
 
 
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def reader_subscribe(portal_id):
     user_dict = g.user.get_client_side_dict()
     portal = Portal.get(portal_id)
@@ -162,11 +162,9 @@ def reader_subscribe(portal_id):
 
 
 @reader_bp.route('/subscribe/', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def reader_subscribe_registered(json):
     user_dict = g.user.get_client_side_dict()
-    if g.user and not g.user.tos:
-        return 'Please confirm tos!'
     portal_id = json['portal_id']
     portal = Portal.get(portal_id)
     if not portal:
@@ -193,13 +191,13 @@ def reader_subscribe_registered(json):
 
 
 @reader_bp.route('/profile/',  methods=['GET'])
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def reader_profile():
     return render_template('partials/reader/reader_profile.html')
 
 
 @reader_bp.route('/profile/', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def reader_profile_load(json):
     pagination_params = list()
     filter_params = []
@@ -224,13 +222,13 @@ def reader_profile_load(json):
 
 
 @reader_bp.route('/edit_portal_subscription/<string:reader_portal_id>')
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def edit_portal_subscription(reader_portal_id):
     return render_template('partials/reader/edit_portal_subscription.html')
 
 
 @reader_bp.route('/edit_portal_subscription/<string:reader_portal_id>', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def edit_portal_subscription_load(json, reader_portal_id):
     user_portal_reader = db(UserPortalReader, id=reader_portal_id).one()
     if request.args.get('action') == 'load':
@@ -249,7 +247,7 @@ def edit_portal_subscription_load(json, reader_portal_id):
 
 
 @reader_bp.route('/edit_profile_/<string:reader_portal_id>', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def edit_profile_submit(json, reader_portal_id):
     divisions_and_comments = db(UserPortalReader, id=reader_portal_id).one().show_divisions_and_comments
     for item in json['divisions']:
@@ -260,6 +258,6 @@ def edit_profile_submit(json, reader_portal_id):
 
 
 @reader_bp.route('/buy_subscription')
-@check_right(UserIsActive)
+@check_right(UserNonBanned)
 def buy_subscription():
     return render_template('partials/reader/buy_subscription.html')

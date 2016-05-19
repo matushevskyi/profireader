@@ -258,11 +258,13 @@ class User(Base, UserMixin, PRBase):
         self.yahoo_link = YAHOO_ALL['link']
         self.yahoo_phone = YAHOO_ALL['phone']
 
-    def is_active(self):
+    def is_active(self, check_only_banned=None):
+
         if self._banned:
             return "Sorry!You were baned!Plese send a message to the administrator to know details!"
-        if not self.tos:
-            return "Sorry!You must confirm license first!"
+        if not check_only_banned:
+            if not self.tos:
+                return "Sorry!You must confirm license first!"
         if not self.confirmed:
             return "Sorry!You must be confirmed!"
         return True
