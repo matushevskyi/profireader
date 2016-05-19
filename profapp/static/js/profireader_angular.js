@@ -149,6 +149,18 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             return modalInstance;
         }
     }])
+    .factory('$membership_tags', ['$http', '$uibModal', function ($http, $uibModal) {
+        return function (dict) {
+            var modalInstance = $uibModal.open({
+                templateUrl: 'membership_tags.html',
+                controller: 'membership_tags',
+                backdrop: 'static',
+                keyboard: false,
+                resolve: resolveDictForAngularController(dict)
+            });
+            return modalInstance;
+        }
+    }])
     .factory('$ok', ['$http', function ($http) {
         return function (url, data, ifok, iferror, translate, disableonsubmid) {
             //console.log($scope);
@@ -1268,13 +1280,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             }
             return $sce.trustAsHtml(text.replace(new RegExp(search, 'gi'), '<span pr-test="MachedLightedText" class="highlightedText">$&</span>'));
         },
-        grid_change_row: function (grid_data, new_row) {
-            $.each(grid_data['grid_data'], function (index, old_row) {
-                if (old_row['id'] === new_row['id']) {
-                    grid_data['grid_data'][index] = new_row;
-                }
-            });
-        },
 
         setGridExtarnals: function (gridApi) {
             var scope = this;
@@ -1363,6 +1368,9 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                             return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-style="grid.appScope.' + col.cellStyle + '"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
                         case 'img':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="{{ COL_FIELD }}" alt="image" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
+                        case 'tags':
+                            return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '">' + prefix_img + '<span ng-repeat="tag in COL_FIELD"' +
+                                ' class="m025em label label-danger">{{ tag.text }}</span></div>';
                         case 'show_modal':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-click="' + col.modal + '" ng-bind="COL_FIELD"></a></div>';
                         case 'actions':
@@ -1419,6 +1427,17 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 gridApi.grid.all_grid_data.paginationOptions.pageNumber = 1;
                 gridApi.grid.all_grid_data['filter'][col.field] = col.filter.text;
                 gridApi.grid.setGridData()
+            };
+
+            gridApi.grid['grid_change_row'] = function(new_row) {
+                $.each(gridApi.grid.options.data, function (index, old_row) {
+                    if (old_row['id'] === new_row['id']) {
+                        if(new_row.hasOwnProperty('replace_id')){
+                            new_row['id'] = new_row['replace_id']
+                        }
+                        gridApi.grid.options.data[index] = new_row;
+                    }
+                });
             };
 
             gridApi.grid['set_data_function'] = function (grid_data) {

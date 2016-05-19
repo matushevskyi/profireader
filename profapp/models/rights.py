@@ -7,6 +7,7 @@ from ..models.portal import Portal, PortalDivision
 from ..models.articles import ArticlePortalDivision, ArticleCompany
 from ..models.users import User
 from .pr_base import PRBase
+import re
 
 #COMPANY_OWNER = ['edit', 'publish', 'unpublish', 'upload_files', 'delete_files', 'add_employee',
 #                 'suspend_employee', 'submit_publications', 'manage_rights_company', 'manage_portal',
@@ -52,6 +53,7 @@ class BaseRightsInProfireader:
         return True
 
     def check_rights(self, action_name, necessary_rights, objects_for_check):
+
         if isinstance(necessary_rights, tuple):
             _any = []
             allow = True
@@ -66,6 +68,10 @@ class BaseRightsInProfireader:
     def rights_allowed(self, action_name, rights, objects_for_check):
         allow = True
         for object in rights:
+            if not object in rights:
+                raise Exception('Rights object doesn`t containts {}'.format(object))
+            if not object in objects_for_check:
+                raise Exception('Objects for check rights doesn`t containts {}'.format(object))
             if isinstance(rights[object], list):
                 for right in rights[object]:
                     if isinstance(right, str):
@@ -78,6 +84,8 @@ class BaseRightsInProfireader:
                 allow = self._any(object, rights[object], objects_for_check, action_name)
             elif callable(rights[object]):
                 allow = rights[object](objects_for_check)
+            else:
+                raise Exception('Wrong data type!')
             if allow != True:
                 return allow
         return True
@@ -107,13 +115,12 @@ class BaseRightsInProfireader:
     @staticmethod
     def _is_action_allowed(self, action_name, objects_for_check_status, objects_for_check_rights=None, actions=None, actions_for_statuses=None):
         required_rights = None
-        if not action_name in actions:
+        if not action_name.upper() in actions.keys():
             return "Unrecognized action `{}`".format(action_name)
         if actions_for_statuses:
             if not self.status in actions_for_statuses:
                 return "Unrecognized status `{}`".format(self.status)
-
-            if not action_name in actions_for_statuses[self.status]:
+            if not action_name in actions_for_statuses[self.status].keys():
                 return "Action `{}` is not applicable with status `{}`".format(action_name, self.status)
             if self.status in actions_for_statuses:
                 required_rights = actions_for_statuses[self.status][action_name]
@@ -127,9 +134,11 @@ class BaseRightsInProfireader:
         return result if result != True else True
 
     @staticmethod
-    def base_actions(self, *args, status=None):
-        return {action_name: self.action_is_allowed(action_name, *args) for action_name
-                in self.ACTIONS_FOR_STATUSES[status]}
+    def base_actions(self, *args, object=None, **kwargs):
+        if not isinstance(object, str) and not hasattr(object, 'status'):
+            raise Exception('Bad data!')
+        return {action_name: self.action_is_allowed(action_name, *args, **kwargs) for action_name
+                in self.ACTIONS_FOR_STATUSES[object.status if not isinstance(object, str) else object]}
 
 class PublishUnpublishInPortal(BaseRightsInProfireader):
 
@@ -198,14 +207,21 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
             }
         }
         def actions(self):
-            return BaseRightsInProfireader.base_actions(self, status=self.publication.status)
+            return BaseRightsInProfireader.base_actions(self, object=self.publication)
 
         def action_is_allowed(self, action_name):
-            company = self.company if self.company else self.division.portal.own_company if self.division else self.publication.company
+            company = self.company if self.company else self.division.portal.own_company \
+                if self.division else self.publication.company if self.publication else None
+            membership_portal_id = self.division.portal.id if self.division else ''
+            if not company:
+                raise Exception('Bad data!')
             employee = UserCompany.get(company_id=company.id)
             if not employee:
                 return "Sorry!You are not employee in this company!"
-            membership = MemberCompanyPortal.get(portal_id=self.division.portal.id, company_id=company.id)
+
+            membership = MemberCompanyPortal.get(portal_id=membership_portal_id, company_id=company.id)
+            if not membership:
+                raise Exception('Bad data!')
             company_object = self.division.portal.own_company
             check_objects_status = {'employeer':company,
                                     'employee': employee,
@@ -258,18 +274,20 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
     }
 
     def actions(self):
-        return BaseRightsInProfireader.base_actions(self, status=self.material.status)
+        return BaseRightsInProfireader.base_actions(self, object=self.material)
 
     def action_is_allowed(self, action_name):
+        if not self.material:
+            raise Exception('Bad data!')
         self.employee = UserCompany.get(company_id=self.material.company.id)
         if not self.employee:
             return "Sorry!You are not employee in this company!"
-        check_objects_status = {'company owner material': self.material.company if self.material else None,
+        check_objects_status = {'company owner material': self.material.company,
                                 'employee': self.employee}
 
         check_objects_status.update({'division':self.division}) if self.division else None
 
-        check_objects_rights = {'company owner material': self.material.company if self.material else None,
+        check_objects_rights = {'company owner material': self.material.company,
                                 'employee': self.employee, 'material': self.material, 'user': g.user}
         if self.portal:
             check_objects_rights.update({'membership': MemberCompanyPortal.get(portal_id=self.portal.id, company_id=self.material.company.id)})
@@ -315,6 +333,8 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
     }
 
     def action_is_allowed(self, action):
+        if not self.company:
+            raise Exception('Bad data')
         employee = UserCompany.get(company_id=self.company.id)
         if not employee:
             return "Sorry!You are not employee in this company!"
@@ -327,36 +347,90 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
 
 class FilemanagerRights(BaseRightsEmployeeInCompany):
 
+    def __init__(self, company=None):
+        super(FilemanagerRights, self).__init__(company=company)
+        self.employee = UserCompany.get(company_id=self.company.id)
+
     ACTIONS = {
-        'DOWNLOAD': 'DOWNLOAD',
-        'REMOVE': 'REMOVE',
-        'SHOW': 'SHOW',
-        'UPLOAD': 'UPLOAD',
-        'CUT': 'CUT',
-        'CREATE_FOLDER': 'CREATE_FOLDER'
+        'DOWNLOAD': 'download',
+        'REMOVE': 'remove',
+        'SHOW': 'show',
+        'UPLOAD': 'upload',
+        'CUT': 'cut',
+        'CREATE_FOLDER': 'create_folder',
+        'PROPERTIES': 'properties',
+        'PASTE': 'paste',
+        'COPY': 'copy',
+        'CHOOSE': 'choose'
     }
+
+    ACTIONS_FOR_STATUSES = {
+        'ACTIVE': {
+            ACTIONS['PROPERTIES']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD],
+                                    'file': lambda kwargs: None if kwargs['file'].mime == "root" else True},
+            ACTIONS['PASTE']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD],
+                               'file': lambda kwargs: None if kwargs['file'] == None else True},
+            ACTIONS['COPY']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE],
+                              'file': lambda kwargs: None if kwargs['file'].mime == "root" else True},
+            ACTIONS['REMOVE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS],
+                                'file': lambda kwargs: None if kwargs['file'].mime == "root" else True},
+            ACTIONS['CUT']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS],
+                             'file': lambda kwargs: None if kwargs['file'].mime == "root" else True},
+        },
+        'NONE': {
+            ACTIONS['PROPERTIES']: {'employee': lambda kwargs: False},
+            ACTIONS['PASTE']: {'employee': lambda kwargs: False},
+            ACTIONS['COPY']: {'employee': lambda kwargs: True},
+            ACTIONS['REMOVE']: {'employee': lambda kwargs: False},
+            ACTIONS['CUT']: {'employee': lambda kwargs: False}
+        }
+
+    }
+
     ACTIONS_FOR_FILEMANAGER = {
         'ACTIVE': {
-            ACTIONS['DOWNLOAD']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE]},
-            ACTIONS['REMOVE']: {'employee':[UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS]},
             ACTIONS['SHOW']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE]},
             ACTIONS['UPLOAD']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD]},
-            ACTIONS['CUT']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS]},
             ACTIONS['CREATE_FOLDER']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD]}
         }
     }
 
-    def is_action_allowed(self, action):
-        employee = UserCompany.get(company_id=self.company.id)
-        if employee:
-            get_objects_for_check = {'employee': employee,
+
+    def actions(self, file, called_for):
+        if not file:
+            raise Exception('Bad data!')
+        actions = BaseRightsInProfireader.base_actions(self, file, object=self.employee if self.employee else 'NONE')
+        default_actions = {}
+        default_actions['download'] = None if ((file.mime == 'directory') or (file.mime == 'root')) else True
+        if called_for == 'file_browse_image':
+            default_actions['choose'] = False if None == re.search('^image/.*', file.mime) else True
+            actions['choose'] = False if None == re.search('^image/.*', file.mime) else True.bit_length()
+        elif called_for == 'file_browse_media':
+            default_actions['choose'] = False if None == re.search('^video/.*', file.mime) else True
+            actions['choose'] = False if None == re.search('^video/.*', file.mime) else True
+        elif called_for == 'file_browse_file':
+            default_actions['choose'] = True
+            actions['choose'] = True
+        actions.update({act: default_actions[act] for act in default_actions})
+        return actions
+
+    def action_is_allowed(self, action, file=None):
+
+        if self.employee:
+            objects_for_check_status = {'employee': self.employee,
                                      'employeer': self.company}
-            result = BaseRightsInProfireader._is_action_allowed(employee, action, get_objects_for_check, {'employee': employee},
+            objects_for_check_rights = {'employee': self.employee}
+            if file:
+                objects_for_check_rights.update({'file': file})
+                action_for_status = FilemanagerRights.ACTIONS_FOR_STATUSES
+            else:
+                action_for_status = FilemanagerRights.ACTIONS_FOR_FILEMANAGER
+            result = BaseRightsInProfireader._is_action_allowed(self.employee, action, objects_for_check_status, objects_for_check_rights,
                                                               actions=FilemanagerRights.ACTIONS,
-                                                              actions_for_statuses=FilemanagerRights.ACTIONS_FOR_FILEMANAGER)
+                                                              actions_for_statuses=action_for_status)
             if result != True:
                 return result
-        elif not employee and action != FilemanagerRights.ACTIONS['SHOW']:
+        elif not self.employee and action != FilemanagerRights.ACTIONS['SHOW'] and action != FilemanagerRights.ACTIONS['COPY']:
             return "You cannot menage files in joined company!"
         return True
 
@@ -416,6 +490,10 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
     }
 
     def action_is_allowed(self, action_name):
+        if not self.company:
+            raise Exception('Bad data!')
+        if not self.employment:
+            raise Exception('Bad data!')
         employee = UserCompany.get(company_id=self.company.id)
         if not employee:
             return "Sorry!You are not employee in this company!"
@@ -427,7 +505,7 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
                                                           actions_for_statuses=self.ACTIONS_FOR_STATUSES)
 
     def actions(self):
-        return BaseRightsInProfireader.base_actions(self, status=self.employment.status)
+        return BaseRightsInProfireader.base_actions(self, object=self.employment)
 
 
 class MembersOrMembershipBase(BaseRightsInProfireader):
@@ -506,12 +584,10 @@ class MembersRights(MembersOrMembershipBase):
     }
 
     def actions(self):
-        return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id), status=self.member_company.status)
+        return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id), object=self.member_company)
 
     def action_is_allowed(self, action_name, employee):
-        add_check = {}
-        if action_name != MembersOrMembershipBase.ACTIONS['REJECT']:
-            add_check = {'company members': self.member_company.company}
+        add_check = {'company members': self.member_company.company} if action_name != MembersOrMembershipBase.ACTIONS['REJECT'] else {}
         return self.action_is_allowed_member_company(action_name, employee, add_check)
 
 
@@ -543,12 +619,11 @@ class MembershipRights(MembersOrMembershipBase):
 
     def actions(self):
         return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id),
-                                                    status=self.member_company.status)
+                                                    object=self.member_company)
 
     def action_is_allowed(self, action_name, employee):
-        add_check ={}
-        if action_name == MembersOrMembershipBase.ACTIONS['FREEZE']:
-            add_check = {'company_membership':self.member_company.portal.own_company}
+        add_check = {'company_membership':self.member_company.portal.own_company} \
+            if action_name == MembersOrMembershipBase.ACTIONS['FREEZE'] else {}
         return self.action_is_allowed_member_company(action_name, employee, add_check)
 
 
@@ -567,6 +642,8 @@ class UserIsActive(BaseRightsInProfireader):
         return key, value
 
     def is_allowed(self):
+        if not self.user:
+            raise Exception('Wrong data!')
         allow = self.user.is_active()
         if allow != True:
             return allow
@@ -679,18 +756,6 @@ class EditPublicationRight(PublishUnpublishInPortal):
         self.division = self.publication.division
         return self.actions()[self.ACTIONS['EDIT']]
 
-
-        #        company_alias1 = aliased(Company)
-        #        company_alias2 = aliased(Company)
-        #        participants = db(ArticlePortalDivision, company_alias1, MemberCompanyPortal, company_alias2) \
-        #            .join(company_alias1, company_alias1.id == ArticlePortalDivision.article_company_id) \
-        #            .join(MemberCompanyPortal, MemberCompanyPortal.company_id == company_alias1.id) \
-        # \
-        #            .filter(ArticlePortalDivision.id == self.id).all()
-        #
-        #        for parts in participants:
-        #            for p in parts:
-        #                print(p.get_client_side_dict())
 
 class RIGHTS:
     @staticmethod

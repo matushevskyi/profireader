@@ -1,7 +1,6 @@
 from .blueprints_declaration import front_bp
 from flask import render_template, request, url_for, redirect, g, current_app, session
 from ..models.articles import Article, ArticlePortalDivision, ReaderArticlePortalDivision
-from flask import jsonify
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal, PortalConfig, UserPortalReader
 from ..models.company import Company
@@ -12,10 +11,15 @@ from ..models.pr_base import Search
 from utils.session_utils import back_to_url
 from config import Config
 from sqlalchemy import and_
-from .request_wrapers import ok
 from ..utils.pr_email import send_email
 from .request_wrapers import check_right
 from ..models.rights import AllowAll
+
+
+def add_tags(articles):
+    for article_id in articles:
+        articles[article_id]['tags'] = ArticlePortalDivision.get(article_id).get_client_side_dict(fields='tags')[
+            'tags']
 
 
 def get_division_for_subportal(portal_id, member_company_id):
@@ -32,6 +36,8 @@ def get_division_for_subportal(portal_id, member_company_id):
     else:
         return g.db().query(PortalDivision).filter_by(portal_id=portal_id,
                                                       portal_division_type_id='index').one()
+
+
 @front_bp.route('subscribe_to_portal/')
 @check_right(AllowAll)
 def subscribe_to_portal():
@@ -41,7 +47,7 @@ def subscribe_to_portal():
         if portal in portals:
             redirect(url_for('reader.list_reader'))
         else:
-            url = '//profireader.com/subscribe/'+portal.id
+            url = '//profireader.com/subscribe/' + portal.id
             print(url)
             redirect(url)
     return ''
@@ -94,7 +100,7 @@ def details(article_portal_division_id):
                                                        'publishing_tm, keywords, status, long, image_file_id,'
                                                        'division.name, division.portal.id,'
                                                        'company.name|id')
-    article_dict['tags'] = article.tags
+    article_dict['tags'] = [tag.get_client_side_dict() for tag in article.tags]
 
     division = g.db().query(PortalDivision).filter_by(id=article.portal_division_id).one()
     if article_visibility is not True:
@@ -120,7 +126,7 @@ def details(article_portal_division_id):
                            article=article_dict,
                            favorite=favorite,
                            liked=liked,
-                           liked_count = liked_count,
+                           liked_count=liked_count,
                            article_visibility=article_visibility is True,
                            redirect_info=article_visibility
                            )
@@ -129,9 +135,9 @@ def details(article_portal_division_id):
 @front_bp.route('_a/add_delete_favorite/<string:article_portal_division_id>/', methods=['OK'])
 @check_right(AllowAll)
 def add_delete_favorite(json, article_portal_division_id):
-
     ReaderArticlePortalDivision.add_delete_favorite_user_article(article_portal_division_id, json['on'])
     return {'on': False if json['on'] else True}
+
 
 @front_bp.route('_a/add_delete_liked/<string:article_portal_division_id>/', methods=['OK'])
 @check_right(AllowAll)
@@ -139,7 +145,6 @@ def add_delete_liked(json, article_portal_division_id):
     article = ArticlePortalDivision.get(article_portal_division_id)
     ReaderArticlePortalDivision.add_delete_liked_user_article(article_portal_division_id, json['on'])
     return {'on': False if json['on'] else True, 'liked_count': article.check_liked_count()}
-
 
 
 @front_bp.route('<string:division_name>/_c/<string:member_company_id>/<string:member_company_name>/')
@@ -157,6 +162,8 @@ def subportal_division(division_name, member_company_id, member_company_name, pa
     articles, pages, page = Search().search(ArticlePortalDivision().search_filter_default(
         subportal_division.id, company_id=member_company_id), search_text=search_text, page=page,
         order_by=order, pagination=True, items_per_page=items_per_page)
+
+    add_tags(articles)
 
     # sub_query = Article.subquery_articles_at_portal(
     #     search_text=search_text,
@@ -286,7 +293,7 @@ def send_message(json, member_company_id):
 def index(page=1):
     search_text, portal, _ = get_params()
     if not portal:
-        return render_template('front/error.html', message="No portal found %(host)s", dict = {'host': request.host} )
+        return render_template('front/error.html', message="No portal found %(host)s", dict={'host': request.host})
 
     division = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
                                                       portal_division_type_id='index').one()
@@ -300,6 +307,8 @@ def index(page=1):
         # {'class': Company, 'filter': Company.name.ilike('ssssssss')},
         search_text=search_text, page=page, order_by=order, pagination=True,
         items_per_page=items_per_page)
+
+    add_tags(articles)
     session['original_search_text'] = search_text
 
     return render_template('front/' + g.portal_layout_path + 'division.html',
@@ -310,7 +319,6 @@ def index(page=1):
                            current_page=page,
                            page_buttons=Config.PAGINATION_BUTTONS,
                            search_text=search_text)
-
 
 
 @front_bp.route('<string:division_name>/', methods=['GET'])
@@ -331,7 +339,7 @@ def division(division_name, page=1):
             search_text=search_text, page=page, order_by=order, pagination=True,
             items_per_page=items_per_page)
 
-
+        add_tags(articles)
 
         current_division = division.get_client_side_dict()
 
@@ -351,10 +359,8 @@ def division(division_name, page=1):
 
     elif division.portal_division_type_id == 'catalog':
 
-        # sub_query = Article.subquery_articles_at_portal(search_text=search_text,
-        # articles, pages, page = pagination(query=sub_query, page=page)
 
-        members = {member.id: member.company.get_client_side_dict() for
+        members = {member.id: member.get_client_side_dict(fields="id|company|tags") for
                    member in division.portal.company_members}
 
         return render_template('front/' + g.portal_layout_path + 'catalog.html',

@@ -311,8 +311,8 @@ class Company(Base, PRBase):
                 #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
                 #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
         sub_query = sub_query.join(MemberCompanyPortal.company)
-        list_sorts.append({'value': 'desc', 'field': Company.name})
-        sub_query = Grid.subquery_grid(sub_query, filters=list_filters, sorts=list_sorts)
+        # list_sorts.append({'value': 'desc', 'field': Company.name})
+        sub_query = Grid.subquery_grid(sub_query, filters=list_filters)
         return sub_query
 
     @staticmethod

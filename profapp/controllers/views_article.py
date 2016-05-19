@@ -100,31 +100,34 @@ def material_details(material_id):
                            company=company)
 
 
-def get_portal_dict_for_material(portal, company, material=None, publication=None):
-    ret = portal.get_client_side_dict(
+def get_portal_dict_for_material(portal, company, material=None, publication=None, submit=None):
+    ret = {}
+    ret['portal'] = portal.get_client_side_dict(
         fields='id, name, host, logo_file_id, divisions.id|name|portal_division_type_id, own_company.name|id|logo_file_id')
 
     # ret['rights'] = MemberCompanyPortal.get(company_id=company_id, portal_id=ret['id']).rights
-    ret['divisions'] = PRBase.get_ordered_dict([d for d in ret['divisions'] if (
+    ret['divisions'] = PRBase.get_ordered_dict([d for d in ret['portal']['divisions'] if (
         d['portal_division_type_id'] == 'events' or d['portal_division_type_id'] == 'news')])
-
+    ret['company_id'] = company.id
     if material:
         publication_in_portal = db(ArticlePortalDivision).filter_by(article_company_id=material.id).filter(
             ArticlePortalDivision.portal_division_id.in_(
                 [div_id for div_id, div in ret['divisions'].items()])).first()
     else:
         publication_in_portal = publication
-
     if publication_in_portal:
+        if submit:
+            ret['replace_id'] = publication_in_portal.id
+        ret['id'] = portal.id if submit else publication_in_portal.id
         ret['publication'] = publication_in_portal.get_client_side_dict(
             'id,position,title,status,visibility,portal_division_id,publishing_tm')
         ret['publication']['division'] = ret['divisions'][ret['publication']['portal_division_id']]
         ret['publication']['counts'] = '0/0/0/0'
         ret['actions'] = PublishUnpublishInPortal(publication=publication_in_portal,
                                                   division=publication_in_portal.division, company=company).actions()
-        ret['publication']['actions'] = ret['actions']
 
     else:
+        ret['id'] = portal.id
         ret['publication'] = None
         ret['actions'] = {EditOrSubmitMaterialInPortal.ACTIONS['SUBMIT']:
                               EditOrSubmitMaterialInPortal(material=material, portal=portal).actions()[
@@ -197,12 +200,7 @@ def submit_publish(json, article_action):
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
         publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))
         publication.event_end_tm = PRBase.parse_timestamp(json['publication'].get('event_end_tm'))
-        publication.tags = []
-        # tag_position = 0
-        for tag in json['publication']['tags']:
-            publication.tags.append(Tag.get(tag['id']))
-
-        print(publication.tags)
+        publication.tags = [Tag.get(t['id']) for t in json['publication']['tags']]
 
         if 'also_publish' in json and json['also_publish']:
             publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
@@ -223,15 +221,8 @@ def submit_publish(json, article_action):
             if article_action == 'SUBMIT':
                 publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,
                                                                                      publication)
-            publication.save()
-            tag_position = 0
-            for tag in publication.tags:
-                tag_position += 1
-                tag_pub = db(TagPublication).filter(and_(TagPublication.tag_id == tag.id,
-                                               TagPublication.article_portal_division_id == publication.id)).one()
-                tag_pub.position = tag_position
-                tag_pub.save()
-            return get_portal_dict_for_material(publication.portal, company, publication=publication)
+            publication.save().set_tags_positions()
+            return get_portal_dict_for_material(publication.portal, company, publication=publication, submit=article_action == 'SUBMIT')
 
 
 # @article_bp.route('/material_unpublish_from_portal/', methods=['OK'])

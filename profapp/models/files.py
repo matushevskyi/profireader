@@ -18,7 +18,7 @@ from io import BytesIO
 from .google import GoogleAuthorize, GoogleToken
 import sys
 import os, urllib
-from time import gmtime, strftime
+from time import gmtime, strftime, clock
 
 
 class File(Base, PRBase):
@@ -158,10 +158,9 @@ class File(Base, PRBase):
         return rel_sort + sort
 
     @staticmethod
-    def search(name, folder_id, actions, file_manager_called_for=''):
+    def search(name, folder_id, rights_object, file_manager_called_for='', ):
         if name == None:
             return None
-        actions['paste'] = lambda file: None
         name = name.lower()
         all_files = File.get_all_in_dir_rev(folder_id)[::-1]
         sort_dirs = []
@@ -182,7 +181,7 @@ class File(Base, PRBase):
                     'path_to': File.path(file),
                     'author_name': file.copyright_author_name,
                     'description': file.description,
-                    'actions': {action: actions[action](file) for action in actions},
+                    'actions': rights_object.actions(file, file_manager_called_for),
                     }
                    for file in s if file.mime != 'image/thumbnail')
         return ret
@@ -190,57 +189,34 @@ class File(Base, PRBase):
     @staticmethod
     def list(parent_id=None, file_manager_called_for='', name=None, company_id=None):
         from ..models.rights import FilemanagerRights
-        rights_object = FilemanagerRights(company=company_id)
         folder = File.get(parent_id)
-        show = lambda file: True if rights_object.is_action_allowed(FilemanagerRights.ACTIONS['SHOW']) else False
-        actions = {}
-        default_actions = {}
-        default_actions['download'] = lambda file: None if (
-            (file.mime == 'directory') or (file.mime == 'root')) else True
-        if file_manager_called_for == 'file_browse_image':
-            default_actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True
-            actions['choose'] = lambda file: False if None == re.search('^image/.*', file.mime) else True.bit_length()
-        elif file_manager_called_for == 'file_browse_media':
-            default_actions['choose'] = lambda file: False if None == re.search('^video/.*', file.mime) else True
-            actions['choose'] = lambda file: False if None == re.search('^video/.*', file.mime) else True
-        elif file_manager_called_for == 'file_browse_file':
-            default_actions['choose'] = lambda file: True
-            actions['choose'] = lambda file: True
-        actions = {act: default_actions[act] for act in default_actions}
-        actions['remove'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['REMOVE'])
-        actions['copy'] = lambda file: None if file.mime == "root" else True
-        actions['paste'] = lambda file: None if file == None else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])
-        actions['cut'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['CUT']) \
-                                                                       and rights_object.is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])
-        actions['properties'] = lambda file: None if file.mime == "root" else rights_object.is_action_allowed(FilemanagerRights.ACTIONS['UPLOAD'])
+        rights_object = FilemanagerRights(company=company_id)
+        search_files = File.search(name, parent_id, rights_object, file_manager_called_for)
 
-        search_files = File.search(name, parent_id, actions, file_manager_called_for)
         if search_files != None:
             ret = search_files
         else:
-            size = Config.THUMBNAILS_SIZE
             ret = [{'size': file.size, 'name': file.name, 'id': file.id,
                         'parent_id': file.parent_id, 'type': File.type(file),
                         'date': str(file.md_tm),
-                        'url': file.get_thumbnail_url(),
+                        'url': file.get_thumbnail_url() if file.mime.split('/')[0] == 'image' else None,
                         'file_url' : file.url(),
                         'youtube_data': {'id': file.youtube_video.video_id,
                                          'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
                         'path_to': File.path(file),
                         'author_name': file.copyright_author_name,
                         'description': file.description,
-                        'actions': {action: actions[action](file) for action in actions},
-                        }
-                       for file in [file.get_thumbnails(size=size)
-                                    for file in db(File, parent_id=parent_id)] if show(file) and
-                       file.mime != 'image/thumbnail']
+                        'actions': rights_object.actions(file, file_manager_called_for),
+                        }for file in db(File, parent_id=parent_id)
+                            if rights_object.action_is_allowed(rights_object.ACTIONS['SHOW'])
+                            and file.mime != 'image/thumbnail']
             ret.append({'id': folder.id, 'parent_id': folder.parent_id,
                         'type': 'parent',
                         'date': str(folder.md_tm).split('.')[0],
                         'url': folder.url(),
                         'author_name': folder.copyright_author_name,
                         'description': folder.description,
-                        'actions': {action: actions[action](folder) for action in actions},
+                        'actions': rights_object.actions(folder, file_manager_called_for),
                         })
         return ret
 
@@ -289,12 +265,15 @@ class File(Base, PRBase):
         return back
 
     def get_thumbnail_url(self):
-        thumbnail = self.get_thumbnail()
-        return thumbnail.url() if thumbnail else self.url()
+        thumbnail_id = self.get_thumbnail()
+        if not thumbnail_id:
+            self.get_thumbnails(size=Config.THUMBNAILS_SIZE)
+            thumbnail_id = self.get_thumbnail()
+        return File().url(thumbnail_id) if thumbnail_id else self.url()
 
     def get_thumbnail(self):
-        image_cropped = db(ImageCroped, original_image_id=self.id).first()
-        return db(File, id=image_cropped.croped_image_id).first() if image_cropped else None
+        croped_image_id = g.db.execute(("SELECT croped_image_id FROM image_croped WHERE original_image_id='{}'").format(self.id)).fetchone()
+        return croped_image_id[0] if croped_image_id else None
 
     def type(self):
         if self.mime == 'root' or self.mime == 'directory':
@@ -317,9 +296,11 @@ class File(Base, PRBase):
         path += self.name
         return path
 
-    def url(self):
-        server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', self.id)
-        return '//file' + server + '.profireader.com/' + self.id + '/'
+    def url(self, id=None):
+        ID = id if id else self.id
+        server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', ID)
+
+        return '//file' + server + '.profireader.com/' + ID + '/'
 
     @staticmethod
     def get_all_in_dir_rev(id):
@@ -733,39 +714,6 @@ class FileContent(Base, PRBase):
         self.file = file
         self.content = content
 
-        # file.save(os.path.join(root, filename))
-        # for tmp_file in os.listdir(root):
-        #     st = os.stat(root+'/'+filename)
-        #     file_db.name = filename
-        #     file_db.md_tm = time.ctime(os.path.getmtime(root+'/'+filename))
-        #     file_db.ac_tm = time.ctime(os.path.getctime(root+'/'+filename))
-        #     file_db.cr_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-        #     file_db.size = st[ST_SIZE]
-        #     if os.path.isfile(root+'/'+tmp_file):
-        #         file_db.mime = 'file'
-        #     els# e:
-        #         file_db.mime = 'dir'
-
-        #
-        # binary_out.close# ()
-        # if os.path.isfile(root+'/'+filename):
-        #     os.remove(root+'/'+filename)
-        # else:
-        #     os.removedirs(root+'/'+filename)
-        # g.db.add(file_db)
-        # try:
-        #     g.db.commit()
-        # except PermissionError:
-        #     result = {"result":  {
-        #             "success": False,
-        #             "error": "Access denied to remove file"}
-        #          }
-        #     g.db.rollback()
-        #
-        # return result
-        # return True
-
-
 class ImageCroped(Base, PRBase):
     __tablename__ = 'image_croped'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, unique=True, primary_key=True)
@@ -1152,3 +1100,23 @@ class YoutubePlaylist(Base, PRBase):
         playlist.save()
         video.playlist = playlist
         return playlist
+
+    def check(self, what_to_check):
+        ret = {}
+        for k in what_to_check:
+            if k == 'company_id':
+                ret[k] = []
+                # check company
+                ret[k].append('guess_from_parent')
+                ret[k].append('delete')
+
+            if k == 'size':
+                ret[k] = []
+                # check company
+                ret[k].append('resize')
+                ret[k].append('delete')
+
+        pass
+
+    def repair(self, what_to_do, what_to_check):
+        return self.check(what_to_check)

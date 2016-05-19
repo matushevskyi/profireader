@@ -42,8 +42,6 @@
                 + (index + size < text.length ? '...' : '')) : text);
     }
 
-
-
 </script>
 {% set article_count = 0 %}
 {% set wide_banners = {2:'1',6:'2'} %}
@@ -52,16 +50,14 @@
     <div class="block-item list-elements">
         <div class="item-type article">
             <a href="{{ url_for('front.division', division_name=article['division']['name'], page=1, search_text='') }}">{{ article['division']['name']|safe }}</a>
+            {% if article['tags'] %}<span
+                    class="label label-danger item-tags fr"><a href="{{ url_for('front.division',
+                    division_name=article['division']['name'], page=1, search_text='', tag=article.tags[0].text) }}">{{ article.tags[0].text }}</a></span>
+            {% endif %}
+
         </div>
         <h2 class="item-title">
             <a href="{{ url_for('front.details', article_portal_division_id=article['id']) }}">{{ article['title']|safe }}</a>
-            {% if article['tags'] %}
-                <span class="tag-in-article">
-                    {% for tag in article['tags'] %}
-                        <a href="#">{{ tag }}</a>
-                    {% endfor %}
-                </span>
-            {% endif %}
         </h2>
         <div class="item-short-content">
             <script type="text/javascript">
@@ -87,5 +83,5 @@
         </div>
     {% endif %}
 {% else %}
-<h1>{{ _('There are no articles in this division') }}</h1>
+    <h1>{{ _('There are no articles in this division') }}</h1>
 {% endfor %}

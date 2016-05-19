@@ -1,14 +1,23 @@
 {% extends 'layout.html' %}
 {% block content %}
 
-    {% for member_id in members %}
+    {% for member_id, member in members.items() %}
 
         <div class="block-item company-item">
+
+        {% if member['tags'] %}
+        <div class="item-tags fr">
+            {% for tag in member['tags'] %}
+                <span class="label label-danger"><a href="#">{{ tag.text }}</a></span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
             <img src="//static.profireader.com/static/images/0.gif" class="block-item-img"
-                 style="background-image:url({{ fileUrl(members[member_id]['logo_file_id']) }});"/>
-            <a href="{{ url_for('front.subportal', member_company_id = members[member_id]['id'], member_company_name = members[member_id]['name']) }}"
-               href>{{ members[member_id]['name'] }}</a><br/><br/>
-            {{ members[member_id]['short_description']|safe }}
+                 style="background-image:url({{ fileUrl(member['company']['logo_file_id']) }});"/>
+            <a href="{{ url_for('front.subportal', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}"
+               href>{{ member['company']['name'] }}</a><br/><br/>
+            {{ member['company']['short_description']|safe }}
         </div>
 
     {% endfor %}

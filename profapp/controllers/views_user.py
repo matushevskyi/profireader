@@ -64,7 +64,7 @@ def edit_profile_load(json, user_id):
             return ret
 
 @user_bp.route('/change_lang/', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(AllowAll)
 def change_language(json):
     if g.user:
         g.user.lang = json.get('language')

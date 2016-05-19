@@ -38,10 +38,6 @@
 
         $scope.object_name = (action === 'SUBMIT') ? 'material' : 'publication';
         $scope.action = action;
-        $scope.a = {atags: ['Red']};
-        $scope.availableColors = ['Red', 'Green', 'Blue', 'Yellow', 'Magenta', 'Maroon', 'Umbra', 'Turquoise'];
-
-        //$scope.selected_tags = [];
 
         $scope.get_tags_for_selected_division = function (search_text) {
             var division = $scope.get_selected_division();
@@ -97,9 +93,11 @@
         };
 
         $scope.$watch("data['publication']['portal_division_id']", function (newid, oldid) {
-            $scope.data.publication.tags = (newid ? _.filter($scope.data.publication.tags, function (tag) {
-                return $scope.tag_is_allowed_for_division($scope.get_selected_division(), tag);
-            }) : []);
+            if($scope.data.publication){
+                $scope.data.publication.tags = (newid ? _.filter($scope.data.publication.tags, function (tag) {
+                    return $scope.tag_is_allowed_for_division($scope.get_selected_division(), tag);
+                }) : []);
+            }
         });
 
         //added listener per @homerjam per https://github.com/angular-ui/ui-select/issues/974
@@ -196,6 +194,87 @@
             </button>
 
             <button class="btn btn-warning" type="button" ng-click="action_cancel()">{{ _('Cancel ' + action) }}
+            </button>
+        </div>
+    </div>
+</script>
+
+{% endraw %}
+
+
+<script>
+    module.controller('membership_tags', function ($scope, $ok, $uibModalInstance, company_id, portal_id) {
+
+        $scope.$$translate = {{ translates('membership_tags')|safe }};
+        $scope.set_membership_tags = {{ raw_url_for('portal.membership_set_tags')|safe }};
+        {% raw %}
+
+        $scope.data = {
+            portal: {id: portal_id},
+            company: {id: company_id},
+            all_tags: [],
+            selected_tags: []
+        };
+
+
+        $scope.afterSave = function (resp, defcallback) {
+            $uibModalInstance.close(resp)
+        };
+
+        $scope.get_tags = function (search_text) {
+            return _.filter($scope.data.portal.tags, function (tag) {
+                var ret = ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
+                        (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
+                return ret;
+            })
+        };
+
+        $scope.action_cancel = $uibModalInstance.dismiss;
+
+        //added listener per @homerjam per https://github.com/angular-ui/ui-select/issues/974
+        $scope.$on('uiSelectSort:change', function (event, args) {
+            $scope.data.tags = args.array;
+            if (!$scope.$$phase) { //http://stackoverflow.com/questions/20263118/what-is-phase-in-angularjs
+                $scope.$apply();
+            }
+        });
+
+        {% endraw %}
+
+    });
+</script>
+
+{% raw %}
+<script type="text/ng-template" id="membership_tags.html">
+    <div af ng-model="data"
+         af-url="{{ set_membership_tags({company_id: data.company.id, portal_id: data.portal.id }) }}"
+         af-after-save="afterSave"
+         af-watch="data.tags" ng-cloak>
+        <div class="modal-header">
+            <h3 class="modal-title">{{ _('select tags') }}</h3>
+        </div>
+        <div class="modal-body">
+            {{ _('You are going to select tags for company `%(data.company.name)s` at portal
+            `%(data.portal.name)s`')}}<br/>
+            <div class="selected_tags">
+                Tags:
+                <ui-select ng-model="data.tags" class="form-control" sortable="true"
+                           multiple>
+                    <ui-select-match placeholder="Select tag...">{{$item.text}}</ui-select-match>
+                    <ui-select-choices repeat="tag in get_tags($select.search)">
+                        <div ng-bind-html="(tag.text | highlight: $select.search)"></div>
+                        <small ng-bind-html="tag.description | highlight: $select.search"></small>
+                    </ui-select-choices>
+                </ui-select>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary"
+                    ng-disabled="!$af.isActionAllowed(data, 'save')" type="button"
+                    ng-click="$af.save(data)">{{ _('Save tags') }}
+            </button>
+            <button class="btn btn-warning" type="button" ng-click="action_cancel()">{{ _('Cancel') }}
             </button>
         </div>
     </div>

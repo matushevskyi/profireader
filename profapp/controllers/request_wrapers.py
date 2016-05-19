@@ -31,8 +31,8 @@ def function_profiler(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
 
-        if g.debug:
-            if not func.__dict__['__check_rights__']:
+        if g.debug or g.testing:
+            if not func.__dict__.get('__check_rights__'):
                 print('Please add "check_right" decorator for your func!')
             start = time.clock()
             ret = func(*args, **kwargs)
@@ -121,9 +121,10 @@ def check_right(classCheck, params=None, action=None):
             if not params:
                 allow = classCheck().is_allowed()
             else:
+                set_attrs = [params] if isinstance(params, str) else params
                 instance = classCheck()
                 check = True
-                for param in params:
+                for param in set_attrs:
                     if param in kwargs and kwargs[param]:
                         setattr(instance, param, kwargs[param])
                     else:

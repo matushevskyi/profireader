@@ -43,7 +43,7 @@
                 $scope.loading = true;
                 $ok('', data, function (resp) {
                     callback(resp.portals);
-                    $scope.data = resp;
+                    $scope.data = resp
                 }).finally(function(){
                     $scope.loading = false
                 });
@@ -62,9 +62,8 @@
 
             $scope.grid_action = function (id, action, row, column_name) {
                 'use strict';
-                console.log($scope.data)
                 if (action === 'EDIT') {
-                    window.location.href = $scope.url_update_material({'company_id':$scope.data.company.id,'publication_id': row['publication']['id']});
+                    window.location.href = $scope.url_update_material({'company_id':row['company_id'],'publication_id': row['publication']['id']});
                     return;
                 }
 
@@ -73,12 +72,12 @@
                         material_or_publication_id: (action === 'SUBMIT') ? $scope.data['material']['id'] :
                                 row['publication']['id'],
                         action: action,
-                        portal_id: row['id'],
-                        company_id: $scope.data.company['id']
+                        portal_id: row['portal']['id'],
+                        company_id: row['company_id']
                     });
 
                     modalInstance.result.then(function (updated_row) {
-                        $scope.grid_change_row($scope.data.portals, updated_row);
+                        $scope.gridApi.grid.grid_change_row(updated_row);
                     });
                 }
             };
@@ -95,20 +94,20 @@
                      }
                      ,*/
                     {
-                        name: 'name',
+                        name: 'portal.name',
                         type: 'link',
                         target: 'front',
-                        href: 'url_front_publication_index_host(row.entity.host)',
-                        img: 'logo_file_id'
+                        href: 'url_front_publication_index_host(row.entity.portal.host)',
+                        img: 'portal.logo_file_id'
                     }
                     , {
                         name: 'publication.division.name', type: 'link', target: 'front',
-                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.host)'
+                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.portal.host)'
                     }
 
                     , {
                         name: 'publication.title', type: 'link', target: 'front',
-                        href: 'url_front_publication_details_host(row.entity.publication.id, row.entity.host)'
+                        href: 'url_front_publication_details_host(row.entity.publication.id, row.entity.portal.host)'
                     },
                         {
                         name: 'publication.status', afilter: {type: 'multi_select'}, width: '100'

@@ -390,3 +390,15 @@ div.pr-cell:last-child {
 div.pr-row:last-child div.pr-cell {
     border-bottom-style: solid;
 }
+
+.m1em {
+    margin: 1em;
+}
+
+.m05em {
+    margin: 0.5em;
+}
+
+.m025em {
+    margin: 0.25em;
+}

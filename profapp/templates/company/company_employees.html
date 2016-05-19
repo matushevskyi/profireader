@@ -72,7 +72,6 @@
             $scope.$$translate = {{ translates('employment_position_dialog')|safe }};
             $scope.url_employment_change_position = {{ raw_url_for('company.employment_change_position')|safe }};
             {% raw %}
-            console.log(user)
             $scope.user = user;
             $scope.company = company;
             $scope.position = position;
@@ -119,14 +118,12 @@
             $scope.$$translate = {{ translates('company_employees_controller')|safe }};
             $scope.company = {{ company.get_client_side_dict(fields = 'id,name')|tojson|safe }};
             $scope.url_employee_update = {{ raw_url_for('company.employee_update')|safe }};
-            $scope.data = null;
             {% raw %}
 
             $scope.loadData = function (data, callbackfunc) {
                 $scope.loading = true;
                 $ok('', data, function (resp) {
                     callbackfunc(resp);
-                    $scope.data = resp;
                 }).finally(function(){
                     $scope.loading = false
                 });
@@ -134,9 +131,7 @@
 //http://profireader.com/company/560b9f54-1727-4001-bda8-784be5762873/employment_action/5617835c-12a4-4001-b423-b7f13c696686
 
             $scope.grid_update_row = function (updated_row) {
-                console.log($scope, updated_row);
-//                    TODO: SS by OZ: how i can access grid data without data cariable in my scope?
-                $scope.grid_change_row($scope.data, updated_row);
+                $scope.gridApi.grid.grid_change_row(updated_row);
             }
 
             $scope.grid_action = function (id, action, row, column_name) {
