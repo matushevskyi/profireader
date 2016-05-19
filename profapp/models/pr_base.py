@@ -497,9 +497,8 @@ class PRBase:
                         old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
                         selected_by_user['crop_coordinates'], column_data):
                     return old_croped_image_id
-                elif selected_by_user[
-                    'image_file_id'] == old_image_cropped.original_image_id and not old_image_cropped.same_coordinates(
-                        selected_by_user['crop_coordinates'], column_data):
+                elif selected_by_user['image_file_id'] == old_image_cropped.original_image_id \
+                        and not old_image_cropped.same_coordinates(selected_by_user['crop_coordinates'], column_data):
                     original_image = File.get(selected_by_user['image_file_id'])
                     return original_image.crop(selected_by_user['crop_coordinates'],
                                                folder_id, column_data, old_image_cropped)
@@ -508,11 +507,11 @@ class PRBase:
             else:
                 original_image = File.get(selected_by_user['image_file_id'])
             content = original_image.file_content.content
-            new_orginal_image = File.uploadLogo(content, original_image.name, original_image.mime, folder_id)
+            new_orginal_image = File.uploadLogo(content, original_image.name, original_image.mime, folder_id, author={self.__class__.__name__:self})
         if old_image_cropped:
             old_original_image = File.get(old_image_cropped.original_image_id)
-            # if old_original_image:
-            #     old_original_image.delete()
+            if old_original_image:
+                old_original_image.delete()
         if selected_by_user_type == 'none':
             return None
         if selected_by_user_type == 'upload':
@@ -520,7 +519,7 @@ class PRBase:
             image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
             content = base64.b64decode(image_data)
             new_orginal_image = File.uploadLogo(content, selected_by_user['file']['name'], selected_by_user['file']['mime'],
-                                                folder_id)
+                                                folder_id, author={self.__class__.__name__:self})
             if 'error' in File.check_image_mime(new_orginal_image.id):
                 resp = self.get_client_side_dict()
                 resp.update({'error': True})

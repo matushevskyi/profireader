@@ -33,8 +33,7 @@ class File(Base, PRBase):
     # youtube_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
     company_id = Column(TABLE_TYPES['id_profireader'],
-                        ForeignKey('company.id'),
-                        nullable=False)
+                        ForeignKey('company.id'))
     article_portal_division_id = Column(TABLE_TYPES['id_profireader'],
                                         ForeignKey('article_portal_division.id'))
     copyright_author_name = Column(TABLE_TYPES['name'],
@@ -43,35 +42,32 @@ class File(Base, PRBase):
     ac_count = Column(Integer, default=0, nullable=False)
     size = Column(Integer, default=0, nullable=False)
     author_user_id = Column(TABLE_TYPES['id_profireader'],
-                            ForeignKey('user.id'),
-                            nullable=False)
+                            ForeignKey('user.id'))
     cr_tm = Column(TABLE_TYPES['timestamp'], nullable=False)
     md_tm = Column(TABLE_TYPES['timestamp'], nullable=False)
     ac_tm = Column(TABLE_TYPES['timestamp'], nullable=False)
 
     UniqueConstraint('name', 'parent_id', name='unique_name_in_folder')
-    thumbnail_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
     file_content = relationship('FileContent', uselist=False, foreign_keys='FileContent.id',
                                 cascade="save-update, merge, delete")
 
-    thumbnail = relationship('File', uselist=True, foreign_keys='File.thumbnail_id')
+    youtube_video = relationship('YoutubeVideo', uselist=False, foreign_keys='YoutubeVideo.id',
+                                cascade="save-update, merge, delete")
+
 
     owner = relationship('User',
                          backref=backref('files', lazy='dynamic'),
-                         foreign_keys='File.author_user_id',
-                         cascade='save-update,delete')
+                         foreign_keys='File.author_user_id')
 
     def __init__(self, parent_id=None, name=None, mime='text/plain', size=0,
                  cr_tm=None, md_tm=None, ac_tm=None,
                  root_folder_id=None,
                  # youtube_id=None,
-                 company_id=None, copyright_author_name=None, author_user_id=None, image_croped=None,
-                 thumbnail_id=None):
+                 company_id=None, copyright_author_name=None, author_user_id=None, image_croped=None):
         super(File, self).__init__()
         self.parent_id = parent_id
         self.name = name
-        self.thumbnail_id = thumbnail_id
         self.mime = mime
         self.size = size
         self.cr_tm = cr_tm
@@ -233,6 +229,7 @@ class File(Base, PRBase):
                                      name=self.name + '_thumbnail_{str_size}'.format(
                                              str_size=str_size),
                                      parent_id=self.parent_id,
+                                     author_user_id=self.author_user_id,
                                      root_folder_id=self.root_folder_id,
                                      company_id=self.company_id,
                                      mime=self.mime.split('/')[0] + '/thumbnail').save()
@@ -445,10 +442,14 @@ class File(Base, PRBase):
             File.save_files(files, dir.id, attr)
 
     @staticmethod
-    def uploadLogo(content, name, type, directory, root=None):
+    def uploadLogo(content, name, type, directory, author=None):
         file = File(parent_id=directory,
-                    root_folder_id=root if root else directory,
+                    root_folder_id=directory,
                     mime=type)
+        if 'User' in author:
+            file.author_user_id = author['User'].id
+        if 'Company' in author:
+            file.company_id = author['Company'].id
         try:
             file.name = File.get_unique_name(urllib.parse.unquote(name).replace(
                     '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), type, directory)
@@ -575,12 +576,14 @@ class File(Base, PRBase):
             File.update_all(self.id, attr)
         return self.id
 
-    def create_cropped_image(self, bytes_file, area, coordinates, zoom, folder_id):
+    def create_cropped_image(self, bytes_file, folder_id):
         croped = File()
         croped.md_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())
         croped.size = sys.getsizeof(
                 bytes_file.getvalue())
         croped.name = self.name + '_cropped'
+        croped.author_user_id = self.author_user_id
+        croped.company_id = self.company_id
         croped.parent_id = folder_id
         croped.root_folder_id = folder_id
         croped.mime = self.mime
@@ -620,37 +623,20 @@ class File(Base, PRBase):
         bytes_file, area = self.crop_with_coordinates(coordinates, params)
         if bytes_file:
             if old_image_cropped:
-                return self.update_croped_image(old_image_cropped, coordinates, bytes_file, area, folder_id).id
-            else:
-                new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
-                ImageCroped(original_image_id=self.id,
-                            croped_image_id=new_cropped_image.id,
-                            x=float(round(area[0], 6)), y=float(round(area[1], 6)),
-                            width=float(area[2]-area[0]), height=float(area[3]-area[1]),
-                            croped_width=float(area[4]),
-                            croped_height=float(area[5]),
-                            origin_x=float(coordinates['origin_x']),
-                            origin_y=float(coordinates['origin_y']),
-                            zoom=coordinates['zoom']).save()
-                return new_cropped_image.id
+                db(File, id=old_image_cropped.croped_image_id).first().delete()
+            new_cropped_image = self.create_cropped_image(bytes_file, folder_id)
+            ImageCroped(original_image_id=self.id,
+                        croped_image_id=new_cropped_image.id,
+                        x=float(round(area[0], 6)), y=float(round(area[1], 6)),
+                        width=float(area[2]-area[0]), height=float(area[3]-area[1]),
+                        croped_width=float(area[4]),
+                        croped_height=float(area[5]),
+                        origin_x=float(coordinates['origin_x']),
+                        origin_y=float(coordinates['origin_y']),
+                        zoom=coordinates['zoom']).save()
+            return new_cropped_image.id
         else:
             return self.id
-
-    def update_croped_image(self, old_image_cropped, coordinates ,bytes_file, area, folder_id):
-        # old_image = old_image_cropped.croped_image_id
-        new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
-        old_image_cropped.croped_image_id = new_cropped_image.id
-        old_image_cropped.x = float(round(area[0], 6))
-        old_image_cropped.y = float(round(area[1], 6))
-        old_image_cropped.origin_x = float(coordinates['origin_x'])
-        old_image_cropped.origin_y = float(coordinates['origin_y'])
-        old_image_cropped.width = float(area[2]-area[0])
-        old_image_cropped.height = float(area[3]-area[1])
-        old_image_cropped.croped_width = float(area[4])
-        old_image_cropped.croped_height = float(area[5])
-        old_image_cropped.zoom = coordinates['zoom']
-        # File.get(old_image).delete()
-        return new_cropped_image.save()
 
     @staticmethod
     def get_correct_coordinates(left, top, right, bottom, column_data):
@@ -760,8 +746,8 @@ class ImageCroped(Base, PRBase):
         left, top, right, bottom = File.get_correct_coordinates(coordinates['x'], coordinates['y'], (coordinates['x'] + coordinates['width']),
                                                            (coordinates['y'] + coordinates['height']), column_data)
         if (round(self.x) == round(left)) and round(self.y) == round(top) \
-                and (int(right-left) == self.croped_width and int(bottom-top)
-                    == self.croped_height):
+                and (round(right-left) == self.width and round(bottom-top)
+                    == self.height):
             return True
         else:
             return False
@@ -975,8 +961,7 @@ class YoutubeVideo(Base, PRBase):
     playlist = relationship('YoutubePlaylist', uselist=False)
     file = relationship('File',
                         uselist=False,
-                        backref=backref('youtube_video', uselist=False),
-                        cascade='save-update,delete')
+                        back_populates='youtube_video')
 
     def __init__(self, file=None, title='Title', authorization=None, size=None, user_id=None, video_id=None,
                  status='uploading', playlist_id=None, playlist=None):

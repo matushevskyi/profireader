@@ -62,8 +62,8 @@ def list_reader_load(json):
     favorite = request.args.get('favorite') == 'True'
     localtime = time.gmtime(time.time())
     filter = and_(ArticlePortalDivision.portal_division_id == db(PortalDivision).filter(
-                      PortalDivision.portal_id ==db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id).subquery().c.id,
-                      ArticlePortalDivision.status ==ArticlePortalDivision.STATUSES['PUBLISHED'],
+                      PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id).subquery().c.id,
+                      ArticlePortalDivision.status == ArticlePortalDivision.STATUSES['PUBLISHED'],
                       ArticlePortalDivision.publishing_tm < datetime.datetime(*localtime[:6])) if not favorite\
             else (ArticlePortalDivision.id == db(ReaderArticlePortalDivision, user_id=g.user.id,
                                         favorite=True).subquery().c.article_portal_division_id)
