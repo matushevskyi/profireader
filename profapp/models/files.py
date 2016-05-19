@@ -52,6 +52,9 @@ class File(Base, PRBase):
     file_content = relationship('FileContent', uselist=False, foreign_keys='FileContent.id',
                                 cascade="save-update, merge, delete")
 
+    youtube_video = relationship('YoutubeVideo', uselist=False, foreign_keys='YoutubeVideo.id',
+                                cascade="save-update, merge, delete")
+
 
     owner = relationship('User',
                          backref=backref('files', lazy='dynamic'),
@@ -958,8 +961,7 @@ class YoutubeVideo(Base, PRBase):
     playlist = relationship('YoutubePlaylist', uselist=False)
     file = relationship('File',
                         uselist=False,
-                        backref=backref('youtube_video', uselist=False),
-                        cascade='save-update,delete')
+                        back_populates='youtube_video')
 
     def __init__(self, file=None, title='Title', authorization=None, size=None, user_id=None, video_id=None,
                  status='uploading', playlist_id=None, playlist=None):
