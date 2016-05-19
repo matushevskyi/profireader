@@ -19,7 +19,7 @@ from ..models.files import File
 
 
 @tools_bp.route('/save_translate/', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(AllowAll)
 def save_translate(json):
     return TranslateTemplate.getTranslate(request.json['template'], request.json['phrase'], request.json['url'], request.json['allow_html'])
 
@@ -36,7 +36,7 @@ def SSO(local_cookie):
 
 
 @tools_bp.route('/change_allowed_html/', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(AllowAll)
 def change_allowed_html(json):
     return TranslateTemplate.change_allowed_html(json['template'], json['phrase'], json['allow_html'])
 

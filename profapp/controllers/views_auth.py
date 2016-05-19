@@ -346,6 +346,7 @@ def password_resets():
 @check_right(AllowAll)
 def password_reset_request(json):
     if not current_user.is_anonymous():
+        print('hhhhh')
         flash('To reset your password logout first please.')
         redirect(url_for('reader.list_reader'))
         return False
@@ -356,7 +357,6 @@ def password_reset_request(json):
         SendEmail().send_email(subject='Reset password', send_to=(user.profireader_email, ""),
                                html=render_template('auth/email/reset_password.html', user=user),)
         flash('An email with instructions to reset your password has been sent to you.')
-        redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
     else:
         flash('You are not Profireader user yet. Sign up Profireader first please.')
     return {}
