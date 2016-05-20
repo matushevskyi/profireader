@@ -187,7 +187,8 @@
                                             maybe layout selector is apporpriate here-->
                     {{ _('Article title') }}
                     <pr_help_tooltip>article_title</pr_help_tooltip>
-                    <input class="form-control" style="width: 100%" type="text" ng-model="data.article.title" pr-validation-answer="data_validation:title"
+                    <input class="form-control article-edit-input" type="text" ng-model="data
+                    .article.title" pr-validation-answer="data_validation:title"
                            name="article_title" jng-pattern="/[\wа-яёі']{3}/i">
                     <div ng-show="newMaterial.article_title.$error.pattern" class="error-input">
                         {{ _('The title name should be longer!') }}
@@ -196,10 +197,10 @@
                     {{ _('Article subtitle') }}
                     <pr_help_tooltip>article_subtitle</pr_help_tooltip> <span
                         af-validation-answer="data_validation:subtitle"></span>
-                    <input class="form-control" style="width: 100%" type="text" ng-model="data.article.subtitle">
+                    <input class="form-control article-edit-input" type="text" ng-model="data.article.subtitle">
 
                     {{ _('Keywords') }}
-                    <input class="form-control" style="width: 100%" ng-model="data.article.keywords" pr-validation-answer="data_validation:keywords"
+                    <input class="form-control article-edit-input" ng-model="data.article.keywords" pr-validation-answer="data_validation:keywords"
                            name="article_keywords" jng-pattern="/[\wа-яёі']{2}/i">
                     <div ng-show="newMaterial.article_keywords.$error.pattern" class="error-input">
                         {{ _('The keywords should be longer!') }}
@@ -214,11 +215,11 @@
                     <link href="//static.profireader.com/static/front/bird/css/article.css" rel="stylesheet">
 
                     {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
-                    <textarea class="form-control" style="width: 100%" placeholder="{{_('short')}}"
+                    <textarea class="form-control article-edit-input" style="width: 710px" placeholder="{{_('short')}}"
                               ng-model="data.article.short"></textarea>
 
                     {{ _('Full text') }}
-            <textarea ui-tinymce="tinymceImageOptions" style="width: 400px;"
+            <textarea ui-tinymce="tinymceImageOptions"
                       ng-model="data.article.long"></textarea>
                 </div>
 

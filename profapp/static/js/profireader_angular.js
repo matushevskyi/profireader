@@ -1709,6 +1709,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
         tinymceImageOptions: {
             inline: false,
             menu: [],
+            width: 750,
             plugins: 'advlist autolink link image charmap print paste table media',
             skin: 'lightgray',
             theme: 'modern',

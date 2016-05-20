@@ -10,7 +10,7 @@
   display: none !important;
 }
 body {
-  padding-top: 100px;
+  padding-top: 80px;
 }
 .item-company {
   color: #00BBA1;
@@ -102,6 +102,9 @@ body {
   color: #333;
   padding-right: 15px;
   padding-left: 15px;
+  margin-bottom: 15px;
+  margin-top: 15px;
+  float: left;
 }
 .menu-company a:hover {
   color: #fff;
@@ -109,6 +112,29 @@ body {
   background-color: #00ceb1;
   transition: all 0.2s ease-out;
   padding: 15px;
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+.menu-company a.selected {
+  color: #fff;
+  text-decoration: none;
+  background-color: #00ceb1;
+  transition: all 0.2s ease-out;
+  padding: 15px;
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+.menu-company img.menu-company-logo {
+  margin: 0px 5px;
+  padding: 0px;
+  background: none;
+  float: right;
+}
+.menu-company.menu-company-portal a {
+  float: right;
+}
+.menu-company a.company-about {
+  float: right;
 }
 .menu-company-img {
   height: 60px;
@@ -119,32 +145,6 @@ body {
   text-decoration: none;
   background-color: #00ceb1;
   padding: 15px;
-}
-.about-company a {
-  color: #333;
-}
-.about-company a:hover {
-  text-decoration: none;
-  color: #333;
-}
-
-
- /*TODO SS to OZ  please move this style to less*/
-.company-portal a {
-  color: #525252;
-  float: right;
-  margin: 1px!important;
-  border-bottom: 1px solid #fff;
-  padding: 15px;
-}
-
- /*TODO SS to OZ  please move this style to less*/
-.company-portal a:hover {
-    color: #fff!important;
-    text-decoration: none;
-    background-color: #00ceb1;
-    transition: all 0.2s ease-out;
-    padding: 15px;
 }
 .company-logo img {
   margin-right: -15px;
@@ -228,13 +228,6 @@ body {
   border-bottom: 1px solid #101010;
 }
 /*---Company ID---*/
-.about-company a {
-  color: #333;
-}
-.about-company a:hover {
-  text-decoration: none;
-  color: #333;
-}
 .company-portal a {
   color: #525252;
   float: right;
@@ -1106,6 +1099,10 @@ body {
 }
 .create-material .create-new-material {
   margin-left: 0;
+}
+.create-material .article-edit-input {
+  width: 698px;
+  box-sizing: border-box;
 }
 .create-material button.pr-button {
   background-color: #00c853;
