@@ -1,14 +1,14 @@
 <script type="text/ng-template" id="tos_dialog.html">
             <div class="modal-header">
-                <h3 pr-test="LicenceTitle" class="modal-title">{{ _('Pls accept tos dialog header') }}</h3>
+                <h3 pr-test="LicenceTitle" class="modal-title">{{ _('Please accept tos dialog header') }}</h3>
             </div>
             <div class="modal-body">
                 {{ __('Licence text') }}
             </div>
 
             <div class="modal-footer">
-            <button pr-test="AcceptLicence" type="button" class="btn btn-default" ng-click="accept_tos('accept')">Accept</button>
-            <button pr-test="DeclineLicence" type="button" class="btn btn-default" ng-click="accept_tos('decline')">Decline</button>
+            <button pr-test="AcceptLicence" type="button" class="btn btn-default" ng-click="accept_tos('accept')">{{ __('Accept') }}</button>
+            <button pr-test="DeclineLicence" type="button" class="btn btn-default" ng-click="accept_tos('decline')">{{ __('Decline') }}</button>
             </div>
         </div>
     </script>

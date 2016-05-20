@@ -6,14 +6,14 @@
     {% include '_ruslan/partials/_header_files_grid.html' %}
 {% endblock head %}
 
-{% block title %}{{ _('Profireader reader profile') }}{% endblock title %}
+{% block title %}Profireader{{ _(' reader profile') }}{% endblock title %}
 
 {% block portal_content %}
     {% include '_ruslan/reader/_reader_nav.html' %}
     <script type="text/ng-template" id="grid_reader_modal.html">
 <h4><textarea>Plan text</textarea></h4>
         <div class='modal-footer'>
-            <button id='buttonClose' class='btn btn-primary' ng-click='cancel()'>Close</button>
+            <button id='buttonClose' class='btn btn-primary' ng-click='cancel()'>{{ _('Close') }}</button>
         </div>
     </script>
 <script>

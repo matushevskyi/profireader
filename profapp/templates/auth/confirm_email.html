@@ -1,5 +1,5 @@
 {% extends "_ruslan/_index_layout.html" %}
-{% block title %}Profireader - Confirmation{% endblock title %}
+{% block title %}Profireader - {{ _('Confirmation') }}{% endblock title %}
 {% block head %}
     {{ super() }}
 {% endblock head %}
@@ -17,7 +17,7 @@
     <h3 pr-test="Confirmed">{{ _('You have confirmed your account successfully!') }}</h3>
     <p>
 
-        <a pr-test="ConfirmEmail" href="{{ url_for('reader.list_reader') }}">{{ _('Start from here!') }}</a>
+        <a pr-test="ConfirmEmail" href="{{ url_for('general.index') }}">{{ _('Start from here!') }}</a>
     </p>
 
 </div>
