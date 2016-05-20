@@ -320,7 +320,6 @@ def get_publication_dict(publication):
     ret['publication'] = publication.get_client_side_dict()
     if ret.get('long'):
         del ret['long']
-    print(publication.division.portal.id)
     ret['id'] = publication.id
     ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.division,
                                               company=publication.division.portal.own_company).actions()

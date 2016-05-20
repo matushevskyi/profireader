@@ -641,13 +641,21 @@ class UserIsActive(BaseRightsInProfireader):
             value = User.get(value)
         return key, value
 
-    def is_allowed(self):
+    def is_allowed(self, check_only_banned=None):
         if not self.user:
             raise Exception('Wrong data!')
-        allow = self.user.is_active()
+        allow = self.user.is_active(check_only_banned)
         if allow != True:
             return allow
         return True
+
+class UserNonBanned(UserIsActive):
+
+    def __init__(self, user=None):
+        super(UserNonBanned, self).__init__(user=user)
+
+    def is_allowed(self):
+        return UserIsActive.is_allowed(self, check_only_banned=True)
 
 class AllowAll(BaseRightsInProfireader):
 
