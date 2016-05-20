@@ -49,7 +49,7 @@ class ArticlePortalDivision(Base, PRBase):
 
     # tags =[]
 
-    tags = relationship(Tag, secondary = 'tag_publication', uselist=True)
+    tags = relationship(Tag, secondary='tag_publication', uselist=True)
     # tags_publication = relationship(TagPublication, uselist=True)
 
     # primaryjoin=and_(
@@ -116,45 +116,44 @@ class ArticlePortalDivision(Base, PRBase):
         division_type = division.portal_division_type.id
         visibility = ArticlePortalDivision.visibility.in_(ArticlePortalDivision.articles_visibility_for_user(
             portal_id=division.portal_id)[0])
-        filter = None
+        ret = None
         if division_type == 'index':
-            filter = {'class': ArticlePortalDivision,
-                      'filter': and_(ArticlePortalDivision.portal_division_id.in_(db(
-                          PortalDivision.id, portal_id=division.portal_id).filter(
-                          PortalDivision.portal_division_type_id != 'events'
-                      )), ArticlePortalDivision.status == ArticlePortalDivision.STATUSES['PUBLISHED'], visibility),
-                      'return_fields': 'default_dict', 'tags': True}
+            ret = {'class': ArticlePortalDivision,
+                   'filter': and_(ArticlePortalDivision.portal_division_id.in_(db(
+                       PortalDivision.id, portal_id=division.portal_id).filter(
+                       PortalDivision.portal_division_type_id != 'events'
+                   )), ArticlePortalDivision.status == ArticlePortalDivision.STATUSES['PUBLISHED'], visibility),
+                   'return_fields': 'default_dict', 'tags': True}
         elif division_type == 'news':
             if not company_id:
-                filter = {'class': ArticlePortalDivision,
-                          'filter': and_(ArticlePortalDivision.portal_division_id == division_id,
-                                         ArticlePortalDivision.status ==
-                                         ArticlePortalDivision.STATUSES['PUBLISHED'], visibility),
-                          'return_fields': 'default_dict', 'tags': True}
+                ret = {'class': ArticlePortalDivision,
+                       'filter': and_(ArticlePortalDivision.portal_division_id == division_id,
+                                      ArticlePortalDivision.status ==
+                                      ArticlePortalDivision.STATUSES['PUBLISHED'], visibility),
+                       'return_fields': 'default_dict', 'tags': True}
             else:
-                filter = {'class': ArticlePortalDivision,
-                          'filter': and_(ArticlePortalDivision.portal_division_id == division_id,
-                                         ArticlePortalDivision.status ==
-                                         ArticlePortalDivision.STATUSES['PUBLISHED'],
-                                         db(ArticleCompany, company_id=company_id,
-                                            id=ArticlePortalDivision.article_company_id).exists(), visibility),
-                          'return_fields': 'default_dict', 'tags': True}
+                ret = {'class': ArticlePortalDivision,
+                       'filter': and_(ArticlePortalDivision.portal_division_id == division_id,
+                                      ArticlePortalDivision.status == ArticlePortalDivision.STATUSES['PUBLISHED'],
+                                      db(ArticleCompany, company_id=company_id,
+                                         id=ArticlePortalDivision.article_company_id).exists(), visibility),
+                       'return_fields': 'default_dict', 'tags': True}
         elif division_type == 'events':
             if not company_id:
-                filter = {'class': ArticlePortalDivision,
-                          'filter': and_(ArticlePortalDivision.portal_division_id == division_id,
-                                         ArticlePortalDivision.status ==
-                                         ArticlePortalDivision.STATUSES['PUBLISHED'], visibility),
-                          'return_fields': 'default_dict', 'tags': True}
+                ret = {'class': ArticlePortalDivision,
+                       'filter': and_(ArticlePortalDivision.portal_division_id == division_id,
+                                      ArticlePortalDivision.status ==
+                                      ArticlePortalDivision.STATUSES['PUBLISHED'], visibility),
+                       'return_fields': 'default_dict', 'tags': True}
             else:
-                filter = {'class': ArticlePortalDivision,
-                          'filter': and_(ArticlePortalDivision.portal_division_id == division_id,
-                                         ArticlePortalDivision.status ==
-                                         ArticlePortalDivision.STATUSES['PUBLISHED'],
-                                         db(ArticleCompany, company_id=company_id,
-                                            id=ArticlePortalDivision.article_company_id).exists(), visibility),
-                          'return_fields': 'default_dict', 'tags': True}
-        return filter
+                ret = {'class': ArticlePortalDivision,
+                       'filter': and_(ArticlePortalDivision.portal_division_id == division_id,
+                                      ArticlePortalDivision.status ==
+                                      ArticlePortalDivision.STATUSES['PUBLISHED'],
+                                      db(ArticleCompany, company_id=company_id,
+                                         id=ArticlePortalDivision.article_company_id).exists(), visibility),
+                       'return_fields': 'default_dict', 'tags': True}
+        return ret
 
     def add_recently_read_articles_to_session(self):
         if self.id not in session.get('recently_read_articles', []):

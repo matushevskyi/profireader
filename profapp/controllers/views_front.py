@@ -4,7 +4,6 @@ from ..models.articles import Article, ArticlePortalDivision, ReaderArticlePorta
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal, PortalConfig, UserPortalReader
 from ..models.company import Company
-from utils.db_utils import db
 from ..models.users import User
 from ..models.company import UserCompany
 from ..models.pr_base import Search
@@ -14,6 +13,8 @@ from sqlalchemy import and_
 from ..utils.pr_email import send_email
 from .request_wrapers import check_right
 from ..models.rights import AllowAll
+from ..models.tag import Tag, TagMembership, TagPortalDivision
+from utils.db_utils import db
 
 
 def add_tags(articles):
@@ -55,13 +56,13 @@ def subscribe_to_portal():
 
 def get_params(**argv):
     search_text = request.args.get('search_text') or ''
-    app = current_app._get_current_object()
+    tag = request.args.get('tag') or None
     portal = g.db().query(Portal).filter_by(host=request.host).first()
     if portal:
         sub_query = Article.subquery_articles_at_portal(search_text=search_text, portal_id=portal.id)
-        return search_text, portal, sub_query
+        return search_text, portal, tag, sub_query
     else:
-        return None, None, None
+        return None, None, None, None
 
 
 def portal_and_settings(portal):
@@ -90,7 +91,7 @@ def portal_and_settings(portal):
 @front_bp.route('details/<string:article_portal_division_id>')
 @check_right(AllowAll)
 def details(article_portal_division_id):
-    search_text, portal, _ = get_params()
+    search_text, portal, _, __ = get_params()
     if search_text:
         return redirect(url_for('front.index', search_text=search_text))
     article = ArticlePortalDivision.get(article_portal_division_id)
@@ -152,7 +153,7 @@ def add_delete_liked(json, article_portal_division_id):
 @check_right(AllowAll)
 def subportal_division(division_name, member_company_id, member_company_name, page=1):
     member_company = Company.get(member_company_id)
-    search_text, portal, _ = get_params()
+    search_text, portal, _, __ = get_params()
     division = get_division_for_subportal(portal.id, member_company_id)
     subportal_division = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
                                                                 name=division_name).one()
@@ -198,7 +199,7 @@ def subportal_division(division_name, member_company_id, member_company_name, pa
 @front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/')
 @check_right(AllowAll)
 def subportal(member_company_id, member_company_name, page=1):
-    search_text, portal, _ = get_params()
+    search_text, portal, _, __ = get_params()
     if search_text:
         return redirect(url_for('front.index', search_text=search_text))
     member_company = Company.get(member_company_id)
@@ -222,7 +223,7 @@ def subportal(member_company_id, member_company_name, page=1):
 @front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/address/')
 @check_right(AllowAll)
 def subportal_address(member_company_id, member_company_name):
-    search_text, portal, _ = get_params()
+    search_text, portal, _, __ = get_params()
 
     member_company = Company.get(member_company_id)
 
@@ -245,7 +246,7 @@ def subportal_address(member_company_id, member_company_name):
 @front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/contacts/')
 @check_right(AllowAll)
 def subportal_contacts(member_company_id, member_company_name):
-    search_text, portal, _ = get_params()
+    search_text, portal, _, __ = get_params()
 
     member_company = Company.get(member_company_id)
 
@@ -291,12 +292,12 @@ def send_message(json, member_company_id):
 @front_bp.route('<int:page>/', methods=['GET'])
 @check_right(AllowAll)
 def index(page=1):
-    search_text, portal, _ = get_params()
+    search_text, portal, tag, __ = get_params()
     if not portal:
         return render_template('front/error.html', message="No portal found %(host)s", dict={'host': request.host})
 
-    division = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
-                                                      portal_division_type_id='index').one()
+    division = g.db().query(PortalDivision).filter_by(portal_id=portal.id, portal_division_type_id='index').one()
+    tag_filter = TagPortalDivision if tag else None
     order = Search.ORDER_POSITION if not search_text else Search.ORDER_RELEVANCE
     page = page if session.get('original_search_text') == search_text else 1
     # portal.config.set_division_page_size(page_size_for_divisions={division.name: 1})
@@ -304,7 +305,6 @@ def index(page=1):
                                                   division_name=division.name)
     articles, pages, page = Search().search(
         ArticlePortalDivision().search_filter_default(division.id),
-        # {'class': Company, 'filter': Company.name.ilike('ssssssss')},
         search_text=search_text, page=page, order_by=order, pagination=True,
         items_per_page=items_per_page)
 
@@ -325,7 +325,7 @@ def index(page=1):
 @front_bp.route('<string:division_name>/<int:page>/', methods=['GET'])
 @check_right(AllowAll)
 def division(division_name, page=1):
-    search_text, portal, _ = get_params()
+    search_text, portal, _, __ = get_params()
     division = g.db().query(PortalDivision).filter_by(portal_id=portal.id, name=division_name).one()
 
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,

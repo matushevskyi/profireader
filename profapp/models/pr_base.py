@@ -219,6 +219,7 @@ class Search(Base):
                              func.max(Search.position).label('position'),
                              func.max(Search.text).label('text')).filter(
                 or_(*self.__get_search_params(*args))).group_by('index')
+
         if type(ord_by) in (str, list, tuple):
             order = self.__get_order('text', 'text')
             subquery_search = add_joined_search(ord_by)
