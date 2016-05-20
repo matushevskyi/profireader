@@ -28,29 +28,24 @@
     <div ng-if="user.id && company.id && user_active" ng-cloak>
         <div class="container">
             <div class="row menu-company-inside">
-                <div class="col-lg-6 col-md-6 col-sm-4 col-xs-4 menu-company">
+                <div class="col-lg-12 col-md-6 col-sm-4 col-xs-4 menu-company">
                     <a ng-class="{'selected': selected_company_menu == 'materials'}"
                        href="{{ url_company_materials({company_id: company.id}) }}">{{ _('Materials') }}</a>
                     <a ng-class="{'selected': selected_company_menu == 'portals_partners'}" id="companies_partners"
                        href="{{ url_portal_portals_partners({company_id: company.id}) }}">{{ _('Membership') }}</a>
                     <a ng-class="{'selected': selected_company_menu == 'companies_employees'}"
                        href="{{ url_company_employees({company_id: company.id}) }}">{{ _('Employees') }}</a>
-                </div>
-                <div class="col-lg-6 col-md-6 col-sm-8 col-xs-8 about-company">
-                    <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
-                        <a class="pull-right" ng-class="{'selected': selected_company_menu == 'home'}"
+
+                    <img pr-image="company.logo_file_id " class="menu-company-img menu-company-logo"/>
+                    <a class="company-about" ng-class="{'selected': selected_company_menu == 'home'}"
                            href="{{ url_company_profile({company_id: company.id}) }}">{{ company.name }}</a>
-                    </div>
-                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 company-logo">
-                        <a href="{{ url_company_profile({company_id: company.id}) }}">
-                            <img pr-image="company.logo_file_id " class="menu-company-img"/>
-                        </a>
-                    </div>
+
                 </div>
             </div>
 
             <div class="row">
-                <div ng-if="company.own_portal" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 company-portal">
+                <div ng-if="company.own_portal" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 menu-company
+                menu-company-portal">
                     <a ng-class="{'selected': selected_company_menu == 'portal_banners'}"
                        href="{{ url_portal_banners({company_id: company.id}) }}">{{ _('Banners') }}</a>
                     <a ng-class="{'selected': selected_company_menu == 'portal_tags'}"

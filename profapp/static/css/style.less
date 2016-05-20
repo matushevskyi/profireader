@@ -18,7 +18,7 @@
 }
 
 body {
-  padding-top: 100px;
+  padding-top: 80px;
 }
 
 .item-company {
@@ -122,6 +122,9 @@ body {
   color: #333;
   padding-right: 15px;
   padding-left: 15px;
+  margin-bottom: 15px;
+  margin-top: 15px;
+  float: left;
 }
 
 .menu-company a:hover {
@@ -130,6 +133,34 @@ body {
   background-color: @color-links-hover;
   transition: @transition;
   padding: 15px;
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+
+.menu-company a.selected {
+  color: #fff;
+  text-decoration: none;
+  background-color: @color-links-hover;
+  transition: @transition;
+  padding: 15px;
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+
+.menu-company img.menu-company-logo {
+  margin: 0px 5px;
+  padding: 0px;
+  background: none;
+  float: right;
+}
+
+
+.menu-company.menu-company-portal a {
+  float: right;
+}
+
+.menu-company a.company-about {
+  float: right;
 }
 
 .menu-company-img {
@@ -144,32 +175,6 @@ body {
   padding: 15px;
 }
 
-.about-company {
-  a {
-    color: #333;
-  }
-  a:hover {
-    text-decoration: none;
-    color: #333;
-  }
-}
-
-.company-portal {
-  a {
-    color: #525252;
-    float: right;
-    margin-left: 15px;
-    border-bottom: 1px solid #fff;
-    margin-top: 15px;
-    margin-bottom: 15px;
-  }
-  a:hover {
-    color: @color-links;
-    text-decoration: none;
-    border-bottom: 1px solid;
-    transition: @transition;
-  }
-}
 
 .company-logo img {
   margin-right: -15px;
@@ -274,16 +279,6 @@ body {
 }
 
 /*---Company ID---*/
-
-.about-company {
-  a {
-    color: #333;
-  }
-  a:hover {
-    text-decoration: none;
-    color: #333;
-  }
-}
 
 .company-portal {
   a {
@@ -1276,6 +1271,12 @@ body {
   .create-new-material {
     margin-left: 0;
   }
+
+  .article-edit-input {
+    width: 698px;
+    box-sizing: border-box;
+  }
+
   button.pr-button {
     background-color: @color-btn;
     color: #fff;
