@@ -51,14 +51,15 @@
                         </div>
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
 
-                        <div class="label label-success"><div ng-if="article.tags" class="float right tag-in-article">
-                                <a target="_blank" href="#" ng-repeat="tag in article.tags">{{ tag.text }}</a></div>
-
-                            </div>
+                        <span ng-if="article.tags" class="float right tag-in-article">
+                                <a class="label label-danger" target="_blank" href="#" ng-repeat="tag in article.tags">{{
+                                    tag.text+' ' }}</a></span>
+                            
                             <a pr-test="ArticlePortal" target="_blank"
                                href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
-                               class="item-company">{{ article.portal.name}}</a>-><a pr-test="ArticleDivision" target="_blank"
-                                                             href="//{{ article.portal.host }}/{{ article.division.name}}/1/?search_text=">{{
+                               class="item-company">{{ article.portal.name}}</a>-><a pr-test="ArticleDivision"
+                                                                                     target="_blank"
+                                                                                     href="//{{ article.portal.host }}/{{ article.division.name}}/1/?search_text=">{{
                             article.division.name}}</a>
                             <div style=""
                                  class="item-publication-date">{{ get_local_time(article.publishing_tm) }}
