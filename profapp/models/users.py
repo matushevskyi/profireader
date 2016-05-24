@@ -289,7 +289,7 @@ class User(Base, UserMixin, PRBase):
             'none': noavatar_url,
             'crop': True,
             'image_size': [300, 400],
-            'min_size': [100,80],
+            'min_size': [100,100],
             'aspect_ratio': [0.5, 2.0],
             'preset_urls': {'glyphicon-share': self.gravatar(size=500)},
             'no_selection_url': noavatar_url
