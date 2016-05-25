@@ -346,7 +346,6 @@ def password_resets():
 @check_right(AllowAll)
 def password_reset_request(json):
     if not current_user.is_anonymous():
-        print('hhhhh')
         flash('To reset your password logout first please.')
         redirect(url_for('reader.list_reader'))
         return False
