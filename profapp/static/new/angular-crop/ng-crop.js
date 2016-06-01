@@ -12,15 +12,15 @@
 
     var ri = function (f) {
         return Math.round(f * 100000) / 100000;
-    }
+    };
 
     var rc = function (f) {
         return Math.round(f * 100000) / 100000;
-    }
+    };
 
     var px = function (n) {
         return ('' + n + 'px');
-    }
+    };
 
     var inRange = function (v, min, max) {
         return Math.min(Math.max(min, v), max);
@@ -49,7 +49,7 @@
             '</div></div>');
 
         $compile(element.contents())($scope);
-    }
+    };
 
     var collectElements = function ($scope, element) {
 
@@ -72,7 +72,7 @@
         $scope.$canvas = $scope.$e('.ng-crop-canvas');
         $scope.$container = $scope.$e('.ng-crop-container');
         $scope.$loading = $scope.$e('.ng-crop-loading');
-    }
+    };
 
     var Logic = function (img, opts, $container) {
 
@@ -201,7 +201,7 @@
 
 
             return ret;
-        }
+        };
 
         this.fitCoordinatesAndOriginByZoom = function (coords, zoom, origin, center_point) {
             var ret = {};
@@ -455,7 +455,7 @@
 
         this.ctr = this.calculateConstrains();
 
-    }
+    };
 
     var cropLinkFunc = function ($scope, $q, $timeout, element, attrs, model) {
 
@@ -497,7 +497,7 @@
 
             // console.log(newv);
 
-            var opts = {}
+            var opts = {};
 
             var isnum = function (newval, key, already_assigned_opts) {
                 return (typeof newval === 'number') ? true : (key + " should be number");
@@ -560,7 +560,7 @@
             var ctr = $scope.logic.ctr;
             if (!$scope.ngCropCoordinates) { // we haven't coordinates. so we calculate coordinates based on zoom
                 $scope.ngCropZoom = inRange($scope.ngCropZoom, ctr.min_zoom, ctr.max_zoom);
-                var center = [ctr.image_size[0] / 2., ctr.image_size[1] / 2.]
+                var center = [ctr.image_size[0] / 2., ctr.image_size[1] / 2.];
                 var canvas_size = [ctr.canvas_size[0] / $scope.ngCropZoom, ctr.canvas_size[1] / $scope.ngCropZoom];
                 $scope.ngCropCoordinates = [center[0] - 4 * canvas_size[0] / 10, center[1] - 4 * canvas_size[1] / 10, center[0] + 4 * canvas_size[0] / 10, center[1] + 4 * canvas_size[1] / 10];
                 // default coordinates can be out of constrains. check it
@@ -576,7 +576,7 @@
             }
 
             var canvas_size = [ctr.canvas_size[0] / $scope.ngCropZoom, ctr.canvas_size[1] / $scope.ngCropZoom];
-            var crop_center = [($scope.ngCropCoordinates[0] + $scope.ngCropCoordinates[2]) / 2., ($scope.ngCropCoordinates[1] + $scope.ngCropCoordinates[3]) / 2.]
+            var crop_center = [($scope.ngCropCoordinates[0] + $scope.ngCropCoordinates[2]) / 2., ($scope.ngCropCoordinates[1] + $scope.ngCropCoordinates[3]) / 2.];
             if (!$scope.ngCropOrigin) { // we have now coordinates and zoom. can we preserve image center?
                 $scope.ngCropOrigin = [crop_center[0] - canvas_size[0] / 2, crop_center[1] - canvas_size[1] / 2];
             }
@@ -584,7 +584,7 @@
             $scope.ngCropOrigin = [inRange($scope.ngCropOrigin[0], $scope.ngCropCoordinates[2] - canvas_size[0], $scope.ngCropCoordinates[0]),
                 inRange($scope.ngCropOrigin[1], $scope.ngCropCoordinates[3] - canvas_size[1], $scope.ngCropCoordinates[1])];
             $scope.ngCropOrigin = [inRange($scope.ngCropOrigin[0], 0, ctr.image_size[0] - canvas_size[0]), inRange($scope.ngCropOrigin[1], 0, ctr.image_size[1] - canvas_size[1])];
-        }
+        };
 
         $scope.setZoom = function (FixedPoint) {
             console.log('setZoom', FixedPoint);
@@ -630,8 +630,8 @@
                 // console.log(compass, FixedPoint, canvas_size, new_canvas_coordinates);
                 // ok. new canvas fit in image? we can check only one corner if it's fit another SHOULD fit by
                 // zoom/coordinates constrains
-                new_canvas_coordinates[0] = inRange(new_canvas_coordinates[0], 0, ctr.image_size[0] - (new_canvas_coordinates[2] - new_canvas_coordinates[0]))
-                new_canvas_coordinates[1] = inRange(new_canvas_coordinates[1], 0, ctr.image_size[1] - (new_canvas_coordinates[3] - new_canvas_coordinates[1]))
+                new_canvas_coordinates[0] = inRange(new_canvas_coordinates[0], 0, ctr.image_size[0] - (new_canvas_coordinates[2] - new_canvas_coordinates[0]));
+                new_canvas_coordinates[1] = inRange(new_canvas_coordinates[1], 0, ctr.image_size[1] - (new_canvas_coordinates[3] - new_canvas_coordinates[1]));
                 $scope.ngCropOrigin = new_canvas_coordinates;
                 // console.log($scope.ngCropOrigin);
                 // we have new origin and now coordinates can be out of canvas
@@ -640,7 +640,7 @@
                     origin: $scope.ngCropOrigin
                 }, compass);
             }
-        }
+        };
 
         $scope.setOrigin = function () {
             if (!$scope.logic || !$scope.logic.img) return;
@@ -648,19 +648,19 @@
             // in future we have to replace `origin` by `center` in croper and change
             // here zoom and coordinates (if we cant preserve it), also maybe `origin`=>`center` replace somehow
             // affect `FixedPoint` in $scope.setZoom function
-        }
+        };
 
         $scope.coordinatesWasChanged = function (o, n) {
             return ((!o && n) || (o && !n) || (o && n && ((o[0] !== n[0]) || (o[1] !== n[1]) || (o[2] !== n[2]) || (o[3] !== n[3])))) ? true : false;
-        }
+        };
 
         $scope.originWasChanged = function (o, n) {
             return ((!o && n) || (o && !n) || (o && n && ((o[0] !== n[0]) || (o[1] !== n[1])))) ? true : false;
-        }
+        };
 
         $scope.zoomWasChanged = function (o, n) {
             return ((!o && n) || (o && !n) || (o && n && (o !== n))) ? true : false;
-        }
+        };
 
         $scope.$watchCollection(function () {
 
@@ -672,9 +672,9 @@
                     zoom: $scope.state.zoom ? $scope.state.zoom : null,
                     coordinates: $scope.state.coordinates ? $scope.state.coordinates.join(',') : null,
                     origin: $scope.state.origin ? $scope.state.origin.join(',') : null
-                }
+                };
                 return ret;
-            }
+            };
 
 
             var image_changed = (!$scope.loading && (($scope.state.crop && !$scope.ngCrop) || (!$scope.state.crop && $scope.ngCrop) || ($scope.state.crop !== $scope.ngCrop)));
@@ -694,7 +694,7 @@
 
                 var storeState = function () {
                     $scope._stored = [$scope.state, $scope.logic, $scope.loading];
-                }
+                };
 
                 var reStoreState = function () {
                     if (!$scope._stored) return;
@@ -706,14 +706,14 @@
                     $scope.ngCropDisabled = $scope.state.disabled;
                     $scope.ngCropCoordinates = $scope.state.coordinates;
                     $scope.ngCropZoom = $scope.state.zoom;
-                }
+                };
 
                 var err = function (e) {
                     reStoreState();
                     $scope.onError(typeof e === 'string' ? e : 'image loading error');
                     $timeout(function () {
                     })
-                }
+                };
 
 
                 if (!$scope.ngCrop) {
@@ -973,11 +973,24 @@
             return true;
         };
 
-        $scope.sr = _.debounce(function (r) {
-            $timeout(function () {
+        $scope._last_time_called_sr = null;
 
-            })
-        }, 100);
+        $scope.sr = function (r) {
+            if ($scope._last_time_called_sr) return null;
+            $scope._last_time_called_sr = setTimeout(function () {
+                $timeout(function () {
+                    $scope._last_time_called_sr = null;
+                });
+            }, 100);
+        };
+
+            // var nowtime = new Date.now? Date.now:Date().getTime();
+            // if (nowtime - $scope._last_time_called_sr) {
+            //
+            // }
+            // $scope._last_time_called_sr = nowtime;
+
+        // }, 100);
 
 
         $scope.new_rect = function (nr, compass) {
@@ -1161,18 +1174,18 @@
             restrict: 'A',
             scope: {
                 ngCrop: '=ngCrop',
-                ngCropCoordinates: '=ngCropCoordinates',
-                ngCropOptions: '=ngCropOptions',
-                ngCropZoom: '=ngCropZoom',
-                ngCropOrigin: '=ngCropOrigin',
-                ngCropLoading: '=ngCropLoading',
-                ngCropDisabled: '=ngCropDisabled',
+                ngCropCoordinates: '=?ngCropCoordinates',
+                ngCropOptions: '=?ngCropOptions',
+                ngCropZoom: '=?ngCropZoom',
+                ngCropOrigin: '=?ngCropOrigin',
+                ngCropLoading: '=?ngCropLoading',
+                ngCropDisabled: '=?ngCropDisabled',
 
-                logic: '=logic',
+                logic: '=?logic',
 
 
-                ngCropOnError: '&ngCropOnError',
-                ngCropOnLoad: '&ngCropOnLoad',
+                ngCropOnError: '&?ngCropOnError',
+                ngCropOnLoad: '&?ngCropOnLoad',
 
             },
             link: function ($scope, element, attrs, model) {
