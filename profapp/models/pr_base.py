@@ -393,6 +393,9 @@ class Grid:
 
 
 class PRBase:
+
+    omit_validation = False
+
     def __init__(self):
         self.query = g.db.query_property()
 
@@ -743,6 +746,10 @@ class PRBase:
     #     ret = target.validate('delete')
     #     if len(ret['errors'].keys()):
     #         raise errors.ValidationException(ret)
+
+    @staticmethod
+    def prepare_text_for_elastic_search(text):
+        return MLStripper().strip_tags(text)
 
 
     @staticmethod

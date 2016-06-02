@@ -33,6 +33,7 @@ class ArticlePortalDivision(Base, PRBase):
     short = Column(TABLE_TYPES['text'], default='')
     long = Column(TABLE_TYPES['text'], default='')
     long_stripped = Column(TABLE_TYPES['text'], nullable=False)
+
     keywords = Column(TABLE_TYPES['keywords'], nullable=False)
     md_tm = Column(TABLE_TYPES['timestamp'])
     publishing_tm = Column(TABLE_TYPES['timestamp'])
@@ -40,6 +41,7 @@ class ArticlePortalDivision(Base, PRBase):
     event_end_tm = Column(TABLE_TYPES['timestamp'])
     position = Column(TABLE_TYPES['position'])
     read_count = Column(TABLE_TYPES['int'], default=0)
+    search_reindexed = Column(TABLE_TYPES['int'], default=0)
 
     # rticle_portal_division.id = tag_portal_division_article.article_portal_division_id
     # AND
@@ -185,6 +187,19 @@ class ArticlePortalDivision(Base, PRBase):
         self.like_count = like_count
         # self.portal_id = portal_id
 
+    def get_elastic_search_data(self):
+        return {
+            'title': self.prepare_text_for_elastic_search(self.title),
+            'subtitle': self.prepare_text_for_elastic_search(self.subtitle),
+            'short': self.prepare_text_for_elastic_search(self.short),
+            'long': self.prepare_text_for_elastic_search(self.long),
+            'keywords': self.prepare_text_for_elastic_search(self.keywords),
+            'tags': ' '.join([t.text for t in self.tags]),
+            'author': '',
+            'portal': self.prepare_text_for_elastic_search(self.portal.name),
+            'division': self.prepare_text_for_elastic_search(self.division.name)
+            }
+
     @staticmethod
     def articles_visibility_for_user(portal_id):
         employer = True
@@ -329,6 +344,8 @@ class ArticlePortalDivision(Base, PRBase):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
+        if (self.omit_validation):
+            return ret
 
         if not self.publishing_tm:
             ret['errors']['publishing_tm'] = 'Please select publication date'
