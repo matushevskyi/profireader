@@ -46,3 +46,15 @@ def fileID(url):
 
     match = re.match(reg, url)
     return match.group('id') if match else None
+
+def merge_dicts(*args):
+    ret = {}
+    for d in args:
+        ret.update(d)
+    return ret
+
+def putInRange(what, fromr, tor, check_only = False):
+    if check_only:
+        return True if (what >= fromr) and (what <= tor) else False
+    else:
+        return fromr if (what <= fromr) else (tor if (what >= tor) else what)

@@ -14,6 +14,8 @@ from sqlalchemy import and_
 from ..utils.pr_email import send_email
 from .request_wrapers import check_right
 from ..models.rights import AllowAll
+from ..models.elastic import PRElastic
+from collections import OrderedDict
 
 
 def add_tags(articles):
@@ -158,7 +160,7 @@ def subportal_division(division_name, member_company_id, member_company_name, pa
                                                                 name=division_name).one()
     order = Search.ORDER_POSITION if not search_text else Search.ORDER_RELEVANCE
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=subportal_division.name)
+                                                  division_name=subportal_division.name, default=10)
     articles, pages, page = Search().search(ArticlePortalDivision().search_filter_default(
         subportal_division.id, company_id=member_company_id), search_text=search_text, page=page,
         order_by=order, pagination=True, items_per_page=items_per_page)
@@ -301,7 +303,7 @@ def index(page=1):
     page = page if session.get('original_search_text') == search_text else 1
     # portal.config.set_division_page_size(page_size_for_divisions={division.name: 1})
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=division.name)
+                                                  division_name=division.name, default=10)
     articles, pages, page = Search().search(
         ArticlePortalDivision().search_filter_default(division.id),
         # {'class': Company, 'filter': Company.name.ilike('ssssssss')},
@@ -329,19 +331,27 @@ def division(division_name, page=1):
     division = g.db().query(PortalDivision).filter_by(portal_id=portal.id, name=division_name).one()
 
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=division.name)
+                                                  division_name=division.name, default=10)
     if division.portal_division_type_id == 'catalog' and search_text:
         return redirect(url_for('front.index', search_text=search_text))
-    if division.portal_division_type_id == 'news' or division.portal_division_type_id == 'events':
-        order = Search.ORDER_POSITION if not search_text else Search.ORDER_RELEVANCE
-        articles, pages, page = Search().search(
-            ArticlePortalDivision().search_filter_default(division.id),
-            search_text=search_text, page=page, order_by=order, pagination=True,
-            items_per_page=items_per_page)
 
-        add_tags(articles)
+    if division.portal_division_type_id == 'news' or division.portal_division_type_id == 'events':
+
+        order = Search.ORDER_POSITION if not search_text else Search.ORDER_RELEVANCE
 
         current_division = division.get_client_side_dict()
+
+        es = PRElastic(host='http://elastic.profi:9200')
+
+        articles, pages, page = es.search('articles', 'articles',
+                                          filter={"portal_division_id": division.id},
+                                          must={("title^100", 'subtitle^50', 'short^10', "long^1",
+                                                 'author^50', 'keywords^10'): search_text} if search_text else {},
+                                          page=page, items_per_page=items_per_page)
+
+        articles = OrderedDict((a['id'], ArticlePortalDivision.get(a['id']).get_client_side_dict()) for a in articles)
+
+        add_tags(articles)
 
         def url_page_division(page=1, search_text='', **kwargs):
             return url_for('front.division', division_name=current_division['name'], page=page,
@@ -358,7 +368,6 @@ def division(division_name, page=1):
                                search_text=search_text)
 
     elif division.portal_division_type_id == 'catalog':
-
 
         members = {member.id: member.get_client_side_dict(fields="id|company|tags") for
                    member in division.portal.company_members}

@@ -16,6 +16,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import expression, and_
 from sqlalchemy import text
 import time
+from .. import utils
 import datetime
 from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPortal, EditMaterialRight, \
     EditPublicationRight, UserIsEmployee, UserIsActive, BaseRightsEmployeeInCompany
@@ -193,7 +194,7 @@ def submit_publish(json, article_action):
         ret['portal']['divisions'] = PRBase.get_ordered_dict(
             PublishUnpublishInPortal().get_active_division(portal.divisions))
 
-        return PRBase.merge_dicts(ret, more_data_to_ret)
+        return utils.merge_dicts(ret, more_data_to_ret)
     else:
 
         publication.attr(g.filter_json(json['publication'], 'portal_division_id'))

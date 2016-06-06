@@ -15,6 +15,7 @@ from profapp.models.rights import RIGHTS
 from ..controllers import errors
 from ..models.pr_base import PRBase, Grid
 import copy
+from .. import utils
 import re
 from .pagination import pagination
 from config import Config
@@ -138,7 +139,7 @@ def portals_partners(company_id):
 
 
 def membership_grid_row(membership):
-    return PRBase.merge_dicts(membership.get_client_side_dict(fields='id,status,portal.own_company,portal,rights,tags'),
+    return utils.merge_dicts(membership.get_client_side_dict(fields='id,status,portal.own_company,portal,rights,tags'),
                        {'actions': MembershipRights(company=membership.company_id,
                                                     member_company=membership).actions()},
                        {'who': MembershipRights.MEMBERSHIP})
@@ -284,7 +285,7 @@ def companies_partners_load(json, company_id):
     subquery = Company.subquery_company_partners(company_id, json.get('filter'),
                                                  filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
     members, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
-    return {'grid_data': [PRBase.merge_dicts({'member': member.get_client_side_dict(more_fields='company'),
+    return {'grid_data': [utils.merge_dicts({'member': member.get_client_side_dict(more_fields='company'),
                                               'company_id': company_id,
                                               'portal_id': db(Portal, company_owner_id=company_id).first().id},
                                              {'actions': MembersRights(company=company_id,

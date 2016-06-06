@@ -15,7 +15,7 @@ from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
 from .files import ImageCroped
-from ..utils import fileUrl
+from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 
 
@@ -35,6 +35,7 @@ class ArticlePortalDivision(Base, PRBase):
     long_stripped = Column(TABLE_TYPES['text'], nullable=False)
 
     keywords = Column(TABLE_TYPES['keywords'], nullable=False)
+    author = 'hello'
     md_tm = Column(TABLE_TYPES['timestamp'])
     publishing_tm = Column(TABLE_TYPES['timestamp'])
     event_begin_tm = Column(TABLE_TYPES['timestamp'])
@@ -187,6 +188,74 @@ class ArticlePortalDivision(Base, PRBase):
         self.like_count = like_count
         # self.portal_id = portal_id
 
+        # PUT
+        # my_index
+        # {
+        #     "mappings": {
+        #         "user": {
+        #             "_all": {"enabled": false},
+        #             "properties": {
+        #                 "title": {"type": "string"},
+        #                 "name": {"type": "string"},
+        #                 "age": {"type": "integer"}
+        #             }
+        #         },
+        #         "blogpost": {
+        #             "properties": {
+        #                 "title": {"type": "string"},
+        #                 "body": {"type": "string"},
+        #                 "user_id": {
+        #                     "type": "string",
+        #                     "index": "not_analyzed"
+        #                 },
+        #                 "created": {
+        #                     "type": "date",
+        #                     "format": "strict_date_optional_time||epoch_millis"
+        #                 }
+        #             }
+        #         }
+        #     }
+        # }
+
+    def get_elastic_default_mapping(self, name):
+        return {type: 'string', 'value': lambda: self.prepare_text_for_elastic_search(self.attr(name))}
+
+    def get_elastic_search_mapping(self):
+        ret = {}
+        for fn, val in  self.get_elastic_search_fields():
+            ret
+
+    # def get_elastic_search_fields(self):
+    #     return {
+    #         "title": True,
+    #         "subtitle": True,
+    #         "short": True,
+    #         'long': True,
+    #         'keywords': True,
+    #         'author': True,
+    #
+    #         'tags': False,
+    #
+    #         'user': False,
+    #         'user_id': False,
+    #
+    #         'portal': False,
+    #         'portal_id': False,
+    #
+    #         'division': False,
+    #         'portal_division_id': False,
+    #
+    #         "body": {"type": "string"},
+    #         "user_id": {
+    #             "type": "string",
+    #             "index": "not_analyzed"
+    #         },
+    #         "created": {
+    #             "type": "date",
+    #             "format": "strict_date_optional_time||epoch_millis"
+    #         }
+    #     }
+
     def get_elastic_search_data(self):
         return {
             'title': self.prepare_text_for_elastic_search(self.title),
@@ -196,8 +265,12 @@ class ArticlePortalDivision(Base, PRBase):
             'keywords': self.prepare_text_for_elastic_search(self.keywords),
             'tags': ' '.join([t.text for t in self.tags]),
             'author': '',
+            'user': '',
+            'user_id': '',
             'portal': self.prepare_text_for_elastic_search(self.portal.name),
-            'division': self.prepare_text_for_elastic_search(self.division.name)
+            'portal_id': self.portal.id,
+            'division': self.prepare_text_for_elastic_search(self.division.name),
+            'portal_division_id': self.division.id
             }
 
     @staticmethod
@@ -282,9 +355,9 @@ class ArticlePortalDivision(Base, PRBase):
             article['liked'] = ReaderArticlePortalDivision.count_likes(g.user.id, article_id)
             article['list_liked_reader'] = ReaderArticlePortalDivision.get_list_reader_liked(article_id)
             article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
-                articles[article_id]['company']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
+                articles[article_id]['company']['logo_file_id'] else utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
             article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-                articles[article_id]['portal']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
+                articles[article_id]['portal']['logo_file_id'] else utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
             del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
             list_articles.append(article)
         return list_articles
@@ -744,7 +817,7 @@ class Article(Base, PRBase):
 
     @staticmethod
     def logo_file_properties(article):
-        noimage_url = fileUrl(FOLDER_AND_FILE.no_article_image())
+        noimage_url = utils.fileUrl(FOLDER_AND_FILE.no_article_image())
         return {
             'browse': article.id,
             'upload': True,
@@ -812,7 +885,7 @@ class Article(Base, PRBase):
         dict = material.get_client_side_dict(fields='md_tm,title,editor.profireader_name,id')
         dict.update({'portal.name': None if len(material.portal_article) == 0 else '', 'level': True})
         dict.update({'actions': None if len(material.portal_article) == 0 else '', 'level': True})
-        list = [PRBase.merge_dicts(
+        list = [utils.merge_dicts(
             article_portal.get_client_side_dict(fields='portal.name|host,status, id, portal_division_id'),
             {'actions':
                  {'edit': PublishUnpublishInPortal(publication=article_portal,
