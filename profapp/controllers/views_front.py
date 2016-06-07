@@ -336,8 +336,14 @@ def division(division_name, page=1):
         return redirect(url_for('front.index', search_text=search_text))
 
     if division.portal_division_type_id == 'news' or division.portal_division_type_id == 'events':
+        # order = Search.ORDER_POSITION if not search_text else Search.ORDER_RELEVANCE
 
-        order = Search.ORDER_POSITION if not search_text else Search.ORDER_RELEVANCE
+        # articles, pages, page = Search().search(
+        #     ArticlePortalDivision().search_filter_default(division.id),
+        #     search_text=search_text, page=page, order_by=order, pagination=True,
+        #     items_per_page=items_per_page)
+        #
+        # order = Search.ORDER_POSITION if not search_text else Search.ORDER_RELEVANCE
 
         current_division = division.get_client_side_dict()
 

@@ -106,19 +106,6 @@ class Portal(Base, PRBase):
             MemberCompanyPortal(portal=self, company=company_owner, status=MemberCompanyPortal.STATUSES['ACTIVE'],
                                 plan=db(MemberCompanyPortalPlan).first())]
 
-        # self.own_company.company_portals = db(MemberCompanyPortalPlan).first()
-
-        # db(MemberCompanyPortalPlan).first().portal_companies.add(MemberCompanyPortal(company=self.own_company))
-
-
-
-
-        # self.company_assoc = [MemberCompanyPortal(portal = self,
-        #                                     company = self.own_company,
-        #                                     company_portal_plan_id=db(MemberCompanyPortalPlan).first().id)]
-
-
-        pass
 
     def logo_file_properties(self):
         nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
@@ -127,7 +114,7 @@ class Portal(Base, PRBase):
             'upload': True,
             'crop': True,
             'image_size': [450, 450],
-            'min_size': [120, 100],
+            'min_size': [100, 100],
             'aspect_ratio': [0.5, 2.0],
             'preset_urls': {'glyphicon-remove-circle': nologo_url},
             'no_selection_url': nologo_url
