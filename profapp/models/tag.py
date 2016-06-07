@@ -2,6 +2,7 @@ from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from .pr_base import PRBase, Base
+from ..constants.SEARCH import RELEVANCE
 
 
 class Tag(Base, PRBase):
@@ -24,6 +25,8 @@ class Tag(Base, PRBase):
 
     def get_client_side_dict(self, fields='id|text|description', more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    search_fields = {'text': {'relevance': lambda field='text': RELEVANCE.tag}}
 
 
 class TagPortalDivision(Base, PRBase):
