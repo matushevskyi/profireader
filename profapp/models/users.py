@@ -55,7 +55,7 @@ class User(Base, UserMixin, PRBase):
                                     default='//static.profireader.com/static/no_avatar.png')
     profireader_small_avatar_url = Column(TABLE_TYPES['url'], nullable=False,
                                           default='//static.profireader.com/static/no_avatar_small.png')
-    avatar_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
+    avatar_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
     # status_id = Column(Integer, db.ForeignKey('status.id'))
 
     email_conf_token = Column(TABLE_TYPES['token'])
@@ -258,11 +258,13 @@ class User(Base, UserMixin, PRBase):
         self.yahoo_link = YAHOO_ALL['link']
         self.yahoo_phone = YAHOO_ALL['phone']
 
-    def is_active(self):
+    def is_active(self, check_only_banned=None):
+
         if self._banned:
             return "Sorry!You were baned!Plese send a message to the administrator to know details!"
-        if not self.tos:
-            return "Sorry!You must confirm license first!"
+        if not check_only_banned:
+            if not self.tos:
+                return "Sorry!You must confirm license first!"
         if not self.confirmed:
             return "Sorry!You must be confirmed!"
         return True
@@ -287,7 +289,7 @@ class User(Base, UserMixin, PRBase):
             'none': noavatar_url,
             'crop': True,
             'image_size': [300, 400],
-            'min_size': [100,80],
+            'min_size': [100,100],
             'aspect_ratio': [0.5, 2.0],
             'preset_urls': {'glyphicon-share': self.gravatar(size=500)},
             'no_selection_url': noavatar_url
@@ -560,26 +562,6 @@ class User(Base, UserMixin, PRBase):
         self.profireader_email = new_email
         return True
 
-    def avatar_update(self, passed_file):
-        if passed_file:
-            list = [file for file in db(File, parent_id=self.system_folder_file_id, ) if
-                    re.search('^image/.*', file.mime) and file.mime != 'image/thumbnail']
-            file = File.uploadLogo(passed_file.stream.read(-1), passed_file.filename, passed_file.content_type,
-                                   self.system_folder_file_id)
-            if 'error' in File.check_image_mime(file.id):
-                return self
-            self.profireader_avatar_url = file.url()
-            file_thumbnail = file.get_thumbnails(size=(133, 100)).thumbnail
-            self.profireader_small_avatar_url = file_thumbnail[0].url()
-        else:
-            list = [file for file in db(File, parent_id=self.system_folder_file_id, ) if
-                    re.search('^image/.*', file.mime)]
-            self.profireader_avatar_url = self.gravatar(size=100)
-            self.profireader_small_avatar_url = self.gravatar(size=100)
-        if list:
-            for f in list:
-                File.remove(f.id)
-        return self
 
     # def can(self, permissions):
     #     return self.role is not None and \
@@ -589,7 +571,10 @@ class User(Base, UserMixin, PRBase):
     #    return self.can(Permission.ADMINISTER)
 
     def get_client_side_dict(self,
-                             fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url|profireader_email|profireader_first_name|profireader_last_name|profireader_link|profireader_phone|location|profireader_gender|lang|about_me|country_id|tos|profireader_phone|birth_tm',
+                             fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url'
+                                    '|profireader_email|profireader_first_name|profireader_last_name|profireader_link'
+                                    '|profireader_phone|location|profireader_gender|lang|about_me|country_id|tos|profireader_phone'
+                                    '|birth_tm',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 

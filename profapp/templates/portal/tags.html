@@ -1,6 +1,6 @@
 {% extends "index_lazy_layout.html" %}
 
-{% block title %}Tags - Profireader{% endblock title %}
+{% block title %}{{ _('Tags') }} - Profireader{% endblock title %}
 
 {% block portal_content %}
     {% block company_base %}
@@ -107,7 +107,7 @@
                                 ng-disabled="!editing || tags_to_remove[tag.id]"
                                 type="checkbox"/></label></div>
                     <div class="pr-cell" style="width: 10em;">
-                        <button ng-disabled="!editing" ng-if="!tags_to_remove[tag.id]" ng-click="remove_tag(tag.id, false)">Remove</button>
+                        <button ng-disabled="!editing" ng-if="!tags_to_remove[tag.id]" ng-click="remove_tag(tag.id, false)">{{ _('Remove') }}</button>
                         <button ng-disabled="!editing" ng-if="tags_to_remove[tag.id]" ng-click="remove_tag(tag.id,
                         true)">Undo remove</button>
                     </div>
@@ -118,7 +118,7 @@
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 ">
                 <div class="pull-right">
                     <input ng-disabled="!editing" placeholder="new tag" ng-model="new_tag"/>
-                    <button ng-disabled="!editing" class="btn border-radius" ng-click="add_tag()">Add tag</button>
+                    <button ng-disabled="!editing" class="btn border-radius" ng-click="add_tag()">{{ _('Add tag') }}</button>
                 </div>
             </div>
 

@@ -21,6 +21,8 @@ import time
 import operator
 from collections import OrderedDict
 import base64
+from PIL import Image
+from io import BytesIO
 
 from ..utils import fileUrl, fileID
 
@@ -497,9 +499,8 @@ class PRBase:
                         old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
                         selected_by_user['crop_coordinates'], column_data):
                     return old_croped_image_id
-                elif selected_by_user[
-                    'image_file_id'] == old_image_cropped.original_image_id and not old_image_cropped.same_coordinates(
-                        selected_by_user['crop_coordinates'], column_data):
+                elif selected_by_user['image_file_id'] == old_image_cropped.original_image_id \
+                        and not old_image_cropped.same_coordinates(selected_by_user['crop_coordinates'], column_data):
                     original_image = File.get(selected_by_user['image_file_id'])
                     return original_image.crop(selected_by_user['crop_coordinates'],
                                                folder_id, column_data, old_image_cropped)
@@ -508,23 +509,36 @@ class PRBase:
             else:
                 original_image = File.get(selected_by_user['image_file_id'])
             content = original_image.file_content.content
-            new_orginal_image = File.uploadLogo(content, original_image.name, original_image.mime, folder_id)
+
         if old_image_cropped:
             old_original_image = File.get(old_image_cropped.original_image_id)
-            # if old_original_image:
-            #     old_original_image.delete()
+            if old_original_image:
+                old_original_image.delete()
+
         if selected_by_user_type == 'none':
             return None
+
         if selected_by_user_type == 'upload':
             imgdataContent = selected_by_user['file']['content']
             image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
             content = base64.b64decode(image_data)
-            new_orginal_image = File.uploadLogo(content, selected_by_user['file']['name'], selected_by_user['file']['mime'],
-                                                folder_id)
-            if 'error' in File.check_image_mime(new_orginal_image.id):
-                resp = self.get_client_side_dict()
-                resp.update({'error': True})
-                return resp
+
+        name = selected_by_user['file']['name'] if selected_by_user_type == 'upload' else original_image.name
+        mime = selected_by_user['file']['mime'] if selected_by_user_type == 'upload' else original_image.mime
+
+        image_pil = Image.open(BytesIO(content))
+        if image_pil.width > column_data['image_size'][1] * 10 and image_pil.height > column_data['image_size'][0] * 10:
+            cont = image_pil.resize((int(column_data['image_size'][1] * 10), int(column_data['image_size'][0] * 10)))
+            content = BytesIO()
+            cont.save(content, mime.split('/')[-1].upper())
+            content = content.getvalue()
+
+        new_orginal_image = File.uploadLogo(content, name, mime, folder_id, author={self.__class__.__name__:self})
+
+        if 'error' in File.check_image_mime(new_orginal_image.id):
+            resp = self.get_client_side_dict()
+            resp.update({'error': True})
+            return resp
         return new_orginal_image.crop(selected_by_user['crop_coordinates'], folder_id, column_data)
 
     def get_image_cropped_file(self, parameters={}, croped_image_file_id=None):
@@ -538,7 +552,6 @@ class PRBase:
             'no_selection_url': parameters.get('no_selection_url'),
             'selected_by_user': {'type': 'none'}
         }
-        print(croped_image_file_id)
         if croped_image_file_id:
             ret['selected_by_user'] = {'type': 'browse', 'image_file_id': croped_image_file_id.original_image_id}
             if ret['cropper']:

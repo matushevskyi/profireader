@@ -1,14 +1,14 @@
 <script type="text/ng-template" id="tos_dialog.html">
             <div class="modal-header">
-                <h3 pr-test="LicenceTitle" class="modal-title">{{ _('Pls accept tos dialog header') }}</h3>
+                <h3 pr-test="LicenceTitle" class="modal-title">{{ _('Please accept tos dialog header') }}</h3>
             </div>
             <div class="modal-body">
                 {{ __('Licence text') }}
             </div>
 
             <div class="modal-footer">
-            <button pr-test="AcceptLicence" type="button" class="btn btn-default" ng-click="accept_tos('accept')">Accept</button>
-            <button pr-test="DeclineLicence" type="button" class="btn btn-default" ng-click="accept_tos('decline')">Decline</button>
+            <button pr-test="AcceptLicence" type="button" class="btn btn-default" ng-click="accept_tos('accept')">{{ __('Accept') }}</button>
+            <button pr-test="DeclineLicence" type="button" class="btn btn-default" ng-click="accept_tos('decline')">{{ __('Decline') }}</button>
             </div>
         </div>
     </script>
@@ -112,13 +112,13 @@
                     <ul>
                         <li ng-if="user"><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="{{ _('Стрічкa читача') }}" ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
                                 class="fa fa-newspaper-o"></i><span>{{ _('Стрічкa читача') }}</span></a></li>
-                        <li ng-if="user"><a pr_test="UserMassages" href="{{ url_messenger }}" title="{{ _('Всі повідомлення') }}"
+                        <li ng-if="user && user.tos"><a pr_test="UserMassages" href="{{ url_messenger }}" title="{{ _('Всі повідомлення') }}"
                                ng-class="{'selected': selected_user_menu == 'messages'}"><i
                                 class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span></a></li>
-                        <li ng-if="user"><a pr_test="CompaniesList" href="{{ url_company_companies() }}" title="{{ _('Компанії') }}"
+                        <li ng-if="user.tos"><a pr_test="CompaniesList" href="{{ url_company_companies() }}" title="{{ _('Компанії') }}"
                                ng-class="{'selected': selected_user_menu == 'companies'}"><i
                                 class="fa fa-building-o"></i><span>{{ _('Компанії') }}</span></a></li>
-                        <li ng-if="user"><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
+                        <li ng-if="user.tos"><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
                                ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
                                 class="fa fa-folder-open-o"></i><span>{{ _('Менеджер файлів') }}</span></a></li>
                         <li class="info-padding"><a pr_test="UserInfo" href="{{ url_general_help() }}" title="{{ _('Help information') }}"

@@ -1,6 +1,6 @@
 {% extends "index_lazy_layout.html" %}
 
-{% block title %}Article history{% endblock title %}
+{% block title %}{{ _('Article history') }}{% endblock title %}
 
 {% block portal_content %}
 
@@ -111,7 +111,7 @@
           id="article_submitted_to_company_id_{{ a_submitted.company_id }}">
         <h3>{{ _('Article title is `%(title)s` submitted to company `%(company.name)s` and has status `%(status)s`',
             a_submitted) }} [<a
-                    href="{{ url_update({article_company_id: a_submitted.id}) }}">edit</a>]
+                    href="{{ url_update({article_company_id: a_submitted.id}) }}">{{ _(edit) }}</a>]
             <span ng-if="a_submitted.status === 'declined'">[<a ng-click="resubmit(a_submitted.id)" href="#">{{_('resubmit')}}</a>]</span>
         </h3>
         {{ a_submitted.short }}

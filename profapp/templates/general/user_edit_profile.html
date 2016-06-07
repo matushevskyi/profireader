@@ -65,8 +65,8 @@
                                aria-describedby="sizing-addon1" type="text"
                                placeholder="last name" ng-model="data.user.profireader_last_name"
                                name="profireader_last_name" ng-pattern="/[\wа-яёі']{2}/">
-                        <div ng-show="formUser.profireader_last_name.$error.pattern" class="error-input">The
-                            user name should be longer!
+                        <div ng-show="formUser.profireader_last_name.$error.pattern" class="error-input">{{ _('The
+                            user name should be longer!') }}
                         </div>
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">

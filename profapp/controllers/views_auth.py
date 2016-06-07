@@ -356,7 +356,6 @@ def password_reset_request(json):
         SendEmail().send_email(subject='Reset password', send_to=(user.profireader_email, ""),
                                html=render_template('auth/email/reset_password.html', user=user),)
         flash('An email with instructions to reset your password has been sent to you.')
-        redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
     else:
         flash('You are not Profireader user yet. Sign up Profireader first please.')
     return {}

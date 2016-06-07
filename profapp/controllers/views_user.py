@@ -20,14 +20,6 @@ def profile(user_id):
                            actions={'edit_user_profile': UserEditProfieRight(user=user).is_allowed() == True})
 
 
-@user_bp.route('/avatar_update')
-@check_right(UserIsActive)
-def avatar_update(json):
-    image = json.get('update_image')
-    user = json.get('user')
-    return user.avatar_update(image)
-
-
 # TODO (AA to AA): Here admin must have the possibility to change user profile
 @user_bp.route('/edit-profile/<user_id>/', methods=['GET'])
 @check_right(UserEditProfieRight, ['user_id'])
