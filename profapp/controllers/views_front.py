@@ -331,7 +331,7 @@ def division(division_name, page=1):
     division = g.db().query(PortalDivision).filter_by(portal_id=portal.id, name=division_name).one()
 
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=division.name, default=10)
+                                                  division_name=division.name, default=100)
     if division.portal_division_type_id == 'catalog' and search_text:
         return redirect(url_for('front.index', search_text=search_text))
 
@@ -342,9 +342,11 @@ def division(division_name, page=1):
         current_division = division.get_client_side_dict()
 
         es = PRElastic(host='http://elastic.profi:9200')
+        filter = {"portal_division_id": division.id}
+        filter['tag_ids'] = '573aee00-0e9f-4001-a3c3-70cc05fbbb47'
 
         articles, pages, page = es.search('articles', 'articles',
-                                          filter={"portal_division_id": division.id},
+                                          sort = [{"date": "desc"}], filter=filter,
                                           must={("title^100", 'subtitle^50', 'short^10', "long^1",
                                                  'author^50', 'keywords^10'): search_text} if search_text else {},
                                           page=page, items_per_page=items_per_page)

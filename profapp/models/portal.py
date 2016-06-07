@@ -172,7 +172,6 @@ class Portal(Base, PRBase):
 
     #TODO: OZ by OZ fix this
     def get_value_from_config(self, key=None, division_name=None, default = None):
-        return 3
         return default
 
         """

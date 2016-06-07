@@ -46,6 +46,10 @@ class PRElastic:
                         PRElasticField('id', ftype='string', analyzed=False, setter=lambda a, p, d: a.id),
                         PRElasticField('tags', ftype='string', analyzed=False,
                                        setter=lambda a, p, d: ' '.join([t.text for t in a.tags])),
+                        PRElasticField('tag_ids', ftype='string', analyzed=False,
+                                       setter=lambda a, p, d: [t.id for t in a.tags]),
+                        PRElasticField('date', ftype='date',
+                                       setter=lambda a, p, d: int(a.publishing_tm.timestamp() * 1000)),
                         PRElasticField('user', ftype='string', analyzed=False),
                         PRElasticField('user_id', ftype='string', analyzed=False),
                         PRElasticField('portal', ftype='string', setter=lambda a, p, d: p.name),
@@ -97,13 +101,14 @@ class PRElastic:
         return json.loads(response.text)
 
     @staticmethod
-    def search(index_name, document_type, filter={}, must={}, should={}, page=1, items_per_page=10):
+    def search(index_name, document_type, sort=["_score"], filter={}, must={}, should={}, page=1, items_per_page=10):
 
-        f = [{"term": {k: v}} for k, v in filter.items()]
-        m = [{"multi_match": {'query': v, 'fields': list(k)}} for k, v in must.items()]
-        s = [{"multi_match": {'query': v, 'fields': list(k)}} for k, v in should.items()]
-
-        req = {"query": {"bool": {"filter": f, "must": m, "should": s}}}
+        req = {
+            "sort": sort,
+            "query": {"bool": {"filter": [{"term" if type(v) == 'str' else 'terms': {k: v}} for k, v in filter.items()],
+                               "must": [{"multi_match": {'query': v, 'fields': list(k)}} for k, v in must.items()],
+                               "should": [{"multi_match": {'query': v, 'fields': list(k)}} for k, v in should.items()]
+                               }}}
 
         count = PRElastic.rq(path=PRElastic.path(index_name, document_type, '_count'),
                              req=req, method='GET')['count']
