@@ -101,14 +101,11 @@ class PRElastic:
         return json.loads(response.text)
 
     @staticmethod
-    def search(index_name, document_type, sort=["_score"], filter={}, must={}, should={}, page=1, items_per_page=10):
+    def search(index_name, document_type, sort=["_score"], filter=[], must=[], should=[], page=1, items_per_page=10):
 
         req = {
             "sort": sort,
-            "query": {"bool": {"filter": [{"term" if type(v) == 'str' else 'terms': {k: v}} for k, v in filter.items()],
-                               "must": [{"multi_match": {'query': v, 'fields': list(k)}} for k, v in must.items()],
-                               "should": [{"multi_match": {'query': v, 'fields': list(k)}} for k, v in should.items()]
-                               }}}
+            "query": {"bool": {"filter": filter, "must": must, "should": should }}}
 
         count = PRElastic.rq(path=PRElastic.path(index_name, document_type, '_count'),
                              req=req, method='GET')['count']

@@ -5,6 +5,7 @@ from operator import or_
 import inspect
 import copy
 
+
 # def redirect_url(default=None):
 #     if not default:
 #         default = url_for('general.index')
@@ -31,25 +32,25 @@ def url_page(endpoint=None, **kwargs):
     ep = endpoint if endpoint else request.endpoint
     kwargs_new = request.view_args
 
-#    try:
-#     from run import app
-#     with app.app_context():
-#         func = current_app.view_functions[ep]
-# #    except:
-# #        from run_front import app_front
-# #        with app_front.app_context():
-# #            func = current_app.view_functions[ep]
-#
-# #    print(func)
-#     argspec = inspect.getargspec(func)
-#     args = argspec.args
-#     defaults = argspec.defaults or []
-#
-#     len_obligatory_args = len(args) - len(defaults)
-#     obligatory_args = args[0:len_obligatory_args]
-#
-#     if not set(obligatory_args).issubset(set(kwargs.keys())):
-#         raise WrongMandatoryParametersPassedToFunction
+    #    try:
+    #     from run import app
+    #     with app.app_context():
+    #         func = current_app.view_functions[ep]
+    # #    except:
+    # #        from run_front import app_front
+    # #        with app_front.app_context():
+    # #            func = current_app.view_functions[ep]
+    #
+    # #    print(func)
+    #     argspec = inspect.getargspec(func)
+    #     args = argspec.args
+    #     defaults = argspec.defaults or []
+    #
+    #     len_obligatory_args = len(args) - len(defaults)
+    #     obligatory_args = args[0:len_obligatory_args]
+    #
+    #     if not set(obligatory_args).issubset(set(kwargs.keys())):
+    #         raise WrongMandatoryParametersPassedToFunction
 
     kwargs_new.update(kwargs)
 

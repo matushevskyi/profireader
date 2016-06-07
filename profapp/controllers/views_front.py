@@ -325,8 +325,12 @@ def index(page=1):
 
 @front_bp.route('<string:division_name>/', methods=['GET'])
 @front_bp.route('<string:division_name>/<int:page>/', methods=['GET'])
+@front_bp.route('<string:division_name>/tags/<string:tags>/', methods=['GET'])
+@front_bp.route('<string:division_name>/<int:page>/', methods=['GET'])
+@front_bp.route('<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'])
 @check_right(AllowAll)
-def division(division_name, page=1):
+def division(division_name, page=1, tags = ''):
+    print(request.url_rule.arguments)
     search_text, portal, _ = get_params()
     division = g.db().query(PortalDivision).filter_by(portal_id=portal.id, name=division_name).one()
 
@@ -348,13 +352,17 @@ def division(division_name, page=1):
         current_division = division.get_client_side_dict()
 
         es = PRElastic(host='http://elastic.profi:9200')
-        filter = {"portal_division_id": division.id}
-        filter['tag_ids'] = '573aee00-0e9f-4001-a3c3-70cc05fbbb47'
+
+        filter = [{'term': {'portal_division_id': division.id}},
+                  {'term': {'tag_ids': '573aee00-0e9f-4001-a3c3-70cc05fbbb47'}},
+                  {'term': {'tag_ids': '573aee00-0e9f-4001-8c4e-010d9af9ba55'}},
+                  ]
+
+        must = [{"multi_match": {'query': search_text, 'fields': ["title^100", 'subtitle^50', 'short^10', "long^1",
+                                                 'author^50', 'keywords^10']}}] if search_text else []
 
         articles, pages, page = es.search('articles', 'articles',
-                                          sort = [{"date": "desc"}], filter=filter,
-                                          must={("title^100", 'subtitle^50', 'short^10', "long^1",
-                                                 'author^50', 'keywords^10'): search_text} if search_text else {},
+                                          sort = [{"date": "desc"}], filter=filter, must= must,
                                           page=page, items_per_page=items_per_page)
 
         articles = OrderedDict((a['id'], ArticlePortalDivision.get(a['id']).get_client_side_dict()) for a in articles)
@@ -368,6 +376,8 @@ def division(division_name, page=1):
         return render_template('front/' + g.portal_layout_path + 'division.html',
                                articles=articles,
                                current_division=current_division,
+                               all_tags = current_division['tags'],
+                               selected_tags=['фірми'],
                                portal=portal_and_settings(portal),
                                pages=pages,
                                url_page=url_page_division,

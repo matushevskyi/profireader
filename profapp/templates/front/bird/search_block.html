@@ -1,11 +1,10 @@
-<form class="search-form" style=""
-      onsubmit="{{ url_for('front.index') }}">
-    {% if search_text!='' %}
-        <input style="width: 10em" type="text" name="search_text" placeholder="Search" value="{{ search_text }}">
-    {% else %}
-        <input style="width: 10em" type="text" name="search_text">
-    {% endif %}
+{{ request.view_args }}<br/>
+{{ request.endpoint }}
 
+<form class="search-form">
+    <input style="width: 10em" type="text" name="search_text" placeholder="{{ _('Search') }}" value="{{ search_text }}">
     <button class="btn btn-default search-btn" type="submit"><span
             class="glyphicon glyphicon-search"></span></button>
 </form>
+{% for tag in all_tags if tag.text     in selected_tags %} {{ pr_tag(tag, selected_tags = selected_tags, toogle_tag = True) }} {% endfor %}
+{% for tag in all_tags if tag.text not in selected_tags %} {{ pr_tag(tag, selected_tags = selected_tags, toogle_tag = True) }} {% endfor %}

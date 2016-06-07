@@ -53,6 +53,19 @@ def merge_dicts(*args):
         ret.update(d)
     return ret
 
+def list_merge(list, remove = [], add = []):
+    print('list', list, remove, add)
+    print('listr', [l for l in list if l not in remove])
+    print('lista', [a for a in add if a not in list])
+    print('list=', [l for l in list if l not in remove] + [a for a in add if a not in list])
+    return [l for l in list if l not in remove] + [a for a in add if a not in list]
+
+
+def list_remove(list, remove):
+    return list - remove
+
+
+
 def putInRange(what, fromr, tor, check_only = False):
     if check_only:
         return True if (what >= fromr) and (what <= tor) else False

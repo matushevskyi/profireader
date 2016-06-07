@@ -13,11 +13,20 @@
         if (messageevent.data && messageevent.data.profireader_session_id) {
             $.cookie('beaker.session.id', messageevent.data.profireader_session_id, {path: '/'});
             window.location.reload();
-            }
+        }
     }, false);
-    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: none; left: -1px;" src="https://profireader.com/tools/SSO/'+$.cookie('beaker.session.id')+'/"></iframe>');
+    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: none; left: -1px;" src="https://profireader.com/tools/SSO/' + $.cookie('beaker.session.id') + '/"></iframe>');
 </script>
 {% include 'nav.html' %}
+{% macro pr_tag(tag, selected_tags = [], toogle_tag = False) %}
+    {% set new_tags = selected_tags if not toogle_tag else utils.list_merge(selected_tags, add = [tag.text] if tag.text not in selected_tags else [], remove = [tag.text] if tag.text in selected_tags else []) %}
+    {% set url_on_click = url_for(request.endpoint, **utils.merge_dicts(request.view_args, {'tags': '+'.join(new_tags)})) %}
+
+    <span class="label {{ 'label-danger' if tag.text in selected_tags else 'label-default' }} item-tags"><a href="{{ url_on_click }}">{{ tag.text }}</a>
+        {% if searctoogleurl %}
+            <span class="glyphicon {{ 'glyphicon-plus' if tag.text in selected_tags else 'glyphicon-remove' }}"></span>{% endif %}
+    </span>
+{% endmacro %}
 <br/>
 <br/>
 <div class="container">
@@ -35,6 +44,7 @@
             {% endif %}
         </div>
         <div class="col-md-3">
+            {% include 'search_block.html' %}<br/><br/>
             <a href="#" class="right_banner_1">{{ portal.advs['right_banner_1']|safe }}</a>
             <a href="#" class="right_banner_2">{{ portal.advs['right_banner_2']|safe }}</a>
 
