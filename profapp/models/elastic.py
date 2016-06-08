@@ -39,6 +39,7 @@ class PRElastic:
                                       ).add_document_field(
                     *[
                         PRElasticField('title', ftype='string', setter=lambda a, p, d: a.title, boost=10),
+                        PRElasticField('author', ftype='string', setter=lambda a, p, d: a.author, boost=10),
                         PRElasticField('subtitle', ftype='string', setter=lambda a, p, d: a.subtitle, boost=4),
                         PRElasticField('keywords', ftype='string', setter=lambda a, p, d: a.keywords, boost=3),
                         PRElasticField('short', ftype='string', setter=lambda a, p, d: a.short, boost=2),
@@ -84,8 +85,8 @@ class PRElastic:
 
     @staticmethod
     def rq(path='', req='', method='GET'):
-        print(method + ' - ' + path)
-        print(req)
+        # print(method + ' - ' + path)
+        # print(req)
         if method == 'POST':
             response = requests.post(path, data=json.dumps(req))
         elif method == 'PUT':
@@ -97,7 +98,7 @@ class PRElastic:
         else:
             raise Exception("unknown method `" + method + '`')
 
-        print(response.text)
+        # print(response.text)
         return json.loads(response.text)
 
     @staticmethod
@@ -112,7 +113,10 @@ class PRElastic:
 
         pages = int(math.ceil(count / items_per_page))
 
+
         p = utils.putInRange(page, 1, pages)
+        p = 1 if p==0 else p
+        print(page, p, pages)
         items = utils.putInRange(items_per_page, 1, 100)
 
         res = PRElastic.rq(path=PRElastic.path(index_name, document_type, '_search', params={'size': items,
@@ -214,6 +218,6 @@ class PRElasticIndex:
 
 # def search_elastic(type, body):
 #     es = Elasticsearch(hosts='elastic.profi')
-#     return ([utils.merge_dicts(r['_source'], {'id': r['_id']}) for r in es.search(index='profireader',
+#     return ([utils.dict_merge(r['_source'], {'id': r['_id']}) for r in es.search(index='profireader',
 #                                                                                   doc_type=type,
 #                                                                                   body=body)['hits']['hits']], 10, 1)

@@ -5,7 +5,7 @@ import json
 from flask import Flask, g, request, current_app, session
 from beaker.middleware import SessionMiddleware
 from authomatic import Authomatic
-from profapp.utils.redirect_url import url_page
+# from profapp.utils.redirect_url import url_page
 from flask import url_for
 from flask.ext.bootstrap import Bootstrap
 # from flask.ext.moment import Moment
@@ -517,7 +517,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.jinja_env.globals.update(translates=translates)
     app.jinja_env.globals.update(fileUrl=utils.fileUrl)
     app.jinja_env.globals.update(prImage=prImage)
-    app.jinja_env.globals.update(url_page=url_page)
+    # app.jinja_env.globals.update(url_page=url_page)
     app.jinja_env.globals.update(config_variables=config_variables)
     app.jinja_env.globals.update(_=translate_phrase)
     app.jinja_env.globals.update(moment=moment)

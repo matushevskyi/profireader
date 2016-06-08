@@ -117,7 +117,7 @@ def employees(company_id):
 def employees_load(json, company_id):
     company = Company.get(company_id)
     employees_list = [
-        utils.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
+        utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                            {'actions': EmployeesRight(company=company, employment=employment).actions()})
         for employment in company.employee_assoc]
 
@@ -190,7 +190,7 @@ def employment_action(json, company_id, employment_id, action):
 
     employment.save()
 
-    return utils.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
+    return utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                               {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
@@ -202,7 +202,7 @@ def employment_change_position(json, company_id, employment_id):
     employment.position = json['position']
     employment.save()
 
-    return utils.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
+    return utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                               {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 

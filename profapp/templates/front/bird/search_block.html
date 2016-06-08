@@ -1,10 +1,10 @@
-{{ request.view_args }}<br/>
-{{ request.endpoint }}
-
+{% if search_text is not none and search_text is not undefined %}
+{% import 'partials/front-macros.html' as frontmacros %}
 <form class="search-form">
-    <input style="width: 10em" type="text" name="search_text" placeholder="{{ _('Search') }}" value="{{ search_text }}">
+    <input style="width: 10em" type="text" name="search" placeholder="{{ _('Search') }}" value="{{ search_text }}">
     <button class="btn btn-default search-btn" type="submit"><span
             class="glyphicon glyphicon-search"></span></button>
 </form>
-{% for tag in all_tags if tag.text     in selected_tags %} {{ pr_tag(tag, selected_tags = selected_tags, toogle_tag = True) }} {% endfor %}
-{% for tag in all_tags if tag.text not in selected_tags %} {{ pr_tag(tag, selected_tags = selected_tags, toogle_tag = True) }} {% endfor %}
+{% for tag in all_tags %} {{ frontmacros.tag(tag, url_toggle_tag, selected_tag_names = selected_tag_names, toogle_tag = True) }} {% endfor %}
+<br/><br/>
+{% endif %}

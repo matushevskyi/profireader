@@ -22,7 +22,7 @@
                     <a href="{{ url_for('front.subportal_division',
                                    member_company_id = member_company['id'] ,
                                    member_company_name = member_company['name'],
-                                   division_name=division.name, page=1, search_text='') }}">{{ division.name }}</a>
+                                   division_name=division.name) }}">{{ division.name }}</a>
                 </li>
             {% endif %}
         {% endfor %}

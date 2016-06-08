@@ -194,7 +194,7 @@ def submit_publish(json, article_action):
         ret['portal']['divisions'] = PRBase.get_ordered_dict(
             PublishUnpublishInPortal().get_active_division(portal.divisions))
 
-        return utils.merge_dicts(ret, more_data_to_ret)
+        return utils.dict_merge(ret, more_data_to_ret)
     else:
 
         publication.attr(g.filter_json(json['publication'], 'portal_division_id'))

@@ -35,7 +35,7 @@ class ArticlePortalDivision(Base, PRBase):
     long_stripped = Column(TABLE_TYPES['text'], nullable=False)
 
     keywords = Column(TABLE_TYPES['keywords'], nullable=False)
-    author = 'hello'
+    author = Column(TABLE_TYPES['short_name'], nullable=False)
     md_tm = Column(TABLE_TYPES['timestamp'])
     publishing_tm = Column(TABLE_TYPES['timestamp'])
     event_begin_tm = Column(TABLE_TYPES['timestamp'])
@@ -304,7 +304,7 @@ class ArticlePortalDivision(Base, PRBase):
                    }
         return actions[self.visibility]()
 
-    def get_client_side_dict(self, fields='id|image_file_id|read_count|title|subtitle|short|long_stripped|tags|'
+    def get_client_side_dict(self, fields='id|image_file_id|read_count|title|subtitle|short|long_stripped|tags|author|'
                                           'portal_division_id|image_file_id|position|keywords|cr_tm|md_tm|status|'
                                           'visibility|publishing_tm|event_begin_tm,event_end_tm,company.id|name, '
                                           'division.id|'
@@ -886,7 +886,7 @@ class Article(Base, PRBase):
         dict = material.get_client_side_dict(fields='md_tm,title,editor.profireader_name,id')
         dict.update({'portal.name': None if len(material.portal_article) == 0 else '', 'level': True})
         dict.update({'actions': None if len(material.portal_article) == 0 else '', 'level': True})
-        list = [utils.merge_dicts(
+        list = [utils.dict_merge(
             article_portal.get_client_side_dict(fields='portal.name|host,status, id, portal_division_id'),
             {'actions':
                  {'edit': PublishUnpublishInPortal(publication=article_portal,
