@@ -14,14 +14,14 @@
 
         {#            <div class="row company-about">#}
         {#                <a#}
-        {#                    href="{{ url_for('front.subportal', member_company_id = members[member_id]['id'], member_company_name = members[member_id]['name']) }}"#}
+        {#                    href="{{ url_for('front.company_member', member_company_id = members[member_id]['id'], member_company_name = members[member_id]['name']) }}"#}
         {#                    href>{{ members[member_id]['name'] }}</a>#}
         {#                {{ members[member_id]['short_description']|safe }}#}
         {#            </div>#}
         {#        </div>#}
 
         <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12 company-blocks">
-            <a href="{{ url_for('front.subportal', member_company_id = members[member_id]['id'], member_company_name = members[member_id]['name']) }}">
+            <a href="{{ url_for('front.company_member', member_company_id = members[member_id]['id'], member_company_name = members[member_id]['name']) }}">
 
 
                 <div class="thumbnail">

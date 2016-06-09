@@ -56,14 +56,23 @@ def subscribe_to_portal():
     return ''
 
 
-def get_params(**argv):
+def get_params(division_name):
+
     search_text = request.args.get('search') or ''
+
     portal = g.db().query(Portal).filter_by(host=request.host).first()
+
+    dvsn = g.db().query(PortalDivision).filter_by(**utils.dict_merge(
+            {'portal_id': portal.id},
+            {'portal_division_type_id': 'index'} if division_name is None else {'name': division_name})).one()
+
+
+
     if portal:
         sub_query = Article.subquery_articles_at_portal(search_text=search_text, portal_id=portal.id)
-        return search_text, portal, sub_query
+        return search_text, portal, dvsn, sub_query
     else:
-        return None, None, None
+        return None, None, None, None
 
 
 def portal_and_settings(portal):
@@ -103,95 +112,92 @@ def add_delete_liked(json, article_portal_division_id):
     return {'on': False if json['on'] else True, 'liked_count': article.check_liked_count()}
 
 
-@front_bp.route('<string:division_name>/_c/<string:member_company_id>/<string:member_company_name>/')
-@front_bp.route('<string:division_name>/_c/<string:member_company_id>/<string:member_company_name>/<int:page>/')
+# @front_bp.route('<string:division_name>/_c/<string:member_company_id>/<string:member_company_name>/')
+# @front_bp.route('<string:division_name>/_c/<string:member_company_id>/<string:member_company_name>/<int:page>/')
+# @check_right(AllowAll)
+# def subportal_division(division_name, member_company_id, member_company_name, page=1):
+#     member_company = Company.get(member_company_id)
+#     search_text, portal, _ = get_params()
+#     division = get_division_for_subportal(portal.id, member_company_id)
+#     subportal_division = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
+#                                                                 name=division_name).one()
+#     order = Search.ORDER_POSITION if not search_text else Search.ORDER_RELEVANCE
+#     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
+#                                                   division_name=subportal_division.name, default=10)
+#     articles, pages, page = Search().search(ArticlePortalDivision().search_filter_default(
+#         subportal_division.id, company_id=member_company_id), search_text=search_text, page=page,
+#         order_by=order, pagination=True, items_per_page=items_per_page)
+#
+#     add_tags(articles)
+#
+#     # sub_query = Article.subquery_articles_at_portal(
+#     #     search_text=search_text,
+#     #     portal_division_id=subportal_division.id). \
+#     #     filter(db(ArticleCompany,
+#     #               company_id=member_company_id,
+#     #               id=ArticlePortalDivision.article_company_id).exists())
+#     # filter(Company.id == member_company_id)
+#
+#     # articles, pages, page = pagination(query=sub_query, page=page)
+#
+#     def url_page_division(page=1, search_text='', **kwargs):
+#         return url_for('front.subportal_division', division_name=division_name,
+#                        member_company_id=member_company_id, member_company_name=member_company_name,
+#                        page=page, search_text=search_text)
+#
+#     return render_template('front/' + g.portal_layout_path + 'bak_subportal_division.html',
+#                            articles=articles,
+#                            subportal=True,
+#                            portal=portal_and_settings(portal),
+#                            current_division=division.get_client_side_dict(),
+#                            current_subportal_division=subportal_division.get_client_side_dict(),
+#                            member_company=member_company.get_client_side_dict(),
+#                            pages=pages,
+#                            page=page,
+#                            current_page=page,
+#                            page_buttons=Config.PAGINATION_BUTTONS,
+#                            search_text=search_text,
+#                            url_page=url_page_division)
+
+
+@front_bp.route('_c/<string:member_company_id>/send_message/', methods=['OK'])
 @check_right(AllowAll)
-def subportal_division(division_name, member_company_id, member_company_name, page=1):
-    member_company = Company.get(member_company_id)
-    search_text, portal, _ = get_params()
-    division = get_division_for_subportal(portal.id, member_company_id)
-    subportal_division = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
-                                                                name=division_name).one()
-    order = Search.ORDER_POSITION if not search_text else Search.ORDER_RELEVANCE
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=subportal_division.name, default=10)
-    articles, pages, page = Search().search(ArticlePortalDivision().search_filter_default(
-        subportal_division.id, company_id=member_company_id), search_text=search_text, page=page,
-        order_by=order, pagination=True, items_per_page=items_per_page)
-
-    add_tags(articles)
-
-    # sub_query = Article.subquery_articles_at_portal(
-    #     search_text=search_text,
-    #     portal_division_id=subportal_division.id). \
-    #     filter(db(ArticleCompany,
-    #               company_id=member_company_id,
-    #               id=ArticlePortalDivision.article_company_id).exists())
-    # filter(Company.id == member_company_id)
-
-    # articles, pages, page = pagination(query=sub_query, page=page)
-
-    def url_page_division(page=1, search_text='', **kwargs):
-        return url_for('front.subportal_division', division_name=division_name,
-                       member_company_id=member_company_id, member_company_name=member_company_name,
-                       page=page, search_text=search_text)
-
-    return render_template('front/' + g.portal_layout_path + 'subportal_division.html',
-                           articles=articles,
-                           subportal=True,
-                           portal=portal_and_settings(portal),
-                           current_division=division.get_client_side_dict(),
-                           current_subportal_division=subportal_division.get_client_side_dict(),
-                           member_company=member_company.get_client_side_dict(),
-                           pages=pages,
-                           page=page,
-                           current_page=page,
-                           page_buttons=Config.PAGINATION_BUTTONS,
-                           search_text=search_text,
-                           url_page=url_page_division)
-
-
-@front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/')
-@check_right(AllowAll)
-def subportal(member_company_id, member_company_name, page=1):
-    search_text, portal, _ = get_params()
-    if search_text:
-        return redirect(url_for('front.index', search_text=search_text))
-    member_company = Company.get(member_company_id)
-    division = get_division_for_subportal(portal.id, member_company_id)
-    subportal_division = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
-                                                                portal_division_type_id='index').one()
-    return render_template('front/' + g.portal_layout_path + 'subportal.html',
-                           subportal=True,
-                           portal=portal_and_settings(portal),
-                           current_division=division.get_client_side_dict(),
-                           current_subportal_division=subportal_division.get_client_side_dict(),
-                           member_company=member_company.get_client_side_dict(),
-                           current_subportal_division_name='index',
-                           pages=False,
-                           # current_page=page,
-                           # page_buttons=Config.PAGINATION_BUTTONS,
-                           # search_text=search_text
-                           )
+def send_message(json, member_company_id):
+    send_to = User.get(json['user_id'])
+    send_email(send_to.profireader_email, 'New message',
+               'messenger/email_send_message', user_to=send_to, user_from=g.user.get_client_side_dict(),
+               in_company=Company.get(member_company_id), message=json['message'])
+    return {}
 
 
 @front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/address/')
 @check_right(AllowAll)
 def subportal_address(member_company_id, member_company_name):
-    search_text, portal, _ = get_params()
+    _, portal, dvsn, _ = get_params(None, member_company_id, member_company_name)
 
-    member_company = Company.get(member_company_id)
 
     division = get_division_for_subportal(portal.id, member_company_id)
 
     return render_template('front/' + g.portal_layout_path + 'subportal_address.html',
-                           subportal=True,
                            portal=portal_and_settings(portal),
                            current_division=division.get_client_side_dict(),
-                           current_subportal_division=False,
-                           current_subportal_division_name='address',
-                           member_company=member_company.get_client_side_dict(),
-                           pages=False,
+                           member_company=subportal_for_company.get_client_side_dict(),
+                           member_company_page='address',
+                           )
+
+@front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/address/')
+@check_right(AllowAll)
+def company_member(member_company_id, member_company_name):
+    _, portal, dvsn, _ = get_params(None, member_company_id, member_company_name)
+
+
+    division = get_division_for_subportal(portal.id, member_company_id)
+
+    return render_template('front/' + g.portal_layout_path + 'subportal_address.html',
+                           portal=portal_and_settings(portal),
+                           current_division=division.get_client_side_dict(),
+                           member_company=subportal_for_company.get_client_side_dict(),
+                           member_company_page='address',
                            )
 
 
@@ -229,18 +235,85 @@ def subportal_contacts(member_company_id, member_company_name):
                            # search_text=search_text
                            )
 
+def render_articles(portal, dvsn, page, tags, search_text):
+    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
+                                                  division_name=dvsn.name, default=2)
 
-@front_bp.route('_c/<string:member_company_id>/send_message/', methods=['OK'])
-@check_right(AllowAll)
-def send_message(json, member_company_id):
-    send_to = User.get(json['user_id'])
-    send_email(send_to.profireader_email, 'New message',
-               'messenger/email_send_message', user_to=send_to, user_from=g.user.get_client_side_dict(),
-               in_company=Company.get(member_company_id), message=json['message'])
-    return {}
+    pdt = dvsn.portal_division_type_id
+
+    current_division = dvsn.get_client_side_dict()
+    afilter = [] if pdt == 'index' else [{'term': {'portal_division_id': dvsn.id}}]
+
+    wrong_tag = False
+    all_tags = (portal.get_client_side_dict(fields='tags') if pdt == 'index' else current_division)['tags']
+    all_tags_text_id = {t['text']: t['id'] for t in all_tags}
+    selected_tag_names = []
+    if tags:
+        for t in tags.split('+'):
+            if t in all_tags_text_id:
+                selected_tag_names.append(t)
+                afilter.append({'term': {'tag_ids': all_tags_text_id[t]}})
+            else:
+                wrong_tag = True
+
+    if wrong_tag:
+        return redirect(url_for(request.endpoint,
+                                **utils.dict_merge(request.view_args, {'tags': '+'.join(selected_tag_names)})))
+
+    es = PRElastic(host='http://elastic.profi:9200')
+
+    articles, pages, page = es.search('articles', 'articles',
+                                      sort=[{"date": "desc"}], filter=afilter, page=page,
+                                      items_per_page=items_per_page,
+                                      must=[{"multi_match": {'query': search_text,
+                                                             'fields': ["title^100", 'subtitle^50', 'short^10',
+                                                                        "long^1",
+                                                                        'author^50',
+                                                                        'keywords^10']}}] if search_text else [])
+
+    articles = OrderedDict((a['id'], ArticlePortalDivision.get(a['id']).get_client_side_dict()) for a in articles)
+
+    add_tags(articles)
 
 
-subportal_prefix = '<string:division_name>/_c/<string:member_company_id>/<string:member_company_name>/'
+    def url_page_division(page=1):
+        s = ('?search=' + search_text) if search_text else ''
+        url_args = utils.dict_merge(request.view_args, {'page': page} if page > 1 else {},
+                                    remove={} if page > 1 else {'page': True})
+        return url_for(request.endpoint, **url_args) + s
+
+
+    def url_toggle_tag(toggle_tag):
+        new_tags = utils.list_merge(selected_tag_names,
+                                    [toggle_tag] if (toggle_tag and toggle_tag not in selected_tag_names) else [],
+                                    remove=[toggle_tag] if toggle_tag and toggle_tag in selected_tag_names else [])
+
+        url_args = {}
+
+        if pdt != 'index':
+            url_args['division_name'] = current_division['name']
+        if len(new_tags) > 0:
+            url_args['tags'] = '+'.join(new_tags)
+
+        s = ('?search=' + search_text) if search_text else ''
+
+        return url_for(request.endpoint, **url_args) + s
+
+
+    return render_template('front/' + g.portal_layout_path + 'division.html',
+                           articles=articles,
+                           current_division=current_division,
+                           all_tags=all_tags,
+                           selected_tag_names=selected_tag_names,
+                           portal=portal_and_settings(portal),
+                           pages=pages,
+                           url_page=url_page_division,
+                           url_toggle_tag=url_toggle_tag,
+                           current_page=page,
+                           page_buttons=Config.PAGINATION_BUTTONS,
+                           search_text=search_text)
+
+subportal_prefix = '<string:subportal_division_name>/'
 
 @front_bp.route('/', methods=['GET'])
 @front_bp.route('<int:page>/', methods=['GET'])
@@ -256,97 +329,30 @@ subportal_prefix = '<string:division_name>/_c/<string:member_company_id>/<string
 # @front_bp.route(subportal_prefix + '<int:page>/tags/<string:tags>/', methods=['GET'])
 # @front_bp.route(subportal_prefix + '<string:division_name>/', methods=['GET'])
 # @front_bp.route(subportal_prefix + '<string:division_name>/<int:page>/', methods=['GET'])
-# @front_bp.route(subportal_prefix + '<string:division_name>/tags/<string:tags>/', methods=['GET'])
-# @front_bp.route(subportal_prefix + '<string:division_name>/<int:page>/', methods=['GET'])
-# @front_bp.route(subportal_prefix + '<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'])
+@front_bp.route(subportal_prefix + '<string:division_name>/tags/<string:tags>/', methods=['GET'])
+@front_bp.route(subportal_prefix + '<string:division_name>/<int:page>/', methods=['GET'])
+@front_bp.route(subportal_prefix + '<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'])
 
 @check_right(AllowAll)
-def division(division_name=None, page=1, tags=None):
-    search_text, portal, _ = get_params()
+def division(division_name=None, page=1, tags=None, member_company_name = None, member_company_id = None):
 
-    dvsn = g.db().query(PortalDivision).filter_by(**utils.dict_merge(
-        {'portal_id': portal.id},
-        {'portal_division_type_id': 'index'} if division_name is None else {'name': division_name})).one()
+    search_text, portal, dvsn, _ = get_params(division_name)
 
-    pdt = dvsn.portal_division_type_id
-
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=2)
-
-    if pdt == 'catalog' and search_text:
+    if dvsn.portal_division_type_id == 'catalog' and search_text:
         return redirect(url_for('front.index', search_text=search_text))
 
-    if pdt in ['index', 'news', 'events']:
+    if dvsn.portal_division_type_id == 'company_subportal':
+        member_company = MemberCompanyPortal.get(g.db().query(PortalDivisionSettingsCompanySubportal).filter_by(portal_division_id = dvsn.id).one().member_company_portal_id)
+        return render_template('front/' + g.portal_layout_path + 'subportal_about.html',
+                           portal=portal_and_settings(portal),
+                           current_division=dvsn.get_client_side_dict(),
+                           member_company=member_company.get_client_side_dict(),
+                           member_company_division=dvsn.get_client_side_dict(),
+                           member_company_page='about',
+                           )
 
-        current_division = dvsn.get_client_side_dict()
-        afilter = [] if pdt == 'index' else [{'term': {'portal_division_id': dvsn.id}}]
-
-        wrong_tag = False
-        all_tags = (portal.get_client_side_dict(fields='tags') if pdt == 'index' else current_division)['tags']
-        all_tags_text_id = {t['text']: t['id'] for t in all_tags}
-        selected_tag_names = []
-        if tags:
-            for t in tags.split('+'):
-                if t in all_tags_text_id:
-                    selected_tag_names.append(t)
-                    afilter.append({'term': {'tag_ids': all_tags_text_id[t]}})
-                else:
-                    wrong_tag = True
-
-        if wrong_tag:
-            return redirect(url_for(request.endpoint,
-                                    **utils.dict_merge(request.view_args, {'tags': '+'.join(selected_tag_names)})))
-
-        es = PRElastic(host='http://elastic.profi:9200')
-
-        articles, pages, page = es.search('articles', 'articles',
-                                          sort=[{"date": "desc"}], filter=afilter, page=page,
-                                          items_per_page=items_per_page,
-                                          must=[{"multi_match": {'query': search_text,
-                                                                 'fields': ["title^100", 'subtitle^50', 'short^10',
-                                                                            "long^1",
-                                                                            'author^50',
-                                                                            'keywords^10']}}] if search_text else [])
-
-        articles = OrderedDict((a['id'], ArticlePortalDivision.get(a['id']).get_client_side_dict()) for a in articles)
-
-        add_tags(articles)
-
-        def url_page_division(page=1):
-            s = ('?search=' + search_text) if search_text else ''
-            url_args = utils.dict_merge(request.view_args, {'page': page} if page > 1 else {},
-                                        remove={} if page > 1 else {'page': True})
-            return url_for(request.endpoint, **url_args) + s
-
-        def url_toggle_tag(toggle_tag):
-
-            new_tags = utils.list_merge(selected_tag_names,
-                                        [toggle_tag] if (toggle_tag and toggle_tag not in selected_tag_names) else [],
-                                        remove=[toggle_tag] if toggle_tag and toggle_tag in selected_tag_names else [])
-
-            url_args = {}
-
-            if pdt != 'index':
-                url_args['division_name'] = current_division['name']
-            if len(new_tags) > 0:
-                url_args['tags'] = '+'.join(new_tags)
-
-            s = ('?search=' + search_text) if search_text else ''
-
-            return url_for(request.endpoint, **url_args) + s
-
-        return render_template('front/' + g.portal_layout_path + 'division.html',
-                               articles=articles,
-                               current_division=current_division,
-                               all_tags=all_tags,
-                               selected_tag_names=selected_tag_names,
-                               portal=portal_and_settings(portal),
-                               pages=pages,
-                               url_page=url_page_division,
-                               url_toggle_tag=url_toggle_tag,
-                               current_page=page,
-                               page_buttons=Config.PAGINATION_BUTTONS,
-                               search_text=search_text)
+    if dvsn.portal_division_type_id in ['index', 'news', 'events']:
+        return render_articles(portal, dvsn, page, tags, search_text)
 
     elif dvsn.portal_division_type_id == 'catalog':
         members = {member.id: member.get_client_side_dict(fields="id|company|tags") for
