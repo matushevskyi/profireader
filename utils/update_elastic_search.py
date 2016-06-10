@@ -4,20 +4,10 @@ sys.path.append('..')
 from profapp.models.articles import Article, ArticleCompany, ArticleCompanyHistory, \
     ArticlePortalDivision
 
-from sqlalchemy import create_engine, event
-from profapp.models.pr_base import Search
-from profapp.constants.SEARCH import RELEVANCE
-import re
-from sqlalchemy.orm import scoped_session, sessionmaker
-from config import ProductionDevelopmentConfig
-import datetime
-import http.client, urllib.parse
-from profapp.models.elastic import PRElastic
-
-from datetime import datetime
 
 from profapp import create_app, load_database
 import argparse
+
 
 # if __name__ == '__main__':
 
@@ -29,10 +19,15 @@ classes = [ArticlePortalDivision]
 
 
 
-def add_documents():
-    indexes = PRElastic.get_structure()
-    for ei in indexes:
-        ei.insert_all_documents()
+def recreate_documents():
+    for aclass in classes:
+        aclass.elastic_reindex_all()
+    # for s in structure:
+    #     s.recreate_all_documents()
+    #     pass
+
+    # for ei in indexes:
+    #     ei.insert_all_documents()
     # for doctype, doc_properties in es.get_elastic_fields().items():
     #     id_field = doc_properties['id']
     #     main_class = list(id_field['depend_on'].keys())[0]
@@ -45,19 +40,10 @@ def add_documents():
     # db_session.commit()
 
 
-def create_indexes():
-    # mappings = {}
-    settings = {
-        # "index": {
-        #     "number_of_shards": 3,
-        #     "number_of_replicas": 2
-        # }
-    }
-    indexes = PRElastic.get_structure()
+def delete_indexes():
 
-    for ei in indexes:
-        ei.delete()
-        ei.create()
+    for aclass in classes:
+        aclass.elastic_remove_all_indexes()
 
 
 if __name__ == '__main__':
@@ -71,9 +57,9 @@ if __name__ == '__main__':
     with app.app_context():
         load_database(app.config['SQLALCHEMY_DATABASE_URI'])()
 
-        if args.whattodo == 'create_elastic_indexes':
-            create_indexes()
+        if args.whattodo == 'delete_elastic_indexes':
+            delete_indexes()
 
-        elif args.whattodo == 'reindex_elastic_documents':
-            add_documents()
+        elif args.whattodo == 'recreate_all_elastic_documents':
+            recreate_documents()
 

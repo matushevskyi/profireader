@@ -1,92 +1,32 @@
-from elasticsearch import Elasticsearch
-from .articles import ArticlePortalDivision
-from .portal import Portal, PortalDivision
-from .tag import TagPublication
-from .pr_base import PRBase
 import requests
 import json
 import math
 from .. import utils
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import scoped_session, sessionmaker
-from config import ProductionDevelopmentConfig
-
-elastic_host = 'http://elastic.profi:9200'
-
-engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
-db_session = scoped_session(sessionmaker(autocommit=False,
-                                         autoflush=False,
-                                         bind=engine))
+from utils.db_utils import db
 
 
-class PRElastic:
-    uri = ''
+# engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
+# db_session = scoped_session(sessionmaker(autocommit=False,
+#                                          autoflush=False,
+#                                          bind=engine))
+
+class PRElasticConnection:
+
+    host = None
 
     def __init__(self, host):
-        self.uri = host
-        pass
+        self.host = host
 
-    @staticmethod
-    def get_structure():
 
-        return [
-            PRElasticIndex('articles').add_document_type(
-                PRElasticDocumentType('articles',
-                                      elastic2alchemy=lambda id, d: ArticlePortalDivision.get(id),
-                                      all_alchemys=lambda: {a.id: [a, a.portal, a.division] for a in
-                                                            db_session.query(
-                                                                ArticlePortalDivision).all()}
-                                      ).add_document_field(
-                    *[
-                        PRElasticField('title', ftype='string', setter=lambda a, p, d: a.title, boost=10),
-                        PRElasticField('author', ftype='string', setter=lambda a, p, d: a.author, boost=10),
-                        PRElasticField('subtitle', ftype='string', setter=lambda a, p, d: a.subtitle, boost=4),
-                        PRElasticField('keywords', ftype='string', setter=lambda a, p, d: a.keywords, boost=3),
-                        PRElasticField('short', ftype='string', setter=lambda a, p, d: a.short, boost=2),
-                        PRElasticField('long', ftype='string', setter=lambda a, p, d: a.long),
-                        PRElasticField('id', ftype='string', analyzed=False, setter=lambda a, p, d: a.id),
-                        PRElasticField('tags', ftype='string', analyzed=False,
-                                       setter=lambda a, p, d: ' '.join([t.text for t in a.tags])),
-                        PRElasticField('tag_ids', ftype='string', analyzed=False,
-                                       setter=lambda a, p, d: [t.id for t in a.tags]),
-                        PRElasticField('date', ftype='date',
-                                       setter=lambda a, p, d: int(a.publishing_tm.timestamp() * 1000)),
-                        PRElasticField('user', ftype='string', analyzed=False),
-                        PRElasticField('user_id', ftype='string', analyzed=False),
-                        PRElasticField('portal', ftype='string', setter=lambda a, p, d: p.name),
-                        PRElasticField('portal_id', ftype='string', analyzed=False, setter=lambda a, p, d: p.id),
-                        PRElasticField('division', ftype='string', setter=lambda a, p, d: d.name),
-                        PRElasticField('portal_division_id', ftype='string', analyzed=False,
-                                       setter=lambda a, p, d: a.division.id)
-                    ]
-                )
-            )
-        ]
 
-    @staticmethod
-    def path(*args, params=None):
-        return (elastic_host + '/' + '/'.join(args)) + '?' + \
+    def path(self, *args, params=None):
+        return (self.host + '/' + '/'.join(args)) + '?' + \
                ('&'.join(["%s=%s" % (k, v) for k, v in params.items()]) if params else '')
 
-    # def search(self, index, doc_type, filter = {}, search = {}):
-    #     return (self.rq(path=self.path(index_name, document_type, id), req={}, method='PUT'), 1, 1)
-    #     """Simple Elasticsearch Query"""
-    #     query = json.dumps({
-    #         "query": {
-    #             "match": {
-    #                 "content": term
-    #             }
-    #         }
-    #     })
-    #     response = requests.get(self.uri, data=query)
-    #     results = json.loads(response.text)
-    #
-    #     return results
 
-    @staticmethod
-    def rq(path='', req='', method='GET'):
-        # print(method + ' - ' + path)
-        # print(req)
+    def rq(self, path='', req='', method='GET', returnstatusonly=False):
+        print(method + ' - ' + path)
+        print(req)
         if method == 'POST':
             response = requests.post(path, data=json.dumps(req))
         elif method == 'PUT':
@@ -95,36 +35,143 @@ class PRElastic:
             response = requests.delete(path, data=json.dumps(req))
         elif method == 'GET':
             response = requests.get(path, data=json.dumps(req))
+        elif method == 'HEAD':
+            response = requests.head(path, data=json.dumps(req))
         else:
             raise Exception("unknown method `" + method + '`')
+        if returnstatusonly:
+            print('----------', response.status_code, '----------')
+            return True if response.status_code == 200 else False
+        else:
+            print('++++++++++', response.text, '++++++++++')
+            return json.loads(response.text)
 
-        # print(response.text)
-        return json.loads(response.text)
+    def index_exists(self, index_name):
+        return self.rq(path=self.path(index_name), req={}, method='HEAD', returnstatusonly=True)
 
-    @staticmethod
-    def search(index_name, document_type, sort=["_score"], filter=[], must=[], should=[], page=1, items_per_page=10):
+    def doctype_exists(self, index_name, doctype_name):
+        ret = self.rq(path=self.path(index_name, '_mapping', doctype_name), req={}, method='GET')
+        #          return True if len(ret.keys()) > 0 else False
+        #     def doc_exists(self, indexname, doctype, id):
+        #         return PRElastic.rq(path=PRElastic.path(indexname, doctype, id), req={}, method='HEAD', returnstatusonly=True)
+        #
+        #     def doc_delete(self, indexname, doctype, id):
+        #         return PRElastic.rq(path=PRElastic.path(indexname, doctype, id), req={}, method='DELETE')
+        #
+        #     def doctype_exists(self, indexname, doctype):
+        #          ret = PRElastic.rq(path=PRElastic.path(indexname, '_mapping', doctype), req={}, method='GET')
+        #          return True if len(ret.keys()) > 0 else False
+
+
+    def replace_document(self, index_name, document_type, id, document):
+        return self.rq(path=self.path(index_name, document_type, id), req=document, method='PUT')
+
+
+    def remove_index(self, index_name):
+        return self.rq(path=self.path(index_name), req={}, method='DELETE')
+
+
+    def search(self, index_name, document_type, sort=["_score"], filter=[], must=[], should=[], page=1, items_per_page=10):
 
         req = {
             "sort": sort,
-            "query": {"bool": {"filter": filter, "must": must, "should": should }}}
+            "query": {"bool": {"filter": filter, "must": must, "should": should}}}
 
-        count = PRElastic.rq(path=PRElastic.path(index_name, document_type, '_count'),
-                             req=req, method='GET')['count']
+        count = self.rq(path=self.path(index_name, document_type, '_count'),
+                                       req=req, method='GET')['count']
 
         pages = int(math.ceil(count / items_per_page))
 
-
         p = utils.putInRange(page, 1, pages)
-        p = 1 if p==0 else p
+        p = 1 if p == 0 else p
         print(page, p, pages)
         items = utils.putInRange(items_per_page, 1, 100)
 
-        res = PRElastic.rq(path=PRElastic.path(index_name, document_type, '_search', params={'size': items,
-                                                                                             'from': (p - 1) * items}),
-                           req=req, method='GET')
+        res = self.rq(
+            path=self.path(index_name, document_type, '_search', params={'size': items,
+                                                                                        'from': (p - 1) * items}),
+            req=req, method='GET')
         found = [h['_source'] for h in res['hits']['hits']]
 
         return (found, pages, p)
+
+elasticsearch = PRElasticConnection('http://elastic.profi:9200')
+
+class PRElasticDocument:
+
+    elastic_cached_index_doctype = {}
+
+    def elastic_get_fields(self):
+        return None
+
+    def elastic_get_document(self):
+        return {k: v.setter() for k, v in self.elastic_get_fields().items()}
+
+    def elastic_replace(self):
+        self.create_doctype_if_not_exists()
+        return elasticsearch.replace_document(self.elastic_get_index(),
+                                                    self.elastic_get_doctype(),
+                                                    self.elastic_get_id(),
+                                                    self.elastic_get_document(),
+                                                    )
+
+    def create_index_if_not_exist(self):
+        index_name = self.elastic_get_index()
+        if index_name in self.elastic_cached_index_doctype:
+            return True
+        else:
+            if elasticsearch.index_exists(index_name):
+                self.elastic_cached_index_doctype[index_name] = {}
+                return True
+
+            ret = elasticsearch.rq(path=elasticsearch.path(index_name), req={"settings": {}}, method='PUT')
+            if ret:
+                print('created index:', index_name)
+                self.elastic_cached_index_doctype[index_name] = {}
+            return True if ret else False
+
+    def create_doctype_if_not_exists(self):
+        index_name = self.elastic_get_index()
+        doctype_name = self.elastic_get_doctype()
+        self.create_index_if_not_exist()
+        if doctype_name in self.elastic_cached_index_doctype[index_name]:
+            return True
+        else:
+            if elasticsearch.doctype_exists(index_name, doctype_name):
+                self.elastic_cached_index_doctype[index_name][doctype_name] = True
+                return True
+
+            ret = elasticsearch.rq(path=elasticsearch.path(index_name, '_mapping', doctype_name),
+                          req=self.elastic_doctype_mappintg(), method='PUT')
+            if ret:
+                print('created doctype:', index_name, doctype_name)
+                self.elastic_cached_index_doctype[index_name][doctype_name] = True
+            return True if ret else False
+
+    def elastic_doctype_mappintg(self):
+        return {'properties': {f_name: field.generate_mapping() for f_name, field in self.elastic_get_fields().items()}}
+
+    @classmethod
+    def elastic_remove_all_indexes(cls):
+        pass
+
+    @classmethod
+    def elastic_get_all_documents(cls):
+        return db(cls).all()
+
+    @classmethod
+    def elastic_reindex_all(cls):
+        for o in cls.elastic_get_all_documents():
+            o.elastic_replace()
+
+    def elastic_get_index(self):
+        return None
+
+    def elastic_get_doctype(self):
+        return None
+
+    def elastic_get_id(self):
+        return None
 
 
 class PRElasticField:
@@ -133,8 +180,7 @@ class PRElasticField:
     boost = ''
     setter = None
 
-    def __init__(self, name, ftype='string', boost=1, analyzed=None, setter=lambda *args: ''):
-        self.name = name
+    def __init__(self, ftype='string', boost=1, analyzed=None, setter=lambda *args: ''):
         self.type = ftype
         self.boost = boost
         self.analyzed = ('analyzed' if self.type == 'string' else 'not_analyzed') if analyzed is None else analyzed
@@ -149,75 +195,159 @@ class PRElasticField:
         }
 
 
-class PRElasticDocumentType:
-    name = ''
-    document_fields = []
-    class_dependent = {}
-    all_alchemys = lambda: []
-
-    def __init__(self, name, document_fields=[], class_dependent={}, all_alchemys=lambda: [], elastic2alchemy=
-    lambda: None):
-        self.name = name
-        self.document_fields = document_fields
-        self.class_dependent = class_dependent
-        self.all_alchemys = all_alchemys
-        self.elastic2alchemy = elastic2alchemy
-
-    def add_document_field(self, *args):
-        for a in args:
-            self.document_fields.append(a)
-        return self
-
-    def generate_mapping(self):
-        return {'properties': {f.name: f.generate_mapping() for f in self.document_fields}}
-
-    def generate_document(self, *objects):
-        return {f.name: f.setter(*objects) for f in self.document_fields}
-
-    def add(self, index_name, document_type, id, document):
-        return PRElastic.rq(path=PRElastic.path(index_name, document_type, id), req=document, method='PUT')
-
-    def insert_all_documents(self, index_name):
-        return {id: self.add(index_name, self.name, id, self.generate_document(*objects)) for id, objects in
-                self.all_alchemys().items()}
+        # import abc
 
 
-class PRElasticIndex:
-    name = ''
-    document_types = []
-    settings = {}
+        # class PRElasticDocumentType(metaclass = abc.ABCMeta):
+        #
+        #     cached_index_doctype = {}
+        #
+        #     def __init__(self):
+        #         pass
+        #
+        #     def add_document_field(self, *args):
+        #         for a in args:
+        #             self.document_fields.append(a)
+        #         return self
+        #
+        #     def generate_mapping(self):
+        #         return {'properties': {f_name: field.generate_mapping() for f_name, field in self.get_all_fields().items()}}
+        #
+        #     @abc.abstractmethod
+        #     def all_alchemys(self):
+        #         pass
+        #
+        #     @abc.abstractmethod
+        #     def alchemy2index(self, *alchemyobgects):
+        #         pass
+        #
+        #     @abc.abstractmethod
+        #     def alchemy2doctype(self, *alchemyobgects):
+        #         pass
+        #
+        #     @abc.abstractmethod
+        #     def delete_all_indexes(self):
+        #         pass
+        #
+        #     @abc.abstractmethod
+        #     def alchemy2id(self, *alchemyobgects):
+        #         pass
+        #
+        #     def doc_exists(self, indexname, doctype, id):
+        #         return PRElastic.rq(path=PRElastic.path(indexname, doctype, id), req={}, method='HEAD', returnstatusonly=True)
+        #
+        #     def doc_delete(self, indexname, doctype, id):
+        #         return PRElastic.rq(path=PRElastic.path(indexname, doctype, id), req={}, method='DELETE')
+        #
+        #     def doctype_exists(self, indexname, doctype):
+        #          ret = PRElastic.rq(path=PRElastic.path(indexname, '_mapping', doctype), req={}, method='GET')
+        #          return True if len(ret.keys()) > 0 else False
+        #
+        #     def index_exists(self, indexname):
+        #         return PRElastic.rq(path=PRElastic.path(indexname), req={}, method='HEAD', returnstatusonly=True)
+        #
+        #     def create_index_if_not_exist(self, *alchemyobgects):
+        #         index_name = self.alchemy2index(*alchemyobgects)
+        #         if index_name in self.cached_index_doctype:
+        #             return True
+        #         else:
+        #             if self.index_exists(index_name):
+        #                 self.cached_index_doctype[index_name] = {}
+        #                 return True
+        #
+        #             ret = PRElastic.rq(path=PRElastic.path(index_name), req={"settings": {}}, method='PUT')
+        #             if ret:
+        #                 print('created index:', index_name)
+        #                 self.cached_index_doctype[index_name] = {}
+        #             return True if ret else False
+        #
+        #     def create_doctype_if_not_exists(self, *alchemyobgects):
+        #         self.create_index_if_not_exist(*alchemyobgects)
+        #         index_name = self.alchemy2index(*alchemyobgects)
+        #         doctype_name = self.alchemy2doctype(*alchemyobgects)
+        #         if doctype_name in self.cached_index_doctype[index_name]:
+        #             return True
+        #         else:
+        #             if self.doctype_exists(index_name, doctype_name):
+        #                 self.cached_index_doctype[index_name][doctype_name] = True
+        #                 return True
+        #
+        #             ret = PRElastic.rq(path=PRElastic.path(index_name, '_mapping', doctype_name),
+        #                                req=self.generate_mapping(), method='PUT')
+        #             if ret:
+        #                 print('created doctype:', index_name, doctype_name)
+        #                 self.cached_index_doctype[index_name][doctype_name] = True
+        #             return True if ret else False
+        #
+        #     def alchemy2elastic(self, *alchemyobgects):
+        #         return (
+        #             self.alchemy2index(*alchemyobgects),
+        #             self.alchemy2doctype(*alchemyobgects),
+        #             self.alchemy2id(*alchemyobgects),
+        #             {k: v.setter(*alchemyobgects) for k, v in self.get_all_fields().items()}
+        #         )
+        #
+        #     def replace(self, index_name, document_type, id, document):
+        #         return PRElastic.rq(path=PRElastic.path(index_name, document_type, id), req=document, method='PUT')
+        #
+        #     def recreate_all_documents(self):
+        #         for alcemyobjects in self.all_alchemys():
+        #             index, doctype, id, doc = self.alchemy2elastic(*alcemyobjects)
+        #             self.create_doctype_if_not_exists(*alcemyobjects)
+        #             self.replace(index, doctype, id, doc)
+        #
+        #     def get_all_fields(self):
+        #         return {k: v for k, v in self.__dict__.items() if isinstance(v, PRElasticField)}
 
-    def __init__(self, name, document_types=[]):
-        self.document_types = document_types
-        self.name = name
 
-    def generate_mapping(self):
-        return {d.name: d.generate_mapping() for d in self.document_types}
-        # return document_mapping[field_name] = {
-        #     "type": field_prop['type'] if field_prop['type'] else 'string',
-        #     "index": 'analyzed' if field_prop['analyzed'] else 'not_analyzed',
-        #     "boost": field_prop.get('boost', 1)
-        # }
+        # class PRElasticDocumentArticle(PRElasticDocumentType):
+        #
+        #     def all_alchemys(self):
+        #         return [[a, a.portal, a.division] for a in db_session.query(ArticlePortalDivision).all()]
+        #
+        #     def alchemy2index(self, a, p, d):
+        #         return 'articles'
+        #
+        #     def alchemy2doctype(self, a, p, d):
+        #         return 'articles'
+        #
+        #     def alchemy2id(self, a, p, d):
+        #         return a.id
+        #
 
-    def add_document_type(self, *args):
-        for a in args:
-            self.document_types.append(a)
-        return self
 
-    def create(self):
-        return PRElastic.rq(path=PRElastic.path(self.name), req={
-            "settings": self.settings,
-            "mappings": self.generate_mapping()
-        }, method='PUT')
 
-    def delete(self):
-        return PRElastic.rq(path=PRElastic.path(self.name), req={}, method='DELETE')
+        # class PRElasticIndex:
+        #     name = ''
+        #     document_types = []
+        #     settings = {}
+        #
+        #     def __init__(self, name, document_types=[]):
+        #         self.document_types = document_types
+        #         self.name = name
+        #
+        #     def add_document_type(self, *args):
+        #         for a in args:
+        #             self.document_types.append(a)
+        #         return self
+        #
+        #     def create(self):
+        #         return PRElastic.rq(path=PRElastic.path(self.name), req={
+        #             "settings": self.settings,
+        #             "mappings": self.generate_mapping()
+        #         }, method='PUT')
+        #
+        #     def delete(self):
+        #         return PRElastic.rq(path=PRElastic.path(self.name), req={}, method='DELETE')
+        #
+        #     def insert_all_documents(self):
+        #         return [d.insert_all_documents(self.name) for d in self.document_types]
 
-    def insert_all_documents(self):
-        return [d.insert_all_documents(self.name) for d in self.document_types]
+        # def search_elastic(type, body):
+        #     es = Elasticsearch(hosts='elastic.profi')
+        #     return ([utils.dict_merge(r['_source'], {'id': r['_id']}) for r in es.search(index='profireader',
+        #                                                                                   doc_type=type,
+        #                                                                                   body=body)['hits']['hits']], 10, 1)
 
-# def search_elastic(type, body):
-#     es = Elasticsearch(hosts='elastic.profi')
-#     return ([utils.dict_merge(r['_source'], {'id': r['_id']}) for r in es.search(index='profireader',
-#                                                                                   doc_type=type,
-#                                                                                   body=body)['hits']['hits']], 10, 1)
+        # def get_structure():
+        #     return [PRElasticDocumentArticle()]

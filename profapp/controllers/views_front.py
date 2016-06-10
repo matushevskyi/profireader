@@ -14,7 +14,7 @@ from sqlalchemy import and_
 from ..utils.pr_email import send_email
 from .request_wrapers import check_right
 from ..models.rights import AllowAll
-from ..models.elastic import PRElastic
+from ..models.elastic import elasticsearch
 from collections import OrderedDict
 from .. import utils
 
@@ -260,9 +260,8 @@ def render_articles(portal, dvsn, page, tags, search_text):
         return redirect(url_for(request.endpoint,
                                 **utils.dict_merge(request.view_args, {'tags': '+'.join(selected_tag_names)})))
 
-    es = PRElastic(host='http://elastic.profi:9200')
 
-    articles, pages, page = es.search('articles', 'articles',
+    articles, pages, page = elasticsearch.search('articles', 'articles',
                                       sort=[{"date": "desc"}], filter=afilter, page=page,
                                       items_per_page=items_per_page,
                                       must=[{"multi_match": {'query': search_text,

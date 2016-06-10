@@ -8,6 +8,8 @@ from .request_wrapers import check_right
 from ..models.rights import AllowAll
 from .. import utils
 
+print('routes')
+
 @general_bp.route('help/')
 @check_right(AllowAll)
 def help():
