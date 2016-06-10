@@ -35,7 +35,6 @@ def login_signup_general(*soc_network_names):
         result = g.authomatic.login(WerkzeugAdapter(request, response), soc_network_names[-1])
         if result:
             if result.user:
-                print(result.user)
                 result.user.update()
                 result_user = result.user
                 if result_user.email is None:
@@ -45,9 +44,8 @@ def login_signup_general(*soc_network_names):
                     redirect(redirect_url())
                 db_fields = DB_FIELDS[soc_network_names[-1]]
                 # user = g.db.query(User).filter(getattr(User, db_fields['id']) == result_user.id).first()
-                print(db_fields)
-                user = g.db.query(User).filter(getattr(User, db_fields['email']) == result_user.email).first()
 
+                user = g.db.query(User).filter(getattr(User, db_fields['email']) == result_user.email).first()
 
                 if not user:
                     user = g.db.query(User).filter(User.profireader_email == result_user.email).first()
@@ -56,15 +54,13 @@ def login_signup_general(*soc_network_names):
                     if not user:
                         ind = True
                         user = User()
-                        user.omit_validation = True
 
                     for elem in SOC_NET_FIELDS:
                         setattr(user, db_fields[elem], getattr(result_user, elem))
                     registred_via_soc = len(soc_network_names) > 1
-                    print(result_user)
+
                     if ind:  # ToDo (AA): introduce field signup_via instead.
                         # Todo (AA): If signed_up not via profireader then...
-                        print('1231231')
                         db_fields_profireader = DB_FIELDS['profireader']
                         for elem in SOC_NET_FIELDS_SHORT:
                             setattr(user, db_fields_profireader[elem], getattr(result_user, elem))

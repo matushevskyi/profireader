@@ -393,8 +393,6 @@ class Grid:
 
 
 class PRBase:
-    omit_validation = False
-
 
     def __init__(self):
         self.query = g.db.query_property()
