@@ -269,17 +269,23 @@ class User(Base, UserMixin, PRBase):
             return "Sorry!You must be confirmed!"
         return True
 
+
+
     def validate(self, is_new):
+
         ret = super().validate(is_new)
-        if not re.match(r'[^\s]{3}', str(self.profireader_name)):
-            ret['errors']['profireader_name'] = 'Your username must be at least 3 characters long.'
-        if not re.match(r'[^\s]{3}', str(self.profireader_first_name)):
-            ret['errors']['profireader_first_name'] = 'Your First name must be at least 3 characters long.'
-        if not re.match(r'[^\s]{3}', str(self.profireader_last_name)):
-            ret['errors']['profireader_last_name'] = 'Your Last name must be at least 3 characters long.'
-        if self.profireader_phone and not self.profireader_phone.isdigit():
-            ret['errors']['profireader_phone'] = 'pls enter only digits'
-        return ret
+        if self.omit_validation:
+            return ret
+        if not self.omit_validation:
+            if not re.match(r'[^\s]{3}', str(self.profireader_name)):
+                ret['errors']['profireader_name'] = 'Your username must be at least 3 characters long.'
+            if not re.match(r'[^\s]{3}', str(self.profireader_first_name)):
+                ret['errors']['profireader_first_name'] = 'Your First name must be at least 3 characters long.'
+            if not re.match(r'[^\s]{3}', str(self.profireader_last_name)):
+                ret['errors']['profireader_last_name'] = 'Your Last name must be at least 3 characters long.'
+            if self.profireader_phone and not self.profireader_phone.isdigit():
+                ret['errors']['profireader_phone'] = 'pls enter only digits'
+            return ret
 
     def logo_file_properties(self):
         noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())
