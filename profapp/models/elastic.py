@@ -3,7 +3,7 @@ import json
 import math
 from .. import utils
 from utils.db_utils import db
-
+from sqlalchemy import event
 
 # engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
 # db_session = scoped_session(sessionmaker(autocommit=False,
@@ -172,6 +172,7 @@ class PRElasticDocument:
 
     def elastic_get_id(self):
         return None
+
 
 
 class PRElasticField:

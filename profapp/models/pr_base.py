@@ -799,6 +799,7 @@ class PRBase:
         event.listen(cls, 'after_update', cls.update_search_table)
         event.listen(cls, 'after_delete', cls.delete_from_search)
 
+
     @staticmethod
     def datetime_from_utc_to_local(utc_datetime, format):
         now_timestamp = time.time()

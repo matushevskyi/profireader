@@ -379,6 +379,26 @@ class ArticlePortalDivision(Base, PRBase, PRElasticDocument):
             tag_pub.save()
         return self
 
+    @staticmethod
+    def after_insert(mapper=None, connection=None, target=None):
+        pass
+
+    @staticmethod
+    def after_update(mapper=None, connection=None, target=None):
+        target.elastic_replace()
+        pass
+
+    @staticmethod
+    def after_delete(mapper=None, connection=None, target=None):
+        pass
+
+
+    @classmethod
+    def __declare_last__(cls):
+        event.listen(cls, 'after_insert', cls.after_insert)
+        event.listen(cls, 'after_update', cls.after_update)
+        event.listen(cls, 'after_delete', cls.after_delete)
+
 
 class ArticleCompany(Base, PRBase):
     __tablename__ = 'article_company'

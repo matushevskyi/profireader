@@ -242,8 +242,33 @@ def render_articles(portal, dvsn, page, tags, search_text):
     pdt = dvsn.portal_division_type_id
 
     current_division = dvsn.get_client_side_dict()
-    afilter = [] if pdt == 'index' else [{'term': {'portal_division_id': dvsn.id}}]
 
+    def url_tags(tag_names):
+        url_args = {}
+
+        if pdt != 'index':
+            url_args['division_name'] = current_division['name']
+        if len(tag_names) > 0:
+            url_args['tags'] = '+'.join(tag_names)
+
+        s = ('?search=' + search_text) if search_text else ''
+
+        return url_for(request.endpoint, **url_args) + s
+
+    def url_page_division(page=1):
+        s = ('?search=' + search_text) if search_text else ''
+        url_args = utils.dict_merge(request.view_args, {'page': page} if page > 1 else {},
+                                    remove={} if page > 1 else {'page': True})
+        return url_for(request.endpoint, **url_args) + s
+
+    def url_toggle_tag(toggle_tag):
+        new_tags = utils.list_merge(selected_tag_names,
+                                    [toggle_tag] if (toggle_tag and toggle_tag not in selected_tag_names) else [],
+                                    remove=[toggle_tag] if toggle_tag and toggle_tag in selected_tag_names else [])
+
+        return url_tags(new_tags)
+
+    afilter = [] if pdt == 'index' else [{'term': {'portal_division_id': dvsn.id}}]
     wrong_tag = False
     all_tags = (portal.get_client_side_dict(fields='tags') if pdt == 'index' else current_division)['tags']
     all_tags_text_id = {t['text']: t['id'] for t in all_tags}
@@ -257,8 +282,10 @@ def render_articles(portal, dvsn, page, tags, search_text):
                 wrong_tag = True
 
     if wrong_tag:
-        return redirect(url_for(request.endpoint,
-                                **utils.dict_merge(request.view_args, {'tags': '+'.join(selected_tag_names)})))
+        return redirect(url_tags(selected_tag_names))
+            # url_for(request.endpoint,
+            #                     **utils.dict_merge(request.view_args, {'tags': '+'.join(selected_tag_names)})))
+
 
 
     articles, pages, page = elasticsearch.search('articles', 'articles',
@@ -273,31 +300,6 @@ def render_articles(portal, dvsn, page, tags, search_text):
     articles = OrderedDict((a['id'], ArticlePortalDivision.get(a['id']).get_client_side_dict()) for a in articles)
 
     add_tags(articles)
-
-
-    def url_page_division(page=1):
-        s = ('?search=' + search_text) if search_text else ''
-        url_args = utils.dict_merge(request.view_args, {'page': page} if page > 1 else {},
-                                    remove={} if page > 1 else {'page': True})
-        return url_for(request.endpoint, **url_args) + s
-
-
-    def url_toggle_tag(toggle_tag):
-        new_tags = utils.list_merge(selected_tag_names,
-                                    [toggle_tag] if (toggle_tag and toggle_tag not in selected_tag_names) else [],
-                                    remove=[toggle_tag] if toggle_tag and toggle_tag in selected_tag_names else [])
-
-        url_args = {}
-
-        if pdt != 'index':
-            url_args['division_name'] = current_division['name']
-        if len(new_tags) > 0:
-            url_args['tags'] = '+'.join(new_tags)
-
-        s = ('?search=' + search_text) if search_text else ''
-
-        return url_for(request.endpoint, **url_args) + s
-
 
     return render_template('front/' + g.portal_layout_path + 'division.html',
                            articles=articles,
