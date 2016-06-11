@@ -1,0 +1,701 @@
+current-folder-breadcrumb.html
+<ol class="breadcrumb mb0">
+    <li>
+
+        <a href="" ng-click="fileNavigator.goTo(-1)">
+            <i class="glyphicon glyphicon-folder-open mr2"></i>
+        </a>
+    </li>
+    <li ng-repeat="(key, dir) in fileNavigator.currentPath track by key" ng-class="{'active':$last}" class="animated fast fadeIn">
+        <a href="" ng-show="!$last" ng-click="fileNavigator.goTo(key)">
+            <i class="glyphicon glyphicon-folder-open mr2"></i> {{dir}}
+        </a>
+        <span ng-show="$last"><i class="glyphicon glyphicon-folder-open mr2"></i>  {{dir}}</span>
+    </li>
+    <li><button class="btn btn-primary btn-xs" ng-click="fileNavigator.upDir()">&crarr;</button></li>
+</ol>
+
+
+index.html
+<div ng-controller="FileManagerCtrl" class='container'>
+    <div ng-include="config.tplPath + '/navbar.html'" ng-if="!err()" class='fmnav'></div>
+    <div class="error" ng-show="err()"><h1 align="center">{{errMsg}}</h1></div>
+    <div ng-bind="id"></div>
+    <div class="container-fluid" ng-if="!err()">
+        <div class="row">
+
+            <div class="col-sm-3 col-md-2 sidebar file-tree animated slow fadeIn" ng-include="config.tplPath + '/sidebar.html'" ng-show="config.sidebar && fileNavigator.history[0]"></div>
+            <div class="main" ng-class="config.sidebar && fileNavigator.history[0] && 'col-sm-offset-3 col-md-offset-2'">
+                <div ng-include="config.tplPath + '/current-folder-breadcrumb.html'" ng-show="config.breadcrumb"></div>
+                <div ng-include="config.tplPath + '/' + viewTemplate" class="main-navigation clearfix"></div>
+            </div>
+        </div>
+    </div>
+
+    <div ng-include="config.tplPath + '/modals.html'" ></div>
+    <div ng-include="config.tplPath + '/item-context-menu.html'" ></div>
+</div>
+
+
+item-context-menu.html
+<div id="context-menu" class="dropdown clearfix animated fast fadeIn">
+    <ul class="dropdown-menu dropdown-right-click" role="menu" aria-labelledby="dropdownMenu" style="">
+        <li ng-class="{'disabled': (permitted !== true )}" ng-repeat="(actionname, permitted) in temp.model.actions">
+            <a ng-style="can_action(temp.model, actionname, permitted)" href="" tabindex="-1" ng-if="!isModal(actionname)" ng-click="take_action(temp, actionname, permitted)" style="{{isDisable(actionname,fileNavigator.fileList.length, temp.model.type)}}"><i
+                class="glyphicon glyphicon-{{ glyph(actionname) }}"></i>{{_(actionname)}}</a>
+            <a href="" tabindex="-1" ng-if="isModal(actionname)" data-toggle="modal" data-target="#{{permitted === true?actionname:''}}" style="{{isDisable(actionname,fileNavigator.fileList.length, temp.model.type)}}"><i
+                class="glyphicon glyphicon-{{ glyph(actionname) }}"></i>{{_(actionname)}}</a>
+        </li>
+        <!--<li ng-show="config.allowedActions.rename"><a href="" tabindex="-1" data-toggle="modal" data-target="#rename"><i class="glyphicon glyphicon-edit"></i> {{'rename'}}</a></li>-->
+        <!--<li ng-show="config.allowedActions.copy "><a href="" tabindex="-1" ng-click="copy(temp)"><i class="glyphicon glyphicon-duplicate"></i> {{ _('copy') }}</a></li>-->
+        <!--<li ng-show="config.allowedActions.copy "><a href="" tabindex="-1" ng-click="cut(temp)"><i class="glyphicon glyphicon-scissors"></i> {{ _('cut') }}</a></li>-->
+        <!--<li ng-show="config.allowedActions.copy "><a href="" tabindex="-1" style="{{isDisable()}}" ng-click="paste(temp)"><i class="glyphicon glyphicon-log-in"></i> {{ _('paste') }}</a></li>-->
+        <!--<li ng-show="config.allowedActions.edit && temp.isEditable()"><a href="" tabindex="-1" data-toggle="modal" data-target="#edit" ng-click="temp.getContent();"><i class="glyphicon glyphicon-pencil"></i> {{ _('edit') }}</a></li>-->
+        <!--<li ng-show="config.allowedActions.changePermissions"><a href="" tabindex="-1" data-toggle="modal" data-target="#changepermissions"><i class="glyphicon glyphicon-lock"></i> {{ _('permissions') }}</a></li>-->
+        <!--<li ng-show="config.allowedActions.compress && temp.isCompressible()"><a href="" tabindex="-1" data-toggle="modal" data-target="#compress"><i class="glyphicon glyphicon-compressed"></i> {{ _('compress') }}</a></li>-->
+        <!--<li ng-show="config.allowedActions.extract && temp.isExtractable()"><a href="" tabindex="-1" data-toggle="modal" data-target="#extract" ng-click="temp.tempModel.name=''"><i class="glyphicon glyphicon-export"></i> {{ _('extract') }}</a></li>-->
+        <!--<li ng-show="config.allowedActions.download && !temp.isFolder()"><a href="" tabindex="-1" ng-click="temp.download()"><i class="glyphicon glyphicon-download"></i> {{ _('download') }}</a></li>-->
+        <!--<li ng-show="config.allowedActions.preview && temp.isImage()"><a href="" tabindex="-1" ng-click="temp.preview()"><i class="glyphicon glyphicon-picture"></i> {{ _('view_item') }}</a></li>-->
+        <!--<li ng-show="config.allowedActions.choose && temp.actionAllowed('choose')"><a href="" tabindex="-1" ng-click="temp.choose()"><i class="glyphicon glyphicon-check"></i> {{ _('choose_item') }}</a></li>-->
+        <!--&lt;!&ndash;<li class="divider"></li>&ndash;&gt;-->
+        <!--<li ng-show="config.allowedActions.remove"><a href="" tabindex="-1" data-toggle="modal" data-target="#delete"><i class="glyphicon glyphicon-trash"></i> {{ _('remove') }}</a></li>-->
+    </ul>
+</div>
+
+
+item-toolbar.html
+<div ng-show="!item.inprocess">
+    <button class="btn btn-sm btn-default" data-toggle="modal" data-target="#rename" ng-show="config.allowedActions.rename" ng-click="touch(item)" title="{{ _('rename') }}">
+        <i class="glyphicon glyphicon-edit"></i>
+    </button>
+    <!--<button class="btn btn-sm btn-default" data-toggle="modal" data-target="#copy" ng-show="config.allowedActions.copy && !item.isFolder()" ng-click="touch(item)" title="{{ _('copy') }}">-->
+        <!--<i class="glyphicon glyphicon-log-out"></i>-->
+    <!--</button>-->
+    <button class="btn btn-sm btn-default" data-toggle="modal" data-target="#edit" ng-show="config.allowedActions.edit && item.isEditable()" ng-click="item.getContent(); touch(item)" title="{{ _('edit') }}">
+        <i class="glyphicon glyphicon-pencil"></i>
+    </button>
+    <button class="btn btn-sm btn-default" data-toggle="modal" data-target="#changepermissions" ng-show="config.allowedActions.changePermissions" ng-click="touch(item)" title="{{ _('permissions') }}">
+        <i class="glyphicon glyphicon-lock"></i>
+    </button>
+    <button class="btn btn-sm btn-default" data-toggle="modal" data-target="#compress" ng-show="config.allowedActions.compress && item.isCompressible()" ng-click="touch(item)" title="{{ _('compress') }}">
+        <i class="glyphicon glyphicon-compressed"></i>
+    </button>
+    <button class="btn btn-sm btn-default" data-toggle="modal" data-target="#extract" ng-show="config.allowedActions.extract && item.isExtractable()" ng-click="touch(item); item.tempModel.name=''" title="{{ _('extract') }}">
+        <i class="glyphicon glyphicon-export"></i>
+    </button>
+    <button class="btn btn-sm btn-default" ng-show="(config.allowedActions.download && !item.isFolder()) && item.model.type !== 'file_video'" ng-click="item.download()" title="{{ _('download') }}">
+        <i class="glyphicon glyphicon-cloud-download"></i>
+    </button>
+    <button class="btn btn-sm btn-default" ng-show="config.allowedActions.preview && item.isImage()" ng-click="item.preview()" title="{{ _('view_item') }}">
+        <i class="glyphicon glyphicon-picture"></i>
+    </button>
+    <button ng-disabled="item.model.actions.remove !== true" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#remove" ng-show="config.allowedActions.remove" ng-click="touch(item)" title="{{ item.model.actions.remove !== true?_(item.model.actions.remove):'remove' }}">
+        <i class="glyphicon glyphicon-trash"></i>
+    </button>
+</div>
+<div ng-show="item.inprocess">
+    <button class="btn btn-sm" style="visibility: hidden">&nbsp;</button><span class="label label-warning">{{ _('wait') }} ...</span>
+</div>
+
+
+main-icons.html
+<h3 ng-show="fileNavigator.is_search" style="text-align: center">{{fileNavigator.search_len === 0? _('Search returned no result'):_('Search result')}}</h3>
+<div class="iconset clearfix" style="padding-bottom: 0;height: 80px" ng-hide="fileNavigator.is_search && fileNavigator.search_len === 0">
+    <div class="col-120" style="margin-bottom:0" ng-repeat="item in fileNavigator.list | filter: query | orderBy: orderProp" ng-show="!fileNavigator.requesting && !fileNavigator.error && item.model.type !== 'parent'">
+        <a href="" class="thumbnail text-center" ng-click="smartClick(item)" ng-right-click="touch(item)" title="{{item.title()}}">
+            <div class="item-icon">
+                <i class="glyphicon glyphicon-folder-open" ng-show="item.model.type === 'dir'"></i>
+                <i class="glyphicon glyphicon-facetime-video" style="width: 32px;height: 32px" ng-show="item.model.type === 'file_video'"></i>
+             <i class="glyphicon glyphicon-book" style="width: 32px;height: 32px" ng-show="item.model.type === 'fpdf'"></i>
+            <i class="glyphicon glyphicon-file" style="width: 32px;height: 32px"  ng-show="item.model.type === 'file'"></i>
+                <img class="img-thumbnails" style="width: 32px;height: 32px" ng-src="{{item.model.url}}" ng-if="item.model.type === 'img'">
+            </div>
+            <span id='highlightT_{{item.model.id}}'>{{getTitle(item.model.name, item.model.id, 11)}}</span>
+        </a>
+    </div>
+
+    <div ng-show="!fileNavigator.requesting && !fileNavigator.error && fileNavigator.parent().model.type === 'parent'" ng-if="!fileNavigator.is_search">
+        <a style="width: inherit; padding: 45px!important;" href="" class="thumbnail text-center" ng-click="smartClick(fileNavigator.parent())" ng-right-click="touch(fileNavigator.parent())" title="">
+
+        </a>
+    </div>
+
+<a ng-show="!fileNavigator.requesting && fileNavigator.fileList.length === 1 && !fileNavigator.error" style="width: inherit;text-decoration: none;color: black" href="" class="thumbnail text-center" ng-click="smartClick(fileNavigator.parent())" ng-right-click="touch(fileNavigator.parent())" title="">
+
+  {{ _('no_files_in_folder') }}...
+  </a>  <a ng-show="!fileNavigator.requesting && !fileNavigator.error && fileNavigator.parent().model.type === 'parent'" ng-if="!fileNavigator.is_search" style="width: 100%; height: 450px;padding: 0" href="" class="thumbnail text-center" ng-click="smartClick(fileNavigator.parent())" ng-right-click="touch(fileNavigator.parent())" title="">
+
+      </a>
+    <span ng-if="!fileNavigator.is_search"><hr></span>     <div ng-show="fileNavigator.requesting">
+        <div ng-include="config.tplPath + '/spinner.html'"></div>
+    </div>
+
+       <div ng-show="fileNavigator.fileList.length > 0">
+    </div>
+    
+    <div class="alert alert-danger" ng-show="!fileNavigator.requesting && fileNavigator.error">
+        {{ fileNavigator.error }}
+
+
+
+main-table-modal.html
+<table class="table table-condensed table-modal-condensed mb0">
+    <thead>
+        <tr>
+            <th>{{ _('name') }}</th>
+            <th class="text-right"></th>
+        </tr>
+    </thead>
+    <tbody class="file-item">
+        <tr ng-show="fileNavigator.requesting">
+            <td colspan="2">
+                <div ng-include="config.tplPath + '/spinner.html'"></div>
+            </td>
+        </tr>
+        <tr ng-show="!fileNavigator.requesting && !fileNavigator.listHasFolders() && !fileNavigator.error">
+            <td colspan="2">
+                {{ _('no_folders_in_folder') }}...
+            </td>
+            <td class="text-right">
+                <button class="btn btn-sm btn-default" ng-click="fileNavigator.upDir()">{{ _('go_back') }}</button>
+            </td>
+        </tr>
+        <tr ng-show="!fileNavigator.requesting && fileNavigator.error">
+            <td colspan="2">
+                {{ fileNavigator.error }}
+            </td>
+        </tr>
+        <tr ng-repeat="item in fileNavigator.fileList | orderBy: orderProp" ng-show="!fileNavigator.requesting && item.model.type === 'dir'">
+            <td>
+                <a href="" ng-click="fileNavigator.folderClick(item)" title="{{item.model.name}} ({{item.model.sizeKb()}}kb)">
+                    <i class="glyphicon glyphicon-folder-close"></i>
+                    {{item.model.name | strLimit : 32}}
+                </a>
+            </td>
+            <td class="text-right">
+                <button class="btn btn-sm btn-default" ng-click="select(item, temp)">
+                    <i class="glyphicon glyphicon-hand-up"></i> {{ _('select_this') }}
+                </button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+main-table.html
+<h3 ng-show="fileNavigator.is_search === true" style="text-align: center">{{fileNavigator.search_len === 0? 'Search returned no result':'Search result'}}</h3>
+<table class="table mb0 table-files">
+    <thead ng-hide="fileNavigator.is_search === true && fileNavigator.searchList.length === 0">
+        <tr>
+            <th>{{ _('name') }}</th>
+            <th class="hidden-xs">{{ _('size') }}</th>
+            <th class="hidden-sm hidden-xs">{{ _('date') }}</th>
+            <!--<th class="hidden-sm hidden-xs">{{ _('permissions') }}</th>-->
+            <th class="text-right"></th>
+        </tr>
+    </thead>
+    <tbody class="file-item" ng-hide="fileNavigator.is_search && fileNavigator.search_len === 0">
+        <tr ng-show="fileNavigator.requesting">
+            <td colspan="5">
+                <div ng-include="config.tplPath + '/spinner.html'"></div>
+            </td>
+        </tr>
+        <tr style='height: 400px' ng-show="!fileNavigator.requesting && fileNavigator.fileList.length === 1 && !fileNavigator.error">
+            <td colspan="5">
+                {{ _('no_files_in_folder') }}...
+            </td>
+        </tr>
+        <tr ng-show="!fileNavigator.requesting && fileNavigator.error">
+            <td colspan="5">
+                {{ fileNavigator.error }}
+            </td>
+        </tr>
+        <tr ng-show="temp.error" style="color: red"  ng-if="timer">
+            <td colspan="5">
+                <div class="label label-danger error-msg pull-left animated fadeIn">
+                    <i class="glyphicon glyphicon-remove-circle"></i> {{temp.error}}
+                </div>
+            </td>
+        </tr>
+        <tr ng-repeat="item in fileNavigator.list | orderBy: orderProp" ng-show="!fileNavigator.requesting" >
+            <td ng-right-click="touch(item)" ng-if="item.model.type !== 'parent'">
+                <a href="" ng-click="smartClick(item)" title="{{item.title()}}">
+                    <i class="glyphicon glyphicon-folder-close" ng-show="item.model.type === 'dir'"></i>
+                    <i class="glyphicon glyphicon-file" ng-show="item.model.type !== 'dir'"></i>
+                    <span id='highlightT_{{item.model.id}}'>{{getTitle(item.model.name, item.model.id, 64)}}</span>
+                </a>
+            </td>
+            <td class="hidden-xs" ng-if="item.model.type !== 'parent'">
+                {{item.isFolder()?'------':item.model.sizeKb()+'kb'}}
+            </td>
+            <td class="hidden-sm hidden-xs" ng-if="item.model.type !== 'parent'">
+                {{item.model.date | formatDate }}
+            </td>
+            <!--<td class="hidden-sm hidden-xs">-->
+                <!--{{item.model.perms.toCode(item.model.type === 'dir'?'d':'-')}}-->
+            <!--</td>-->
+            <td class="text-right" ng-if="item.model.type !== 'parent'">
+                <div ng-include="config.tplPath + '/item-toolbar.html'"></div>
+            </td>
+            <td style="padding-bottom: 250px;" ng-right-click="touch(item)" ng-if="item.model.type === 'parent'" ng-show="!fileNavigator.requesting && fileNavigator.fileList.length > 1 && !fileNavigator.error">
+                    {{ _('folder_area') }}
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+modals.html
+<div class="modal animated fadeIn" id="remove">
+  <div class="modal-dialog">
+    <div class="modal-content">
+    <form ng-submit="remove(temp)">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+            <span aria-hidden="true">&times;</span>
+            <span class="sr-only">{{ _('close') }}</span>
+        </button>
+        <h4 class="modal-title">{{ _('confirm') }}</h4>
+      </div>
+      <div class="modal-body">
+        {{ _('sure_to_delete') }} <b>{{temp.model.name}}</b> ?
+        <div ng-include data-src="'error-bar'" class="clearfix"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{ _('cancel') }}</button>
+        <button type="submit" class="btn btn-primary" ng-disabled="temp.inprocess" autofocus="autofocus">{{ _('remove') }}</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="rename">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <form ng-submit="rename(temp)">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">
+                  <span aria-hidden="true">&times;</span>
+                  <span class="sr-only">{{ _('close') }}</span>
+              </button>
+              <h4 class="modal-title">{{ _('change_name_move') }}</h4>
+            </div>
+            <div class="modal-body">
+              <label class="radio">{{ _('enter_new_name_for') }} <b>{{temp.model.name}}</b></label>
+              <input class="form-control" ng-model="temp.tempModel.name" autofocus="autofocus">
+
+              <div ng-include data-src="'path-selector'" class="clearfix"></div>
+              <div ng-include data-src="'error-bar'" class="clearfix"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{ _('cancel') }}</button>
+              <button type="submit" class="btn btn-primary" ng-disabled="temp.inprocess">{{ _('rename') }}</button>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="properties">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <form ng-submit="set_property(temp)">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">
+                  <span aria-hidden="true">&times;</span>
+                  <span class="sr-only">{{ _('close') }}</span>
+              </button>
+              <h4 class="modal-title">{{ _('change_properties') }}</h4>
+            </div>
+            <div class="modal-body">
+              <label class="radio">{{ _('enter_new_name_for') }} <b>{{temp.model.name}}</b></label>
+              <input class="form-control" ng-model="temp.tempModel.name" autofocus="autofocus">
+              <div ng-include data-src="'error-bar'" class="clearfix"></div>
+                <label class="radio" ng-if="temp.model.type !== 'dir' && temp.model.type !== 'parent'">{{ _('link') }}</label>
+              <input ng-if="temp.model.type !== 'dir' && temp.model.type !== 'parent'" class="form-control" autofocus="autofocus" value="{{temp.model.file_url}}" readonly>
+                <label class="radio">{{ _('enter_author_name') }}</label>
+              <input class="form-control" ng-model="temp.tempModel.author_name" autofocus="autofocus">
+                <label class="radio">{{ _('enter_description') }}</label>
+              <textarea style="height: 100px" class="form-control" ng-model="temp.tempModel.description">{{temp.model.description}}</textarea>
+                <span ng-if="temp.isFolder()">
+                    <input type="checkbox" ng-model="temp.tempModel.add_all" autofocus="autofocus" >add_properties_for_all_file_in_directory
+                </span>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{ _('cancel') }}</button>
+              <button type="submit" class="btn btn-primary" ng-disabled="temp.inprocess">{{ _('save') }}</button>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="copy">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <form ng-submit="copy(temp)">
+            <!--<div class="modal-header">-->
+              <!--<button type="button" class="close" data-dismiss="modal">-->
+                  <!--<span aria-hidden="true">&times;</span>-->
+                  <!--<span class="sr-only">{{ _('close') }}</span>-->
+              <!--</button>-->
+              <!--<h4 class="modal-title">{{ _('copy_file') }}</h4>-->
+            <!--</div>-->
+            <!--<div class="modal-body">-->
+              <!--<label class="radio">{{ _('enter_new_name_for') }} <b>{{temp.model.name}}</b></label>-->
+              <!--<input class="form-control" ng-model="temp.tempModel.name" autofocus="autofocus">-->
+
+              <!--<div ng-include data-src="'path-selector'" class="clearfix"></div>-->
+              <!--<div ng-include data-src="'error-bar'" class="clearfix"></div>-->
+            <!--</div>-->
+            <!--<div class="modal-footer">-->
+              <!--<button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{ _('cancel') }}</button>-->
+              <button type="submit" class="btn btn-primary" ng-disabled="temp.inprocess">Copy</button>
+            <!--</div>-->
+        </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="compress">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <form ng-submit="compress(temp)">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">
+                  <span aria-hidden="true">&times;</span>
+                  <span class="sr-only">{{ _('close') }}</span>
+              </button>
+              <h4 class="modal-title">{{ _('compress') }}</h4>
+            </div>
+            <div class="modal-body">
+              <div ng-show="temp.success">
+                  <div class="label label-success error-msg">{{ _('compression_started') }}</div>
+              </div>
+              <div ng-hide="temp.success">
+                  <div ng-hide="config.allowedActions.compressChooseName">
+                    {{ _('sure_to_start_compression_with') }} <b>{{temp.model.name}}</b> ?
+                  </div>
+                  <div ng-show="config.allowedActions.compressChooseName">
+                    <label class="radio">{{ _('enter_folder_name_for_compression') }} <b>{{fileNavigator.currentPath.join('/')}}/{{temp.model.name}}</b></label>
+                    <input class="form-control" ng-model="temp.tempModel.name" autofocus="autofocus">
+                  </div>
+              </div>
+
+              <div ng-include data-src="'error-bar'" class="clearfix"></div>
+            </div>
+            <div class="modal-footer">
+              <div ng-show="temp.success">
+                  <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{ _('close') }}</button>
+              </div>
+              <div ng-hide="temp.success">
+                  <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{ _('cancel') }}</button>
+                  <button type="submit" class="btn btn-primary" ng-disabled="temp.inprocess">{{ _('compress') }}</button>
+              </div>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="extract" ng-init="temp.emptyName()">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <form ng-submit="extract(temp)">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">
+                  <span aria-hidden="true">&times;</span>
+                  <span class="sr-only">{{ _('close') }}</span>
+              </button>
+              <h4 class="modal-title">{{ _('extract_item') }}</h4>
+            </div>
+            <div class="modal-body">
+              <div ng-show="temp.success">
+                  <div class="label label-success error-msg">{{ _('extraction_started') }}</div>
+              </div>
+              <div ng-hide="temp.success">
+                  <label class="radio">{{ _('enter_folder_name_for_extraction') }} <b>{{temp.model.name}}</b></label>
+                  <input class="form-control" ng-model="temp.tempModel.name" autofocus="autofocus">
+                  <div ng-include data-src="'path-selector'" class="clearfix"></div>
+              </div>
+              <div ng-include data-src="'error-bar'" class="clearfix"></div>
+            </div>
+            <div class="modal-footer">
+              <div ng-show="temp.success">
+                  <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{ _('close') }}</button>
+              </div>
+              <div ng-hide="temp.success">
+                  <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{ _('cancel') }}</button>
+                  <button type="submit" class="btn btn-primary" ng-disabled="temp.inprocess">{{ _('extract') }}</button>
+              </div>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="edit" ng-class="{'modal-fullscreen': fullscreen}">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+        <form ng-submit="edit(temp)">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">
+                  <span aria-hidden="true">&times;</span>
+                  <span class="sr-only">{{ _('close') }}</span>
+              </button>
+              <button type="button" class="close mr5" ng-click="fullscreen=!fullscreen">
+                  <span>&loz;</span>
+                  <span class="sr-only">{{ _('toggle_fullscreen') }}</span>
+              </button>
+              <h4 class="modal-title">{{ _('edit_file') }}</h4>
+            </div>
+            <div class="modal-body">
+                <label class="radio">{{ _('file_content') }}</label>
+                <span class="label label-warning" ng-show="temp.inprocess">{{ _('loading') }} ...</span>
+                <textarea class="form-control code" ng-model="temp.tempModel.content" ng-show="!temp.inprocess" autofocus="autofocus"></textarea>
+                <div ng-include data-src="'error-bar'" class="clearfix"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{ _('cancel') }}</button>
+              <button type="submit" class="btn btn-primary" ng-disabled="temp.inprocess">{{ _('edit') }}</button>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="newfolder">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <form ng-submit="createFolder(temp)">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">
+                  <span aria-hidden="true">&times;</span>
+                  <span class="sr-only">{{ _('close') }}</span>
+              </button>
+              <h4 class="modal-title">{{ _('create_folder') }}</h4>
+            </div>
+            <div class="modal-body">
+              <label class="radio">{{ _('folder_name') }}</label>
+              <input class="form-control" ng-model="temp.tempModel.name" autofocus="autofocus">
+              <div ng-include data-src="'error-bar'" class="clearfix"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{ _('cancel') }}</button>
+              <button type="submit" class="btn btn-primary" ng-disabled="temp.inprocess">{{ _('create') }}</button>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="uploadfile">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <form ng-submit="uploadUsingUpload()">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" ng-click="showModal()">
+                  <span aria-hidden="true">&times;</span>
+                  <span class="sr-only">{{ _('close') }}</span>
+              </button>
+                 <button data-dismiss="modal" ng-show="!hide" type="button" class="close" style="padding-right:10px;padding-top:10px" ng-click="hideModal()">
+                  <span aria-hidden="true" style="padding-top:2px" >&macr;</span>
+                  <span class="sr-only">{{ _('hide') }}</span>
+              </button>
+              <h4 class="modal-title">{{ _('upload_file') }}</h4>
+            </div>
+            <div class="modal-body">
+              <label class="radio">{{ _('files_will_uploaded_to') }} <b>{{fileNavigator.currentPath.join('/')}}</b></label>
+              <input type="file" class="form-control" ng-file="$parent.uploadFileList" autofocus="autofocus" multiple="multiple" id='upl_dile'/>
+              <div ng-include data-src="'error-bar'" class="clearfix"></div>
+                <div ng-show="$parent.uploadFileList.length > 0">{{f.$error}} {{f.$errorParam}}
+                      <span class="progress" ng-show="f.progress > 0">
+                          <div ng-bind="f.progress + '%'" style="color: black"></div>
+                      </span>
+                    </div>
+            </div>
+            <div class="modal-footer">
+              <div ng-show="!fileUploader.requesting">
+                  <button type="button" ng-click="abort()"  class="btn btn-default" data-dismiss="modal">{{ _('cancel') }}</button>
+                  <button type="submit" class="btn btn-primary" ng-disabled="uploading(uploadFileList) === false">{{ _('upload') }}</button>
+              </div>
+              <div ng-show="fileUploader.requesting">
+                  <span class="label label-warning">{{ _('uploading') }} ...</span>
+              </div>
+
+            </div>
+
+        </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="changepermissions">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <form ng-submit="changePermissions(temp)">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">
+                  <span aria-hidden="true">&times;</span>
+                  <span class="sr-only">{{ _('close') }}</span>
+              </button>
+              <h4 class="modal-title">{{ _('change_permissions') }}</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table mb0">
+                  <thead>
+                      <tr>
+                          <th>{{ _('permissions') }}</th>
+                          <th class="col-xs-1 text-center">{{_('exec')}}</th>
+                          <th class="col-xs-1 text-center">{{_('read')}}</th>
+                          <th class="col-xs-1 text-center">{{_('write')}}</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      <tr ng-repeat="(permTypeKey, permTypeValue) in temp.tempModel.perms">
+                          <td>{{_(permTypeKey)}}</td>
+                          <td ng-repeat="(permKey, permValue) in permTypeValue" class="col-xs-1 text-center" ng-click="main()">
+                              <label class="col-xs-12">
+                                <input type="checkbox" ng-model="temp.tempModel.perms[permTypeKey][permKey]">
+                              </label>
+                          </td>
+                      </tr>
+                </tbody>
+              </table>
+              <div class="checkbox" ng-show="config.enablePermissionsRecursive && temp.model.type === 'dir'">
+                <label>
+                  <input type="checkbox" ng-model="temp.tempModel.recursive"> {{_('recursive')}}
+                </label>
+              </div>
+              <div class="clearfix mt10">
+                  <span class="label label-primary pull-left">
+                    {{_('original')}}: {{temp.model.perms.toCode(temp.model.type === 'dir'?'d':'-')}} ({{temp.model.perms.toOctal()}})
+                  </span>
+                  <span class="label label-primary pull-right">
+                    {{_('changes')}}: {{temp.tempModel.perms.toCode(temp.model.type === 'dir'?'d':'-')}} ({{temp.tempModel.perms.toOctal()}})
+                  </span>
+              </div>
+              <div ng-include data-src="'error-bar'" class="clearfix"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">{{_("cancel")}}</button>
+              <button type="submit" class="btn btn-primary" ng-disabled="">{{'change'}}</button>
+            </div>
+        </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="selector" ng-controller="ModalFileManagerCtrl">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+            <span aria-hidden="true">&times;</span>
+            <span class="sr-only">{{_("close")}}</span>
+        </button>
+        <h4 class="modal-title">{{_("select_destination_folder")}}</h4>
+      </div>
+      <div class="modal-body">
+
+
+
+        <div>
+            <div ng-include="config.tplPath + '/current-folder-breadcrumb.html'"></div>
+            <div ng-include="config.tplPath + '/main-table-modal.html'"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="temp.inprocess">{{_("close")}}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/ng-template" id="path-selector">
+    <div class="panel panel-primary mt10 mb0">
+      <div class="panel-body">
+          <div class="detail-sources">
+            <code class="mr5"><b>{{_("source")}}:</b> {{temp.model.fullPath()}}</code>
+          </div>
+          <div class="detail-sources">
+            <code class="mr5"><b>{{_("destination")}}:</b>{{temp.tempModel.fullPath()}}</code>
+            <a href="" class="label label-primary" ng-click="openNavigator(temp)">{{_('change')}}</a>
+          </div>
+      </div>
+    </div>
+</script>
+<script type="text/ng-template" id="error-bar">
+    <div class="label label-danger error-msg pull-left animated fadeIn" ng-show="temp.error">
+      <i class="glyphicon glyphicon-remove-circle"></i> {{temp.error}}
+    </div>
+</script>
+
+
+navbar.html
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+          </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <div class="navbar-form navbar-right">
+          <span class="progressbar" ng-show="f.progress > 0 && hide === true" ng-click="showModal()" data-toggle="modal" data-target="#uploadfile"><div ng-bind="'Uploading - '+f.progress + '%'"></div></span>          <input type="text" class="form-control input-sm" placeholder="{{_('search')}}..." ng-enter = "$parent.search(query)" ng-model="$parent.query">
+        <button class="btn btn-default btn-sm" data-toggle="modal" data-target="#newfolder" ng-click="touch()" ng-disabled='can_upload !== true'>
+            <i class="glyphicon glyphicon-plus"></i> {{_("create_folder")}}
+        </button>
+        <button title="{{ can_upload !== true?_(can_upload):_('upload_file') }}" class="btn btn-default btn-sm" data-toggle="modal" data-target="#uploadfile" ng-disabled='can_upload !== true'>
+            <i class="glyphicon glyphicon-upload"></i> {{_("upload_file")}}
+        </button>
+
+        <button class="btn btn-default btn-sm dropdown-toggle" type="button" id="dropDownMenuRoots" data-toggle="dropdown" aria-expanded="true">
+            <i class="glyphicon glyphicon-globe"></i> {{ root_name }} <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu" role="menu" aria-labelledby="dropDownMenuRoots">
+          <li ng-repeat="rootdir in rootdirs"  role="presentation" ><a role="menuitem" tabindex="-1" href="" ng-click="changeRoot(rootdir)" style = "{{root_name === rootdir.name? 'color:blue': '' }}" >{{ rootdir.name }}</a></li>
+        </ul>
+
+        <button class="btn btn-default btn-sm" ng-click="$parent.setTemplate('main-icons.html')" ng-show="$parent.viewTemplate !== 'main-icons.html'" title="{{_('icons')}}">
+            <i class="glyphicon glyphicon-th-large"></i>
+        </button>
+        <button class="btn btn-default btn-sm" ng-click="$parent.setTemplate('main-table.html')" ng-show="$parent.viewTemplate !== 'main-table.html'" title="{{_('list')}}">
+            <i class="glyphicon glyphicon-th-list"></i>
+        </button>
+
+      </div>
+    </div>
+  </div>
+</nav>
+
+
+sidebar.html
+<ul class="nav nav-sidebar file-tree-root">
+    <li ng-repeat="item in fileNavigator.history" ng-include="'folder-branch-item'" ng-class="{'active': item.name == fileNavigator.currentPath.join('/')}"></li>
+</ul>
+
+<script type="text/ng-template" id="folder-branch-item">
+    <a href="" ng-click="fileNavigator.folderClick(item.item)" class="animated fast fadeInDown">
+        <i class="glyphicon glyphicon-folder-close mr2" ng-hide="isInThisPath(item.name)"></i>
+        <i class="glyphicon glyphicon-folder-open mr2"  ng-show="isInThisPath(item.name)"></i>
+        {{ (item.name.split('/').pop() || '/') | strLimit : 24 }}
+    </a>
+    <ul class="nav nav-sidebar">
+        <li ng-repeat="item in item.nodes" ng-include="'folder-branch-item'" ng-class="{'active': item.name == fileNavigator.currentPath.join('/')}"></li>
+    </ul>
+</script>
+
+
+spinner.html
+<div class="spinner-container col-xs-12">
+    <svg class="spinner" width="65px" height="65px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+       <circle class="path" fill="none" stroke-width="6" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
+    </svg>
+</div>
+
+}]);

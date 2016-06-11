@@ -16,6 +16,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import expression, and_
 from sqlalchemy import text
 import time
+from .. import utils
 import datetime
 from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPortal, EditMaterialRight, \
     EditPublicationRight, UserIsEmployee, UserIsActive, BaseRightsEmployeeInCompany
@@ -178,7 +179,8 @@ def submit_publish(json, article_action):
         }
     else:
         publication = ArticlePortalDivision.get(json['publication']['id'])
-        check = PublishUnpublishInPortal(publication=publication, division=publication.portal_division_id, company=company).action_is_allowed(article_action)
+        check = PublishUnpublishInPortal(publication=publication, division=publication.portal_division_id,
+                                         company=company).action_is_allowed(article_action)
         if check != True:
             return check
         more_data_to_ret = {}
@@ -193,7 +195,7 @@ def submit_publish(json, article_action):
         ret['portal']['divisions'] = PRBase.get_ordered_dict(
             PublishUnpublishInPortal().get_active_division(portal.divisions))
 
-        return PRBase.merge_dicts(ret, more_data_to_ret)
+        return utils.dict_merge(ret, more_data_to_ret)
     else:
 
         publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
@@ -222,7 +224,8 @@ def submit_publish(json, article_action):
                 publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,
                                                                                      publication)
             publication.save().set_tags_positions()
-            return get_portal_dict_for_material(publication.portal, company, publication=publication, submit=article_action == 'SUBMIT')
+            return get_portal_dict_for_material(publication.portal, company, publication=publication,
+                                                submit=article_action == 'SUBMIT')
 
 
 @article_bp.route('/list_reader')
@@ -260,4 +263,3 @@ def list_reader(page=1):
                            portals=portals,
                            favorite=favorite
                            )
-

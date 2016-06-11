@@ -252,7 +252,7 @@ footer .btn-social-icon {
     overflow: hidden;
 }
 
-.block-item .item-tags a {
+.item-tags a, .block-item .item-tags a {
     color: white;
 }
 

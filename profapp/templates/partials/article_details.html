@@ -1,6 +1,6 @@
 <div class="block-item full-block-info" style="height: auto;">
     <div class="item-additional-info">
-            <a href="{{ url_for('front.subportal', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}"
+            <a href="{{ url_for('front.company_member', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}"
                class="item-company">{{ article['company']['name']|safe }}</a>
             <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
             <div><br>
@@ -9,12 +9,7 @@
     </div>
 
     {% if article['tags'] %}
-        <div class="item-tags fr">
-            {% for tag in article['tags'] %}
-                <span class="label label-danger"><a href="{{ url_for('front.division',
-                    division_name=article['division']['name'], page=1, search_text='', tag=tag.text) }}">{{ tag.text }}</a></span>
-            {% endfor %}
-        </div>
+        <div style="text-align: right">{% for tag in article.tags %} {{ frontmacros.tag(tag, url_toggle_tag, selected_tag_names = [], toogle_tag = True) }} {% endfor %}</div>
     {% endif %}
 
     <h2 class="item-title">{{ article['title']|safe }}</h2>

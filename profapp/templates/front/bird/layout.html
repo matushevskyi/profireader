@@ -13,9 +13,9 @@
         if (messageevent.data && messageevent.data.profireader_session_id) {
             $.cookie('beaker.session.id', messageevent.data.profireader_session_id, {path: '/'});
             window.location.reload();
-            }
+        }
     }, false);
-    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: none; left: -1px;" src="https://profireader.com/tools/SSO/'+$.cookie('beaker.session.id')+'/"></iframe>');
+    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: none; left: -1px;" src="https://profireader.com/tools/SSO/' + $.cookie('beaker.session.id') + '/"></iframe>');
 </script>
 {% include 'nav.html' %}
 <br/>
@@ -35,9 +35,9 @@
             {% endif %}
         </div>
         <div class="col-md-3">
+            {% include 'search_block.html' %}
             <a href="#" class="right_banner_1">{{ portal.advs['right_banner_1']|safe }}</a>
             <a href="#" class="right_banner_2">{{ portal.advs['right_banner_2']|safe }}</a>
-
 
         </div>
 

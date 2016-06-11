@@ -11,7 +11,7 @@
     <ul class="nav navbar-nav">
 
         <li  {% if current_subportal_division_name == 'index' %}class="active"{% endif %}><a
-                href="{{ url_for('front.subportal',
+                href="{{ url_for('front.company_member',
                                    member_company_id = member_company['id'] ,
                                    member_company_name = member_company['name']) }}">{{ _('About') }}</a></li>
 
@@ -19,7 +19,7 @@
             {% if division.portal_division_type_id == 'news' or division.portal_division_type_id == 'events' %}
                 <li {% if current_subportal_division and division.id == current_subportal_division.id
                             %}class="active"{% endif %}>
-                    <a href="{{ url_for('front.subportal_division',
+                    <a href="{{ url_for('front.division',
                                    member_company_id = member_company['id'] ,
                        subportal_division.html            member_company_name = member_company['name'],
                                    division_name=division.name, page=1, search_text='') }}">{{ division.name }}</a>

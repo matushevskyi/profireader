@@ -8,6 +8,7 @@ var path = require('path');
 
 // Vars
 var src = 'bower_components/';
+var src_dev = 'bower_components_dev/';
 var dst = 'new/';
 
 var watch = require('gulp-watch');
@@ -24,8 +25,7 @@ gulp.task('clean', function (cb) {
 });
 
 gulp.task('install_filemanager', function () {
-    return true;
-    return gulp.src(src + 'filemanager/dist/*')
+    return gulp.src(src_dev + 'angular-server-driven-filemanager/dist/*')
         .pipe(gulp.dest(dst + 'filemanager/'));
 });
 
@@ -81,7 +81,7 @@ gulp.task('install_datepicker', function () {
 });
 
 gulp.task('install_angular_crop', function () {
-    return gulp.src([src + 'ngImgCrop/compile/minified/*'])
+    return gulp.src([src_dev + 'ng-crop/ng-crop.*'])
         .pipe(gulp.dest(dst + 'angular-crop/'));
 });
 
@@ -163,6 +163,7 @@ gulp.task('default', taskListing);
 
 gulp.task('all', ['install_fileuploader', 'install_angular', 'install_angular_translate', 'install_angular_cookies',
     'install_angular_ui_select',
+    'install_angular_crop',
 'install_angular_ui_tinymce', 'install_tinymce', 'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
 'install_slider','install_bootstrap', 'install_angular_crop', 'install_eonasdan-bootstrap-datetimepicker', 'install_moment']);
 

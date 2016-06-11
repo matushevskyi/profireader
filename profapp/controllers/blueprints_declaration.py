@@ -39,6 +39,7 @@ class PrBlueprint(Blueprint):
             return ret
         return decorator
 
+print('blueprint declaration')
 static_bp = PrBlueprint('static', __name__, static_folder='static')
 general_bp = PrBlueprint('general', __name__)
 auth_bp = PrBlueprint('auth', __name__)
