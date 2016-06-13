@@ -23,21 +23,21 @@ from .elastic import PRElasticField, PRElasticDocument, elasticsearch
 class Material(Base, PRBase):
     __tablename__ = 'material'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
-    company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'))
     # portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
     # portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
     image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
 
     cr_tm = Column(TABLE_TYPES['timestamp'])
-    title = Column(TABLE_TYPES['name'], default='')
-    subtitle = Column(TABLE_TYPES['subtitle'], default='')
-    short = Column(TABLE_TYPES['text'], default='')
-    long = Column(TABLE_TYPES['text'], default='')
+    md_tm = Column(TABLE_TYPES['timestamp'])
+
+    title = Column(TABLE_TYPES['name'], default='', nullable=False)
+    subtitle = Column(TABLE_TYPES['subtitle'], default='', nullable=False)
+    short = Column(TABLE_TYPES['text'], default='', nullable=False)
+    long = Column(TABLE_TYPES['text'], default='', nullable=False)
     long_stripped = Column(TABLE_TYPES['text'], nullable=False)
 
     keywords = Column(TABLE_TYPES['keywords'], nullable=False)
     author = Column(TABLE_TYPES['short_name'], nullable=False)
-    md_tm = Column(TABLE_TYPES['timestamp'])
 
     status = Column(TABLE_TYPES['status'], default='NORMAL')
     STATUSES = {'NORMAL': 'NORMAL', 'EDITING': 'EDITING', 'FINISHED': 'FINISHED', 'DELETED': 'DELETED', 'APPROVED': 'APPROVED'}
@@ -45,6 +45,7 @@ class Material(Base, PRBase):
     editor_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'), nullable=False)
     editor = relationship(User, uselist=False)
 
+    company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Company.id))
     company = relationship(Company, uselist=False)
 
     publications = relationship('Publication', primaryjoin="Material.id==Publication.material_id")
@@ -98,86 +99,6 @@ class Material(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    # @staticmethod
-    # def update_article_portal(article_portal_division_id, **kwargs):
-    #     db(Publication, id=article_portal_division_id).update(kwargs)
-
-    # @staticmethod
-    # def get_portals_where_company_send_article(company_id):
-    #
-    #     portals = {}
-    #
-    #     for article in db(ArticleCompany, company_id=company_id).all():
-    #         for port in article.portal_article:
-    #             portals[port.portal.id] = port.portal.name
-    #     return portals
-
-    # @staticmethod
-    # def get_companies_which_send_article_to_portal(portal_id):
-    #     # all = {'name': 'All', 'id': 0}
-    #     companies = {}
-    #     # companies.append(all)
-    #     articles = g.db.query(Publication). \
-    #         join(Publication.portal). \
-    #         filter(Portal.id == portal_id).all()
-    #     # for article in db(Publication, portal_id=portal_id).all():
-    #     for article in articles:
-    #         companies[article.company.id] = article.company.name
-    #     return companies
-
-    # # TODO: SS by OZ: contition `if datetime(*localtime[:6]) > article['publishing_tm']:` should be checked by sql (passed
-    # # to search function)
-    # @staticmethod
-    # def get_list_reader_articles(articles):
-    #     list_articles = []
-    #     for article_id, article in articles.items():
-    #         article['tags'] = [tag.get_client_side_dict() for tag in article['tags']]
-    #         article['is_favorite'] = ReaderPublication.article_is_favorite(g.user.id, article_id)
-    #         article['liked'] = ReaderPublication.count_likes(g.user.id, article_id)
-    #         article['list_liked_reader'] = ReaderPublication.get_list_reader_liked(article_id)
-    #         article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
-    #             articles[article_id]['company']['logo_file_id'] else utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
-    #         article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-    #             articles[article_id]['portal']['logo_file_id'] else utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
-    #         del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
-    #         list_articles.append(article)
-    #     return list_articles
-
-    # def clone_for_company(self, company_id):
-    #     return self.detach().attr({'company_id': company_id,
-    #                                'status': ARTICLE_STATUS_IN_COMPANY.
-    #                               submitted})
-
-    # @staticmethod
-    # def subquery_portal_articles(portal_id, filters, sorts):
-    #     sub_query = db(Publication)
-    #     list_filters = []
-    #     list_sorts = []
-    #     if 'publication_status' in filters:
-    #         list_filters.append(
-    #             {'type': 'select', 'value': filters['publication_status'], 'field': Publication.status})
-    #     if 'company' in filters:
-    #         sub_query = sub_query.join(Publication.company)
-    #         list_filters.append({'type': 'select', 'value': filters['company'], 'field': Company.id})
-    #     if 'date' in filters:
-    #         list_filters.append(
-    #             {'type': 'date_range', 'value': filters['date'], 'field': Publication.publishing_tm})
-    #     sub_query = sub_query. \
-    #         join(Publication.division). \
-    #         join(PortalDivision.portal). \
-    #         filter(Portal.id == portal_id)
-    #     if 'title' in filters:
-    #         list_filters.append({'type': 'text', 'value': filters['title'], 'field': Publication.title})
-    #     if 'date' in sorts:
-    #         list_sorts.append({'type': 'date', 'value': sorts['date'], 'field': Publication.publishing_tm})
-    #     else:
-    #         list_sorts.append({'type': 'date', 'value': 'desc', 'field': Publication.publishing_tm})
-    #     sub_query = Grid.subquery_grid(sub_query, list_filters, list_sorts)
-    #     return sub_query
-
-    # def position_unique_filter(self):
-    #     return and_(Publication.portal_division_id == self.portal_division_id,
-    #                 Publication.position != None)
 
     def validate(self, is_new):
         ret = super().validate(is_new)
@@ -190,12 +111,6 @@ class Material(Base, PRBase):
             ret['notices']['_'] = 'Ok, you can click submit'
 
         return ret
-
-    # def get_image_client_side_dict(self):
-    #     return Article.get_image_client_side_dict(self)
-    #
-    # def set_image_client_side_dict(self, client_data):
-    #     return Article.set_image_client_side_dict(self, client_data)
 
 
     @staticmethod
@@ -218,374 +133,11 @@ class Material(Base, PRBase):
         event.listen(cls, 'after_delete', cls.after_delete)
 
 
-# class ArticleCompany(Base, PRBase):
-#     __tablename__ = 'article_company'
-#     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
-#     editor_user_id = Column(TABLE_TYPES['id_profireader'],
-#                             ForeignKey('user.id'), nullable=False)
-#     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'))
-#     article_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('article.id'))
-#     # created_from_version_id = Column(TABLE_TYPES['id_profireader'],
-#     # ForeignKey('article_version.id'))
-#     title = Column(TABLE_TYPES['title'], nullable=False)
-#     subtitle = Column(TABLE_TYPES['subtitle'], default='')
-#     short = Column(TABLE_TYPES['text'], nullable=False)
-#     long = Column(TABLE_TYPES['text'], nullable=False)
-#     long_stripped = Column(TABLE_TYPES['text'], nullable=False)
-#
-#     cr_tm = Column(TABLE_TYPES['timestamp'])
-#     md_tm = Column(TABLE_TYPES['timestamp'])
-#
-#     status = Column(TABLE_TYPES['status'], default='NORMAL')
-#     STATUSES = {'NORMAL': 'NORMAL', 'EDITING': 'EDITING', 'FINISHED': 'FINISHED', 'DELETED': 'DELETED',
-#                 'APPROVED': 'APPROVED'}
-#
-#     image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
-#     keywords = Column(TABLE_TYPES['keywords'], nullable=False)
-#     # TODO: OZ by OZ: we need keywords in ArticleCompany ??
-#
-#     company = relationship(Company)
-#     editor = relationship(User)
-#     article = relationship('Article', primaryjoin="and_(Article.id==ArticleCompany.article_id)",
-#                            uselist=False)
-#     portal_article = relationship('Publication',
-#                                   primaryjoin="ArticleCompany.id=="
-#                                               "Publication."
-#                                               "article_company_id",
-#                                   backref='company_article')
-#
-#     search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
-#                      'short': {'relevance': lambda field='short': RELEVANCE.short},
-#                      'subtitle': {'relevance': lambda field='subtitle': RELEVANCE.short},
-#                      'long': {'relevance': lambda field='long': RELEVANCE.long},
-#                      'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
-#
-#     def is_active(self):
-#         return True
-#
-#     def get_client_side_dict(self,
-#                              fields='id|title|subtitle|short|keywords|cr_tm|md_tm|article_id|image_file_id|company_id',
-#                              more_fields=None):
-#         return self.to_dict(fields, more_fields)
-#
-#     def get_image_client_side_dict(self):
-#         return Article.get_image_client_side_dict(self)
-#
-#     def set_image_client_side_dict(self, client_data):
-#         return Article.set_image_client_side_dict(self, client_data)
-#
-#     def validate(self, is_new):
-#         ret = super().validate(is_new)
-#         if not re.match('.*\S{2}.*', self.title, re.IGNORECASE):
-#             ret['errors']['title'] = 'pls enter tite longer than 2 letters'
-#         if not re.match('\S+.*', self.keywords, re.IGNORECASE):
-#             ret['warnings']['keywords'] = 'pls enter at least one keyword'
-#         return ret
-#
-#     @staticmethod
-#     def get_companies_where_user_send_article(user_id):
-#         # all = {'name': 'All', 'id': 0}
-#         # companies = []
-#         # companies.append(all)
-#         companies = {}
-#         for article in db(Article, author_user_id=user_id).all():
-#             for comp in article.submitted_versions:
-#                 companies[comp.company.id] = comp.company.name
-#                 # companies.append(comp.company.get_client_side_dict(fields='id, name'))
-#         return companies  # all, [dict(comp) for comp in set([tuple(c.items()) for c in companies])]
-#
-#     @staticmethod
-#     def get_companies_for_article(article_id):
-#         companies = []
-#         for article in db(Article, id=article_id).all():
-#             for comp in article.submitted_versions:
-#                 companies.append(comp.company.get_client_side_dict(fields='id, name'))
-#         return [dict(comp) for comp in set([tuple(c.items()) for c in companies])]
-#
-#     # def clone_for_company(self, company_id):
-#     #     return self.detach().attr({'company_id': company_id,
-#     #                                'status': ARTICLE_STATUS_IN_COMPANY.
-#     #                               submitted})
-#
-#     @staticmethod
-#     def subquery_user_articles(search_text=None, user_id=None, **kwargs):
-#         own_article = aliased(ArticleCompany, name="OwnArticle")
-#         sub_query = db(Article, own_article.md_tm, author_user_id=user_id). \
-#             join(own_article,
-#                  and_(Article.id == own_article.article_id, own_article.company_id == None))
-#         article_filter = db(ArticleCompany, article_id=Article.id)
-#         if 'title' in search_text:
-#             article_filter = article_filter.filter(ArticleCompany.title.ilike(
-#                 "%" + repr(search_text['title']).strip("'") + "%"))
-#         if 'company' in kwargs['filter'].keys():
-#             article_filter = article_filter.filter(ArticleCompany.company_id == kwargs['filter']['company'])
-#         if 'status' in kwargs['filter'].keys():
-#             article_filter = article_filter.filter(ArticleCompany.status == kwargs['filter']['status'])
-#         if 'date' in kwargs['sort'].keys():
-#             sub_query = sub_query.order_by(own_article.md_tm.asc()) if kwargs['sort'][
-#                                                                            'date'] == 'asc' else sub_query.order_by(
-#                 own_article.md_tm.desc())
-#         else:
-#             sub_query = sub_query.order_by(own_article.md_tm.desc())
-#         return sub_query.filter(article_filter.exists())
-#
     @staticmethod
     def subquery_company_materials(company_id=None, filters=None, sorts=None):
         sub_query = db(Material, company_id=company_id)
-        list_filters = []
-        list_sorts = []
-        # TODO: OZ by OZ: Join material_portal_division
-        # if 'status' in filters or 'portal.name' in filters:
-            # sub_query = sub_query.join(Publication,
-            #                            Publication.article_company_id == ArticleCompany.id)
-            # if 'status' in filters:
-            #     list_filters.append({'type': 'multiselect', 'value': filters['status'],
-            #                          'field': Publication.status})
-            # if 'portal.name' in filters:
-            #     sub_query = sub_query.join(PortalDivision,
-            #                                PortalDivision.id == Publication.portal_division_id).join(Portal,
-#                                                                                                                Portal.id == PortalDivision.portal_id)
-#                 list_filters.append({'type': 'multiselect', 'value': filters['portal.name'], 'field': Portal.name})
-#         if 'md_tm' in filters:
-#             list_filters.append({'type': 'date_range', 'value': filters['md_tm'], 'field': ArticleCompany.md_tm})
-#         if 'title' in filters:
-#             list_filters.append({'type': 'text', 'value': filters['title_author'], 'field': ArticleCompany.title})
-#         if 'title&editor.profireader_name' in filters:
-#             sub_query = sub_query.join(User,
-#                                        User.id == ArticleCompany.editor_user_id)
-#             list_filters.append({'type': 'text_multi', 'value': filters['title&editor.profireader_name'],
-#                                  'field': [ArticleCompany.title, User.profireader_name]})
-#         if 'editor.profireader_name' in filters:
-#             sub_query = sub_query.join(User,
-#                                        User.id == ArticleCompany.editor_user_id)
-#             list_filters.append(
-#                 {'type': 'text', 'value': filters['editor.profireader_name'], 'field': User.profireader_name})
-#         if 'md_tm' in sorts:
-#             list_sorts.append({'type': 'date', 'value': sorts['md_tm'], 'field': ArticleCompany.md_tm})
-#         else:
-#             list_sorts.append({'type': 'date', 'value': 'desc', 'field': ArticleCompany.md_tm})
-#         sub_query = Grid.subquery_grid(sub_query, list_filters, list_sorts)
         return sub_query
-#
-        # self.portal_devision_id = portal_devision_id
-        # self.article_company_id = article_company_id
-        # self.title = title
-        # self.short = short
-        # self.long = long
-        # self.status = status
-#
-#     # def find_files_used(self):
-#     #     ret = [found.group(1) for found in re.findall('http://file001.profireader.com/([^/]*)/', self.long)]
-#     #     # if self.image_file_id:
-#     #     #     ret.append(self.image_file_id)
-#     #     return ret
-#
-#     def clone_for_portal_images_and_replace_urls(self, portal_division_id, article_portal_division):
-#         filesintext = {found[1]: True for found in
-#                        re.findall('(https?://file001.profireader.com/([^/]*)/)', self.long)}
-#         if self.image_file_id:
-#             filesintext[self.image_file_id] = True
-#         company = db(PortalDivision, id=portal_division_id).one().portal.own_company
-#
-#         for file_id in filesintext:
-#             filesintext[file_id] = \
-#                 File.get(file_id).copy_from_cropped_file().id
-#
-#         if self.image_file_id:
-#             article_portal_division.image_file_id = filesintext[self.image_file_id]
-#
-#         article_portal_division.save()
-#
-#         long_text = self.long
-#         for old_image_id in filesintext:
-#             long_text = long_text.replace('://file001.profireader.com/%s/' % (old_image_id,),
-#                                           '://file001.profireader.com/%s/' % (filesintext[old_image_id],))
-#         return long_text
-#
-#     def get_article_owner_portal(self, **kwargs):
-#         return [art_port_div.division.portal for art_port_div in self.portal_article if kwargs][0]
-#
-#     @staticmethod
-#     def update_article(company_id, article_id, **kwargs):
-#         db(ArticleCompany, company_id=company_id, id=article_id).update(kwargs)
-#
-#
-# def set_long_striped(mapper, connection, target):
-#     target.long_stripped = MLStripper().strip_tags(target.long)
-#
-#
-# event.listen(Publication, 'before_update', set_long_striped)
-# event.listen(Publication, 'before_insert', set_long_striped)
-# event.listen(ArticleCompany, 'before_update', set_long_striped)
-# event.listen(ArticleCompany, 'before_insert', set_long_striped)
-#
-#
-# class Article(Base, PRBase):
-#     __tablename__ = 'article'
-#
-#     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
-#     author_user_id = Column(TABLE_TYPES['id_profireader'],
-#                             ForeignKey('user.id'), nullable=False)
-#
-#     submitted_versions = relationship(ArticleCompany,
-#                                       primaryjoin="and_(Article.id==ArticleCompany.article_id, "
-#                                                   "ArticleCompany.company_id!=None)")
-#
-#     mine_version = relationship(ArticleCompany,
-#                                 primaryjoin="and_(Article.id==ArticleCompany.article_id, "
-#                                             "ArticleCompany.company_id==None)",
-#                                 uselist=False)
-#
-#     def get_client_side_dict(self,
-#                              fields='id, mine_version|submitted_versions.id|title|short|'
-#                                     'cr_tm|md_tm|company_id|status|image_file_id, '
-#                                     'submitted_versions.editor.id|'
-#                                     'profireader_name, '
-#                                     'submitted_versions.company.name',
-#                              more_fields=None):
-#         return self.to_dict(fields, more_fields)
-#
-#     def get_article_with_html_tag(self, text_into_html):
-#         article = self.get_client_side_dict()
-#         article['mine_version']['title'] = article['mine_version']['title'].replace(text_into_html,
-#                                                                                     '<span class=colored>%s</span>' % text_into_html)
-#         return article
-#
-#     @staticmethod
-#     def search_for_company_to_submit(user_id, article_id, searchtext):
-#         # TODO: AA by OZ:    .filter(user_id has to be employee in company and
-#         # TODO: must have rights to submit article to this company)
-#         return [x.get_client_side_dict(fields='id,name') for x in db(Company).filter(~db(ArticleCompany).
-#                                                                                      filter_by(company_id=Company.id,
-#                                                                                                article_id=article_id).
-#                                                                                      exists()).filter(
-#             Company.name.ilike("%" + searchtext + "%")).all()]
-#
-#     @staticmethod
-#     def save_edited_version(user_id, article_company_id, **kwargs):
-#         a = ArticleCompany.get(article_company_id)
-#         return a.attr(kwargs)
-#
-#     @staticmethod
-#     def get_articles_for_user(user_id):
-#         return g.db.query(Article).filter_by(author_user_id=user_id).all()
-#
-#     # @staticmethod
-#     # def subquery_articles_at_portal(portal_division_id=None, search_text=None):
-#     #
-#     #     if not search_text:
-#     #         sub_query = db(Publication).order_by('publishing_tm').filter(text(
-#     #             ' "publishing_tm" < clock_timestamp() ')).filter_by(
-#     #             portal_division_id=portal_division_id,
-#     #             status=Publication.STATUSES['PUBLISHED'])
-#     #     else:
-#     #         sub_query = db(Publication).order_by('publishing_tm').filter(text(
-#     #             ' "publishing_tm" < clock_timestamp() ')).filter_by(
-#     #             portal_division_id=portal_division_id,
-#     #             status=Publication.STATUSES['PUBLISHED']).filter(
-#     #             or_(
-#     #                 Publication.title.ilike("%" + search_text + "%"),
-#     #                 Publication.short.ilike("%" + search_text + "%"),
-#     #                 Publication.long.ilike("%" + search_text + "%")))
-#     #     return sub_query
-#
-#     @staticmethod
-#     def subquery_articles_at_portal(search_text=None, **kwargs):
-#         portal_id = None
-#         if 'portal_id' in kwargs.keys():
-#             portal_id = kwargs['portal_id']
-#             kwargs.pop('portal_id', None)
-#         # search_text = 'aa'
-#         # test = db(Search).filter(Search.text.ilike("%" + search_text + "%")).filter(
-#         #     Search.index == db(Publication).filter(
-#         #         Publication.portal_division_id == db(
-#         #             PortalDivision, portal_id=portal_id).first().id).first()).all()
-#         # for a in test:
-#         #     print(a)
-#         # print(**kwargs)
-#         # test = db(Search, table_name=Publication.__tablename__).filter(Search.text.ilike("%" + search_text + "%")).filter(
-#         #     Publication.portal_division_id in db(PortalDivision.id, portal_id=portal_id).all())
-#         # for a in test:
-#         #     print(a.text)
-#
-#         sub_query = db(Publication, status=Publication.STATUSES['PUBLISHED'], **kwargs). \
-#             order_by(Publication.publishing_tm.desc()).filter(
-#             text(' "publishing_tm" < clock_timestamp() '))
-#
-#         if portal_id:
-#             sub_query = sub_query.join(PortalDivision).join(Portal).filter(Portal.id == portal_id)
-#
-#         if search_text:
-#             sub_query = sub_query. \
-#                 filter(or_(Publication.title.ilike("%" + search_text + "%"),
-#                            Publication.short.ilike("%" + search_text + "%"),
-#                            Publication.long_stripped.ilike("%" + search_text + "%")))
-#         return sub_query
-#
-#     @staticmethod
-#     def logo_file_properties(article):
-#         noimage_url = utils.fileUrl(FOLDER_AND_FILE.no_article_image())
-#         return {
-#             'browse': article.id,
-#             'upload': True,
-#             'none': noimage_url,
-#             'crop': True,
-#             'image_size': [600, 480],
-#             'min_size': [100, 80],
-#             'aspect_ratio': [300 / 240., 300 / 240.],
-#             'preset_urls': {},
-#             'no_selection_url': noimage_url
-#         }
-#
-#     @staticmethod
-#     def get_image_client_side_dict(article):
-#         return article.get_image_cropped_file(Article.logo_file_properties(article),
-#                                               db(ImageCroped, croped_image_id=article.image_file_id).first())
-#
-#     @staticmethod
-#     def set_image_client_side_dict(article, client_data):
-#         if client_data['selected_by_user']['type'] == 'preset':
-#             client_data['selected_by_user'] = {'type': 'none'}
-#         if not article.company:
-#             folder_id = Company.get(article.company_id).system_folder_file_id
-#         else:
-#             folder_id = article.company.system_folder_file_id
-#         article.image_file_id = article.set_image_cropped_file(Article.logo_file_properties(article),
-#                                                                client_data, article.image_file_id, folder_id)
-#         return article
-#
-#     # @staticmethod
-#     # def get_articles_for_portal(page_size, portal_division_id,
-#     #                             pages, page=1, search_text=None):
-#     #     page -= 1
-#     #     if not search_text:
-#     #         query = g.db.query(Publication).order_by('publishing_tm').filter(text(
-#     #             ' "publishing_tm" < clock_timestamp() ')).filter_by(
-#     #             portal_division_id=portal_division_id,
-#     #             status=Publication.STATUSES['PUBLISHED'])
-#     #     else:
-#     #         query = g.db.query(Publication).order_by('publishing_tm').filter(text(
-#     #             ' "publishing_tm" < clock_timestamp() ')).filter_by(
-#     #             portal_division_id=portal_division_id,
-#     #             status=Publication.STATUSES['PUBLISHED']).filter(
-#     #             or_(
-#     #                 Publication.title.ilike("%" + search_text + "%"),
-#     #                 Publication.short.ilike("%" + search_text + "%"),
-#     #                 Publication.long.ilike("%" + search_text + "%")))
-#     #
-#     #     if page_size:
-#     #         query = query.limit(page_size)
-#     #     if page:
-#     #         query = query.offset(page*page_size) if int(page) in range(
-#     #             0, int(pages)) else query.offset(pages*page_size)
-#     #
-#     #     return query
-#
-#     @staticmethod
-#     def get_articles_submitted_to_company(company_id):
-#         articles = g.db.query(ArticleCompany).filter_by(company_id=company_id).all()
-#         return articles if articles else []
-#
+
     @staticmethod
     def get_material_grid_data(material):
         from ..models.rights import PublishUnpublishInPortal
@@ -624,133 +176,43 @@ class Material(Base, PRBase):
         for article in articles:
             companies[article.company.id] = article.company.name
         return companies
-#
-#         # for article in articles:
-#         #     article.possible_new_statuses = ARTICLE_STATUS_IN_COMPANY.\
-#         #         can_user_change_status_to(article.status)
-#
-#
-# class ArticleCompanyHistory(Base, PRBase):
-#     __tablename__ = 'article_company_history'
-#     id = Column(TABLE_TYPES['bigint'], primary_key=True)
-#     editor_user_id = Column(TABLE_TYPES['id_profireader'])
-#     company_id = Column(TABLE_TYPES['id_profireader'])
-#     name = Column(TABLE_TYPES['name'])
-#     short = Column(TABLE_TYPES['text'], default='')
-#     long = Column(TABLE_TYPES['text'], default='')
-#     article_company_id = Column(TABLE_TYPES['id_profireader'])
-#     article_id = Column(TABLE_TYPES['id_profireader'])
-#
-#     def __init__(self, editor_user_id=None, company_id=None, name=None,
-#                  short=None, long=None, article_company_id=None,
-#                  article_id=None):
-#         super(ArticleCompanyHistory, self).__init__()
-#         self.editor_user_id = editor_user_id
-#         self.company_id = company_id
-#         self.name = name
-#         self.short = short
-#         self.long = long
-#         self.article_company_id = article_company_id
-#         self.article_id = article_id
-#
-#
-# class ReaderPublication(Base, PRBase):
-#     __tablename__ = 'reader_article_portal_division'
-#     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
-#     user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
-#     article_portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('article_portal_division.id'))
-#     favorite = Column(TABLE_TYPES['boolean'], default=False)
-#     liked = Column(TABLE_TYPES['boolean'], default=False)
-#
-#     def __init__(self, user_id=None, article_portal_division_id=None, favorite=False, liked=False):
-#         super(ReaderPublication, self).__init__()
-#         self.user_id = user_id
-#         self.article_portal_division_id = article_portal_division_id
-#         self.favorite = favorite
-#         self.liked = liked
-#
-#     @staticmethod
-#     def add_delete_favorite_user_article(article_portal_division_id, favorite):
-#         articleReader = db(ReaderPublication, article_portal_division_id=article_portal_division_id,
-#                            user_id=g.user.id).first()
-#         if not articleReader:
-#             articleReader = ReaderPublication.add_to_table_if_not_exists(article_portal_division_id)
-#         articleReader.favorite = True if favorite else False
-#         articleReader.save()
-#         return articleReader.favorite
-#
-#     @staticmethod
-#     def add_delete_liked_user_article(article_portal_division_id, liked):
-#         articleReader = db(ReaderPublication, article_portal_division_id=article_portal_division_id,
-#                            user_id=g.user.id).first()
-#
-#         if not articleReader:
-#             articleReader = ReaderPublication.add_to_table_if_not_exists(article_portal_division_id)
-#         articleReader.liked = False if articleReader.liked else True
-#         article_division = Publication.get(article_portal_division_id)
-#         article_division.like_count = article_division.like_count - 1 \
-#             if articleReader.liked == False and article_division.like_count != 0 else article_division.like_count + 1
-#         article_division.save()
-#         articleReader.save()
-#         return articleReader.liked
-#
-#     @staticmethod
-#     def count_likes(user_id, article_portal_division_id):
-#         article_division = Publication.get(article_portal_division_id)
-#         return article_division.like_count
-#
-#     @staticmethod
-#     def article_is_liked(user_id, article_portal_division_id):
-#         reader_article = db(ReaderPublication, user_id=user_id,
-#                             article_portal_division_id=article_portal_division_id).first()
-#         return reader_article.liked if reader_article else False
-#
-#     @staticmethod
-#     def article_is_favorite(user_id, article_portal_division_id):
-#         reader_article = db(ReaderPublication, user_id=user_id,
-#                             article_portal_division_id=article_portal_division_id).first()
-#         return reader_article.favorite if reader_article else False
-#
-#     @staticmethod
-#     def get_list_reader_liked(article_portal_division_id):
-#         me = db(ReaderPublication, article_portal_division_id=article_portal_division_id, user_id=g.user.id,
-#                 liked=True).first()
-#         limit = 15
-#         articles = db(ReaderPublication, article_portal_division_id=article_portal_division_id, liked=True)
-#         liked_users = [User.get(article.user_id).profireader_name for article in articles.limit(limit)]
-#         if me:
-#             if g.user.profireader_name in liked_users:
-#                 index = liked_users.index(g.user.profireader_name)
-#                 del liked_users[index]
-#             else:
-#                 del liked_users[-1]
-#             liked_users.insert(0, g.user.profireader_name)
-#         if articles.count() > limit:
-#             liked_users.append('and ' + str((articles.count() - limit)) + ' more...')
-#         return liked_users
-#
-#     @staticmethod
-#     def add_to_table_if_not_exists(article_portal_division_id):
-#         if not db(ReaderPublication,
-#                   user_id=g.user.id, article_portal_division_id=article_portal_division_id).count():
-#             return ReaderPublication(user_id=g.user.id,
-#                                                article_portal_division_id=article_portal_division_id,
-#                                                favorite=False).save()
-#
-#     def get_article_portal_division(self):
-#         return db(Publication, id=self.article_portal_division_id).one()
-#
-#     @staticmethod
-#     def subquery_favorite_articles():
-#         return db(Publication).filter(
-#             Publication.id == db(ReaderPublication,
-#                                            user_id=g.user.id,
-#                                            favorite=True).subquery().c.article_portal_division_id)
-#
-#     def get_portal_division(self):
-#         return db(PortalDivision).filter(PortalDivision.id == db(Publication,
-#                                                                  id=self.article_portal_division_id).c.portal_division_id).one()
 
+    def logo_file_properties(self):
+        noimage_url = utils.fileUrl(FOLDER_AND_FILE.no_article_image())
+        return {
+            'browse': True,
+            'upload': True,
+            'none': noimage_url,
+            'crop': True,
+            'image_size': [600, 480],
+            'min_size': [100, 80],
+            'aspect_ratio': [300 / 240., 300 / 240.],
+            'preset_urls': {},
+            'no_selection_url': noimage_url
+        }
+
+    def get_image_client_side_dict(self):
+        return self.get_image_cropped_file(self.logo_file_properties(),
+                                               db(ImageCroped, croped_image_id=self.image_file_id).first())
+
+    def set_image_client_side_dict(self, client_data):
+        if client_data['selected_by_user']['type'] == 'preset':
+            client_data['selected_by_user'] = {'type': 'none'}
+        if not self.company:
+            folder_id = Company.get(self.company_id).system_folder_file_id
+        else:
+            folder_id = self.company.system_folder_file_id
+            self.image_file_id = self.set_image_cropped_file(Material.logo_file_properties(self),
+                                                                 client_data, self.image_file_id, folder_id)
+        return self
+
+
+def set_long_striped(mapper, connection, target):
+    target.long_stripped = MLStripper().strip_tags(target.long)
+
+
+event.listen(Material, 'before_update', set_long_striped)
+event.listen(Material, 'before_insert', set_long_striped)
 
 
 class Publication(Base, PRBase, PRElasticDocument):
@@ -1039,11 +501,6 @@ class Publication(Base, PRBase, PRElasticDocument):
 
         return ret
 
-    def get_image_client_side_dict(self):
-        return Article.get_image_client_side_dict(self)
-
-    def set_image_client_side_dict(self, client_data):
-        return Article.set_image_client_side_dict(self, client_data)
 
     def set_tags_positions(self):
         tag_position = 0
