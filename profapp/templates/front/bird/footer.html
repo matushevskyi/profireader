@@ -1,3 +1,4 @@
+{# футер + меню субпорталу #}
 <footer>
     <div class="container">
         <div class="row">
@@ -9,7 +10,9 @@
                     {% for division in portal.divisions %}
                         {% if division.portal_division_type_id != 'index' %}
                             <li>
-                                <a  href="{% if division.portal_division_type_id != 'company_subportal' %}{{ url_for('front.division', division_name=division.name, page=1, search_text='') }}{% else %}{{ url_for('front.subportal', member_company_id = division['member_company']['id'] ,
+                                <a  href="{% if division.portal_division_type_id != 'company_subportal' %}{{ url_for('front.division', division_name=division.name, page=1, search_text='') }}
+                                {% else %}
+                                {{ url_for('front.subportal', member_company_id = division['member_company']['id'] ,
                                         member_company_name = division['member_company']['name']) }}{% endif %}">{{ division.name }}</a>
                             </li>
                         {% endif %}

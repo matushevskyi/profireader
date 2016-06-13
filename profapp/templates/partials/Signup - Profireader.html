@@ -1,3 +1,5 @@
+{# поля для реєстрації вручну #}
+
 {# <script>#}
 {#      $(function () {#}
 {#        $('#register-form-profirider').on('submit', function (e) {#}
@@ -13,7 +15,7 @@
 {#        });#}
 {#      });#}
 {#    </script>#}
-<h3 ng-controller="UserLoginController">{{ _('or Simple registration') }}</h3>
+<h3 ng-controller="UserLoginController">{{ _('or simple registration') }}</h3>
 
 <form name="formLogin" class="register-form-profireader" action="{{ url_for('auth.signup') }}" method="post">
     <input pr-test="RegEmail" class="form-control" type="email" placeholder="email" required name="email" ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/">
