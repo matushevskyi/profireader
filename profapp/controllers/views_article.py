@@ -1,5 +1,5 @@
 from flask import render_template, redirect, url_for, request, g, make_response, json, jsonify, session
-from profapp.models.articles import Article, ArticleCompany, ArticlePortalDivision, ReaderArticlePortalDivision
+# from profapp.models.bak_articles import Article, ArticleCompany, ArticlePortalDivision, ReaderArticlePortalDivision
 from profapp.models.portal import PortalDivision, UserPortalReader, Portal, MemberCompanyPortal
 from ..models.pr_base import Search, PRBase, Grid
 from .blueprints_declaration import article_bp
@@ -10,6 +10,7 @@ from .views_file import crop_image
 from ..models.files import ImageCroped
 from ..models.company import Company, UserCompany
 from ..models.tag import Tag, TagPublication
+from ..models.materials import Material, Publication
 
 from utils.db_utils import db
 from sqlalchemy.orm.exc import NoResultFound
@@ -95,9 +96,9 @@ def load_form_create(json, company_id=None, material_id=None, publication_id=Non
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'])
 @check_right(UserIsEmployee, ['material_id'])
 def material_details(material_id):
-    company = Company.get(ArticleCompany.get(material_id).company.id)
+    company = Company.get(Material.get(material_id).company.id)
     return render_template('company/material_details.html',
-                           article=ArticleCompany.get(material_id).get_client_side_dict(more_fields='company|long'),
+                           material=Material.get(material_id).get_client_side_dict(),
                            company=company)
 
 
@@ -111,8 +112,8 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
         d['portal_division_type_id'] == 'events' or d['portal_division_type_id'] == 'news')])
     ret['company_id'] = company.id
     if material:
-        publication_in_portal = db(ArticlePortalDivision).filter_by(article_company_id=material.id).filter(
-            ArticlePortalDivision.portal_division_id.in_(
+        publication_in_portal = db(Publication).filter_by(material_id=material.id).filter(
+            Publication.portal_division_id.in_(
                 [div_id for div_id, div in ret['divisions'].items()])).first()
     else:
         publication_in_portal = publication
@@ -121,7 +122,7 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
             ret['replace_id'] = publication_in_portal.id
         ret['id'] = portal.id if submit else publication_in_portal.id
         ret['publication'] = publication_in_portal.get_client_side_dict(
-            'id,position,title,status,visibility,portal_division_id,publishing_tm')
+            'id,status,visibility,portal_division_id,publishing_tm')
         ret['publication']['division'] = ret['divisions'][ret['publication']['portal_division_id']]
         ret['publication']['counts'] = '0/0/0/0'
         ret['actions'] = PublishUnpublishInPortal(publication=publication_in_portal,
@@ -140,7 +141,7 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
 @article_bp.route('/material_details/<string:material_id>/', methods=['OK'])
 @check_right(UserIsEmployee, ['material_id'])
 def material_details_load(json, material_id):
-    material = ArticleCompany.get(material_id)
+    material = Material.get(material_id)
     company = material.company
 
     return {
@@ -152,7 +153,7 @@ def material_details_load(json, material_id):
             'grid_data': [get_portal_dict_for_material(portal, company, material) for portal in
                           PublishUnpublishInPortal.get_portals_where_company_is_member(company)],
             'grid_filters': {
-                'publication.status': Grid.filter_for_status(ArticlePortalDivision.STATUSES)
+                'publication.status': Grid.filter_for_status(Publication.STATUSES)
             }
 
         }

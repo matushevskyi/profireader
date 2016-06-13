@@ -8,7 +8,7 @@ from utils.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
     PortalDivisionSettingsCompanySubportal, PortalConfig, PortalAdvertisment
 from .request_wrapers import ok, tos_required, check_right
-from ..models.articles import ArticlePortalDivision, ArticleCompany, Article
+# from ..models.bak_articles import ArticlePortalDivision, ArticleCompany, Article
 from ..models.company import UserCompany
 from ..models.tag import Tag, TagPortalDivision
 from profapp.models.rights import RIGHTS

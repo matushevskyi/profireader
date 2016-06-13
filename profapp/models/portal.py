@@ -64,10 +64,10 @@ class Portal(Base, PRBase):
     # articles = relationship('ArticlePortalDivision',
     #                         back_populates='portal',
     #                         uselist=False)
-    publications = relationship('ArticlePortalDivision',
+    publications = relationship('Publication',
                                 secondary='portal_division',
                                 primaryjoin="Portal.id == PortalDivision.portal_id",
-                                secondaryjoin="PortalDivision.id == ArticlePortalDivision.portal_division_id",
+                                secondaryjoin="PortalDivision.id == Publication.portal_division_id",
                                 back_populates='portal',
                                 uselist=False)
 

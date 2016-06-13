@@ -43,7 +43,6 @@ class ArticlePortalDivision(Base, PRBase, PRElasticDocument):
     event_end_tm = Column(TABLE_TYPES['timestamp'])
     position = Column(TABLE_TYPES['position'])
     read_count = Column(TABLE_TYPES['int'], default=0)
-    search_reindexed = Column(TABLE_TYPES['int'], default=0)
 
     tags = relationship(Tag, secondary='tag_publication', uselist=True)
 

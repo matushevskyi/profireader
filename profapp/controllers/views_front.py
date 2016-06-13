@@ -1,6 +1,6 @@
 from .blueprints_declaration import front_bp
 from flask import render_template, request, url_for, redirect, g, current_app, session
-from ..models.articles import Article, ArticlePortalDivision, ReaderArticlePortalDivision
+# from ..models.bak_articles import Article, ArticlePortalDivision, ReaderArticlePortalDivision
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal, PortalConfig, UserPortalReader
 from ..models.company import Company

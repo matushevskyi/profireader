@@ -3,7 +3,7 @@ from flask import render_template, redirect, jsonify, json, request, g, url_for,
 from .request_wrapers import tos_required, check_right
 from sqlalchemy import and_
 from ..models.pr_base import Search
-from ..models.articles import ArticlePortalDivision, ReaderArticlePortalDivision
+# from ..models.bak_articles import ArticlePortalDivision, ReaderArticlePortalDivision
 from ..models.portal import PortalDivision, UserPortalReader, Portal, ReaderUserPortalPlan, ReaderDivision
 from .errors import BadDataProvided
 from config import Config

@@ -4,10 +4,10 @@ from flask import render_template, request, url_for, g, redirect, abort
 from ..models.company import Company, UserCompany
 from ..models.translate import TranslateTemplate
 from .request_wrapers import check_right
-from ..models.articles import Article
+from ..models.materials import Material, Publication
 from ..models.portal import PortalDivision
 
-from ..models.articles import ArticleCompany, ArticlePortalDivision
+# from ..models.bak_articles import ArticleCompany, ArticlePortalDivision
 from utils.db_utils import db
 from .pagination import pagination
 from config import Config
@@ -51,21 +51,21 @@ def materials(company_id):
 @company_bp.route('/<string:company_id>/materials/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
 def materials_load(json, company_id):
-    subquery = ArticleCompany.subquery_company_materials(company_id, json.get('filter'), json.get('sort'))
+    subquery = Material.subquery_company_materials(company_id, json.get('filter'), json.get('sort'))
     materials, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
 
     grid_filters = {
         'portal.name': [{'value': portal, 'label': portal} for portal_id, portal in
-                        ArticlePortalDivision.get_portals_where_company_send_article(company_id).items()],
-        'material_status': Grid.filter_for_status(ArticleCompany.STATUSES),
-        'status': Grid.filter_for_status(ArticlePortalDivision.STATUSES),
-        'publication_visibility': Grid.filter_for_status(ArticlePortalDivision.VISIBILITIES)
+                        Material.get_portals_where_company_send_article(company_id).items()],
+        'material_status': Grid.filter_for_status(Material.STATUSES),
+        'status': Grid.filter_for_status(Publication.STATUSES),
+        'publication_visibility': Grid.filter_for_status(Publication.VISIBILITIES)
 
 
     }
     # PublishUnpublishInPortal(publication=publication, portal=publication.division.portal,
     #                          company=publication.division.portal.own_company).actions()
-    return {'grid_data': Grid.grid_tuple_to_dict([Article.get_material_grid_data(material) for material in materials]),
+    return {'grid_data': Grid.grid_tuple_to_dict([Material.get_material_grid_data(material) for material in materials]),
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in grid_filters.items()},
             'total': count
