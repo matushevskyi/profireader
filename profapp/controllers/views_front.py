@@ -48,7 +48,6 @@ def subscribe_to_portal():
             redirect(url_for('reader.list_reader'))
         else:
             url = '//profireader.com/subscribe/' + portal.id
-            print(url)
             redirect(url)
     return ''
 
