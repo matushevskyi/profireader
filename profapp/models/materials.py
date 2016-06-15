@@ -95,7 +95,7 @@ class Material(Base, PRBase):
     def is_active(self):
         return True
 
-    def get_client_side_dict(self, fields='id,cr_tm,md_tm,company_id,title,subtitle,short,keywords,company.id|name',
+    def get_client_side_dict(self, fields='id,cr_tm,md_tm,image_file_id,company_id,title,subtitle,author,short,keywords,company.id|name',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
@@ -119,7 +119,7 @@ class Material(Base, PRBase):
 
     @staticmethod
     def after_update(mapper=None, connection=None, target=None):
-        target.elastic_replace()
+        # target.elastic_replace()
         pass
 
     @staticmethod
@@ -141,7 +141,7 @@ class Material(Base, PRBase):
     @staticmethod
     def get_material_grid_data(material):
         from ..models.rights import PublishUnpublishInPortal
-        dict = material.get_client_side_dict(fields='md_tm,title,editor.profireader_name,id')
+        dict = material.get_client_side_dict(fields='image_file_id,md_tm,title,editor.profireader_name,id')
         dict.update({'portal.name': None if len(material.publications) == 0 else '', 'level': True})
         dict.update({'actions': None if len(material.publications) == 0 else '', 'level': True})
         list = [utils.dict_merge(
@@ -202,7 +202,8 @@ class Material(Base, PRBase):
             folder_id = Company.get(self.company_id).system_folder_file_id
         else:
             folder_id = self.company.system_folder_file_id
-            self.image_file_id = self.set_image_cropped_file(Material.logo_file_properties(self),
+
+        self.image_file_id = self.set_image_cropped_file(self.logo_file_properties(),
                                                                  client_data, self.image_file_id, folder_id)
         return self
 

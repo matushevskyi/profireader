@@ -43,7 +43,6 @@ def article_show_form(material_id=None, company_id=None):
 def load_form_create(json, company_id=None, material_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
-
     # available_tag_names = None
 
     if material_id:  # companys version. always updating existing
@@ -55,7 +54,7 @@ def load_form_create(json, company_id=None, material_id=None):
     #     # available_tags = PortalDivision.get(portal_division_id).portal_division_tags
     #     # available_tag_names = list(map(lambda x: getattr(x, 'name', ''), available_tags))
     else:
-        material = Material(company=Company.get(company_id), company_id =company_id, editor=g.user)
+        material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user)
     if action == 'load':
         material_dict = material.get_client_side_dict(more_fields='long|company')
         material_dict['image'] = material.get_image_client_side_dict()
@@ -63,23 +62,16 @@ def load_form_create(json, company_id=None, material_id=None):
         #     article_dict = dict(list(article_dict.items()) + [('tags', article_tag_names)])
         return {'material': material_dict}
     else:
-        parameters = g.filter_json(json, 'material.title|subtitle|short|long|keywords')
+        parameters = g.filter_json(json, 'material.title|subtitle|short|long|keywords|author')
         material.attr(parameters['material'])
         if action == 'validate':
             material.detach()
             return material.validate(material.id is not None)
         else:
-            # if type(articleVersion) == Publication:
-            #     tag_names = json['article']['tags']
-            #     articleVersion.manage_article_tags(tag_names)
-            material_dict = material.set_image_client_side_dict(
-                json['material']['image']).save().get_client_side_dict(more_fields='long|company')
-            # if publication_id:
-            #     articleVersion.insert_after(json['portal_division']['insert_after'],
-            #                                 articleVersion.position_unique_filter())
+            material_dict = material.set_image_client_side_dict(json['material']['image']).save().get_client_side_dict(
+                more_fields='long|company')
             material_dict['image'] = material.get_image_client_side_dict()
-            return {'article': material_dict,
-                    'portal_division': portal_division_dict(material)}
+            return {'material': material_dict}
 
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'])
@@ -160,9 +152,7 @@ def submit_publish(json, article_action):
             article_action)
         if check != True:
             return check
-        publication = Publication(title=material.title, subtitle=material.subtitle,
-                                            keywords=material.keywords,
-                                            short=material.short, long=material.long, article_company_id=material.id)
+        publication = Publication(material=material)
         more_data_to_ret = {
             'material': {'id': material.id},
             'can_material_also_be_published': check == True
@@ -238,8 +228,8 @@ def list_reader(page=1):
     else:
         articles, pages, page = Search().search({'class': Publication,
                                                  'filter': (Publication.id == db(ReaderPublication,
-                                                                                           user_id=g.user.id,
-                                                                                           favorite=True).subquery().c.
+                                                                                 user_id=g.user.id,
+                                                                                 favorite=True).subquery().c.
                                                             article_portal_division_id),
                                                  'tags': True, 'return_fields': 'default_dict'}, page=page,
                                                 search_text=search_text)

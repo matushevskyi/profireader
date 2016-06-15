@@ -397,7 +397,7 @@ class PRBase:
     def __init__(self):
         self.query = g.db.query_property()
 
-# TODO: YG by OZ: move this (to next comment) static methods to utils (just like `putInRange` moved)
+    # TODO: YG by OZ: move this (to next comment) static methods to utils (just like `putInRange` moved)
 
     @staticmethod
     def get_ordered_dict(list_of_dicts, **kwargs):
@@ -420,7 +420,6 @@ class PRBase:
         except Exception:
             return onfail
 
-
     @staticmethod
     def parse_timestamp(str):
         try:
@@ -439,7 +438,7 @@ class PRBase:
     def del_attr_by_keys(dict, keys):
         return {key: dict[key] for key in dict if key not in keys}
 
-# TODO: YG by OZ: move this static methods to utils
+    # TODO: YG by OZ: move this static methods to utils
 
 
     def position_unique_filter(self):
@@ -498,9 +497,9 @@ class PRBase:
 
         if selected_by_user_type == 'browse':
             if old_image_cropped:
-                if selected_by_user['image_file_id'] == \
-                        old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
-                    selected_by_user['crop_coordinates'], column_data):
+                if selected_by_user[
+                    'image_file_id'] == old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
+                        selected_by_user['crop_coordinates'], column_data):
                     return old_croped_image_id
                 elif selected_by_user['image_file_id'] == old_image_cropped.original_image_id \
                         and not old_image_cropped.same_coordinates(selected_by_user['crop_coordinates'], column_data):
@@ -598,7 +597,6 @@ class PRBase:
     def expunge(self):
         g.db.expunge(self)
         return self
-
 
     def get_client_side_dict(self, fields='id',
                              more_fields=None):
@@ -798,7 +796,6 @@ class PRBase:
         event.listen(cls, 'after_insert', cls.add_to_search)
         event.listen(cls, 'after_update', cls.update_search_table)
         event.listen(cls, 'after_delete', cls.delete_from_search)
-
 
     @staticmethod
     def datetime_from_utc_to_local(utc_datetime, format):

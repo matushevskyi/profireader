@@ -261,7 +261,7 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
     def get_allowed_attributes(self, key, value):
         if key == 'material_id':
             key = 'material'
-            value = ArticleCompany.get(value)
+            value = Material.get(value)
         return key, value
 
     ACTIONS = {

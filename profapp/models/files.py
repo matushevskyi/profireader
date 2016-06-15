@@ -34,8 +34,7 @@ class File(Base, PRBase):
 
     company_id = Column(TABLE_TYPES['id_profireader'],
                         ForeignKey('company.id'))
-    article_portal_division_id = Column(TABLE_TYPES['id_profireader'],
-                                        ForeignKey('article_portal_division.id'))
+    # publication_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('publication.id'))
     copyright_author_name = Column(TABLE_TYPES['name'],
                                    default='',
                                    nullable=False)
@@ -458,7 +457,9 @@ class File(Base, PRBase):
             g.db.add_all([file, file_cont])
             g.db.flush()
         except:
+            print("Unexpected error:", sys.exc_info()[0])
             file.delete()
+            raise
         return file
 
     @staticmethod

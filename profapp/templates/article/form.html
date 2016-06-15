@@ -15,6 +15,8 @@
     <script>
         module.controller('article_edit', ['$scope', function ($scope) {
 
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
+
             $scope.$$translate = {{ translates('article_edit')|safe }};
             $scope.data = {};
 
@@ -122,6 +124,14 @@
                            name="article_keywords" jng-pattern="/[\wа-яёі']{2}/i">
                     <div ng-show="newMaterial.article_keywords.$error.pattern" class="error-input">
                         {{ _('The keywords should be longer!') }}
+                    </div>
+
+                    {{ _('Author') }}
+                    <input class="form-control article-edit-input" ng-model="data.material.author"
+                           pr-validation-answer="data_validation:author"
+                           name="article_author" jng-pattern="/[\wа-яёі']{2}/i">
+                    <div ng-show="newMaterial.article_author.$error.pattern" class="error-input">
+                        {{ _('The author should be longer!') }}
                     </div>
                 </div>
 

@@ -151,8 +151,7 @@
         <h4>{{ _('Created at') }} {{get_local_time(data.material.cr_tm)}}</h4>
         <h4>{{ _('Last modified at') }} {{get_local_time(data.material.md_tm)}}</h4>
         <hr/>
-        <button pr-user-can="data.actions.EDIT" class="btn fr" ng-click="updateMaterial(data.material.id, data.material.company_id)
-        ">{{ _('Update material') }}</button>
+        <button pr-user-can="data.actions.EDIT" class="btn fr" ng-click="updateMaterial(data.material.id, data.material.company_id)">{{ _('Update material') }}</button>
         <div class="material-details-article-preview">
 
             {% endraw %}{% include 'partials/article_details.html' %}{% raw %}
