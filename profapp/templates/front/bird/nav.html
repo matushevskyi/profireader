@@ -24,8 +24,6 @@
                                                                                  class="block-item-img"></a>
             </div>
             <ul class="nav navbar-nav">
-
-
                 {% for division in portal.divisions %}
                     {% if division.portal_division_type_id != 'index' %}
                         <li {% if division.id == current_division.id %}class="active"{% endif %}>
@@ -45,4 +43,3 @@
     </div>
 
 </nav>
-

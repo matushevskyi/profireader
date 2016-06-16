@@ -14,6 +14,7 @@
         </div>
         {% endif %}
 
+
             <img src="//static.profireader.com/static/images/0.gif" class="block-item-img"
                  style="background-image:url({{ fileUrl(member['company']['logo_file_id']) }});"/>
             <a href="{{ url_for('front.subportal', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}"
