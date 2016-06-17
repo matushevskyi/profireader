@@ -1,4 +1,4 @@
-from .blueprints_declaration import auth_bp
+from .blueprints_declaration import auth_bp, tutorial_bp
 from flask import g, request, url_for, render_template, flash, current_app, session
 from ..constants.SOCIAL_NETWORKS import DB_FIELDS, SOC_NET_FIELDS, \
     SOC_NET_FIELDS_SHORT
@@ -330,6 +330,10 @@ def help_message(json):
         redirect(url_for('reader.list_reader'))
         return True
 
+@tutorial_bp.route('/help/tutorial', methods=["OK"])
+def help_login_tutorial():
+    print('213123')
+    return True
 
 # @auth_bp.route('/change-password', methods=['GET', 'OK'])
 # @login_required
