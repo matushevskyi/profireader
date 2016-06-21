@@ -269,7 +269,10 @@ class User(Base, UserMixin, PRBase):
             return "Sorry!You must be confirmed!"
         return True
 
+
+
     def validate(self, is_new):
+
         ret = super().validate(is_new)
         if not re.match(r'[^\s]{3}', str(self.profireader_name)):
             ret['errors']['profireader_name'] = 'Your username must be at least 3 characters long.'
@@ -289,7 +292,7 @@ class User(Base, UserMixin, PRBase):
             'none': noavatar_url,
             'crop': True,
             'image_size': [300, 400],
-            'min_size': [100,80],
+            'min_size': [100,100],
             'aspect_ratio': [0.5, 2.0],
             'preset_urls': {'glyphicon-share': self.gravatar(size=500)},
             'no_selection_url': noavatar_url

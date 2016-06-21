@@ -4,7 +4,9 @@ rand=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
 
 PWD=$(pwd)
 
-sudo apt-get install dialog
+if [[ $(dpkg -l dialog | grep Version) == '' ]]; then
+    sudo apt-get install dialog
+fi
 
 function e {
     echo "$*"
@@ -164,10 +166,10 @@ apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcach
     }
 
 function menu_hosts {
-    conf_comm "sed -i '/\(db\|web\|mail\|memcached\).profi/d' /etc/hosts
+    conf_comm "sed -i '/\(db\|web\|mail\|memcached\|elastic\).profi/d' /etc/hosts
 sed -i '/profireader.com/d' /etc/hosts
 echo '' >> /etc/hosts
-echo '127.0.0.1 db.profi web.profi mail.profi memcached.profi' >> /etc/hosts
+echo '127.0.0.1 db.profi web.profi mail.profi memcached.profi elastic.profi' >> /etc/hosts
 echo '127.0.0.1 file001.profireader.com' >> /etc/hosts
 echo '127.0.0.1 static.profireader.com' >> /etc/hosts
 echo '127.0.0.1 profireader.com rodynni.firmy oles.profireader.com rodynnifirmy.profireader.com derevoobrobka.profireader.com viktor.profireader.com md.profireader.com oleh.profireader.com fsm.profireader.com' >> /etc/hosts
@@ -217,8 +219,8 @@ function menu_python_3 {
     if [[ -e $destdir ]]; then
 	echo "error: $destdir exists"
     else
-	warn_about_rm '/usr/bin/python3'
-	warn_about_rm '/usr/bin/pyvenv'
+#	warn_about_rm '/usr/bin/python3'
+#	warn_about_rm '/usr/bin/pyvenv'
 	conf_comm "cd /tmp/
 rm -rf 'Python-$pversion/*'
 rm 'Python-$pversion.tgz'
@@ -228,10 +230,6 @@ cd 'Python-$pversion'
 ./configure --prefix='$destdir'
 make
 make install
-rm /usr/bin/python3
-rm /usr/bin/pyvenv
-ln -s $destdir/bin/python3 /usr/bin/python3
-ln -s $destdir/bin/pyvenv /usr/bin/pyvenv
 cd /tmp
 rm -rf 'Python-$pversion'" sudo venv
     fi
@@ -239,10 +237,11 @@ rm -rf 'Python-$pversion'" sudo venv
 
 function menu_venv {
     destdir=$(rr 'destination dir for virtual directory' .venv)
+    pythondir=$(rr 'python dir' /usr/local/opt/python-3.4.2)
     if [[ -e $destdir ]]; then
 	echo "error: $destdir exists"
     else
-	conf_comm "pyvenv $destdir
+	conf_comm "$pythondir/bin/pyvenv $destdir
 cp ./activate_this.py $destdir/bin" nosudo modules
     fi
     }

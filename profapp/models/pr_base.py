@@ -393,6 +393,7 @@ class Grid:
 
 
 class PRBase:
+
     def __init__(self):
         self.query = g.db.query_property()
 

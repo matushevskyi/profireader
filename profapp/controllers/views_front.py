@@ -30,12 +30,12 @@ def get_division_for_subportal(portal_id, member_company_id):
              PortalDivision.id == PortalDivisionSettingsCompanySubportal.portal_division_id). \
         filter(MemberCompanyPortal.company_id == member_company_id). \
         filter(PortalDivision.portal_id == portal_id)
+    # return q.one().portal_division
     PortalDivisionSettings = q.all()
     if (len(PortalDivisionSettings)):
         return PortalDivisionSettings[0].portal_division
     else:
-        return g.db().query(PortalDivision).filter_by(portal_id=portal_id,
-                                                      portal_division_type_id='index').one()
+        return g.db().query(PortalDivision).filter_by(portal_id=portal_id, portal_division_type_id='catalog').one()
 
 
 @front_bp.route('subscribe_to_portal/')
@@ -48,7 +48,6 @@ def subscribe_to_portal():
             redirect(url_for('reader.list_reader'))
         else:
             url = '//profireader.com/subscribe/' + portal.id
-            print(url)
             redirect(url)
     return ''
 
@@ -164,6 +163,8 @@ def subportal_division(division_name, member_company_id, member_company_name, pa
         order_by=order, pagination=True, items_per_page=items_per_page)
 
     add_tags(articles)
+
+
 
     # sub_query = Article.subquery_articles_at_portal(
     #     search_text=search_text,
@@ -327,9 +328,12 @@ def index(page=1):
 def division(division_name, page=1):
     search_text, portal, _ = get_params()
     division = g.db().query(PortalDivision).filter_by(portal_id=portal.id, name=division_name).one()
+    subportal_division = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
+                                                                portal_division_type_id='index').one()
 
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
                                                   division_name=division.name)
+
     if division.portal_division_type_id == 'catalog' and search_text:
         return redirect(url_for('front.index', search_text=search_text))
     if division.portal_division_type_id == 'news' or division.portal_division_type_id == 'events':

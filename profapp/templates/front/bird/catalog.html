@@ -1,3 +1,4 @@
+{# division catalog in bird layout #}
 {% extends 'layout.html' %}
 {% block content %}
 
@@ -12,6 +13,7 @@
             {% endfor %}
         </div>
         {% endif %}
+
 
             <img src="//static.profireader.com/static/images/0.gif" class="block-item-img"
                  style="background-image:url({{ fileUrl(member['company']['logo_file_id']) }});"/>
