@@ -1,1 +1,12 @@
-<h3>Messenger in develop</h3>
+{% extends "index_lazy_layout.html" %}
+
+{% block title %}Profireader - {{ _('help') }}{% endblock title %}
+{% block head %}
+    {{ super() }}
+{% endblock head %}
+
+{% block content %}
+    <script>
+    $('body').prepend('<iframe style="position: absolute; width: 100%; height: 100%;" src="/static/registration_via_email/Registration_via_email.htm"></iframe>');
+    </script>
+{% endblock %}
