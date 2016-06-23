@@ -15,7 +15,7 @@
     <h2 class="item-title">{{ material['title']|safe }}</h2>
 
     <h3 class="item-subtitle">{{ material['subtitle']|safe }}</h3>
-    <div class="s-cover-l" style="padding-bottom: 10px"><img width="300" height="240"  {{ prImage(material['image_file_id']) }}></div>
+    <div class="s-cover-l" style="padding-bottom: 10px"><img width="300" height="240"  {{ prImage(url = material['illustration']['url']) }}></div>
     <div class="article-short">
         {{ material['short']|safe }}
     </div>

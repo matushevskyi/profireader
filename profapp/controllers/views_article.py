@@ -7,7 +7,6 @@ from .request_wrapers import ok, tos_required, check_right
 from .pagination import pagination
 from config import Config
 from .views_file import crop_image
-from ..models.files import ImageCroped
 from ..models.company import Company, UserCompany
 from ..models.tag import Tag, TagPublication
 from ..models.materials import Material, Publication
@@ -57,7 +56,7 @@ def load_form_create(json, company_id=None, material_id=None):
         material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user)
     if action == 'load':
         material_dict = material.get_client_side_dict(more_fields='long|company')
-        material_dict['image'] = material.get_image_client_side_dict()
+        # material_dict['illustration'] = material.get_image_client_side_dict()
         # if publication_id:
         #     article_dict = dict(list(article_dict.items()) + [('tags', article_tag_names)])
         return {'material': material_dict}
@@ -68,8 +67,8 @@ def load_form_create(json, company_id=None, material_id=None):
             material.detach()
             return material.validate(material.id is not None)
         else:
-            material_dict = material.set_image_client_side_dict(json['material']['image']).save().get_client_side_dict(
-                more_fields='long|company')
+            material_dict = material.set_image_client_side_dict(json['material']['image']).save()\
+                .get_client_side_dict(more_fields='long|company')
             material_dict['image'] = material.get_image_client_side_dict()
             return {'material': material_dict}
 

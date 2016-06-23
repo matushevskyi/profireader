@@ -9,7 +9,7 @@ from ..constants.SEARCH import RELEVANCE
 from sqlalchemy import orm
 from config import Config
 import simplejson
-from .files import File, ImageCroped
+from .files import File, FileImg
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from ..utils import fileUrl
 from ..models.tag import Tag, TagMembership
@@ -122,7 +122,7 @@ class Portal(Base, PRBase):
 
     def get_logo_client_side_dict(self):
         return self.get_image_cropped_file(self.logo_file_properties(),
-                                           db(ImageCroped, croped_image_id=self.logo_file_id).first())
+                                           db(FileImg, croped_image_id=self.logo_file_id).first())
 
     def set_logo_client_side_dict(self, client_data):
         if client_data['selected_by_user']['type'] == 'preset':

@@ -15,9 +15,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from utils.db_utils import db
 from sqlalchemy import String
+from . import country
 import hashlib
 from flask.ext.login import UserMixin
-from .files import File, ImageCroped
+from .files import File, FileImg
 from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
 from ..utils import fileUrl
@@ -426,7 +427,7 @@ class User(Base, UserMixin, PRBase):
 
     def get_avatar_client_side_dict(self):
         ret = self.get_image_cropped_file(self.logo_file_properties(),
-                                             db(ImageCroped, croped_image_id=self.avatar_file_id).first())
+                                          db(FileImg, croped_image_id=self.avatar_file_id).first())
 
         if self.profireader_avatar_url == self.gravatar(size=500):
             ret['selected_by_user'] = {'type': 'preset', 'class': 'glyphicon-share'}

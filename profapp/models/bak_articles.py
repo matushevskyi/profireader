@@ -14,7 +14,7 @@ import re
 from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
-from .files import ImageCroped
+from .files import FileImg
 from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument, elasticsearch
@@ -721,8 +721,8 @@ class Article(Base, PRBase):
 
     @staticmethod
     def get_image_client_side_dict(article):
-        return article.get_image_cropped_file(Article.logo_file_properties(article),
-                                              db(ImageCroped, croped_image_id=article.image_file_id).first())
+        return article.get_image_cropped_file(Article.image_cropping_properties(article),
+                                              db(FileImg, croped_image_id=article.image_file_id).first())
 
     @staticmethod
     def set_image_client_side_dict(article, client_data):

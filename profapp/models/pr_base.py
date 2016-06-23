@@ -1,4 +1,5 @@
 from ..constants.TABLE_TYPES import TABLE_TYPES
+from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Table, Column, Integer, Text, ForeignKey, String, Boolean, or_, and_, text, desc, asc, join
 from sqlalchemy.orm import relationship, backref, make_transient, class_mapper, aliased
 from sqlalchemy.sql import func
@@ -24,6 +25,7 @@ import base64
 from PIL import Image
 from io import BytesIO
 from ..utils import fileUrl, fileID
+from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
 
 Base = declarative_base()
 
@@ -489,60 +491,6 @@ class PRBase:
 
         return self
 
-    def set_image_cropped_file(self, column_data, user_data, old_croped_image_id, folder_id):
-        from ..models.files import File, ImageCroped
-        selected_by_user = user_data['selected_by_user']
-        selected_by_user_type = selected_by_user['type']
-        old_image_cropped = db(ImageCroped, croped_image_id=old_croped_image_id).first()
-
-        if selected_by_user_type == 'browse':
-            if old_image_cropped:
-                if selected_by_user[
-                    'image_file_id'] == old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
-                        selected_by_user['crop_coordinates'], column_data):
-                    return old_croped_image_id
-                elif selected_by_user['image_file_id'] == old_image_cropped.original_image_id \
-                        and not old_image_cropped.same_coordinates(selected_by_user['crop_coordinates'], column_data):
-                    original_image = File.get(selected_by_user['image_file_id'])
-                    return original_image.crop(selected_by_user['crop_coordinates'],
-                                               folder_id, column_data, old_image_cropped)
-                else:
-                    original_image = File.get(selected_by_user['image_file_id'])
-            else:
-                original_image = File.get(selected_by_user['image_file_id'])
-            content = original_image.file_content.content
-
-        if old_image_cropped:
-            old_original_image = File.get(old_image_cropped.original_image_id)
-            if old_original_image:
-                old_original_image.delete()
-
-        if selected_by_user_type == 'none':
-            return None
-
-        if selected_by_user_type == 'upload':
-            imgdataContent = selected_by_user['file']['content']
-            image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
-            content = base64.b64decode(image_data)
-
-        name = selected_by_user['file']['name'] if selected_by_user_type == 'upload' else original_image.name
-        mime = selected_by_user['file']['mime'] if selected_by_user_type == 'upload' else original_image.mime
-
-        image_pil = Image.open(BytesIO(content))
-        if image_pil.width > column_data['image_size'][1] * 10 and image_pil.height > column_data['image_size'][0] * 10:
-            cont = image_pil.resize((int(column_data['image_size'][1] * 10), int(column_data['image_size'][0] * 10)))
-            content = BytesIO()
-            cont.save(content, mime.split('/')[-1].upper())
-            content = content.getvalue()
-
-        new_orginal_image = File.uploadLogo(content, name, mime, folder_id, author={self.__class__.__name__: self})
-
-        if 'error' in File.check_image_mime(new_orginal_image.id):
-            resp = self.get_client_side_dict()
-            resp.update({'error': True})
-            return resp
-        return new_orginal_image.crop(selected_by_user['crop_coordinates'], folder_id, column_data)
-
     def get_image_cropped_file(self, parameters={}, croped_image_file_id=None):
         ret = {
             'upload': parameters.get('upload'),
@@ -633,9 +581,10 @@ class PRBase:
             req_relationships[column_name].append(columns)
 
         def get_next_level(child, nextlevelargs, prefix, standard_fields_required):
-            in_next_level_dict = child.to_dict(*nextlevelargs, prefix=prefix)
+            in_next_level_dict = {k: v for k, v in child.items() if k in nextlevelargs} if \
+                isinstance(child, dict) else child.to_dict(*nextlevelargs, prefix=prefix)
             if standard_fields_required:
-                in_next_level_dict.update(child.get_client_side_dict())
+                in_next_level_dict.update(child if isinstance(child, dict) else child.get_client_side_dict())
             return in_next_level_dict
 
         for arguments in args:
@@ -651,6 +600,12 @@ class PRBase:
 
         columns = class_mapper(self.__class__).columns
         relations = {a: b for (a, b) in class_mapper(self.__class__).relationships.items()}
+        for a, b in class_mapper(self.__class__).all_orm_descriptors.items():
+            if isinstance(b, AssociationProxy):
+                relations[a] = b
+        # association_proxies = {a: b for (a, b) in class_mapper(self.__class__).all_orm_descriptors.items()
+        #                        if isinstance(b, AssociationProxy)}
+        pass
 
         for col in columns:
             if col.key in req_columns or (__debug and '*' in req_columns):
@@ -676,6 +631,7 @@ class PRBase:
                     #                          req_columns.keys())),))
 
         for relationname, relation in relations.items():
+            rltn = relations[relation.target_collection] if isinstance(relation, AssociationProxy) else relation
             if relationname in req_relationships or (__debug and '*' in req_relationships):
                 if relationname in req_relationships:
                     nextlevelargs = req_relationships[relationname]
@@ -688,7 +644,7 @@ class PRBase:
                     standard_fields_required = True
                     nextlevelargs.remove('~')
 
-                if relation.uselist:
+                if rltn.uselist:
                     add = [get_next_level(child, nextlevelargs, prefix + relationname + '.', standard_fields_required)
                            for child in related_obj]
                 else:

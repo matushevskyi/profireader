@@ -14,10 +14,70 @@ import re
 from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
-from .files import ImageCroped
+from .files import FileImg, FileImgCropProperties
 from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument, elasticsearch
+from sqlalchemy.ext.associationproxy import association_proxy
+
+
+class FileImgProxy:
+    browse = True
+    upload = True
+    crop = True
+    image_size = [600, 600]
+    min_size = [60, 60]
+    aspect_ratio = [0.1, 10]
+    preset_urls = {}
+    # none = utils.fileUrl(FOLDER_AND_FILE.no_image())
+    no_selection_url = utils.fileUrl(FOLDER_AND_FILE.no_image())
+
+    def __init__(self, browse=None, upload=None, crop=None, image_size=None, min_size=None,
+                 aspect_ratio=None, preset_urls=None, no_selection_url=None):
+        if browse is not None:
+            self.browse = browse
+        if upload is not None:
+            self.upload = upload
+        if crop is not None:
+            self.crop = crop
+        if image_size is not None:
+            self.image_size = image_size
+        if min_size is not None:
+            self.min_size = min_size
+        if aspect_ratio is not None:
+            self.aspect_ratio = aspect_ratio
+        if preset_urls is not None:
+            self.preset_urls = preset_urls
+        if no_selection_url is not None:
+            self.no_selection_url = no_selection_url
+
+    def proxy_getter(self, obj):
+        return {
+            'url': utils.fileUrl(obj.provenance_image_file_id) if obj else self.no_selection_url,
+            'selected_by_user': {'type': 'provenance',
+                                 'crop': obj.get_client_side_dict(),
+                                 'provenance_file_id': obj.provenance_image_file_id
+                                 } if obj else {'type': 'none'},
+            'cropper': {
+                'browse': self.browse,
+                'upload': self.upload,
+                'crop': self.crop,
+                'image_size': self.image_size,
+                'min_size': self.min_size,
+                'aspect_ratio': self.aspect_ratio,
+                'preset_urls': self.preset_urls,
+                'no_selection_url': self.no_selection_url
+            }}
+
+    def proxy_setter(self, obj, value):
+        print((obj, value))
+        return None
+
+    def get_factory(self, *args, **kwargs):
+        return self.proxy_getter, self.proxy_setter
+
+    def get_proxy(self, target_collection):
+        return association_proxy(target_collection, None, getset_factory=self.get_factory)
 
 
 class Material(Base, PRBase):
@@ -25,7 +85,24 @@ class Material(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     # portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
     # portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
-    image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
+
+    # TODO: OZ by OZ: remove me
+    image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=True)
+
+    illustration_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
+    illustration_file_img = relationship(FileImg, uselist=False)
+
+    # illustration = image_file_association_proxy('illustration_file_img', 'illustration',
+    #                                             getset_factory=image_file_association_proxy)
+
+    illustration = FileImgProxy(image_size=[600, 480],
+                                min_size=[600 / 6, 480 / 6],
+                                aspect_ratio=[600 / 480., 600 / 480.],
+                                # none=utils.fileUrl(FOLDER_AND_FILE.no_article_image()),
+                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_article_image())).get_proxy(
+        'illustration_file_img')
+
+    # illustration_file_img_properties =
 
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
@@ -40,7 +117,8 @@ class Material(Base, PRBase):
     author = Column(TABLE_TYPES['short_name'], nullable=False)
 
     status = Column(TABLE_TYPES['status'], default='NORMAL')
-    STATUSES = {'NORMAL': 'NORMAL', 'EDITING': 'EDITING', 'FINISHED': 'FINISHED', 'DELETED': 'DELETED', 'APPROVED': 'APPROVED'}
+    STATUSES = {'NORMAL': 'NORMAL', 'EDITING': 'EDITING', 'FINISHED': 'FINISHED', 'DELETED': 'DELETED',
+                'APPROVED': 'APPROVED'}
 
     editor_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'), nullable=False)
     editor = relationship(User, uselist=False)
@@ -55,7 +133,6 @@ class Material(Base, PRBase):
                      'long': {'relevance': lambda field='long': RELEVANCE.long},
                      'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
 
-    # elasticsearch begin
     def elastic_get_fields(self):
         return {
             'id': PRElasticField(analyzed=False, setter=lambda: self.id),
@@ -89,16 +166,13 @@ class Material(Base, PRBase):
     def elastic_remove_all_indexes(cls):
         return elasticsearch.remove_index('articles')
 
-    # elasticsearch end
-
-
     def is_active(self):
         return True
 
-    def get_client_side_dict(self, fields='id,cr_tm,md_tm,image_file_id,company_id,title,subtitle,author,short,keywords,company.id|name',
+    def get_client_side_dict(self,
+                             fields='id,cr_tm,md_tm,company_id,illustration_file_img,title,subtitle,author,short,keywords,company.id|name',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
-
 
     def validate(self, is_new):
         ret = super().validate(is_new)
@@ -111,7 +185,6 @@ class Material(Base, PRBase):
             ret['notices']['_'] = 'Ok, you can click submit'
 
         return ret
-
 
     @staticmethod
     def after_insert(mapper=None, connection=None, target=None):
@@ -132,7 +205,6 @@ class Material(Base, PRBase):
         event.listen(cls, 'after_update', cls.after_update)
         event.listen(cls, 'after_delete', cls.after_delete)
 
-
     @staticmethod
     def subquery_company_materials(company_id=None, filters=None, sorts=None):
         sub_query = db(Material, company_id=company_id)
@@ -141,7 +213,7 @@ class Material(Base, PRBase):
     @staticmethod
     def get_material_grid_data(material):
         from ..models.rights import PublishUnpublishInPortal
-        dict = material.get_client_side_dict(fields='image_file_id,md_tm,title,editor.profireader_name,id')
+        dict = material.get_client_side_dict(fields='md_tm,title,editor.profireader_name,id,illustration.url')
         dict.update({'portal.name': None if len(material.publications) == 0 else '', 'level': True})
         dict.update({'actions': None if len(material.publications) == 0 else '', 'level': True})
         list = [utils.dict_merge(
@@ -177,24 +249,6 @@ class Material(Base, PRBase):
             companies[article.company.id] = article.company.name
         return companies
 
-    def logo_file_properties(self):
-        noimage_url = utils.fileUrl(FOLDER_AND_FILE.no_article_image())
-        return {
-            'browse': True,
-            'upload': True,
-            'none': noimage_url,
-            'crop': True,
-            'image_size': [600, 480],
-            'min_size': [100, 80],
-            'aspect_ratio': [300 / 240., 300 / 240.],
-            'preset_urls': {},
-            'no_selection_url': noimage_url
-        }
-
-    def get_image_client_side_dict(self):
-        return self.get_image_cropped_file(self.logo_file_properties(),
-                                               db(ImageCroped, croped_image_id=self.image_file_id).first())
-
     def set_image_client_side_dict(self, client_data):
         if client_data['selected_by_user']['type'] == 'preset':
             client_data['selected_by_user'] = {'type': 'none'}
@@ -203,8 +257,8 @@ class Material(Base, PRBase):
         else:
             folder_id = self.company.system_folder_file_id
 
-        self.image_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-                                                                 client_data, self.image_file_id, folder_id)
+        FileImg.set_image_cropped_file(self.illustration_image_cropped, self.image_cropping_properties(),
+                                       client_data, folder_id)
         return self
 
 
@@ -223,9 +277,7 @@ class Publication(Base, PRBase, PRElasticDocument):
     portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
 
     material_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('material.id'))
-    material = relationship('Material',  cascade="save-update, merge, delete")
-
-
+    material = relationship('Material', cascade="save-update, merge, delete")
 
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
@@ -373,8 +425,6 @@ class Publication(Base, PRBase, PRElasticDocument):
                           back_populates='publications',
                           uselist=False)
 
-
-
     @staticmethod
     def articles_visibility_for_user(portal_id):
         employer = True
@@ -415,7 +465,6 @@ class Publication(Base, PRBase, PRElasticDocument):
     @staticmethod
     def update_article_portal(article_portal_division_id, **kwargs):
         db(Publication, id=article_portal_division_id).update(kwargs)
-
 
     # TODO: SS by OZ: contition `if datetime(*localtime[:6]) > article['publishing_tm']:` should be checked by sql (passed
     # to search function)
@@ -467,7 +516,6 @@ class Publication(Base, PRBase, PRElasticDocument):
         sub_query = Grid.subquery_grid(sub_query, list_filters, list_sorts)
         return sub_query
 
-
     def position_unique_filter(self):
         return and_(Publication.portal_division_id == self.portal_division_id,
                     Publication.position != None)
@@ -502,7 +550,6 @@ class Publication(Base, PRBase, PRElasticDocument):
 
         return ret
 
-
     def set_tags_positions(self):
         tag_position = 0
         for tag in self.tags:
@@ -526,10 +573,8 @@ class Publication(Base, PRBase, PRElasticDocument):
     def after_delete(mapper=None, connection=None, target=None):
         pass
 
-
     @classmethod
     def __declare_last__(cls):
         event.listen(cls, 'after_insert', cls.after_insert)
         event.listen(cls, 'after_update', cls.after_update)
         event.listen(cls, 'after_delete', cls.after_delete)
-

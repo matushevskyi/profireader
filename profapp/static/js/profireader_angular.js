@@ -296,25 +296,31 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 });
 
                 scope.$watch('prCrop', function (newv, oldv) {
-                    // console.log('prCrop prCrop');
+                    console.log('prCrop prCrop', newv, oldv);
                     scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
                     if (!newv) return;
 
                     var selected_by_user = newv['selected_by_user'];
+                    var cropper_options = newv['cropper'];
                     if (!scope.original_model) {
                         scope.original_model = $.extend(true, {}, selected_by_user);
                     }
                     scope.coordinates = [];
                     scope.state = {};
-                    scope.browsable = newv['browse'] ? true : false;
-                    scope.uploadable = newv['upload'] ? true : false;
+                    scope.browsable = cropper_options['browse'] ? true : false;
+                    scope.uploadable = cropper_options['upload'] ? true : false;
                     scope.resetable = true;
-                    scope.noneurl = newv['no_selection_url'];
+                    scope.noneurl = cropper_options['no_selection_url'];
                     scope.options = {};
-                    if (newv.min_size) scope.options['min_width'] = newv.min_size[0];
-                    if (newv.min_size) scope.options['min_height'] = newv.min_size[1];
-                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['min_aspect'] = newv.cropper.aspect_ratio[0];
-                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['max_aspect'] = newv.cropper.aspect_ratio[1];
+                    if (cropper_options.min_size) {
+                        scope.options['min_width'] = cropper_options.min_size[0];
+                        scope.options['min_height'] = cropper_options.min_size[1];
+                    }
+
+                    if (cropper_options.aspect_ratio) {
+                        scope.options['min_aspect'] = cropper_options.aspect_ratio[0];
+                        scope.options['max_aspect'] = cropper_options.aspect_ratio[1];
+                    }
                     scope.setModel(selected_by_user, false);
                 });
 
@@ -343,16 +349,16 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.setModel = function (model, do_not_set_ng_crop) {
 
-                    // console.log('set_model',model);
+                    console.log('set_model', model);
 
                     switch (model['type']) {
-                        case 'browse':
-                            var crd = model.crop_coordinates;
-                            scope.selectedurl = fileUrl(model['image_file_id']);
+                        case 'provenance':
+                            var crd = model.crop;
+                            scope.selectedurl = fileUrl(model['provenance_file_id']);
                             scope.disabled = false;
-                            scope.coordinates = crd ? [crd.x, crd.y, crd.width + crd.x, crd.height + crd.y] : null;
-                            scope.origin = crd ? [crd.origin_x, crd.origin_y] : null;
-                            scope.zoom = crd ? crd.zoom : null;
+                            scope.coordinates = crd ? [crd.crop_left, crd.crop_top, crd.crop_width + crd.crop_left, crd.crop_height + crd.crop_top] : null;
+                            scope.origin = crd ? [crd.origin_left, crd.origin_top] : null;
+                            scope.zoom = crd ? crd.origin_zoom : null;
                             // scope.state = null;
                             break;
                         case 'none':
@@ -460,8 +466,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
     .directive('prDateTimePicker', function ($timeout) {
         return prDatePicker_and_DateTimePicker('prDateTimePicker', $timeout);
     }).directive('prDatePicker', function ($timeout) {
-        return prDatePicker_and_DateTimePicker('prDatePicker', $timeout);
-    })
+    return prDatePicker_and_DateTimePicker('prDatePicker', $timeout);
+})
     .directive('prDatepicker', function () {
         return {
             replace: false,
@@ -506,7 +512,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             restrict: 'A',
             scope: {
                 prImage: '=',
-                prNoImage: '@'
+                prNoImage: '@',
+
             },
             link: function (scope, element, attrs) {
                 var image_reference = attrs['prImage'].split('.').pop();
@@ -1354,14 +1361,14 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         classes_for_row += '{{ grid.options.columnDefs[' + columnindex + '].classes(row.entity.id, row.entity, col.field) }}';
                     }
 
-                    var attributes_for_cell = ' pr-id="{{ row.entity.id }}" ';
+                    var attributes_for_cell = ' ng-if="row.entity.' + col.name + '" pr-id="{{ row.entity.id }}" ';
                     if (col.onclick && col.type !== 'actions' && col.type !== 'editable') {
                         attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\') "';
                     }
 
                     var prefix_img = '';
-                    if (col.img) {
-                        var prefix_img = '<img class="pr-grid-cell-img-prefix" pr-image="row.entity.' + col.img + '"/>';
+                    if (col.img_url) {
+                        var prefix_img = '<img src="//static.profireader.com/static/images/0.gif" class="pr-grid-cell-img-prefix" style="background-size: contain; background-repeat: no-repeat; background-position: center center; background-color: #fff; background-image: url({{ row.entity.' + col.img_url + ' }})" />';
                     }
                     switch (col.type) {
                         case 'link':
@@ -1429,10 +1436,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 gridApi.grid.setGridData()
             };
 
-            gridApi.grid['grid_change_row'] = function(new_row) {
+            gridApi.grid['grid_change_row'] = function (new_row) {
                 $.each(gridApi.grid.options.data, function (index, old_row) {
                     if (old_row['id'] === new_row['id']) {
-                        if(new_row.hasOwnProperty('replace_id')){
+                        if (new_row.hasOwnProperty('replace_id')) {
                             new_row['id'] = new_row['replace_id']
                         }
                         gridApi.grid.options.data[index] = new_row;

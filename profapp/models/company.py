@@ -19,7 +19,7 @@ from .users import User
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from .. import utils
 import re
-from .files import ImageCroped
+from .files import FileImg
 
 
 
@@ -248,7 +248,7 @@ class Company(Base, PRBase):
 
     def get_logo_client_side_dict(self):
         return self.get_image_cropped_file(self.logo_file_properties(),
-                                             db(ImageCroped, croped_image_id=self.logo_file_id).first())
+                                           db(FileImg, croped_image_id=self.logo_file_id).first())
 
     def set_logo_client_side_dict(self, client_data):
         if client_data['selected_by_user']['type'] == 'preset':
