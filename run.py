@@ -8,10 +8,7 @@ parser.add_argument("apptype", default='profi')
 args = parser.parse_args()
 app = create_app(apptype=args.apptype)
 
-
-
 def app_run():
-
     if args.apptype == 'front':
         port = 8888
     elif args.apptype == 'file':
@@ -25,10 +22,5 @@ def app_run():
 
 if __name__ == '__main__':
     app_run()
-
-
-
-
-
 
 

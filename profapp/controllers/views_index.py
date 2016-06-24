@@ -6,6 +6,9 @@ from utils.pr_email import email_send
 from utils.db_utils import db
 from .request_wrapers import check_right
 from ..models.rights import AllowAll
+from .. import utils
+
+print('routes')
 
 @general_bp.route('help/')
 @check_right(AllowAll)
@@ -38,7 +41,8 @@ def portals_list_load(json):
          'filter':(~Portal.id.in_(db(UserPortalReader.portal_id).filter(UserPortalReader.user_id==g.user.id).all())) if g.user else None,
          'return_fields': 'default_dict'},
           page=1, search_text=json.get('text'), pagination=True, items_per_page=5 * json.get('next_page'))
-    return {'list_portals':[PRBase.merge_dicts(p, {'subscribed': True if UserPortalReader.get(portal_id=p_id) else False})
+    return {'list_portals':[utils.dict_merge(p, {'subscribed': True if UserPortalReader.get(portal_id=p_id) else
+    False})
             for p_id, p in ret.items()], 'end': True if page == 1 or page == 0 else False}
 
 

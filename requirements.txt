@@ -31,3 +31,5 @@ beaker==1.8.0
 python-memcached
 #python3-memcached
 yappi
+#elasticsearch
+requests

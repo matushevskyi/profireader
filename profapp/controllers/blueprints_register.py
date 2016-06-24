@@ -15,6 +15,7 @@ from flask import Blueprint
 # help_bp = Blueprint('help', __name__)
 
 from .blueprints_declaration import *
+
 from . import views_index, views_user, views_filemanager, views_article, \
     views_company, views_portal, errors, views_file, views_admin, views_tools, views_help, views_reader, views_tutorial, \
     views_messanger

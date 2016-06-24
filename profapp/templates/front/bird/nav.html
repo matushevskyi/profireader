@@ -7,6 +7,11 @@
             {#        {% include 'social.html' %}#}
             {% include 'subscribe_to_portal.html' %}
         </div>
+    <div class="social-block">
+        {% include 'user_profile.html' %}
+{#        {% include 'social.html' %}#}
+        {% include 'subscribe_to_portal.html' %}
+    </div>
         <!-- Brand and toggle get grouped for better mobile display -->
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse"
@@ -24,8 +29,12 @@
                                                                                  class="block-item-img"></a>
             </div>
             <ul class="nav navbar-nav">
-                {% for division in portal.divisions %}
-                    {% if division.portal_division_type_id != 'index' %}
+                {% for division in portal.divisions %}{% if division.portal_division_type_id != 'index' %}
+                    {% if member_company_division %}
+                        <li {% if member_company_division.id == current_division.id %}class="active"{% endif %}>
+                            <a href="{{ url_for('front.company_member', member_company_id = member_company.id, member_company_name = member_company.name) }}">{{ division.name }}</a>
+                        </li>
+                    {% else %}
                         <li {% if division.id == current_division.id %}class="active"{% endif %}>
                             <a href="{% if division.portal_division_type_id != 'company_subportal' %}
                                 {{ url_for('front.division', division_name=division.name, page=1, search_text='') }}
@@ -43,3 +52,4 @@
     </div>
 
 </nav>
+

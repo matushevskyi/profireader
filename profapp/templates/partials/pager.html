@@ -7,17 +7,17 @@
                     {% for button in range(page_buttons)|reverse %}
                         {% if current_page - (button + 1)> 0 %}
                             <li>
-                                <a href="{{ url_page(page=current_page - (button + 1), search_text=search_text, favorite=favorite) }}">{{ current_page - (button + 1) }}</a>
+                                <a href="{{ url_page(page=current_page - (button + 1)) }}">{{ current_page - (button + 1) }}</a>
                             </li>
                         {% endif %}
                     {% endfor %}
                     <li class="current-page">
-                        <a href="{{ url_page(page=current_page, search_text=search_text, favorite=favorite) }}" style="background-color: #eee;">{{ current_page }}</a>
+                        <a href="{{ url_page(page=current_page) }}" style="background-color: #eee;">{{ current_page }}</a>
                     </li>
                     {% for button in range(page_buttons) %}
                         {% if current_page + (button + 1)< pages %}
                             <li>
-                                <a href="{{ url_page(page=current_page + (button + 1), search_text=search_text, favorite=favorite) }}">{{ current_page + (button + 1) }}</a>
+                                <a href="{{ url_page(page=current_page + (button + 1)) }}">{{ current_page + (button + 1) }}</a>
                             </li>
                         {% endif %}
                     {% endfor %}
@@ -28,16 +28,13 @@
                     {% endif %}
                     {% if current_page != pages %}
                         <li>
-                            <a href="{{ url_page(page=pages, search_text=search_text, favorite=favorite) }}">{{ pages }}</a>
+                            <a href="{{ url_page(page=pages) }}">{{ pages }}</a>
                         </li>
                     {% endif %}
 
                     <li class="next">
                         {% if current_page != pages %}
-
-                            <a href="{{ url_page(page=current_page + 1, search_text=search_text, favorite=favorite) }}"><i
-                                    ></i></a>
-
+                            <a href="{{ url_page(page=current_page + 1) }}"><i></i></a>
                         {% else %}
                         {% endif %}
                     </li>

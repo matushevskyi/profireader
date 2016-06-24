@@ -5,7 +5,7 @@ import json
 from flask import Flask, g, request, current_app, session
 from beaker.middleware import SessionMiddleware
 from authomatic import Authomatic
-from profapp.utils.redirect_url import url_page
+# from profapp.utils.redirect_url import url_page
 from flask import url_for
 from flask.ext.bootstrap import Bootstrap
 # from flask.ext.moment import Moment
@@ -30,7 +30,7 @@ from .models.tools import HtmlHelper
 from .models.pr_base import MLStripper
 import os.path
 import datetime
-from profapp.utils import fileUrl
+from profapp import utils
 
 from flask.sessions import SessionInterface
 from beaker.middleware import SessionMiddleware
@@ -148,7 +148,7 @@ def load_database(db_config):
         g.req = req
         g.filter_json = filter_json
         g.get_url_adapter = get_url_adapter
-        g.fileUrl = fileUrl
+        g.fileUrl = utils.fileUrl
 
     return load_db
 
@@ -202,7 +202,7 @@ def load_user(apptype):
 
 
 def prImage(id, if_no_image=None):
-    file = fileUrl(id, False, if_no_image if if_no_image else "//static.profireader.com/static/images/no_image.png")
+    file = utils.fileUrl(id, False, if_no_image if if_no_image else "//static.profireader.com/static/images/no_image.png")
     return Markup(
             ' src="//static.profireader.com/static/images/0.gif" style="background-position: center; background-size: contain; background-repeat: no-repeat; background-image: url(\'%s\')" ' % (
                 file,))
@@ -513,16 +513,18 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.jinja_env.globals.update(raw_url_for=raw_url_for)
     app.jinja_env.globals.update(pre=pre)
+    app.jinja_env.globals.update(utils=utils)
     app.jinja_env.globals.update(translates=translates)
-    app.jinja_env.globals.update(fileUrl=fileUrl)
+    app.jinja_env.globals.update(fileUrl=utils.fileUrl)
     app.jinja_env.globals.update(prImage=prImage)
-    app.jinja_env.globals.update(url_page=url_page)
+    # app.jinja_env.globals.update(url_page=url_page)
     app.jinja_env.globals.update(config_variables=config_variables)
     app.jinja_env.globals.update(_=translate_phrase)
     app.jinja_env.globals.update(moment=moment)
     app.jinja_env.globals.update(__=translate_html)
     app.jinja_env.globals.update(tinymce_format_groups=HtmlHelper.tinymce_format_groups)
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
+    # url_regenerate
 
     app.jinja_env.filters['nl2br'] = nl2br
     # app.jinja_env.filters['localtime'] = localtime

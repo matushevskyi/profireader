@@ -15,11 +15,12 @@ from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
 from .files import ImageCroped
-from ..utils import fileUrl
+from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+from .elastic import PRElasticField, PRElasticDocument, elasticsearch
 
 
-class ArticlePortalDivision(Base, PRBase):
+class ArticlePortalDivision(Base, PRBase, PRElasticDocument):
     __tablename__ = 'article_portal_division'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     article_company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('article_company.id'))
@@ -33,36 +34,18 @@ class ArticlePortalDivision(Base, PRBase):
     short = Column(TABLE_TYPES['text'], default='')
     long = Column(TABLE_TYPES['text'], default='')
     long_stripped = Column(TABLE_TYPES['text'], nullable=False)
+
     keywords = Column(TABLE_TYPES['keywords'], nullable=False)
+    author = Column(TABLE_TYPES['short_name'], nullable=False)
     md_tm = Column(TABLE_TYPES['timestamp'])
     publishing_tm = Column(TABLE_TYPES['timestamp'])
     event_begin_tm = Column(TABLE_TYPES['timestamp'])
     event_end_tm = Column(TABLE_TYPES['timestamp'])
     position = Column(TABLE_TYPES['position'])
     read_count = Column(TABLE_TYPES['int'], default=0)
+    search_reindexed = Column(TABLE_TYPES['int'], default=0)
 
-    # rticle_portal_division.id = tag_portal_division_article.article_portal_division_id
-    # AND
-    # tag_portal_division_article.tag_portal_division_id = tag_portal_division.id
-    # AND
-    # tag_portal_division.tag_portal_id = tag_portal.id
-
-    # tags =[]
-
-    tags = relationship(Tag, secondary = 'tag_publication', uselist=True)
-    # tags_publication = relationship(TagPublication, uselist=True)
-
-    # primaryjoin=and_(
-    #    id == TagPortalDivisionArticle.article_portal_division_id
-    #    ,TagPortalDivisionArticle.tag_portal_division_id == TagPortalDivision.id
-    #    # ,TagPortalDivisionArticle.tag_portal_division_portal_division_id == TagPortalDivision.portal_division_id
-    #     # ,
-    #     # TagPortalDivisionArticle.tag_portal_division_id == TagPortalDivision.id,
-    #     # TagPortalDivisionArticle.tag_portal_division_portal_division_id == TagPortalDivision.portal_division_id
-    # )
-    # primaryjoin="tag_portal_division_article.article_portal_division.id == article_portal_division.id",
-    # secondaryjoin="C.id == B.c_id",
-    # ,viewonly=True
+    tags = relationship(Tag, secondary='tag_publication', uselist=True)
 
     status = Column(TABLE_TYPES['status'], default='SUBMITTED')
     STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED'}
@@ -84,6 +67,43 @@ class ArticlePortalDivision(Base, PRBase):
                      'short': {'relevance': lambda field='short': RELEVANCE.short},
                      'long': {'relevance': lambda field='long': RELEVANCE.long},
                      'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
+
+    # elasticsearch begin
+    def elastic_get_fields(self):
+        return {
+            'id': PRElasticField(analyzed=False, setter=lambda: self.id),
+            'title': PRElasticField(setter=lambda: self.title, boost=10),
+            'author': PRElasticField(setter=lambda: self.author, boost=10),
+            'subtitle': PRElasticField(setter=lambda: self.subtitle, boost=4),
+            'keywords': PRElasticField(setter=lambda: self.keywords, boost=3),
+            'short': PRElasticField(setter=lambda: self.short, boost=2),
+            'long': PRElasticField(setter=lambda: self.long),
+            'tags': PRElasticField(analyzed=False, setter=lambda: ' '.join([t.text for t in self.tags])),
+            'tag_ids': PRElasticField(analyzed=False, setter=lambda: [t.id for t in self.tags]),
+            'date': PRElasticField(ftype='date', setter=lambda: int(self.publishing_tm.timestamp() * 1000)),
+            'user': PRElasticField(analyzed=False),
+            'user_id': PRElasticField(analyzed=False),
+            'portal': PRElasticField(setter=lambda: self.portal.name),
+            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id),
+            'division': PRElasticField(setter=lambda: self.division.name),
+            'portal_division_id': PRElasticField(analyzed=False, setter=lambda: self.division.id)
+        }
+
+    def elastic_get_index(self):
+        return 'articles'
+
+    def elastic_get_doctype(self):
+        return 'articles'
+
+    def elastic_get_id(self):
+        return self.id
+
+    @classmethod
+    def elastic_remove_all_indexes(cls):
+        return elasticsearch.remove_index('articles')
+
+    # elasticsearch end
+
 
     def is_active(self):
         return True
@@ -185,6 +205,8 @@ class ArticlePortalDivision(Base, PRBase):
         self.like_count = like_count
         # self.portal_id = portal_id
 
+
+
     @staticmethod
     def articles_visibility_for_user(portal_id):
         employer = True
@@ -216,7 +238,7 @@ class ArticlePortalDivision(Base, PRBase):
                    }
         return actions[self.visibility]()
 
-    def get_client_side_dict(self, fields='id|image_file_id|read_count|title|subtitle|short|long_stripped|tags|'
+    def get_client_side_dict(self, fields='id|image_file_id|read_count|title|subtitle|short|long_stripped|tags|author|'
                                           'portal_division_id|image_file_id|position|keywords|cr_tm|md_tm|status|'
                                           'visibility|publishing_tm|event_begin_tm,event_end_tm,company.id|name, '
                                           'division.id|'
@@ -267,9 +289,9 @@ class ArticlePortalDivision(Base, PRBase):
             article['liked'] = ReaderArticlePortalDivision.count_likes(g.user.id, article_id)
             article['list_liked_reader'] = ReaderArticlePortalDivision.get_list_reader_liked(article_id)
             article['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url() if \
-                articles[article_id]['company']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
+                articles[article_id]['company']['logo_file_id'] else utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
             article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-                articles[article_id]['portal']['logo_file_id'] else fileUrl(FOLDER_AND_FILE.no_company_logo())
+                articles[article_id]['portal']['logo_file_id'] else utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
             del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
             list_articles.append(article)
         return list_articles
@@ -306,22 +328,6 @@ class ArticlePortalDivision(Base, PRBase):
         sub_query = Grid.subquery_grid(sub_query, list_filters, list_sorts)
         return sub_query
 
-    # def manage_article_tags(self, new_tags):
-    #     self.tag_assoc_select = []
-    #     g.db.add(self)
-    #     g.db.commit()  # TODO (AA to AA): this solution solves the problem but we MUST find another one to avoid commit on this stage!
-    #     tags_portal_division_article = []
-    #     for i in range(len(new_tags)):
-    #         tag_portal_division_article = TagPortalDivisionArticle(position=i + 1)
-    #         tag_portal_division = \
-    #             g.db.query(TagPortalDivision). \
-    #                 select_from(TagPortalDivision). \
-    #                 join(Tag). \
-    #                 filter(TagPortalDivision.portal_division_id == self.portal_division_id). \
-    #                 filter(Tag.name == new_tags[i]).one()
-    #         tag_portal_division_article.tag_portal_division = tag_portal_division
-    #         tags_portal_division_article.append(tag_portal_division_article)
-    #     self.tag_assoc_select = tags_portal_division_article
 
     def position_unique_filter(self):
         return and_(ArticlePortalDivision.portal_division_id == self.portal_division_id,
@@ -329,6 +335,8 @@ class ArticlePortalDivision(Base, PRBase):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
+        if (self.omit_validation):
+            return ret
 
         if not self.publishing_tm:
             ret['errors']['publishing_tm'] = 'Please select publication date'
@@ -371,6 +379,26 @@ class ArticlePortalDivision(Base, PRBase):
             tag_pub.save()
         return self
 
+    @staticmethod
+    def after_insert(mapper=None, connection=None, target=None):
+        pass
+
+    @staticmethod
+    def after_update(mapper=None, connection=None, target=None):
+        target.elastic_replace()
+        pass
+
+    @staticmethod
+    def after_delete(mapper=None, connection=None, target=None):
+        pass
+
+
+    @classmethod
+    def __declare_last__(cls):
+        event.listen(cls, 'after_insert', cls.after_insert)
+        event.listen(cls, 'after_update', cls.after_update)
+        event.listen(cls, 'after_delete', cls.after_delete)
+
 
 class ArticleCompany(Base, PRBase):
     __tablename__ = 'article_company'
@@ -407,6 +435,7 @@ class ArticleCompany(Base, PRBase):
                                               "ArticlePortalDivision."
                                               "article_company_id",
                                   backref='company_article')
+
     search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
                      'short': {'relevance': lambda field='short': RELEVANCE.short},
                      'subtitle': {'relevance': lambda field='subtitle': RELEVANCE.short},
@@ -482,19 +511,6 @@ class ArticleCompany(Base, PRBase):
             sub_query = sub_query.order_by(own_article.md_tm.desc())
         return sub_query.filter(article_filter.exists())
 
-    # @staticmethod
-    # def subquery_company_materials(company_id = None, **kwargs):
-    #     sub_query = db(ArticleCompany, company_id=company_id)
-    #     if 'filter' in kwargs.keys():
-    #          if 'publication_status' in kwargs['filter'].keys() or 'portals' in kwargs['filter'].keys():
-    #             sub_query = sub_query.join(ArticlePortalDivision,
-    #                                    ArticlePortalDivision.article_company_id == ArticleCompany.id)
-    #             if 'publication_status' in kwargs['filter'].keys():
-    #                 sub_query = sub_query.filter(ArticlePortalDivision.status == kwargs['filter']['publication_status'])
-    #             if 'portals' in kwargs['filter'].keys():
-    #                 sub_query = sub_query.join(PortalDivision,
-    #                                        PortalDivision.id == ArticlePortalDivision.portal_division_id).filter(PortalDivision.portal_id == kwargs['filter']['portals'])
-    #     return sub_query
 
     @staticmethod
     def subquery_company_materials(company_id=None, filters=None, sorts=None):
@@ -568,42 +584,6 @@ class ArticleCompany(Base, PRBase):
                                           '://file001.profireader.com/%s/' % (filesintext[old_image_id],))
         return long_text
 
-    # def clone_for_portal(self, portal_division_id, action, tag_names=[]):
-    #
-    #     article_portal_division = \
-    #         ArticlePortalDivision(
-    #                 title=self.title, subtitle=self.subtitle,
-    #                 short=self.short, long=self.long,
-    #                 portal_division_id=portal_division_id,
-    #                 article_company_id=self.id,
-    #                 keywords=self.keywords,
-    #         )
-    #
-    #     article_portal_division.long = \
-    #         self.clone_for_portal_images_and_replace_urls(portal_division_id, article_portal_division)
-    #
-    #     # TODO (AA to AA): old  tag_portal_division_article should be deleted.
-    #     # TagPortalDivisionArticle(article_portal_division_id=None, tag_portal_division_id=None, position=None)
-    #
-    #     # article_portal_division.portal_division_tags = []
-    #     #
-    #     # tags_portal_division_article = []
-    #     # for i in range(len(tag_names)):
-    #     #     tag_portal_division_article = TagPortalDivisionArticle(position=i + 1)
-    #     #     tag_portal_division = \
-    #     #         g.db.query(TagPortalDivision). \
-    #     #             select_from(TagPortalDivision). \
-    #     #             join(Tag). \
-    #     #             filter(TagPortalDivision.portal_division_id == portal_division_id). \
-    #     #             filter(Tag.name == tag_names[i]).one()
-    #     #
-    #     #     tag_portal_division_article.tag_portal_division = tag_portal_division
-    #     #     tags_portal_division_article.append(tag_portal_division_article)
-    #     # article_portal_division.tag_assoc_select = tags_portal_division_article
-    #
-    #
-    #
-    #     return self
 
     def get_article_owner_portal(self, **kwargs):
         return [art_port_div.division.portal for art_port_div in self.portal_article if kwargs][0]
@@ -727,7 +707,7 @@ class Article(Base, PRBase):
 
     @staticmethod
     def logo_file_properties(article):
-        noimage_url = fileUrl(FOLDER_AND_FILE.no_article_image())
+        noimage_url = utils.fileUrl(FOLDER_AND_FILE.no_article_image())
         return {
             'browse': article.id,
             'upload': True,
@@ -795,7 +775,7 @@ class Article(Base, PRBase):
         dict = material.get_client_side_dict(fields='md_tm,title,editor.profireader_name,id')
         dict.update({'portal.name': None if len(material.portal_article) == 0 else '', 'level': True})
         dict.update({'actions': None if len(material.portal_article) == 0 else '', 'level': True})
-        list = [PRBase.merge_dicts(
+        list = [utils.dict_merge(
             article_portal.get_client_side_dict(fields='portal.name|host,status, id, portal_division_id'),
             {'actions':
                  {'edit': PublishUnpublishInPortal(publication=article_portal,

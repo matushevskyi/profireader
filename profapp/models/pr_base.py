@@ -211,7 +211,7 @@ class Search(Base):
             joined = db(Search.index, func.min(Search.text).label('text'),
                         func.min(Search.table_name).label('table_name'),
                         index=subquery_search.subquery().c.index).filter(
-                    Search.kind.in_(tuple(field_name))).group_by(Search.index)
+                Search.kind.in_(tuple(field_name))).group_by(Search.index)
             return joined
 
         subquery_search = db(Search.index.label('index'),
@@ -220,7 +220,7 @@ class Search(Base):
                              func.min(Search.md_tm).label('md_tm'),
                              func.max(Search.position).label('position'),
                              func.max(Search.text).label('text')).filter(
-                or_(*self.__get_search_params(*args))).group_by('index')
+            or_(*self.__get_search_params(*args))).group_by('index')
         if type(ord_by) in (str, list, tuple):
             order = self.__get_order('text', 'text')
             subquery_search = add_joined_search(ord_by)
@@ -233,26 +233,26 @@ class Search(Base):
             subquery_search = subquery_search.order_by(order)
         else:
             subquery_search = subquery_search.order_by(order).order_by(
-                    self.__get_order('md_tm', 'md_tm'))
+                self.__get_order('md_tm', 'md_tm'))
         return subquery_search
 
     def __get_order(self, order_name, field):
         order_name += '+' if self.__desc_asc == 'desc' else '-'
         result = {'text+': lambda field_name: desc(func.max(getattr(Search, field_name, Search.text))),
                   'text-': lambda field_name: asc(func.max(
-                          getattr(Search, field_name, Search.text))),
+                      getattr(Search, field_name, Search.text))),
                   'md_tm+': lambda field_name: desc(func.min(
-                          getattr(Search, field_name, Search.md_tm))),
+                      getattr(Search, field_name, Search.md_tm))),
                   'md_tm-': lambda field_name: asc(func.min(
-                          getattr(Search, field_name, Search.md_tm))),
+                      getattr(Search, field_name, Search.md_tm))),
                   'relevance+': lambda field_name: desc(func.sum(
-                          getattr(Search, field_name, Search.relevance))),
+                      getattr(Search, field_name, Search.relevance))),
                   'relevance-': lambda field_name: asc(func.sum(
-                          getattr(Search, field_name, Search.relevance))),
+                      getattr(Search, field_name, Search.relevance))),
                   'position+': lambda field_name: desc(func.max(
-                          getattr(Search, field_name, Search.position))),
+                      getattr(Search, field_name, Search.position))),
                   'position-': lambda field_name: asc(func.max(
-                          getattr(Search, field_name, Search.position)))
+                      getattr(Search, field_name, Search.position)))
                   }[order_name](field)
         return result
 
@@ -310,7 +310,7 @@ class Search(Base):
                 'Parameter page is not integer, or page < 1 .'
             assert (getattr(args[0]['class'], str(ord_by), False) is not False) or \
                    (type(ord_by) is int) or type(
-                    ord_by is (list or tuple)), \
+                ord_by is (list or tuple)), \
                 'Bad value for parameter "order_by".' \
                 'You requested attribute which is not in class %s or give bad kwarg type.' \
                 'Can be string, list or tuple %s given' % \
@@ -323,7 +323,7 @@ class Search(Base):
             tb_info = traceback.extract_tb(tb)
             filename_, line_, func_, text_ = tb_info[-1]
             message = 'An error occurred on File "{file}" line {line}\n {assert_message}'.format(
-                    line=line_, assert_message=e.args, file=filename_)
+                line=line_, assert_message=e.args, file=filename_)
             raise errors.BadDataProvided({'message': message})
 
 
@@ -381,7 +381,7 @@ class Grid:
         if sorts:
             for sort in sorts:
                 query = query.order_by(sort['field'].asc()) if sort['value'] == 'asc' else query.order_by(
-                        sort['field'].desc())
+                    sort['field'].desc())
         return query
 
     @staticmethod
@@ -393,9 +393,19 @@ class Grid:
 
 
 class PRBase:
+    omit_validation = False
 
     def __init__(self):
         self.query = g.db.query_property()
+
+# TODO: YG by OZ: move this (to next comment) static methods to utils (just like `putInRange` moved)
+
+    @staticmethod
+    def get_ordered_dict(list_of_dicts, **kwargs):
+        ret = OrderedDict()
+        for item in list_of_dicts:
+            ret[item['id']] = item
+        return ret
 
     @staticmethod
     def str2float(str, onfail=None):
@@ -411,9 +421,6 @@ class PRBase:
         except Exception:
             return onfail
 
-    @staticmethod
-    def inRange(what, fromr, tor):
-        return True if (what >= fromr) and (what <= tor) else False
 
     @staticmethod
     def parse_timestamp(str):
@@ -422,26 +429,22 @@ class PRBase:
         except:
             return None
 
-        @staticmethod
-        def parse_date(str):
-            try:
-                return datetime.date.strptime(str, "%Y-%m-%d")
-            except:
-                return None
-
-    def position_unique_filter(self):
-        return self.__class__.position != None
-
     @staticmethod
-    def merge_dicts(*args):
-        ret = {}
-        for d in args:
-            ret.update(d)
-        return ret
+    def parse_date(str):
+        try:
+            return datetime.date.strptime(str, "%Y-%m-%d")
+        except:
+            return None
 
     @staticmethod
     def del_attr_by_keys(dict, keys):
         return {key: dict[key] for key in dict if key not in keys}
+
+# TODO: YG by OZ: move this static methods to utils
+
+
+    def position_unique_filter(self):
+        return self.__class__.position != None
 
     # if insert_after_id == False - insert at top
     # if insert_after_id == True - insert at bottom
@@ -498,7 +501,7 @@ class PRBase:
             if old_image_cropped:
                 if selected_by_user['image_file_id'] == \
                         old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
-                        selected_by_user['crop_coordinates'], column_data):
+                    selected_by_user['crop_coordinates'], column_data):
                     return old_croped_image_id
                 elif selected_by_user['image_file_id'] == old_image_cropped.original_image_id \
                         and not old_image_cropped.same_coordinates(selected_by_user['crop_coordinates'], column_data):
@@ -534,7 +537,7 @@ class PRBase:
             cont.save(content, mime.split('/')[-1].upper())
             content = content.getvalue()
 
-        new_orginal_image = File.uploadLogo(content, name, mime, folder_id, author={self.__class__.__name__:self})
+        new_orginal_image = File.uploadLogo(content, name, mime, folder_id, author={self.__class__.__name__: self})
 
         if 'error' in File.check_image_mime(new_orginal_image.id):
             resp = self.get_client_side_dict()
@@ -597,12 +600,6 @@ class PRBase:
         g.db.expunge(self)
         return self
 
-    @staticmethod
-    def get_ordered_dict(list_of_dicts, **kwargs):
-        ret = OrderedDict()
-        for item in list_of_dicts:
-            ret[item['id']] = item
-        return ret
 
     def get_client_side_dict(self, fields='id',
                              more_fields=None):
@@ -670,8 +667,8 @@ class PRBase:
             columns_not_in_relations = list(set(req_columns.keys()) - set(relations.keys()))
             if len(columns_not_in_relations) > 0:
                 raise ValueError(
-                        "you requested not existing attribute(s) `%s%s`" % (
-                            prefix, '`, `'.join(columns_not_in_relations),))
+                    "you requested not existing attribute(s) `%s%s`" % (
+                        prefix, '`, `'.join(columns_not_in_relations),))
             else:
                 for rel_name in req_columns:
                     add_to_req_relationships(rel_name, '~')
@@ -709,16 +706,16 @@ class PRBase:
 
         if len(req_relationships) > 0:
             relations_not_in_columns = list(set(
-                    req_relationships.keys()) - set(columns))
+                req_relationships.keys()) - set(columns))
             if len(relations_not_in_columns) > 0:
                 raise ValueError(
-                        "you requested not existing relation(s) `%s%s`" % (
-                            prefix, '`, `'.join(relations_not_in_columns),))
+                    "you requested not existing relation(s) `%s%s`" % (
+                        prefix, '`, `'.join(relations_not_in_columns),))
             else:
                 raise ValueError("you requested for relation(s) but "
                                  "column(s) found `%s%s`" % (
                                      prefix, '`, `'.join(set(columns).intersection(
-                                             req_relationships)),))
+                                         req_relationships)),))
 
         return ret
 
@@ -745,6 +742,9 @@ class PRBase:
     #     if len(ret['errors'].keys()):
     #         raise errors.ValidationException(ret)
 
+    @staticmethod
+    def prepare_text_for_elastic_search(text):
+        return MLStripper().strip_tags(text)
 
     @staticmethod
     def add_to_search(mapper=None, connection=None, target=None):
@@ -799,6 +799,7 @@ class PRBase:
         event.listen(cls, 'after_insert', cls.add_to_search)
         event.listen(cls, 'after_update', cls.update_search_table)
         event.listen(cls, 'after_delete', cls.delete_from_search)
+
 
     @staticmethod
     def datetime_from_utc_to_local(utc_datetime, format):

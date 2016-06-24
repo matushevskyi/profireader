@@ -46,17 +46,16 @@
 </script>
 {% set article_count = 0 %}
 {% set wide_banners = {2:'1',6:'2'} %}
+{% import 'partials/front-macros.html' as frontmacros %}
+
 {% for article_id, article in articles.items() %}
     {% set article_count = article_count + 1 %}
     <div class="block-item list-elements">
         <div class="item-type article">
-            <a href="{{ url_for('front.division', division_name=article['division']['name'], page=1, search_text='') }}">{{ article['division']['name']|safe }}</a>
-            {% if article['tags'] %}<span
-                    class="label label-danger item-tags fr"><a href="{{ url_for('front.division',
-                    division_name=article['division']['name'], page=1, search_text='', tag=article.tags[0].text) }}">{{ article.tags[0].text }}</a></span>
-            {% endif %}
-
+            <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
+            <span class="fr">{{ article.author }}</span>
         </div>
+        <div style="text-align: right">{% for tag in article.tags %} {{ frontmacros.tag(tag, url_toggle_tag, selected_tag_names = selected_tag_names, toogle_tag = True) }} {% endfor %}</div>
         <h2 class="item-title">
             <a href="{{ url_for('front.details', article_portal_division_id=article['id']) }}">{{ article['title']|safe }}</a>
         </h2>
@@ -66,7 +65,7 @@
             </script>
         </div>
         <div class="item-additional-info">
-            <a href="{{ url_for('front.subportal', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}"
+            <a href="{{ url_for('front.division', member_company_name = article['company']['name']) }}"
                class="item-company">{{ article['company']['name']|safe }}</a>
             <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
             <div><br>

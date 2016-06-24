@@ -106,19 +106,6 @@ class Portal(Base, PRBase):
             MemberCompanyPortal(portal=self, company=company_owner, status=MemberCompanyPortal.STATUSES['ACTIVE'],
                                 plan=db(MemberCompanyPortalPlan).first())]
 
-        # self.own_company.company_portals = db(MemberCompanyPortalPlan).first()
-
-        # db(MemberCompanyPortalPlan).first().portal_companies.add(MemberCompanyPortal(company=self.own_company))
-
-
-
-
-        # self.company_assoc = [MemberCompanyPortal(portal = self,
-        #                                     company = self.own_company,
-        #                                     company_portal_plan_id=db(MemberCompanyPortalPlan).first().id)]
-
-
-        pass
 
     def logo_file_properties(self):
         nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
@@ -170,7 +157,10 @@ class Portal(Base, PRBase):
     #
     #     return default
 
-    def get_value_from_config(self, key=None, division_name=None):
+    #TODO: OZ by OZ fix this
+    def get_value_from_config(self, key=None, division_name=None, default = None):
+        return default
+
         """
         :param key: string, variable which you want to return from config
         optional:

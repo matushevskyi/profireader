@@ -11,6 +11,7 @@ from ..models.articles import ArticleCompany, ArticlePortalDivision
 from utils.db_utils import db
 from .pagination import pagination
 from config import Config
+from .. import utils
 from ..models.pr_base import PRBase, Grid
 from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, UserIsEmployee, EmployeeAllowRight, \
     CanCreateCompanyRight, UserIsActive, BaseRightsEmployeeInCompany
@@ -116,7 +117,7 @@ def employees(company_id):
 def employees_load(json, company_id):
     company = Company.get(company_id)
     employees_list = [
-        PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
+        utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                            {'actions': EmployeesRight(company=company, employment=employment).actions()})
         for employment in company.employee_assoc]
 
@@ -189,7 +190,7 @@ def employment_action(json, company_id, employment_id, action):
 
     employment.save()
 
-    return PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
+    return utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                               {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
@@ -201,7 +202,7 @@ def employment_change_position(json, company_id, employment_id):
     employment.position = json['position']
     employment.save()
 
-    return PRBase.merge_dicts(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
+    return utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
                               {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
