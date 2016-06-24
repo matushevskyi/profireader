@@ -1,4 +1,3 @@
-
 (function (window, angular, $) {
     "use strict";
     angular.module('FileManagerApp').controller('FileManagerCtrl', ['$http',

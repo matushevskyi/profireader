@@ -162,8 +162,39 @@ apt-get install postgresql-9.4" sudo deb
 
 function menu_deb {
     conf_comm "apt-get update
-apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached" sudo hosts
+apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached" sudo npm
     }
+
+function menu_npm {
+    conf_comm "apt-get install nodejs
+apt-get install npm
+ln -s /usr/bin/nodejs /usr/bin/node 
+npm install -g bower
+npm install -g gulp" sudo bower
+    }
+
+function menu_bower {
+    conf_comm "cd ./profapp/static
+bower install" nosudo menu_bower_dev
+    }
+
+function menu_bower_dev {
+    conf_comm "cd ./profapp/static/bower_components_dev
+mkdir ./angular-db-filemanager
+cd ./angular-db-filemanager
+git clone git@github.com:kakabomba/angular-server-driven-filemanager.git .
+cd ..
+mkdir ./angular-crop
+cd ./angular-crop
+git clone git@github.com:kakabomba/ng-crop.git .
+" nosudo hosts
+    }
+
+function menu_gulp {
+     conf_comm "cd ./profapp/static
+npm install gulp del gulp-less-sourcemap gulp-watch run-sequence gulp-task-listing
+gulp" nosudo hosts
+     }
 
 function menu_hosts {
     conf_comm "sed -i '/\(db\|web\|mail\|memcached\|elastic\).profi/d' /etc/hosts
@@ -383,6 +414,10 @@ dialog --title "profireader" --nocancel --default-item $next --menu "Choose an o
 "origin" "change git origin and add new remote repo" \
 "postgres_9_4" "install postgres 9.4" \
 "deb" "install deb packages" \
+"npm" "install nodejs, npm, bower and gulp globally" \
+"bower" "download bower components in ./profapp/static/bower_components" \
+"bower_dev" "download bower development components in ./profapp/static/bower_components_dev" \
+"gulp" "install gulp in ./profapp/static" \
 "hosts" "create virtual domain zone in /etc/hosts" \
 "haproxy_compile" "compile and install haproxy" \
 "haproxy_config" "copy haproxy config to /etc/haproxy" \

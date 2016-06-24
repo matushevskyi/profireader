@@ -7,7 +7,6 @@
     "angular-ui-tinymce": "0.0.10",
     "angular-animate": "~1.4.0",
     "angular-ui-grid": "3.0.7",
-    "ng-crop": "~1",
     "cropper": "~2",
     "bootstrap": "3.3.6",
     "jquery": "2.1.4",
@@ -17,6 +16,7 @@
     "moment": "~2.12.0",
     "eonasdan-bootstrap-datetimepicker": "~4.17.37",
     "angular-ui-select": "~0.17.0",
-    "angular-db-filemanager": "git@github.com:kakabomba/angular-server-driven-filemanager.git#master"
+    "angular-db-filemanager": "git@github.com:kakabomba/angular-server-driven-filemanager.git#master",
+    "angular-crop": "git@github.com:kakabomba/ng-crop.git#master"
   }
 }
