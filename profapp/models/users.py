@@ -269,7 +269,10 @@ class User(Base, UserMixin, PRBase):
             return "Sorry!You must be confirmed!"
         return True
 
+
+
     def validate(self, is_new):
+
         ret = super().validate(is_new)
         if not re.match(r'[^\s]{3}', str(self.profireader_name)):
             ret['errors']['profireader_name'] = 'Your username must be at least 3 characters long.'

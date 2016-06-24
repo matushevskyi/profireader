@@ -1,3 +1,4 @@
+{# social networks icons in portals #}
 {% for sn in ['facebook','google', 'tweeter', 'linkedin'] %}
     {% if portal['url_' + sn] %}
         <a href="{{ portal['url_' + sn] }}" class="btn btn-social-icon btn-{{ sn }}">

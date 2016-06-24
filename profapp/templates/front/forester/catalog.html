@@ -18,6 +18,12 @@
             <a href="{{ url_for('front.company_member', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}"
                href>{{ member['company']['name'] }}</a><br/><br/>
             {{ member['company']['short_description']|safe }}
+            {%  if member['company']['country'] != '' %}
+            <span>{{ __('Country') }}: {{ member['company']['country']|safe }}</span></br>
+            {% endif %}
+            {%  if member['company']['city'] != '' %}
+            <span>{{ __('City') }}: {{ member['company']['city']|safe }}</span>
+            {% endif %}
         </div>
 
     {% endfor %}

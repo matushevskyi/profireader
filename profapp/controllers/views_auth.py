@@ -16,11 +16,14 @@ from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
 from ..utils.redirect_url import redirect_url
 from utils.pr_email import SendEmail
 from ..models.rights import AllowAll
+import sys
 
 EMAIL_REGEX = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
 
+
 def login_signup_general(*soc_network_names):
+
     portal_id = session.get('portal_id')
     back_to = session.get('back_to')
     response = make_response()
@@ -41,24 +44,33 @@ def login_signup_general(*soc_network_names):
                     redirect(redirect_url())
                 db_fields = DB_FIELDS[soc_network_names[-1]]
                 # user = g.db.query(User).filter(getattr(User, db_fields['id']) == result_user.id).first()
+
                 user = g.db.query(User).filter(getattr(User, db_fields['email']) == result_user.email).first()
+
                 if not user:
                     user = g.db.query(User).filter(User.profireader_email == result_user.email).first()
                     ind = False
+
                     if not user:
                         ind = True
                         user = User()
+
                     for elem in SOC_NET_FIELDS:
                         setattr(user, db_fields[elem], getattr(result_user, elem))
                     registred_via_soc = len(soc_network_names) > 1
+
                     if ind:  # ToDo (AA): introduce field signup_via instead.
                         # Todo (AA): If signed_up not via profireader then...
                         db_fields_profireader = DB_FIELDS['profireader']
                         for elem in SOC_NET_FIELDS_SHORT:
                             setattr(user, db_fields_profireader[elem], getattr(result_user, elem))
-                        user.avatar(logged_via_soc or 'gravatar',
+
+                        try:
+                            user.avatar(logged_via_soc or 'gravatar',
                                     url=result_user.data.get('pictureUrl') if logged_via_soc == 'linkedin' else None,
                                     size=AVATAR_SIZE, small_size=AVATAR_SMALL_SIZE)
+                        except:
+                            print('avatar loading error', sys.exc_info()[0])
 
                     g.db.add(user)
                     user.confirmed = True
@@ -96,8 +108,7 @@ def login_signup_general(*soc_network_names):
                 redirect_path = '#/?msg={}'.format(quote(soc_network_names[-1] + ' login failed.'))
                 return redirect(redirect_path)
     except:
-        import sys
-        print(sys.exc_info())
+        print(sys.exc_info()[0])
         raise
     return response
 
@@ -318,7 +329,6 @@ def help_message(json):
         flash('Your message has been sent! ')
         redirect(url_for('reader.list_reader'))
         return True
-
 
 # @auth_bp.route('/change-password', methods=['GET', 'OK'])
 # @login_required
