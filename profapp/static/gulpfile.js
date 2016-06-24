@@ -86,10 +86,6 @@ gulp.task('install_angular_crop', function () {
         .pipe(gulp.dest(dst + 'angular-crop/'));
 });
 
-gulp.task('install_angular_crop_from_dev', function () {
-    return gulp.src([src_dev + 'angular-crop/ng-crop.*'])
-        .pipe(gulp.dest(dst + 'angular-crop/'));
-});
 
 gulp.task('install_angular-db-filemanager', function () {
     return gulp.src([src + 'angular-db-filemanager/dist/*.*'])
@@ -97,20 +93,36 @@ gulp.task('install_angular-db-filemanager', function () {
 });
 
 gulp.task('install_angular-db-filemanager_from_dev', function () {
-    exec('cd bower_components_dev/angular-db-filemanager; gulp --gulpfile ./gulpfile.js',
-        function (error, stdout, stderr) {
-            console.log('other-thing-with-gulpfile/gulpfile.js:');
-            console.log(stdout);
-            if (error) {
-                console.log(error, stderr);
-            }
-            else {
-                return gulp.src([src_dev + 'angular-db-filemanager/dist/*.*'])
-                    .pipe(gulp.dest(dst + 'filemanager/'));
-            }
-        });
+    var csrc = src_dev + 'angular-db-filemanager/'
 
+    gulp.watch([csrc + 'src/css/*.*', csrc + 'src/js/*.*', csrc + 'src/templates/*.*']).on('change',
+        function (file) {
+            console.log(file.path + ' changed');
+            exec('cd ' + csrc + '; gulp --gulpfile ./gulpfile.js',
+                function (error, stdout, stderr) {
+                    console.log(stdout);
+                    if (error) {
+                        console.log(error, stderr);
+                    }
+                    else {
+                        return gulp.src([csrc + 'dist/*.*'])
+                            .pipe(gulp.dest(dst + 'filemanager/'));
+                    }
+                });
+        })
 });
+
+gulp.task('install_angular_crop_from_dev', function () {
+    var csrc = src_dev + 'angular-crop/'
+
+    gulp.watch([csrc + 'ng-crop.*']).on('change',
+        function (file) {
+            console.log(file.path + ' changed');
+            return gulp.src([csrc + 'ng-crop.*'])
+                .pipe(gulp.dest(dst + 'angular-crop/'));
+        })
+});
+
 
 gulp.task('install_angular_xeditable', function () {
     return gulp.src([src + 'angular-xeditable/dist/css/xeditable.css', src + 'angular-xeditable/dist/js/xeditable.js'])

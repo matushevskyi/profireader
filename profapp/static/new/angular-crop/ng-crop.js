@@ -4,7 +4,6 @@
  */
 
 (function (angular) {
-
     'use strict';
     if (!angular) {
         throw 'No angular found';
