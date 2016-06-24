@@ -185,7 +185,8 @@ class File(Base, PRBase):
             ret = [{'size': file.size, 'name': file.name, 'id': file.id,
                     'parent_id': file.parent_id, 'type': File.type(file),
                     'date': str(file.md_tm),
-                    'url': file.get_thumbnail_url() if file.mime.split('/')[0] == 'image' else None,
+                    # TODO: OZ by OZ: thumbnail generation
+                    'thumbnail_url': '//static.profireader.com/static/images/0.gif',
                     'file_url': file.url(),
                     'youtube_data': {'id': file.youtube_video.video_id,
                                      'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
@@ -209,36 +210,36 @@ class File(Base, PRBase):
     def createScaledImage(self, width, height):
         pass
 
-    def get_thumbnails(self, size):
-        if self.mime.split('/')[0] == 'image' and self.mime != 'image/thumbnail':
-            str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
-            if not self.get_thumbnail():
-                try:
-                    image_pil = Image.open(BytesIO(self.file_content.content))
-                    resized = File.scale(image_pil, size)
-                    bytes_file = BytesIO()
-                    resized.save(bytes_file, self.mime.split('/')[-1].upper())
-                    thumbnail = File(md_tm=self.md_tm, size=sys.getsizeof(bytes_file.getvalue()),
-                                     name=self.name + '_thumbnail_{str_size}'.format(
-                                         str_size=str_size),
-                                     parent_id=self.parent_id,
-                                     author_user_id=self.author_user_id,
-                                     root_folder_id=self.root_folder_id,
-                                     company_id=self.company_id,
-                                     mime=self.mime.split('/')[0] + '/thumbnail').save()
-                    content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
-                    g.db.add_all([thumbnail, content])
-                    g.db.flush()
-                    exist = db(FileImg, original_image_id=self.id)
-                    if exist:
-                        exist.delete()
-                    FileImg(original_image_id=self.id,
-                            croped_image_id=thumbnail.id,
-                            width=image_pil.width,
-                            height=image_pil.height).save()
-                except Exception as e:
-                    self.delete()
-        return self
+    # def get_thumbnails(self, size):
+    #     if self.mime.split('/')[0] == 'image' and self.mime != 'image/thumbnail':
+    #         str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
+    #         if not self.get_thumbnail():
+    #             try:
+    #                 image_pil = Image.open(BytesIO(self.file_content.content))
+    #                 resized = File.scale(image_pil, size)
+    #                 bytes_file = BytesIO()
+    #                 resized.save(bytes_file, self.mime.split('/')[-1].upper())
+    #                 thumbnail = File(md_tm=self.md_tm, size=sys.getsizeof(bytes_file.getvalue()),
+    #                                  name=self.name + '_thumbnail_{str_size}'.format(
+    #                                      str_size=str_size),
+    #                                  parent_id=self.parent_id,
+    #                                  author_user_id=self.author_user_id,
+    #                                  root_folder_id=self.root_folder_id,
+    #                                  company_id=self.company_id,
+    #                                  mime=self.mime.split('/')[0] + '/thumbnail').save()
+    #                 content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
+    #                 g.db.add_all([thumbnail, content])
+    #                 g.db.flush()
+    #                 exist = db(FileImg, original_image_id=self.id)
+    #                 if exist:
+    #                     exist.delete()
+    #                 FileImg(original_image_id=self.id,
+    #                         croped_image_id=thumbnail.id,
+    #                         width=image_pil.width,
+    #                         height=image_pil.height).save()
+    #             except Exception as e:
+    #                 self.delete()
+    #     return self
 
     @staticmethod
     def scale(image, max_size, method=Image.ANTIALIAS):
@@ -254,17 +255,19 @@ class File(Base, PRBase):
         back.paste(scaled, offset)
         return back
 
-    def get_thumbnail_url(self):
-        thumbnail_id = self.get_thumbnail()
-        if not thumbnail_id:
-            self.get_thumbnails(size=Config.THUMBNAILS_SIZE)
-            thumbnail_id = self.get_thumbnail()
-        return File().url(thumbnail_id) if thumbnail_id else self.url()
+    # def get_thumbnail_url(self):
+    #
+    #     if self.mime.split('/')[0] == 'image'
+    #     thumbnail_id = self.get_thumbnail()
+    #     if not thumbnail_id:
+    #         self.get_thumbnails(size=Config.THUMBNAILS_SIZE)
+    #         thumbnail_id = self.get_thumbnail()
+    #     return File().url(thumbnail_id) if thumbnail_id else self.url()
 
-    def get_thumbnail(self):
-        croped_image_id = g.db.execute(
-            ("SELECT croped_image_id FROM image_croped WHERE original_image_id='{}'").format(self.id)).fetchone()
-        return croped_image_id[0] if croped_image_id else None
+    # def get_thumbnail(self):
+    #     croped_image_id = g.db.execute(
+    #         ("SELECT croped_image_id FROM image_croped WHERE original_image_id='{}'").format(self.id)).fetchone()
+    #     return croped_image_id[0] if croped_image_id else None
 
     def type(self):
         if self.mime == 'root' or self.mime == 'directory':

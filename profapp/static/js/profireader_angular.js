@@ -359,6 +359,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                             scope.coordinates = crd ? [crd.crop_left, crd.crop_top, crd.crop_width + crd.crop_left, crd.crop_height + crd.crop_top] : null;
                             scope.origin = crd ? [crd.origin_left, crd.origin_top] : null;
                             scope.zoom = crd ? crd.origin_zoom : null;
+                            console.log(scope.coordinates)
+                            console.log(scope.origin)
                             // scope.state = null;
                             break;
                         case 'none':

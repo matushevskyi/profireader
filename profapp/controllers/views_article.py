@@ -55,7 +55,7 @@ def load_form_create(json, company_id=None, material_id=None):
     else:
         material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user)
     if action == 'load':
-        material_dict = material.get_client_side_dict(more_fields='long|company')
+        material_dict = material.get_client_side_dict(more_fields='long|company|illustration')
         # material_dict['illustration'] = material.get_image_client_side_dict()
         # if publication_id:
         #     article_dict = dict(list(article_dict.items()) + [('tags', article_tag_names)])

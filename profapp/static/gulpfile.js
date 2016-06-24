@@ -161,9 +161,11 @@ gulp.task('install_moment', function () {
 
 gulp.task('default', taskListing);
 
-gulp.task('all', ['install_fileuploader', 'install_angular', 'install_angular_translate', 'install_angular_cookies',
+gulp.task('all', ['install_fileuploader', 'install_angular',
+    'install_angular_translate', 'install_angular_cookies',
     'install_angular_ui_select',
-    'install_angular_crop',
-'install_angular_ui_tinymce', 'install_tinymce', 'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
-'install_slider','install_bootstrap', 'install_angular_crop', 'install_eonasdan-bootstrap-datetimepicker', 'install_moment']);
+    'install_angular_crop', 'install_angular_ui_tinymce', 'install_tinymce',
+    'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
+    'install_slider','install_bootstrap', 'install_angular_crop',
+    'install_eonasdan-bootstrap-datetimepicker', 'install_moment']);
 
