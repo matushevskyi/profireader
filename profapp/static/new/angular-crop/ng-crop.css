@@ -32,7 +32,11 @@
 .ng-crop-container .ng-crop-move {
     cursor: move;
     position: absolute;
-    border: dashed #0d1318 thin;
+    border: 1px solid transparent;
+    border-image-source: url("data:image/png;base64,R0lGODlhCAAIAJECAP///wAAAAAAAAAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQFFAACACwAAAAACAAIAAACDYwDCadrzVRMB9FZ5SwAIfkEBRQAAgAsAAAAAAgACAAAAg9EHqCYaudeW9ChyOyltQAAIfkEBRQAAgAsAAAAAAgACAAAAg8EgmGXm+rQYtC0WGl9oAAAIfkEBRQAAgAsAAAAAAgACAAAAg+Eg2GQernaYmjCWLF7qAAAIfkEBRQAAgAsAAAAAAgACAAAAg2EERmna81UTAfRWeUsACH5BAUUAAIALAAAAAAIAAgAAAIPDA6hmGrnXlvQocjspbUAACH5BAUUAAIALAAAAAAIAAgAAAIPTIBgl5vq0GLQtFhpfaEAACH5BAUUAAIALAAAAAAIAAgAAAIPjIFgkXq52mJowlixe6gAADs=");
+    border-image-slice: 2;
+    border-image-repeat: repeat;
+    border-image-width: 1px;
     box-sizing: border-box;
     background-repeat: no-repeat;
     background-position: left 0px top 0px;
@@ -51,7 +55,11 @@
     position: absolute;
     width: 10px;
     height: 10px;
-    border: solid #0d1318 thin;
+    border: 1px solid transparent;
+    border-image-source: url("data:image/png;base64,R0lGODlhCAAIAJECAP///wAAAAAAAAAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQFFAACACwAAAAACAAIAAACDYwDCadrzVRMB9FZ5SwAIfkEBRQAAgAsAAAAAAgACAAAAg9EHqCYaudeW9ChyOyltQAAIfkEBRQAAgAsAAAAAAgACAAAAg8EgmGXm+rQYtC0WGl9oAAAIfkEBRQAAgAsAAAAAAgACAAAAg+Eg2GQernaYmjCWLF7qAAAIfkEBRQAAgAsAAAAAAgACAAAAg2EERmna81UTAfRWeUsACH5BAUUAAIALAAAAAAIAAgAAAIPDA6hmGrnXlvQocjspbUAACH5BAUUAAIALAAAAAAIAAgAAAIPTIBgl5vq0GLQtFhpfaEAACH5BAUUAAIALAAAAAAIAAgAAAIPjIFgkXq52mJowlixe6gAADs=");
+    border-image-slice: 2;
+    border-image-repeat: stretch;
+    border-image-width: 1px;
     box-sizing: border-box;
     margin-left: -5px;
     margin-top: -5px;

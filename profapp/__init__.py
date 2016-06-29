@@ -133,7 +133,7 @@ def db_session_func(db_config):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import scoped_session, sessionmaker
 
-    engine = create_engine(db_config, echo=False)
+    engine = create_engine(db_config, echo=not False)
     g.sql_connection = engine.connect()
     db_session = scoped_session(sessionmaker(autocommit=False,
                                              autoflush=False,

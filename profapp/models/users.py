@@ -146,9 +146,9 @@ class User(Base, UserMixin, PRBase):
     yahoo_link = Column(TABLE_TYPES['link'])
     yahoo_phone = Column(TABLE_TYPES['phone'])
     tos = Column(TABLE_TYPES['boolean'], default=False)
-    search_fields = {'profireader_name': {'relevance': lambda field='profireader_name': RELEVANCE.profireader_name},
-                     'about_me': {'relevance': lambda field='about_me': RELEVANCE.about_me},
-                     'profireader_email': {'relevance': lambda field='profireader_email': RELEVANCE.profireader_email}}
+    # search_fields = {'profireader_name': {'relevance': lambda field='profireader_name': RELEVANCE.profireader_name},
+    #                  'about_me': {'relevance': lambda field='about_me': RELEVANCE.about_me},
+    #                  'profireader_email': {'relevance': lambda field='profireader_email': RELEVANCE.profireader_email}}
 
     # get all users in company : company.employees
     # get all users companies : user.employers

@@ -76,8 +76,8 @@ class Portal(Base, PRBase):
                                    # back_populates='portal',
                                    # lazy='dynamic'
                                    )
-    search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
-                     'host': {'relevance': lambda field='host': RELEVANCE.host}}
+    # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
+    #                  'host': {'relevance': lambda field='host': RELEVANCE.host}}
 
     ALLOWED_STATUSES_TO_JOIN = {
         'DELETED': 'DELETED',

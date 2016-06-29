@@ -13,7 +13,7 @@
         </div>
         {% endif %}
 
-            <img src="//static.profireader.com/static/images/0.gif" class="block-item-img"
+            <img src="//static.profireader.com/static/images/0.gif" class="block-item-img bg-contain"
                  style="background-image:url({{ fileUrl(member['company']['logo_file_id']) }});"/>
             <a href="{{ url_for('front.company_member', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}"
                href>{{ member['company']['name'] }}</a><br/><br/>

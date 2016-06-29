@@ -3,7 +3,7 @@
 {% block head %}
     {{ super() }}
     <script>
-        var library = {{ library|safe }};
+        var filemanager_company_list = {{ filemanager_company_list|safe }};
         var error = '{{ err }}';
         var file_manager_called_for = '{{ file_manager_called_for|safe }}';
         var file_manager_on_action = {{ file_manager_on_action|safe }};
@@ -50,6 +50,3 @@
         {% endblock portal_content %}
     </div>
 {% endblock content %}
-
-
-

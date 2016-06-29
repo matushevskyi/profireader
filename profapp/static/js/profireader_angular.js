@@ -230,8 +230,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 prCrop: '='
             },
             link: function link(scope, element, attrs) {
-
-
                 element.attr('ng-crop', 'selectedurl');
                 element.attr('ng-crop-coordinates', 'coordinates');
                 element.attr('ng-crop-options', 'options');
@@ -302,9 +300,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                     var selected_by_user = newv['selected_by_user'];
                     var cropper_options = newv['cropper'];
-                    if (!scope.original_model) {
+                    // if (!scope.original_model) {
                         scope.original_model = $.extend(true, {}, selected_by_user);
-                    }
+                    // }
                     scope.coordinates = [];
                     scope.state = {};
                     scope.browsable = cropper_options['browse'] ? true : false;
@@ -354,7 +352,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     switch (model['type']) {
                         case 'browse':
                             console.log(model);
-                            var crd = model.crop;
                             scope.selectedurl = fileUrl(model['image_file_id']);
                             scope.disabled = false;
                             scope.coordinates = null;
@@ -368,9 +365,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                             scope.coordinates = crd ? [crd.crop_left, crd.crop_top, crd.crop_width + crd.crop_left, crd.crop_height + crd.crop_top] : null;
                             scope.origin = crd ? [crd.origin_left, crd.origin_top] : null;
                             scope.zoom = crd ? crd.origin_zoom : null;
-                            console.log(scope.coordinates)
-                            console.log(scope.origin)
-                            // scope.state = null;
                             break;
                         case 'none':
                             scope.selectedurl = scope.noneurl;
@@ -453,7 +447,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 $compile($(element).next())(scope);
             }
         }
-            ;
     })
 
     .directive('dateTimestampFormat', function () {
@@ -521,7 +514,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
         };
     }])
 
-    .directive('prImage', ['$timeout', function ($timeout) {
+    .directive('prImage', [function () {
         return {
             restrict: 'A',
             scope: {
@@ -544,15 +537,61 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     });
                 });
                 element.attr('src', '//static.profireader.com/static/images/0.gif');
-                element.css({
-                    backgroundPosition: 'center',
-                    backgroundSize: 'contain',
-                    backgroundRepeat: 'no-repeat'
-                });
+                element.addClass('bg-contain');
             }
         };
-    }])
-    //TODO: SS by OZ: better use actions (prUserCan) not rights. action can depend on many rights
+    }]).directive('prImageWatch', [function () {
+    return {
+        restrict: 'A',
+        scope: {
+            prImageWatch: '=',
+            prNoImage: '@',
+
+        },
+        link: function (scope, element, attrs) {
+            var image_reference = attrs['prImageWatch'].split('.').pop();
+            var no_image = attrs['prNoImage'] ? attrs['prNoImage'] : false;
+
+            if (!no_image) {
+                no_image = noImageForImageName(image_reference);
+            }
+
+            scope.$watch('prImageWatch', function (newval, oldval) {
+                element.css({
+                    backgroundImage: "url('" + fileUrl(newval, false, no_image) + "')"
+                });
+            });
+            element.attr('src', '//static.profireader.com/static/images/0.gif');
+            element.addClass('bg-contain');
+        }
+    };
+}])
+    .directive('prImageUrl', [function () {
+        return {
+            restrict: 'A',
+            scope: {},
+            link: function (scope, element, attrs) {
+                element.attr('src', '//static.profireader.com/static/images/0.gif');
+                element.css({backgroundImage: 'url(' + attrs['prImageUrl'] + ')'});
+                element.addClass('bg-contain');
+            }
+        };
+    }]).directive('prImageUrlWatch', [function () {
+    return {
+        restrict: 'A',
+        scope: {
+            prImageUrlWatch: '=',
+        },
+        link: function (scope, element, attrs) {
+            element.attr('src', '//static.profireader.com/static/images/0.gif');
+            element.addClass('bg-contain');
+            scope.$watch('prImageUrlWatch', function (newval, oldval) {
+                element.css({backgroundImage: "url('" + newval + "')"});
+            });
+        }
+    };
+}])
+//TODO: SS by OZ: better use actions (prUserCan) not rights. action can depend on many rights
     .directive('prUserRights', function ($timeout) {
         return {
             restrict: 'AE',
@@ -1211,16 +1250,21 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     if (typeof phrase !== 'string') {
         return '';
     }
-    if (!scope.$$translate) {
-        scope.$$translate = {};
-    }
+    // if (!scope.$$translate) {
+    //     scope.$$translate = {};
+    // }
     //console.log(scope.$$translate)
     new Date;
     var t = Date.now() / 1000;
     //TODO OZ by OZ hasOwnProperty
     var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
-    if (scope.$$translate[phrase] === undefined) {
-        scope.$$translate[phrase] = {'lang': phrase, 'time': t};
+
+    if (!scope.$$translate || !scope.$$translate[phrase]) {
+        phrase_dict = {'lang': phrase, 'time': t, allow_html: allow_html}
+    }
+
+    else if (scope.$$translate && !scope.$$translate[phrase]) {
+        scope.$$translate[phrase] = phrase_dict;
         $ok('/tools/save_translate/', {
             template: CtrlName,
             phrase: phrase,
@@ -1230,15 +1274,18 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
 
         });
     }
+    else {
+        phrase_dict = scope.$$translate[phrase];
+    }
 
-    if ((t - scope.$$translate[phrase]['time']) > 86400) {
-        scope.$$translate[phrase]['time'] = t;
+    if ((t - phrase_dict['time']) > 86400) {
+        phrase_dict['time'] = t;
         $ok('/tools/update_last_accessed/', {template: CtrlName, phrase: phrase}, function (resp) {
         });
     }
 
-    if (scope.$$translate[phrase]['allow_html'] !== allow_html) {
-        scope.$$translate[phrase]['allow_html'] = allow_html;
+    if (phrase_dict['allow_html'] !== allow_html) {
+        phrase_dict['allow_html'] = allow_html;
         $ok('/tools/change_allowed_html/', {
             template: CtrlName,
             phrase: phrase,

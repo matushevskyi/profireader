@@ -41,13 +41,14 @@ def article_show_form(material_id=None, company_id=None):
 @check_right(BaseRightsEmployeeInCompany, ['company_id'], BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
 def load_form_create(json_data, company_id=None, material_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
+
     if material_id:
         material = Material.get(material_id)
     else:
         material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user)
+
     if action == 'load':
-        material_dict = material.get_client_side_dict(more_fields='long|company|illustration')
-        return {'material': material_dict}
+        return {'material': material.get_client_side_dict(more_fields='long|company|illustration')}
     else:
         parameters = g.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
         material.attr(parameters['material'])
@@ -59,7 +60,8 @@ def load_form_create(json_data, company_id=None, material_id=None):
                                                      {'company': material.company,
                                                       'file_name_prefix': 'illustration_for_material_%s' % (
                                                           material.id,)})
-            return {'material': {}}
+
+            return {'material': material.get_client_side_dict(more_fields='long|company|illustration')}
 
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'])

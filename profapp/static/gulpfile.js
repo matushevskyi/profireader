@@ -114,12 +114,23 @@ gulp.task('install_angular-db-filemanager_from_dev', function () {
 
 gulp.task('install_angular_crop_from_dev', function () {
     var csrc = src_dev + 'angular-crop/'
-
+    
     gulp.watch([csrc + 'ng-crop.*']).on('change',
         function (file) {
             console.log(file.path + ' changed');
-            return gulp.src([csrc + 'ng-crop.*'])
-                .pipe(gulp.dest(dst + 'angular-crop/'));
+            exec('cd ' + csrc + '; gulp --gulpfile ./gulpfile.js',
+                function (error, stdout, stderr) {
+                    console.log(stdout);
+                    if (error) {
+                        console.log(error, stderr);
+                    }
+                    else {
+                        return gulp.src([csrc + 'ng-crop.*'])
+                            .pipe(gulp.dest(dst + 'angular-crop/'));
+                    }
+                });
+
+
         })
 });
 
@@ -200,7 +211,8 @@ gulp.task('install_moment', function () {
 
 gulp.task('default', taskListing);
 
-gulp.task('all', ['install_fileuploader',
+gulp.task('all', [
+    'install_fileuploader',
     'install_angular',
     'install_angular_translate',
     'install_angular_cookies',

@@ -82,11 +82,11 @@ class Company(Base, PRBase):
 
     user_owner = relationship('User', back_populates='companies')
 
-    search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
-                     'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
-                     'about': {'relevance': lambda field='about': RELEVANCE.about},
-                     'country': {'relevance': lambda field='country': RELEVANCE.country},
-                     'phone': {'relevance': lambda field='phone': RELEVANCE.phone}}
+    # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
+    #                  'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
+    #                  'about': {'relevance': lambda field='about': RELEVANCE.about},
+    #                  'country': {'relevance': lambda field='country': RELEVANCE.country},
+    #                  'phone': {'relevance': lambda field='phone': RELEVANCE.phone}}
 
     # TODO: AA by OZ: we need employees.position (from user_company table) (also search and fix #ERROR employees.position.2#)
     # ERROR employees.position.1#

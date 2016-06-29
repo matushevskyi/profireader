@@ -23,16 +23,16 @@
             $scope.title = '{{ 'Update material' if material_id else 'Create new material' }}';
             document.title = document.title;
 
+
             $scope.amidSave = function (resp) {
-                console.log(resp)
                 if (!$scope.data.material.id && resp.material.id) {
-                    console.log($scope.data)
                     window.location.href = {{ raw_url_for('article.article_show_form')|safe }}({
                         company_id: resp.material.company_id,
                         material_id: resp.material.id
                     })
                 }
                 else {
+                    $scope.data['material']['illustration'] = resp['material']['illustration'];
                     add_message($scope._('material was saved'), 'success', 3000);
                 }
 
@@ -48,7 +48,14 @@
             }
 
             $scope.getData = function (model, deff) {
-               return deff(model);
+                return deff(model);
+            };
+
+            $scope.getDataForValidation = function (model, deff) {
+                console.log(model, deff);
+                delete model['material']['illustration'];
+                console.log(model, deff);
+                return deff(model);
             };
 
             $scope.amidLoad = function (resp) {
@@ -93,12 +100,14 @@
         <form name="newMaterial">
             <!-- <h1 class="nice-title">{{ _(title) }}<span></span></h1> -->
 
-            <div af af-amid-load="amidLoad" af-amid-save="amidSave" af-before-save="getData"
-                 af-beforeValidate="getData" af-watch="data.material" ng-model="data">
+            <div af af-amid-load="amidLoad" af-amid-save="amidSave"
+                 af-before-save="getData"
+                 af-before-validate-todo="getDataForValidation" af-watch="data.material" ng-model="data">
 
                 <div style="padding-bottom: 50px">
                     <div>
-                        <div style="width: 400px; height: 300px; position: relative" pr-crop="data.material.illustration"></div>
+                        <div style="width: 400px; height: 300px; position: relative"
+                             pr-crop="data.material.illustration"></div>
                     </div>
                 </div>
 
@@ -107,7 +116,8 @@
                                             maybe layout selector is apporpriate here-->
                     {{ _('Article title') }}
                     <pr_help_tooltip>article_title</pr_help_tooltip>
-                    <input class="form-control article-edit-input" type="text" ng-model="data.material.title" pr-validation-answer="data_validation:title"
+                    <input class="form-control article-edit-input" type="text" ng-model="data.material.title"
+                           pr-validation-answer="data_validation:title"
                            name="article_title" jng-pattern="/[\wа-яёі']{3}/i">
                     <div ng-show="newMaterial.article_title.$error.pattern" class="error-input">
                         {{ _('The title name should be longer!') }}

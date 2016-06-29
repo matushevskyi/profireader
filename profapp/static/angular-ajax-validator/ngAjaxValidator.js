@@ -200,6 +200,9 @@
                     };
                     var validationdict = $af.$getValidationDict($scope['model']);
                     try {
+                        // TODO: OZ by OZ: send copy of model here $scope['model'] -> $.extend(true,{},$scope['model']) and check all validation still works
+                        // this is for changing validation data before validate (dont sending something for validation for example)
+                        // search for $scope.getDataForValidation in project
                         var dataToSend = callCallback('afBefore' + action, $scope['model']);
                         var url = params['afUrl' + action];
                         setInParent('afState', statebefore);

@@ -164,23 +164,26 @@ class FileImgProxy:
 
         provenance_img, l, t, w, h = self.get_correct_coordinates(sel_by_user_crop, user_img)
 
-        if sel_by_user_type == 'provenance':
-            if provenance_img == user_img:
-                if [round(c) for c in [l, t, w, h]] == \
-                        [round(c) for c in [file_img.crop_left, file_img.crop_top,
-                                            file_img.crop_width,
-                                            file_img.crop_height]]:
-                    return
+        file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
+        file_img.origin_left, file_img.origin_top, file_img.origin_zoom = \
+            sel_by_user_crop['origin_left'], sel_by_user_crop['origin_top'], sel_by_user_crop['origin_zoom']
+
+        if sel_by_user_type == 'provenance' and \
+                        provenance_img == user_img and \
+                        [round(c) for c in [l, t, w, h]] == \
+                        [round(c) for c in
+                         [file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height]]:
+            return True
 
         file_img.provenance_image_file = self.create_file_from_pillow_image(provenance_img,
                                                                             company=company,
-                                                                            name='%s_provenance' % (file_name,)).save()
+                                                                            name='provenance_%s' % (file_name,)).save()
 
         file_img.proceeded_image_file = self.create_file_from_pillow_image(provenance_img.crop(
             (round(l), round(t), round(l + w), round(t + h))), company=company,
-            name='%s_proceeded' % (file_name,)).save()
+            name='proceeded_%s' % (file_name,)).save()
 
-        return None
+        return True
 
     def get_factory(self, *args, **kwargs):
         return self.proxy_getter, self.proxy_setter
@@ -237,10 +240,10 @@ class Material(Base, PRBase):
 
     publications = relationship('Publication', primaryjoin="Material.id==Publication.material_id")
 
-    search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
-                     'short': {'relevance': lambda field='short': RELEVANCE.short},
-                     'long': {'relevance': lambda field='long': RELEVANCE.long},
-                     'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
+    # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
+    #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
+    #                  'long': {'relevance': lambda field='long': RELEVANCE.long},
+    #                  'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
 
     def elastic_get_fields(self):
         return {
@@ -414,10 +417,10 @@ class Publication(Base, PRBase, PRElasticDocument):
                            secondaryjoin="Material.company_id == Company.id",
                            viewonly=True, uselist=False)
 
-    search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
-                     'short': {'relevance': lambda field='short': RELEVANCE.short},
-                     'long': {'relevance': lambda field='long': RELEVANCE.long},
-                     'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
+    # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
+    #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
+    #                  'long': {'relevance': lambda field='long': RELEVANCE.long},
+    #                  'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
 
     # elasticsearch begin
     def elastic_get_fields(self):

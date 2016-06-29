@@ -624,9 +624,9 @@ class File(Base, PRBase):
     @staticmethod
     def folder_dict(company, dict):
         res = {'id': company.journalist_folder_file_id,
-               'name': "%s files" % (company.name.replace(
+               'name': "%s" % (company.name.replace(
                    '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),),
-               'icon': ''}
+               'icon_url': utils.fileUrl(company.logo_file_id)}
         res.update(dict)
         return res
 
