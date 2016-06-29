@@ -34,8 +34,8 @@ class File(Base, PRBase):
 
     company_id = Column(TABLE_TYPES['id_profireader'],
                         ForeignKey('company.id'))
-    article_portal_division_id = Column(TABLE_TYPES['id_profireader'],
-                                        ForeignKey('article_portal_division.id'))
+    # article_portal_division_id = Column(TABLE_TYPES['id_profireader'],
+    #                                     ForeignKey('article_portal_division.id'))
     copyright_author_name = Column(TABLE_TYPES['name'],
                                    default='',
                                    nullable=False)

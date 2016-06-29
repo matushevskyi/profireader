@@ -19,10 +19,13 @@
         </div>
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-            <div class="centred">
-                <a class="logo" href="/"><img {{ prImage(portal.logo_file_id)}}  alt="Portal logo" class="block-item-img"></a>
+            <div class="left-block--portal">
+                <div class="centred">
+                    <a class="logo" href="/"><img {{ prImage(portal.logo_file_id) }} alt="Portal logo"
+                                                                                     class="block-item-img"></a>
+                </div>
             </div>
-
+         <div class="right-block-menu-portal">
             <ul class="nav navbar-nav">
                 {% for division in portal.divisions %}
                     {% if division.portal_division_type_id != 'index' %}
@@ -35,6 +38,8 @@
                 {% endfor %}
             </ul>
         </div>
+    </div>
+    <hr>
     </div>
 </nav>
 
