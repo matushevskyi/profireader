@@ -260,24 +260,24 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.$watch('zoom', function (newv, oldv) {
                         if (newv) {
-                            if (!scope.prCrop['selected_by_user']['crop_coordinates'])
-                                scope.prCrop['selected_by_user']['crop_coordinates'] = {};
-                            scope.prCrop['selected_by_user']['crop_coordinates']['zoom'] = newv;
+                            if (!scope.prCrop['selected_by_user']['crop'])
+                                scope.prCrop['selected_by_user']['crop'] = {};
+                            scope.prCrop['selected_by_user']['crop']['origin_zoom'] = newv;
                         }
                     }
                 );
 
                 scope.$watch('origin', function (newv, oldv) {
                         if (newv) {
-                            if (!scope.prCrop['selected_by_user']['crop_coordinates'])
-                                scope.prCrop['selected_by_user']['crop_coordinates'] = {};
+                            if (!scope.prCrop['selected_by_user']['crop'])
+                                scope.prCrop['selected_by_user']['crop'] = {};
                             if (newv) {
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_x'] = newv[0];
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_y'] = newv[1];
+                                scope.prCrop['selected_by_user']['crop']['origin_left'] = newv[0];
+                                scope.prCrop['selected_by_user']['crop']['origin_top'] = newv[1];
                             }
                             else {
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_x'] = 0;
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_y'] = 0;
+                                scope.prCrop['selected_by_user']['crop']['origin_left'] = 0;
+                                scope.prCrop['selected_by_user']['crop']['origin_top'] = 0;
                             }
 
                         }
@@ -286,12 +286,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.$watchCollection('coordinates', function (newv, oldv) {
                     if (newv) {
-                        if (!scope.prCrop['selected_by_user']['crop_coordinates'])
-                            scope.prCrop['selected_by_user']['crop_coordinates'] = {};
-                        scope.prCrop['selected_by_user']['crop_coordinates']['x'] = newv[0];
-                        scope.prCrop['selected_by_user']['crop_coordinates']['y'] = newv[1];
-                        scope.prCrop['selected_by_user']['crop_coordinates']['width'] = newv[2] - newv[0];
-                        scope.prCrop['selected_by_user']['crop_coordinates']['height'] = newv[3] - newv[1];
+                        if (!scope.prCrop['selected_by_user']['crop'])
+                            scope.prCrop['selected_by_user']['crop'] = {};
+                        scope.prCrop['selected_by_user']['crop']['crop_left'] = newv[0];
+                        scope.prCrop['selected_by_user']['crop']['crop_top'] = newv[1];
+                        scope.prCrop['selected_by_user']['crop']['crop_width'] = newv[2] - newv[0];
+                        scope.prCrop['selected_by_user']['crop']['crop_height'] = newv[3] - newv[1];
                     }
                 });
 
@@ -352,6 +352,15 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     console.log('set_model', model);
 
                     switch (model['type']) {
+                        case 'browse':
+                            console.log(model);
+                            var crd = model.crop;
+                            scope.selectedurl = fileUrl(model['image_file_id']);
+                            scope.disabled = false;
+                            scope.coordinates = null;
+                            scope.zoom = null;
+                            scope.origin = null;
+                            break;
                         case 'provenance':
                             var crd = model.crop;
                             scope.selectedurl = fileUrl(model['provenance_file_id']);
@@ -386,6 +395,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                             scope.zoom = null;
                             scope.origin = null;
                             // scope.state = null;
+                            break;
+                        default:
+                            console.log('unknown model type');
                             break;
                     }
 

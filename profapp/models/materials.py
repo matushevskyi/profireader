@@ -14,11 +14,37 @@ import re
 from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
-from .files import FileImg, FileImgCropProperties
+from .files import FileImg, FileImgCropProperties, FileContent
 from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument, elasticsearch
 from sqlalchemy.ext.associationproxy import association_proxy
+
+
+class CropCoordinates:
+    left = 0
+    top = 0
+    width = 0
+    height = 0
+    rotate = 0
+    origin_x = 0
+    origin_y = 0
+
+    def __init__(self, left=None, top=None, width=None, height=None):
+        if left is not None:
+            self.left = left
+        if width is not None:
+            self.width = width
+        if top is not None:
+            self.top = top
+        if height is not None:
+            self.height = height
+
+
+from PIL import Image
+from io import BytesIO
+import base64
+import sys
 
 
 class FileImgProxy:
@@ -29,6 +55,7 @@ class FileImgProxy:
     min_size = [60, 60]
     aspect_ratio = [0.1, 10]
     preset_urls = {}
+
     # none = utils.fileUrl(FOLDER_AND_FILE.no_image())
     no_selection_url = utils.fileUrl(FOLDER_AND_FILE.no_image())
 
@@ -69,15 +96,103 @@ class FileImgProxy:
                 'no_selection_url': self.no_selection_url
             }}
 
-    def proxy_setter(self, obj, value):
-        print((obj, value))
+    def get_correct_coordinates(self, coords_by_client, img):
+
+        l, t, w, h = (coords_by_client['crop_left'], coords_by_client['crop_top'],
+                      coords_by_client['crop_width'], coords_by_client['crop_height'])
+
+        # resize image if it is to big
+
+        scale_by = max(img.width / (self.image_size[0] * 10), img.height / (self.image_size[1] * 10), 1)
+        if scale_by > 1:
+            old_center = [l + w / 2., t + h / 2.]
+            w, h = w / scale_by, h / scale_by
+            l, t = old_center[0] - w / 2, old_center[1] - h / 2
+            img = img.resize((round(w), round(h)), Image.ANTIALIAS)
+
+        if self.aspect_ratio and self.aspect_ratio[0] and w / h < self.aspect_ratio[0]:
+            increase_height = (w / self.aspect_ratio[0] - h)
+            t, h = t - increase_height / 2, h + increase_height
+        elif self.aspect_ratio and self.aspect_ratio[1] and w / h > self.aspect_ratio[1]:
+            increase_width = (h * self.aspect_ratio[1] - w)
+            l, w = l - increase_width / 2, w + increase_width
+
+        if l < 0 or t < 0 or t + h > img.height or l + w > img.width:
+            raise Exception("cant fit coordinates in image %s, %s, %s, %s" % (l, t, w, h))
+
+        if self.min_size and (w < self.min_size[0] or h < self.min_size[1]):
+            raise Exception("cant fit coordinates in min image %s, %s:  %s" % (w, h, self.min_size))
+
+        return img, l, t, w, h
+
+    @staticmethod
+    def create_file_from_pillow_image(pillow_img, company: Company = None, file_fmt=None, name=''):
+        bytes_file = BytesIO()
+        fmt = file_fmt if file_fmt else (pillow_img.format if pillow_img.format else 'JPEG')
+        pillow_img.save(bytes_file, fmt)
+        file = File(size=sys.getsizeof(bytes_file.getvalue()),
+                    mime='image/' + fmt.lower(),
+                    name=name,
+                    parent_id=company.journalist_folder_file_id,
+                    root_folder_id=company.journalist_folder_file_id)
+
+        file_content = FileContent(content=bytes_file.getvalue(), file=file)
+        return file
+
+    def proxy_setter(self, file_img: FileImg, value):
+
+        sel_by_user = value['selected_by_user']
+        sel_by_user_type = sel_by_user['type']
+        sel_by_user_crop = sel_by_user['crop']
+
+        company = value['company']
+        file_name = value['file_name_prefix']
+
+        if sel_by_user_type == 'none' or sel_by_user_type == 'preset':
+            file_img.delete()
+            return
+
+        if sel_by_user_type == 'provenance':
+            user_img = Image.open(BytesIO(file_img.provenance_image_file.file_content.content))
+        elif sel_by_user_type == 'browse':
+            user_img = Image.open(BytesIO(File.get(sel_by_user['image_file_id']).file_content.content))
+        elif sel_by_user_type == 'upload':
+            user_img = Image.open(
+                BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', sel_by_user['file']['content']))))
+        else:
+            raise Exception('Unknown selected by user image source type `%s`', sel_by_user_type)
+
+        provenance_img, l, t, w, h = self.get_correct_coordinates(sel_by_user_crop, user_img)
+
+        if sel_by_user_type == 'provenance':
+            if provenance_img == user_img:
+                if [round(c) for c in [l, t, w, h]] == \
+                        [round(c) for c in [file_img.crop_left, file_img.crop_top,
+                                            file_img.crop_width,
+                                            file_img.crop_height]]:
+                    return
+
+        file_img.provenance_image_file = self.create_file_from_pillow_image(provenance_img,
+                                                                            company=company,
+                                                                            name='%s_provenance' % (file_name,)).save()
+
+        file_img.proceeded_image_file = self.create_file_from_pillow_image(provenance_img.crop(
+            (round(l), round(t), round(l + w), round(t + h))), company=company,
+            name='%s_proceeded' % (file_name,)).save()
+
         return None
 
     def get_factory(self, *args, **kwargs):
         return self.proxy_getter, self.proxy_setter
 
-    def get_proxy(self, target_collection):
-        return association_proxy(target_collection, None, getset_factory=self.get_factory)
+    def get_creator(self, client_data):
+        ret = FileImg()
+        self.proxy_setter(ret, client_data)
+        return ret
+
+    def get_proxy(self, target_collection_name):
+        return association_proxy(target_collection_name, None, creator=self.get_creator,
+                                 getset_factory=self.get_factory)
 
 
 class Material(Base, PRBase):
@@ -91,18 +206,12 @@ class Material(Base, PRBase):
 
     illustration_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
     illustration_file_img = relationship(FileImg, uselist=False)
-
-    # illustration = image_file_association_proxy('illustration_file_img', 'illustration',
-    #                                             getset_factory=image_file_association_proxy)
-
     illustration = FileImgProxy(image_size=[600, 480],
                                 min_size=[600 / 6, 480 / 6],
                                 aspect_ratio=[600 / 480., 600 / 480.],
                                 # none=utils.fileUrl(FOLDER_AND_FILE.no_article_image()),
-                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_article_image())).get_proxy(
-        'illustration_file_img')
-
-    # illustration_file_img_properties =
+                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_article_image())) \
+        .get_proxy('illustration_file_img')
 
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
@@ -249,17 +358,17 @@ class Material(Base, PRBase):
             companies[article.company.id] = article.company.name
         return companies
 
-    def set_image_client_side_dict(self, client_data):
-        if client_data['selected_by_user']['type'] == 'preset':
-            client_data['selected_by_user'] = {'type': 'none'}
-        if not self.company:
-            folder_id = Company.get(self.company_id).system_folder_file_id
-        else:
-            folder_id = self.company.system_folder_file_id
-
-        FileImg.set_image_cropped_file(self.illustration_image_cropped, self.image_cropping_properties(),
-                                       client_data, folder_id)
-        return self
+        # def set_image_client_side_dict(self, client_data):
+        #     if client_data['selected_by_user']['type'] == 'preset':
+        #         client_data['selected_by_user'] = {'type': 'none'}
+        #     if not self.company:
+        #         folder_id = Company.get(self.company_id).system_folder_file_id
+        #     else:
+        #         folder_id = self.company.system_folder_file_id
+        #
+        #     FileImg.set_image_cropped_file(self.illustration_image_cropped, self.image_cropping_properties(),
+        #                                    client_data, folder_id)
+        #     return self
 
 
 def set_long_striped(mapper, connection, target):

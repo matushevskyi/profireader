@@ -27,7 +27,7 @@ class FileContent(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), primary_key=True)
     content = Column(Binary, nullable=False)
 
-    file = relationship('File', uselist=False, back_populates='file_content')
+    file = relationship('File', uselist=False, back_populates='file_content', cascade='all')
 
     def __init__(self, file=None, content=None):
         self.file = file
@@ -186,7 +186,7 @@ class File(Base, PRBase):
                     'parent_id': file.parent_id, 'type': File.type(file),
                     'date': str(file.md_tm),
                     # TODO: OZ by OZ: thumbnail generation
-                    'thumbnail_url': '//static.profireader.com/static/images/0.gif',
+                    'thumbnail_url': '//static.profireader.com/static/images/unknown_file.png',
                     'file_url': file.url(),
                     'youtube_data': {'id': file.youtube_video.video_id,
                                      'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
@@ -631,28 +631,11 @@ class File(Base, PRBase):
         return res
 
 
-class CropCoordinates:
-    left = 0
-    top = 0
-    width = 0
-    height = 0
-    rotate = 0
-    origin_x = 0
-    origin_y = 0
 
-    def __init__(self, left=None, top=None, width=None, height=None):
-        if left is not None:
-            self.left = left
-        if width is not None:
-            self.width = width
-        if top is not None:
-            self.top = top
-        if height is not None:
-            self.height = height
 
 class FileImg(Base, PRBase):
     __tablename__ = 'file_img'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, unique=True, primary_key=True)
+    id = Column(TABLE_TYPES['id_profireader'], nullable=True, unique=True, primary_key=True)
 
     provenance_image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(File.id), nullable=False)
     provenance_image_file = relationship(File, foreign_keys=[provenance_image_file_id])
@@ -675,147 +658,6 @@ class FileImg(Base, PRBase):
     crop_height = Column(TABLE_TYPES['float'], nullable=False)
 
 
-    @staticmethod
-    def createCropedAndScaledImageInFile(img, w, h, file_format, top=None, left=None, width=None, height=None):
-        resized = img.resize((w, h))
-
-        # fileformat = original.mime.split('/')[-1].upper()
-        # fileformat = fileformat if fileformat else 'jpeg'
-        return resized
-        # bytes_file = BytesIO()
-        # return resized.save(bytes_file, file_format)
-        # return bytes_file.getvalue()
-
-        # return File(md_tm=original.md_tm, size=sys.getsizeof(bytes_file.getvalue()),
-        #                  name=original.name + '_thumbnail_%sx%s' % (w,h),
-        #                  parent_id=folder_id if folder_id else original.parent_id,
-        #                  author_user_id=original.author_user_id,
-        #                  root_folder_id=original.root_folder_id,
-        #                  company_id=original.company_id,
-        #                  content = bytes_file.getvalue(),
-        #                  mime=original.mime)
-
-    # def coordinates_changed_by_user(self, coordinates_from_client, cropping_properties):
-    #
-    #     return (round(self.x) == round(left)) and round(self.y) == round(top) and \
-    #            (round(right - left) == self.width and round(bottom - top) == self.height)
-
-    def get_provenance_size(self, w, h, cropping_properties):
-        provenance_size = [w, h]
-        if provenance_size[0] > cropping_properties.image_size[0] * 10:
-            provenance_size = [cropping_properties.image_size[0] * 10,
-                               provenance_size[1] / provenance_size[0] * cropping_properties.image_size[0] * 10]
-        if provenance_size[1] > cropping_properties.image_size[1] * 10:
-            provenance_size = [provenance_size[0] / provenance_size[1] * cropping_properties.image_size[1] * 10,
-                               cropping_properties.image_size[1] * 10]
-        return provenance_size
-
-    @staticmethod
-    def createFileFromPillowImage(pillowImage, parent_id, format=None):
-        bytes_file = BytesIO()
-        pillowImage.save(bytes_file, format if format else (pillowImage.format if pillowImage.format else 'JPEG'))
-        return File(size=sys.getsizeof(bytes_file.getvalue()),
-                    # name='provenance_%sx%s' % (w, h),
-                    parent_id=parent_id,
-                    # root_folder_id=original.root_folder_id,
-                    # company_id=original.company_id,
-                    file_content=FileContent(content=bytes_file.getvalue()))
-
-
-        # self.provenance_image_file =
-        #
-        # # createCropedAndScaledImageInFile
-        #
-        #
-        # # self.original_image_file =
-        # #
-        # # if not existing_cropped_file:
-        # #     existing_cropped_file = FileImg()
-        #
-        # existing_cropped_file.provenance_image_file = File.createScaledImage()
-        #
-        # if existing_cropped_file:
-        #     if selected_by_user[
-        #         'image_file_id'] == existing_cropped_file.provenance_image_file_id and not existing_cropped_file.coordinates_changed(
-        #         selected_by_user['crop_coordinates'],
-        #         cropping_properties):
-        #         return self
-        #     elif selected_by_user['image_file_id'] == existing_cropped_file.provenance_image_file_id \
-        #             and existing_cropped_file.coordinates_changed(selected_by_user['crop_coordinates'],
-        #                                                           client_data):
-        #
-        #         original_image = File.get(selected_by_user['image_file_id'])
-        #         return original_image.crop(selected_by_user['crop_coordinates'],
-        #                                    folder_id, cropping_properties, old_image_cropped)
-        #     else:
-        #         original_image = File.get(selected_by_user['image_file_id'])
-        # else:
-        #     original_image = File.get(selected_by_user['image_file_id'])
-        # content = original_image.file_content.content
-        #
-        # if old_image_cropped:
-        #     old_original_image = File.get(old_image_cropped.original_image_id)
-        #     if old_original_image:
-        #         old_original_image.delete()
-        #
-        # if selected_by_user_type == 'none':
-        #     return None
-        #
-        # if selected_by_user_type == 'upload':
-        #     imgdataContent = selected_by_user['file']['content']
-        #     image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
-        #     content = base64.b64decode(image_data)
-        #
-        # name = selected_by_user['file']['name'] if selected_by_user_type == 'upload' else original_image.name
-        # mime = selected_by_user['file']['mime'] if selected_by_user_type == 'upload' else original_image.mime
-        #
-        # image_pil = Image.open(BytesIO(content))
-        # if image_pil.width > column_data['image_size'][1] * 10 and image_pil.height > column_data['image_size'][0] * 10:
-        #     cont = image_pil.resize((int(column_data['image_size'][1] * 10), int(column_data['image_size'][0] * 10)))
-        #     content = BytesIO()
-        #     cont.save(content, mime.split('/')[-1].upper())
-        #     content = content.getvalue()
-        #
-        # new_orginal_image = File.uploadLogo(content, name, mime, folder_id, author={self.__class__.__name__: self})
-        #
-        # if 'error' in File.check_image_mime(new_orginal_image.id):
-        #     resp = self.get_client_side_dict()
-        #     resp.update({'error': True})
-        #     return resp
-        # return new_orginal_image.crop(selected_by_user['crop_coordinates'], folder_id, column_data)
-
-    # this function create illustration from uploaded image file
-    @staticmethod
-    def create_from_image_file(file_id, parent_id, cropparameters):
-        original_file = File.get(file_id)
-        copied_file = original_file.copy_file(parent_id)
-        bytes_file, area = copied_file.crop_with_coordinates(
-            {'x': 0, 'y': 0, 'width': 10000000000, 'height': 10000000000},
-            cropparameters)
-
-    # crop_with_coordinates
-
-
-    @staticmethod
-    def crop(file, coordinates, folder_id, params, old_image_cropped=None):
-        bytes_file, area = file.crop_with_coordinates(coordinates, params)
-        if bytes_file:
-            if old_image_cropped:
-                db(File, id=old_image_cropped.croped_image_id).first().delete()
-            new_cropped_image = file.create_cropped_image(bytes_file, folder_id)
-            FileImg(original_image_id=file.id,
-                    croped_image_id=new_cropped_image.id,
-                    x=float(round(area[0], 6)), y=float(round(area[1], 6)),
-                    width=float(area[2] - area[0]), height=float(area[3] - area[1]),
-                    croped_width=float(area[4]),
-                    croped_height=float(area[5]),
-                    origin_x=float(coordinates['origin_x']),
-                    origin_y=float(coordinates['origin_y']),
-                    zoom=coordinates['zoom']).save()
-            return new_cropped_image.id
-        else:
-            return self.id
-
     def get_client_side_dict(self, fields='crop_left,crop_top,crop_width,crop_height,origin_zoom,origin_top,origin_left',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
@@ -826,11 +668,6 @@ class FileImg(Base, PRBase):
 
     # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
-
-    @staticmethod
-    def get_coordinates_and_original_img(croped_image_id):
-        coor_img = db(FileImg, croped_image_id=croped_image_id).one()
-        return coor_img.original_image_id, coor_img.get_client_side_dict()
 
 class FileImgCropProperties:
     from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
@@ -876,18 +713,18 @@ class FileImgCropProperties:
         else:
             return None
 
-    @staticmethod
-    def get_correct_coordinates(self, left, top, width, height):
-        area_aspect = width / height
-
-        if self.aspect_ratio and self.aspect_ratio[0] and area_aspect < self.aspect_ratio[0]:
-            change_height = (width / self.aspect_ratio[0] - height)
-            return CropCoordinates(left, top - change_height / 2, width, height + change_height)
-        elif self.aspect_ratio and self.aspect_ratio[1] and area_aspect > self.aspect_ratio[1]:
-            change_width = (height * self.aspect_ratio[1] - width)
-            return CropCoordinates(left - change_width / 2, top, width + change_width, height)
-        else:
-            return CropCoordinates(left, top, width, height)
+    # @staticmethod
+    # def get_correct_coordinates(self, left, top, width, height):
+    #     area_aspect = width / height
+    #
+    #     if self.aspect_ratio and self.aspect_ratio[0] and area_aspect < self.aspect_ratio[0]:
+    #         change_height = (width / self.aspect_ratio[0] - height)
+    #         return CropCoordinates(left, top - change_height / 2, width, height + change_height)
+    #     elif self.aspect_ratio and self.aspect_ratio[1] and area_aspect > self.aspect_ratio[1]:
+    #         change_width = (height * self.aspect_ratio[1] - width)
+    #         return CropCoordinates(left - change_width / 2, top, width + change_width, height)
+    #     else:
+    #         return CropCoordinates(left, top, width, height)
 
     def crop_with_coordinates(self, coordinates, params):
         try:
@@ -915,43 +752,43 @@ class FileImgCropProperties:
         except ValueError:
             return False
 
-    def set_image_cropped_file(self, file_img: FileImg, client_data: dict, folder_id):
-
-        selected_by_user = client_data['selected_by_user']
-        selected_by_user_type = selected_by_user['type']
-
-        if selected_by_user_type == 'none':
-            file_img.delete()
-
-        coordinates = File.get_correct_coordinates(client_data['x'], client_data['y'],
-                                                   client_data['width'], client_data['height'], self)
-
-        if selected_by_user_type == 'provenance':
-            # user didn't change anything
-            if [round(c) for c in coordinates] == [round(c) for c in self.get_crop_coordinates()]:
-                return self
-            provenance_img = Image.open(BytesIO(self.provenance_image_file.file_content.content))
-            original_img = None
-        elif selected_by_user_type == 'browse':
-            original_img = Image.open(BytesIO(File.get(selected_by_user['image_file_id']).file_content.content))
-        elif selected_by_user_type == 'upload':
-            original_img = Image.open(
-                BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', selected_by_user['file']['content']))))
-        else:
-            raise Exception('Unknown selected by user image source type `%s`', selected_by_user_type)
-
-        if original_img:
-            # provenance file sholdn't be too large
-            provenance_size = self.get_provenance_size(original_img.width, original_img.height, self)
-            provenance_img = self.createCropedAndScaledImageInFile(original_img,
-                                                                   CropCoordinates(width=provenance_size[0],
-                                                                                   height=provenance_size[1]))
-
-            self.provenance_image_file = self.createFileFromPillowImage(provenance_img)
-
-        self.proceeded_image_file = \
-            self.createFileFromPillowImage(self.createCropedAndScaledImageInFile(provenance_img, coordinates))
-        return self
+    # def set_image_cropped_file(self, file_img: FileImg, client_data: dict, folder_id):
+    #
+    #     selected_by_user = client_data['selected_by_user']
+    #     selected_by_user_type = selected_by_user['type']
+    #
+    #     if selected_by_user_type == 'none':
+    #         file_img.delete()
+    #
+    #     coordinates = File.get_correct_coordinates(client_data['x'], client_data['y'],
+    #                                                client_data['width'], client_data['height'], self)
+    #
+    #     if selected_by_user_type == 'provenance':
+    #         # user didn't change anything
+    #         if [round(c) for c in coordinates] == [round(c) for c in self.get_crop_coordinates()]:
+    #             return self
+    #         provenance_img = Image.open(BytesIO(self.provenance_image_file.file_content.content))
+    #         original_img = None
+    #     elif selected_by_user_type == 'browse':
+    #         original_img = Image.open(BytesIO(File.get(selected_by_user['image_file_id']).file_content.content))
+    #     elif selected_by_user_type == 'upload':
+    #         original_img = Image.open(
+    #             BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', selected_by_user['file']['content']))))
+    #     else:
+    #         raise Exception('Unknown selected by user image source type `%s`', selected_by_user_type)
+    #
+    #     if original_img:
+    #         # provenance file sholdn't be too large
+    #         provenance_size = self.get_provenance_size(original_img.width, original_img.height, self)
+    #         provenance_img = self.createCropedAndScaledImageInFile(original_img,
+    #                                                                CropCoordinates(width=provenance_size[0],
+    #                                                                                height=provenance_size[1]))
+    #
+    #         self.provenance_image_file = self.createFileFromPillowImage(provenance_img)
+    #
+    #     self.proceeded_image_file = \
+    #         self.createFileFromPillowImage(self.createCropedAndScaledImageInFile(provenance_img, coordinates))
+    #     return self
 
     def __init__(self, field, relationship, **kwargs):
         print((field, relationship))

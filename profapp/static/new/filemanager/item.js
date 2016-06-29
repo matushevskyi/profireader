@@ -20,7 +20,7 @@
                 id: model && model.id || '',
                 parent_id: model && model.parent_id || '',
                 recursive: false,
-                url: model && model.url || '',
+                thumbnail_url: model && model.thumbnail_url || '',
                 file_url: model && model.file_url || '',
                 sizeKb: function() {
                     return Math.round(this.size / 1024, 1);

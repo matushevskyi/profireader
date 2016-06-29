@@ -39,38 +39,27 @@ def article_show_form(material_id=None, company_id=None):
 @check_right(EditMaterialRight, ['material_id'])
 # @check_right(EditPublicationRight, ['publication_id', 'company_id'])
 @check_right(BaseRightsEmployeeInCompany, ['company_id'], BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
-def load_form_create(json, company_id=None, material_id=None):
+def load_form_create(json_data, company_id=None, material_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
-
-    # available_tag_names = None
-
-    if material_id:  # companys version. always updating existing
+    if material_id:
         material = Material.get(material_id)
-    # elif publication_id:  # updating portal version
-    #     articleVersion = Publication.get(publication_id)
-    #     portal_division_id = articleVersion.portal_division_id
-    #     # article_tag_names = articleVersion.tags
-    #     # available_tags = PortalDivision.get(portal_division_id).portal_division_tags
-    #     # available_tag_names = list(map(lambda x: getattr(x, 'name', ''), available_tags))
     else:
         material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user)
     if action == 'load':
         material_dict = material.get_client_side_dict(more_fields='long|company|illustration')
-        # material_dict['illustration'] = material.get_image_client_side_dict()
-        # if publication_id:
-        #     article_dict = dict(list(article_dict.items()) + [('tags', article_tag_names)])
         return {'material': material_dict}
     else:
-        parameters = g.filter_json(json, 'material.title|subtitle|short|long|keywords|author')
+        parameters = g.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
         material.attr(parameters['material'])
         if action == 'validate':
             material.detach()
             return material.validate(material.id is not None)
         else:
-            material_dict = material.set_image_client_side_dict(json['material']['image']).save()\
-                .get_client_side_dict(more_fields='long|company')
-            material_dict['image'] = material.get_image_client_side_dict()
-            return {'material': material_dict}
+            material.illustration = utils.dict_merge(json_data['material']['illustration'],
+                                                     {'company': material.company,
+                                                      'file_name_prefix': 'illustration_for_material_%s' % (
+                                                          material.id,)})
+            return {'material': {}}
 
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'])
