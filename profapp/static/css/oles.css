@@ -46,10 +46,6 @@
     font-weight: bold;
 }
 
-.text-align-right {
-    text-align: right;
-}
-
 .item input[disabled], .item select[disabled], .item button[disabled] {
     color: #ccc;
 }
@@ -374,7 +370,6 @@ div.pr-cell {
     text-overflow: ellipsis;
     vertical-align: top;
 
-
     border-style: none;
     border-color: #0a0a0a;
     border-width: 1px;
@@ -402,3 +397,151 @@ div.pr-row:last-child div.pr-cell {
 .m025em {
     margin: 0.25em;
 }
+
+.m05em {
+    margin: 0.5em;
+}
+
+.m025em {
+    margin: 0.25em;
+}
+
+.mr1em {
+    margin-right: 1em;
+}
+
+.ml1em {
+    margin-left: 1em;
+}
+
+.mt1em {
+    margin-top: 1em;
+}
+
+.mb1em {
+    margin-bottom: 1em;
+}
+
+.mr2em {
+    margin-right: 2em;
+}
+
+.ml2em {
+    margin-left: 2em;
+}
+
+.mt2em {
+    margin-top: 2em;
+}
+
+.mb2em {
+    margin-bottom: 2em;
+}
+
+.p1em {
+    padding: 1em;
+}
+
+.p05em {
+    padding: 0.5em;
+}
+
+.p025em {
+    padding: 0.25em;
+}
+
+.p05em {
+    padding: 0.5em;
+}
+
+.p025em {
+    padding: 0.25em;
+}
+
+.pr1em {
+    padding-right: 1em;
+}
+
+.pl1em {
+    padding-left: 1em;
+}
+
+.pt1em {
+    padding-top: 1em;
+}
+
+.pb1em {
+    padding-bottom: 1em;
+}
+
+.pr2em {
+    padding-right: 2em;
+}
+
+.pl2em {
+    padding-left: 2em;
+}
+
+.pt2em {
+    padding-top: 2em;
+}
+
+.pb2em {
+    padding-bottom: 2em;
+}
+
+
+.bg-contain {
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.img-icon-in-text-2-1 {
+    width: 2em;
+    height: 1em;
+}
+
+.img-icon-in-text-4-2 {
+    width: 4em;
+    height: 2em;
+}
+
+.img-icon-in-text-3-1_5 {
+    width: 3em;
+    height: 1.5em;
+}
+
+.w10em {
+    width: 10em;
+    overflow: hidden;
+}
+
+.w20em {
+    width: 20em;
+    overflow: hidden;
+}
+
+.tal {
+    text-align: left;
+}
+
+.tar {
+    text-align: right;
+}
+
+.tac {
+    text-align: center;
+}
+
+.taj {
+    text-align: justify;
+}
+
+
+.caret {
+    position: absolute;
+    right: 0.5em;
+    top: 45%;
+}
+

@@ -4,7 +4,6 @@
  */
 
 (function (angular) {
-
     'use strict';
     if (!angular) {
         throw 'No angular found';
@@ -587,7 +586,7 @@
         };
 
         $scope.setZoom = function (FixedPoint) {
-            console.log('setZoom', FixedPoint);
+            // console.log('setZoom', FixedPoint);
             if (!$scope.logic || !$scope.logic.img) return;
 
             // this function is called when zoom was changed and coordianates do not.
@@ -621,7 +620,7 @@
                     compass.e = 1 - compass.w;
                     compass.s = 1 - compass.n;
                 }
-                console.log(FixedPoint, compass);
+                // console.log(FixedPoint, compass);
                 // we have compass calculate new canvas coordinates, actually we need only top left corner (origin)
 
                 var new_canvas_coordinates = [
@@ -946,18 +945,16 @@
         $scope.mouseOverCropper = function (event) {
             var of = $scope.$container.offset();
             var ret = [(event.pageX - of.left) + $(window).scrollLeft(), (event.pageY - of.top) + $(window).scrollTop()];
-            console.log(ret);
             return (ret[0] >= 0 && ret[1] >= 0 && ret[0] <= $scope.$container.outerWidth() && ret[1] <= $scope.$container.outerHeight()) ? ret : false;
         };
 
         $scope.zoom_to = function (new_zoomratio, canvas_fixed_point) {
 
-
             $scope.processing = true;
 
             if ($scope.logic.relativeDeviationIn(new_zoomratio, $scope.logic.ctr.max_zoom, 0.01)) new_zoomratio = $scope.logic.ctr.max_zoom;
             if ($scope.logic.relativeDeviationIn(new_zoomratio, $scope.logic.ctr.min_zoom, 0.01)) new_zoomratio = $scope.logic.ctr.min_zoom;
-            console.log(canvas_fixed_point);
+            // console.log(canvas_fixed_point);
             var fixed_point = $scope.logic.canvas2imgPoint(canvas_fixed_point, {
                 zoom: $scope.ngCropZoom,
                 origin: $scope.ngCropOrigin
@@ -970,12 +967,13 @@
             $scope.state.origin = $scope.ngCropOrigin;
             $scope.redraw($scope.REDRAW_NEW_ZOOM, 'new zoom');
             $scope.processing = false;
+            $scope.sr();
             return true;
         };
 
         $scope._last_time_called_sr = null;
 
-        $scope.sr = function (r) {
+        $scope.sr = function () {
             if ($scope._last_time_called_sr) return null;
             $scope._last_time_called_sr = setTimeout(function () {
                 $timeout(function () {
@@ -983,14 +981,6 @@
                 });
             }, 100);
         };
-
-            // var nowtime = new Date.now? Date.now:Date().getTime();
-            // if (nowtime - $scope._last_time_called_sr) {
-            //
-            // }
-            // $scope._last_time_called_sr = nowtime;
-
-        // }, 100);
 
 
         $scope.new_rect = function (nr, compass) {
@@ -1007,7 +997,7 @@
                 // $scope.state.origin = $scope.ngCropOrigin;
                 // $scope.redraw($scope.REDRAW_NEW_ZOOM, 'new zoom');
                 // $scope.processing = false;
-                $scope.sr(newir);
+                $scope.sr();
                 $scope.redraw($scope.REDRAW_NEW_RECT, 'new rect');
 
 
@@ -1109,7 +1099,6 @@
                     return false;
                 }
                 var canvas_point = $scope.mouseOverCropper(event);
-                console.log(canvas_point);
                 if (!canvas_point) return false;
                 canvas_point = $scope.mouseRelativeToCanvas(event);
                 canvas_point = [inRange(canvas_point[0], 0, $scope.logic.ctr.canvas_size[0]),
@@ -1180,10 +1169,7 @@
                 ngCropOrigin: '=?ngCropOrigin',
                 ngCropLoading: '=?ngCropLoading',
                 ngCropDisabled: '=?ngCropDisabled',
-
                 logic: '=?logic',
-
-
                 ngCropOnError: '&?ngCropOnError',
                 ngCropOnLoad: '&?ngCropOnLoad',
 

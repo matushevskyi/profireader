@@ -2,23 +2,6 @@
 {% block portal_content %}
 
     {% for member_id in members %}
-        {##}
-        {#        <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12 block-item"#}
-        {#             style="background-image:url({{ fileUrl(members[member_id]['logo_file_id']) }});">#}
-        {#            <img src="//static.profireader.com/static/images/0.gif"#}
-        {#                 class="block-item-img"#}
-        {#                 style="background-image:url({{ fileUrl(members[member_id]['logo_file_id']) }});"/>#}
-        {#            <div class="row block-item">#}
-        {##}
-        {#            </div>#}
-
-        {#            <div class="row company-about">#}
-        {#                <a#}
-        {#                    href="{{ url_for('front.company_member', member_company_id = members[member_id]['id'], member_company_name = members[member_id]['name']) }}"#}
-        {#                    href>{{ members[member_id]['name'] }}</a>#}
-        {#                {{ members[member_id]['short_description']|safe }}#}
-        {#            </div>#}
-        {#        </div>#}
 
         <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12 company-blocks">
             <a href="{{ url_for('front.company_member', member_company_id = members[member_id]['id'], member_company_name = members[member_id]['name']) }}">

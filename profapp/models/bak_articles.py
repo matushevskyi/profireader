@@ -14,7 +14,7 @@ import re
 from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
-from .files import ImageCroped
+from .files import FileImg
 from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument, elasticsearch
@@ -43,7 +43,6 @@ class ArticlePortalDivision(Base, PRBase, PRElasticDocument):
     event_end_tm = Column(TABLE_TYPES['timestamp'])
     position = Column(TABLE_TYPES['position'])
     read_count = Column(TABLE_TYPES['int'], default=0)
-    search_reindexed = Column(TABLE_TYPES['int'], default=0)
 
     tags = relationship(Tag, secondary='tag_publication', uselist=True)
 
@@ -63,10 +62,10 @@ class ArticlePortalDivision(Base, PRBase, PRElasticDocument):
                            secondaryjoin="ArticleCompany.company_id == Company.id",
                            viewonly=True, uselist=False)
 
-    search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
-                     'short': {'relevance': lambda field='short': RELEVANCE.short},
-                     'long': {'relevance': lambda field='long': RELEVANCE.long},
-                     'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
+    # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
+    #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
+    #                  'long': {'relevance': lambda field='long': RELEVANCE.long},
+    #                  'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
 
     # elasticsearch begin
     def elastic_get_fields(self):
@@ -722,8 +721,8 @@ class Article(Base, PRBase):
 
     @staticmethod
     def get_image_client_side_dict(article):
-        return article.get_image_cropped_file(Article.logo_file_properties(article),
-                                              db(ImageCroped, croped_image_id=article.image_file_id).first())
+        return article.get_image_cropped_file(Article.image_cropping_properties(article),
+                                              db(FileImg, croped_image_id=article.image_file_id).first())
 
     @staticmethod
     def set_image_client_side_dict(article, client_data):

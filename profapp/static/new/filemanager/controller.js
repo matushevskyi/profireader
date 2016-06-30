@@ -1,4 +1,3 @@
-
 (function (window, angular, $) {
     "use strict";
     angular.module('FileManagerApp').controller('FileManagerCtrl', ['$http',
@@ -10,7 +9,7 @@
             $scope.path_profireader = 'http://profireader.com';
             $scope.orderProp = ['model.type', 'model.name'];
             $scope.query = '';
-            $scope.rootdirs = library;
+            $scope.rootdirs = filemanager_company_list;
             $scope.last_visit_root = last_visit_root;
             $scope.last_root_id = last_root_id;
             $scope.$$translate = translates;
@@ -23,15 +22,13 @@
             $scope.file_manager_called_for = file_manager_called_for;
             $scope.file_manager_on_action = file_manager_on_action;
             $scope.file_manager_default_action = file_manager_default_action;
-            $scope.root_id = '';
-            $scope.root_name = '';
+            $scope.root_selected = {};
             $scope.copy_file_id = '';
             $scope.cut_file_id = '';
             $scope.timer = false;
             $scope.name = '';
             $scope.upload_file_id = '';
             $scope.uploadingProgress = false;
-            $scope.can_upload = false;
             $scope.last_visit = document.referrer;
             
             $scope._ = function(phrase){
@@ -45,9 +42,8 @@
             };
             
             $scope.changeRoot = function (root) {
-                $scope.can_upload=root.can_upload;
+                $scope.root_selected = root;
                 $cookies.put('last_root' ,root.id);
-                $scope.root_name = root.name;
                 $scope.fileNavigator.setRoot(root.id);
             };
 

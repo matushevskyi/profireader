@@ -27,11 +27,11 @@ class PrBlueprint(Blueprint):
                     index = options['methods'].index('OK')
                     options['methods'][index] = 'POST'
                     ret = ok(f)
-                    ret = function_profiler(ret)
+                    # ret = function_profiler(ret)
                     self.bluprints[self.name] = {}
                     self.bluprints[self.name][ret.__name__] = ret
                 else:
-                    ret = function_profiler(ret)
+                    # ret = function_profiler(ret)
                     self.bluprints[self.name] = {}
                     self.bluprints[self.name][ret.__name__] = ret
             endpoint = options.pop("endpoint", ret.__name__)

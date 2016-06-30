@@ -41,25 +41,25 @@ def filemanager():
     else:
         last_root_id = ''
 
-    library = []
+    filemanager_company_list = []
     members, main_companies = Company.get_members_for_company()
     uniq = set()
     for n, user_company in enumerate(g.user.employer_assoc):
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE) == True:
-            library.insert(n, File.folder_dict(user_company.employer,
+            filemanager_company_list.insert(n, File.folder_dict(user_company.employer,
                                                {'can_upload': FilemanagerRights(company=user_company.company_id).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD'])}))
             uniq.update({user_company.employer.name})
             if user_company.employer.journalist_folder_file_id == last_root_id:
-                last_visit_root_name = user_company.employer.name + " files"
+                last_visit_root_name = user_company.employer.name
             if user_company.employer.name in members:
                 for member in members[user_company.employer.name]:
                     if member.company.name not in uniq and member.company.name not in main_companies:
-                        library.append(File.folder_dict(member.company,
+                        filemanager_company_list.append(File.folder_dict(member.company,
                                                         {'can_upload': FilemanagerRights(company=member.company.id).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD'])}))
                         uniq.update({member.company.name})
                         if member.company.journalist_folder_file_id == last_root_id:
-                            last_visit_root_name = member.company.name + " files"
-    # library.sort(key=lambda k: k['name'])
+                            last_visit_root_name = member.company.name
+    # filemanager_company_list.sort(key=lambda k: k['name'])
     file_manager_called_for = request.args[
         'file_manager_called_for'] if 'file_manager_called_for' in request.args else ''
     file_manager_on_action = jsonmodule.loads(
@@ -70,10 +70,10 @@ def filemanager():
         'get_root'] if 'get_root' in request.args else None
     if get_root:
         root = Company.get(get_root)
-        last_visit_root_name = (root.name + " files") if root else ''
+        last_visit_root_name = (root.name) if root else ''
         last_root_id = root.journalist_folder_file_id if root else ''
-    err = True if len(library) == 0 else False
-    return render_template('filemanager.html', library=json.dumps(library), err=err, last_visit_root=last_visit_root_name.replace(
+    err = True if len(filemanager_company_list) == 0 else False
+    return render_template('filemanager.html', filemanager_company_list=json.dumps(filemanager_company_list), err=err, last_visit_root=last_visit_root_name.replace(
         '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),
                            last_root_id=last_root_id,
                            file_manager_called_for=file_manager_called_for,

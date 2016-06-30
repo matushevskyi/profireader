@@ -230,8 +230,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 prCrop: '='
             },
             link: function link(scope, element, attrs) {
-
-
                 element.attr('ng-crop', 'selectedurl');
                 element.attr('ng-crop-coordinates', 'coordinates');
                 element.attr('ng-crop-options', 'options');
@@ -260,24 +258,24 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.$watch('zoom', function (newv, oldv) {
                         if (newv) {
-                            if (!scope.prCrop['selected_by_user']['crop_coordinates'])
-                                scope.prCrop['selected_by_user']['crop_coordinates'] = {};
-                            scope.prCrop['selected_by_user']['crop_coordinates']['zoom'] = newv;
+                            if (!scope.prCrop['selected_by_user']['crop'])
+                                scope.prCrop['selected_by_user']['crop'] = {};
+                            scope.prCrop['selected_by_user']['crop']['origin_zoom'] = newv;
                         }
                     }
                 );
 
                 scope.$watch('origin', function (newv, oldv) {
                         if (newv) {
-                            if (!scope.prCrop['selected_by_user']['crop_coordinates'])
-                                scope.prCrop['selected_by_user']['crop_coordinates'] = {};
+                            if (!scope.prCrop['selected_by_user']['crop'])
+                                scope.prCrop['selected_by_user']['crop'] = {};
                             if (newv) {
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_x'] = newv[0];
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_y'] = newv[1];
+                                scope.prCrop['selected_by_user']['crop']['origin_left'] = newv[0];
+                                scope.prCrop['selected_by_user']['crop']['origin_top'] = newv[1];
                             }
                             else {
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_x'] = 0;
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_y'] = 0;
+                                scope.prCrop['selected_by_user']['crop']['origin_left'] = 0;
+                                scope.prCrop['selected_by_user']['crop']['origin_top'] = 0;
                             }
 
                         }
@@ -286,35 +284,41 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.$watchCollection('coordinates', function (newv, oldv) {
                     if (newv) {
-                        if (!scope.prCrop['selected_by_user']['crop_coordinates'])
-                            scope.prCrop['selected_by_user']['crop_coordinates'] = {};
-                        scope.prCrop['selected_by_user']['crop_coordinates']['x'] = newv[0];
-                        scope.prCrop['selected_by_user']['crop_coordinates']['y'] = newv[1];
-                        scope.prCrop['selected_by_user']['crop_coordinates']['width'] = newv[2] - newv[0];
-                        scope.prCrop['selected_by_user']['crop_coordinates']['height'] = newv[3] - newv[1];
+                        if (!scope.prCrop['selected_by_user']['crop'])
+                            scope.prCrop['selected_by_user']['crop'] = {};
+                        scope.prCrop['selected_by_user']['crop']['crop_left'] = newv[0];
+                        scope.prCrop['selected_by_user']['crop']['crop_top'] = newv[1];
+                        scope.prCrop['selected_by_user']['crop']['crop_width'] = newv[2] - newv[0];
+                        scope.prCrop['selected_by_user']['crop']['crop_height'] = newv[3] - newv[1];
                     }
                 });
 
                 scope.$watch('prCrop', function (newv, oldv) {
-                    // console.log('prCrop prCrop');
+                    console.log('prCrop prCrop', newv, oldv);
                     scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
                     if (!newv) return;
 
                     var selected_by_user = newv['selected_by_user'];
-                    if (!scope.original_model) {
+                    var cropper_options = newv['cropper'];
+                    // if (!scope.original_model) {
                         scope.original_model = $.extend(true, {}, selected_by_user);
-                    }
+                    // }
                     scope.coordinates = [];
                     scope.state = {};
-                    scope.browsable = newv['browse'] ? true : false;
-                    scope.uploadable = newv['upload'] ? true : false;
+                    scope.browsable = cropper_options['browse'] ? true : false;
+                    scope.uploadable = cropper_options['upload'] ? true : false;
                     scope.resetable = true;
-                    scope.noneurl = newv['no_selection_url'];
+                    scope.noneurl = cropper_options['no_selection_url'];
                     scope.options = {};
-                    if (newv.min_size) scope.options['min_width'] = newv.min_size[0];
-                    if (newv.min_size) scope.options['min_height'] = newv.min_size[1];
-                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['min_aspect'] = newv.cropper.aspect_ratio[0];
-                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['max_aspect'] = newv.cropper.aspect_ratio[1];
+                    if (cropper_options.min_size) {
+                        scope.options['min_width'] = cropper_options.min_size[0];
+                        scope.options['min_height'] = cropper_options.min_size[1];
+                    }
+
+                    if (cropper_options.aspect_ratio) {
+                        scope.options['min_aspect'] = cropper_options.aspect_ratio[0];
+                        scope.options['max_aspect'] = cropper_options.aspect_ratio[1];
+                    }
                     scope.setModel(selected_by_user, false);
                 });
 
@@ -343,17 +347,24 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.setModel = function (model, do_not_set_ng_crop) {
 
-                    // console.log('set_model',model);
+                    console.log('set_model', model);
 
                     switch (model['type']) {
                         case 'browse':
-                            var crd = model.crop_coordinates;
+                            console.log(model);
                             scope.selectedurl = fileUrl(model['image_file_id']);
                             scope.disabled = false;
-                            scope.coordinates = crd ? [crd.x, crd.y, crd.width + crd.x, crd.height + crd.y] : null;
-                            scope.origin = crd ? [crd.origin_x, crd.origin_y] : null;
-                            scope.zoom = crd ? crd.zoom : null;
-                            // scope.state = null;
+                            scope.coordinates = null;
+                            scope.zoom = null;
+                            scope.origin = null;
+                            break;
+                        case 'provenance':
+                            var crd = model.crop;
+                            scope.selectedurl = fileUrl(model['provenance_file_id']);
+                            scope.disabled = false;
+                            scope.coordinates = crd ? [crd.crop_left, crd.crop_top, crd.crop_width + crd.crop_left, crd.crop_height + crd.crop_top] : null;
+                            scope.origin = crd ? [crd.origin_left, crd.origin_top] : null;
+                            scope.zoom = crd ? crd.origin_zoom : null;
                             break;
                         case 'none':
                             scope.selectedurl = scope.noneurl;
@@ -378,6 +389,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                             scope.zoom = null;
                             scope.origin = null;
                             // scope.state = null;
+                            break;
+                        default:
+                            console.log('unknown model type');
                             break;
                     }
 
@@ -433,7 +447,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 $compile($(element).next())(scope);
             }
         }
-            ;
     })
 
     .directive('dateTimestampFormat', function () {
@@ -460,8 +473,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
     .directive('prDateTimePicker', function ($timeout) {
         return prDatePicker_and_DateTimePicker('prDateTimePicker', $timeout);
     }).directive('prDatePicker', function ($timeout) {
-        return prDatePicker_and_DateTimePicker('prDatePicker', $timeout);
-    })
+    return prDatePicker_and_DateTimePicker('prDatePicker', $timeout);
+})
     .directive('prDatepicker', function () {
         return {
             replace: false,
@@ -501,12 +514,13 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
         };
     }])
 
-    .directive('prImage', ['$timeout', function ($timeout) {
+    .directive('prImage', [function () {
         return {
             restrict: 'A',
             scope: {
                 prImage: '=',
-                prNoImage: '@'
+                prNoImage: '@',
+
             },
             link: function (scope, element, attrs) {
                 var image_reference = attrs['prImage'].split('.').pop();
@@ -523,15 +537,61 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     });
                 });
                 element.attr('src', '//static.profireader.com/static/images/0.gif');
-                element.css({
-                    backgroundPosition: 'center',
-                    backgroundSize: 'contain',
-                    backgroundRepeat: 'no-repeat'
-                });
+                element.addClass('bg-contain');
             }
         };
-    }])
-    //TODO: SS by OZ: better use actions (prUserCan) not rights. action can depend on many rights
+    }]).directive('prImageWatch', [function () {
+    return {
+        restrict: 'A',
+        scope: {
+            prImageWatch: '=',
+            prNoImage: '@',
+
+        },
+        link: function (scope, element, attrs) {
+            var image_reference = attrs['prImageWatch'].split('.').pop();
+            var no_image = attrs['prNoImage'] ? attrs['prNoImage'] : false;
+
+            if (!no_image) {
+                no_image = noImageForImageName(image_reference);
+            }
+
+            scope.$watch('prImageWatch', function (newval, oldval) {
+                element.css({
+                    backgroundImage: "url('" + fileUrl(newval, false, no_image) + "')"
+                });
+            });
+            element.attr('src', '//static.profireader.com/static/images/0.gif');
+            element.addClass('bg-contain');
+        }
+    };
+}])
+    .directive('prImageUrl', [function () {
+        return {
+            restrict: 'A',
+            scope: {},
+            link: function (scope, element, attrs) {
+                element.attr('src', '//static.profireader.com/static/images/0.gif');
+                element.css({backgroundImage: 'url(' + attrs['prImageUrl'] + ')'});
+                element.addClass('bg-contain');
+            }
+        };
+    }]).directive('prImageUrlWatch', [function () {
+    return {
+        restrict: 'A',
+        scope: {
+            prImageUrlWatch: '=',
+        },
+        link: function (scope, element, attrs) {
+            element.attr('src', '//static.profireader.com/static/images/0.gif');
+            element.addClass('bg-contain');
+            scope.$watch('prImageUrlWatch', function (newval, oldval) {
+                element.css({backgroundImage: "url('" + newval + "')"});
+            });
+        }
+    };
+}])
+//TODO: SS by OZ: better use actions (prUserCan) not rights. action can depend on many rights
     .directive('prUserRights', function ($timeout) {
         return {
             restrict: 'AE',
@@ -1190,16 +1250,21 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     if (typeof phrase !== 'string') {
         return '';
     }
-    if (!scope.$$translate) {
-        scope.$$translate = {};
-    }
+    // if (!scope.$$translate) {
+    //     scope.$$translate = {};
+    // }
     //console.log(scope.$$translate)
     new Date;
     var t = Date.now() / 1000;
     //TODO OZ by OZ hasOwnProperty
     var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
-    if (scope.$$translate[phrase] === undefined) {
-        scope.$$translate[phrase] = {'lang': phrase, 'time': t};
+
+    if (!scope.$$translate || !scope.$$translate[phrase]) {
+        phrase_dict = {'lang': phrase, 'time': t, allow_html: allow_html}
+    }
+
+    else if (scope.$$translate && !scope.$$translate[phrase]) {
+        scope.$$translate[phrase] = phrase_dict;
         $ok('/tools/save_translate/', {
             template: CtrlName,
             phrase: phrase,
@@ -1209,15 +1274,18 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
 
         });
     }
+    else {
+        phrase_dict = scope.$$translate[phrase];
+    }
 
-    if ((t - scope.$$translate[phrase]['time']) > 86400) {
-        scope.$$translate[phrase]['time'] = t;
+    if ((t - phrase_dict['time']) > 86400) {
+        phrase_dict['time'] = t;
         $ok('/tools/update_last_accessed/', {template: CtrlName, phrase: phrase}, function (resp) {
         });
     }
 
-    if (scope.$$translate[phrase]['allow_html'] !== allow_html) {
-        scope.$$translate[phrase]['allow_html'] = allow_html;
+    if (phrase_dict['allow_html'] !== allow_html) {
+        phrase_dict['allow_html'] = allow_html;
         $ok('/tools/change_allowed_html/', {
             template: CtrlName,
             phrase: phrase,
@@ -1354,14 +1422,14 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         classes_for_row += '{{ grid.options.columnDefs[' + columnindex + '].classes(row.entity.id, row.entity, col.field) }}';
                     }
 
-                    var attributes_for_cell = ' pr-id="{{ row.entity.id }}" ';
+                    var attributes_for_cell = ' ng-if="row.entity.' + col.name + '" pr-id="{{ row.entity.id }}" ';
                     if (col.onclick && col.type !== 'actions' && col.type !== 'editable') {
                         attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\') "';
                     }
 
                     var prefix_img = '';
-                    if (col.img) {
-                        var prefix_img = '<img class="pr-grid-cell-img-prefix" pr-image="row.entity.' + col.img + '"/>';
+                    if (col.img_url) {
+                        var prefix_img = '<img src="//static.profireader.com/static/images/0.gif" class="pr-grid-cell-img-prefix" style="background-size: contain; background-repeat: no-repeat; background-position: center center; background-color: #fff; background-image: url({{ row.entity.' + col.img_url + ' }})" />';
                     }
                     switch (col.type) {
                         case 'link':
@@ -1429,10 +1497,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 gridApi.grid.setGridData()
             };
 
-            gridApi.grid['grid_change_row'] = function(new_row) {
+            gridApi.grid['grid_change_row'] = function (new_row) {
                 $.each(gridApi.grid.options.data, function (index, old_row) {
                     if (old_row['id'] === new_row['id']) {
-                        if(new_row.hasOwnProperty('replace_id')){
+                        if (new_row.hasOwnProperty('replace_id')) {
                             new_row['id'] = new_row['replace_id']
                         }
                         gridApi.grid.options.data[index] = new_row;

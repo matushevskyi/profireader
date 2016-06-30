@@ -9,7 +9,7 @@ from ..constants.SEARCH import RELEVANCE
 from sqlalchemy import orm
 from config import Config
 import simplejson
-from .files import File, ImageCroped
+from .files import File, FileImg
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from ..utils import fileUrl
 from ..models.tag import Tag, TagMembership
@@ -64,10 +64,10 @@ class Portal(Base, PRBase):
     # articles = relationship('ArticlePortalDivision',
     #                         back_populates='portal',
     #                         uselist=False)
-    publications = relationship('ArticlePortalDivision',
+    publications = relationship('Publication',
                                 secondary='portal_division',
                                 primaryjoin="Portal.id == PortalDivision.portal_id",
-                                secondaryjoin="PortalDivision.id == ArticlePortalDivision.portal_division_id",
+                                secondaryjoin="PortalDivision.id == Publication.portal_division_id",
                                 back_populates='portal',
                                 uselist=False)
 
@@ -76,8 +76,8 @@ class Portal(Base, PRBase):
                                    # back_populates='portal',
                                    # lazy='dynamic'
                                    )
-    search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
-                     'host': {'relevance': lambda field='host': RELEVANCE.host}}
+    # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
+    #                  'host': {'relevance': lambda field='host': RELEVANCE.host}}
 
     ALLOWED_STATUSES_TO_JOIN = {
         'DELETED': 'DELETED',
@@ -122,7 +122,7 @@ class Portal(Base, PRBase):
 
     def get_logo_client_side_dict(self):
         return self.get_image_cropped_file(self.logo_file_properties(),
-                                           db(ImageCroped, croped_image_id=self.logo_file_id).first())
+                                           db(FileImg, croped_image_id=self.logo_file_id).first())
 
     def set_logo_client_side_dict(self, client_data):
         if client_data['selected_by_user']['type'] == 'preset':

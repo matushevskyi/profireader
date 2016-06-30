@@ -65,7 +65,7 @@ def filter_json(json, *args, NoneTo='', ExceptionOnNotPresent=False, prefix=''):
                     if column_name not in req_relationships:
                         req_relationships[column_name] = []
                     req_relationships[column_name].append(
-                            '.'.join(columnsdevided))
+                        '.'.join(columnsdevided))
 
     for col in json:
         if col in req_columns or '*' in req_columns:
@@ -80,8 +80,8 @@ def filter_json(json, *args, NoneTo='', ExceptionOnNotPresent=False, prefix=''):
         if len(columns_not_in_relations) > 0:
             if ExceptionOnNotPresent:
                 raise ValueError(
-                        "you requested not existing json value(s) `%s%s`" % (
-                            prefix, '`, `'.join(columns_not_in_relations),))
+                    "you requested not existing json value(s) `%s%s`" % (
+                        prefix, '`, `'.join(columns_not_in_relations),))
             else:
                 for notpresent in columns_not_in_relations:
                     ret[notpresent] = NoneTo
@@ -91,7 +91,7 @@ def filter_json(json, *args, NoneTo='', ExceptionOnNotPresent=False, prefix=''):
                              "relationships found `%s%s`" % (
                                  prefix, '`, `'.join(set(json.keys()).
                                      intersection(
-                                         req_columns.keys())),))
+                                     req_columns.keys())),))
 
     for relationname, relation in json.items():
         if relationname in req_relationships or '*' in req_relationships:
@@ -115,16 +115,16 @@ def filter_json(json, *args, NoneTo='', ExceptionOnNotPresent=False, prefix=''):
 
     if len(req_relationships) > 0:
         relations_not_in_columns = list(set(
-                req_relationships.keys()) - set(json))
+            req_relationships.keys()) - set(json))
         if len(relations_not_in_columns) > 0:
             raise ValueError(
-                    "you requested not existing json(s) `%s%s`" % (
-                        prefix, '`, `'.join(relations_not_in_columns),))
+                "you requested not existing json(s) `%s%s`" % (
+                    prefix, '`, `'.join(relations_not_in_columns),))
         else:
             raise ValueError("you requested for json deeper than json is(s) but "
                              "column(s) found `%s%s`" % (
                                  prefix, '`, `'.join(set(json).intersection(
-                                         req_relationships)),))
+                                     req_relationships)),))
 
     return ret
 
@@ -133,7 +133,7 @@ def db_session_func(db_config):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import scoped_session, sessionmaker
 
-    engine = create_engine(db_config, echo=False)
+    engine = create_engine(db_config, echo=not False)
     g.sql_connection = engine.connect()
     db_session = scoped_session(sessionmaker(autocommit=False,
                                              autoflush=False,
@@ -200,12 +200,15 @@ def load_user(apptype):
         else:
             current_app.config[var_id] = '%s' % (variable.value,)
 
-
-def prImage(id, if_no_image=None):
-    file = utils.fileUrl(id, False, if_no_image if if_no_image else "//static.profireader.com/static/images/no_image.png")
+def prImageUrl(url):
     return Markup(
-            ' src="//static.profireader.com/static/images/0.gif" style="background-position: center; background-size: contain; background-repeat: no-repeat; background-image: url(\'%s\')" ' % (
-                file,))
+        ' src="//static.profireader.com/static/images/0.gif" style="background-position: center; background-size: contain; background-repeat: no-repeat; background-image: url(\'%s\')" ' % (
+        url,))
+
+
+def prImage(id=None, if_no_image=None):
+    noimage_url = if_no_image if if_no_image else "//static.profireader.com/static/images/no_image.png"
+    return prImageUrl((utils.fileUrl(id, False, noimage_url)) if id else noimage_url)
 
 
 def translates(template):
@@ -254,12 +257,12 @@ def translate_html(context, phrase, dictionary=None):
 def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
                     classes='glyphicon glyphicon-question-sign'):
     return Markup(
-            '<span popover-placement="' + placement + '" popover-trigger="' + trigger + '" class="' + classes +
-            '" uib-popover-html="\'' + HtmlHelper.quoteattr(
-                    translate_phrase_or_html(context, 'help tooltip ' + phrase, None, '*')) + '\'"></span>')
+        '<span popover-placement="' + placement + '" popover-trigger="' + trigger + '" class="' + classes +
+        '" uib-popover-html="\'' + HtmlHelper.quoteattr(
+            translate_phrase_or_html(context, 'help tooltip ' + phrase, None, '*')) + '\'"></span>')
 
 
-def moment(value, out_format = None):
+def moment(value, out_format=None):
     if isinstance(value, datetime.datetime):
         print(out_format)
         value = value.isoformat(' ') + ' GMT'
@@ -305,7 +308,7 @@ def config_variables():
         else:
             ret[var_id] = '\'' + variable.value + '\''
     return "<script>\nConfig = {};\n" + ''.join(
-            [("Config['%s']=%s;\n" % (var_id, ret[var_id])) for var_id in ret]) + '</script>'
+        [("Config['%s']=%s;\n" % (var_id, ret[var_id])) for var_id in ret]) + '</script>'
 
 
 def config_variables():
@@ -325,7 +328,7 @@ def config_variables():
             ret[var_id] = '\'' + variable.value.replace('\\', '\\\\').replace('\n', '\\n').replace('\'', '\\\'') + '\''
 
     return "<script>\n_LANG = '" + g.lang + "'; \nConfig = {};\n" + ''.join(
-            [("Config['%s']=%s;\n" % (var_id, ret[var_id])) for var_id in ret]) + '</script>'
+        [("Config['%s']=%s;\n" % (var_id, ret[var_id])) for var_id in ret]) + '</script>'
 
 
 def get_url_adapter():
@@ -424,9 +427,9 @@ class AnonymousUser(AnonymousUserMixin):
         #     email = self.profireader_email
 
         hash = hashlib.md5(
-                email.encode('utf-8')).hexdigest()
+            email.encode('utf-8')).hexdigest()
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
-                url=url, hash=hash, size=size, default=default, rating=rating)
+            url=url, hash=hash, size=size, default=default, rating=rating)
 
     def __repr__(self):
         return "<User(id = %r)>" % self.id
@@ -517,6 +520,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.jinja_env.globals.update(translates=translates)
     app.jinja_env.globals.update(fileUrl=utils.fileUrl)
     app.jinja_env.globals.update(prImage=prImage)
+    app.jinja_env.globals.update(prImageUrl=prImageUrl)
     # app.jinja_env.globals.update(url_page=url_page)
     app.jinja_env.globals.update(config_variables=config_variables)
     app.jinja_env.globals.update(_=translate_phrase)

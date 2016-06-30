@@ -26,7 +26,7 @@ class Tag(Base, PRBase):
     def get_client_side_dict(self, fields='id|text|description', more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    search_fields = {'text': {'relevance': lambda field='text': RELEVANCE.tag}}
+    # search_fields = {'text': {'relevance': lambda field='text': RELEVANCE.tag}}
 
 
 class TagPortalDivision(Base, PRBase):
@@ -49,7 +49,7 @@ class TagPortalDivision(Base, PRBase):
 class TagPublication(Base, PRBase):
     __tablename__ = 'tag_publication'
 
-    article_portal_division_id = Column(TABLE_TYPES['id_profireader'],
+    publication_id = Column(TABLE_TYPES['id_profireader'],
                                         primary_key=True, nullable=False)
     tag_id = Column(TABLE_TYPES['id_profireader'],
                                         ForeignKey(Tag.id),
@@ -57,8 +57,8 @@ class TagPublication(Base, PRBase):
 
     portal_division_id = Column(TABLE_TYPES['id_profireader'],nullable=False)
 
-    ForeignKeyConstraint((article_portal_division_id, portal_division_id), ('article_portal_division.id',
-                                                                            'article_portal_division.portal_division_id'),
+    ForeignKeyConstraint((publication_id, portal_division_id), ('publication.id',
+                                                                            'publication.portal_division_id'),
                          onupdate='CASCADE', ondelete='CASCADE')
 
     position = Column(TABLE_TYPES['position'], nullable=True, default=1)

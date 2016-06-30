@@ -19,7 +19,7 @@ from .users import User
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from .. import utils
 import re
-from .files import ImageCroped
+from .files import FileImg
 
 
 
@@ -82,11 +82,11 @@ class Company(Base, PRBase):
 
     user_owner = relationship('User', back_populates='companies')
 
-    search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
-                     'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
-                     'about': {'relevance': lambda field='about': RELEVANCE.about},
-                     'country': {'relevance': lambda field='country': RELEVANCE.country},
-                     'phone': {'relevance': lambda field='phone': RELEVANCE.phone}}
+    # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
+    #                  'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
+    #                  'about': {'relevance': lambda field='about': RELEVANCE.about},
+    #                  'country': {'relevance': lambda field='country': RELEVANCE.country},
+    #                  'phone': {'relevance': lambda field='phone': RELEVANCE.phone}}
 
     # TODO: AA by OZ: we need employees.position (from user_company table) (also search and fix #ERROR employees.position.2#)
     # ERROR employees.position.1#
@@ -248,7 +248,7 @@ class Company(Base, PRBase):
 
     def get_logo_client_side_dict(self):
         return self.get_image_cropped_file(self.logo_file_properties(),
-                                             db(ImageCroped, croped_image_id=self.logo_file_id).first())
+                                           db(FileImg, croped_image_id=self.logo_file_id).first())
 
     def set_logo_client_side_dict(self, client_data):
         if client_data['selected_by_user']['type'] == 'preset':
