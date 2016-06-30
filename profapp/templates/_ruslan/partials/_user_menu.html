@@ -54,6 +54,7 @@
 
         $scope.url_company_companies = {{ raw_url_for('company.companies')|safe }}
         $scope.url_general_help = {{ raw_url_for('general.help')|safe }}
+        $scope.url_tutorial = {{ raw_url_for('tutorial.tutorial')|safe }}
         $scope.url_auth_logout = {{ raw_url_for('auth.logout')|safe }}
         $scope.url_user_profile = {{ raw_url_for('user.profile')|safe }}
         $scope.user_avatar_url = '{{ current_user.profireader_avatar_url }}';
@@ -96,7 +97,7 @@
 
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
                         data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-                    <span class="sr-only">{{ _('Toggle navigation') }}</span>
+                    <span class="sr-only">Toggle navigation</span>
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
@@ -123,6 +124,8 @@
                                 class="fa fa-folder-open-o"></i><span>{{ _('Менеджер файлів') }}</span></a></li>
                         <li class="info-padding"><a pr_test="UserInfo" href="{{ url_general_help() }}" title="{{ _('Help information') }}"
                                ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-info"></i><span>{{ _('Help information') }}</span></a></li>
+                        <li class="info-padding"><a pr_test="tutorial" href="{{ url_tutorial() }}" title="{{ _('tutorial') }}"
+                               ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-file-video-o"></i><span>{{ _('Tutorial') }}</span></a></li>
 
                         <li class="dropdown"><a class="dropbtn" title="{{ _('Language') }}"><i class="fa fa-language"></i><span>{{ _('Language') }}</span></a>
                         <div class="dropdown-content">

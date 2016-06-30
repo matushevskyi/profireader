@@ -1,4 +1,4 @@
-<div class="collapse navbar-collapse subportal" id="bs-example-navbar-collapse-1">
+<div class="collapse navbar-collapse navbar-inverse subportal" id="bs-example-navbar-collapse-1">
 
     <div class="subportal-cover">
         <img src="{{ fileUrl(member_company['logo_file_id']) }}"/>
@@ -23,8 +23,7 @@
             {% endif %}
         {% endfor %}
 
-        <li {% if current_subportal_division_name == 'address' %}class="active"{% endif %}><a href="{{ url_for
-        ('front.subportal_address',
+        <li {% if current_subportal_division_name == 'address' %}class="active"{% endif %}><a href="{{ url_for('front.subportal_address',
                                    member_company_id = member_company['id'] ,
                                    member_company_name = member_company['name']) }}">{{ _('Address') }}</a></li>
         <li {% if current_subportal_division_name == 'contacts' %}class="active"{% endif %}><a href="{{ url_for('front.subportal_contacts',

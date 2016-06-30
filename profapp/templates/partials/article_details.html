@@ -1,4 +1,6 @@
+{# опис статті + теги #}
 <div class="block-item full-block-info" style="height: auto;">
+
     <div class="item-additional-info">
             <a href="{{ url_for('front.company_member', member_company_id = material['company']['id'], member_company_name = material['company']['name']) }}"
                class="item-company">{{ material['company']['name']|safe }}</a>

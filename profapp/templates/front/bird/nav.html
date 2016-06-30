@@ -1,6 +1,12 @@
 <!-- Navigation -->
 <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
     <div class="well">
+        <div class="social-block">
+            {% include 'search_block.html' %}
+            {% include 'user_profile.html' %}
+            {#        {% include 'social.html' %}#}
+            {% include 'subscribe_to_portal.html' %}
+        </div>
     <div class="social-block">
         {% include 'user_profile.html' %}
 {#        {% include 'social.html' %}#}
@@ -10,7 +16,7 @@
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse"
                     data-target="#bs-example-navbar-collapse-1">
-                <span class="sr-only">{{ _('Toggle navigation') }}</span>
+                <span class="sr-only">Toggle navigation</span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
@@ -19,7 +25,7 @@
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
             <div class="centred">
-                <a class="logo" href="/"><img {{ prImage(portal.logo_file_id)}}  alt="Portal logo" class="block-item-img bg-contain"></a>
+                <a class="logo" href="/"><img {{ prImage(portal.logo_file_id) }} alt="Portal logo" class="block-item-img"></a>
             </div>
             <ul class="nav navbar-nav">
                 {% for division in portal.divisions %}{% if division.portal_division_type_id != 'index' %}
@@ -29,12 +35,17 @@
                         </li>
                     {% else %}
                         <li {% if division.id == current_division.id %}class="active"{% endif %}>
-                            <a href="
-                                       {% if division.portal_division_type_id != 'company_subportal' %} {{ url_for('front.division', division_name=division.name) }}{% else %}{{ url_for('front.company_member', member_company_id = division['member_company']['id'] ,
-                                        member_company_name = division['member_company']['name']) }} {% endif %}">{{ division.name }}</a>
+                            <a href="{% if division.portal_division_type_id != 'company_subportal' %}
+                                {{ url_for('front.division', division_name=division.name, page=1, search_text='') }}
+                                {% else %}
+                                {{ url_for('front.subportal', member_company_id = division['member_company']['id'] ,
+                                        member_company_name = division['member_company']['name']) }}
+                                        {% endif %}
+                                        ">{{ division.name }}
+                            </a>
                         </li>
                     {% endif %}
-                {% endif %}{% endfor %}
+                {% endfor %}
             </ul>
         </div>
     </div>
