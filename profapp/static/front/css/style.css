@@ -24,19 +24,23 @@ h1, h2, h3, h4, h5, h6 {
     /*-moz-transition: top .5s ease-in-out;*/
     /*transition: top .5s ease-in-out;*/
     /*}*/
+
     .navbar {
         /*position: relative;*/
-        padding-top: 50px;
+        padding-top: 60px;
         top: 0px;
         /*-webkit-transition: padding .5s ease-in-out, top .5s ease-in-out;*/
         /*-moz-transition: padding .5s ease-in-out, top .5s ease-in-out;*/
         /*transition: padding .5s ease-in-out, top .5s ease-in-out;*/
     }
 
+
     .navbar.top-nav-collapse {
         /*pading-top:0;*/
         top: -50px;
+
     }
+
 
     /*nav.top-nav-collapse .social-block{*/
     /*top: -50px;*/
@@ -44,7 +48,7 @@ h1, h2, h3, h4, h5, h6 {
     .logo img {
         /*background-color: #ff0000;*/
         display: block;
-        width: auto;
+        width: 200px;
         height: 100px;
 
         -webkit-transition: height 1.5s ease-in-out;
@@ -57,12 +61,49 @@ h1, h2, h3, h4, h5, h6 {
     }
 
 }
+ ul li {
 
-.navbar-inverse {
+        }
+        ul li.left {
+                width: 20%;
+                float: left;
+        }
+        ul li.right {
+                width: 20%;
+                float: right;
+                text-align: right;
+        }
+        ul li.center {
+                text-align: center;
+        }
+
+ .navbar-inverse {
     background-color: #fff;
     border-color: #fefefe;
 }
+   .left-block-logo-portal {
+        float: left;
+        width: 20%;
+        height:100%;
 
+   }
+
+   .right-block-menu-portal {
+        width: 80%;
+        height:100%;
+        float: right;
+        text-align:center;
+   }
+
+
+   .right-block-menu-portal ul {
+       width: 100%;
+   }
+   .right-block-menu-portal  ul li {
+      float:left;
+      padding:0;
+      margin:0
+}
 .navbar-fixed-top {
     border: none;
 }
@@ -70,15 +111,22 @@ h1, h2, h3, h4, h5, h6 {
 .navbar-fixed-top .navbar-collapse,
 .navbar-static-top .navbar-collapse,
 .navbar-fixed-bottom .navbar-collapse {
-    padding-right: 15px;
+    padding-right: 35px;
     padding-left: 15px;
 }
 
 .nav.navbar-nav * {
-    font-size: 18px;
+    /*position:relative; right:100px;*/
+    /*font-size: 15px;*/
 
 }
-
+  hr {
+      border: 0;
+	  border-bottom: 6px solid #e1e1e1;
+	  margin: auto;
+	  width: 989px;
+      padding-left: 1px;
+  }
 .logo {
     display: block;
     position: absolute;
@@ -89,7 +137,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .navbar.top-nav-collapse {
     /*pading-top:0;*/
-    top: -50px;
+    top: -60px;
 }
 
 .fixed .logo {
@@ -135,7 +183,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .social-block {
     top: -50px;
-    right: 20px;
+    right: 40px;
     width: auto;
     position: absolute;
     text-align: right;
@@ -446,17 +494,17 @@ footer .promo {
 
 .well {
     position: relative;
-    width: 1028px;
+    width: 1100px;
     margin: 0px auto;
     padding-top: 0px;
     padding-bottom: 0px;
     background: #fff;
     border: none;
-    /*-webkit-border-radius: 0px;*/
-    /*-moz-border-radius: 0px;*/
-    /*border-radius: 0px;*/
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    border-radius: 0px;
 
-    /*box-shadow: none;*/
+    box-shadow: none;
 }
 
 .well .input-group .form-control {
