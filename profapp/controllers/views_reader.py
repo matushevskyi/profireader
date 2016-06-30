@@ -3,7 +3,7 @@ from flask import render_template, redirect, jsonify, json, request, g, url_for,
 from .request_wrapers import tos_required, check_right
 from sqlalchemy import and_
 from ..models.pr_base import Search
-# from ..models.bak_articles import ArticlePortalDivision, ReaderArticlePortalDivision
+from ..models.materials import Publication, ReaderPublication
 from ..models.portal import PortalDivision, UserPortalReader, Portal, ReaderUserPortalPlan, ReaderDivision
 from .errors import BadDataProvided
 from config import Config
@@ -18,14 +18,14 @@ from ..models.rights import UserIsActive, UserNonBanned
 @reader_bp.route('/details_reader/<string:article_portal_division_id>')
 @check_right(UserNonBanned)
 def details_reader(article_portal_division_id):
-    article = ArticlePortalDivision.get(article_portal_division_id)
+    article = Publication.get(article_portal_division_id)
     article.add_recently_read_articles_to_session()
     article_dict = article.get_client_side_dict(fields='id, title,short, cr_tm, md_tm, '
                                                        'publishing_tm, keywords, status, long, image_file_id,'
                                                        'division.name, division.portal.id,'
                                                        'company.name|id')
     article_dict['tags'] = article.tags
-    ReaderArticlePortalDivision.add_to_table_if_not_exists(article_portal_division_id)
+    ReaderPublication.add_to_table_if_not_exists(article_portal_division_id)
     favorite = article.check_favorite_status()
 
     return render_template('partials/reader/reader_details.html',
@@ -61,18 +61,18 @@ def list_reader_load(json):
                      'division.name,portal.name|host|logo_file_id|id'
     favorite = request.args.get('favorite') == 'True'
     localtime = time.gmtime(time.time())
-    filter = and_(ArticlePortalDivision.portal_division_id == db(PortalDivision).filter(
+    filter = and_(Publication.portal_division_id == db(PortalDivision).filter(
                       PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id).subquery().c.id,
-                      ArticlePortalDivision.status == ArticlePortalDivision.STATUSES['PUBLISHED'],
-                      ArticlePortalDivision.publishing_tm < datetime.datetime(*localtime[:6])) if not favorite\
-            else (ArticlePortalDivision.id == db(ReaderArticlePortalDivision, user_id=g.user.id,
+                      Publication.status == Publication.STATUSES['PUBLISHED'],
+                      Publication.publishing_tm < datetime.datetime(*localtime[:6])) if not favorite\
+            else (Publication.id == db(ReaderPublication, user_id=g.user.id,
                                         favorite=True).subquery().c.article_portal_division_id)
-    articles, pages, page = Search().search({'class': ArticlePortalDivision,
+    articles, pages, page = Search().search({'class': Publication,
                                              'filter': filter,
                                              'tags': True, 'return_fields': article_fields}, page=1,
                                                 items_per_page=5*next_page,
                                                 search_text=search_text)
-    list_articles = ArticlePortalDivision.get_list_reader_articles(articles)
+    list_articles = Publication.get_list_reader_articles(articles)
     return {
         'end': True if pages == 1 or pages == 0 else False,
         'articles': list_articles,
@@ -91,19 +91,19 @@ def list_reader_load(json):
 #                      'division.name,portal.name|host|logo_file_id'
 #     favorite = request.args.get('favorite') == 'True'
 #     if not favorite:
-#         articles, pages, page = Search().search({'class': ArticlePortalDivision,
-#                                                  'filter': and_(ArticlePortalDivision.portal_division_id ==
+#         articles, pages, page = Search().search({'class': Publication,
+#                                                  'filter': and_(Publication.portal_division_id ==
 #                                                                 db(PortalDivision).filter(
 #                                                                     PortalDivision.portal_id ==
 #                                                                     db(UserPortalReader,
 #                                                                        user_id=g.user.id).subquery().
 #                                                                     c.portal_id).subquery().c.id,
-#                                                                 ArticlePortalDivision.status ==
-#                                                                 ArticlePortalDivision.STATUSES['PUBLISHED']),
+#                                                                 Publication.status ==
+#                                                                 Publication.STATUSES['PUBLISHED']),
 #                                                  'tags': True, 'return_fields': article_fields}, page=page)
 #     else:
-#         articles, pages, page = Search().search({'class': ArticlePortalDivision,
-#                                                  'filter': (ArticlePortalDivision.id == db(ReaderArticlePortalDivision,
+#         articles, pages, page = Search().search({'class': Publication,
+#                                                  'filter': (Publication.id == db(ReaderPublication,
 #                                                                                            user_id=g.user.id,
 #                                                                                            favorite=True).subquery().c.
 #                                                             article_portal_division_id),
@@ -127,14 +127,14 @@ def list_reader_load(json):
 @reader_bp.route('/add_to_favorite/', methods=['OK'])
 @check_right(UserNonBanned)
 def add_delete_favorite(json):
-    return ReaderArticlePortalDivision.add_delete_favorite_user_article(json.get('article')['id'], json.get('article')['is_favorite'])
+    return ReaderPublication.add_delete_favorite_user_article(json.get('article')['id'], json.get('article')['is_favorite'])
 
 @reader_bp.route('/add_to_like/', methods=['OK'])
 @check_right(UserNonBanned)
 def add_delete_like(json):
-    ReaderArticlePortalDivision.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
-    return {'liked':ReaderArticlePortalDivision.count_likes(g.user.id, json.get('article')['id']),
-            'list_liked_reader':ReaderArticlePortalDivision.get_list_reader_liked(json.get('article')['id'])}
+    ReaderPublication.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
+    return {'liked':ReaderPublication.count_likes(g.user.id, json.get('article')['id']),
+            'list_liked_reader':ReaderPublication.get_list_reader_liked(json.get('article')['id'])}
 
 
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])

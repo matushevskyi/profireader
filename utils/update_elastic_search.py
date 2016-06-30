@@ -1,8 +1,8 @@
 import sys
 
 sys.path.append('..')
-from profapp.models.bak_articles import Article, ArticleCompany, ArticleCompanyHistory, \
-    ArticlePortalDivision
+from profapp.models.materials import Material, Publication
+from profapp.models.elastic import elasticsearch
 
 
 from profapp import create_app, load_database
@@ -15,13 +15,15 @@ import argparse
 # classes = [ArticlePortalDivision, Article, ArticleCompany, ArticleCompanyHistory,
 #            Company, UserCompany, File, User, Portal]
 
-classes = [ArticlePortalDivision]
+classes = [Publication]
 
 
 
 def recreate_documents():
+
     for aclass in classes:
         aclass.elastic_reindex_all()
+
     # for s in structure:
     #     s.recreate_all_documents()
     #     pass
@@ -41,9 +43,9 @@ def recreate_documents():
 
 
 def delete_indexes():
-
-    for aclass in classes:
-        aclass.elastic_remove_all_indexes()
+    elasticsearch.show_all_indexes()
+    elasticsearch.remove_all_indexes()
+    elasticsearch.show_all_indexes()
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ from utils.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
     PortalDivisionSettingsCompanySubportal, PortalConfig, PortalAdvertisment
 from .request_wrapers import ok, tos_required, check_right
-# from ..models.bak_articles import ArticlePortalDivision, ArticleCompany, Article
+# from ..models.bak_articles import Publication, ArticleCompany, Article
 from ..models.company import UserCompany
 from ..models.tag import Tag, TagPortalDivision
 from profapp.models.rights import RIGHTS
@@ -333,12 +333,12 @@ def get_publication_dict(publication):
 def publications_load(json, company_id):
     company = Company.get(company_id)
     portal = company.own_portal
-    subquery = ArticlePortalDivision.subquery_portal_articles(portal.id, json.get('filter'), json.get('sort'))
+    subquery = Publication.subquery_portal_articles(portal.id, json.get('filter'), json.get('sort'))
     publications, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     # grid_filters = {
-    #     'publication_status':Grid.filter_for_status(ArticlePortalDivision.STATUSES),
+    #     'publication_status':Grid.filter_for_status(Publication.STATUSES),
     #     'company': [{'value': company_id, 'label': company} for company_id, company  in
-    #                 ArticlePortalDivision.get_companies_which_send_article_to_portal(portal).items()]
+    #                 Publication.get_companies_which_send_article_to_portal(portal).items()]
     # }
     return {'company': company.get_client_side_dict(),
             'portal': portal.get_client_side_dict(),

@@ -57,7 +57,7 @@
         </div>
         <div style="text-align: right">{% for tag in article.tags %} {{ frontmacros.tag(tag, url_toggle_tag, selected_tag_names = selected_tag_names, toogle_tag = True) }} {% endfor %}</div>
         <h2 class="item-title">
-            <a href="{{ url_for('front.details', article_portal_division_id=article['id']) }}">{{ article['title']|safe }}</a>
+            <a href="{{ url_for('front.details', publication_id=article['id']) }}">{{ article['title']|safe }}</a>
         </h2>
         <div class="item-short-content">
             <script type="text/javascript">
@@ -74,7 +74,8 @@
         </div>
 
         <div class="bottom-hide"></div>
-        <img {{ prImage(article['image_file_id']) }} class="block-item-img bg-contain"/>
+
+        <img {{ prImageUrl(article['illustration']['url']) }} class="block-item-img bg-contain"/>
     </div>
     {% if article_count in wide_banners and portal.advs['wide_banner_' + wide_banners[article_count]] %}
         <div class="block-item list-elements">

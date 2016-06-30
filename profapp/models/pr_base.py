@@ -699,7 +699,7 @@ class PRBase:
     #         raise errors.ValidationException(ret)
 
     @staticmethod
-    def prepare_text_for_elastic_search(text):
+    def strip_tags(text):
         return MLStripper().strip_tags(text)
 
     @staticmethod
