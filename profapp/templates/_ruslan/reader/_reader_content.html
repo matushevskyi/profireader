@@ -59,7 +59,7 @@
                                href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
                                class="item-company">{{ article.company.name}}</a>-><a pr-test="ArticleDivision"
                                                                                      target="_blank"
-                                                                                     href="//{{ article.portal.host }}/{{ article.division.name}}/1/?search_text=">{{
+                                                                                     href="//{{ article.portal.host }}/{{ article.division.name}}/">{{
                             article.division.name}}</a>
                             <div style=""
                                  class="item-publication-date">{{ get_local_time(article.publishing_tm) }}
@@ -106,7 +106,7 @@
                         </div>
                         <div class="bottom-hide"></div>
                         <img pr-image="article.image_file_id" src="//static.profireader.com/static/images/0.gif"
-                             class="block-item-img"/>
+                             class="block-item-img bg-contain"/>
                     </div>
                 </div>
                 <h3 ng-if="!data.articles && !loading" style="text-align: center">{{ __('Your portals does"t have

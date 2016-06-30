@@ -38,7 +38,10 @@ def function_profiler(func):
             try:
                 ret = func(*args, **kwargs)
             except:
-                return redirect(url_for('general.index'))
+                import sys
+                print("Unexpected error:", sys.exc_info()[0])
+                return "Unexpected error:", sys.exc_info()[0]
+                # return redirect(url_for('general.index'))
             end = time.clock()
             profiler = db(Profiler, name=func.__name__, blueprint_name=func.__dict__['__endpoint__']).first()
             method = ','.join([method for method in func.__dict__['__method__']]) if func.__dict__['__method__'] else None
@@ -53,7 +56,9 @@ def function_profiler(func):
             try:
                 ret = func(*args, **kwargs)
             except:
-                return redirect(url_for('general.index'))
+                import sys
+                print("Unexpected error:", sys.exc_info()[0])
+                return "Unexpected error:", sys.exc_info()[0]
         return ret
     return wrapper
 

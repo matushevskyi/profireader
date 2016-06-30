@@ -15,6 +15,8 @@
     "jquery-datetimepicker": "git@github.com:xdan/datetimepicker.git#v2.4.5",
     "moment": "~2.12.0",
     "eonasdan-bootstrap-datetimepicker": "~4.17.37",
-    "angular-ui-select": "~0.17.0"
+    "angular-ui-select": "~0.17.0",
+    "angular-db-filemanager": "git@github.com:kakabomba/angular-server-driven-filemanager.git#master",
+    "angular-crop": "git@github.com:kakabomba/ng-crop.git#master"
   }
 }

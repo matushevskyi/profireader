@@ -1,0 +1,8 @@
+{% macro tag(tag, url_toggle_tag = None, selected_tag_names = [], toogle_tag = False, endpoint = None) %}
+    <span class="label {{ 'label-danger' if tag.text in selected_tag_names else 'label-default' }} item-tags">
+    {% if toogle_tag and url_toggle_tag %}<a href="{{ url_toggle_tag(toggle_tag = tag.text) }}">{{ tag.text }}</a>{% else %}
+        {{ tag.text }}{% endif %}
+        {% if toogle_tag and url_toggle_tag %}
+            <span class="glyphicon {{ 'glyphicon-remove' if tag.text in selected_tag_names else 'glyphicon-plus' }}"></span>{% endif %}
+    </span>&nbsp;
+{% endmacro %}

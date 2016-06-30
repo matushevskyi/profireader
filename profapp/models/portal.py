@@ -9,7 +9,7 @@ from ..constants.SEARCH import RELEVANCE
 from sqlalchemy import orm
 from config import Config
 import simplejson
-from .files import File, ImageCroped
+from .files import File, FileImg
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from ..utils import fileUrl
 from ..models.tag import Tag, TagMembership
@@ -64,10 +64,10 @@ class Portal(Base, PRBase):
     # articles = relationship('ArticlePortalDivision',
     #                         back_populates='portal',
     #                         uselist=False)
-    publications = relationship('ArticlePortalDivision',
+    publications = relationship('Publication',
                                 secondary='portal_division',
                                 primaryjoin="Portal.id == PortalDivision.portal_id",
-                                secondaryjoin="PortalDivision.id == ArticlePortalDivision.portal_division_id",
+                                secondaryjoin="PortalDivision.id == Publication.portal_division_id",
                                 back_populates='portal',
                                 uselist=False)
 
@@ -76,8 +76,8 @@ class Portal(Base, PRBase):
                                    # back_populates='portal',
                                    # lazy='dynamic'
                                    )
-    search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
-                     'host': {'relevance': lambda field='host': RELEVANCE.host}}
+    # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
+    #                  'host': {'relevance': lambda field='host': RELEVANCE.host}}
 
     ALLOWED_STATUSES_TO_JOIN = {
         'DELETED': 'DELETED',
@@ -106,19 +106,6 @@ class Portal(Base, PRBase):
             MemberCompanyPortal(portal=self, company=company_owner, status=MemberCompanyPortal.STATUSES['ACTIVE'],
                                 plan=db(MemberCompanyPortalPlan).first())]
 
-        # self.own_company.company_portals = db(MemberCompanyPortalPlan).first()
-
-        # db(MemberCompanyPortalPlan).first().portal_companies.add(MemberCompanyPortal(company=self.own_company))
-
-
-
-
-        # self.company_assoc = [MemberCompanyPortal(portal = self,
-        #                                     company = self.own_company,
-        #                                     company_portal_plan_id=db(MemberCompanyPortalPlan).first().id)]
-
-
-        pass
 
     def logo_file_properties(self):
         nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
@@ -135,7 +122,7 @@ class Portal(Base, PRBase):
 
     def get_logo_client_side_dict(self):
         return self.get_image_cropped_file(self.logo_file_properties(),
-                                           db(ImageCroped, croped_image_id=self.logo_file_id).first())
+                                           db(FileImg, croped_image_id=self.logo_file_id).first())
 
     def set_logo_client_side_dict(self, client_data):
         if client_data['selected_by_user']['type'] == 'preset':
@@ -170,7 +157,10 @@ class Portal(Base, PRBase):
     #
     #     return default
 
-    def get_value_from_config(self, key=None, division_name=None):
+    #TODO: OZ by OZ fix this
+    def get_value_from_config(self, key=None, division_name=None, default = None):
+        return default
+
         """
         :param key: string, variable which you want to return from config
         optional:

@@ -185,10 +185,7 @@ body a:hover {
   border-bottom: 1px solid #191818;
 }
 .block-item-img {
-  background-position-y: center;
   width: 30%;
-  background-size: contain;
-  background-repeat: no-repeat;
 }
 .subportal-about {
   padding: 30px;

@@ -17,9 +17,10 @@ from .files import YoutubePlaylist
 from ..constants.SEARCH import RELEVANCE
 from .users import User
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
-from ..utils import fileUrl
+from .. import utils
 import re
-from .files import ImageCroped
+from .files import FileImg
+
 
 
 class Company(Base, PRBase):
@@ -32,7 +33,7 @@ class Company(Base, PRBase):
     logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
 
     def logo_file_properties(self):
-        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
+        nologo_url = utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
         return {
             'browse': self.id,
             'upload': True,
@@ -81,11 +82,11 @@ class Company(Base, PRBase):
 
     user_owner = relationship('User', back_populates='companies')
 
-    search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
-                     'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
-                     'about': {'relevance': lambda field='about': RELEVANCE.about},
-                     'country': {'relevance': lambda field='country': RELEVANCE.country},
-                     'phone': {'relevance': lambda field='phone': RELEVANCE.phone}}
+    # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
+    #                  'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
+    #                  'about': {'relevance': lambda field='about': RELEVANCE.about},
+    #                  'country': {'relevance': lambda field='country': RELEVANCE.country},
+    #                  'phone': {'relevance': lambda field='phone': RELEVANCE.phone}}
 
     # TODO: AA by OZ: we need employees.position (from user_company table) (also search and fix #ERROR employees.position.2#)
     # ERROR employees.position.1#
@@ -137,10 +138,10 @@ class Company(Base, PRBase):
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)
 
-        if self.lon is not None and PRBase.inRange(self.lon, 180, 180):
+        if self.lon is not None and utils.putInRange(self.lon, 180, 180, check_only = True):
             ret['errors']['lon'] = 'pls longitude in range [-180,180]'
 
-        if self.lat is not None and PRBase.inRange(self.lat, 90, 90):
+        if self.lat is not None and utils.putInRange(self.lat, 90, 90, check_only = True):
             ret['errors']['lat'] = 'pls latitude in range [-90,90]'
 
         if (self.lat is None and self.lon is not None) or (self.lat is not None and self.lon is None):
@@ -247,7 +248,7 @@ class Company(Base, PRBase):
 
     def get_logo_client_side_dict(self):
         return self.get_image_cropped_file(self.logo_file_properties(),
-                                             db(ImageCroped, croped_image_id=self.logo_file_id).first())
+                                           db(FileImg, croped_image_id=self.logo_file_id).first())
 
     def set_logo_client_side_dict(self, client_data):
         if client_data['selected_by_user']['type'] == 'preset':

@@ -1,4 +1,5 @@
 from ..constants.TABLE_TYPES import TABLE_TYPES
+from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Table, Column, Integer, Text, ForeignKey, String, Boolean, or_, and_, text, desc, asc, join
 from sqlalchemy.orm import relationship, backref, make_transient, class_mapper, aliased
 from sqlalchemy.sql import func
@@ -25,6 +26,7 @@ from PIL import Image
 from io import BytesIO
 
 from ..utils import fileUrl, fileID
+from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
 
 Base = declarative_base()
 
@@ -211,7 +213,7 @@ class Search(Base):
             joined = db(Search.index, func.min(Search.text).label('text'),
                         func.min(Search.table_name).label('table_name'),
                         index=subquery_search.subquery().c.index).filter(
-                    Search.kind.in_(tuple(field_name))).group_by(Search.index)
+                Search.kind.in_(tuple(field_name))).group_by(Search.index)
             return joined
 
         subquery_search = db(Search.index.label('index'),
@@ -220,7 +222,7 @@ class Search(Base):
                              func.min(Search.md_tm).label('md_tm'),
                              func.max(Search.position).label('position'),
                              func.max(Search.text).label('text')).filter(
-                or_(*self.__get_search_params(*args))).group_by('index')
+            or_(*self.__get_search_params(*args))).group_by('index')
         if type(ord_by) in (str, list, tuple):
             order = self.__get_order('text', 'text')
             subquery_search = add_joined_search(ord_by)
@@ -233,26 +235,26 @@ class Search(Base):
             subquery_search = subquery_search.order_by(order)
         else:
             subquery_search = subquery_search.order_by(order).order_by(
-                    self.__get_order('md_tm', 'md_tm'))
+                self.__get_order('md_tm', 'md_tm'))
         return subquery_search
 
     def __get_order(self, order_name, field):
         order_name += '+' if self.__desc_asc == 'desc' else '-'
         result = {'text+': lambda field_name: desc(func.max(getattr(Search, field_name, Search.text))),
                   'text-': lambda field_name: asc(func.max(
-                          getattr(Search, field_name, Search.text))),
+                      getattr(Search, field_name, Search.text))),
                   'md_tm+': lambda field_name: desc(func.min(
-                          getattr(Search, field_name, Search.md_tm))),
+                      getattr(Search, field_name, Search.md_tm))),
                   'md_tm-': lambda field_name: asc(func.min(
-                          getattr(Search, field_name, Search.md_tm))),
+                      getattr(Search, field_name, Search.md_tm))),
                   'relevance+': lambda field_name: desc(func.sum(
-                          getattr(Search, field_name, Search.relevance))),
+                      getattr(Search, field_name, Search.relevance))),
                   'relevance-': lambda field_name: asc(func.sum(
-                          getattr(Search, field_name, Search.relevance))),
+                      getattr(Search, field_name, Search.relevance))),
                   'position+': lambda field_name: desc(func.max(
-                          getattr(Search, field_name, Search.position))),
+                      getattr(Search, field_name, Search.position))),
                   'position-': lambda field_name: asc(func.max(
-                          getattr(Search, field_name, Search.position)))
+                      getattr(Search, field_name, Search.position)))
                   }[order_name](field)
         return result
 
@@ -310,7 +312,7 @@ class Search(Base):
                 'Parameter page is not integer, or page < 1 .'
             assert (getattr(args[0]['class'], str(ord_by), False) is not False) or \
                    (type(ord_by) is int) or type(
-                    ord_by is (list or tuple)), \
+                ord_by is (list or tuple)), \
                 'Bad value for parameter "order_by".' \
                 'You requested attribute which is not in class %s or give bad kwarg type.' \
                 'Can be string, list or tuple %s given' % \
@@ -323,7 +325,7 @@ class Search(Base):
             tb_info = traceback.extract_tb(tb)
             filename_, line_, func_, text_ = tb_info[-1]
             message = 'An error occurred on File "{file}" line {line}\n {assert_message}'.format(
-                    line=line_, assert_message=e.args, file=filename_)
+                line=line_, assert_message=e.args, file=filename_)
             raise errors.BadDataProvided({'message': message})
 
 
@@ -381,7 +383,7 @@ class Grid:
         if sorts:
             for sort in sorts:
                 query = query.order_by(sort['field'].asc()) if sort['value'] == 'asc' else query.order_by(
-                        sort['field'].desc())
+                    sort['field'].desc())
         return query
 
     @staticmethod
@@ -393,8 +395,21 @@ class Grid:
 
 
 class PRBase:
+    omit_validation = False
+
+    # search_fields = {}
+
     def __init__(self):
         self.query = g.db.query_property()
+
+    # TODO: YG by OZ: move this (to next comment) static methods to utils (just like `putInRange` moved)
+
+    @staticmethod
+    def get_ordered_dict(list_of_dicts, **kwargs):
+        ret = OrderedDict()
+        for item in list_of_dicts:
+            ret[item['id']] = item
+        return ret
 
     @staticmethod
     def str2float(str, onfail=None):
@@ -411,36 +426,28 @@ class PRBase:
             return onfail
 
     @staticmethod
-    def inRange(what, fromr, tor):
-        return True if (what >= fromr) and (what <= tor) else False
-
-    @staticmethod
     def parse_timestamp(str):
         try:
             return datetime.datetime.strptime(str, "%a, %d %b %Y %H:%M:%S %Z")
         except:
             return None
 
-        @staticmethod
-        def parse_date(str):
-            try:
-                return datetime.date.strptime(str, "%Y-%m-%d")
-            except:
-                return None
-
-    def position_unique_filter(self):
-        return self.__class__.position != None
-
     @staticmethod
-    def merge_dicts(*args):
-        ret = {}
-        for d in args:
-            ret.update(d)
-        return ret
+    def parse_date(str):
+        try:
+            return datetime.date.strptime(str, "%Y-%m-%d")
+        except:
+            return None
 
     @staticmethod
     def del_attr_by_keys(dict, keys):
         return {key: dict[key] for key in dict if key not in keys}
+
+    # TODO: YG by OZ: move this static methods to utils
+
+
+    def position_unique_filter(self):
+        return self.__class__.position != None
 
     # if insert_after_id == False - insert at top
     # if insert_after_id == True - insert at bottom
@@ -486,60 +493,6 @@ class PRBase:
                 self.position = insert_after_object.position - 1
 
         return self
-
-    def set_image_cropped_file(self, column_data, user_data, old_croped_image_id, folder_id):
-        from ..models.files import File, ImageCroped
-        selected_by_user = user_data['selected_by_user']
-        selected_by_user_type = selected_by_user['type']
-        old_image_cropped = db(ImageCroped, croped_image_id=old_croped_image_id).first()
-
-        if selected_by_user_type == 'browse':
-            if old_image_cropped:
-                if selected_by_user['image_file_id'] == \
-                        old_image_cropped.original_image_id and old_image_cropped.same_coordinates(
-                        selected_by_user['crop_coordinates'], column_data):
-                    return old_croped_image_id
-                elif selected_by_user['image_file_id'] == old_image_cropped.original_image_id \
-                        and not old_image_cropped.same_coordinates(selected_by_user['crop_coordinates'], column_data):
-                    original_image = File.get(selected_by_user['image_file_id'])
-                    return original_image.crop(selected_by_user['crop_coordinates'],
-                                               folder_id, column_data, old_image_cropped)
-                else:
-                    original_image = File.get(selected_by_user['image_file_id'])
-            else:
-                original_image = File.get(selected_by_user['image_file_id'])
-            content = original_image.file_content.content
-
-        if old_image_cropped:
-            old_original_image = File.get(old_image_cropped.original_image_id)
-            if old_original_image:
-                old_original_image.delete()
-
-        if selected_by_user_type == 'none':
-            return None
-
-        if selected_by_user_type == 'upload':
-            imgdataContent = selected_by_user['file']['content']
-            image_data = re.sub('^data:image/.+;base64,', '', imgdataContent)
-            content = base64.b64decode(image_data)
-
-        name = selected_by_user['file']['name'] if selected_by_user_type == 'upload' else original_image.name
-        mime = selected_by_user['file']['mime'] if selected_by_user_type == 'upload' else original_image.mime
-
-        image_pil = Image.open(BytesIO(content))
-        if image_pil.width > column_data['image_size'][1] * 10 and image_pil.height > column_data['image_size'][0] * 10:
-            cont = image_pil.resize((int(column_data['image_size'][1] * 10), int(column_data['image_size'][0] * 10)))
-            content = BytesIO()
-            cont.save(content, mime.split('/')[-1].upper())
-            content = content.getvalue()
-
-        new_orginal_image = File.uploadLogo(content, name, mime, folder_id, author={self.__class__.__name__:self})
-
-        if 'error' in File.check_image_mime(new_orginal_image.id):
-            resp = self.get_client_side_dict()
-            resp.update({'error': True})
-            return resp
-        return new_orginal_image.crop(selected_by_user['crop_coordinates'], folder_id, column_data)
 
     def get_image_cropped_file(self, parameters={}, croped_image_file_id=None):
         ret = {
@@ -596,13 +549,6 @@ class PRBase:
         g.db.expunge(self)
         return self
 
-    @staticmethod
-    def get_ordered_dict(list_of_dicts, **kwargs):
-        ret = OrderedDict()
-        for item in list_of_dicts:
-            ret[item['id']] = item
-        return ret
-
     def get_client_side_dict(self, fields='id',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
@@ -638,9 +584,10 @@ class PRBase:
             req_relationships[column_name].append(columns)
 
         def get_next_level(child, nextlevelargs, prefix, standard_fields_required):
-            in_next_level_dict = child.to_dict(*nextlevelargs, prefix=prefix)
+            in_next_level_dict = {k: v for k, v in child.items() if k in nextlevelargs} if \
+                isinstance(child, dict) else child.to_dict(*nextlevelargs, prefix=prefix)
             if standard_fields_required:
-                in_next_level_dict.update(child.get_client_side_dict())
+                in_next_level_dict.update(child if isinstance(child, dict) else child.get_client_side_dict())
             return in_next_level_dict
 
         for arguments in args:
@@ -656,6 +603,12 @@ class PRBase:
 
         columns = class_mapper(self.__class__).columns
         relations = {a: b for (a, b) in class_mapper(self.__class__).relationships.items()}
+        for a, b in class_mapper(self.__class__).all_orm_descriptors.items():
+            if isinstance(b, AssociationProxy):
+                relations[a] = b
+        # association_proxies = {a: b for (a, b) in class_mapper(self.__class__).all_orm_descriptors.items()
+        #                        if isinstance(b, AssociationProxy)}
+        pass
 
         for col in columns:
             if col.key in req_columns or (__debug and '*' in req_columns):
@@ -669,8 +622,8 @@ class PRBase:
             columns_not_in_relations = list(set(req_columns.keys()) - set(relations.keys()))
             if len(columns_not_in_relations) > 0:
                 raise ValueError(
-                        "you requested not existing attribute(s) `%s%s`" % (
-                            prefix, '`, `'.join(columns_not_in_relations),))
+                    "you requested not existing attribute(s) `%s%s`" % (
+                        prefix, '`, `'.join(columns_not_in_relations),))
             else:
                 for rel_name in req_columns:
                     add_to_req_relationships(rel_name, '~')
@@ -681,6 +634,7 @@ class PRBase:
                     #                          req_columns.keys())),))
 
         for relationname, relation in relations.items():
+            rltn = relations[relation.target_collection] if isinstance(relation, AssociationProxy) else relation
             if relationname in req_relationships or (__debug and '*' in req_relationships):
                 if relationname in req_relationships:
                     nextlevelargs = req_relationships[relationname]
@@ -693,7 +647,7 @@ class PRBase:
                     standard_fields_required = True
                     nextlevelargs.remove('~')
 
-                if relation.uselist:
+                if rltn.uselist:
                     add = [get_next_level(child, nextlevelargs, prefix + relationname + '.', standard_fields_required)
                            for child in related_obj]
                 else:
@@ -708,16 +662,16 @@ class PRBase:
 
         if len(req_relationships) > 0:
             relations_not_in_columns = list(set(
-                    req_relationships.keys()) - set(columns))
+                req_relationships.keys()) - set(columns))
             if len(relations_not_in_columns) > 0:
                 raise ValueError(
-                        "you requested not existing relation(s) `%s%s`" % (
-                            prefix, '`, `'.join(relations_not_in_columns),))
+                    "you requested not existing relation(s) `%s%s`" % (
+                        prefix, '`, `'.join(relations_not_in_columns),))
             else:
                 raise ValueError("you requested for relation(s) but "
                                  "column(s) found `%s%s`" % (
                                      prefix, '`, `'.join(set(columns).intersection(
-                                             req_relationships)),))
+                                         req_relationships)),))
 
         return ret
 
@@ -744,6 +698,9 @@ class PRBase:
     #     if len(ret['errors'].keys()):
     #         raise errors.ValidationException(ret)
 
+    @staticmethod
+    def prepare_text_for_elastic_search(text):
+        return MLStripper().strip_tags(text)
 
     @staticmethod
     def add_to_search(mapper=None, connection=None, target=None):

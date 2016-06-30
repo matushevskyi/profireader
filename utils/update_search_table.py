@@ -1,6 +1,6 @@
 import sys
 sys.path.append('..')
-from profapp.models.articles import Article, ArticleCompany, ArticleCompanyHistory, \
+from profapp.models.bak_articles import Article, ArticleCompany, ArticleCompanyHistory, \
     ArticlePortalDivision
 from profapp.models.company import Company, UserCompany
 from profapp.models.files import File

@@ -62,10 +62,10 @@ class ArticlePortalDivision(Base, PRBase, PRElasticDocument):
                            secondaryjoin="ArticleCompany.company_id == Company.id",
                            viewonly=True, uselist=False)
 
-    search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
-                     'short': {'relevance': lambda field='short': RELEVANCE.short},
-                     'long': {'relevance': lambda field='long': RELEVANCE.long},
-                     'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
+    # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
+    #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
+    #                  'long': {'relevance': lambda field='long': RELEVANCE.long},
+    #                  'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
 
     # elasticsearch begin
     def elastic_get_fields(self):

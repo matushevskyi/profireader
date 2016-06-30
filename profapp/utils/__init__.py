@@ -3,6 +3,7 @@ from werkzeug.exceptions import Unauthorized
 from functools import wraps
 import re
 
+
 # we don't need it still
 #
 # def admin_required(fn):
@@ -40,9 +41,30 @@ def fileUrl(id, down=False, if_no_file=None):
 
 
 def fileID(url):
-
     reg = r'^(https?:)?//file(?P<server>%s{3})\.profireader\.com/(?P<id>%s{8}-%s{4}-4(%s{3})-%s{4}-%s{12})/.*$' % \
-          ('[0-9a-f]','[0-9a-f]','[0-9a-f]','[0-9a-f]','[0-9a-f]','[0-9a-f]')
+          ('[0-9a-f]', '[0-9a-f]', '[0-9a-f]', '[0-9a-f]', '[0-9a-f]', '[0-9a-f]')
 
     match = re.match(reg, url)
     return match.group('id') if match else None
+
+
+def dict_merge(*args, remove={}):
+    ret = {}
+    for d in args:
+        ret.update(d)
+    return {k: v for k, v in ret.items() if not k in remove}
+
+def list_merge(*args, remove=[]):
+    ret = []
+    for l in args:
+        for el in l:
+            if el not in ret:
+                ret.append(el)
+    return [el for el in ret if el not in remove]
+
+
+def putInRange(what, fromr, tor, check_only=False):
+    if check_only:
+        return True if (what >= fromr) and (what <= tor) else False
+    else:
+        return fromr if (what <= fromr) else (tor if what >= tor else what)

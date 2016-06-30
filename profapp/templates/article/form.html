@@ -15,60 +15,55 @@
     <script>
         module.controller('article_edit', ['$scope', function ($scope) {
 
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
+
             $scope.$$translate = {{ translates('article_edit')|safe }};
             $scope.data = {};
 
-            {% if publication_id %}
-                $scope.article_type = 'publication';
-                $scope.title = 'Update publication at portal `%(data.article.portal.name)s` in division `%(data.article.division.name)s`';
-            {% else %}
-                {% if material_id %}
-                    $scope.article_type = 'material';
-                    $scope.title = 'Update material';
-                {% else%}
-                    $scope.article_type = false;
-                    $scope.title = 'Create new material';
-                {% endif %}
-            {% endif %}
+            $scope.title = '{{ 'Update material' if material_id else 'Create new material' }}';
+            document.title = document.title;
 
-            document.title = $scope.title;
 
             $scope.amidSave = function (resp) {
-                console.log(resp)
-                if (!$scope.data.article.id && resp.article.id) {
-                    console.log($scope.data)
-                    window.location.href = {{ raw_url_for('article.article_show_form')|safe }}({company_id: resp.article.company_id, material_id:resp.article.id})
+                if (!$scope.data.material.id && resp.material.id) {
+                    window.location.href = {{ raw_url_for('article.article_show_form')|safe }}({
+                        company_id: resp.material.company_id,
+                        material_id: resp.material.id
+                    })
                 }
                 else {
-                    add_message($scope._($scope.article_type + ' was saved'), 'success', 3000);
+                    $scope.data['material']['illustration'] = resp['material']['illustration'];
+                    add_message($scope._('material was saved'), 'success', 3000);
                 }
 
             };
 
-            $scope.goToArticle = function (article) {
-                if ($scope.article_type === 'material') {
-                    url = {{ raw_url_for('article.material_details')|safe }}({company_id:article.company_id, material_id: article.id})
-                } else if ($scope.article_type === 'publication') {
-                    url = ('//' + article.portal.host + {{ raw_url_for('front.details')|safe }}({article_portal_division_id: article.id}))
-                }
+            $scope.goToArticle = function (material) {
+                url = {{ raw_url_for('article.material_details')|safe }}({
+                    company_id: material.company_id,
+                    material_id: material.id
+                })
                 var win = window.open(url, '_blank');
                 win.focus();
             }
 
             $scope.getData = function (model, deff) {
-                model.portal_division.insert_after = model.portal_division.positioned_articles[model.portal_division.current].id;
+                return deff(model);
+            };
+
+            $scope.getDataForValidation = function (model, deff) {
+                console.log(model, deff);
+                delete model['material']['illustration'];
+                console.log(model, deff);
                 return deff(model);
             };
 
             $scope.amidLoad = function (resp) {
-
-                if(typeof resp  === 'string'){
+                if (typeof resp === 'string') {
                     location.href = '/';
                     add_message(resp, 'warning', 2000);
                     console.log(resp)
                 }
-                resp.article.publishing_tm = new Date(resp.article.publishing_tm);
-                resp.portal_division = $scope.setPositioning(resp.portal_division, resp.article.id);
                 return resp;
             };
 
@@ -94,74 +89,6 @@
 
             $scope.tinymceImageOptions = $.extend(true, $scope.tinymceImageOptions, tinyArticleOptions);
 
-            $scope.articlePositionDontChange = function () {
-                if ($scope.data.portal_division.positioned_articles
-                        && $scope.data.portal_division.positioned_articles[$scope.data.portal_division.current] &&
-                        $scope.data.portal_division.positioned_articles[$scope.data.portal_division.current].id == $scope.data.article.id) {
-                    return true;
-                }
-                return false;
-            }
-
-            $scope.ArticlePositionTitle = function () {
-                var obj = $scope.data.portal_division.positioned_articles[$scope.data.portal_division.current];
-                if (obj.id === false) return $scope._('Set first in division');
-                if (obj.id === true) return $scope._('Set last in division');
-                if (obj.id === null) return $scope._('Do not use priority. Stay with publishing date');
-                if (obj.id === $scope.data.article.id) {
-                    return $scope._('Dont change priority');
-                }
-                return $scope._('Show this article just after `%(title)s`', obj);
-
-            }
-
-            $scope.setPositioning = function (portal_division, article_id) {
-                console.log(portal_division, article_id);
-
-                if (!portal_division) {
-                    return {
-                        min: 0,
-                        max: 0,
-                        current: 0,
-                        positioned_articles: [{id: null, title: '', insert_after: null}],
-                        insert_after: null
-                    }
-                }
-
-                portal_division.positioned_articles.unshift({'id': false, 'title': '', 'position': false});
-
-                var current = null;
-
-
-                var removeindex = false;
-                $.each(portal_division.positioned_articles, function (ind, positioned) {
-                    if (positioned.id === article_id) {
-                        removeindex = ind;
-                        return false;
-                    }
-                });
-
-                if (removeindex !== false) {
-                    current = removeindex - 1;
-                    portal_division.positioned_articles.splice(removeindex, 1);
-
-                }
-
-                portal_division.positioned_articles.push({'id': null, 'title': '', 'position': null});
-                if (current === null) {
-                    current = portal_division.positioned_articles.length - 1;
-                }
-
-                console.log('current = ', current);
-
-                return $.extend(portal_division, {
-                    min: 0, max: portal_division.positioned_articles.length - 1,
-                    current: current, insert_after: portal_division.positioned_articles[current].id
-                });
-
-            };
-
-
         }]);
 
     </script>
@@ -173,12 +100,14 @@
         <form name="newMaterial">
             <!-- <h1 class="nice-title">{{ _(title) }}<span></span></h1> -->
 
-            <div af af-amid-load="amidLoad" af-amid-save="amidSave" af-before-save="getData"
-                 af-beforeValidate="getData" af-watch="data.article" ng-model="data">
+            <div af af-amid-load="amidLoad" af-amid-save="amidSave"
+                 af-before-save="getData"
+                 af-before-validate-todo="getDataForValidation" af-watch="data.material" ng-model="data">
 
                 <div style="padding-bottom: 50px">
                     <div>
-                        <div style="width: 400px; height: 300px; position: relative" pr-crop="data.article.image"></div>
+                        <div style="width: 400px; height: 300px; position: relative"
+                             pr-crop="data.material.illustration"></div>
                     </div>
                 </div>
 
@@ -187,8 +116,8 @@
                                             maybe layout selector is apporpriate here-->
                     {{ _('Article title') }}
                     <pr_help_tooltip>article_title</pr_help_tooltip>
-                    <input class="form-control article-edit-input" type="text" ng-model="data
-                    .article.title" pr-validation-answer="data_validation:title"
+                    <input class="form-control article-edit-input" type="text" ng-model="data.material.title"
+                           pr-validation-answer="data_validation:title"
                            name="article_title" jng-pattern="/[\wа-яёі']{3}/i">
                     <div ng-show="newMaterial.article_title.$error.pattern" class="error-input">
                         {{ _('The title name should be longer!') }}
@@ -197,13 +126,22 @@
                     {{ _('Article subtitle') }}
                     <pr_help_tooltip>article_subtitle</pr_help_tooltip> <span
                         af-validation-answer="data_validation:subtitle"></span>
-                    <input class="form-control article-edit-input" type="text" ng-model="data.article.subtitle">
+                    <input class="form-control article-edit-input" type="text" ng-model="data.material.subtitle">
 
                     {{ _('Keywords') }}
-                    <input class="form-control article-edit-input" ng-model="data.article.keywords" pr-validation-answer="data_validation:keywords"
+                    <input class="form-control article-edit-input" ng-model="data.material.keywords"
+                           pr-validation-answer="data_validation:keywords"
                            name="article_keywords" jng-pattern="/[\wа-яёі']{2}/i">
                     <div ng-show="newMaterial.article_keywords.$error.pattern" class="error-input">
                         {{ _('The keywords should be longer!') }}
+                    </div>
+
+                    {{ _('Author') }}
+                    <input class="form-control article-edit-input" ng-model="data.material.author"
+                           pr-validation-answer="data_validation:author"
+                           name="article_author" jng-pattern="/[\wа-яёі']{2}/i">
+                    <div ng-show="newMaterial.article_author.$error.pattern" class="error-input">
+                        {{ _('The author should be longer!') }}
                     </div>
                 </div>
 
@@ -216,11 +154,11 @@
 
                     {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
                     <textarea class="form-control article-edit-input" style="width: 710px" placeholder="{{_('short')}}"
-                              ng-model="data.article.short"></textarea>
+                              ng-model="data.material.short"></textarea>
 
                     {{ _('Full text') }}
             <textarea ui-tinymce="tinymceImageOptions"
-                      ng-model="data.article.long"></textarea>
+                      ng-model="data.material.long"></textarea>
                 </div>
 
 
@@ -229,9 +167,9 @@
 
                     <button class="pr-button" ng-disabled="!$af.isActionAllowed(data, 'save')"
                             ng-click="$af.save(data)">&nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;{{
-                        data.article.id ? _('save') : _('create') }}
+                        data.material.id ? _('save') : _('create') }}
                     </button>
-                    <button class="pr-button" ng-click="goToArticle(data.article)" ng-if="article_type"><span class="fa
+                    <button class="pr-button" ng-click="goToArticle(data.material)" ng-if="article_type"><span class="fa
                     fa-external-link">{{ _(article_type +
                         ' preview') }}</span></button>
                 </div>

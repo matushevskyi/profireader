@@ -1,3 +1,4 @@
+{# цикл статей і баннери між ними з функцією пошуку #}
 <script>
     var searchText = {{ search_text|tojson }};
     var re = new RegExp(searchText, 'g');
@@ -52,11 +53,11 @@
             <span class="tag-in-article">
                     {% if article['tags'] %}<span
                         class="label label-danger item-tags fr"><a href="{{ url_for('front.division',
-                        division_name=article['division']['name'], page=1, search_text='', tag=article.tags[0].text) }}">{{ article.tags[0]
+                        division_name=article['division']['name'], tag=article.tags[0].text) }}">{{ article.tags[0]
                         .text }}</a></span>
                     {% endif %}
             </span>
-            <a href="{{ url_for('front.division', division_name=article['division']['name'], page=1, search_text='') }}">{{ article['division']['name']|safe }}</a>
+            <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
         </div>
         <h2 class="item-title">
             <a href="{{ url_for('front.details', article_portal_division_id=article['id']) }}">{{ article['title']|safe }}</a>
@@ -68,7 +69,7 @@
             </script>
         </div>
         <div class="item-additional-info">
-            <a href="{{ url_for('front.subportal', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}"
+            <a href="{{ url_for('front.company_member', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}"
                class="item-company">{{ article['company']['name']|safe }}</a>
             <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
             <div><br>
@@ -77,7 +78,7 @@
         </div>
 
         <div class="bottom-hide"></div>
-        <img {{ prImage(article['image_file_id']) }} class="block-item-img"/>
+        <img {{ prImage(article['image_file_id']) }} class="block-item-img bg-contain"/>
     </div>
     {% if article_count in wide_banners and portal.advs['wide_banner_' + wide_banners[article_count]] %}
         <div class="block-item list-elements">

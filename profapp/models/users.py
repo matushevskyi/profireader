@@ -15,9 +15,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from utils.db_utils import db
 from sqlalchemy import String
+from . import country
 import hashlib
 from flask.ext.login import UserMixin
-from .files import File, ImageCroped
+from .files import File, FileImg
 from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
 from ..utils import fileUrl
@@ -145,9 +146,9 @@ class User(Base, UserMixin, PRBase):
     yahoo_link = Column(TABLE_TYPES['link'])
     yahoo_phone = Column(TABLE_TYPES['phone'])
     tos = Column(TABLE_TYPES['boolean'], default=False)
-    search_fields = {'profireader_name': {'relevance': lambda field='profireader_name': RELEVANCE.profireader_name},
-                     'about_me': {'relevance': lambda field='about_me': RELEVANCE.about_me},
-                     'profireader_email': {'relevance': lambda field='profireader_email': RELEVANCE.profireader_email}}
+    # search_fields = {'profireader_name': {'relevance': lambda field='profireader_name': RELEVANCE.profireader_name},
+    #                  'about_me': {'relevance': lambda field='about_me': RELEVANCE.about_me},
+    #                  'profireader_email': {'relevance': lambda field='profireader_email': RELEVANCE.profireader_email}}
 
     # get all users in company : company.employees
     # get all users companies : user.employers
@@ -269,7 +270,10 @@ class User(Base, UserMixin, PRBase):
             return "Sorry!You must be confirmed!"
         return True
 
+
+
     def validate(self, is_new):
+
         ret = super().validate(is_new)
         if not re.match(r'[^\s]{3}', str(self.profireader_name)):
             ret['errors']['profireader_name'] = 'Your username must be at least 3 characters long.'
@@ -426,7 +430,7 @@ class User(Base, UserMixin, PRBase):
 
     def get_avatar_client_side_dict(self):
         ret = self.get_image_cropped_file(self.logo_file_properties(),
-                                             db(ImageCroped, croped_image_id=self.avatar_file_id).first())
+                                          db(FileImg, croped_image_id=self.avatar_file_id).first())
 
         if self.profireader_avatar_url == self.gravatar(size=500):
             ret['selected_by_user'] = {'type': 'preset', 'class': 'glyphicon-share'}
