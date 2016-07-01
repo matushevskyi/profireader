@@ -1,6 +1,7 @@
 {# division catalog in bird layout #}
 {% extends 'layout.html' %}
 {% block content %}
+{#    {{ portal|tojson }}#}
 
     {% for member_id, member in members.items() %}
         <div class="block-item company-item">
