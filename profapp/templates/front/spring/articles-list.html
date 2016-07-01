@@ -49,7 +49,7 @@
             <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
         </div>
         <h2 class="item-title">
-            <a href="{{ url_for('front.details', article_portal_division_id=article['id']) }}">{{ article['title']|safe }}</a>
+            <a href="{{ url_for('front.details', publication_id=article['id']) }}">{{ article['title']|safe }}</a>
             {% if article['tags'] %}
                 <span class="tag-in-article">
                     {% for tag in article['tags'] %}

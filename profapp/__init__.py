@@ -133,7 +133,7 @@ def db_session_func(db_config):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import scoped_session, sessionmaker
 
-    engine = create_engine(db_config, echo=not False)
+    engine = create_engine(db_config, echo=False)
     g.sql_connection = engine.connect()
     db_session = scoped_session(sessionmaker(autocommit=False,
                                              autoflush=False,
@@ -200,10 +200,11 @@ def load_user(apptype):
         else:
             current_app.config[var_id] = '%s' % (variable.value,)
 
+
 def prImageUrl(url):
     return Markup(
         ' src="//static.profireader.com/static/images/0.gif" style="background-position: center; background-size: contain; background-repeat: no-repeat; background-image: url(\'%s\')" ' % (
-        url,))
+            url,))
 
 
 def prImage(id=None, if_no_image=None):

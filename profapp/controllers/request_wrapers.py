@@ -125,6 +125,14 @@ def tos_required(func):
         return func(*args, **kwargs)
     return decorated_view
 
+def get_portal(func):
+    @wraps(func)
+    def function_portal(*args, **kwargs):
+        from ..models.portal import Portal
+        return func(g.db().query(Portal).filter_by(host=request.host).first(), *args, **kwargs)
+
+    return function_portal
+
 def check_right(classCheck, params=None, action=None):
     def wrapped(func):
         @wraps(func)

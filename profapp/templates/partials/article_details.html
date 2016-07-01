@@ -1,28 +1,30 @@
 {# опис статті + теги #}
+{% import 'front-macros.html' as frontmacros %}
 <div class="block-item full-block-info" style="height: auto;">
 
     <div class="item-additional-info">
-            <a href="{{ url_for('front.company_member', member_company_id = material['company']['id'], member_company_name = material['company']['name']) }}"
-               class="item-company">{{ material['company']['name']|safe }}</a>
-            <div class="item-publication-date">{{ material['publishing_tm']|safe }}</div>
+            <a href="{{ url_for('front.company_member', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}"
+               class="item-company">{{ article['company']['name']|safe }}</a>
+            <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
             <div><br>
-                <script type="text/javascript">getSearchBlock({{ material|tojson }})</script>
+                <script type="text/javascript">getSearchBlock({{ article|tojson }})</script>
             </div>
     </div>
 
-    {% if material['tags'] %}
-        <div style="text-align: right">{% for tag in material.tags %} {{ frontmacros.tag(tag, url_toggle_tag, selected_tag_names = [], toogle_tag = True) }} {% endfor %}</div>
+    {% if article['tags'] %}
+        <div style="text-align: right">{% for tag in article.tags %} {{ frontmacros.tag(tag, url_toggle_tag, selected_tag_names = [], toogle_tag = True) }} {% endfor %}</div>
     {% endif %}
 
-    <h2 class="item-title">{{ material['title']|safe }}</h2>
+    <h2 class="item-title">{{ article['title']|safe }}</h2>
 
-    <h3 class="item-subtitle">{{ material['subtitle']|safe }}</h3>
-    <div class="s-cover-l" style="padding-bottom: 10px"><img width="300" height="240"  {{ prImageUrl(url = material['illustration']['url']) }}></div>
+    <h3 class="item-subtitle">{{ article['subtitle']|safe }}</h3>
+    <div class="s-cover-l" style="padding-bottom: 10px"><img width="300" height="240"
+            {{ prImageUrl(url = article['illustration']['url']) }}></div>
     <div class="article-short">
-        {{ material['short']|safe }}
+        {{ article['short']|safe }}
     </div>
     <div class="article-content">
-        {{ material['long'] |safe }}
+        {{ article['long'] |safe }}
     </div>
 
 </div>

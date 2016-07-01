@@ -245,38 +245,6 @@ class Material(Base, PRBase):
     #                  'long': {'relevance': lambda field='long': RELEVANCE.long},
     #                  'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
 
-    def elastic_get_fields(self):
-        return {
-            'id': PRElasticField(analyzed=False, setter=lambda: self.id),
-            'title': PRElasticField(setter=lambda: self.title, boost=10),
-            'author': PRElasticField(setter=lambda: self.author, boost=10),
-            'subtitle': PRElasticField(setter=lambda: self.subtitle, boost=4),
-            'keywords': PRElasticField(setter=lambda: self.keywords, boost=3),
-            'short': PRElasticField(setter=lambda: self.short, boost=2),
-            'long': PRElasticField(setter=lambda: self.long),
-            'tags': PRElasticField(analyzed=False, setter=lambda: ' '.join([t.text for t in self.tags])),
-            'tag_ids': PRElasticField(analyzed=False, setter=lambda: [t.id for t in self.tags]),
-            'date': PRElasticField(ftype='date', setter=lambda: int(self.publishing_tm.timestamp() * 1000)),
-            'user': PRElasticField(analyzed=False),
-            'user_id': PRElasticField(analyzed=False),
-            'portal': PRElasticField(setter=lambda: self.portal.name),
-            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id),
-            'division': PRElasticField(setter=lambda: self.division.name),
-            'portal_division_id': PRElasticField(analyzed=False, setter=lambda: self.division.id)
-        }
-
-    def elastic_get_index(self):
-        return 'articles'
-
-    def elastic_get_doctype(self):
-        return 'articles'
-
-    def elastic_get_id(self):
-        return self.id
-
-    @classmethod
-    def elastic_remove_all_indexes(cls):
-        return elasticsearch.remove_index('articles')
 
     def is_active(self):
         return True
@@ -426,22 +394,27 @@ class Publication(Base, PRBase, PRElasticDocument):
     def elastic_get_fields(self):
         return {
             'id': PRElasticField(analyzed=False, setter=lambda: self.id),
-            'tags': PRElasticField(analyzed=False, setter=lambda: ' '.join([t.text for t in self.tags])),
+            'tags': PRElasticField(analyzed=False, setter=lambda: ' '.join([t.text for t in self.tags]), boost=5),
             'tag_ids': PRElasticField(analyzed=False, setter=lambda: [t.id for t in self.tags]),
             'date': PRElasticField(ftype='date', setter=lambda: int(self.publishing_tm.timestamp() * 1000)),
-            'user': PRElasticField(analyzed=False),
-            'user_id': PRElasticField(analyzed=False),
+            'user': PRElasticField(analyzed=False, setter=lambda: ''),
+            'user_id': PRElasticField(analyzed=False, setter=lambda: ''),
+            'material_id': PRElasticField(analyzed=False, setter=lambda: self.material_id),
             'portal': PRElasticField(setter=lambda: self.portal.name),
+            'long': PRElasticField(setter=lambda: self.strip_tags(self.material.long)),
+            'short': PRElasticField(setter=lambda: self.strip_tags(self.material.short), boost=2),
+            'subtitle': PRElasticField(setter=lambda: self.strip_tags(self.material.subtitle), boost=5),
+            'title': PRElasticField(setter=lambda: self.material.title, boost=10),
             'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id),
-            'division': PRElasticField(setter=lambda: self.division.name),
+            'division': PRElasticField(setter=lambda: self.division.name, boost=2),
             'portal_division_id': PRElasticField(analyzed=False, setter=lambda: self.division.id)
         }
 
     def elastic_get_index(self):
-        return 'articles'
+        return 'publications'
 
     def elastic_get_doctype(self):
-        return 'articles'
+        return 'publications'
 
     def elastic_get_id(self):
         return self.id
@@ -568,7 +541,7 @@ class Publication(Base, PRBase, PRElasticDocument):
                    }
         return actions[self.visibility]()
 
-    def get_client_side_dict(self, fields='id|read_count|tags|portal_division_id|cr_tm|md_tm|status|'
+    def get_client_side_dict(self, fields='id|read_count|tags|portal_division_id|cr_tm|md_tm|status|material_id|'
                                           'visibility|publishing_tm|event_begin_tm,event_end_tm,company.id|name, '
                                           'division.id|name|portal_id, portal.id|name|host, material',
                              more_fields=None):
@@ -690,3 +663,101 @@ class Publication(Base, PRBase, PRElasticDocument):
         event.listen(cls, 'after_insert', cls.after_insert)
         event.listen(cls, 'after_update', cls.after_update)
         event.listen(cls, 'after_delete', cls.after_delete)
+
+
+class ReaderPublication(Base, PRBase):
+    __tablename__ = 'reader_article_portal_division'
+    id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
+    user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
+    article_portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('publication.id'))
+    favorite = Column(TABLE_TYPES['boolean'], default=False)
+    liked = Column(TABLE_TYPES['boolean'], default=False)
+
+    def __init__(self, user_id=None, article_portal_division_id=None, favorite=False, liked=False):
+        super(ReaderPublication, self).__init__()
+        self.user_id = user_id
+        self.article_portal_division_id = article_portal_division_id
+        self.favorite = favorite
+        self.liked = liked
+
+    @staticmethod
+    def add_delete_favorite_user_article(article_portal_division_id, favorite):
+        articleReader = db(ReaderPublication, article_portal_division_id=article_portal_division_id,
+                           user_id=g.user.id).first()
+        if not articleReader:
+            articleReader = ReaderPublication.add_to_table_if_not_exists(article_portal_division_id)
+        articleReader.favorite = True if favorite else False
+        articleReader.save()
+        return articleReader.favorite
+
+    @staticmethod
+    def add_delete_liked_user_article(article_portal_division_id, liked):
+        articleReader = db(ReaderPublication, article_portal_division_id=article_portal_division_id,
+                           user_id=g.user.id).first()
+
+        if not articleReader:
+            articleReader = ReaderPublication.add_to_table_if_not_exists(article_portal_division_id)
+        articleReader.liked = False if articleReader.liked else True
+        article_division = ArticlePortalDivision.get(article_portal_division_id)
+        article_division.like_count = article_division.like_count - 1 \
+            if articleReader.liked == False and article_division.like_count != 0 else article_division.like_count + 1
+        article_division.save()
+        articleReader.save()
+        return articleReader.liked
+
+    @staticmethod
+    def count_likes(user_id, article_portal_division_id):
+        article_division = ArticlePortalDivision.get(article_portal_division_id)
+        return article_division.like_count
+
+    @staticmethod
+    def article_is_liked(user_id, article_portal_division_id):
+        reader_article = db(ReaderPublication, user_id=user_id,
+                            article_portal_division_id=article_portal_division_id).first()
+        return reader_article.liked if reader_article else False
+
+    @staticmethod
+    def article_is_favorite(user_id, article_portal_division_id):
+        reader_article = db(ReaderPublication, user_id=user_id,
+                            article_portal_division_id=article_portal_division_id).first()
+        return reader_article.favorite if reader_article else False
+
+    @staticmethod
+    def get_list_reader_liked(article_portal_division_id):
+        me = db(ReaderPublication, article_portal_division_id=article_portal_division_id, user_id=g.user.id,
+                liked=True).first()
+        limit = 15
+        articles = db(ReaderPublication, article_portal_division_id=article_portal_division_id, liked=True)
+        liked_users = [User.get(article.user_id).profireader_name for article in articles.limit(limit)]
+        if me:
+            if g.user.profireader_name in liked_users:
+                index = liked_users.index(g.user.profireader_name)
+                del liked_users[index]
+            else:
+                del liked_users[-1]
+            liked_users.insert(0, g.user.profireader_name)
+        if articles.count() > limit:
+            liked_users.append('and ' + str((articles.count() - limit)) + ' more...')
+        return liked_users
+
+    @staticmethod
+    def add_to_table_if_not_exists(article_portal_division_id):
+        if not db(ReaderPublication,
+                  user_id=g.user.id, article_portal_division_id=article_portal_division_id).count():
+            return ReaderPublication(user_id=g.user.id,
+                                               article_portal_division_id=article_portal_division_id,
+                                               favorite=False).save()
+
+    def get_article_portal_division(self):
+        return db(ArticlePortalDivision, id=self.article_portal_division_id).one()
+
+    @staticmethod
+    def subquery_favorite_articles():
+        return db(ArticlePortalDivision).filter(
+            ArticlePortalDivision.id == db(ReaderPublication,
+                                           user_id=g.user.id,
+                                           favorite=True).subquery().c.article_portal_division_id)
+
+    def get_portal_division(self):
+        return db(PortalDivision).filter(PortalDivision.id == db(ArticlePortalDivision,
+                                                                 id=self.article_portal_division_id).c.portal_division_id).one()

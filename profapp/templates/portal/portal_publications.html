@@ -28,7 +28,7 @@
             }
 
             $scope.url_front_publication_details_host = function (publication_id, host) {
-                return publication_id ? ('//' + host + $scope.url_front_publication_details({article_portal_division_id: publication_id})) : '';
+                return publication_id ? ('//' + host + $scope.url_front_publication_details({publication_id: publication_id})) : '';
             }
 
             {% raw %}
