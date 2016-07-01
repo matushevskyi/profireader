@@ -500,6 +500,8 @@ class PortalDivision(Base, PRBase):
 
     settings = None
 
+    TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events', 'catalog': 'catalog'}
+
     def is_active(self):
         return True
 

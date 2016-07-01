@@ -60,6 +60,7 @@ def get_search_text_and_division(portal, division_name):
 
 
 def portal_and_settings(portal):
+    # TODO OZ by OZ: use polymorphic association and return object here (maybe we even will not need  this function)
     ret = portal.get_client_side_dict()
     newd = []
     for di in ret['divisions']:
@@ -67,11 +68,33 @@ def portal_and_settings(portal):
             pdset = g.db().query(PortalDivisionSettingsCompanySubportal). \
                 filter_by(portal_division_id=di['id']).first()
             com_port = g.db().query(MemberCompanyPortal).get(pdset.member_company_portal_id)
-            di['member_company'] = Company.get(com_port.company_id)
+            di['subportal_company'] = Company.get(com_port.company_id)
         newd.append(di)
     ret['divisions'] = newd
     ret['advs'] = {a.place: a.html for a in portal.advs}
     return ret
+
+
+def get_company_member_and_division(portal: Portal, company_id, company_name):
+    # TODO: OZ by OZ: redirect if name is wrong
+    portal_dict = portal_and_settings(portal)
+    # TODO: OZ by OZ: heck company is member
+    member_company = Company.get(company_id)
+    di = None
+    for d in portal_dict['divisions']:
+        if 'subportal_company' in d and d['subportal_company'].id == company_id:
+            di = get_division_for_subportal(portal.id, member_company.id)
+
+    if not di:
+        # TODO: YG: by OZ: change all hardcoded portal_division_types_id (like '<here some index>') to PortalDivision.TYPES[<here some index>]
+        di = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
+                                                    portal_division_type_id=PortalDivision.TYPES[
+                                                        'catalog']).first()
+    if not di:
+        di = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
+                                                    portal_division_type_id=PortalDivision.TYPES[
+                                                        'index']).one()
+    return member_company, di
 
 
 # @front_bp.route('favicon.ico')
@@ -164,29 +187,32 @@ def subportal_address(portal, member_company_id, member_company_name):
 
     division = get_division_for_subportal(portal.id, member_company_id)
 
-    return render_template('front/' + g.portal_layout_path + 'subportal_address.html',
-                           portal=portal_and_settings(portal),
-                           current_division=division.get_client_side_dict(),
-                           member_company=subportal_for_company.get_client_side_dict(),
-                           member_company_page='address',
+    return render_template('front/' + g.portal_layout_path + 'company_address.html',
+                           # portal=portal_and_settings(portal),
+                           # current_division=division.get_client_side_dict(),
+                           # member_company=subportal_for_company.get_client_side_dict(),
+                           # member_company_page='address',
                            )
 
 
-@front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/address/')
+@front_bp.route('_c/<string:member_company_id>/<string:member_company_name>/')
 @check_right(AllowAll)
 @get_portal
 def company_member(portal, member_company_id, member_company_name):
-    #TODO: OZ by OZ
-    _, dvsn = get_search_text_and_division(portal, 'index')
-    subportal_for_company = Company.get(member_company_id)
+    # _, dvsn = get_search_text_and_division(portal, 'index')
+    # TODO: OZ by OZ
+    member_company, dvsn = \
+        get_company_member_and_division(portal, member_company_id, member_company_name)
 
-    division = get_division_for_subportal(portal.id, member_company_id)
+    # subportal_for_company = Company.get(member_company_id)
 
-    return render_template('front/' + g.portal_layout_path + 'subportal_address.html',
+    # division = get_division_for_subportal(portal.id, member_company_id)
+
+    return render_template('front/' + g.portal_layout_path + 'company_about.html',
                            portal=portal_and_settings(portal),
-                           current_division=division.get_client_side_dict(),
-                           member_company=subportal_for_company.get_client_side_dict(),
-                           member_company_page='address',
+                           current_division=dvsn.get_client_side_dict(),
+                           member_company=member_company.get_client_side_dict(),
+                           # member_company_page='address',
                            )
 
 
@@ -197,11 +223,11 @@ def subportal_contacts(portal, member_company_id, member_company_name):
     # TODO: OZ by OZ
     search_text, portal = get_search_text_and_division(portal, 'index')
 
-    member_company = Company.get(member_company_id)
+    # member_company = Company.get(member_company_id)
 
     division = get_division_for_subportal(portal.id, member_company_id)
 
-    company_users = member_company.employees
+    # company_users = member_company.employees
 
     # TODO: AA by OZ: remove this. llok also for ERROR employees.position.2
     # ERROR employees.position.2#
@@ -209,7 +235,7 @@ def subportal_contacts(portal, member_company_id, member_company_name):
         r = db(UserCompany, user_id=u_id, company_id=c_id).first()
         return r.position if r else ''
 
-    return render_template('front/' + g.portal_layout_path + 'subportal_contacts.html',
+    return render_template('front/' + g.portal_layout_path + 'company_contacts.html',
                            subportal=True,
                            company_users={
                                u.id: dict(u.get_client_side_dict(), position=getposition(u.id, member_company_id)) for u
@@ -219,7 +245,7 @@ def subportal_contacts(portal, member_company_id, member_company_name):
                            current_division=division.get_client_side_dict(),
                            current_subportal_division=False,
                            current_subportal_division_name='contacts',
-                           member_company=member_company.get_client_side_dict(),
+                           # member_company=member_company.get_client_side_dict(),
                            pages=False,
                            # current_page=page,
                            # page_buttons=Config.PAGINATION_BUTTONS,
@@ -296,7 +322,6 @@ def render_articles(portal, dvsn, page, tags, search_text):
                                                                                        'author^50',
                                                                                        'keywords^10']}}] if search_text else [])
 
-
     return render_template('front/' + g.portal_layout_path + 'division.html',
                            articles=OrderedDict((p['id'], publication_id_to_article(p['id'])) for p in publications),
                            current_division=current_division,
@@ -341,7 +366,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_name=
     if dvsn.portal_division_type_id == 'company_subportal':
         member_company = MemberCompanyPortal.get(g.db().query(PortalDivisionSettingsCompanySubportal).filter_by(
             portal_division_id=dvsn.id).one().member_company_portal_id)
-        return render_template('front/' + g.portal_layout_path + 'subportal_about.html',
+        return render_template('front/' + g.portal_layout_path + 'company_about.html',
                                portal=portal_and_settings(portal),
                                current_division=dvsn.get_client_side_dict(),
                                member_company=member_company.get_client_side_dict(),
@@ -372,7 +397,6 @@ def details(portal, publication_id):
     article_visibility = publication.article_visibility_details()
     article_dict = publication_id_to_article(publication.id)
 
-
     division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()
     if article_visibility is not True:
         back_to_url('front.details', host=portal.host, publication_id=publication_id)
@@ -398,7 +422,7 @@ def details(portal, publication_id):
                                # a.id: a.get_client_side_dict(fields='id, title, publishing_tm, company.name|id')
                                # for a
                                # in related_articles
-                               },
+                           },
                            article=article_dict,
                            favorite=favorite,
                            url_toggle_tag=url_toggle_tag,
