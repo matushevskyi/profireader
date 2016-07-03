@@ -128,7 +128,7 @@ class Portal(Base, PRBase):
             'crop': True,
             'image_size': [450, 450],
             'min_size': [120, 100],
-            'aspect_ratio': [0.5, 2.0],
+            'aspect_ratio': [0.25, 4.0],
             'preset_urls': {'glyphicon-remove-circle': nologo_url},
             'no_selection_url': nologo_url
         }
@@ -154,15 +154,15 @@ class Portal(Base, PRBase):
         for division in self.divisions:
             if division.portal_division_type_id == 'company_subportal':
                 PortalDivisionSettingsCompanySubportal(
-                    member_company_portal=division.settings.member_company_portal,
+                    member_company_portal=division.settings['member_company_portal'],
                     portal_division=division).save()
 
         if logo_file_id:
-            originalfile = File.get(logo_file_id)
+            originalfile = File.get(logo_file_id['logo_file_id'])
             if originalfile:
                 self.logo_file_id = originalfile.copy_file(
                     company_id=self.company_owner_id,
-                    parent_folder_id=self.own_company.system_folder_file_id,
+                    parent_id=self.own_company.system_folder_file_id,
                     article_portal_division_id=None).save().id
         return self
 
@@ -280,7 +280,7 @@ class Portal(Base, PRBase):
                 grouped['by_division_type'][div.portal_division_type_id] = 1
 
             if div.portal_division_type_id == 'company_subportal':
-                member_company_id = div.settings.member_company_portal.company_id
+                member_company_id = div.settings['member_company_portal'].company_id
                 if member_company_id in grouped['by_company_member']:
                     grouped['by_company_member'][member_company_id] += 1
                 else:
@@ -303,8 +303,8 @@ class Portal(Base, PRBase):
 
         for inddiv, div in enumerate(self.divisions):
             if div.portal_division_type_id == 'company_subportal':
-                if div.settings.member_company_portal.company_id in grouped['by_company_member'] and grouped[
-                    'by_company_member'][div.settings.member_company_portal.company_id] > 1:
+                if div.settings['member_company_portal'].company_id in grouped['by_company_member'] and grouped[
+                    'by_company_member'][div.settings['member_company_portal'].company_id] > 1:
                     if not 'remove_division' in ret['warnings']:
                         ret['warnings']['remove_division'] = {}
                     ret['warnings']['remove_division'][inddiv] = 'you have more that one subportal for this company'
