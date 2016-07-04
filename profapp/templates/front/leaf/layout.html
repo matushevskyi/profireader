@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include '/front/bird/partials/head.html' %}
+    <meta charset="UTF-8">
+    <title>Test</title>
+</head>
+<body>
+ <script>
+    window.addEventListener("message", function (messageevent) {
+        if (messageevent.data && messageevent.data.profireader_session_id) {
+            $.cookie('beaker.session.id', messageevent.data.profireader_session_id, {path: '/'});
+            window.location.reload();
+        }
+    }, false);
+    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: none; left: -1px;" src="https://profireader.com/tools/SSO/' + $.cookie('beaker.session.id') + '/"></iframe>');
+</script>
+{% include 'nav.html' %}
+
+{% for article_id, article in articles.items() %}
+<div class="block-item list-elements">
+        <div class="item-type article">
+            <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
+            <span class="fr">{{ article.author }}</span>
+        </div>
+        <h2 class="item-title">
+            <a href="{{ url_for('front.details', publication_id=article['id']) }}">{{ article['title']|safe }}</a>
+        </h2>
+
+</div>
+{% endfor %}
+</body>
+</html>

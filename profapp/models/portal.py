@@ -565,7 +565,7 @@ class PortalDivisionSettingsCompanySubportal(Base, PRBase):
 
     portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
     member_company_portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal.id'))
-
+    print(member_company_portal_id)
     member_company_portal = relationship(MemberCompanyPortal)
 
     portal_division = relationship(PortalDivision)
