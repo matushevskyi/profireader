@@ -44,7 +44,7 @@ def filemanager():
     filemanager_company_list = []
     members, main_companies = Company.get_members_for_company()
     uniq = set()
-    for n, user_company in enumerate(g.user.employer_assoc):
+    for n, user_company in enumerate(g.user.company_employers):
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE) == True:
             filemanager_company_list.insert(n, File.folder_dict(user_company.employer,
                                                {'can_upload': FilemanagerRights(company=user_company.company_id).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD'])}))
