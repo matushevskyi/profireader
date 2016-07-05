@@ -23,7 +23,7 @@
             $scope.url_search_for_user = {{ raw_url_for('company.search_for_user')|safe }};
             $scope.url_update_material = {{ raw_url_for('article.article_show_form')|safe }};
             $scope.url_company = {{ raw_url_for('company.profile')|safe }};
-            $scope.url_front_publication_details = {{ raw_url_for('front.details')|safe }};
+            $scope.url_front_publication_details = {{ raw_url_for('front.article_details')|safe }};
             $scope.url_front_publication_division = {{ raw_url_for('front.division')|safe }};
 
             $scope.url_front_publication_division_host = function (division_name, host) {
