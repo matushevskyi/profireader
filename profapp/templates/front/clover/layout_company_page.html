@@ -5,7 +5,7 @@
 
 {% block top_content %}
     {{ super() }}
-    {% include 'company/menu.html' %}
+    {% include 'company_menu.html' %}
     <h2>{{ _('header ' + company_menu_selected_item + ' %(company_name)s', {'company_name': member_company.name}) }}</h2>
     {% block company_content %}{% endblock %}
 {% endblock %}

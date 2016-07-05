@@ -82,7 +82,7 @@ def publication_id_to_article(p_id):
     )
 
 
-def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text):
+def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, company_publisher=None):
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
                                                   division_name=dvsn.name, default=10)
 
@@ -113,12 +113,15 @@ def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text):
 
         return url_tags(new_tags)
 
+    afilter = [{'term': {'portal_id': portal.id}}] if pdt == 'index' else [{'term': {'portal_division_id': dvsn.id}}]
 
-    afilter = [] if pdt == 'index' else [{'term': {'portal_division_id': dvsn.id}}]
+    if company_publisher:
+        afilter.append({'term': {'publisher_company_id': company_publisher.id}})
+
     wrong_tag = False
-    all_tags = portal.get_client_side_dict(fields='tags') if pdt == 'index' else dvsn.get_client_side_dict(
-        fields='tags')
-    all_tags_text_id = {t['text']: t['id'] for t in all_tags['tags']}
+    all_tags = (portal.get_client_side_dict(fields='tags') if pdt == 'index' else dvsn.get_client_side_dict(
+        fields='tags'))['tags']
+    all_tags_text_id = {t['text']: t['id'] for t in all_tags}
     selected_tag_names = []
     if tags:
         for t in tags.split('+'):
@@ -194,7 +197,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
 
         if dvsn.portal_division_type_id in ['index', 'news', 'events']:
             return render_template(
-                'front/' + g.portal_layout_path + 'division_' + dvsn.portal_division_type_id + '.html',
+                'front/' + g.portal_layout_path + 'division_articles.html',
                 division=dvsn.get_client_side_dict(),
                 portal=portal_and_settings(portal),
                 **get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text))
@@ -216,13 +219,13 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
             get_company_member_and_division(portal, member_company_id, member_company_name)
         search_text, subportal_dvsn = get_search_text_and_division(portal, division_name)
 
-        member_company = g.db().query(PortalDivisionSettingsCompanySubportal).filter_by(
-            portal_division_id=dvsn.id).one().member_company_portal.company
         return render_template('front/' + g.portal_layout_path + 'division_company.html',
                                portal=portal_and_settings(portal),
                                division=dvsn.get_client_side_dict(),
                                member_company=member_company.get_client_side_dict(),
-                               member_company_page=subportal_dvsn.get_client_side_dict(),
+                               company_menu_selected_item=subportal_dvsn.get_client_side_dict(),
+                               **get_articles_tags_pages_search_text(portal, subportal_dvsn, page, tags, search_text,
+                                                                     company_publisher=member_company)
                                )
 
 

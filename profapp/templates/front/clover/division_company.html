@@ -1,1 +1,5 @@
-{% extends 'division_index.html' %}
+{% extends 'division_articles.html' %}
+{% block top_content %}
+    {{ super() }}
+    {% include 'company_menu.html' %}
+{% endblock %}

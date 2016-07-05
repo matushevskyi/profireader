@@ -9,12 +9,3 @@
             <span class="glyphicon {{ 'glyphicon-remove' if tag.text in selected_tag_names else 'glyphicon-plus' }}"></span>{% endif %}
     </span>&nbsp;
 {% endmacro %}
-
-
-{#{% macro link_to_company(portal, company) %}#}
-{#    {% if company['id'] in portal['subportals_by_companies_id'] %}#}
-{#        {{ url_for('front.division', division_name = portal['subportals_by_companies_id'][company['id']]['name']) }}#}
-{#    {% else %}#}
-{#        {{ url_for('front.company_member', member_company_id = company['id'], member_company_name = company['name']) }}#}
-{#    {% endif %}#}
-{#{% endmacro %}#}
