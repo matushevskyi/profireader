@@ -69,7 +69,7 @@ def load_form_create(json_data, company_id=None, material_id=None):
 def material_details(material_id):
     company = Company.get(Material.get(material_id).company.id)
     return render_template('company/material_details.html',
-                           material=Material.get(material_id).get_client_side_dict(),
+                           article=Material.get(material_id).get_client_side_dict(),
                            company=company)
 
 
