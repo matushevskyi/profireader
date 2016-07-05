@@ -254,6 +254,8 @@ def article_details(portal, publication_id, publication_title):
                            article=article_dict,
                            article_visibility=article_visibility,
                            articles_related=articles_related,
+                           tags={'all': [], 'selected_names': [],
+                                 'url_construct_toggle': url_toggle_tag},
                            article_social_activity={
                                'favorite': publication.check_favorite_status(),
                                'liked': publication.check_liked_status(),
