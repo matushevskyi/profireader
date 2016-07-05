@@ -419,10 +419,10 @@ def readers(company_id, page=1):
 @company_bp.route('/readers/<string:company_id>/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
 def readers_load(json, company_id):
+
     company = Company.get(company_id)
     company_readers, pages, page, count = pagination(query=company.get_readers_for_portal(json.get('filter')),
                                                      **Grid.page_options(json.get('paginationOptions')))
-
     return {'grid_data': [reader.get_client_side_dict(
             'id,profireader_email,profireader_name,profireader_first_name,profireader_last_name') for reader in
                           company_readers],
