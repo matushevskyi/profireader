@@ -68,7 +68,7 @@ class User(Base, UserMixin, PRBase):
     # employers = relationship('Company', secondary='user_company',
     #                          backref=backref("employees", lazy='dynamic'))  # Correct
 
-    employers = relationship('Company', secondary='user_company', back_populates='employees')
+    employments = relationship('UserCompany', back_populates='user')
     companies = relationship('Company', back_populates='user_owner')
 
     # FB_NET_FIELD_NAMES = ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
@@ -156,7 +156,7 @@ class User(Base, UserMixin, PRBase):
     def __init__(self,
                  # user_rights_in_profireader_def=[],
                  # user_rights_in_profireader_undef=[],
-                 employers=[],
+                 company_employers=[],
                  PROFIREADER_ALL=SOC_NET_NONE['profireader'],
                  GOOGLE_ALL=SOC_NET_NONE['google'],
                  FACEBOOK_ALL=SOC_NET_NONE['facebook'],
@@ -179,7 +179,7 @@ class User(Base, UserMixin, PRBase):
                  tos=None
                  ):
 
-        self.employers = employers
+        self.company_employers = company_employers
 
         self.profireader_email = PROFIREADER_ALL['email']
         self.profireader_first_name = PROFIREADER_ALL['first_name']

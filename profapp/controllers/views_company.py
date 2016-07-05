@@ -117,9 +117,9 @@ def employees(company_id):
 def employees_load(json, company_id):
     company = Company.get(company_id)
     employees_list = [
-        utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
+        utils.dict_merge(employment.user_employee.get_client_side_dict(), employment.get_client_side_dict(),
                            {'actions': EmployeesRight(company=company, employment=employment).actions()})
-        for employment in company.employee_assoc]
+        for employment in company.employments]
 
     return {
         'company': company.get_client_side_dict(fields='id,name'),
@@ -225,7 +225,7 @@ def employment_change_position(json, company_id, employment_id):
 @company_bp.route('/create/', methods=['GET'])
 @check_right(UserIsActive)
 def update():
-    # user_companies = [user_comp for user_comp in current_user.employer_assoc]
+    # user_companies = [user_comp for user_comp in current_user.company_employers]
     # user_have_comp = True if len(user_companies) > 0 else False
     # company = db(Company, id=company_id).first()
     return render_template('company/company_profile.html', rights_user_in_company={},
@@ -331,7 +331,7 @@ def send_article_to_user(json):
 @check_right(UserIsActive)
 def join_to_company(json, company_id):
     UserCompany(user_id=g.user.id, company_id=json.get('company_id')).save()
-    return {'companies': [employer.get_client_side_dict() for employer in current_user.employers]}
+    return {'companies': [employer.get_client_side_dict() for employer in current_user.company_employers]}
 
 
 @company_bp.route('/add_subscriber/', methods=['POST'])
@@ -376,24 +376,8 @@ def confirm_subscriber():
 #     return redirect(url_for('company.employees', company_id=company_id))
 #
 #
-# @company_bp.route('/suspended_employees/<string:company_id>',
-#                   methods=['GET'])
-# @tos_required
-# @login_required
-# # @check_rights(simple_permissions([]))
-# def suspended_employees(company_id):
-#     company = db(Company, id=company_id).one()
-#     return render_template('company/company_fired.html', company_id=company_id, company=company)
 #
-#
-# @company_bp.route('/suspended_employees/<string:company_id>', methods=['POST'])
-# @login_required
-# # @check_rights(simple_permissions([]))
-# @ok
-# def load_suspended_employees(json, company_id):
-#     suspend_employees = Company.query_company(company_id)
-#     suspend_employees = suspend_employees.suspended_employees()
-#     return suspend_employees
+
 
 
 @company_bp.route('/readers/<string:company_id>/', methods=['GET'])

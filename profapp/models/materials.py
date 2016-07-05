@@ -664,6 +664,15 @@ class Publication(Base, PRBase, PRElasticDocument):
         event.listen(cls, 'after_update', cls.after_update)
         event.listen(cls, 'after_delete', cls.after_delete)
 
+    def get_related_articles(self, count=5):
+        from sqlalchemy.sql import func
+
+        return g.db().query(Publication).filter(
+            and_(Publication.id != self.id,
+                 Publication.portal_division_id.in_(
+                     db(PortalDivision.id).filter(PortalDivision.portal_id == self.division.portal_id))
+                 )).order_by(func.random()).limit(count).all()
+
 
 class ReaderPublication(Base, PRBase):
     __tablename__ = 'reader_article_portal_division'
@@ -745,8 +754,8 @@ class ReaderPublication(Base, PRBase):
         if not db(ReaderPublication,
                   user_id=g.user.id, article_portal_division_id=article_portal_division_id).count():
             return ReaderPublication(user_id=g.user.id,
-                                               article_portal_division_id=article_portal_division_id,
-                                               favorite=False).save()
+                                     article_portal_division_id=article_portal_division_id,
+                                     favorite=False).save()
 
     def get_article_portal_division(self):
         return db(ArticlePortalDivision, id=self.article_portal_division_id).one()

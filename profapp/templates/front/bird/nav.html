@@ -17,7 +17,7 @@
             </div>
             <div class="right-block-menu-portal">
                 <ul class="nav navbar-nav">
-                    {% for division in portal.divisions %}
+                    {% for division_id, division in portal.divisions.items() %}
                         {% if division.portal_division_type_id != 'index' %}
                             <li {% if division.id == current_division.id %}class="active"{% endif %}>
                                 <a href=" {{ url_for('front.division', division_name=division.name) }}">{{ division.name }}</a>
@@ -27,7 +27,7 @@
                 </ul>
             </div>
         </div>
-        <hr class ="border-limiter"/>
+        <hr class="border-limiter"/>
     </div>
 </nav>
 

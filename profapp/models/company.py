@@ -90,10 +90,7 @@ class Company(Base, PRBase):
 
     # TODO: AA by OZ: we need employees.position (from user_company table) (also search and fix #ERROR employees.position.2#)
     # ERROR employees.position.1#
-    employees = relationship('User',
-                             secondary='user_company',
-                             back_populates='employers',
-                             lazy='dynamic')
+    employments = relationship('UserCompany', back_populates='company')
 
     youtube_playlists = relationship('YoutubePlaylist')
 
@@ -163,8 +160,8 @@ class Company(Base, PRBase):
             order_by(User.profireader_name). \
             filter(self.__class__.id == self.id)
 
-        # get all users in company : company.employees
-        # get all users companies : user.employers
+        # get all users in company : company.user_employees
+        # get all users companies : user.company_employers
 
     # TODO: VK by OZ I think this have to be moved to __init__ and duplication check to validation
     def setup_new_company(self):
@@ -178,20 +175,12 @@ class Company(Base, PRBase):
         user_company = UserCompany(status=UserCompany.STATUSES['ACTIVE'], rights={UserCompany.RIGHT_AT_COMPANY._OWNER:
                                                                                       True})
         user_company.employer = self
-        g.user.employer_assoc.append(user_company)
+        g.user.company_employers.append(user_company)
         g.user.companies.append(self)
         self.youtube_playlists.append(YoutubePlaylist(name=self.name, company_owner=self))
         self.save()
 
         return self
-
-    def suspended_employees(self):
-        """ Show all suspended employees from company. Before define method you should have
-        query with one company """
-        suspended_employees = [x.get_client_side_dict(more_fields='md_tm, employee, employee.employers')
-                               for x in self.employee_assoc
-                               if x.status == 'DELETED']
-        return suspended_employees
 
     @staticmethod
     def query_company(company_id):
@@ -320,7 +309,7 @@ class Company(Base, PRBase):
     def get_members_for_company():
         dict_members = {}
         main_companies =[]
-        for user_company in g.user.employer_assoc:
+        for user_company in g.user.company_employers:
             main_companies.append(user_company.employer.name)
             if user_company.employer.own_portal:
                 dict_members[user_company.employer.name] = db(MemberCompanyPortal,
@@ -378,8 +367,8 @@ class UserCompany(Base, PRBase):
     #                 default='324235423-423423',
     #                 nullable=False)
 
-    employer = relationship('Company', backref='employee_assoc')
-    employee = relationship('User', backref=backref('employer_assoc', lazy='dynamic'))
+    company = relationship(Company, back_populates='employments')
+    user = relationship('User', back_populates='employments')
 
     def __init__(self, user_id=None, company_id=None, status=STATUSES['APPLICANT'],
                  rights=None):
@@ -499,7 +488,7 @@ class UserCompany(Base, PRBase):
         #         if not company:
         #             return abort(400)
         #
-        #     user_company = user.employer_assoc.filter_by(company_id=company.id).first()
+        #     user_company = user.company_employers.filter_by(company_id=company.id).first()
         #
         #     if not user_company:
         #         return False if needed_rights_iterable else True

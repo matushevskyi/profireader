@@ -515,6 +515,9 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     # read this: http://stackoverflow.com/questions/6036082/call-a-python-function-from-jinja2
     # app.jinja_env.globals.update(flask_endpoint_to_angular=flask_endpoint_to_angular)
 
+    def raise_helper(msg):
+        raise Exception(msg)
+
     app.jinja_env.globals.update(raw_url_for=raw_url_for)
     app.jinja_env.globals.update(pre=pre)
     app.jinja_env.globals.update(utils=utils)
@@ -527,6 +530,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.jinja_env.globals.update(_=translate_phrase)
     app.jinja_env.globals.update(moment=moment)
     app.jinja_env.globals.update(__=translate_html)
+    app.jinja_env.globals['raise'] = raise_helper
     app.jinja_env.globals.update(tinymce_format_groups=HtmlHelper.tinymce_format_groups)
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
     # url_regenerate
