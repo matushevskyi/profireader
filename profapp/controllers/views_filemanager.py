@@ -11,7 +11,7 @@ from flask.ext.login import login_required
 from flask import session, redirect, request, url_for
 from ..models.google import GoogleAuthorize, GoogleToken
 from utils.db_utils import db
-from ..models.company import Company, UserCompany
+from ..models.company import Company, UserCompany, MemberCompanyPortal
 import urllib.parse
 from ..models.rights import FilemanagerRights, UserIsActive
 import time
@@ -35,30 +35,39 @@ json_result = {"result": {"success": True, "error": None}}
 @login_required
 @check_right(UserIsActive)
 def filemanager():
+    from collections import OrderedDict
+
     last_visit_root_name = ''
     if 'last_root' in request.cookies:
         last_root_id = request.cookies['last_root']
     else:
         last_root_id = ''
 
-    filemanager_company_list = []
-    members, main_companies = Company.get_members_for_company()
-    uniq = set()
-    for n, user_company in enumerate(g.user.company_employers):
+    filemanager_company_list = OrderedDict()
+
+    for user_company in g.user.employments:
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE) == True:
-            filemanager_company_list.insert(n, File.folder_dict(user_company.employer,
-                                               {'can_upload': FilemanagerRights(company=user_company.company_id).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD'])}))
-            uniq.update({user_company.employer.name})
-            if user_company.employer.journalist_folder_file_id == last_root_id:
-                last_visit_root_name = user_company.employer.name
-            if user_company.employer.name in members:
-                for member in members[user_company.employer.name]:
-                    if member.company.name not in uniq and member.company.name not in main_companies:
-                        filemanager_company_list.append(File.folder_dict(member.company,
-                                                        {'can_upload': FilemanagerRights(company=member.company.id).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD'])}))
-                        uniq.update({member.company.name})
-                        if member.company.journalist_folder_file_id == last_root_id:
-                            last_visit_root_name = member.company.name
+            filemanager_company_list[user_company.company_id] = File.folder_dict(user_company.company,
+                                                                                 {'can_upload': FilemanagerRights(
+                                                                                     company=user_company.company_id).action_is_allowed(
+                                                                                     FilemanagerRights.ACTIONS[
+                                                                                         'UPLOAD'])})
+    for user_company in g.user.employments:
+        if user_company.company.own_portal:
+            company_membership_in_portal = db(MemberCompanyPortal, portal_id=user_company.company.own_portal.id). \
+                filter(
+                MemberCompanyPortal.company_id != user_company.company.id and MemberCompanyPortal.status == 'ACTIVE') \
+                .join(Company).filter(Company.status == 'ACTIVE').all()
+
+            for company_membership in company_membership_in_portal:
+                if company_membership.company_id not in filemanager_company_list:
+                    filemanager_company_list[company_membership.company_id] = File.folder_dict(
+                        company_membership.company,
+                        {
+                            'can_upload': FilemanagerRights(
+                                company=company_membership.company_id).action_is_allowed(
+                                FilemanagerRights.ACTIONS[
+                                    'UPLOAD'])})
     # filemanager_company_list.sort(key=lambda k: k['name'])
     file_manager_called_for = request.args[
         'file_manager_called_for'] if 'file_manager_called_for' in request.args else ''
@@ -73,8 +82,11 @@ def filemanager():
         last_visit_root_name = (root.name) if root else ''
         last_root_id = root.journalist_folder_file_id if root else ''
     err = True if len(filemanager_company_list) == 0 else False
-    return render_template('filemanager.html', filemanager_company_list=json.dumps(filemanager_company_list), err=err, last_visit_root=last_visit_root_name.replace(
-        '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),
+    return render_template('filemanager.html',
+                           filemanager_company_list=json.dumps([v for k, v in filemanager_company_list.items()]),
+                           err=err,
+                           last_visit_root=last_visit_root_name.replace(
+                               '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),
                            last_root_id=last_root_id,
                            file_manager_called_for=file_manager_called_for,
                            file_manager_on_action=file_manager_on_action,
@@ -86,17 +98,19 @@ def filemanager():
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
     company = db(Company, journalist_folder_file_id=ancestors[0]).first()
-    if len(json['params'].get('search_text'))>0:
+    if len(json['params'].get('search_text')) > 0:
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],
                          json['params']['search_text'], company_id=company.id)
     else:
-        list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],company_id=company.id)
+        list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'], company_id=company.id)
     return {'list': list, 'ancestors': ancestors}
+
 
 @filemanager_bp.route('/createdir/', methods=['OK'])
 @check_right(UserIsActive)
 def createdir(json):
-    if FilemanagerRights(company=get_company_from_folder(json['params']['root_id'])).action_is_allowed(FilemanagerRights.ACTIONS['CREATE_FOLDER']) != True:
+    if FilemanagerRights(company=get_company_from_folder(json['params']['root_id'])).action_is_allowed(
+            FilemanagerRights.ACTIONS['CREATE_FOLDER']) != True:
         return False
     return File.createdir(name=json['params']['name'],
                           root_folder_id=json['params']['root_id'],
@@ -107,7 +121,8 @@ def createdir(json):
 @check_right(UserIsActive)
 def set_properties(json):
     file = File.get(json['params']['id'])
-    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
+    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).action_is_allowed(
+            FilemanagerRights.ACTIONS['UPLOAD']) != True:
         return False
     return File.set_properties(file, json['params']['add_all'], name=json['params']['name'],
                                copyright_author_name=json['params']['author_name'],
@@ -118,7 +133,8 @@ def set_properties(json):
 @check_right(UserIsActive)
 def copy(json):
     file = File.get(json['params']['id'])
-    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['folder_id'])).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
+    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['folder_id'])).action_is_allowed(
+            FilemanagerRights.ACTIONS['UPLOAD']) != True:
         return False
     return file.copy_file(json['params']['folder_id']).id
 
@@ -127,7 +143,8 @@ def copy(json):
 @check_right(UserIsActive)
 def cut(json):
     file = File.get(json['params']['id'])
-    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
+    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).action_is_allowed(
+            FilemanagerRights.ACTIONS['UPLOAD']) != True:
         return False
     return file.move_to(json['params']['folder_id'])
 
@@ -137,18 +154,23 @@ def cut(json):
 def auto_remove(json):
     return File.auto_remove(json.get('list'))
 
+
 def get_company_from_folder(file_id):
     ancestors = File.ancestors(file_id)
     return db(Company, journalist_folder_file_id=ancestors[0]).first()
+
 
 @filemanager_bp.route('/remove/<string:file_id>', methods=['OK'])
 @check_right(UserIsActive)
 def remove(json, file_id):
     file = File.get(file_id)
     ancestors = File.ancestors(file.parent_id)
-    if not file or FilemanagerRights(company=db(Company, journalist_folder_file_id=ancestors[0]).first()).action_is_allowed(FilemanagerRights.ACTIONS['REMOVE'], file) != True:
+    if not file or FilemanagerRights(
+            company=db(Company, journalist_folder_file_id=ancestors[0]).first()).action_is_allowed(
+        FilemanagerRights.ACTIONS['REMOVE'], file) != True:
         return False
     return file.remove()
+
 
 @filemanager_bp.route('/send/<string:parent_id>/', methods=['POST'])
 @check_right(UserIsActive)
@@ -159,7 +181,7 @@ def send(parent_id):
         root = parent.id
     company = db(Company, journalist_folder_file_id=root).one()
     if FilemanagerRights(company=company).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
-        return jsonify({'error': True })
+        return jsonify({'error': True})
     data = request.form
     uploaded_file = request.files['file']
     name = File.get_unique_name(urllib.parse.unquote(uploaded_file.filename).replace(
@@ -180,7 +202,7 @@ def send(parent_id):
         file = youtube.upload()
     else:
         file = File.upload(name, data, parent.id, root, company, content=uploaded_file.stream.read(-1))
-    return jsonify({'result': {'size': 0}, 'error': True if file=='error' else False, 'file_id':file})
+    return jsonify({'result': {'size': 0}, 'error': True if file == 'error' else False, 'file_id': file})
 
 
 @filemanager_bp.route('/resumeupload/', methods=['GET'])
