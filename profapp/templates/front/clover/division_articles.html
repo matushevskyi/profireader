@@ -10,20 +10,18 @@
 
 {% block left_content %}
     {% import '_common/macros.html' as frontmacros %}
-    {% set article_count = 0 %}
     {% set wide_banners = {2:'1',6:'2'} %}
     {% for article_id, article in articles.items() %}
-        {% set article_count = article_count + 1 %}
-        {% include 'article/short.html' %}
-        {% if article_count in wide_banners and portal.advs['wide_banner_' + wide_banners[article_count]] %}
+        {% include 'article_short.html' %}
+        {% if loop.index in wide_banners and portal.advs['wide_banner_' + wide_banners[loop.index]] %}
             <div class="block-item list-elements">
                 <a href="#"
-                   class="wide_banners">{{ portal.advs['wide_banner_' + wide_banners[article_count]]|safe }}</a>
+                   class="wide_banners">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a>
             </div>
         {% endif %}
     {% else %}
         <h1>{{ _('There are no articles in this division') }}</h1>
     {% endfor %}
 
-    {% block pager %}{% if pages and articles %}{% include '_common/block_pager.html' %}{% endif %}{% endblock pager %}
+    {% include '_common/block_pager.html' %}
 {% endblock %}
