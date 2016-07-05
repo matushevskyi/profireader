@@ -17,8 +17,8 @@
 </script>
 {% include 'nav.html' %}
 
-{% for article_id, article in articles.items() %}
-<div class="block-item list-elements">
+    {% for article_id, article in articles.items() %}
+    <div class="block-item list-elements">
         <div class="item-type article">
             <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
             <span class="fr">{{ article.author }}</span>
@@ -27,7 +27,7 @@
             <a href="{{ url_for('front.details', publication_id=article['id']) }}">{{ article['title']|safe }}</a>
         </h2>
 
-</div>
+    </div>
 {% endfor %}
 </body>
 </html>

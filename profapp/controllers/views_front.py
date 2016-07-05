@@ -340,7 +340,8 @@ def division(portal, division_name=None, page=1, tags=None, member_company_name=
 
     if dvsn.portal_division_type_id == 'company_subportal':
         member_company = MemberCompanyPortal.get(g.db().query(PortalDivisionSettingsCompanySubportal).filter_by(
-            portal_division_id=dvsn.id))
+            portal_division_id=dvsn.id).first().member_company_portal_id)
+        print(member_company)
         return render_template('front/' + g.portal_layout_path + 'subportal_about.html',
                                portal=portal_and_settings(portal),
                                current_division=dvsn.get_client_side_dict(),
