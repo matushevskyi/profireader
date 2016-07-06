@@ -61,7 +61,7 @@ def load_form_create(json_data, company_id=None, material_id=None):
                                                       'file_name_prefix': 'illustration_for_material_%s' % (
                                                           material.id,)})
 
-            return {'material': material.get_client_side_dict(more_fields='long|company|illustration')}
+            return {'material': material.save().get_client_side_dict(more_fields='long|company|illustration')}
 
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'])

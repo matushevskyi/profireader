@@ -1,11 +1,11 @@
 {% extends 'layout.html' %}
 {% block title %}
-    {{ _('%(division_name)s -  %(portal_name)s', {'portal_name': portal.name, 'division_name': division.name}) }}{% endblock %}
+    {{ _('%(division_name)s - %(portal_name)s', {'portal_name': portal.name, 'division_name': division.name}) }}{% endblock %}
 
 {% block right_content %}
     {% include '_common/block_search.html' %}
-    <a href="#" class="right_banner_1">{{ portal.advs['right_banner_1']|safe }}</a>
-    <a href="#" class="right_banner_2">{{ portal.advs['right_banner_2']|safe }}</a>
+    <a href="#" class="right_banner_1">{{ portal.advs.right_banner_1|safe }}</a>
+    <a href="#" class="right_banner_2">{{ portal.advs.right_banner_2|safe }}</a>
 {% endblock %}
 
 {% block left_content %}
