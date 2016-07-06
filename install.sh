@@ -157,8 +157,15 @@ function menu_postgres_9_4 {
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
 sudo apt-key add -
 sudo apt-get update
-apt-get install postgresql-9.4" sudo deb
+apt-get install postgresql-9.4" sudo elastic
     }
+
+function menu_elastic {
+    conf_comm "wget https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/2.3.3/elasticsearch-2.3.3.deb
+    apt  install ./elasticsearch-2.3.3.deb
+    rm ./elasticsearch-2.3.3.deb" sudo deb
+
+}
 
 function menu_deb {
     conf_comm "apt-get update
@@ -413,6 +420,7 @@ do
 dialog --title "profireader" --nocancel --default-item $next --menu "Choose an option" 22 78 17 \
 "origin" "change git origin and add new remote repo" \
 "postgres_9_4" "install postgres 9.4" \
+"elastic" "install elastic search" \
 "deb" "install deb packages" \
 "npm" "install nodejs, npm, bower and gulp globally" \
 "bower" "download bower components in ./profapp/static/bower_components" \
