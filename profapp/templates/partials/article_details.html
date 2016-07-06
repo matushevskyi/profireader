@@ -1,5 +1,5 @@
 {# опис статті + теги #}
-{% import 'front-macros.html' as frontmacros %}
+{#{% import 'front-macros.html' as frontmacros %}#}
 <div class="block-item full-block-info" style="height: auto;">
 
     <div class="item-additional-info">
@@ -11,9 +11,9 @@
             </div>
     </div>
 
-    {% if article['tags'] %}
-        <div style="text-align: right">{% for tag in article.tags %} {{ frontmacros.tag(tag, url_toggle_tag, selected_tag_names = [], toogle_tag = True) }} {% endfor %}</div>
-    {% endif %}
+{#    {% if article['tags'] %}#}
+{#        <div style="text-align: right">{% for tag in article.tags %} {{ frontmacros.tag(tag, url_toggle_tag, selected_tag_names = [], toogle_tag = True) }} {% endfor %}</div>#}
+{#    {% endif %}#}
 
     <h2 class="item-title">{{ article['title']|safe }}</h2>
 
