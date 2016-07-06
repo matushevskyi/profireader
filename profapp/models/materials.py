@@ -149,9 +149,10 @@ class FileImgProxy:
         file_name = value['file_name_prefix']
 
         if sel_by_user_type == 'none' or sel_by_user_type == 'preset':
-            if file_img and file_img.id:
+            from sqlalchemy import inspect
+            if file_img and inspect(file_img).persistent:
                 file_img.delete()
-            return
+            return False
 
         if sel_by_user_type == 'provenance':
             user_img = Image.open(BytesIO(file_img.provenance_image_file.file_content.content))
@@ -191,8 +192,7 @@ class FileImgProxy:
 
     def get_creator(self, client_data):
         ret = FileImg()
-        self.proxy_setter(ret, client_data)
-        return ret
+        return ret if self.proxy_setter(ret, client_data) else None
 
     def get_proxy(self, target_collection_name):
         return association_proxy(target_collection_name, None, creator=self.get_creator,
