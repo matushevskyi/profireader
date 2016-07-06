@@ -620,17 +620,15 @@ class File(Base, PRBase):
                 zoom=image_cropped.zoom).save()
         return copy_crop
 
-
     @staticmethod
     def folder_dict(company, dict):
         res = {'id': company.journalist_folder_file_id,
                'name': "%s" % (company.name.replace(
                    '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),),
-               'icon_url': utils.fileUrl(company.logo_file_id)}
+               'icon_url': utils.fileUrl(company.logo_file_id,
+                                         if_no_file='//static.profireader.com/static/images/company_no_logo.png')}
         res.update(dict)
         return res
-
-
 
 
 class FileImg(Base, PRBase):
@@ -657,8 +655,8 @@ class FileImg(Base, PRBase):
     crop_width = Column(TABLE_TYPES['float'], nullable=False)
     crop_height = Column(TABLE_TYPES['float'], nullable=False)
 
-
-    def get_client_side_dict(self, fields='crop_left,crop_top,crop_width,crop_height,origin_zoom,origin_top,origin_left',
+    def get_client_side_dict(self,
+                             fields='crop_left,crop_top,crop_width,crop_height,origin_zoom,origin_top,origin_left',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
@@ -666,7 +664,7 @@ class FileImg(Base, PRBase):
         ret = self.to_dict('x,y,width,height,rotate,zoom,origin_x,origin_y')
         return ret
 
-    # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
+        # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
 
 class FileImgCropProperties:
@@ -799,7 +797,6 @@ class FileImgCropProperties:
                 setattr(self, k, v)
             else:
                 raise ValueError("Unknown attribute `%s` in CropFileProperties" % (k,))
-
 
 
 class YoutubeApi(GoogleAuthorize):
