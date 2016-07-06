@@ -149,7 +149,8 @@ class FileImgProxy:
         file_name = value['file_name_prefix']
 
         if sel_by_user_type == 'none' or sel_by_user_type == 'preset':
-            file_img.delete()
+            if file_img and file_img.id:
+                file_img.delete()
             return
 
         if sel_by_user_type == 'provenance':

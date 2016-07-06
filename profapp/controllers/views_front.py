@@ -84,7 +84,7 @@ def publication_id_to_article(p_id):
 
 def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, company_publisher=None):
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=10)
+                                                  division_name=dvsn.name, default=2)
 
     pdt = dvsn.portal_division_type_id
 

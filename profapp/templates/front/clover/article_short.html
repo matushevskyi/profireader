@@ -10,7 +10,7 @@
     </h2>
     <div class="item-short-content">
         <div>{{ article.subtitle }}</div>
-        <div>{{ article.short }}</div>
+        <div>{{ article.short|safe }}</div>
     </div>
     <div class="item-additional-info">
         <a href="{{ url_for('front.company_page', member_company_name = article['company']['name'], member_company_id = article['company']['id']) }}"
