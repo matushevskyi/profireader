@@ -77,7 +77,7 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
 def publication_id_to_article(p_id):
     p = Publication.get(p_id)
     return utils.dict_merge(
-        p.get_client_side_dict(),
+        p.get_client_side_dict(more_fields='division.portal_division_type_id'),
         Material.get(p.material_id).get_client_side_dict(fields='long|short|title|subtitle|keywords|illustration')
     )
 

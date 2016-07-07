@@ -69,6 +69,7 @@ class User(Base, UserMixin, PRBase):
     #                          backref=backref("employees", lazy='dynamic'))  # Correct
 
     employments = relationship('UserCompany', back_populates='user')
+
     companies = relationship('Company', back_populates='user_owner')
 
     # FB_NET_FIELD_NAMES = ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
