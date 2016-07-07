@@ -50,9 +50,7 @@ class Company(Base, PRBase):
     # corporate_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
     system_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
     #    portal_consist = Column(TABLE_TYPES['boolean'])
-    author_user_id = Column(TABLE_TYPES['id_profireader'],
-                            ForeignKey('user.id'),
-                            nullable=False)
+
     country = Column(TABLE_TYPES['name'], nullable=False, default='')
     region = Column(TABLE_TYPES['name'], nullable=False, default='')
     city = Column(TABLE_TYPES['name'], nullable=False, default='')
@@ -80,7 +78,8 @@ class Company(Base, PRBase):
     #                           back_populates='own_company', uselist=False,
     #                           foreign_keys='Portal.company_owner_id')
 
-    user_owner = relationship('User', back_populates='companies')
+    author_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id), nullable=False)
+    user_owner = relationship(User, back_populates='companies')
 
     # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
     #                  'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
@@ -489,3 +488,4 @@ class UserCompany(Base, PRBase):
         #         # available_rights = 0
         #
         #     return True if available_rights & needed_rights_int == needed_rights_int else False
+
