@@ -190,9 +190,9 @@ def submit_publish(json, article_action):
             publication.detach()
             return publication.validate(True if article_action == 'SUBMIT' else False)
         else:
-            if article_action == 'SUBMIT':
-                publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,
-                                                                                     publication)
+            # if article_action == 'SUBMIT':
+            #     publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,
+            #                                                                          publication)
             publication.save().set_tags_positions()
             return get_portal_dict_for_material(publication.portal, company, publication=publication,
                                                 submit=article_action == 'SUBMIT')
