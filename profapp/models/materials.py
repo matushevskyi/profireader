@@ -571,7 +571,6 @@ class Publication(Base, PRBase, PRElasticDocument):
                 articles[article_id]['portal']['logo_file_id'] else utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
             del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
             list_articles.append(article)
-            print(list_articles)
         return list_articles
 
     # def clone_for_company(self, company_id):
