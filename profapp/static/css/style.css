@@ -127,7 +127,7 @@ body {
 .menu-company img.menu-company-logo {
   margin: 0px 5px;
   padding: 0px;
-  background: none;
+  /*background: none;*/
   float: right;
 }
 .menu-company.menu-company-portal a {
