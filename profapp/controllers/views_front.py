@@ -84,7 +84,7 @@ def publication_id_to_article(p_id):
 
 def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, company_publisher=None):
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=2)
+                                                  division_name=dvsn.name, default=200)
 
     pdt = dvsn.portal_division_type_id
 
@@ -113,7 +113,9 @@ def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, c
 
         return url_tags(new_tags)
 
-    afilter = [{'term': {'portal_id': portal.id}}] if pdt == 'index' else [{'term': {'portal_division_id': dvsn.id}}]
+    afilter = [
+        {'term': {'status': Publication.STATUSES['PUBLISHED']}},
+        {'term': {'portal_id': portal.id}}] if pdt == 'index' else [{'term': {'portal_division_id': dvsn.id}}]
 
     if company_publisher:
         afilter.append({'term': {'publisher_company_id': company_publisher.id}})

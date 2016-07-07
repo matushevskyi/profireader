@@ -27,7 +27,7 @@ class PRElasticConnection:
         return (self.host + '/' + '/'.join(args)) + '?' + \
                ('&'.join(["%s=%s" % (k, v) for k, v in params.items()]) if params else '')
 
-    def rq(self, path='', req='', method='GET', returnstatusonly=False, notjson=False):
+    def rq(self, path='', req={}, method='GET', returnstatusonly=False, notjson=False):
         import sys
 
         print(method + ' - ' + path + ' called from ' + sys._getframe(1).f_code.co_name)
@@ -56,10 +56,10 @@ class PRElasticConnection:
             return response.text if notjson else json.loads(response.text)
 
     def index_exists(self, index_name):
-        return self.rq(path=self.path(index_name), req={}, method='HEAD', returnstatusonly=True)
+        return self.rq(path=self.path(index_name), method='HEAD', returnstatusonly=True)
 
     def doctype_exists(self, index_name, doctype_name):
-        ret = self.rq(path=self.path(index_name, '_mapping', doctype_name), req={}, method='GET')
+        ret = self.rq(path=self.path(index_name, '_mapping', doctype_name), method='GET')
         #          return True if len(ret.keys()) > 0 else False
         #     def doc_exists(self, indexname, doctype, id):
         #         return PRElastic.rq(path=PRElastic.path(indexname, doctype, id), req={}, method='HEAD', returnstatusonly=True)
@@ -71,17 +71,23 @@ class PRElasticConnection:
         #          ret = PRElastic.rq(path=PRElastic.path(indexname, '_mapping', doctype), req={}, method='GET')
         #          return True if len(ret.keys()) > 0 else False
 
+        # curl - XDELETE
+        # 'localhost:9200/customer/external/2?pretty'
+
+    def delete_document(self, index_name, document_type, id):
+        return self.rq(path=self.path(index_name, document_type, id), method='DELETE')
+
     def replace_document(self, index_name, document_type, id, document):
         return self.rq(path=self.path(index_name, document_type, id), req=document, method='PUT')
 
     def remove_all_indexes(self):
-        return self.rq(path=self.path('_all'), req={}, method='DELETE')
+        return self.rq(path=self.path('_all'), method='DELETE')
 
     def show_all_indexes(self):
-        return self.rq(path=self.path('_cat', 'indices'), req={}, method='GET', notjson=True)
+        return self.rq(path=self.path('_cat', 'indices'), method='GET', notjson=True)
 
     def remove_index(self, index_name):
-        return self.rq(path=self.path(index_name), req={}, method='DELETE')
+        return self.rq(path=self.path(index_name), method='DELETE')
 
     def search(self, index_name, document_type, sort=["_score"], filter=[], must=[], should=[], page=1,
                items_per_page=10):
@@ -127,6 +133,21 @@ class PRElasticDocument:
                                               self.elastic_get_doctype(),
                                               self.elastic_get_id(),
                                               self.elastic_get_document(),
+                                              )
+
+    def elastic_insert(self):
+        self.create_doctype_if_not_exists()
+        return elasticsearch.replace_document(self.elastic_get_index(),
+                                              self.elastic_get_doctype(),
+                                              self.elastic_get_id(),
+                                              self.elastic_get_document(),
+                                              )
+
+    def elastic_delete(self):
+        self.create_doctype_if_not_exists()
+        return elasticsearch.delete_document(self.elastic_get_index(),
+                                              self.elastic_get_doctype(),
+                                              self.elastic_get_id()
                                               )
 
     def create_index_if_not_exist(self):
