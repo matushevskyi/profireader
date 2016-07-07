@@ -4,9 +4,6 @@
     <div class="item-additional-info">
             <a href="" class="item-company">{{ article['company']['name']|safe }}</a>
             <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
-            <div><br>
-                <script type="text/javascript">getSearchBlock({{ article|tojson }})</script>
-            </div>
     </div>
 
     <h2 class="item-title">{{ article['title']|safe }}</h2>

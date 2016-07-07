@@ -399,6 +399,7 @@ class Publication(Base, PRBase, PRElasticDocument):
             'tag_ids': PRElasticField(analyzed=False, setter=lambda: [t.id for t in self.tags]),
             'date': PRElasticField(ftype='date', setter=lambda: int(self.publishing_tm.timestamp() * 1000)),
             'user': PRElasticField(analyzed=False, setter=lambda: ''),
+            'status': PRElasticField(setter=lambda: self.status, analyzed=False),
             'user_id': PRElasticField(analyzed=False, setter=lambda: ''),
             'publisher_company_id': PRElasticField(analyzed=False, setter=lambda: self.material.company_id),
             'material_id': PRElasticField(analyzed=False, setter=lambda: self.material_id),
@@ -643,23 +644,22 @@ class Publication(Base, PRBase, PRElasticDocument):
         for tag in self.tags:
             tag_position += 1
             tag_pub = db(TagPublication).filter(and_(TagPublication.tag_id == tag.id,
-                                                     TagPublication.article_portal_division_id == self.id)).one()
+                                                     TagPublication.publication_id == self.id)).one()
             tag_pub.position = tag_position
             tag_pub.save()
         return self
 
     @staticmethod
     def after_insert(mapper=None, connection=None, target=None):
-        pass
+        target.elastic_insert()
 
     @staticmethod
     def after_update(mapper=None, connection=None, target=None):
         target.elastic_replace()
-        pass
 
     @staticmethod
     def after_delete(mapper=None, connection=None, target=None):
-        pass
+        target.elastic_delete()
 
     @classmethod
     def __declare_last__(cls):
