@@ -234,16 +234,16 @@ class Company(Base, PRBase):
 
 
 
-    def get_logo_client_side_dict(self):
-        return self.get_image_cropped_file(self.logo_file_properties(),
-                                           db(FileImg, croped_image_id=self.logo_file_id).first())
+    # def get_logo_client_side_dict(self):
+    #     return self.get_image_cropped_file(self.logo_file_properties(),
+    #                                        db(FileImg, croped_image_id=self.logo_file_id).first())
 
-    def set_logo_client_side_dict(self, client_data):
-        if client_data['selected_by_user']['type'] == 'preset':
-            client_data['selected_by_user'] = {'type': 'none'}
-        self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-                                                          client_data, self.logo_file_id, self.system_folder_file_id)
-        return self
+    # def set_logo_client_side_dict(self, client_data):
+    #     if client_data['selected_by_user']['type'] == 'preset':
+    #         client_data['selected_by_user'] = {'type': 'none'}
+    #     self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+    #                                                       client_data, self.logo_file_id, self.system_folder_file_id)
+    #     return self
 
     @staticmethod
     def get_allowed_statuses(company_id=None, portal_id=None):

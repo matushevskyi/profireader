@@ -134,7 +134,7 @@ def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, c
                 wrong_tag = True
 
     if wrong_tag:
-        return redirect(url_tags(selected_tag_names))
+        return dict(articles = False, redirect = redirect(url_tags(selected_tag_names)))
         # url_for(request.endpoint,
         #                     **utils.dict_merge(request.view_args, {'tags': '+'.join(selected_tag_names)})))
 
@@ -197,12 +197,16 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
     if member_company_id is None:
         search_text, dvsn = get_search_text_and_division(portal, division_name)
 
+        articles_data = get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text)
+        if 'redirect' in articles_data:
+            return articles_data['redirect']
+
         if dvsn.portal_division_type_id in ['index', 'news', 'events']:
             return render_template(
                 'front/' + g.portal_layout_path + 'division_articles.html',
                 division=dvsn.get_client_side_dict(),
                 portal=portal_and_settings(portal),
-                **get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text))
+                **articles_data)
 
         elif dvsn.portal_division_type_id == 'catalog':
             members = {member.id: member.get_client_side_dict(fields="id|company|tags") for
@@ -221,13 +225,17 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
             get_company_member_and_division(portal, member_company_id, member_company_name)
         search_text, subportal_dvsn = get_search_text_and_division(portal, division_name)
 
+        articles_data = get_articles_tags_pages_search_text(portal, subportal_dvsn, page, tags, search_text,
+                                                                     company_publisher=member_company)
+        if 'redirect' in articles_data:
+            return articles_data['redirect']
+
         return render_template('front/' + g.portal_layout_path + 'division_company.html',
                                portal=portal_and_settings(portal),
                                division=dvsn.get_client_side_dict(),
                                member_company=member_company.get_client_side_dict(),
                                company_menu_selected_item=subportal_dvsn.get_client_side_dict(),
-                               **get_articles_tags_pages_search_text(portal, subportal_dvsn, page, tags, search_text,
-                                                                     company_publisher=member_company)
+                               **articles_data
                                )
 
 

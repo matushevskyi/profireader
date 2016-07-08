@@ -5,7 +5,7 @@ from utils.db_utils import db
 import requests
 import inspect
 from sqlalchemy import event
-
+from flask import g
 
 # engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
 # db_session = scoped_session(sessionmaker(autocommit=False,
@@ -127,29 +127,6 @@ class PRElasticDocument:
     def elastic_get_document(self):
         return {k: v.setter() for k, v in self.elastic_get_fields().items()}
 
-    def elastic_replace(self):
-        self.create_doctype_if_not_exists()
-        return elasticsearch.replace_document(self.elastic_get_index(),
-                                              self.elastic_get_doctype(),
-                                              self.elastic_get_id(),
-                                              self.elastic_get_document(),
-                                              )
-
-    def elastic_insert(self):
-        self.create_doctype_if_not_exists()
-        return elasticsearch.replace_document(self.elastic_get_index(),
-                                              self.elastic_get_doctype(),
-                                              self.elastic_get_id(),
-                                              self.elastic_get_document(),
-                                              )
-
-    def elastic_delete(self):
-        self.create_doctype_if_not_exists()
-        return elasticsearch.delete_document(self.elastic_get_index(),
-                                              self.elastic_get_doctype(),
-                                              self.elastic_get_id()
-                                              )
-
     def create_index_if_not_exist(self):
         index_name = self.elastic_get_index()
         if index_name in self.elastic_cached_index_doctype:
@@ -187,17 +164,13 @@ class PRElasticDocument:
         return {'properties': {f_name: field.generate_mapping() for f_name, field in self.elastic_get_fields().items()}}
 
     @classmethod
-    def elastic_remove_all_indexes(cls):
-        pass
-
-    @classmethod
     def elastic_get_all_documents(cls):
         return db(cls).all()
 
     @classmethod
     def elastic_reindex_all(cls):
         for o in cls.elastic_get_all_documents():
-            o.elastic_replace()
+            o.elastic_update()
 
     def elastic_get_index(self):
         return None
@@ -207,6 +180,94 @@ class PRElasticDocument:
 
     def elastic_get_id(self):
         return None
+
+    def elastic_update(self):
+        self.create_doctype_if_not_exists()
+        return elasticsearch.replace_document(self.elastic_get_index(),
+                                              self.elastic_get_doctype(),
+                                              self.elastic_get_id(),
+                                              self.elastic_get_document())
+
+    def elastic_insert(self):
+        self.create_doctype_if_not_exists()
+        return elasticsearch.replace_document(self.elastic_get_index(),
+                                              self.elastic_get_doctype(),
+                                              self.elastic_get_id(),
+                                              self.elastic_get_document())
+
+    def elastic_delete(self):
+        return elasticsearch.delete_document(self.elastic_get_index(),
+                                             self.elastic_get_doctype(),
+                                             self.elastic_get_id())
+
+    @staticmethod
+    def event_insert_elastic(mapper, connection, target):
+        target.__class__.get(target.id).elastic_insert()
+
+    @staticmethod
+    def event_update_elastic(mapper, connection, target):
+        target.__class__.get(target.id).elastic_update()
+
+    @staticmethod
+    def event_delete_elastic(mapper, connection, target):
+        target.__class__.get(target.id).elastic_delete()
+
+    @staticmethod
+    def elastic_listeners(cls):
+        event.listen(cls, "after_insert", cls.event_insert_elastic)
+        event.listen(cls, "after_update", cls.event_update_elastic)
+        event.listen(cls, "after_delete", cls.event_delete_elastic)
+
+
+    # @staticmethod
+    # def after_update_elastic(mapper, connection, target):
+    #     a = target.__class__.get(target.id)
+    #     print(a)
+    #
+    # @staticmethod
+    # def after_delete_elastic(mapper, connection, target):
+    #     a = target.__class__.get(target.id)
+    #     print(a)
+
+
+    # @staticmethod
+    # def after_insert_elastic(session = None, target=None):
+    #     target.elastic_insert()
+    #
+    # @staticmethod
+    # def after_update_elastic(mapper=None, connection=None, target=None):
+    #     target.elastic_update()
+    #
+    # @staticmethod
+    # def after_delete_elastic(mapper=None, connection=None, target=None):
+    #     target.elastic_delete()
+    #
+    # @classmethod
+    # def __declare_last__(cls):
+    #     event.listen(cls, 'after_insert', cls.after_insert_elastic)
+    # #     event.listen(cls, 'after_update', cls.after_update_elastic)
+    # #     event.listen(cls, 'after_delete', cls.after_delete_elastic)
+
+    # @classmethod
+    # def __declare_last__(cls):
+    #     # event.listen(g.db, "pending_to_persistent", PRElasticDocument.after_insert_elastic)
+    #     pass
+        # event.listen(cls, 'pending_to_persistent', cls.after_insert_elastic)
+        # event.listen(cls, 'after_update', cls.after_update_elastic)
+        # event.listen(cls, 'after_delete', cls.after_delete_elastic)
+
+
+
+# from sqlalchemy.orm import sessionmaker
+# Session = sessionmaker()
+#
+# event.listen(Session, "before_commit", PRElasticDocument.after_insert_elastic)
+
+
+# event.listen(g.db, "pending_to_persistent", PRElasticDocument.after_insert_elastic)
+# @event.listens_for(g.db, "pending_to_persistent")
+# def intercept_pending_to_persistent(session, object_):
+#     print(object_.after_insert_elastic())
 
 
 class PRElasticField:

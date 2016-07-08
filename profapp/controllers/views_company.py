@@ -252,7 +252,7 @@ def profile_load_validate_save(json, company_id=None):
     company = Company() if company_id is None else Company.get(company_id)
     if action == 'load':
         company_dict = company.get_client_side_dict()
-        company_dict['logo'] = company.get_logo_client_side_dict()
+        # company_dict['logo'] = company.get_logo_client_side_dict()
         user_company = UserCompany.get(company_id=company_id)
         if user_company:
             company_dict['actions'] = {'edit_company_profile': EditCompanyRight(company=company).is_allowed(),
@@ -273,7 +273,7 @@ def profile_load_validate_save(json, company_id=None):
             company.set_logo_client_side_dict(json['logo'])
             company.save()
             company_dict = company.get_client_side_dict()
-            company_dict['logo'] = company.get_logo_client_side_dict()
+            # company_dict['logo'] = company.get_logo_client_side_dict()
             company_dict['actions'] = {'edit': True if company_id else False}
             return company_dict
 

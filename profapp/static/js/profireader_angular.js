@@ -301,7 +301,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     var selected_by_user = newv['selected_by_user'];
                     var cropper_options = newv['cropper'];
                     // if (!scope.original_model) {
-                        scope.original_model = $.extend(true, {}, selected_by_user);
+                    scope.original_model = $.extend(true, {}, selected_by_user);
                     // }
                     scope.coordinates = [];
                     scope.state = {};
@@ -1263,19 +1263,21 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
         phrase_dict = {'lang': phrase, 'time': t, allow_html: allow_html}
     }
 
-    else if (scope.$$translate && !scope.$$translate[phrase]) {
-        scope.$$translate[phrase] = phrase_dict;
-        $ok('/tools/save_translate/', {
-            template: CtrlName,
-            phrase: phrase,
-            allow_html: allow_html,
-            url: window.location.href
-        }, function (resp) {
+    if (scope.$$translate) {
+        if (!scope.$$translate[phrase]) {
+            scope.$$translate[phrase] = phrase_dict;
+            $ok('/tools/save_translate/', {
+                template: CtrlName,
+                phrase: phrase,
+                allow_html: allow_html,
+                url: window.location.href
+            }, function (resp) {
 
-        });
-    }
-    else {
-        phrase_dict = scope.$$translate[phrase];
+            });
+        }
+        else {
+            phrase_dict = scope.$$translate[phrase];
+        }
     }
 
     if ((t - phrase_dict['time']) > 86400) {

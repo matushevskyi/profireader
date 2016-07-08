@@ -747,14 +747,39 @@ class PRBase:
             return True
         return False
 
-    @classmethod
-    def __declare_last__(cls):
-        event.listen(cls, 'before_update', cls.validate_before_update)
-        event.listen(cls, 'before_insert', cls.validate_before_insert)
-        # event.listen(cls, 'before_delete', cls.validate_before_delete)
-        event.listen(cls, 'after_insert', cls.add_to_search)
-        event.listen(cls, 'after_update', cls.update_search_table)
-        event.listen(cls, 'after_delete', cls.delete_from_search)
+    # def elastic_insert(self):
+    #     pass
+    #
+    # def elastic_update(self):
+    #     pass
+    #
+    # def elastic_delete(self):
+    #     pass
+    #
+    # @staticmethod
+    # def after_insert(mapper=None, connection=None, target=None):
+    #     target.elastic_insert()
+    #
+    # @staticmethod
+    # def after_update(mapper=None, connection=None, target=None):
+    #     target.elastic_update()
+    #
+    # @staticmethod
+    # def after_delete(mapper=None, connection=None, target=None):
+    #     target.elastic_delete()
+
+    # @classmethod
+    # def __declare_last__(cls):
+    #     event.listen(cls, 'before_update', cls.validate_before_update)
+    #     event.listen(cls, 'before_insert', cls.validate_before_insert)
+    #     # event.listen(cls, 'before_delete', cls.validate_before_delete)
+        # event.listen(cls, 'after_insert', cls.add_to_search)
+        # event.listen(cls, 'after_update', cls.update_search_table)
+        # event.listen(cls, 'after_delete', cls.delete_from_search)
+
+        # event.listen(cls, 'after_insert', cls.after_insert)
+        # event.listen(cls, 'after_update', cls.after_update)
+        # event.listen(cls, 'after_delete', cls.after_delete)
 
     @staticmethod
     def datetime_from_utc_to_local(utc_datetime, format):
