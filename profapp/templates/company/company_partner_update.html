@@ -29,8 +29,8 @@
     <div ng-controller="company_partner_update" ng-cloak>
         <div af af-after-save="after_save" af-after-load="after_load" af-watch="data.member" ng-model="data">
             <div class="update-company-partner" ng-if="loading">
-                <h2><img class="person-small-cover" pr-image="data.member.company.logo_file_id"/><img
-                        class="person-small-cover" pr-image="data.employeer.logo_file_id"/>
+                <h2><img class="person-small-cover" pr-image-url="{{ data.member.company.logo.url }}"/><img
+                        class="person-small-cover" pr-image-url="{{ data.employeer.logo.url }}"/>
                     {{ _('Portal partner `%(data.member.company.name)s` at company `%(data.employeer.name)s`') }}</h2>
                 <div ng-class="{disabled: !permitted}" ng-repeat="(right_name, permitted) in data.member.rights">
                     <img src="//static.profireader.com/static/images/0.gif"

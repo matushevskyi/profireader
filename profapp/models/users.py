@@ -157,7 +157,6 @@ class User(Base, UserMixin, PRBase):
     def __init__(self,
                  # user_rights_in_profireader_def=[],
                  # user_rights_in_profireader_undef=[],
-                 company_employers=[],
                  PROFIREADER_ALL=SOC_NET_NONE['profireader'],
                  GOOGLE_ALL=SOC_NET_NONE['google'],
                  FACEBOOK_ALL=SOC_NET_NONE['facebook'],
@@ -179,8 +178,6 @@ class User(Base, UserMixin, PRBase):
                  pass_reset_conf_tm=None,
                  tos=None
                  ):
-
-        self.company_employers = company_employers
 
         self.profireader_email = PROFIREADER_ALL['email']
         self.profireader_first_name = PROFIREADER_ALL['first_name']

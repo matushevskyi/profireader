@@ -110,8 +110,7 @@
                     <div class="col-lg-5 col-md-5 col-sm-7 col-xs-12 image-company-profile">
 
                         <!-- TODO: MY by OZ: 400x300 -> some class -->
-                        <img ng-show="!editing" style="width: 400px; height: 300px; position: relative"
-                             pr-image="data.logo_file_id" alt="image">
+                        <img ng-show="!editing" class="company-profile-logo-img" pr-image-url-watch="data.logo.url" alt="image">
 
                         <div ng-if="editing">
                         <div style="width: 400px; height: 300px; position: relative"

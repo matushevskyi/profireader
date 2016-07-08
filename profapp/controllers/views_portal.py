@@ -52,7 +52,6 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
             ret['portal_company_members'] = [company.get_client_side_dict()]
             ret['portal'] = {'company_owner_id': company_id, 'name': '', 'host': '',
 
-                             'logo_file_id': company.logo_file_id,
                              'host_profi_or_own': 'profi',
                              'host_own': '',
                              'host_profi': '',

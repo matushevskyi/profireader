@@ -19,7 +19,7 @@ from .users import User
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from .. import utils
 import re
-from .files import FileImg
+from .files import FileImg, FileImgProxy
 
 
 
@@ -27,24 +27,34 @@ class Company(Base, PRBase):
     __tablename__ = 'company'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     name = Column(TABLE_TYPES['name'], unique=True, nullable=False, default='')
+
+    logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
+    logo_file_img = relationship(FileImg, uselist=False)
+    logo = FileImgProxy(image_size=[480, 480],
+                                min_size=[100, 100],
+                                aspect_ratio=[0.25, 4.],
+                                # none=utils.fileUrl(FOLDER_AND_FILE.no_article_image()),
+                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo())) \
+        .get_proxy('logo_file_img')
+
+    # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
     # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
 
 
-    logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
 
-    def logo_file_properties(self):
-        nologo_url = utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
-        return {
-            'browse': self.id,
-            'upload': True,
-            'none': nologo_url,
-            'crop': True,
-            'image_size': [450, 450],
-            'min_size': [100, 100],
-            'aspect_ratio': [0.25, 4.0],
-            'preset_urls': {},
-            'no_selection_url': nologo_url
-        }
+    # def logo_file_properties(self):
+    #     nologo_url =
+    #     return {
+    #         'browse': self.id,
+    #         'upload': True,
+    #         'none': nologo_url,
+    #         'crop': True,
+    #         'image_size': [450, 450],
+    #         'min_size': [100, 100],
+    #         'aspect_ratio': [0.25, 4.0],
+    #         'preset_urls': {},
+    #         'no_selection_url': nologo_url
+    #     }
 
     journalist_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
     # corporate_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
@@ -93,11 +103,11 @@ class Company(Base, PRBase):
 
     youtube_playlists = relationship('YoutubePlaylist')
 
-    # todo: add company time creation
-    logo_file_relationship = relationship('File',
-                                          uselist=False,
-                                          backref='logo_owner_company',
-                                          foreign_keys='Company.logo_file_id')
+    # # todo: add company time creation
+    # logo_file_relationship = relationship('File',
+    #                                       uselist=False,
+    #                                       backref='logo_owner_company',
+    #                                       foreign_keys='Company.logo_file_id')
 
 
     def is_active(self):
@@ -173,8 +183,9 @@ class Company(Base, PRBase):
 
         user_company = UserCompany(status=UserCompany.STATUSES['ACTIVE'], rights={UserCompany.RIGHT_AT_COMPANY._OWNER:
                                                                                       True})
-        user_company.employer = self
-        g.user.company_employers.append(user_company)
+        user_company.user = g.user
+        user_company.company = self
+        g.user.employments.append(user_company)
         g.user.companies.append(self)
         self.youtube_playlists.append(YoutubePlaylist(name=self.name, company_owner=self))
         self.save()
@@ -227,7 +238,7 @@ class Company(Base, PRBase):
 
     def get_client_side_dict(self,
                              fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
-                                    'short_description,journalist_folder_file_id,logo_file_id,about,lat,lon,'
+                                    'short_description,journalist_folder_file_id,logo,about,lat,lon,'
                                     'own_portal.id|host',
                              more_fields=None):
         return self.to_dict(fields, more_fields)

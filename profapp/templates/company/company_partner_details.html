@@ -28,10 +28,10 @@
 
     <div ng-controller="company_partner_details" ng-cloak>
         <h2>
-            <img class="person-small-cover" pr-image ="member.company.logo_file_id"/>
-            <img class="logo-small-cover" pr-image="employeer.logo_file_id"/>
+            <img class="person-small-cover" pr-image-url ="member.company.logo.url"/>
+            <img class="logo-small-cover" pr-image-url="{{ employeer.logo.url }}"/>
             {{ _('Portal partner `%(member.company.name)s` at company `%(employeer.name)s`') }}</h2>
-        <img pr-image="employer.logo_file_id"/>
+        <img pr-image-url="{{ employer.logo.url }}"/>
         {{ _('status') }} {{ member.status }}<br>
         <div ng-class="{disabled: !permitted}" ng-repeat="(right_name, permitted) in member.rights">
             <img src="//static.profireader.com/static/images/0.gif"
