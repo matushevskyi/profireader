@@ -625,7 +625,7 @@ class File(Base, PRBase):
         res = {'id': company.journalist_folder_file_id,
                'name': "%s" % (company.name.replace(
                    '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),),
-               'icon_url': utils.fileUrl(company.logo_file_id,
+               'icon_url': utils.fileUrl(company.logo.url,
                                          if_no_file='//static.profireader.com/static/images/company_no_logo.png')}
         res.update(dict)
         return res
@@ -665,6 +665,189 @@ class FileImg(Base, PRBase):
         return ret
 
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
+
+from PIL import Image
+from io import BytesIO
+import base64
+import sys
+from sqlalchemy.ext.associationproxy import association_proxy
+from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+
+class FileImgProxy:
+    browse = True
+    upload = True
+    crop = True
+    image_size = [600, 600]
+    min_size = [60, 60]
+    aspect_ratio = [0.1, 10]
+    preset_urls = {}
+
+    # none = utils.fileUrl(FOLDER_AND_FILE.no_image())
+    no_selection_url = utils.fileUrl(FOLDER_AND_FILE.no_image())
+
+    def __init__(self, browse=None, upload=None, crop=None, image_size=None, min_size=None,
+                 aspect_ratio=None, preset_urls=None, no_selection_url=None):
+        if browse is not None:
+            self.browse = browse
+        if upload is not None:
+            self.upload = upload
+        if crop is not None:
+            self.crop = crop
+        if image_size is not None:
+            self.image_size = image_size
+        if min_size is not None:
+            self.min_size = min_size
+        if aspect_ratio is not None:
+            self.aspect_ratio = aspect_ratio
+        if preset_urls is not None:
+            self.preset_urls = preset_urls
+        if no_selection_url is not None:
+            self.no_selection_url = no_selection_url
+
+    def proxy_getter(self, obj):
+        return {
+            'url': utils.fileUrl(obj.provenance_image_file_id) if obj else self.no_selection_url,
+            'selected_by_user': {'type': 'provenance',
+                                 'crop': obj.get_client_side_dict(),
+                                 'provenance_file_id': obj.provenance_image_file_id
+                                 } if obj else {'type': 'none'},
+            'cropper': {
+                'browse': self.browse,
+                'upload': self.upload,
+                'crop': self.crop,
+                'image_size': self.image_size,
+                'min_size': self.min_size,
+                'aspect_ratio': self.aspect_ratio,
+                'preset_urls': self.preset_urls,
+                'no_selection_url': self.no_selection_url
+            }}
+
+    def get_correct_coordinates(self, coords_by_client, img):
+
+        l, t, w, h = (coords_by_client['crop_left'], coords_by_client['crop_top'],
+                      coords_by_client['crop_width'], coords_by_client['crop_height'])
+
+        # resize image if it is to big
+
+        scale_by = max(img.width / (self.image_size[0] * 10), img.height / (self.image_size[1] * 10), 1)
+        if scale_by > 1:
+            old_center = [l + w / 2., t + h / 2.]
+            w, h = w / scale_by, h / scale_by
+            l, t = old_center[0] - w / 2, old_center[1] - h / 2
+            img = img.resize((round(w), round(h)), Image.ANTIALIAS)
+
+        if self.aspect_ratio and self.aspect_ratio[0] and w / h < self.aspect_ratio[0]:
+            increase_height = (w / self.aspect_ratio[0] - h)
+            t, h = t - increase_height / 2, h + increase_height
+        elif self.aspect_ratio and self.aspect_ratio[1] and w / h > self.aspect_ratio[1]:
+            increase_width = (h * self.aspect_ratio[1] - w)
+            l, w = l - increase_width / 2, w + increase_width
+
+        if l < 0 or t < 0 or t + h > img.height or l + w > img.width:
+            raise Exception("cant fit coordinates in image %s, %s, %s, %s" % (l, t, w, h))
+
+        if self.min_size and (w < self.min_size[0] or h < self.min_size[1]):
+            raise Exception("cant fit coordinates in min image %s, %s:  %s" % (w, h, self.min_size))
+
+        return img, l, t, w, h
+
+    @staticmethod
+    def create_file_from_pillow_image(pillow_img, company = None, file_fmt=None, name=''):
+        bytes_file = BytesIO()
+        fmt = file_fmt if file_fmt else (pillow_img.format if pillow_img.format else 'JPEG')
+        pillow_img.save(bytes_file, fmt)
+        file = File(size=sys.getsizeof(bytes_file.getvalue()),
+                    mime='image/' + fmt.lower(),
+                    name=name,
+                    parent_id=company.journalist_folder_file_id,
+                    root_folder_id=company.journalist_folder_file_id)
+
+        file_content = FileContent(content=bytes_file.getvalue(), file=file)
+        return file
+
+    def proxy_setter(self, file_img: FileImg, value):
+
+        sel_by_user = value['selected_by_user']
+        sel_by_user_type = sel_by_user['type']
+        sel_by_user_crop = sel_by_user['crop']
+
+        company = value['company']
+        file_name = value['file_name_prefix']
+
+        if sel_by_user_type == 'none' or sel_by_user_type == 'preset':
+            from sqlalchemy import inspect
+            if file_img and inspect(file_img).persistent:
+                file_img.delete()
+            return False
+
+        if sel_by_user_type == 'provenance':
+            user_img = Image.open(BytesIO(file_img.provenance_image_file.file_content.content))
+        elif sel_by_user_type == 'browse':
+            user_img = Image.open(BytesIO(File.get(sel_by_user['image_file_id']).file_content.content))
+        elif sel_by_user_type == 'upload':
+            user_img = Image.open(
+                BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', sel_by_user['file']['content']))))
+        else:
+            raise Exception('Unknown selected by user image source type `%s`', sel_by_user_type)
+
+        provenance_img, l, t, w, h = self.get_correct_coordinates(sel_by_user_crop, user_img)
+
+        file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
+        file_img.origin_left, file_img.origin_top, file_img.origin_zoom = \
+            sel_by_user_crop['origin_left'], sel_by_user_crop['origin_top'], sel_by_user_crop['origin_zoom']
+
+        if sel_by_user_type == 'provenance' and \
+                        provenance_img == user_img and \
+                        [round(c) for c in [l, t, w, h]] == \
+                        [round(c) for c in
+                         [file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height]]:
+            return True
+
+        file_img.provenance_image_file = self.create_file_from_pillow_image(provenance_img,
+                                                                            company=company,
+                                                                            name='provenance_%s' % (file_name,)).save()
+
+        file_img.proceeded_image_file = self.create_file_from_pillow_image(provenance_img.crop(
+            (round(l), round(t), round(l + w), round(t + h))), company=company,
+            name='proceeded_%s' % (file_name,)).save()
+
+        return True
+
+    def get_factory(self, *args, **kwargs):
+        return self.proxy_getter, self.proxy_setter
+
+    def get_creator(self, client_data):
+        ret = FileImg()
+        return ret if self.proxy_setter(ret, client_data) else None
+
+    def get_proxy(self, target_collection_name):
+        return association_proxy(target_collection_name, None, creator=self.get_creator,
+                                 getset_factory=self.get_factory)
+
+
+
+#TODO: OZ by OZ: remove me
+
+
+class CropCoordinates:
+    left = 0
+    top = 0
+    width = 0
+    height = 0
+    rotate = 0
+    origin_x = 0
+    origin_y = 0
+
+    def __init__(self, left=None, top=None, width=None, height=None):
+        if left is not None:
+            self.left = left
+        if width is not None:
+            self.width = width
+        if top is not None:
+            self.top = top
+        if height is not None:
+            self.height = height
+
 
 
 class FileImgCropProperties:

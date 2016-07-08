@@ -36,7 +36,7 @@
                     <a ng-class="{'selected': selected_company_menu == 'companies_employees'}"
                        href="{{ url_company_employees({company_id: company.id}) }}">{{ _('Employees') }}</a>
 
-                    <img pr-image="company.logo_file_id " class="menu-company-img menu-company-logo"/>
+                    <img pr-image-url="company.logo.url" class="menu-company-img menu-company-logo"/>
                     <a class="company-about" ng-class="{'selected': selected_company_menu == 'home'}"
                            href="{{ url_company_profile({company_id: company.id}) }}">{{ company.name }}</a>
 

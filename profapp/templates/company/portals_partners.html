@@ -95,13 +95,13 @@
                 columnDefs: [
                     {
                         name: 'portal.name', type: 'link',
-                        href: 'portal_link(row.entity.portal.host)', img: 'portal.logo_file_id', link: true
+                        href: 'portal_link(row.entity.portal.host)', img_url: 'portal.logo.url', link: true
                     },
                     {
                         name: 'portal.own_company.name',
                         type: 'link',
                         href: 'url_company_profile({company_id: row.entity.portal.own_company.id})',
-                        img: "portal.own_company.logo_file_id"
+                        img_url: "portal.own_company.logo.url"
                     },
                     {
                         name: 'tags', type: 'tags',

@@ -57,7 +57,8 @@ def list_reader():
 def list_reader_load(json):
     next_page = json.get('next_page') if json.get('next_page') else 1
     search_text = request.args.get('search_text') or ''
-    article_fields = 'title|id|subtitle|short|image_file_id|subtitle|publishing_tm|read_count,company.name|logo_file_id|id,' \
+    article_fields = 'title|id|subtitle|short|image_file_id|subtitle|publishing_tm|read_count,' \
+                     'company.name|id,company.logo.url' \
                      'division.name,portal.name|host|logo_file_id|id'
     favorite = request.args.get('favorite') == 'True'
     localtime = time.gmtime(time.time())

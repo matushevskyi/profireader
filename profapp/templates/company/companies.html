@@ -129,7 +129,7 @@
                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-4 photo-search">
                     <a pr-test="CompanySearchResult" href="{{ url_company_profile({company_id: company.id}) }}"
                        class="thumbnail">
-                        <img pr-image="company.logo_file_id" alt="image" style="width: 100%">
+                        <img pr-image-url="company.logo.url" alt="image" style="width: 100%">
                     </a>
                 </div>
 
@@ -171,7 +171,7 @@
                  ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
                 <a href="{{ url_company_profile({company_id: my_employer.id}) }}">
                     <div class="col-lg-1 col-md-2 col-sm-2 col-xs-3">
-                        <img pr-image="my_employer.logo_file_id" alt="image" style="width: 100%;">
+                        <img pr-image-url="my_employer.logo.url" alt="image" style="width: 100%;">
                     </div>
                     <div class="col-lg-9 col-md-8 col-sm-8 col-xs-7">
                         <h5 class="ellipsis">{{ _('%(name)s' , my_employer) }}</h5>
@@ -195,7 +195,7 @@
                  ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
                 <div class="thumbnail company-thumbnail">
                     <a href="{{ url_company_profile({company_id: my_employer.id}) }}">
-                        <img pr-image="my_employer.logo_file_id" alt="image" style="width: 400px; height: 300px;">
+                        <img pr-image-url="my_employer.logo.url" alt="image" style="width: 400px; height: 300px;">
                     </a>
                     <div pr-test="SomeCompanyInfo" class="caption some-company-info">
 

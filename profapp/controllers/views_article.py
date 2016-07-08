@@ -76,7 +76,7 @@ def material_details(material_id):
 def get_portal_dict_for_material(portal, company, material=None, publication=None, submit=None):
     ret = {}
     ret['portal'] = portal.get_client_side_dict(
-        fields='id, name, host, logo_file_id, divisions.id|name|portal_division_type_id, own_company.name|id|logo_file_id')
+        fields='id, name, host, logo_file_id, divisions.id|name|portal_division_type_id, own_company.name|id, own_company.logo.url')
 
     # ret['rights'] = MemberCompanyPortal.get(company_id=company_id, portal_id=ret['id']).rights
     ret['divisions'] = PRBase.get_ordered_dict([d for d in ret['portal']['divisions'] if (

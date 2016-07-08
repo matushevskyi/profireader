@@ -162,7 +162,7 @@ def employee_update_load(json, company_id, user_id):
     if action == 'load':
         return {'employment': employment.get_client_side_dict(),
                 'employee': employment.employee.get_client_side_dict(),
-                'employer': employment.employer.get_client_side_dict(fields='id|logo_file_id|name'),
+                'employer': employment.employer.get_client_side_dict(fields='id|name, logo.url'),
                 # 'statuses_available': UserCompany.get_statuses_avaible(company_id),
                 # 'rights_available': employment.get_rights_avaible()
                 }
