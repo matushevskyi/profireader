@@ -119,7 +119,7 @@ def employees_load(json, company_id):
     employees_list = [
         utils.dict_merge(employment.user_employee.get_client_side_dict(), employment.get_client_side_dict(),
                            {'actions': EmployeesRight(company=company, employment=employment).actions()})
-        for employment in company.employments]
+        for employment in company]
 
     return {
         'company': company.get_client_side_dict(fields='id,name'),

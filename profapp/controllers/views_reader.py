@@ -67,11 +67,14 @@ def list_reader_load(json):
                       Publication.publishing_tm < datetime.datetime(*localtime[:6])) if not favorite\
             else (Publication.id == db(ReaderPublication, user_id=g.user.id,
                                         favorite=True).subquery().c.article_portal_division_id)
+    # fix here!
     articles, pages, page = Search().search({'class': Publication,
                                              'filter': filter,
                                              'tags': True, 'return_fields': article_fields}, page=1,
                                                 items_per_page=5*next_page,
                                                 search_text=search_text)
+
+    # TODO: OZ by YG:   fix here!
     list_articles = Publication.get_list_reader_articles(articles)
     return {
         'end': True if pages == 1 or pages == 0 else False,

@@ -333,7 +333,7 @@ def get_publication_dict(publication):
 def publications_load(json, company_id):
     company = Company.get(company_id)
     portal = company.own_portal
-    subquery = Publication.subquery_portal_articles(portal.id, json.get('filter'), json.get('sort'))
+    subquery = Company.subquery_portal_articles(portal.id, json.get('filter'), json.get('sort'))
     publications, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     # grid_filters = {
     #     'publication_status':Grid.filter_for_status(Publication.STATUSES),
