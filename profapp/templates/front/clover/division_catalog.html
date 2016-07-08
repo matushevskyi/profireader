@@ -14,8 +14,7 @@
 
         {% endif %}
 
-            <img src="//static.profireader.com/static/images/0.gif" class="block-item-img bg-contain"
-                 style="background-image:url({{ fileUrl(member['company']['logo_file_id']) }});"/>
+            <img class="block-item-img bg-contain" {{ prImageUrl(member['company']['logo']['url']) }}/>
 
             <a href="{{ url_for('front.company_page', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}">{{ member['company']['name'] }}</a>
             <br/><br/>

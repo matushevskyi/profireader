@@ -30,10 +30,10 @@
             <h2>
                 <img class="person-small-cover" pr-image
                      pr-no-image="{{ data.employee.profireader_small_avatar_url }}"/>
-                <img class="logo-small-cover" pr-image-url="data.employer.logo.url"/>
+                <img class="logo-small-cover" pr-image-url="{{ data.employer.logo.url }}"/>
                 {{ _('Employee `%(data.employee.profireader_name)s` at company `%(data.employer.name)s`') }}</h2>
 
-            <img pr-image-url="employer.logo.url"/>
+            <img pr-image-url="{{ employer.logo.url }}"/>
             {{ _('permissions') }}<br>
             <div ng-class="{disabled: !permitted}" ng-repeat="(right_name, permitted) in data.employment.rights">
                 <img src="//static.profireader.com/static/images/0.gif"

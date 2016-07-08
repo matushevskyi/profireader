@@ -183,8 +183,9 @@ class Company(Base, PRBase):
 
         user_company = UserCompany(status=UserCompany.STATUSES['ACTIVE'], rights={UserCompany.RIGHT_AT_COMPANY._OWNER:
                                                                                       True})
-        user_company.employer = self
-        g.user.company_employers.append(user_company)
+        user_company.user = g.user
+        user_company.company = self
+        g.user.employments.append(user_company)
         g.user.companies.append(self)
         self.youtube_playlists.append(YoutubePlaylist(name=self.name, company_owner=self))
         self.save()

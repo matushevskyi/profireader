@@ -706,7 +706,7 @@ class FileImgProxy:
 
     def proxy_getter(self, obj):
         return {
-            'url': utils.fileUrl(obj.provenance_image_file_id) if obj else self.no_selection_url,
+            'url': utils.fileUrl(obj.proceeded_image_file_id) if obj else self.no_selection_url,
             'selected_by_user': {'type': 'provenance',
                                  'crop': obj.get_client_side_dict(),
                                  'provenance_file_id': obj.provenance_image_file_id
@@ -792,7 +792,6 @@ class FileImgProxy:
 
         provenance_img, l, t, w, h = self.get_correct_coordinates(sel_by_user_crop, user_img)
 
-        file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
         file_img.origin_left, file_img.origin_top, file_img.origin_zoom = \
             sel_by_user_crop['origin_left'], sel_by_user_crop['origin_top'], sel_by_user_crop['origin_zoom']
 
@@ -802,6 +801,8 @@ class FileImgProxy:
                         [round(c) for c in
                          [file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height]]:
             return True
+
+        file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
 
         file_img.provenance_image_file = self.create_file_from_pillow_image(provenance_img,
                                                                             company=company,

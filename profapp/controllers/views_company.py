@@ -16,6 +16,7 @@ from ..models.pr_base import PRBase, Grid
 from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, UserIsEmployee, EmployeeAllowRight, \
     CanCreateCompanyRight, UserIsActive, BaseRightsEmployeeInCompany
 
+
 @company_bp.route('/search_to_submit_article/', methods=['POST'])
 @check_right(UserIsActive)
 def search_to_submit_article(json):
@@ -23,21 +24,21 @@ def search_to_submit_article(json):
     return companies
 
 
-
-
 @company_bp.route('/', methods=['GET'])
 @check_right(UserIsActive)
 def companies():
     return render_template('company/companies.html')
+
 
 @company_bp.route('/', methods=['OK'])
 @check_right(UserIsActive)
 def companies_load(json):
     companies, pages, page, count = pagination(query=db(Company)
         .filter(
-            Company.id == db(UserCompany, user_id=g.user.id).subquery().c.company_id), page=1,
-            items_per_page=6 * json.get('next_page') if json.get('next_page') else 6)
-    return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],'actions':{'create_company':CanCreateCompanyRight(user=g.user).is_allowed()},
+        Company.id == db(UserCompany, user_id=g.user.id).subquery().c.company_id), page=1,
+        items_per_page=6 * json.get('next_page') if json.get('next_page') else 6)
+    return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],
+            'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()},
             'user_id': g.user.id, 'end': True if pages == 1 or pages == 0 else False}
 
 
@@ -45,7 +46,9 @@ def companies_load(json):
 @check_right(UserIsEmployee, ['company_id'])
 def materials(company_id):
     return render_template('company/materials.html', company=db(Company, id=company_id).one(),
-            actions={'create_material': BaseRightsEmployeeInCompany(company=company_id).action_is_allowed(BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])})
+                           actions={
+                               'create_material': BaseRightsEmployeeInCompany(company=company_id).action_is_allowed(
+                                   BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])})
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['OK'])
@@ -60,7 +63,6 @@ def materials_load(json, company_id):
         'material_status': Grid.filter_for_status(Material.STATUSES),
         'status': Grid.filter_for_status(Publication.STATUSES),
         'publication_visibility': Grid.filter_for_status(Publication.VISIBILITIES)
-
 
     }
     # PublishUnpublishInPortal(publication=publication, portal=publication.division.portal,
@@ -97,9 +99,9 @@ def update_material_status(json, company_id, article_id):
     # ARTICLE_STATUS_IN_COMPANY.can_user_change_status_to(json['new_status'])
 
     ArticleCompany.update_article(
-            company_id=company_id,
-            article_id=article_id,
-            **{'status': json['new_status']})
+        company_id=company_id,
+        article_id=article_id,
+        **{'status': json['new_status']})
 
     return {'article_new_status': json['new_status'],
             'allowed_statuses': allowed_statuses,
@@ -118,7 +120,7 @@ def employees_load(json, company_id):
     company = Company.get(company_id)
     employees_list = [
         utils.dict_merge(employment.user_employee.get_client_side_dict(), employment.get_client_side_dict(),
-                           {'actions': EmployeesRight(company=company, employment=employment).actions()})
+                         {'actions': EmployeesRight(company=company, employment=employment).actions()})
         for employment in company]
 
     return {
@@ -191,7 +193,7 @@ def employment_action(json, company_id, employment_id, action):
     employment.save()
 
     return utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
-                              {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
+                            {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
 @company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_position/', methods=['OK'])
@@ -203,7 +205,7 @@ def employment_change_position(json, company_id, employment_id):
     employment.save()
 
     return utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
-                              {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
+                            {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
 # @company_bp.route('/update_rights', methods=['POST'])
@@ -256,7 +258,7 @@ def profile_load_validate_save(json, company_id=None):
         user_company = UserCompany.get(company_id=company_id)
         if user_company:
             company_dict['actions'] = {'edit_company_profile': EditCompanyRight(company=company).is_allowed(),
-                                       'edit_portal_profile':EditPortalRight(company=company_id).is_allowed()}
+                                       'edit_portal_profile': EditPortalRight(company=company_id).is_allowed()}
         return company_dict
     else:
         company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
@@ -270,10 +272,11 @@ def profile_load_validate_save(json, company_id=None):
                 return abort(403)
             if company_id is None:
                 company.setup_new_company()
-            company.set_logo_client_side_dict(json['logo'])
-            company.save()
-            company_dict = company.get_client_side_dict()
-            # company_dict['logo'] = company.get_logo_client_side_dict()
+
+            company.logo = utils.dict_merge(json['logo'], {'company': company,
+                                                           'file_name_prefix': 'logo_company_%s' % (company.id,)})
+
+            company_dict = company.save().get_client_side_dict()
             company_dict['actions'] = {'edit': True if company_id else False}
             return company_dict
 
@@ -308,8 +311,8 @@ def profile_load_validate_save(json, company_id=None):
 @check_right(UserIsActive)
 def search_for_company_to_join(json):
     companies, pages, page, count = pagination(
-            query=Company().search_for_company_to_join(g.user.id, json['search']), page=1,
-            items_per_page=5 * json.get('next_page') if json.get('next_page') else 5)
+        query=Company().search_for_company_to_join(g.user.id, json['search']), page=1,
+        items_per_page=5 * json.get('next_page') if json.get('next_page') else 5)
     return {'company_list': [company.get_client_side_dict() for company in
                              companies], 'end': pages == 1}
 
@@ -331,7 +334,7 @@ def send_article_to_user(json):
 @check_right(UserIsActive)
 def join_to_company(json, company_id):
     UserCompany(user_id=g.user.id, company_id=json.get('company_id')).save()
-    return {'companies': [employer.get_client_side_dict() for employer in current_user.company_employers]}
+    return {'companies': [employment.company.get_client_side_dict() for employment in current_user.employments]}
 
 
 @company_bp.route('/add_subscriber/', methods=['POST'])
@@ -403,12 +406,11 @@ def readers(company_id, page=1):
 @company_bp.route('/readers/<string:company_id>/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
 def readers_load(json, company_id):
-
     company = Company.get(company_id)
     company_readers, pages, page, count = pagination(query=company.get_readers_for_portal(json.get('filter')),
                                                      **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [reader.get_client_side_dict(
-            'id,profireader_email,profireader_name,profireader_first_name,profireader_last_name') for reader in
+        'id,profireader_email,profireader_name,profireader_first_name,profireader_last_name') for reader in
                           company_readers],
             'total': count
             }
