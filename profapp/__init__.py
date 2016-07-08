@@ -133,11 +133,36 @@ def db_session_func(db_config):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import scoped_session, sessionmaker
 
+    # def strong_reference_session(session):
+    #     from sqlalchemy import event
+    #
+    #     @event.listens_for(session, "pending_to_persistent")
+    #     @event.listens_for(session, "deleted_to_persistent")
+    #     @event.listens_for(session, "detached_to_persistent")
+    #     @event.listens_for(session, "loaded_as_persistent")
+    #     def strong_ref_object(sess, instance):
+    #         if 'refs' not in sess.info:
+    #             sess.info['refs'] = refs = set()
+    #         else:
+    #             refs = sess.info['refs']
+    #
+    #         refs.add(instance)
+    #
+    #     @event.listens_for(session, "persistent_to_detached")
+    #     @event.listens_for(session, "persistent_to_deleted")
+    #     @event.listens_for(session, "persistent_to_transient")
+    #     def deref_object(sess, instance):
+    #         sess.info['refs'].discard(instance)
+
     engine = create_engine(db_config, echo=False)
     g.sql_connection = engine.connect()
+
+
     db_session = scoped_session(sessionmaker(autocommit=False,
                                              autoflush=False,
                                              bind=engine))
+    # from sqlalchemy.orm import Session
+    # strong_reference_session(Session())
     return db_session
 
 
@@ -453,6 +478,12 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))
     app.before_request(lambda: load_user(apptype))
     app.before_request(setup_authomatic(app))
+
+
+    from sqlalchemy import event
+    # from .models.materials import Publication
+    # from .models.elastic import PRElasticDocument
+    # app.before_request(lambda: event.listen(PRElasticDocument, "after_insert", Publication.after_insert_elastic))
 
     def add_map_headers_to_less_files(response):
         response.headers.add('Access-Control-Allow-Origin', '*')

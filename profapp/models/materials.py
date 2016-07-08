@@ -8,7 +8,7 @@ from ..models.files import File
 from ..models.tag import Tag, TagPortalDivision, TagPublication
 from .pr_base import PRBase, Base, MLStripper, Grid
 from utils.db_utils import db
-from flask import g, session
+from flask import g, session, app, current_app
 from sqlalchemy.sql import or_, and_
 import re
 from sqlalchemy import event
@@ -17,7 +17,7 @@ from datetime import datetime
 from .files import FileImg, FileImgCropProperties, FileContent
 from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
-from .elastic import PRElasticField, PRElasticDocument, elasticsearch
+from .elastic import PRElasticField, PRElasticDocument
 from sqlalchemy.ext.associationproxy import association_proxy
 
 
@@ -199,7 +199,7 @@ class FileImgProxy:
                                  getset_factory=self.get_factory)
 
 
-class Material(Base, PRBase):
+class Material(Base, PRBase, PRElasticDocument):
     __tablename__ = 'material'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     # portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
@@ -224,7 +224,7 @@ class Material(Base, PRBase):
     subtitle = Column(TABLE_TYPES['subtitle'], default='', nullable=False)
     short = Column(TABLE_TYPES['text'], default='', nullable=False)
     long = Column(TABLE_TYPES['text'], default='', nullable=False)
-    long_stripped = Column(TABLE_TYPES['text'], nullable=False)
+    # long_stripped = Column(TABLE_TYPES['text'], nullable=False)
 
     keywords = Column(TABLE_TYPES['keywords'], nullable=False)
     author = Column(TABLE_TYPES['short_name'], nullable=False)
@@ -267,24 +267,6 @@ class Material(Base, PRBase):
 
         return ret
 
-    @staticmethod
-    def after_insert(mapper=None, connection=None, target=None):
-        pass
-
-    @staticmethod
-    def after_update(mapper=None, connection=None, target=None):
-        # target.elastic_replace()
-        pass
-
-    @staticmethod
-    def after_delete(mapper=None, connection=None, target=None):
-        pass
-
-    @classmethod
-    def __declare_last__(cls):
-        event.listen(cls, 'after_insert', cls.after_insert)
-        event.listen(cls, 'after_update', cls.after_update)
-        event.listen(cls, 'after_delete', cls.after_delete)
 
     @staticmethod
     def subquery_company_materials(company_id=None, filters=None, sorts=None):
@@ -342,13 +324,17 @@ class Material(Base, PRBase):
         #                                    client_data, folder_id)
         #     return self
 
+    @classmethod
+    def __declare_last__(cls):
+        cls.elastic_listeners(cls)
 
-def set_long_striped(mapper, connection, target):
-    target.long_stripped = MLStripper().strip_tags(target.long)
+    def elastic_update(self):
+        for p in self.publications:
+            p.elastic_update()
 
-
-event.listen(Material, 'before_update', set_long_striped)
-event.listen(Material, 'before_insert', set_long_striped)
+    def elastic_delete(self):
+        for p in self.publications:
+            p.elastic_delete()
 
 
 class Publication(Base, PRBase, PRElasticDocument):
@@ -378,18 +364,12 @@ class Publication(Base, PRBase, PRElasticDocument):
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
     VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
 
-    division = relationship('PortalDivision', backref=backref('article_portal_division'),
-                            cascade="save-update, merge, delete")
+    division = relationship('PortalDivision', cascade="save-update, merge, delete")
 
     company = relationship(Company, secondary='material',
                            primaryjoin="Publication.material_id == Material.id",
                            secondaryjoin="Material.company_id == Company.id",
                            viewonly=True, uselist=False)
-
-    # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
-    #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
-    #                  'long': {'relevance': lambda field='long': RELEVANCE.long},
-    #                  'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
 
     # elasticsearch begin
     def elastic_get_fields(self):
@@ -414,6 +394,7 @@ class Publication(Base, PRBase, PRElasticDocument):
             'portal_division_id': PRElasticField(analyzed=False, setter=lambda: self.division.id)
         }
 
+
     def elastic_get_index(self):
         return 'publications'
 
@@ -422,12 +403,6 @@ class Publication(Base, PRBase, PRElasticDocument):
 
     def elastic_get_id(self):
         return self.id
-
-    @classmethod
-    def elastic_remove_all_indexes(cls):
-        return elasticsearch.remove_index('articles')
-
-    # elasticsearch end
 
 
     def is_active(self):
@@ -649,24 +624,6 @@ class Publication(Base, PRBase, PRElasticDocument):
             tag_pub.save()
         return self
 
-    @staticmethod
-    def after_insert(mapper=None, connection=None, target=None):
-        target.elastic_insert()
-
-    @staticmethod
-    def after_update(mapper=None, connection=None, target=None):
-        target.elastic_replace()
-
-    @staticmethod
-    def after_delete(mapper=None, connection=None, target=None):
-        target.elastic_delete()
-
-    @classmethod
-    def __declare_last__(cls):
-        event.listen(cls, 'after_insert', cls.after_insert)
-        event.listen(cls, 'after_update', cls.after_update)
-        event.listen(cls, 'after_delete', cls.after_delete)
-
     def get_related_articles(self, count=5):
         from sqlalchemy.sql import func
 
@@ -675,6 +632,13 @@ class Publication(Base, PRBase, PRElasticDocument):
                  Publication.portal_division_id.in_(
                      db(PortalDivision.id).filter(PortalDivision.portal_id == self.division.portal_id))
                  )).order_by(func.random()).limit(count).all()
+
+
+
+    @classmethod
+    def __declare_last__(cls):
+        cls.elastic_listeners(cls)
+
 
 
 class ReaderPublication(Base, PRBase):
