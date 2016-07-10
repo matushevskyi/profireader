@@ -249,6 +249,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 scope.zoomable = true;
                 scope.disabled = false;
                 scope.original_model = null;
+                scope.preset_button_classes = {'gravatar': 'glyphicon-share'};
 
                 scope.onerror = function (m) {
                     add_message(m, 'warning')
@@ -295,12 +296,16 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.$watch('prCrop', function (newv, oldv) {
                     console.log('prCrop prCrop', newv, oldv);
-                    scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
+                    // scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
                     if (!newv) return;
+                    console.log(newv);
 
                     var selected_by_user = newv['selected_by_user'];
                     var cropper_options = newv['cropper'];
+                    console.log(cropper_options);
                     // if (!scope.original_model) {
+
+                    scope.preset_urls = cropper_options['preset_urls'] ? cropper_options['preset_urls'] : {};
                     scope.original_model = $.extend(true, {}, selected_by_user);
                     // }
                     scope.coordinates = [];
@@ -322,9 +327,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     scope.setModel(selected_by_user, false);
                 });
 
-                scope.selectPresetUrl = function (className) {
-                    if (scope.prCrop['preset_urls'] && scope.prCrop['preset_urls'][className]) {
-                        scope.setModel({'type': 'preset', 'class': className});
+                scope.selectPresetUrl = function (preset_id) {
+                    if (scope.preset_urls && scope.preset_urls[preset_id]) {
+                        scope.setModel({'type': 'preset', 'preset_id': preset_id});
                     }
                 };
 
@@ -383,7 +388,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                             // scope.state = null;
                             break;
                         case 'preset':
-                            scope.selectedurl = scope.prCrop['preset_urls'][model['class']];
+                            scope.selectedurl = scope.preset_urls[model['preset_id']];
                             scope.disabled = true;
                             scope.coordinates = null;
                             scope.zoom = null;

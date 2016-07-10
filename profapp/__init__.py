@@ -436,7 +436,7 @@ class AnonymousUser(AnonymousUserMixin):
     def user_name():
         return 'Guest'
 
-    def avatar(self, size=100):
+    def get_avatar(self, size=100):
         avatar = self.gravatar(size=size)
         return avatar
 

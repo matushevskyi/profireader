@@ -9,6 +9,8 @@ from config import Config
 from ..models.country import Country
 from flask import session
 from ..models.rights import UserIsActive, UserEditProfieRight, AllowAll
+from .. import utils
+
 
 @user_bp.route('/profile/<user_id>')
 @check_right(UserIsActive)
@@ -36,11 +38,13 @@ def edit_profile_load(json, user_id):
     if action == 'load':
         ret = {'user': g.user.get_client_side_dict(), 'languages': Config.LANGUAGES,
                'countries': Country.get_countries(), 'change_password': {'password1': '', 'password2': ''}}
-        ret['user']['avatar'] = g.user.get_avatar_client_side_dict()
+        ret['user']['avatar'] = g.user.avatar
         return ret
     else:
-        json['user']['profireader_name'] = json['user']['profireader_first_name']+' '+json['user']['profireader_last_name']
-        g.user.attr(json['user'])
+        json['user']['profireader_name'] = json['user']['profireader_first_name'] + ' ' + json['user'][
+            'profireader_last_name']
+        avatar = json['user']['avatar']
+        g.user.attr(utils.dict_merge(json['user'], remove='avatar'))
         if action == 'validate':
             g.user.detach()
             validate = g.user.validate(False)
@@ -50,10 +54,11 @@ def edit_profile_load(json, user_id):
         else:
             if json['change_password']['password1']:
                 g.user.password = json['change_password']['password1']
-            g.user.set_avatar_client_side_dict(json['user']['avatar']).save()
+            g.user.avatar = avatar
             ret = {'user': g.user.get_client_side_dict()}
-            ret['user']['avatar'] = g.user.get_avatar_client_side_dict()
+
             return ret
+
 
 @user_bp.route('/change_lang/', methods=['OK'])
 @check_right(AllowAll)

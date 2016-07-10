@@ -271,39 +271,35 @@ def profile_load_validate_save(json, company_id=None):
             if company_id and EditCompanyRight(company=company_id).is_allowed() != True:
                 return abort(403)
             if company_id is None:
-                company.setup_new_company()
+                company.setup_new_company().save()
 
-            company.logo = utils.dict_merge(json['logo'], {'company': company,
-                                                           'file_name_prefix': 'logo_company_%s' % (company.id,)})
+            company.logo = json['logo']
 
-            company_dict = company.save().get_client_side_dict()
-            company_dict['actions'] = {'edit': True if company_id else False}
-            return company_dict
+        return utils.dict_merge(company.save().get_client_side_dict(), actions={'edit': True if company_id else False})
 
-
-# @company_bp.route('/confirm_create/', methods=['OK'])
-# @login_required
-# # @check_rights(simple_permissions([]))
-# @ok
-# def confirm_create(json):
+    # @company_bp.route('/confirm_create/', methods=['OK'])
+    # @login_required
+    # # @check_rights(simple_permissions([]))
+    # @ok
+    # def confirm_create(json):
 
 
-# @company_bp.route('/edit/<string:company_id>/', methods=['OK'])
-# @login_required
-# @ok
-# # @check_rights(simple_permissions([RIGHTS.MANAGE_RIGHTS_COMPANY()]))
-# def edit_load(json, company_id):
-#     company = db(Company, id=company_id).one()
-#     return company.get_client_side_dict()
+    # @company_bp.route('/edit/<string:company_id>/', methods=['OK'])
+    # @login_required
+    # @ok
+    # # @check_rights(simple_permissions([RIGHTS.MANAGE_RIGHTS_COMPANY()]))
+    # def edit_load(json, company_id):
+    #     company = db(Company, id=company_id).one()
+    #     return company.get_client_side_dict()
 
 
-# @company_bp.route('/confirm_edit/<string:company_id>', methods=['OK'])
-# @login_required
-# @ok
-# # @check_rights(simple_permissions([RIGHTS.MANAGE_RIGHTS_COMPANY()]))
-# def confirm_edit(json, company_id):
-#
-#     return {}
+    # @company_bp.route('/confirm_edit/<string:company_id>', methods=['OK'])
+    # @login_required
+    # @ok
+    # # @check_rights(simple_permissions([RIGHTS.MANAGE_RIGHTS_COMPANY()]))
+    # def confirm_edit(json, company_id):
+    #
+    #     return {}
 
 
 
@@ -316,26 +312,22 @@ def search_for_company_to_join(json):
     return {'company_list': [company.get_client_side_dict() for company in
                              companies], 'end': pages == 1}
 
-
 @company_bp.route('/search_for_user/<string:company_id>', methods=['OK'])
 @check_right(UserIsActive)
 def search_for_user(json, company_id):
     users = UserCompany().search_for_user_to_join(company_id, json['search'])
     return users
 
-
 @company_bp.route('/send_article_to_user/', methods=['OK'])
 @check_right(UserIsActive)
 def send_article_to_user(json):
     return {'user': json['send_to_user']}
-
 
 @company_bp.route('/join_to_company/<string:company_id>/', methods=['OK'])
 @check_right(UserIsActive)
 def join_to_company(json, company_id):
     UserCompany(user_id=g.user.id, company_id=json.get('company_id')).save()
     return {'companies': [employment.company.get_client_side_dict() for employment in current_user.employments]}
-
 
 @company_bp.route('/add_subscriber/', methods=['POST'])
 @check_right(UserIsActive)
@@ -346,7 +338,6 @@ def confirm_subscriber():
                                user_id=data['user_id'],
                                bool=data['req'])
     return redirect(url_for('company.profile', company_id=data['company_id']))
-
 
 # TODO: VK by OZ: following 3 functions would have to be joined into one
 # @company_bp.route('/suspend_employee/', methods=['POST'])
@@ -401,7 +392,6 @@ def readers(company_id, page=1):
                            page_buttons=Config.PAGINATION_BUTTONS,
                            search_text=None,
                            )
-
 
 @company_bp.route('/readers/<string:company_id>/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])

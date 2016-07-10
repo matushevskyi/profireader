@@ -19,6 +19,7 @@ from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument
 
+
 class Material(Base, PRBase, PRElasticDocument):
     __tablename__ = 'material'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
@@ -30,12 +31,16 @@ class Material(Base, PRBase, PRElasticDocument):
 
     illustration_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
     illustration_file_img = relationship(FileImg, uselist=False)
-    illustration = FileImgProxy(image_size=[600, 480],
+
+    illustration = FileImgProxy(relation_name='illustration_file_img',
+                                file_decorator=lambda m, r, f: f.attr(
+                                    name='%s_for_material_illustration_%s' % (f.name, m.id),
+                                    parent_id=m.company.system_folder_file_id,
+                                    root_folder_id=m.company.system_folder_file_id),
+                                image_size=[600, 480],
                                 min_size=[600 / 6, 480 / 6],
                                 aspect_ratio=[600 / 480., 600 / 480.],
-                                # none=utils.fileUrl(FOLDER_AND_FILE.no_article_image()),
-                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_article_image())) \
-        .get_proxy('illustration_file_img')
+                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_article_image()))
 
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
@@ -86,7 +91,6 @@ class Material(Base, PRBase, PRElasticDocument):
             ret['notices']['_'] = 'Ok, you can click submit'
 
         return ret
-
 
     @staticmethod
     def subquery_company_materials(company_id=None, filters=None, sorts=None):
@@ -147,6 +151,9 @@ class Material(Base, PRBase, PRElasticDocument):
     @classmethod
     def __declare_last__(cls):
         cls.elastic_listeners(cls)
+
+    def elastic_insert(self):
+        pass
 
     def elastic_update(self):
         for p in self.publications:
@@ -213,7 +220,6 @@ class Publication(Base, PRBase, PRElasticDocument):
             'division': PRElasticField(setter=lambda: self.division.name, boost=2),
             'portal_division_id': PRElasticField(analyzed=False, setter=lambda: self.division.id)
         }
-
 
     def elastic_get_index(self):
         return 'publications'
@@ -454,8 +460,6 @@ class Publication(Base, PRBase, PRElasticDocument):
                  Publication.portal_division_id.in_(
                      db(PortalDivision.id).filter(PortalDivision.portal_id == self.division.portal_id))
                  )).order_by(func.random()).limit(count).all()
-
-
 
 
 class ReaderPublication(Base, PRBase):

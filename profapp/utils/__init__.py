@@ -48,11 +48,32 @@ def fileID(url):
     return match.group('id') if match else None
 
 
-def dict_merge(*args, remove={}):
+def dict_merge(*args, remove={}, **kwargs):
     ret = {}
     for d in args:
         ret.update(d)
+    ret.update(kwargs)
     return {k: v for k, v in ret.items() if not k in remove}
+
+
+def dict_merge_recursive(*args):
+    import collections
+
+    def upd_rec(d, u):
+        for k, v in u.items():
+            if isinstance(v, collections.Mapping):
+                r = upd_rec(d.get(k, {}), v)
+                d[k] = r
+            else:
+                d[k] = u[k]
+        return d
+
+    ret = {}
+    for a in args:
+        ret = upd_rec(ret, a)
+
+    return ret
+
 
 def list_merge(*args, remove=[]):
     ret = []

@@ -22,44 +22,26 @@ import re
 from .files import FileImg, FileImgProxy
 
 
-
 class Company(Base, PRBase):
     __tablename__ = 'company'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     name = Column(TABLE_TYPES['name'], unique=True, nullable=False, default='')
 
     logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
-    logo_file_img = relationship(FileImg, uselist=False)
-    logo = FileImgProxy(image_size=[480, 480],
-                                min_size=[100, 100],
-                                aspect_ratio=[0.25, 4.],
-                                # none=utils.fileUrl(FOLDER_AND_FILE.no_article_image()),
-                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo())) \
-        .get_proxy('logo_file_img')
-
-    # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
-    # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
-
-
-
-    # def logo_file_properties(self):
-    #     nologo_url =
-    #     return {
-    #         'browse': self.id,
-    #         'upload': True,
-    #         'none': nologo_url,
-    #         'crop': True,
-    #         'image_size': [450, 450],
-    #         'min_size': [100, 100],
-    #         'aspect_ratio': [0.25, 4.0],
-    #         'preset_urls': {},
-    #         'no_selection_url': nologo_url
-    #     }
+    logo_file_img = relationship(FileImg, uselist=False, backref=backref('company', uselist=False))
+    logo = FileImgProxy(relation_name='logo_file_img',
+                        file_decorator=lambda c, r, f: f.attr(
+                            name='%s_for_company_logo_%s' % (f.name, c.id),
+                            parent_id=c.system_folder_file_id,
+                            root_folder_id=c.system_folder_file_id),
+                        image_size=[480, 480],
+                        min_size=[100, 100],
+                        aspect_ratio=[0.25, 4.],
+                        no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
+    # .get_proxy('logo_file_img')
 
     journalist_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
-    # corporate_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
     system_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
-    #    portal_consist = Column(TABLE_TYPES['boolean'])
 
     country = Column(TABLE_TYPES['name'], nullable=False, default='')
     region = Column(TABLE_TYPES['name'], nullable=False, default='')
@@ -109,7 +91,6 @@ class Company(Base, PRBase):
     #                                       backref='logo_owner_company',
     #                                       foreign_keys='Company.logo_file_id')
 
-
     def is_active(self):
         if self.status != Company.STATUSES['ACTIVE']:
             return False
@@ -117,7 +98,7 @@ class Company(Base, PRBase):
 
     def get_readers_for_portal(self, filters):
         query = g.db.query(User).join(UserPortalReader).join(UserPortalReader.portal).join(Portal.own_company).filter(
-                Company.id == self.id)
+            Company.id == self.id)
         list_filters = []
         if filters:
             for filter in filters:
@@ -144,10 +125,10 @@ class Company(Base, PRBase):
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)
 
-        if self.lon is not None and utils.putInRange(self.lon, 180, 180, check_only = True):
+        if self.lon is not None and utils.putInRange(self.lon, 180, 180, check_only=True):
             ret['errors']['lon'] = 'pls longitude in range [-180,180]'
 
-        if self.lat is not None and utils.putInRange(self.lat, 90, 90, check_only = True):
+        if self.lat is not None and utils.putInRange(self.lat, 90, 90, check_only=True):
             ret['errors']['lat'] = 'pls latitude in range [-90,90]'
 
         if (self.lat is None and self.lon is not None) or (self.lat is not None and self.lon is None):
@@ -202,7 +183,7 @@ class Company(Base, PRBase):
     def search_for_company(user_id, searchtext):
         """Return all companies which are not current user employers yet"""
         query_companies = db(Company).filter(
-                Company.name.like("%" + searchtext + "%")).filter.all()
+            Company.name.like("%" + searchtext + "%")).filter.all()
         ret = []
         for x in query_companies:
             ret.append(x.dict())
@@ -243,8 +224,6 @@ class Company(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
-
-
     # def get_logo_client_side_dict(self):
     #     return self.get_image_cropped_file(self.logo_file_properties(),
     #                                        db(FileImg, croped_image_id=self.logo_file_id).first())
@@ -260,7 +239,7 @@ class Company(Base, PRBase):
     def get_allowed_statuses(company_id=None, portal_id=None):
         if company_id:
             sub_query = db(MemberCompanyPortal, company_id=company_id).filter(
-                    MemberCompanyPortal.status != "DELETED").all()
+                MemberCompanyPortal.status != "DELETED").all()
         else:
             sub_query = db(MemberCompanyPortal, portal_id=portal_id)
         return sorted(list({partner.status for partner in sub_query}))
@@ -276,7 +255,7 @@ class Company(Base, PRBase):
         if filters_exсept:
             if 'status' in filters:
                 list_filters.append(
-                        {'type': 'multiselect', 'value': filters['status'], 'field': MemberCompanyPortal.status})
+                    {'type': 'multiselect', 'value': filters['status'], 'field': MemberCompanyPortal.status})
             else:
                 sub_query = sub_query.filter(and_(MemberCompanyPortal.status != v for v in filters_exсept))
                 # if filters:
@@ -294,11 +273,12 @@ class Company(Base, PRBase):
     @staticmethod
     def subquery_company_partners(company_id, filters, filters_exсept=None):
         sub_query = db(MemberCompanyPortal, portal_id=db(Portal, company_owner_id=company_id).subquery().c.id)
-        list_filters = [];list_sorts=[]
+        list_filters = [];
+        list_sorts = []
         if filters_exсept:
             if 'member.status' in filters:
                 list_filters.append(
-                        {'type': 'multiselect', 'value': filters['member.status'], 'field': MemberCompanyPortal.status})
+                    {'type': 'multiselect', 'value': filters['member.status'], 'field': MemberCompanyPortal.status})
             else:
                 sub_query = sub_query.filter(and_(MemberCompanyPortal.status != v for v in filters_exсept))
                 # if filters:
@@ -314,6 +294,7 @@ class Company(Base, PRBase):
         # list_sorts.append({'value': 'desc', 'field': Company.name})
         sub_query = Grid.subquery_grid(sub_query, filters=list_filters)
         return sub_query
+
 
 class UserCompany(Base, PRBase):
     __tablename__ = 'user_company'
@@ -499,4 +480,3 @@ class UserCompany(Base, PRBase):
         #         # available_rights = 0
         #
         #     return True if available_rights & needed_rights_int == needed_rights_int else False
-

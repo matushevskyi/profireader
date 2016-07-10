@@ -25,7 +25,7 @@ import base64
 from PIL import Image
 from io import BytesIO
 
-from ..utils import fileUrl, fileID
+from .. import utils
 from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
 
 Base = declarative_base()
@@ -394,7 +394,6 @@ class Grid:
         return list
 
 
-
 class PRBase:
     omit_validation = False
 
@@ -533,9 +532,11 @@ class PRBase:
         g.db.flush()
         return self
 
-    def attr(self, dictionary):
+    def attr(self, dictionary={}, **kwargs):
         for k in dictionary:
             setattr(self, k, dictionary[k])
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
         return self
 
     def detach(self):
@@ -619,6 +620,14 @@ class PRBase:
         if '*' in req_columns and __debug:
             del req_columns['*']
 
+        del_req_columns_in_attrs = []
+        for colname in req_columns:
+            if hasattr(self, colname):
+                del_req_columns_in_attrs.append(colname)
+                ret[colname] = getattr(self, colname)
+        for colname in del_req_columns_in_attrs:
+            del req_columns[colname]
+
         if len(req_columns) > 0:
             columns_not_in_relations = list(set(req_columns.keys()) - set(relations.keys()))
             if len(columns_not_in_relations) > 0:
@@ -660,6 +669,17 @@ class PRBase:
 
         if '*' in req_relationships:
             del req_relationships['*']
+
+        del_req_columns_in_attrs = []
+        for relname, nextlevelargs in req_relationships.items():
+            if hasattr(self, relname):
+                del_req_columns_in_attrs.append(relname)
+                add = g.filter_json(getattr(self, relname), *nextlevelargs) if nextlevelargs else getattr(
+                    self, relname)
+                ret[relname] = utils.dict_merge_recursive(ret[relname] if relname in ret else {}, add)
+
+        for colname in del_req_columns_in_attrs:
+            del req_relationships[colname]
 
         if len(req_relationships) > 0:
             relations_not_in_columns = list(set(
@@ -748,32 +768,32 @@ class PRBase:
             return True
         return False
 
-    # def elastic_insert(self):
-    #     pass
-    #
-    # def elastic_update(self):
-    #     pass
-    #
-    # def elastic_delete(self):
-    #     pass
-    #
-    # @staticmethod
-    # def after_insert(mapper=None, connection=None, target=None):
-    #     target.elastic_insert()
-    #
-    # @staticmethod
-    # def after_update(mapper=None, connection=None, target=None):
-    #     target.elastic_update()
-    #
-    # @staticmethod
-    # def after_delete(mapper=None, connection=None, target=None):
-    #     target.elastic_delete()
+        # def elastic_insert(self):
+        #     pass
+        #
+        # def elastic_update(self):
+        #     pass
+        #
+        # def elastic_delete(self):
+        #     pass
+        #
+        # @staticmethod
+        # def after_insert(mapper=None, connection=None, target=None):
+        #     target.elastic_insert()
+        #
+        # @staticmethod
+        # def after_update(mapper=None, connection=None, target=None):
+        #     target.elastic_update()
+        #
+        # @staticmethod
+        # def after_delete(mapper=None, connection=None, target=None):
+        #     target.elastic_delete()
 
-    # @classmethod
-    # def __declare_last__(cls):
-    #     event.listen(cls, 'before_update', cls.validate_before_update)
-    #     event.listen(cls, 'before_insert', cls.validate_before_insert)
-    #     # event.listen(cls, 'before_delete', cls.validate_before_delete)
+        # @classmethod
+        # def __declare_last__(cls):
+        #     event.listen(cls, 'before_update', cls.validate_before_update)
+        #     event.listen(cls, 'before_insert', cls.validate_before_insert)
+        #     # event.listen(cls, 'before_delete', cls.validate_before_delete)
         # event.listen(cls, 'after_insert', cls.add_to_search)
         # event.listen(cls, 'after_update', cls.update_search_table)
         # event.listen(cls, 'after_delete', cls.delete_from_search)

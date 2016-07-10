@@ -56,10 +56,8 @@ def load_form_create(json_data, company_id=None, material_id=None):
             material.detach()
             return material.validate(material.id is not None)
         else:
-            material.illustration = utils.dict_merge(json_data['material']['illustration'],
-                                                     {'company': material.company,
-                                                      'file_name_prefix': 'illustration_for_material_%s' % (
-                                                          material.id,)})
+            material.save()
+            material.illustration = json_data['material']['illustration']
 
             return {'material': material.save().get_client_side_dict(more_fields='long|company|illustration')}
 
