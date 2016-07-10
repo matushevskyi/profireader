@@ -1,6 +1,6 @@
 from flask import request, current_app, g, flash
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from flask import session, json
 from urllib import request as req
 from config import Config
@@ -21,10 +21,14 @@ from flask.ext.login import UserMixin
 from .files import File, FileImg
 from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
-from ..utils import fileUrl
+# from ..utils import fileUrl
+from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+
 import random
 import time
+from .files import FileImg, FileImgProxy
+
 
 class User(Base, UserMixin, PRBase):
     __tablename__ = 'user'
@@ -56,8 +60,37 @@ class User(Base, UserMixin, PRBase):
                                     default='//static.profireader.com/static/no_avatar.png')
     profireader_small_avatar_url = Column(TABLE_TYPES['url'], nullable=False,
                                           default='//static.profireader.com/static/no_avatar_small.png')
-    avatar_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
-    # status_id = Column(Integer, db.ForeignKey('status.id'))
+
+    avatar_selected_preset = Column(TABLE_TYPES['string_30'], nullable=True)
+    avatar_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
+    avatar_file_img = relationship(FileImg, uselist=False)
+
+    def set_avatar_preset(self, r, v):
+        if v['selected_by_user']['type'] == 'preset':
+            self.avatar_selected_preset = v['selected_by_user']['preset_id']
+            v['selected_by_user']['type'] = 'none'
+        else:
+            self.avatar_selected_preset = None
+        return v
+
+    def get_avatar_preset(self, r, v):
+        v['cropper']['preset_urls'] = {'gravatar': self.gravatar(size=300)}
+        if self.avatar_selected_preset is not None:
+            v['selected_by_user']['type'] = 'preset'
+            v['selected_by_user']['preset_id'] = self.avatar_selected_preset
+        return v
+
+    avatar = FileImgProxy(relation_name='avatar_file_img',
+                          file_decorator=lambda u, r, f: f.attr(
+                              name='%s_for_user_avatar_%s' % (f.name, u.id),
+                              parent_id=u.system_folder_file_id,
+                              root_folder_id=u.system_folder_file_id),
+                          image_size=[300, 400],
+                          min_size=[100, 100],
+                          aspect_ratio=[0.5, 2.],
+                          after_get=lambda u, r, v: u.get_avatar_preset(r, v),
+                          before_set=lambda u, r, v: u.set_avatar_preset(r, v),
+                          no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_user_avatar()))
 
     email_conf_token = Column(TABLE_TYPES['token'])
     email_conf_tm = Column(TABLE_TYPES['timestamp'])
@@ -147,6 +180,7 @@ class User(Base, UserMixin, PRBase):
     yahoo_link = Column(TABLE_TYPES['link'])
     yahoo_phone = Column(TABLE_TYPES['phone'])
     tos = Column(TABLE_TYPES['boolean'], default=False)
+
     # search_fields = {'profireader_name': {'relevance': lambda field='profireader_name': RELEVANCE.profireader_name},
     #                  'about_me': {'relevance': lambda field='about_me': RELEVANCE.about_me},
     #                  'profireader_email': {'relevance': lambda field='profireader_email': RELEVANCE.profireader_email}}
@@ -268,8 +302,6 @@ class User(Base, UserMixin, PRBase):
             return "Sorry!You must be confirmed!"
         return True
 
-
-
     def validate(self, is_new):
 
         ret = super().validate(is_new)
@@ -283,19 +315,19 @@ class User(Base, UserMixin, PRBase):
             ret['errors']['profireader_phone'] = 'pls enter only digits'
         return ret
 
-    def logo_file_properties(self):
-        noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())
-        return {
-            'browse': self.id,
-            'upload': True,
-            'none': noavatar_url,
-            'crop': True,
-            'image_size': [300, 400],
-            'min_size': [100,100],
-            'aspect_ratio': [0.5, 2.0],
-            'preset_urls': {'glyphicon-share': self.gravatar(size=500)},
-            'no_selection_url': noavatar_url
-        }
+    # def logo_file_properties(self):
+    #     noavatar_url = fileUrl(FOLDER_AND_FILE.no_user_avatar())
+    #     return {
+    #         'browse': self.id,
+    #         'upload': True,
+    #         'none': noavatar_url,
+    #         'crop': True,
+    #         'image_size': [300, 400],
+    #         'min_size': [100,100],
+    #         'aspect_ratio': [0.5, 2.0],
+    #         'preset_urls': {'glyphicon-share': self.gravatar(size=500)},
+    #         'no_selection_url': noavatar_url
+    #     }
 
     @staticmethod
     def user_query(user_id):
@@ -334,7 +366,7 @@ class User(Base, UserMixin, PRBase):
         g.db.add(self)
         g.db.commit()
 
-    def avatar(self, avatar_via, size=500, small_size=100, url=None):
+    def get_avatar(self, avatar_via, size=500, small_size=100, url=None):
         if avatar_via == 'upload':
             return self
         avatar_urls = dict(facebook=lambda s: 'http://graph.facebook.com/{facebook_id}/picture?width={size}&'
@@ -346,7 +378,7 @@ class User(Base, UserMixin, PRBase):
                            # vkontakte=lambda s, u=url: u if u else self.gravatar(size=s),
                            gravatar=lambda s: self.gravatar(size=s),
                            microsoft=lambda _: 'https://apis.live.net/v5.0/{microsoft_id}/picture'.format(
-                                   microsoft_id=self.microsoft_id))
+                               microsoft_id=self.microsoft_id))
         url = avatar_urls[avatar_via](size)
         url_small = avatar_urls[avatar_via](small_size)
         if avatar_via == 'facebook':
@@ -406,33 +438,33 @@ class User(Base, UserMixin, PRBase):
         email = getattr(self, 'profireader_email', 'guest@profireader.com')
         hash = hashlib.md5(email.encode('utf-8')).hexdigest()
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
-                url=url, hash=hash, size=size, default=default, rating=rating)
+            url=url, hash=hash, size=size, default=default, rating=rating)
 
-    def set_avatar_client_side_dict(self, client_data):
-        if client_data['selected_by_user']['type'] == 'preset':
-            client_data['selected_by_user']['type'] = 'none'
-            if client_data['selected_by_user']['class'] == 'glyphicon-share':
-                self.profireader_avatar_url = self.gravatar(size=500)
-                self.profireader_small_avatar_url = self.gravatar(size=100)
-            else:
-                raise ValueError("passed unknow preset class `{}`".format(client_data['selected_by_user']['class']))
-
-
-        self.avatar_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-                                                          client_data, self.avatar_file_id, self.system_folder_file_id)
-        if self.avatar_file_id:
-            self.profireader_avatar_url = fileUrl(self.avatar_file_id)
-            self.profireader_small_avatar_url = fileUrl(File.get(self.avatar_file_id).get_thumbnails((133,100)).id)
-
-        return self
-
-    def get_avatar_client_side_dict(self):
-        ret = self.get_image_cropped_file(self.logo_file_properties(),
-                                          db(FileImg, croped_image_id=self.avatar_file_id).first())
-
-        if self.profireader_avatar_url == self.gravatar(size=500):
-            ret['selected_by_user'] = {'type': 'preset', 'class': 'glyphicon-share'}
-        return ret
+    # def set_avatar_client_side_dict(self, client_data):
+    #     if client_data['selected_by_user']['type'] == 'preset':
+    #         client_data['selected_by_user']['type'] = 'none'
+    #         if client_data['selected_by_user']['class'] == 'glyphicon-share':
+    #             self.profireader_avatar_url = self.gravatar(size=500)
+    #             self.profireader_small_avatar_url = self.gravatar(size=100)
+    #         else:
+    #             raise ValueError("passed unknow preset class `{}`".format(client_data['selected_by_user']['class']))
+    #
+    #
+    #     self.avatar_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+    #                                                       client_data, self.avatar_file_id, self.system_folder_file_id)
+    #     if self.avatar_file_id:
+    #         self.profireader_avatar_url = fileUrl(self.avatar_file_id)
+    #         self.profireader_small_avatar_url = fileUrl(File.get(self.avatar_file_id).get_thumbnails((133,100)).id)
+    #
+    #     return self
+    #
+    # def get_avatar_client_side_dict(self):
+    #     ret = self.get_image_cropped_file(self.logo_file_properties(),
+    #                                       db(FileImg, croped_image_id=self.avatar_file_id).first())
+    #
+    #     if self.profireader_avatar_url == self.gravatar(size=500):
+    #         ret['selected_by_user'] = {'type': 'preset', 'class': 'glyphicon-share'}
+    #     return ret
 
     def profile_completed(self):
         completeness = True
@@ -517,7 +549,8 @@ class User(Base, UserMixin, PRBase):
         return self
 
     def confirm_email(self):
-        if self.email_conf_tm.timestamp() > int(time.time()) - current_app.config.get('EMAIL_CONFIRMATION_TOKEN_TTL', 3600*24):
+        if self.email_conf_tm.timestamp() > int(time.time()) - current_app.config.get('EMAIL_CONFIRMATION_TOKEN_TTL',
+                                                                                      3600 * 24):
             self.confirmed = True
         return self.confirmed
 
@@ -531,7 +564,8 @@ class User(Base, UserMixin, PRBase):
 
     def generate_reset_token(self):
         self.email_conf_token = random.getrandbits(128)
-        if self.pass_reset_conf_tm.timestamp() > int(time.time()) - current_app.config.get('PASSWORD_CONFIRMATION_TOKEN_TTL', 3600*24):
+        if self.pass_reset_conf_tm.timestamp() > int(time.time()) - current_app.config.get(
+                'PASSWORD_CONFIRMATION_TOKEN_TTL', 3600 * 24):
             self.confirmed = True
             return self.confirmed
         return self
@@ -563,7 +597,6 @@ class User(Base, UserMixin, PRBase):
             return False
         self.profireader_email = new_email
         return True
-
 
     # def can(self, permissions):
     #     return self.role is not None and \

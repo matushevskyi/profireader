@@ -24,6 +24,7 @@ class PRElasticConnection:
         self.host = host
 
     def path(self, *args, params=None):
+        print(1)
         return (self.host + '/' + '/'.join(args)) + '?' + \
                ('&'.join(["%s=%s" % (k, v) for k, v in params.items()]) if params else '')
 
