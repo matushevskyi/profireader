@@ -14,7 +14,7 @@ import re
 from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
-from .files import FileImg, FileImgProxy
+from .files import FileImg, FileImgDescriptor
 from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument
@@ -32,15 +32,15 @@ class Material(Base, PRBase, PRElasticDocument):
     illustration_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
     illustration_file_img = relationship(FileImg, uselist=False)
 
-    illustration = FileImgProxy(relation_name='illustration_file_img',
-                                file_decorator=lambda m, r, f: f.attr(
+    illustration = FileImgDescriptor(relation_name='illustration_file_img',
+                                     file_decorator=lambda m, r, f: f.attr(
                                     name='%s_for_material_illustration_%s' % (f.name, m.id),
                                     parent_id=m.company.system_folder_file_id,
                                     root_folder_id=m.company.system_folder_file_id),
-                                image_size=[600, 480],
-                                min_size=[600 / 6, 480 / 6],
-                                aspect_ratio=[600 / 480., 600 / 480.],
-                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_article_image()))
+                                     image_size=[600, 480],
+                                     min_size=[600 / 6, 480 / 6],
+                                     aspect_ratio=[600 / 480., 600 / 480.],
+                                     no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_article_image()))
 
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])

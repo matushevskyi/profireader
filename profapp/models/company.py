@@ -19,7 +19,7 @@ from .users import User
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from .. import utils
 import re
-from .files import FileImg, FileImgProxy
+from .files import FileImg, FileImgDescriptor
 
 
 class Company(Base, PRBase):
@@ -29,15 +29,15 @@ class Company(Base, PRBase):
 
     logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
     logo_file_img = relationship(FileImg, uselist=False, backref=backref('company', uselist=False))
-    logo = FileImgProxy(relation_name='logo_file_img',
-                        file_decorator=lambda c, r, f: f.attr(
+    logo = FileImgDescriptor(relation_name='logo_file_img',
+                             file_decorator=lambda c, r, f: f.attr(
                             name='%s_for_company_logo_%s' % (f.name, c.id),
                             parent_id=c.system_folder_file_id,
                             root_folder_id=c.system_folder_file_id),
-                        image_size=[480, 480],
-                        min_size=[100, 100],
-                        aspect_ratio=[0.25, 4.],
-                        no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
+                             image_size=[480, 480],
+                             min_size=[100, 100],
+                             aspect_ratio=[0.25, 4.],
+                             no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
     # .get_proxy('logo_file_img')
 
     journalist_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
