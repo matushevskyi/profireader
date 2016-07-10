@@ -675,7 +675,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 
 
-class FileImgProxy(object):
+class FileImgDescriptor(object):
     browse = True
     upload = True
     crop = True
