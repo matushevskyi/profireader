@@ -51,7 +51,7 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
         else:
             ret['portal_company_members'] = [company.get_client_side_dict()]
             ret['portal'] = {'company_owner_id': company_id, 'name': '', 'host': '',
-
+                             'logo': portal.logo,
                              'host_profi_or_own': 'profi',
                              'host_own': '',
                              'host_profi': '',
@@ -68,7 +68,6 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
                                   'portal_division_type_id': 'company_subportal',
                                   'page_size': '',
                                   'settings': {'company_id': ret['portal_company_members'][0]['id']}}]}
-            ret['logo'] = portal.get_logo_client_side_dict()
         return ret
     else:
         json_portal = json['portal']
@@ -97,8 +96,8 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
             portal.divisions = divisions
             PortalConfig(portal=portal, page_size_for_divisions=page_size_for_config)
         if action == 'save':
-            portal.setup_created_portal(g.filter_json(json_portal, 'logo_file_id')).save()
-            portal_dict = portal.set_logo_client_side_dict(json['logo']).save().get_client_side_dict()
+            portal.setup_created_portal(json_portal).save()
+            portal_dict = portal.save().get_client_side_dict()
             return portal_dict
         else:
             return portal.validate(create_or_update == 'create')

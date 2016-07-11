@@ -2239,6 +2239,7 @@ var convert_python_format_to_tinymce_format = function (python_format) {
 };
 
 
+// #TODO: OZ by OZ: remove this function. urls should be formed at ss
 var noImageForImageName = function (image_name) {
     if (image_name === 'logo_file_id') {
         return '//static.profireader.com/static/images/company_no_logo.png';

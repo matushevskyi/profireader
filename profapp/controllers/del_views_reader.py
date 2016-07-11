@@ -83,7 +83,7 @@ def list_reader_load(json):
     search_text = request.args.get('search_text') or ''
     article_fields = 'title|id|subtitle|short|image_file_id|subtitle|publishing_tm|read_count,' \
                      'company.name|id,company.logo.url' \
-                     'division.name,portal.name|host|logo_file_id|id'
+                     'division.name,portal.name|host|id,portal.logo.url'
     favorite = request.args.get('favorite') == 'True'
     localtime = time.gmtime(time.time())
     filter = and_(Publication.portal_division_id == db(PortalDivision).filter(

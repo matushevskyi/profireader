@@ -365,22 +365,22 @@ class Publication(Base, PRBase, PRElasticDocument):
     def update_article_portal(publication_id, **kwargs):
         db(Publication, id=publication_id).update(kwargs)
 
-    # TODO: SS by OZ: contition `if datetime(*localtime[:6]) > article['publishing_tm']:` should be checked by sql (passed
-    # to search function)
-    @staticmethod
-    def get_list_reader_articles(articles):
-        list_articles = []
-        for article_id, article in articles.items():
-            article['tags'] = [tag.get_client_side_dict() for tag in article['tags']]
-            article['is_favorite'] = ReaderPublication.article_is_favorite(g.user.id, article_id)
-            article['liked'] = ReaderPublication.count_likes(g.user.id, article_id)
-            article['list_liked_reader'] = ReaderPublication.get_list_reader_liked(article_id)
-            article['company']['logo'] = Company.get(articles[article_id]['company']['id']).logo.url
-            article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-                articles[article_id]['portal']['logo_file_id'] else utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
-            # del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
-            list_articles.append(article)
-        return list_articles
+    # # TODO: SS by OZ: contition `if datetime(*localtime[:6]) > article['publishing_tm']:` should be checked by sql (passed
+    # # to search function)
+    # @staticmethod
+    # def get_list_reader_articles(articles):
+    #     list_articles = []
+    #     for article_id, article in articles.items():
+    #         article['tags'] = [tag.get_client_side_dict() for tag in article['tags']]
+    #         article['is_favorite'] = ReaderPublication.article_is_favorite(g.user.id, article_id)
+    #         article['liked'] = ReaderPublication.count_likes(g.user.id, article_id)
+    #         article['list_liked_reader'] = ReaderPublication.get_list_reader_liked(article_id)
+    #         article['company']['logo'] = Company.get(articles[article_id]['company']['id']).logo.url
+    #         article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
+    #             articles[article_id]['portal']['logo_file_id'] else utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
+    #         # del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
+    #         list_articles.append(article)
+    #     return list_articles
 
     # def clone_for_company(self, company_id):
     #     return self.detach().attr({'company_id': company_id,
