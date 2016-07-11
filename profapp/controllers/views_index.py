@@ -140,37 +140,6 @@ def list_reader_load(json):
         'favorite': favorite
     }
 
-    search_text = request.args.get('search_text') or ''
-    article_fields = 'title|id|subtitle|short|image_file_id|subtitle|publishing_tm|read_count,' \
-                     'company.name|id,company.logo.url' \
-                     'division.name,portal.name|host|logo_file_id|id'
-    favorite = request.args.get('favorite') == 'True'
-    localtime = time.gmtime(time.time())
-    filter = and_(Publication.portal_division_id == db(PortalDivision).filter(
-        PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id).subquery().c.id,
-                  Publication.status == Publication.STATUSES['PUBLISHED'],
-                  Publication.publishing_tm < datetime.datetime(*localtime[:6])) if not favorite \
-        else (Publication.id == db(ReaderPublication, user_id=g.user.id,
-                                   favorite=True).subquery().c.publication_id)
-    # fix here!
-
-    articles, pages, page = Search().search({'class': Publication,
-                                             'filter': filter,
-                                             'tags': True, 'return_fields': article_fields}, page=1,
-                                            items_per_page=5 * next_page,
-                                            search_text=search_text)
-
-    # TODO: OZ by YG:   fix here!
-    list_articles = Publication.get_list_reader_articles(articles)
-    return {
-        'end': True if pages == 1 or pages == 0 else False,
-        'articles': list_articles,
-        'pages': pages,
-        'current_page': page,
-        'page_buttons': Config.PAGINATION_BUTTONS,
-        # 'portals': portals,
-        'favorite': favorite
-    }
 
 
 # @index_bp.route('/list_reader')

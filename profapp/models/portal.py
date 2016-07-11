@@ -9,9 +9,9 @@ from ..constants.SEARCH import RELEVANCE
 from sqlalchemy import orm
 from config import Config
 import simplejson
-from .files import File, FileImg
+from .files import File, FileImg, FileImgDescriptor
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
-from ..utils import fileUrl
+from .. import utils
 from ..models.tag import Tag, TagMembership
 from profapp.controllers.errors import BadDataProvided
 import datetime
@@ -38,7 +38,21 @@ class Portal(Base, PRBase):
     # portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
     portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_layout.id'))
 
-    logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
+    # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
+
+    logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
+    logo_file_img = relationship(FileImg, uselist=False)
+    logo = FileImgDescriptor(relation_name='logo_file_img',
+                             file_decorator=lambda p, r, f: f.attr(
+                                 name='%s_for_portal_logo_%s' % (f.name, p.id),
+                                 parent_id=p.own_company.system_folder_file_id,
+                                 root_folder_id=p.own_company.system_folder_file_id),
+                             image_size=[480, 480],
+                             min_size=[100, 100],
+                             aspect_ratio=[0.25, 4.],
+                             no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
+
+
     favicon_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
     layout = relationship('PortalLayout')
@@ -86,14 +100,13 @@ class Portal(Base, PRBase):
 
     def __init__(self, name=None,
                  # portal_plan_id=None,
-                 logo_file_id=None,
                  company_owner=None,
                  favicon_file_id=None,
                  lang='uk',
                  host=None, divisions=[], portal_layout_id=None):
         self.name = name
         self.lang = lang
-        self.logo_file_id = logo_file_id
+
         self.favicon_file_id = favicon_file_id
 
         self.host = host
@@ -107,32 +120,8 @@ class Portal(Base, PRBase):
                                 plan=db(MemberCompanyPortalPlan).first())]
 
 
-    def logo_file_properties(self):
-        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
-        return {
-            'browse': self.id,
-            'upload': True,
-            'crop': True,
-            'image_size': [450, 450],
-            'min_size': [100, 100],
-            'aspect_ratio': [0.5, 2.0],
-            'preset_urls': {'glyphicon-remove-circle': nologo_url},
-            'no_selection_url': nologo_url
-        }
 
-    def get_logo_client_side_dict(self):
-        return self.get_image_cropped_file(self.logo_file_properties(),
-                                           db(FileImg, croped_image_id=self.logo_file_id).first())
-
-    def set_logo_client_side_dict(self, client_data):
-        if client_data['selected_by_user']['type'] == 'preset':
-            client_data['selected_by_user'] = {'type': 'none'}
-        self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-                                                        client_data, self.logo_file_id,
-                                                        self.own_company.system_folder_file_id)
-        return self
-
-    def setup_created_portal(self, logo_file_id=None):
+    def setup_created_portal(self, client_data):
         # TODO: OZ by OZ: move this to some event maybe
         """This method create portal in db. Before define this method you have to create
         instance of class with parameters: name, host, portal_layout_id, company_owner_id,
@@ -141,16 +130,18 @@ class Portal(Base, PRBase):
         for division in self.divisions:
             if division.portal_division_type_id == 'company_subportal':
                 PortalDivisionSettingsCompanySubportal(
-                    member_company_portal=division.settings.member_company_portal,
+                    member_company_portal=division.settings['member_company_portal'],
                     portal_division=division).save()
 
-        if logo_file_id:
-            originalfile = File.get(logo_file_id)
-            if originalfile:
-                self.logo_file_id = originalfile.copy_file(
-                    company_id=self.company_owner_id,
-                    parent_folder_id=self.own_company.system_folder_file_id,
-                    publication_id=None).save().id
+        self.logo = client_data['logo']
+
+        # if logo_file_id:
+        #     originalfile = File.get(logo_file_id)
+        #     if originalfile:
+        #         self.logo_file_id = originalfile.copy_file(
+        #             company_id=self.company_owner_id,
+        #             parent_folder_id=self.own_company.system_folder_file_id,
+        #             publication_id=None).save().id
         return self
 
     # def fallback_default_value(self, key=None, division_name=None):
@@ -249,11 +240,10 @@ class Portal(Base, PRBase):
             try:
                 host = socket.gethostbyname(self.host)
                 host_ip = str(host)
+                if not 'host' in ret['errors'] and 'host' in ret['warnings'] and not host_ip in ['136.243.204.62']:
+                    ret['warnings']['host'] = 'Wrong Ip-address'
             except Exception as e:
                 ret['warnings']['host'] = 'cannot resolve hostname. maybe unregistered'
-
-            if not 'host' in ret['errors'] and 'host' in ret['warnings'] and not host_ip in ['136.243.204.62']:
-                ret['warnings']['host'] = 'Wrong Ip-address'
 
         grouped = {'by_company_member': {}, 'by_division_type': {}}
 
@@ -270,7 +260,7 @@ class Portal(Base, PRBase):
                 grouped['by_division_type'][div.portal_division_type_id] = 1
 
             if div.portal_division_type_id == 'company_subportal':
-                member_company_id = div.settings.member_company_portal.company_id
+                member_company_id = div.settings['member_company_portal'].company_id
                 if member_company_id in grouped['by_company_member']:
                     grouped['by_company_member'][member_company_id] += 1
                 else:
@@ -293,8 +283,8 @@ class Portal(Base, PRBase):
 
         for inddiv, div in enumerate(self.divisions):
             if div.portal_division_type_id == 'company_subportal':
-                if div.settings.member_company_portal.company_id in grouped['by_company_member'] and grouped[
-                    'by_company_member'][div.settings.member_company_portal.company_id] > 1:
+                if div.settings['member_company_portal'].company_id in grouped['by_company_member'] and grouped[
+                    'by_company_member'][div.settings['member_company_portal'].company_id] > 1:
                     if not 'remove_division' in ret['warnings']:
                         ret['warnings']['remove_division'] = {}
                     ret['warnings']['remove_division'][inddiv] = 'you have more that one subportal for this company'
@@ -302,7 +292,7 @@ class Portal(Base, PRBase):
         return ret
 
     def get_client_side_dict(self,
-                             fields='id|name|host|tags, divisions.*, divisions.tags.*, layout.*, logo_file_id, '
+                             fields='id|name|host|tags, divisions.*, divisions.tags.*, layout.*, logo.url, '
                                     'favicon_file_id, '
                                     'company_owner_id, url_facebook',
                              more_fields=None):
@@ -681,7 +671,7 @@ class UserPortalReader(Base, PRBase):
 
         for upr in query:
             yield dict(id=upr.id, portal_id=upr.portal_id, status=upr.status, start_tm=upr.start_tm,
-                       portal_logo=File.get(upr.portal.logo_file_id).url() if upr.portal.logo_file_id else '',
+                       portal_logo=upr.portal.logo['url'],
                        end_tm=upr.end_tm if upr.end_tm > datetime.datetime.utcnow() else 'Expired at ' + upr.end_tm,
                        plan_id=upr.portal_plan_id,
                        plan_name=db(ReaderUserPortalPlan.name, id=upr.portal_plan_id).one()[0],

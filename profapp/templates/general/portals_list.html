@@ -83,7 +83,7 @@
 
         <div ng-repeat="portal in data.list_portals" class="row block-portal">
             <div class="col-lg-3 col-md-4 col-sm-4 col-xs-6">
-                <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
+                <img class="subscribe-portal-logo" pr-image-url="{{ portal.logo.url }}"/>
             </div>
             <div class="col-lg-7 col-md-6 col-sm-6 col-xs-6 portal-block-resp">
                 <h3><span pr-test="SearchResults-PortalsName" ng-bind-html="highlight(portal.name, search_text)"></span></h3>
