@@ -37,7 +37,7 @@ def portals_list_load(json):
         {'class': Portal,
          'filter':(~Portal.id.in_(db(UserPortalReader.portal_id).filter(UserPortalReader.user_id==g.user.id).all())) if g.user else None,
          'return_fields': 'default_dict'},
-          page=1, search_text=json.get('text'), pagination=True, items_per_page=5 * json.get('next_page'))
+          page=1, search_text=json.get('text'), pagination=True, items_per_page=5 * json.get('next_page', 1))
     return {'list_portals':[utils.dict_merge(p, {'subscribed': True if UserPortalReader.get(portal_id=p_id) else
     False})
             for p_id, p in ret.items()], 'end': True if page == 1 or page == 0 else False}
@@ -118,7 +118,7 @@ def list_reader_load(json):
     page = json.get('next_page') if json.get('next_page') else 1
 
     favorite = request.args.get('favorite') == 'True'
-    favorite = False
+    # favorite = False
     localtime = time.gmtime(time.time())
     per_page = 10
 
@@ -142,8 +142,8 @@ def list_reader_load(json):
 
 
 
-# @index_bp.route('/list_reader')
-# @index_bp.route('/list_reader/<int:page>/')
+# @index_bp.route('list_reader')
+# @index_bp.route('list_reader/<int:page>/')
 # @tos_required
 # def list_reader(page=1):
 #     search_text = request.args.get('search_text') or ''
@@ -184,14 +184,14 @@ def list_reader_load(json):
 #                            )
 
 
-@index_bp.route('/add_to_favorite/', methods=['OK'])
+@index_bp.route('add_to_favorite/', methods=['OK'])
 @check_right(UserNonBanned)
 def add_delete_favorite(json):
     return ReaderPublication.add_delete_favorite_user_article(json.get('article')['id'],
                                                               json.get('article')['is_favorite'])
 
 
-@index_bp.route('/add_to_like/', methods=['OK'])
+@index_bp.route('add_to_like/', methods=['OK'])
 @check_right(UserNonBanned)
 def add_delete_like(json):
     ReaderPublication.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
@@ -199,7 +199,7 @@ def add_delete_like(json):
             'list_liked_reader': ReaderPublication.get_list_reader_liked(json.get('article')['id'])}
 
 
-@index_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
+@index_bp.route('subscribe/<string:portal_id>/', methods=['GET'])
 @check_right(UserNonBanned)
 def reader_subscribe(portal_id):
     user_dict = g.user.get_client_side_dict()
@@ -225,7 +225,7 @@ def reader_subscribe(portal_id):
     return redirect(url_for('index.list_reader'))
 
 
-@index_bp.route('/subscribe/', methods=['OK'])
+@index_bp.route('subscribe/', methods=['OK'])
 @check_right(UserNonBanned)
 def reader_subscribe_registered(json):
     user_dict = g.user.get_client_side_dict()
@@ -253,13 +253,13 @@ def reader_subscribe_registered(json):
         return 'You already subscribed on this portal!'
 
 
-@index_bp.route('/profile/', methods=['GET'])
+@index_bp.route('profile/', methods=['GET'])
 @check_right(UserNonBanned)
 def reader_profile():
     return render_template('partials/reader/reader_profile.html')
 
 
-@index_bp.route('/profile/', methods=['OK'])
+@index_bp.route('profile/', methods=['OK'])
 @check_right(UserNonBanned)
 def reader_profile_load(json):
     pagination_params = list()
@@ -285,13 +285,13 @@ def reader_profile_load(json):
                              for key in grid_data}}
 
 
-@index_bp.route('/edit_portal_subscription/<string:reader_portal_id>')
+@index_bp.route('edit_portal_subscription/<string:reader_portal_id>')
 @check_right(UserNonBanned)
 def edit_portal_subscription(reader_portal_id):
     return render_template('partials/reader/edit_portal_subscription.html')
 
 
-@index_bp.route('/edit_portal_subscription/<string:reader_portal_id>', methods=['OK'])
+@index_bp.route('edit_portal_subscription/<string:reader_portal_id>', methods=['OK'])
 @check_right(UserNonBanned)
 def edit_portal_subscription_load(json, reader_portal_id):
     reader_portal = db(UserPortalReader, id=reader_portal_id).one()
@@ -310,7 +310,7 @@ def edit_portal_subscription_load(json, reader_portal_id):
     return reader_portal.validate()
 
 
-@index_bp.route('/edit_profile_/<string:reader_portal_id>', methods=['OK'])
+@index_bp.route('edit_profile_/<string:reader_portal_id>', methods=['OK'])
 @check_right(UserNonBanned)
 def edit_profile_submit(json, reader_portal_id):
     divisions_and_comments = db(UserPortalReader, id=reader_portal_id).one().show_divisions_and_comments
@@ -321,7 +321,7 @@ def edit_profile_submit(json, reader_portal_id):
     return json
 
 
-@index_bp.route('/buy_subscription')
+@index_bp.route('buy_subscription')
 @check_right(UserNonBanned)
 def buy_subscription():
     return render_template('partials/reader/buy_subscription.html')

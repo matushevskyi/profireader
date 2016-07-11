@@ -94,6 +94,10 @@
     width: 100%;
 }
 
+.h100 {
+    height: 100%;
+}
+
 .notitledialog .ui-dialog-titlebar {
     display: none
 }

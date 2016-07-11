@@ -23,12 +23,12 @@
                                 }
                             })
                         }
-                        if(resp === true){
+                        if (resp === true) {
                             add_message('You have successfully subscribed to this portal', 'info', 3000)
-                            $timeout(function(){
+                            $timeout(function () {
                                 window.location.href = '{{ url_for('index.list_reader') }}'
                             }, 1500)
-                        }else {
+                        } else {
                             add_message(resp, 'warning', 3000)
                         }
                     });
@@ -56,9 +56,12 @@
                 });
             };
 
+
             $scope.loadNextPage('', function (resp) {
                 $scope.data.list_portals = $scope.data.list_portals ? $scope.data.list_portals : [];
                 $scope.data.list_portals = $scope.data.list_portals.concat(resp['list_portals']);
+                $scope.scroll_data['next_page'] += 1;
+
             })
         });
 
@@ -70,7 +73,8 @@
             <h3 pr-test="SearchAndSubscribeTitle">{{ _('Please, search and subscribe to any portal') }}</h3>
         </div>
         <div class="row">
-            <input pr-test="SearchForPortals" placeholder="Search" class="form-control" ng-model="search_text" ng-change="search_for_portal()"
+            <input pr-test="SearchForPortals" placeholder="Search" class="form-control" ng-model="search_text"
+                   ng-change="search_for_portal()"
                    id="portal_search" type="text">
         </div>
         <div class=" row link-page">
@@ -86,14 +90,21 @@
                 <img class="subscribe-portal-logo" pr-image-url="{{ portal.logo.url }}"/>
             </div>
             <div class="col-lg-7 col-md-6 col-sm-6 col-xs-6 portal-block-resp">
-                <h3><span pr-test="SearchResults-PortalsName" ng-bind-html="highlight(portal.name, search_text)"></span></h3>
+                <h3><span pr-test="SearchResults-PortalsName" ng-bind-html="highlight(portal.name, search_text)"></span>
+                </h3>
                 <span class="address-portal" ng-bind-html="highlight(portal.host, search_text)"></span>
             </div>
             <div class="col-lg-2 col-md-2 col-sm-2 col-xs-6 portal-block-resp">
-                <button pr-test-portal-id="{{ portal.id }}" pr-test="SearchAndSubscribeBtn" ng-disabled="portal.subscribed" class="btn-search-portal" ng-click="subscribe(portal.id)">
+                <button pr-test-portal-id="{{ portal.id }}" pr-test="SearchAndSubscribeBtn"
+                        ng-disabled="portal.subscribed" class="btn-search-portal" ng-click="subscribe(portal.id)">
                     {{ _('Subscribe') }}
                 </button>
             </div>
+        </div>
+        <div class="row">
+            <h3 ng-if="loading" class="tac">{{ __('loading portals') }}</h3>
+            <h3 ng-if="data.end && !loading" class="tac">{{ __('No more portals to load') }}</h3>
+            <h3 ng-if="!data.list_portals && !loading" class="tac">{{ __('no portals found') }}</h3>
         </div>
 
     </div>

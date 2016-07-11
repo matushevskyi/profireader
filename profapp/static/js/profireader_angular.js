@@ -1739,41 +1739,34 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             });
         },
         loadNextPage: function (url, after_load) {
+            var lnpf = function (onscroll) {
+                var atend = onscroll ?
+                    ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) :
+                    (($(document).height() - $(window).height() === 0));
+                if (atend && !scope.loading && !scope.data.end) {
+                    scope.next_page += 1;
+                    scope.loading = true;
+                    load();
+                }
+            }
             var scope = this;
             scope.next_page = 1;
             $(window).scroll(function () {
-                if ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
-
-                    if (scope.loading === false && scope.data.end !== true) {
-
-                        scope.loading = true;
-                        scope.next_page += 1;
-                        if (scope.scroll_data) {
-                            scope.scroll_data.next_page = scope.next_page
-                        }
-                        load()
-                    }
+                if (scope.scroll_data) {
+                    scope.scroll_data.next_page = scope.next_page
                 }
+                lnpf(true);
             });
-            $timeout(function () {
-                if (scope.data.end === false && ($(document).height() - $(window).height() === 0)) {
-                    scope.next_page += 1;
-                    load()
-                }
-            }, 500);
+
+            $timeout(lnpf, 500);
             var load = function () {
                 $ok(url, scope.scroll_data ? scope.scroll_data : {next_page: scope.next_page}, function (resp) {
                     scope.data.end = resp.end;
                     after_load(resp);
-                    if (scope.data.end)
-                        scope.next_page = 1
+                    scope.loading = false;
                 }).finally(function () {
                     $timeout(function () {
-                        scope.loading = false;
-                        if ($(document).height() - $(window).height() === 0 && !scope.data.end) {
-                            scope.next_page += 1;
-                            load()
-                        }
+                        lnpf();
                     }, 1000)
                 });
             }

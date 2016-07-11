@@ -252,7 +252,7 @@ class Publication(Base, PRBase, PRElasticDocument):
 
     def create_article(self):
         return utils.dict_merge(
-            self.get_client_side_dict(more_fields='division.portal_division_type_id'),
+            self.get_client_side_dict(more_fields='division.portal_division_type_id,portal.logo.url'),
             Material.get(self.material_id).get_client_side_dict(
                 fields='long|short|title|subtitle|keywords|illustration'), remove={'material': True})
 
