@@ -197,38 +197,38 @@ def submit_publish(json, article_action):
                                                 submit=article_action == 'SUBMIT')
 
 
-@article_bp.route('/list_reader')
-@article_bp.route('/list_reader/<int:page>/')
-@check_right(UserIsActive)
-def list_reader(page=1):
-    search_text = request.args.get('search_text') or ''
-    favorite = 'favorite' in request.args
-    if not favorite:
-        articles, pages, page = Search().search({'class': Publication,
-                                                 'filter': and_(Publication.portal_division_id ==
-                                                                db(PortalDivision).filter(
-                                                                    PortalDivision.portal_id ==
-                                                                    db(UserPortalReader,
-                                                                       user_id=g.user.id).subquery().
-                                                                    c.portal_id).subquery().c.id,
-                                                                Publication.status ==
-                                                                Publication.STATUSES['PUBLISHED']),
-                                                 'tags': True, 'return_fields': 'default_dict'}, page=page)
-    else:
-        articles, pages, page = Search().search({'class': Publication,
-                                                 'filter': (Publication.id == db(ReaderPublication,
-                                                                                 user_id=g.user.id,
-                                                                                 favorite=True).subquery().c.
-                                                            article_portal_division_id),
-                                                 'tags': True, 'return_fields': 'default_dict'}, page=page,
-                                                search_text=search_text)
-    portals = UserPortalReader.get_portals_for_user() if not articles else None
-
-    return render_template('partials/reader/reader_base.html',
-                           articles=articles,
-                           pages=pages,
-                           current_page=page,
-                           page_buttons=Config.PAGINATION_BUTTONS,
-                           portals=portals,
-                           favorite=favorite
-                           )
+# @article_bp.route('/list_reader')
+# @article_bp.route('/list_reader/<int:page>/')
+# @check_right(UserIsActive)
+# def list_reader(page=1):
+#     search_text = request.args.get('search_text') or ''
+#     favorite = 'favorite' in request.args
+#     if not favorite:
+#         articles, pages, page = Search().search({'class': Publication,
+#                                                  'filter': and_(Publication.portal_division_id ==
+#                                                                 db(PortalDivision).filter(
+#                                                                     PortalDivision.portal_id ==
+#                                                                     db(UserPortalReader,
+#                                                                        user_id=g.user.id).subquery().
+#                                                                     c.portal_id).subquery().c.id,
+#                                                                 Publication.status ==
+#                                                                 Publication.STATUSES['PUBLISHED']),
+#                                                  'tags': True, 'return_fields': 'default_dict'}, page=page)
+#     else:
+#         articles, pages, page = Search().search({'class': Publication,
+#                                                  'filter': (Publication.id == db(ReaderPublication,
+#                                                                                  user_id=g.user.id,
+#                                                                                  favorite=True).subquery().c.
+#                                                             publication_id),
+#                                                  'tags': True, 'return_fields': 'default_dict'}, page=page,
+#                                                 search_text=search_text)
+#     portals = UserPortalReader.get_portals_for_user() if not articles else None
+#
+#     return render_template('partials/reader/reader_base.html',
+#                            articles=articles,
+#                            pages=pages,
+#                            current_page=page,
+#                            page_buttons=Config.PAGINATION_BUTTONS,
+#                            portals=portals,
+#                            favorite=favorite
+#                            )

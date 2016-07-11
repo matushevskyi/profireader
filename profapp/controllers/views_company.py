@@ -74,17 +74,17 @@ def materials_load(json, company_id):
             }
 
 
-# @company_bp.route('/<string:article_portal_division_id>/', methods=['OK'])
+# @company_bp.route('/<string:publication_id>/', methods=['OK'])
 # @login_required
 # @ok
-# @check_right(PublishUnpublishInPortal, 'article_portal_division_id', PublishUnpublishInPortal.ACTIONS['DELETE'])
-# def delete_atricle_from_portal(json, article_portal_division_id):
+# @check_right(PublishUnpublishInPortal, 'publication_id', PublishUnpublishInPortal.ACTIONS['DELETE'])
+# def delete_atricle_from_portal(json, publication_id):
 #     print('here')
 #     g.sql_connection.execute("DELETE FROM article_portal_division WHERE id='%s';"
-#                              % article_portal_division_id)
+#                              % publication_id)
 #     new_json = json.copy()
 #     for article in json:
-#         if json[article]['id'] == article_portal_division_id:
+#         if json[article]['id'] == publication_id:
 #             del new_json[article]
 #     return new_json
 

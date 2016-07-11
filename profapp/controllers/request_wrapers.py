@@ -41,7 +41,7 @@ def function_profiler(func):
                 import sys
                 print("Unexpected error:", sys.exc_info()[0])
                 return "Unexpected error:", sys.exc_info()[0]
-                # return redirect(url_for('general.index'))
+                # return redirect(url_for('index.index'))
             end = time.clock()
             profiler = db(Profiler, name=func.__name__, blueprint_name=func.__dict__['__endpoint__']).first()
             method = ','.join([method for method in func.__dict__['__method__']]) if func.__dict__['__method__'] else None
@@ -121,7 +121,7 @@ def tos_required(func):
     def decorated_view(*args, **kwargs):
         if not g.user or not g.user.tos:
             # flash('You have not accept licence and terms')
-            return redirect(url_for('general.index'))
+            return redirect(url_for('index.index'))
         return func(*args, **kwargs)
     return decorated_view
 

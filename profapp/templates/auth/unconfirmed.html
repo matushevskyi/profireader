@@ -12,7 +12,7 @@
       $scope.resend_confirmation = function() {
           return $ok('{{ url_for('auth.resend_confirmation') }}', {},function(resp){
               if(resp === true){
-                  url_for('general.index')
+                  url_for('index.index')
               }else{
                   add_message('Something wrong', 'warning', 3000)
               }

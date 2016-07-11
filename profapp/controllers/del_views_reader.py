@@ -15,17 +15,17 @@ import time
 from ..models.rights import UserIsActive, UserNonBanned
 
 
-@reader_bp.route('/details_reader/<string:article_portal_division_id>')
+@reader_bp.route('/details_reader/<string:publication_id>')
 @check_right(UserNonBanned)
-def details_reader(article_portal_division_id):
-    article = Publication.get(article_portal_division_id)
+def details_reader(publication_id):
+    article = Publication.get(publication_id)
     article.add_recently_read_articles_to_session()
     article_dict = article.get_client_side_dict(fields='id, title,short, cr_tm, md_tm, '
                                                        'publishing_tm, keywords, status, long, image_file_id,'
                                                        'division.name, division.portal.id,'
                                                        'company.name|id')
     article_dict['tags'] = article.tags
-    ReaderPublication.add_to_table_if_not_exists(article_portal_division_id)
+    ReaderPublication.add_to_table_if_not_exists(publication_id)
     favorite = article.check_favorite_status()
 
     return render_template('partials/reader/reader_details.html',
@@ -33,17 +33,18 @@ def details_reader(article_portal_division_id):
                            favorite=favorite
                            )
 
+
 @reader_bp.route('/list_reader_from_front/<string:portal_id>', methods=['GET'])
 def list_reader_from_front(portal_id):
     portal = Portal.get(portal_id)
     if g.user:
         portals = db(Portal).filter((Portal.id.in_(db(UserPortalReader.portal_id, user_id=g.user.id)))).all()
         if portal in portals:
-            return redirect(url_for('reader.list_reader'))
+            return redirect(url_for('index.list_reader'))
         else:
-            return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
+            return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
     else:
-        return redirect(url_for('general.auth_before_subscribe_to_portal', portal_id=portal_id))
+        return redirect(url_for('index.auth_before_subscribe_to_portal', portal_id=portal_id))
 
 
 @reader_bp.route('/list_reader', methods=['GET'])
@@ -55,7 +56,30 @@ def list_reader():
 @reader_bp.route('/list_reader', methods=['OK'])
 @check_right(UserNonBanned)
 def list_reader_load(json):
-    next_page = json.get('next_page') if json.get('next_page') else 1
+    page = json.get('next_page') if json.get('next_page') else 1
+
+    favorite = request.args.get('favorite') == 'True'
+    favorite = False
+    localtime = time.gmtime(time.time())
+    per_page = 10
+
+    filter = and_(Publication.portal_division_id == db(PortalDivision).filter(
+        PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id).subquery().c.id,
+                  Publication.status == Publication.STATUSES['PUBLISHED'],
+                  Publication.publishing_tm < datetime.datetime(*localtime[:6])) if not favorite \
+        else (Publication.id == db(ReaderPublication, user_id=g.user.id,
+                                   favorite=True).subquery().c.publication_id)
+
+    publications = g.db.query(Publication).filter(filter).limit(per_page + 1).offset((page - 1) * per_page).all()
+
+    articles = [p.create_article() for p in publications[0:per_page]]
+
+    return {
+        'next_page': page + 1 if len(publications) > per_page else -1,
+        'articles': articles,
+        'favorite': favorite
+    }
+
     search_text = request.args.get('search_text') or ''
     article_fields = 'title|id|subtitle|short|image_file_id|subtitle|publishing_tm|read_count,' \
                      'company.name|id,company.logo.url' \
@@ -63,17 +87,18 @@ def list_reader_load(json):
     favorite = request.args.get('favorite') == 'True'
     localtime = time.gmtime(time.time())
     filter = and_(Publication.portal_division_id == db(PortalDivision).filter(
-                      PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id).subquery().c.id,
-                      Publication.status == Publication.STATUSES['PUBLISHED'],
-                      Publication.publishing_tm < datetime.datetime(*localtime[:6])) if not favorite\
-            else (Publication.id == db(ReaderPublication, user_id=g.user.id,
-                                        favorite=True).subquery().c.article_portal_division_id)
+        PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id).subquery().c.id,
+                  Publication.status == Publication.STATUSES['PUBLISHED'],
+                  Publication.publishing_tm < datetime.datetime(*localtime[:6])) if not favorite \
+        else (Publication.id == db(ReaderPublication, user_id=g.user.id,
+                                   favorite=True).subquery().c.publication_id)
     # fix here!
+
     articles, pages, page = Search().search({'class': Publication,
                                              'filter': filter,
                                              'tags': True, 'return_fields': article_fields}, page=1,
-                                                items_per_page=5*next_page,
-                                                search_text=search_text)
+                                            items_per_page=5 * next_page,
+                                            search_text=search_text)
 
     # TODO: OZ by YG:   fix here!
     list_articles = Publication.get_list_reader_articles(articles)
@@ -86,6 +111,8 @@ def list_reader_load(json):
         # 'portals': portals,
         'favorite': favorite
     }
+
+
 # @reader_bp.route('/list_reader')
 # @reader_bp.route('/list_reader/<int:page>/')
 # @tos_required
@@ -110,7 +137,7 @@ def list_reader_load(json):
 #                                                  'filter': (Publication.id == db(ReaderPublication,
 #                                                                                            user_id=g.user.id,
 #                                                                                            favorite=True).subquery().c.
-#                                                             article_portal_division_id),
+#                                                             publication_id),
 #                                                  'tags': True, 'return_fields': article_fields}, page=page,
 #                                                 search_text=search_text)
 #     portals = UserPortalReader.get_portals_for_user() if not articles else None
@@ -131,14 +158,16 @@ def list_reader_load(json):
 @reader_bp.route('/add_to_favorite/', methods=['OK'])
 @check_right(UserNonBanned)
 def add_delete_favorite(json):
-    return ReaderPublication.add_delete_favorite_user_article(json.get('article')['id'], json.get('article')['is_favorite'])
+    return ReaderPublication.add_delete_favorite_user_article(json.get('article')['id'],
+                                                              json.get('article')['is_favorite'])
+
 
 @reader_bp.route('/add_to_like/', methods=['OK'])
 @check_right(UserNonBanned)
 def add_delete_like(json):
     ReaderPublication.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
-    return {'liked':ReaderPublication.count_likes(g.user.id, json.get('article')['id']),
-            'list_liked_reader':ReaderPublication.get_list_reader_liked(json.get('article')['id'])}
+    return {'liked': ReaderPublication.count_likes(g.user.id, json.get('article')['id']),
+            'list_liked_reader': ReaderPublication.get_list_reader_liked(json.get('article')['id'])}
 
 
 @reader_bp.route('/subscribe/<string:portal_id>/', methods=['GET'])
@@ -148,21 +177,21 @@ def reader_subscribe(portal_id):
     portal = Portal.get(portal_id)
     if not portal:
         raise BadDataProvided
-    user_portal_reader = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
-    if not user_portal_reader:
+    reader_portal = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
+    if not reader_portal:
         free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
                                ReaderUserPortalPlan.amount).filter_by(name='free').one()
         start_tm = datetime.datetime.utcnow()
         end_tm = datetime.datetime.fromtimestamp(start_tm.timestamp() + free_plan[1])
-        user_portal_reader = UserPortalReader(user_dict['id'], portal_id, status='active', portal_plan_id=free_plan[0],
-                                              start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
-                                              show_divisions_and_comments=[division_show for division_show in
-                                                                           [ReaderDivision(portal_division=division)
-                                                                            for division in portal.divisions]])
-        g.db.add(user_portal_reader)
+        reader_portal = UserPortalReader(user_dict['id'], portal_id, status='active', portal_plan_id=free_plan[0],
+                                         start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
+                                         show_divisions_and_comments=[division_show for division_show in
+                                                                      [ReaderDivision(portal_division=division)
+                                                                       for division in portal.divisions]])
+        g.db.add(reader_portal)
         g.db.commit()
         flash('You have successfully subscribed to this portal')
-    return redirect(url_for('reader.list_reader'))
+    return redirect(url_for('index.list_reader'))
 
 
 @reader_bp.route('/subscribe/', methods=['OK'])
@@ -174,27 +203,26 @@ def reader_subscribe_registered(json):
     if not portal:
         return 'Portal doesn`t exist!'
 
-    user_portal_reader = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
+    reader_portal = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
 
-    if not user_portal_reader:
+    if not reader_portal:
         free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
                                ReaderUserPortalPlan.amount).filter_by(name='free').one()
         start_tm = datetime.datetime.utcnow()
         end_tm = datetime.datetime.fromtimestamp(start_tm.timestamp() + free_plan[1])
-        user_portal_reader = UserPortalReader(user_dict['id'], portal_id, status='active', portal_plan_id=free_plan[0],
-                                              start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
-                                              show_divisions_and_comments=[division_show for division_show in
-                                                                           [ReaderDivision(portal_division=division)
-                                                                            for division in portal.divisions]])
-        g.db.add(user_portal_reader)
+        reader_portal = UserPortalReader(user_dict['id'], portal_id, status='active', portal_plan_id=free_plan[0],
+                                         start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
+                                         show_divisions_and_comments=[division_show for division_show in
+                                                                      [ReaderDivision(portal_division=division)
+                                                                       for division in portal.divisions]])
+        g.db.add(reader_portal)
         g.db.commit()
         return True
     else:
         return 'You already subscribed on this portal!'
 
 
-
-@reader_bp.route('/profile/',  methods=['GET'])
+@reader_bp.route('/profile/', methods=['GET'])
 @check_right(UserNonBanned)
 def reader_profile():
     return render_template('partials/reader/reader_profile.html')
@@ -215,9 +243,10 @@ def reader_profile_load(json):
                                                                             filter_params=and_(*filter_params))
     grid_data = []
     for field in portals_and_plans:
-        grid_data.append({'user_portal_reader_id': field['id'], 'portal_logo': field['portal_logo'],
+        grid_data.append({'reader_portal_id': field['id'], 'portal_logo': field['portal_logo'],
                           'portal_name': field['portal_name'], 'package_name': field['plan_name'] + ' - UPGRADE',
-                          'start_tm': field['start_tm'], 'end_tm': field['end_tm'], 'article_remains': field['amount'],'id':field['portal_id'],
+                          'start_tm': field['start_tm'], 'end_tm': field['end_tm'], 'article_remains': field['amount'],
+                          'id': field['portal_id'],
                           'portal_host': field['portal_host'], 'configure': 'configure'})
 
     return {'grid_data': grid_data,
@@ -234,20 +263,20 @@ def edit_portal_subscription(reader_portal_id):
 @reader_bp.route('/edit_portal_subscription/<string:reader_portal_id>', methods=['OK'])
 @check_right(UserNonBanned)
 def edit_portal_subscription_load(json, reader_portal_id):
-    user_portal_reader = db(UserPortalReader, id=reader_portal_id).one()
+    reader_portal = db(UserPortalReader, id=reader_portal_id).one()
     if request.args.get('action') == 'load':
-        if not user_portal_reader.show_divisions_and_comments:
-            user_portal_reader.show_divisions_and_comments = [division_show for division_show in
-                                                              [ReaderDivision(portal_division=division)
-                                                               for division in user_portal_reader.portal.divisions]]
+        if not reader_portal.show_divisions_and_comments:
+            reader_portal.show_divisions_and_comments = [division_show for division_show in
+                                                         [ReaderDivision(portal_division=division)
+                                                          for division in reader_portal.portal.divisions]]
         divisions = sorted(list(map(lambda div_and_com: {'name': div_and_com.portal_division.name,
                                                          'division_id': div_and_com.division_id,
                                                          'show_divisions_and_comments': list(
                                                              map(lambda args: (args[0], args[1]),
                                                                  div_and_com.show_divisions_and_comments))},
-                                    user_portal_reader.show_divisions_and_comments)), key=lambda items: items['name'])
+                                    reader_portal.show_divisions_and_comments)), key=lambda items: items['name'])
         return {'divisions': divisions, 'reader_portal_id': reader_portal_id}
-    return user_portal_reader.validate()
+    return reader_portal.validate()
 
 
 @reader_bp.route('/edit_profile_/<string:reader_portal_id>', methods=['OK'])

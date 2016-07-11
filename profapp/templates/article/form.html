@@ -70,7 +70,7 @@
             var tinyArticleOptions = {'height': '500px', 'body_class': 'article-content'}
 
 
-            {% if article_portal_division_id %}
+            {% if publication_id %}
                 var custom_formats = {{ tinymce_format_groups('birdy')|tojson }};
                 tinyArticleOptions['toolbar2'] = 'foreground | background | font | border | margin | padding';
             {% else %}

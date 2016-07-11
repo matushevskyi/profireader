@@ -30,9 +30,9 @@ module.controller('grid_reader_modal', function ($scope, $uibModalInstance, list
 
 module.controller('grid_reader', function ($scope, $uibModal, $ok, $sce, uiGridConstants, $timeout) {
         $scope.$$translate = {{ translates('grid_reader')|safe }};
-        $scope.url_search_translations = {{ raw_url_for('reader.reader_profile')|safe }}
-        $scope.reader_edit_profile = {{ raw_url_for('reader.edit_portal_subscription')|safe }};
-        $scope.subscribe_to = '{{ url_for('general.portals_list')|safe }}';
+        $scope.url_search_translations = {{ raw_url_for('index.reader_profile')|safe }}
+        $scope.reader_edit_profile = {{ raw_url_for('index.edit_portal_subscription')|safe }};
+        $scope.subscribe_to = '{{ url_for('index.portals_list')|safe }}';
         {% raw %}
 
         $scope.portal_lists = function(){
@@ -78,7 +78,7 @@ module.controller('grid_reader', function ($scope, $uibModal, $ok, $sce, uiGridC
                             {
                                 name: 'article_remains'
                             },
-                            {name: 'configure', type: 'link', href: 'reader_edit_profile({reader_portal_id:row.entity.user_portal_reader_id})'}
+                            {name: 'configure', type: 'link', href: 'reader_edit_profile({reader_portal_id:row.entity.reader_portal_id})'}
                         ]
                     });
         {% endraw %}

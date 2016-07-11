@@ -7,14 +7,14 @@
             </div>
         </div>
         <div class="row block-resp">
-            <a href="{{ url_for('general.help') }}">
+            <a href="{{ url_for('index.help') }}">
             <div pr-test="CreatePortal" class="col-lg-6 col-md-6 col-sm-6 col-xs-12 index-links">
                 <span><i class="fa fa-pencil fa-3x"></i></span>
                 {{ __('index left text to publishers') }}
             </div>
             </a>
 
-            <a href="{{ url_for('general.portals_list') }}">
+            <a href="{{ url_for('index.portals_list') }}">
                 <div pr-test="PortalList" class="col-lg-6 col-md-6 col-sm-6 col-xs-12 pull-right index-links">
                     <span><i class="fa fa-book fa-3x"></i></span>
                     {{ __('index right text to readers') }}
@@ -34,7 +34,7 @@
         </div>
     </div>
 </div>
-<!--<a href="{{ url_for('general.send_email_create_portal') }}">{{ _('Index page. Block for company') }}</a>
-                    <a href="{{ url_for('general.portals_list') }}">{{ _('Index page. Block for reader') }}</a>
+<!--<a href="{{ url_for('index.send_email_create_portal') }}">{{ _('Index page. Block for company') }}</a>
+                    <a href="{{ url_for('index.portals_list') }}">{{ _('Index page. Block for reader') }}</a>
 
 -->

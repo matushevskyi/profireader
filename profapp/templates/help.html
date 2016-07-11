@@ -22,7 +22,7 @@
           $scope.disableButton()
           return $ok($scope.help_message, {data:data}, function(help_message){
               if (help_message === true) {
-                    window.location.href = '{{ url_for('reader.list_reader') }}';
+                    window.location.href = '{{ url_for('index.list_reader') }}';
                     add_message('Your message has been sent', 'warning')
                 } else {
                     $scope.isDisabled = false;

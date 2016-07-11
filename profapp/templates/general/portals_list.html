@@ -15,7 +15,7 @@
             $scope.scroll_data = {};
             $scope.subscribe = function (portal_id) {
                 {% if g.user.id %}
-                    $ok('{{ url_for('reader.reader_subscribe_registered')|safe }}', {portal_id: portal_id}, function (resp) {
+                    $ok('{{ url_for('index.reader_subscribe_registered')|safe }}', {portal_id: portal_id}, function (resp) {
                         if (resp) {
                             _.map($scope.data, function (portal) {
                                 if (portal['id'] === portal_id) {
@@ -26,14 +26,14 @@
                         if(resp === true){
                             add_message('You have successfully subscribed to this portal', 'info', 3000)
                             $timeout(function(){
-                                window.location.href = '{{ url_for('reader.list_reader') }}'
+                                window.location.href = '{{ url_for('index.list_reader') }}'
                             }, 1500)
                         }else {
                             add_message(resp, 'warning', 3000)
                         }
                     });
                 {% else %}
-                    window.location.href = {{ raw_url_for('general.auth_before_subscribe_to_portal')|safe }}({portal_id: portal_id});
+                    window.location.href = {{ raw_url_for('index.auth_before_subscribe_to_portal')|safe }}({portal_id: portal_id});
                 {% endif %}
             };
 
@@ -56,7 +56,10 @@
                 });
             };
 
-            $scope.loadNextPage('')
+            $scope.loadNextPage('', function (resp) {
+                $scope.data.list_portals = $scope.data.list_portals ? $scope.data.list_portals : [];
+                $scope.data.list_portals = $scope.data.list_portals.concat(resp['list_portals']);
+            })
         });
 
     </script>
@@ -93,27 +96,6 @@
             </div>
         </div>
 
-
-        <!--
-                <table>
-                    <tr ng-repeat="portal in data.list_portals">
-
-                        <td class="p4px">
-                            <img class="subscribe-portal-logo" pr-image="portal.logo_file_id"/>
-                        </td>
-                        <td class="p4px">
-                            <span ng-bind-html="highlight(portal.name, search_text)"></span><br/>
-                            <span ng-bind-html="highlight(portal.host, search_text)"></span>
-                        </td>
-                        <td class="p4px">
-                            <button ng-disabled="portal.subscribed" class="btn" ng-click="subscribe(portal.id)">{{
-                                _('Subscribe') }}
-                            </button>
-                        </td>
-
-                    </tr>
-
-                </table>-->
     </div>
     {% endraw %}
 {% endblock portal_content %}

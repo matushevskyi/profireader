@@ -9,8 +9,8 @@
             $scope.$$translate = {{ translates('list_reader')|safe }};
             $scope.favorite = {{ favorite }}
                     $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
-            $scope.add_delete_favorite = '{{ url_for('reader.add_delete_favorite') }}'
-            $scope.add_delete_like = '{{ url_for('reader.add_delete_like') }}'
+            $scope.add_delete_favorite = '{{ url_for('index.add_delete_favorite') }}'
+            $scope.add_delete_like = '{{ url_for('index.add_delete_like') }}'
             $scope.add_to_favorite = function (article) {
                 article.is_favorite = article['is_favorite'] ? False : True
                 $ok($scope.add_delete_favorite, {'article': article}, function (resp) {
@@ -18,7 +18,10 @@
                 })
             };
 
-            $scope.loadNextPage('');
+            $scope.loadNextPage('', function (resp) {
+                $scope.data.articles = $scope.data.articles ? $scope.data.articles : [];
+                $scope.data.articles = $scope.data.articles.concat(resp['articles']);
+            });
 
             $scope.like = function (article) {
                 $ok($scope.add_delete_like, {'article': article}, function (resp) {
@@ -58,8 +61,8 @@
                             <a pr-test="ArticlePortal" target="_blank"
                                href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
                                class="item-company">{{ article.company.name}}</a>-><a pr-test="ArticleDivision"
-                                                                                     target="_blank"
-                                                                                     href="//{{ article.portal.host }}/{{ article.division.name}}/">{{
+                                                                                      target="_blank"
+                                                                                      href="//{{ article.portal.host }}/{{ article.division.name}}/">{{
                             article.division.name}}</a>
                             <div style=""
                                  class="item-publication-date">{{ get_local_time(article.publishing_tm) }}
@@ -69,7 +72,7 @@
                         </div>
                     </div>
                     <a target="_blank" type="link" href="//{{ article.portal.host}}/details/{{ article.id }}">
-                        <img class="list-reader-image" style="background-size: cover;" pr-image="article.image_file_id"
+                        <img class="list-reader-image" style="background-size: cover;" pr-image-url="{{ article.illustration.url }}"
                              alt="img">
                     </a>
                     <h3 class="item-title">
@@ -109,6 +112,8 @@
                              class="block-item-img bg-contain"/>
                     </div>
                 </div>
+                <h3 ng-if="loading" style="text-align: center">{{ __('loading articles') }}</h3>
+                <h3 ng-if="data.end && !loading" style="text-align: center">{{ __('No more articles to load') }}</h3>
                 <h3 ng-if="!data.articles && !loading" style="text-align: center">{{ __('Your portals does"t have
                     articles')
                     }}</h3>

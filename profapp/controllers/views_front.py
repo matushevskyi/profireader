@@ -75,12 +75,7 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
 
 
 def publication_id_to_article(p_id):
-    p = Publication.get(p_id)
-    return utils.dict_merge(
-        p.get_client_side_dict(more_fields='division.portal_division_type_id'),
-        Material.get(p.material_id).get_client_side_dict(fields='long|short|title|subtitle|keywords|illustration')
-    )
-
+    return Publication.get(p_id).create_article()
 
 def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, company_publisher=None):
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
@@ -275,18 +270,18 @@ def article_details(portal, publication_id, publication_title):
                            )
 
 
-@front_bp.route('_/add_delete_favorite/<string:article_portal_division_id>/', methods=['OK'])
+@front_bp.route('_/add_delete_favorite/<string:publication_id>/', methods=['OK'])
 @check_right(AllowAll)
-def add_delete_favorite(json, article_portal_division_id):
-    ReaderPublication.add_delete_favorite_user_article(article_portal_division_id, json['on'])
+def add_delete_favorite(json, publication_id):
+    ReaderPublication.add_delete_favorite_user_article(publication_id, json['on'])
     return {'on': False if json['on'] else True}
 
 
-@front_bp.route('_/add_delete_liked/<string:article_portal_division_id>/', methods=['OK'])
+@front_bp.route('_/add_delete_liked/<string:publication_id>/', methods=['OK'])
 @check_right(AllowAll)
-def add_delete_liked(json, article_portal_division_id):
-    article = Publication.get(article_portal_division_id)
-    ReaderPublication.add_delete_liked_user_article(article_portal_division_id, json['on'])
+def add_delete_liked(json, publication_id):
+    article = Publication.get(publication_id)
+    ReaderPublication.add_delete_liked_user_article(publication_id, json['on'])
     return {'on': False if json['on'] else True, 'liked_count': article.check_liked_count()}
 
 

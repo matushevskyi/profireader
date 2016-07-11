@@ -80,7 +80,7 @@ def login_signup_general(*soc_network_names):
                     flash('Sorry, you cannot login into the Profireader. Contact the profireader'
                           'administrator, please: ' + current_app.config['PROFIREADER_MAIL_SENDER'])
 
-                    return redirect(url_for('general.index'))
+                    return redirect(url_for('index.index'))
 
 
 
@@ -91,13 +91,13 @@ def login_signup_general(*soc_network_names):
                     flash("You were successfully logged in")
                     if portal_id:
                         session.pop('portal_id')
-                        return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
+                        return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
                     elif back_to:
                         session.pop('back_to')
                         return redirect(back_to)
-                    # return redirect(request.args.get('next') or url_for('general.index'))
+                    # return redirect(request.args.get('next') or url_for('index.index'))
                     return redirect(redirect_url())
-                # return redirect(url_for('general.index'))  # #  http://profireader.com/
+                # return redirect(url_for('index.index'))  # #  http://profireader.com/
                 # url = redirect_url()
                 # print(url)
                 if registred_via_soc:
@@ -126,7 +126,7 @@ def before_request():
 def login_signup_endpoint():
     if current_user.is_authenticated():
         if session.get('portal_id'):
-            return redirect(url_for('reader.reader_subscribe', portal_id=session['portal_id']))
+            return redirect(url_for('index.reader_subscribe', portal_id=session['portal_id']))
         elif session.get('back_to'):
             return redirect(session['back_to'])
 
@@ -225,9 +225,9 @@ def login():
     if current_user.is_authenticated():
         if portal_id:
             session.pop('portal_id')
-            return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
+            return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
         flash('You are already logged in. If you want to login with another account logout first please')
-        return redirect(url_for('general.index'))
+        return redirect(url_for('index.index'))
     email = request.form.get('email')
     password = request.form.get('password')
 
@@ -238,18 +238,18 @@ def login():
 
         if user and user.is_banned():
             flash('You can not be logged in. Please contact the Profireader administration.')
-            return redirect(url_for('general.index'))
+            return redirect(url_for('index.index'))
         if user and user.verify_password(password):
 
             login_user(user)
             flash("You were successfully logged in")
             if portal_id:
                 session.pop('portal_id')
-                return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
+                return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
             elif back_to:
                 session.pop('back_to')
                 return redirect(back_to)
-            # return redirect(request.args.get('next') or url_for('general.index'))
+            # return redirect(request.args.get('next') or url_for('index.index'))
             return redirect(redirect_url())
         flash('Invalid username or password.')
         redirect_url_str = url_for('auth.login_signup_endpoint') + '?login_signup=login'
@@ -265,13 +265,13 @@ def login():
 def logout():
     logout_user()
     # flash('You have been logged out.')
-    return redirect(url_for('general.index'))
+    return redirect(url_for('index.index'))
 
 @auth_bp.route('/unconfirmed', methods=['GET'])
 @check_right(AllowAll)
 def unconfirmed():
     if current_user.confirmed:
-        return redirect(url_for('general.index'))
+        return redirect(url_for('index.index'))
     return render_template('auth/unconfirmed.html')
 
 @auth_bp.route('/resend_confirmation/', methods=["POST"])
@@ -302,7 +302,7 @@ def confirm(token):
         user.save()
         login_user(user)
         if portal_id:
-            return redirect(url_for('reader.reader_subscribe', portal_id=portal_id))
+            return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
         return render_template("auth/confirm_email.html")
 
 
@@ -327,7 +327,7 @@ def help_message(json):
                                html=('From '+json['data']['email']+': '+json['data']['message']))
 
         flash('Your message has been sent! ')
-        redirect(url_for('reader.list_reader'))
+        redirect(url_for('index.list_reader'))
         return True
 
 # @auth_bp.route('/change-password', methods=['GET', 'OK'])
@@ -340,7 +340,7 @@ def help_message(json):
 #             g.db.add(current_user)
 #             g.db.commit()
 #             flash('Your password has been updated.')
-#             return redirect(url_for('general.index'))
+#             return redirect(url_for('index.index'))
 #         else:
 #             flash('Invalid password.')
 #     return render_template("auth/bak_change_password.html", form=form)
@@ -357,7 +357,7 @@ def password_resets():
 def password_reset_request(json):
     if not current_user.is_anonymous():
         flash('To reset your password logout first please.')
-        redirect(url_for('reader.list_reader'))
+        redirect(url_for('index.list_reader'))
         return False
 
     user = db(User, profireader_email=json.get('email')).first()
@@ -420,7 +420,7 @@ def password_reset_change(json, token):
 #             SendEmail().send_email(subject='Confirm your email address', template='auth/email/change_email',
 #                                    send_to=(new_email, ), user=current_user, token=token)
 #             flash('An email with instructions to confirm your new email address has been sent to you.')
-#             return redirect(url_for('general.index'))
+#             return redirect(url_for('index.index'))
 #         else:
 #             flash('Invalid email or password.')
 #     return render_template("auth/change_email.html", form=form)
@@ -435,4 +435,4 @@ def password_reset_change(json, token):
 #         g.db.commit()
 #     else:
 #         flash('Invalid request.')
-#     return redirect(url_for('general.index'))
+#     return redirect(url_for('index.index'))

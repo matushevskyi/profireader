@@ -14,12 +14,12 @@
             var text = $('#send_message_text').val();
             var subject = {{_('Some one would like to create portal')|tojson}}
                     $.ajax({
-                        url: '{{ url_for('general.send_email') }}',
+                        url: '{{ url_for('index.send_email') }}',
                         type: 'post',
                         data: {'subject': subject, 'text': text},
                         success: function (e) {
                             add_message('message was sent');
-                            window.location.href = '{{ url_for('general.index') }}';
+                            window.location.href = '{{ url_for('index.index') }}';
                         }
                     })
         };
