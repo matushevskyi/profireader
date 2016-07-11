@@ -43,17 +43,17 @@
         };
 
 
-        $scope.url_list_reader = {{ raw_url_for('reader.list_reader')|safe }}
+        $scope.url_list_reader = {{ raw_url_for('index.list_reader')|safe }}
                 $scope.url_general = function(){
                     if ($scope.user){
-                        return'{{ url_for('reader.list_reader')|safe }}'
+                        return'{{ url_for('index.list_reader')|safe }}'
                     }
                     else {
-                   return '{{ url_for('general.index')|safe }}'}
+                   return '{{ url_for('index.index')|safe }}'}
                 };
 
         $scope.url_company_companies = {{ raw_url_for('company.companies')|safe }}
-        $scope.url_general_help = {{ raw_url_for('general.help')|safe }}
+        $scope.url_general_help = {{ raw_url_for('index.help')|safe }}
         $scope.url_tutorial = {{ raw_url_for('tutorial.tutorial')|safe }}
         $scope.url_auth_logout = {{ raw_url_for('auth.logout')|safe }}
         $scope.url_user_profile = {{ raw_url_for('user.profile')|safe }}

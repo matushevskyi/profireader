@@ -39,7 +39,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="{{ url_for('general.index') }}"><img
+                <a class="navbar-brand" href="{{ url_for('index.index') }}"><img
                         src="//static.profireader.com/static/front/img/profi.png"/></a>
             </div>
 
@@ -87,7 +87,7 @@
 
                 </ul>
                 <ul class="top-menu">
-                    <li><a class="read_btn" href="{{ url_for('reader.list_reader') }}" title="{{ _('Read my feed') }}"><span
+                    <li><a class="read_btn" href="{{ url_for('index.list_reader') }}" title="{{ _('Read my feed') }}"><span
                             class="tooltip">{{ _('Read my feed') }}</span></a></li>
                     <li><a class="messages_btn" href="#" title="{{ _('All Messages') }}"><span
                             class="tooltip">{{ _('All Messages') }}</span></a></li>
@@ -98,7 +98,7 @@
                     <li><a class="filemanager_btn" href="#" ng-click="open_filemanager()"
                            title="{{ _('File manager') }}"><span
                             class="tooltip">{{ _('File manager') }}</span></a></li>
-                    <li><a class="help_btn" href="{{ url_for('general.help') }}" title="{{ _('Read help') }}"><span
+                    <li><a class="help_btn" href="{{ url_for('index.help') }}" title="{{ _('Read help') }}"><span
                             class="tooltip">{{ _('Read help') }}</span></a></li>
 
                 </ul>

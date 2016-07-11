@@ -150,7 +150,7 @@ class Portal(Base, PRBase):
                 self.logo_file_id = originalfile.copy_file(
                     company_id=self.company_owner_id,
                     parent_folder_id=self.own_company.system_folder_file_id,
-                    article_portal_division_id=None).save().id
+                    publication_id=None).save().id
         return self
 
     # def fallback_default_value(self, key=None, division_name=None):
@@ -632,7 +632,7 @@ class PortalConfig(Base, PRBase):
 
 
 class UserPortalReader(Base, PRBase):
-    __tablename__ = 'user_portal_reader'
+    __tablename__ = 'reader_portal'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
@@ -644,7 +644,7 @@ class UserPortalReader(Base, PRBase):
     amount = Column(TABLE_TYPES['int'], default=99999)
     portal = relationship('Portal', uselist=False)
     user = relationship('User')
-    show_divisions_and_comments = relationship('ReaderDivision', back_populates='user_portal_reader')
+    show_divisions_and_comments = relationship('ReaderDivision', back_populates='reader_portal')
 
     def __init__(self, user_id=None, portal_id=None, status='active', portal_plan_id=None, start_tm=None,
                  end_tm=None, amount=None, show_divisions_and_comments=None):
@@ -709,20 +709,20 @@ class UserPortalReader(Base, PRBase):
 class ReaderDivision(Base, PRBase):
     __tablename__ = 'reader_division'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False, unique=True)
-    user_portal_reader_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user_portal_reader.id'))
+    reader_portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('reader_portal.id'))
     division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
     _show_division_and_comments = Column(TABLE_TYPES['int'])
-    user_portal_reader = relationship('UserPortalReader', back_populates='show_divisions_and_comments')
+    reader_portal = relationship('UserPortalReader', back_populates='show_divisions_and_comments')
     portal_division = relationship('PortalDivision', uselist=False)
     show_division_and_comments_numeric = {name: 2 ** index for index, name in
                                           enumerate(['show_articles', 'show_comments', 'show_favorite_comments',
                                                      'show_liked_comments'])}
     show_division_and_comments_numeric_all = reduce(lambda x, y: x + y, show_division_and_comments_numeric.values())
 
-    def __init__(self, user_portal_reader=None, portal_division=None):
+    def __init__(self, reader_portal=None, portal_division=None):
         super(ReaderDivision, self).__init__()
         self._show_division_and_comments = self.show_division_and_comments_numeric_all
-        self.user_portal_reader = user_portal_reader
+        self.reader_portal = reader_portal
         self.portal_division = portal_division
 
     @property

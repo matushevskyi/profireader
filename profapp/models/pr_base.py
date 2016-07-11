@@ -95,6 +95,7 @@ class Search(Base):
     ORDER_POSITION = 2
     ORDER_MD_TM = 3
 
+    # TODO: OZ by OZ: remove this function after replacement
     def search(self, *args: dict, **kwargs):
         """ *args: dictionary with following values -
                              -class = sqlalchemy table class object,
@@ -622,7 +623,7 @@ class PRBase:
 
         del_req_columns_in_attrs = []
         for colname in req_columns:
-            if hasattr(self, colname):
+            if hasattr(self, colname) and colname not in relations:
                 del_req_columns_in_attrs.append(colname)
                 ret[colname] = getattr(self, colname)
         for colname in del_req_columns_in_attrs:

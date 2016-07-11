@@ -1738,7 +1738,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 }
             });
         },
-        loadNextPage: function (url) {
+        loadNextPage: function (url, after_load) {
             var scope = this;
             scope.next_page = 1;
             $(window).scroll(function () {
@@ -1763,7 +1763,8 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             }, 500);
             var load = function () {
                 $ok(url, scope.scroll_data ? scope.scroll_data : {next_page: scope.next_page}, function (resp) {
-                    scope.data = resp;
+                    scope.data.end = resp.end;
+                    after_load(resp);
                     if (scope.data.end)
                         scope.next_page = 1
                 }).finally(function () {
@@ -2246,5 +2247,4 @@ var noImageForImageName = function (image_name) {
         return '//static.profireader.com/static/images/no_image.png';
     }
 }
-
 

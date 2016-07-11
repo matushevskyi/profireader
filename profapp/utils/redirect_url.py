@@ -8,12 +8,12 @@ import copy
 
 # def redirect_url(default=None):
 #     if not default:
-#         default = url_for('general.index')
+#         default = url_for('index.index')
 #     return request.args.get('next') or request.referrer or default
 
 
 def redirect_url(*args):
-    urls = [request.args.get('next'), url_for('general.index'), request.referrer]
+    urls = [request.args.get('next'), url_for('index.index'), request.referrer]
     res_urls = []
 
     for elem in args:
