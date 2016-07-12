@@ -10,8 +10,8 @@ from profapp.controllers.errors import csrf
 from .constants.SOCIAL_NETWORKS import INFO_ITEMS_NONE, SOC_NET_FIELDS
 from .constants.USER_REGISTERED import REGISTERED_WITH
 from .models.users import User
-from config import Config as Configure
-from .models.config import Config
+from config import Config
+from .models.config import Config as ModelConfig
 from profapp.controllers.errors import BadDataProvided
 import os.path
 from profapp import utils
@@ -86,7 +86,7 @@ def load_user(apptype):
 
     lang = session['language'] if 'language' in session else 'uk'
     g.lang = g.user.lang if g.user else lang
-    g.languages = Configure.LANGUAGES
+    g.languages = Config.LANGUAGES
 
     g.portal = None
     g.portal_id = None
@@ -95,7 +95,7 @@ def load_user(apptype):
     g.debug = current_app.debug
     g.testing = current_app.testing
 
-    for variable in g.db.query(Config).filter_by(server_side=1).all():
+    for variable in g.db.query(ModelConfig).filter_by(server_side=1).all():
         var_id = variable.id
         if variable.type == 'int':
             current_app.config[var_id] = int(variable.value)
@@ -117,6 +117,10 @@ login_manager.login_view = 'auth.login_signup_endpoint'
 
 class AnonymousUser(AnonymousUserMixin):
     id = 0
+
+    avatar = {
+        'url': ''
+    }
 
     @staticmethod
     def check_rights(permissions):
@@ -145,7 +149,7 @@ class AnonymousUser(AnonymousUserMixin):
     def gravatar(self, size=100, default='identicon', rating='g'):
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
             url='https://secure.gravatar.com/avatar' if request.is_secure else 'http://www.gravatar.com/avatar',
-            hash=hashlib.md5(getattr(self, 'profireader_email', 'guest@profireader.com').encode('utf-8')).hexdigest(),
+            hash=hashlib.md5(getattr(self, 'profireader_email', 'guest@' + Config.MAIN_DOMAIN).encode('utf-8')).hexdigest(),
             size=size, default=default, rating=rating)
 
     def __repr__(self):
@@ -238,3 +242,4 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.session_interface = BeakerSessionInterface()
 
     return app
+

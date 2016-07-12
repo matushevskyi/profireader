@@ -66,7 +66,7 @@
     <div ng-controller="article_list">
         <h1 class="nice-title">{{ _('Article list') }}<span></span></h1>
         <h1 class="nice-title" style="margin-left: 125px">{{ _('Create article') }}<span></span></h1>
-        <a class="h1-btn icon icon-add" href="{{ url_create_article }}" title="{{ _('CREATE NEW ARTICLE') }}"><img src="//static.profireader.com/static/front/img/ico/articles.png" /></a>
+        <a class="h1-btn icon icon-add" href="{{ url_create_article }}" title="{{ _('CREATE NEW ARTICLE') }}"><img ng-src="{{ static_address('front/img/ico/articles.png') }}" /></a>
         <div ng-if="!load_contr">{{ _('Loading...') }}</div>
         <div id="grid1" ui-grid-edit ui-grid-grouping ui-grid-pagination ui-grid="gridOptions1"></div>
     </div>

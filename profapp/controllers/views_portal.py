@@ -80,7 +80,7 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
                     if type(a.get('page_size')) is int and a.get('page_size') != 0 \
                     else Config.ITEMS_PER_PAGE
             # print(json)
-            json_portal['host'] = (json_portal['host_profi'] + '.profireader.com') \
+            json_portal['host'] = (json_portal['host_profi'] + '.' + Config.MAIN_DOMAIN) \
                 if json_portal['host_profi_or_own'] == 'profi' else json_portal['host_own']
 
             portal = Portal(company_owner=company, **g.filter_json(json_portal, 'name', 'portal_layout_id', 'host'))

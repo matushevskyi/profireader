@@ -1,10 +1,9 @@
 {% extends 'layout_company_page.html' %}
 
 {% block company_content %}
-{% for employment in member_company.employments if employment['status'] == 'ACTIVE' %}
+    {% for employment in member_company.employments if employment['status'] == 'ACTIVE' %}
         <div class="person-item" id="company_employees">
-            <img width="50" height="50" class="round-avatar"
-                 style="background-image: url({{ employment.user['profireader_small_avatar_url'] }})"/>
+            <img width="50" height="50" class="round-avatar" {{ prImageUrl(employment.user['avatar']['url']) }} />
             <b>{{ employment.user['profireader_name'] }}</b><br/>
             {% if employment['position'] %}
                 <div class="role">{{ employment['position'] }}&nbsp;</div>{% endif %}

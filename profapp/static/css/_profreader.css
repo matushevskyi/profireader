@@ -367,19 +367,19 @@
 }
 
 .login-by-google {
-    background-image: url("//static.profireader.com/static/images/social/g.png");
+    background-image: url("../images/social/g.png");
 }
 
 .login-by-facebook {
-    background-image: url("//static.profireader.com/static/images/social/f.png");
+    background-image: url("../images/social/f.png");
 }
 
 .login-by-linkedin {
-    background-image: url("//static.profireader.com/static/images/social/l.png");
+    background-image: url("../images/social/l.png");
 }
 
 .login-by-microsoft {
-    background-image: url("//static.profireader.com/static/images/social/m.png");
+    background-image: url("../images/social/m.png");
 }
 
 .by-socials-block {

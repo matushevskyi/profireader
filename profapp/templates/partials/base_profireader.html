@@ -39,8 +39,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="{{ url_for('index.index') }}"><img
-                        src="//static.profireader.com/static/front/img/profi.png"/></a>
+                <a class="navbar-brand" href="{{ url_for('index.index') }}"><img ng-src="{{ static_address('front/img/profi.png')|safe }}"/></a>
             </div>
 
             <!-- Collect the nav links, forms, and other content for toggling -->
@@ -64,7 +63,7 @@
                                 <a href="#" data-toggle="dropdown">
                                     {#                        <img src="{{ current_user.profireader_small_avatar_url }}" style="width:18px;border:0">#}
                                     {#TODO: AA by OZ: in next line http://bla-bla/None (404 error) if no user loged in #}
-                                    <img class="person-small-cover" src="{{ current_user.profireader_small_avatar_url }}">
+                                    <img class="person-small-cover" {{ prImageUrl(user.avatar.url) }} />
                                     {{ '{{' }} user.profireader_name {{ '}}' }}
                                     <b class="caret"></b>
                                 </a>

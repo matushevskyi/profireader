@@ -34,7 +34,7 @@
         <img pr-image-url="{{ employer.logo.url }}"/>
         {{ _('status') }} {{ member.status }}<br>
         <div ng-class="{disabled: !permitted}" ng-repeat="(right_name, permitted) in member.rights">
-            <img src="//static.profireader.com/static/images/0.gif"
+            <img ng-src="{{ static_address('images/0.gif') }}"
                  class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"/>
             {{ right_name }}
         </div>

@@ -148,7 +148,7 @@ h1, h2, h3, h4, h5, h6 {
     position: relative;
     width: 79px;
     height: 51px;
-    background: url('//static.profireader.com/static/front/img/logo.png') no-repeat;
+    background: url('../../img/logo.png') no-repeat;
 }
 
 .search-form {
@@ -273,7 +273,7 @@ footer .btn-social-icon {
     font-size: 20px;
     color: #7d7d7d;
     padding-left: 18px;
-    background: transparent url("//static.profireader.com/static/front/img/article/icons/type.png") no-repeat left center;
+    background: transparent url("../../img/article/icons/type.png") no-repeat left center;
 }
 
 .block-item.list-elements h2 {
@@ -354,7 +354,7 @@ footer .btn-social-icon {
     float: left;
     position: relative;
     padding-left: 18px;
-    background: transparent url("//static.profireader.com/static/front/img/article/icons/company.png") no-repeat left center;
+    background: transparent url("../../img/article/icons/company.png") no-repeat left center;
 }
 
 a.item-company {
@@ -369,7 +369,7 @@ a.item-company {
 .list-elements.right-sidebar .item-publication-date {
     float: right;
     padding-left: 18px;
-    background: transparent url("//static.profireader.com/static/front/img/article/icons/calendar.png") no-repeat left center;
+    background: transparent url("../../img/article/icons/calendar.png") no-repeat left center;
 
 }
 
@@ -425,13 +425,13 @@ a.item-company {
 .pager li.previous {
     left: 20px;
     padding-left: 0px;
-    background: url("//static.profireader.com/static/front/img/prev.png") top left no-repeat;
+    background: url("../../img/prev.png") top left no-repeat;
 }
 
 .pager li.next {
     right: 20px;
     padding-right: 0px;
-    background: url("//static.profireader.com/static/front/img/next.png") top right no-repeat;
+    background: url("../../img/next.png") top right no-repeat;
 }
 
 footer {
@@ -491,7 +491,7 @@ footer .promo {
     left: 400px;
     width: 210px;
     height: 160px;
-    background: url("//static.profireader.com/static/front/img/polska_pomoc.png") bottom center no-repeat;
+    background: url("../../img/polska_pomoc.png") bottom center no-repeat;
     text-align: center;
 
 }
@@ -541,7 +541,7 @@ footer .promo {
     width: 100%;
     bottom: 31px;
     right: 0;
-    background: transparent url("//static.profireader.com/static/front/img/bottom.png") repeat-x;
+    background: transparent url("../../img/bottom.png") repeat-x;
 }
 
 .article-cover {
@@ -581,7 +581,7 @@ footer .promo {
     /*position: absolute;*/
     /*left: 0;*/
     padding-left: 18px;
-    background: transparent url("//static.profireader.com/static/front/img/article/icons/company.png") no-repeat left center;
+    background: transparent url("../../img/article/icons/company.png") no-repeat left center;
 }
 
 .block-item .item-additional-info .item-comments,
@@ -594,7 +594,7 @@ footer .promo {
     /*float: right;*/
     padding-left: 18px;
     margin-top: -52px;
-    background: transparent url("//static.profireader.com/static/front/img/article/icons/comment.png") no-repeat left center;
+    background: transparent url("../../img/article/icons/comment.png") no-repeat left center;
 }
 
 .block-item .item-additional-info-top .item-favorite {
@@ -616,7 +616,7 @@ footer .promo {
     padding-left: 18px;
     width: auto;
     margin-left: -280px;
-    background: transparent url("//static.profireader.com/static/front/img/article/icons/calendar.png") no-repeat left center;
+    background: transparent url("../../img/article/icons/calendar.png") no-repeat left center;
 }
 
 .block-item .item-additional-info-top .item-comments,
@@ -630,7 +630,7 @@ footer .promo {
     width: 100%;
     padding: 7px 7px 7px 18px;
     border-top: 1px #ccc solid;
-    background: transparent url("//static.profireader.com/static/front/img/article/icons/tag.png") no-repeat left center;
+    background: transparent url("../../img/article/icons/tag.png") no-repeat left center;
 }
 
 .tag-list a {

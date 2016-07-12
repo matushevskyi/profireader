@@ -2,11 +2,11 @@
 
 @font-face {
   font-family: "prfont";
-  src:url("//static.profireader.com/static/fonts/prfont.eot");
-  src:url("//static.profireader.com/static/fonts/prfont.eot?#iefix") format("embedded-opentype"),
-    url("//static.profireader.com/static/fonts/prfont.woff") format("woff"),
-    url("//static.profireader.com/static/fonts/prfont.ttf") format("truetype"),
-    url("//static.profireader.com/static/fonts/prfont.svg#prfont") format("svg");
+  src:url("../fonts/prfont.eot");
+  src:url("../fonts/prfont.eot?#iefix") format("embedded-opentype"),
+    url("../fonts/prfont.woff") format("woff"),
+    url("../fonts/prfont.ttf") format("truetype"),
+    url("../fonts/prfont.svg#prfont") format("svg");
   font-weight: normal;
   font-style: normal;
 

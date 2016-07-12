@@ -5,7 +5,7 @@ from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal, PortalConfig, UserPortalReader
 from ..models.company import Company
 from ..models.users import User
-from utils.session_utils import back_to_url
+from ..utils.session_utils import back_to_url
 from config import Config
 from ..utils.pr_email import send_email
 from .request_wrapers import check_right, get_portal

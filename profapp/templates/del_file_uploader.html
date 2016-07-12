@@ -1,0 +1,62 @@
+{##}
+{##}
+{#    <script src="{{ static_address('jquery/jquery.min.js') }}"></script>#}
+{#    <script src="{{ static_address('angular/angular.min.js') }}"></script>#}
+{#    <script src="{{ static_address('angular/angular-cookies.min.js') }}"></script>#}
+{#    <script src="{{ static_address('angular/angular-translate.min.js') }}"></script>#}
+{##}
+{##}
+{#    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>#}
+{#    <script src="{{ static_address('angular-bootstrap/ui-bootstrap.min.js') }}"></script>#}
+{#    <script src="{{ static_address('angular-bootstrap/ui-bootstrap-tpls.min.js') }}"></script>#}
+{#    <script src="{{ static_address('angular-animate/angular-animate.min.js') }}"></script>#}
+{##}
+{##}
+{##}
+{#    <link rel="stylesheet"#}
+{#          href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"/>#}
+{#    <script src="{{ static_address('file_uploader/dist/ng-file-upload.js') }}"></script>#}
+{#     <script src="{{ static_address('file_uploader/demo/src/main/webapp/js/upload.js') }}"></script>#}
+{#<script>#}
+{#var app = angular.module('fileUpload', ['ngFileUpload']);#}
+{#app.controller('MyCtrl', ['$scope', 'Upload', '$timeout', function ($scope, Upload, $timeout) {#}
+{#    $scope.name = '';#}
+{#      $scope.chunkSize = '20480KB';#}
+{##}
+{#  $scope.uploadUsingUpload=function(file) {#}
+{#      $scope.f = file;#}
+{#      console.log(file);#}
+{#    file.upload = Upload.upload({#}
+{##}
+{#      url: '//profireader.com/filemanager/send/{{ company_id }}/',#}
+{#        data : $scope.name,#}
+{#      resumeSizeUrl: '//profireader.com/filemanager/resumeupload/',#}
+{#      resumeChunkSize: $scope.chunkSize,#}
+{#      headers: {#}
+{#        'optional-header': 'header-value'#}
+{#      },#}
+{##}
+{#      fields: {username: $scope.username},#}
+{#      file: file});#}
+{#                file.upload.progress(function (evt) {#}
+{#                file.progress = Math.min(100, parseInt(100.0 *#}
+{#                                                       evt.loaded / evt.total));#}
+{#            });#}
+{#  };#}
+{#}]);#}
+{#</script>#}
+{#{% raw %}#}
+{#<body ng-app="fileUpload" ng-controller="MyCtrl" ng-cloak>#}
+{#  <h4>{{ _('Upload on file select') }}</h4>{{ resp }}#}
+{#  <button type="file" ngf-select="uploadUsingUpload($file)" ngf-max-size="10000MB">#}
+{#      Select File</button>#}
+{#  <br><br>#}
+{#  File:#}
+{#  <div>{{f.name}} {{f.$error}} {{f.$errorParam}}#}
+{#      <span class="progress" ng-show="f.progress >= 0">#}
+{#          <div ng-bind="f.progress + '%'"></div>#}
+{#      </span>#}
+{#  </div>#}
+{#  {#}
+{#</body>#}
+{#{% endraw %}#}

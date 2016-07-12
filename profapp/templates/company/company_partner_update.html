@@ -33,7 +33,7 @@
                         class="person-small-cover" pr-image-url="{{ data.employeer.logo.url }}"/>
                     {{ _('Portal partner `%(data.member.company.name)s` at company `%(data.employeer.name)s`') }}</h2>
                 <div ng-class="{disabled: !permitted}" ng-repeat="(right_name, permitted) in data.member.rights">
-                    <img src="//static.profireader.com/static/images/0.gif"
+                    <img ng-src="{{ static_address('images/0.gif') }}"
                          class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"/>
                     <label><input ng-model="data.member.rights[right_name]" type="checkbox"/> {{ right_name }}</label>
                 </div>

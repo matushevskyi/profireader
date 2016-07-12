@@ -11,23 +11,23 @@
 
 {% block styles %}
         {{ super() }}
-        <link rel="stylesheet" type="text/css" href="//static.profireader.com/static/filemanager/angular-filemanager.css">
-    <link href="//static.profireader.com/static/image_editor/assets/css/bootstrap.min.css" rel="stylesheet">
-    <link href="//static.profireader.com/static/image_editor/demo/css/main.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="{{ static_address('filemanager/angular-filemanager.css') }}">
+    <link href="{{ static_address('image_editor/assets/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ static_address('image_editor/demo/css/main.css') }}" rel="stylesheet">
 
-    <link rel="shortcut icon" href="//static.profireader.com/static/favicon.ico" type="image/x-icon">
-    <link rel="icon" href="//static.profireader.com/static/favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" type="text/css" href="//static.profireader.com/static/styles.css">
+    <link rel="shortcut icon" href="{{ static_address('favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" href="{{ static_address('favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="{{ static_address('styles.css') }}">
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.css">
-    <link rel="stylesheet" href="//static.profireader.com/static/css/profireader_responsive.css">
-    <link rel="stylesheet" href="//static.profireader.com/static/css/profireader.css">
-    <link rel="stylesheet" href="//static.profireader.com/static/jquery/smoothness/jquery-ui.css">
-    <link rel="stylesheet" href="//static.profireader.com/static/css/oles.css">
-    <link rel="stylesheet" href="//static.profireader.com/static/css/icons.css">
-    <link rel="stylesheet" href="//static.profireader.com/static/css/andriy-pagination.css">
-    <link rel="stylesheet" href="//static.profireader.com/static/css/_company.css">
-    <link rel="stylesheet" href="//static.profireader.com/static/css/_auth.css">
+    <link rel="stylesheet" href="{{ static_address('css/profireader_responsive.css') }}">
+    <link rel="stylesheet" href="{{ static_address('css/profireader.css') }}">
+    <link rel="stylesheet" href="{{ static_address('jquery/smoothness/jquery-ui.css') }}">
+    <link rel="stylesheet" href="{{ static_address('css/oles.css') }}">
+    <link rel="stylesheet" href="{{ static_address('css/icons.css') }}">
+    <link rel="stylesheet" href="{{ static_address('css/andriy-pagination.css') }}">
+    <link rel="stylesheet" href="{{ static_address('css/_company.css') }}">
+    <link rel="stylesheet" href="{{ static_address('css/_auth.css') }}">
 
 
 
@@ -41,8 +41,8 @@
         var pr_angular_modules = ['ui.bootstrap', 'profireaderdirectives', 'ngSanitize', 'profireaderdirectives', 'ui.grid', 'ui.grid.pagination', 'ui.grid.edit', 'ngAnimate', 'ngTouch', 'ui.grid.selection', 'ui.grid.grouping', 'ui.grid.treeView', 'ui.slider', 'ui.tinymce'];
     </script>
 
-    <link rel="shortcut icon" href="//static.profireader.com/static/favicon.ico" type="image/x-icon"/>
-    <link rel="icon" href="//static.profireader.com/static/favicon.ico" type="image/gif"/>
+    <link rel="shortcut icon" href="{{ static_address('favicon.ico') }}" type="image/x-icon"/>
+    <link rel="icon" href="{{ static_address('favicon.ico') }}" type="image/gif"/>
 
     {{ config_variables()|safe }}
 
@@ -51,19 +51,19 @@
 
 
         <script src="{{ bootstrap_find_resource('jquery.js', cdn='jquery') }}"></script>
-    <script src="//static.profireader.com/static/jquery/jquery.min.js"></script>
-    <script src="//static.profireader.com/static/jquery/jquery-ui.min.js"></script>
-    <script src="//static.profireader.com/static/angular/angular.min.js"></script>
-    <script src="//static.profireader.com/static/angular-bootstrap/ui-bootstrap.min.js"></script>
-    <script src="//static.profireader.com/static/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
-    <script src="//static.profireader.com/static/tinymce.pr/tinymce.jquery.pr.js"></script>
-    <script src="//static.profireader.com/static/angular-ui-tinymce/tinymce.js"></script>
-    <script src="//static.profireader.com/static/angular-ui-slider/slider.js"></script>
-    <script src="//static.profireader.com/static/angular-ajax-validator/ngAjaxValidator.js"></script>
+    <script src="{{ static_address('jquery/jquery.min.js') }}"></script>
+    <script src="{{ static_address('jquery/jquery-ui.min.js') }}"></script>
+    <script src="{{ static_address('angular/angular.min.js') }}"></script>
+    <script src="{{ static_address('angular-bootstrap/ui-bootstrap.min.js') }}"></script>
+    <script src="{{ static_address('angular-bootstrap/ui-bootstrap-tpls.min.js') }}"></script>
+    <script src="{{ static_address('tinymce.pr/tinymce.jquery.pr.js') }}"></script>
+    <script src="{{ static_address('angular-ui-tinymce/tinymce.js') }}"></script>
+    <script src="{{ static_address('angular-ui-slider/slider.js') }}"></script>
+    <script src="{{ static_address('angular-ajax-validator/ngAjaxValidator.js') }}"></script>
 
     TODO: SS by OZ: remove this two lines when ng-grid is up and running
-        <link rel="stylesheet" href="//static.profireader.com/static/angular-xeditable/xeditable.css">
-        <script src="//static.profireader.com/static/angular-xeditable/xeditable.js"></script>
+        <link rel="stylesheet" href="{{ static_address('angular-xeditable/xeditable.css') }}">
+        <script src="{{ static_address('angular-xeditable/xeditable.js') }}"></script>
 
     <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js"></script>
         <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js"></script>
@@ -75,28 +75,27 @@
     {% if angular_ui_bootstrap_version %}
         <script src="{{ angular_ui_bootstrap_version }}"></script>
     {% endif %}
-    <script src="//static.profireader.com/static/image_editor/demo/js/main.js"></script>
-        <script src="//static.profireader.com/static/filemanager/angular-filemanager.min.js"></script><!-- Comment if you need to use raw source code -->
+    <script src="{{ static_address('image_editor/demo/js/main.js') }}"></script>
+        <script src="{{ static_address('filemanager/angular-filemanager.min.js') }}"></script><!-- Comment if you need to use raw source code -->
 
-        <script src="//static.profireader.com/static/filemanager/cached-templates.js"></script><!-- Comment if you need to use raw source code -->
+        <script src="{{ static_address('filemanager/cached-templates.js') }}"></script><!-- Comment if you need to use raw source code -->
         <script src="{{bootstrap_find_resource('js/bootstrap.js', cdn='bootstrap')}}"></script>
 
-    <script src="//static.profireader.com/static/js/underscore-min.js"></script>
+    <script src="{{ static_address('js/underscore-min.js') }}"></script>
 
     <!-- ui-select files -->
-    <script src="//static.profireader.com/static/js/select.js"></script>
-    <!-- profireader_angular.js uses //static.profireader.com/static/js/select.js -->
-    <script src="//static.profireader.com/static/js/profireader_angular.js"></script>
+    <script src="{{ static_address('js/select.js') }}"></script>
+    <script src="{{ static_address('js/profireader_angular.js') }}"></script>
 
-    <script src="//static.profireader.com/static/js/jquery.smooth-scroll.js"></script>
+    <script src="{{ static_address('js/jquery.smooth-scroll.js') }}"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
     <!---!GRID!---->
-    <link rel="styleSheet" href="//static.profireader.com/static/css/ui-grid.css"/>
-    <script src="//static.profireader.com/static/js/ui-grid.min.js"></script>
-        <script src="//static.profireader.com/static/ui-grid/csv.js"></script>
-        <script src="//static.profireader.com/static/ui-grid/pdfmake.js"></script>
-        <script src="//static.profireader.com/static/ui-grid/vfs_fonts.js"></script>
+    <link rel="styleSheet" href="{{ static_address('css/ui-grid.css') }}"/>
+    <script src="{{ static_address('js/ui-grid.min.js') }}"></script>
+        <script src="{{ static_address('ui-grid/csv.js') }}"></script>
+        <script src="{{ static_address('ui-grid/pdfmake.js') }}"></script>
+        <script src="{{ static_address('ui-grid/vfs_fonts.js') }}"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-touch.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-animate.js"></script>
 

@@ -149,9 +149,9 @@
 
                 <div class="update_col1">
                     <!-- TODO: OZ by OZ move this code to one file -->
-                    <link href="//static.profireader.com/static/css/article.css" rel="stylesheet">
+                    <link href="{{ static_address('css/article.css') }}" rel="stylesheet">
                     <!-- TODO: OZ by OZ: select css for current theme. also look for another place with same todo-->
-                    <link href="//static.profireader.com/static/front/bird/css/article.css" rel="stylesheet">
+                    <link href="{{ static_address('front/bird/css/article.css') }}" rel="stylesheet">
 
                     {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
                     <textarea class="form-control article-edit-input" style="width: 710px" placeholder="{{_('short')}}"
