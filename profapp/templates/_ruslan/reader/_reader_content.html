@@ -9,9 +9,9 @@
             $scope.$$translate = {{ translates('list_reader')|safe }};
             $scope.favorite = {{ favorite }}
                     $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
-            $scope.add_delete_favorite = '{{ url_for('index.add_delete_favorite') }}'
-            $scope.add_delete_like = '{{ url_for('index.add_delete_like') }}'
-            $scope.tag_url = '{{ url_for('front.division') }}'
+            $scope.add_delete_favorite = '{{ url_for('index.add_delete_favorite') }}';
+            $scope.add_delete_like = '{{ url_for('index.add_delete_like') }}';
+            $scope.tag_url = {{ raw_url_for('front.division')|safe }};
 
 {#            @front_bp.route('tags/<string:tags>/', methods=['GET'])#}
             $scope.add_to_favorite = function (article) {
@@ -59,8 +59,8 @@
                             </a>
                         </div>
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
-                            <span class="fr label label-default item-tags" ng-repeat="tag in article.tags">
-                                <a href="{{ tag_url({tags: tag.text}) }}">{{ tag.text }}</a>
+                            <span class="fr ml05em label label-default item-tags" ng-repeat="tag in article.tags">
+                                <a href="//{{ article.portal.host }}{{ tag_url({tags: tag.text}) }}">{{ tag.text }}</a>
                             </span>
 
                             <a target="_blank"

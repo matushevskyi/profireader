@@ -409,6 +409,22 @@ div.pr-row:last-child div.pr-cell {
     margin: 0.25em;
 }
 
+.mr05em {
+    margin-right: 0.5em;
+}
+
+.ml05em {
+    margin-left: 0.5em;
+}
+
+.mt05em {
+    margin-top: 0.5em;
+}
+
+.mb05em {
+    margin-bottom: 0.5em;
+}
+
 .mr1em {
     margin-right: 1em;
 }
