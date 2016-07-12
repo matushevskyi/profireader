@@ -1,8 +1,4 @@
-from flask import g, request, url_for, redirect, flash
-from werkzeug.exceptions import Unauthorized
-from functools import wraps
 import re
-
 
 # we don't need it still
 #
@@ -33,11 +29,12 @@ import re
 #     return decorated
 
 def fileUrl(id, down=False, if_no_file=None):
+    from config import Config
     if not id:
         return if_no_file if if_no_file else ''
 
     server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', id)
-    return '//file' + server + '.profireader.com/' + id + '/' + ('?d' if down else '')
+    return '//file' + server + '.'+Config.MAIN_DOMAIN+'/' + id + '/' + ('?d' if down else '')
 
 
 def fileID(url):
@@ -170,3 +167,8 @@ def filter_json(json, *args, NoneTo='', ExceptionOnNotPresent=False, prefix=''):
                                      req_relationships)),))
 
     return ret
+
+def static_address(relative_file_name):
+    from config import Config
+    return '//static.' + Config.MAIN_DOMAIN + '/static/' + relative_file_name
+

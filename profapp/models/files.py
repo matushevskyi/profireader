@@ -186,7 +186,7 @@ class File(Base, PRBase):
                     'parent_id': file.parent_id, 'type': File.type(file),
                     'date': str(file.md_tm),
                     # TODO: OZ by OZ: thumbnail generation
-                    'thumbnail_url': '//static.profireader.com/static/images/unknown_file.png',
+                    'thumbnail_url': utils.static_address('images/unknown_file.png'),
                     'file_url': file.url(),
                     'youtube_data': {'id': file.youtube_video.video_id,
                                      'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
@@ -294,7 +294,7 @@ class File(Base, PRBase):
         ID = id if id else self.id
         server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', ID)
 
-        return '//file' + server + '.profireader.com/' + ID + '/'
+        return '//file' + server + '.'+Config.MAIN_DOMAIN+'/' + ID + '/'
 
     @staticmethod
     def get_all_in_dir_rev(id):

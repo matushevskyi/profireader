@@ -56,10 +56,11 @@ class User(Base, UserMixin, PRBase):
                            default=datetime.datetime.utcnow)
     last_seen = Column(TABLE_TYPES['timestamp'],
                        default=datetime.datetime.utcnow)
-    profireader_avatar_url = Column(TABLE_TYPES['url'], nullable=False,
-                                    default='//static.profireader.com/static/no_avatar.png')
-    profireader_small_avatar_url = Column(TABLE_TYPES['url'], nullable=False,
-                                          default='//static.profireader.com/static/no_avatar_small.png')
+
+    # profireader_avatar_url = Column(TABLE_TYPES['url'], nullable=False,
+    #                                 default='//static.profireader.com/static/no_avatar.png')
+    # profireader_small_avatar_url = Column(TABLE_TYPES['url'], nullable=False,
+    #                                       default='//static.profireader.com/static/no_avatar_small.png')
 
     avatar_selected_preset = Column(TABLE_TYPES['string_30'], nullable=True)
     avatar_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
@@ -366,68 +367,68 @@ class User(Base, UserMixin, PRBase):
         g.db.add(self)
         g.db.commit()
 
-    def get_avatar(self, avatar_via, size=500, small_size=100, url=None):
-        if avatar_via == 'upload':
-            return self
-        avatar_urls = dict(facebook=lambda s: 'http://graph.facebook.com/{facebook_id}/picture?width={size}&'
-                                              'height={size}&redirect=0'.format(facebook_id=self.facebook_id, size=s),
-                           google=lambda s: 'https://www.googleapis.com/plus/v1/people/{google_id}?'
-                                            'fields=image&key={key}'.format(google_id=self.google_id,
-                                                                            size=s, key=Config.GOOGLE_API_KEY_SIMPLE),
-                           linkedin=lambda s, u=url: u if u else self.gravatar(size=s),
-                           # vkontakte=lambda s, u=url: u if u else self.gravatar(size=s),
-                           gravatar=lambda s: self.gravatar(size=s),
-                           microsoft=lambda _: 'https://apis.live.net/v5.0/{microsoft_id}/picture'.format(
-                               microsoft_id=self.microsoft_id))
-        url = avatar_urls[avatar_via](size)
-        url_small = avatar_urls[avatar_via](small_size)
-        if avatar_via == 'facebook':
-            avatar = json.load(req.urlopen(url=url))
-            avatar_small = json.load(req.urlopen(url=url_small))
-            if avatar['data'].get('is_silhouette'):
-                self.profireader_avatar_url = self.gravatar(size=size)
-                self.profireader_small_avatar_url = self.gravatar(size=small_size)
-            else:
-                self.profireader_avatar_url = avatar['data'].get('url')
-                self.profireader_small_avatar_url = avatar_small['data'].get('url')
-        elif avatar_via == 'google':
-            avatar = json.load(req.urlopen(url=url))
-            avatar_small = json.load(req.urlopen(url=url_small))
-            if avatar['image'].get('isDefault'):
-                self.profireader_avatar_url = self.gravatar(size=size)
-                self.profireader_small_avatar_url = self.gravatar(size=small_size)
-            else:
-                self.profireader_avatar_url = avatar['image'].get('url')
-                self.profireader_small_avatar_url = avatar_small['image'].get('url')
-        elif avatar_via == 'linkedin':
-            self.profireader_avatar_url = url
-            self.profireader_small_avatar_url = url
-        # elif avatar_via == 'vkontakte':
-        #     avatar = json.load(urllib.urlopen("https://api.vk.com/method/users.get?v=5.8&fields="
-        #                                 "photo_{size}&access_token={access_token}".
-        #                                 format(size=str(size),
-        #                                      access_token=access_token)))['response'][0].get(# Here needs right token from VK
-        #                                         'photo_{size}'.format(size=size))
-        #     avatar_small = json.load(urllib.urlopen("https://api.vk.com/method/users.get?v=5.8&fields="
-        #                                       "photo_{size}&access_token={access_token}".
-        #                                       format(size=str(small_size),
-        #                                              access_token=access_token)))['response'][0].get(# Here needs right token from VK
-        #                                              'photo_{size}'.format(size=small_size))
-        #     self.profireader_avatar_url = url
-        #     self.profireader_small_avatar_url = url
-        elif avatar_via == 'microsoft':
-            avatar = req.urlopen(url=url)
-            if 'Default' not in avatar.url:
-                self.profireader_avatar_url = avatar.url
-                self.profireader_small_avatar_url = avatar.url
-            else:
-                self.profireader_avatar_url = self.gravatar(size=size)
-                self.profireader_small_avatar_url = self.gravatar(size=small_size)
-        elif avatar_via == 'gravatar':
-            self.profireader_avatar_url = url
-            self.profireader_small_avatar_url = url_small
-
-        return self
+    # def get_avatar(self, avatar_via, size=500, small_size=100, url=None):
+    #     if avatar_via == 'upload':
+    #         return self
+    #     avatar_urls = dict(facebook=lambda s: 'http://graph.facebook.com/{facebook_id}/picture?width={size}&'
+    #                                           'height={size}&redirect=0'.format(facebook_id=self.facebook_id, size=s),
+    #                        google=lambda s: 'https://www.googleapis.com/plus/v1/people/{google_id}?'
+    #                                         'fields=image&key={key}'.format(google_id=self.google_id,
+    #                                                                         size=s, key=Config.GOOGLE_API_KEY_SIMPLE),
+    #                        linkedin=lambda s, u=url: u if u else self.gravatar(size=s),
+    #                        # vkontakte=lambda s, u=url: u if u else self.gravatar(size=s),
+    #                        gravatar=lambda s: self.gravatar(size=s),
+    #                        microsoft=lambda _: 'https://apis.live.net/v5.0/{microsoft_id}/picture'.format(
+    #                            microsoft_id=self.microsoft_id))
+    #     url = avatar_urls[avatar_via](size)
+    #     url_small = avatar_urls[avatar_via](small_size)
+    #     if avatar_via == 'facebook':
+    #         avatar = json.load(req.urlopen(url=url))
+    #         avatar_small = json.load(req.urlopen(url=url_small))
+    #         if avatar['data'].get('is_silhouette'):
+    #             self.profireader_avatar_url = self.gravatar(size=size)
+    #             self.profireader_small_avatar_url = self.gravatar(size=small_size)
+    #         else:
+    #             self.profireader_avatar_url = avatar['data'].get('url')
+    #             self.profireader_small_avatar_url = avatar_small['data'].get('url')
+    #     elif avatar_via == 'google':
+    #         avatar = json.load(req.urlopen(url=url))
+    #         avatar_small = json.load(req.urlopen(url=url_small))
+    #         if avatar['image'].get('isDefault'):
+    #             self.profireader_avatar_url = self.gravatar(size=size)
+    #             self.profireader_small_avatar_url = self.gravatar(size=small_size)
+    #         else:
+    #             self.profireader_avatar_url = avatar['image'].get('url')
+    #             self.profireader_small_avatar_url = avatar_small['image'].get('url')
+    #     elif avatar_via == 'linkedin':
+    #         self.profireader_avatar_url = url
+    #         self.profireader_small_avatar_url = url
+    #     # elif avatar_via == 'vkontakte':
+    #     #     avatar = json.load(urllib.urlopen("https://api.vk.com/method/users.get?v=5.8&fields="
+    #     #                                 "photo_{size}&access_token={access_token}".
+    #     #                                 format(size=str(size),
+    #     #                                      access_token=access_token)))['response'][0].get(# Here needs right token from VK
+    #     #                                         'photo_{size}'.format(size=size))
+    #     #     avatar_small = json.load(urllib.urlopen("https://api.vk.com/method/users.get?v=5.8&fields="
+    #     #                                       "photo_{size}&access_token={access_token}".
+    #     #                                       format(size=str(small_size),
+    #     #                                              access_token=access_token)))['response'][0].get(# Here needs right token from VK
+    #     #                                              'photo_{size}'.format(size=small_size))
+    #     #     self.profireader_avatar_url = url
+    #     #     self.profireader_small_avatar_url = url
+    #     elif avatar_via == 'microsoft':
+    #         avatar = req.urlopen(url=url)
+    #         if 'Default' not in avatar.url:
+    #             self.profireader_avatar_url = avatar.url
+    #             self.profireader_small_avatar_url = avatar.url
+    #         else:
+    #             self.profireader_avatar_url = self.gravatar(size=size)
+    #             self.profireader_small_avatar_url = self.gravatar(size=small_size)
+    #     elif avatar_via == 'gravatar':
+    #         self.profireader_avatar_url = url
+    #         self.profireader_small_avatar_url = url_small
+    #
+    #     return self
 
     def gravatar(self, size=100, default='identicon', rating='g'):
         if request.is_secure:
@@ -435,7 +436,7 @@ class User(Base, UserMixin, PRBase):
         else:
             url = '//www.gravatar.com/avatar'
 
-        email = getattr(self, 'profireader_email', 'guest@profireader.com')
+        email = getattr(self, 'profireader_email', 'guest@' + Config.MAIN_DOMAIN)
         hash = hashlib.md5(email.encode('utf-8')).hexdigest()
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
             url=url, hash=hash, size=size, default=default, rating=rating)
@@ -606,7 +607,7 @@ class User(Base, UserMixin, PRBase):
     #    return self.can(Permission.ADMINISTER)
 
     def get_client_side_dict(self,
-                             fields='id|profireader_name|profireader_avatar_url|profireader_small_avatar_url'
+                             fields='id|profireader_name'
                                     '|profireader_email|profireader_first_name|profireader_last_name|profireader_link'
                                     '|profireader_phone|location|profireader_gender|lang|about_me|country_id|tos|profireader_phone'
                                     '|birth_tm',

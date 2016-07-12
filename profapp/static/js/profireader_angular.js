@@ -541,7 +541,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                         // backgroundImage: "url('" + newval + "')"
                     });
                 });
-                element.attr('src', '//static.profireader.com/static/images/0.gif');
+                element.attr('src', static_address('images/0.gif'));
                 element.addClass('bg-contain');
             }
         };
@@ -566,7 +566,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     backgroundImage: "url('" + fileUrl(newval, false, no_image) + "')"
                 });
             });
-            element.attr('src', '//static.profireader.com/static/images/0.gif');
+            element.attr('src', static_address('images/0.gif'));
             element.addClass('bg-contain');
         }
     };
@@ -576,7 +576,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             restrict: 'A',
             scope: {},
             link: function (scope, element, attrs) {
-                element.attr('src', '//static.profireader.com/static/images/0.gif');
+                element.attr('src', static_address('images/0.gif'));
                 element.css({backgroundImage: 'url(' + attrs['prImageUrl'] + ')'});
                 element.addClass('bg-contain');
             }
@@ -588,7 +588,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             prImageUrlWatch: '=',
         },
         link: function (scope, element, attrs) {
-            element.attr('src', '//static.profireader.com/static/images/0.gif');
+            element.attr('src', static_address('images/0.gif'));
             element.addClass('bg-contain');
             scope.$watch('prImageUrlWatch', function (newval, oldval) {
                 element.css({backgroundImage: "url('" + newval + "')"});
@@ -830,7 +830,7 @@ function file_choose(selectedfile) {
     top.tinymce.activeEditor.windowManager.close();
 }
 
-// 'ui.select' uses "//static.profireader.com/static/js/select.js" included in _index_layout.html
+// 'ui.select' uses static_address('js/select.js') included in _index_layout.html
 //module = angular.module('Profireader', ['ui.bootstrap', 'profireaderdirectives', 'ui.tinymce', 'ngSanitize', 'ui.select']);
 
 module = angular.module('Profireader', pr_angular_modules);
@@ -1349,6 +1349,9 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             var args = [].slice.call(arguments);
             return pr_dictionary(args.shift(), args, '', this, $ok);
         },
+        static_address: function (relative_file_name) {
+            return static_address(relative_file_name);
+        },
         highlight: function (text, search) {
             if (!search) {
                 return $sce.trustAsHtml(text);
@@ -1436,7 +1439,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
                     var prefix_img = '';
                     if (col.img_url) {
-                        var prefix_img = '<img src="//static.profireader.com/static/images/0.gif" class="pr-grid-cell-img-prefix" style="background-size: contain; background-repeat: no-repeat; background-position: center center; background-color: #fff; background-image: url({{ row.entity.' + col.img_url + ' }})" />';
+                        var prefix_img = '<img src="'+static_address('/images/0.gif')+'" class="pr-grid-cell-img-prefix" style="background-size: contain; background-repeat: no-repeat; background-position: center center; background-color: #fff; background-image: url({{ row.entity.' + col.img_url + ' }})" />';
                     }
                     switch (col.type) {
                         case 'link':
@@ -1811,13 +1814,13 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             //valid_elements: Config['article_html_valid_elements'],
             //valid_elements: 'a[class],img[class|width|height],p[class],table[class|width|height],th[class|width|height],tr[class],td[class|width|height],span[class],div[class],ul[class],ol[class],li[class]',
             //TODO: OZ by OZ: select css for current theme. also look for another place with same todo
-            content_css: ["//static.profireader.com/static/front/css/bootstrap.css", "//static.profireader.com/static/css/article.css", "//static.profireader.com/static/front/bird/css/article.css"],
+            content_css: [static_address('front/css/bootstrap.css'), static_address('css/article.css'), static_address('front/bird/css/article.css')],
 
 
             //paste_auto_cleanup_on_paste : true,
             //paste_remove_styles: true,
             //paste_remove_styles_if_webkit: true,
-            //paste_strip_class_attributes: "all",
+            //paste_strip_class_attributes: "all'),
 
             //style_formats: [
             //    {title: 'Bold text', inline: 'b'},
@@ -1960,9 +1963,9 @@ function fileUrl(id, down, if_no_file) {
 
     var server = id.replace(/^[^-]*-[^-]*-4([^-]*)-.*$/, "$1");
     if (down) {
-        return '//file' + server + '.profireader.com/' + id + '?d'
+        return '//file' + server + '.'+MAIN_DOMAIN+'/' + id + '?d'
     } else {
-        return '//file' + server + '.profireader.com/' + id + '/'
+        return '//file' + server + '.'+MAIN_DOMAIN+'/' + id + '/'
     }
 }
 
@@ -2235,10 +2238,10 @@ var convert_python_format_to_tinymce_format = function (python_format) {
 // #TODO: OZ by OZ: remove this function. urls should be formed at ss
 var noImageForImageName = function (image_name) {
     if (image_name === 'logo_file_id') {
-        return '//static.profireader.com/static/images/company_no_logo.png';
+        return static_address('images/company_no_logo.png');
     }
     else {
-        return '//static.profireader.com/static/images/no_image.png';
+        return static_address('images/no_image.png');
     }
 }
 

@@ -333,7 +333,7 @@
 .loading {
     background-repeat: no-repeat;
     background-position: center;
-    background-image: url("//static.profireader.com/static/images/loading.gif");
+    background-image: url("../images/loading.gif");
     background-color: transparent;
 }
 

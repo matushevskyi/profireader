@@ -19,8 +19,8 @@ class Config(object):
     # 0.0.0.0    profireader.a
     # to /etc/hosts
 
-    # SERVER_NAME = 'profireader.com'
     SITE_TITLE = 'Profireader'
+    MAIN_DOMAIN = 'kupyty.com'
 
     # Statement for enabling the development environment
     DEBUG = False
@@ -65,7 +65,7 @@ class Config(object):
     GOOGLE_API_SECRET_JSON = secret_data.GOOGLE_API_SECRET_JSON
     GOOGLE_API_KEY_SIMPLE = secret_data.GOOGLE_API_KEY_SIMPLE
     YOUTUBE_API = dict(SCOPE="https://www.googleapis.com/auth/youtube",
-                       UPLOAD=dict(REDIRECT_URI="http://profireader.com/filemanager/uploader/",
+                       UPLOAD=dict(REDIRECT_URI= '//' + MAIN_DOMAIN + "/filemanager/uploader/",
                                    SEND_URI="https://www.googleapis.com/upload/youtube/v3/"
                                             "videos?%s"),
                        CREATE_PLAYLIST=dict(SEND_URI="https://www.googleapis.com/youtube/v3/"
@@ -114,6 +114,7 @@ class Config(object):
 class ProductionDevelopmentConfig(Config):
 
     #Define database connection parameters
+
     host = os.getenv('PRODUCTION_SERVER_DB_HOST', Config.host)
     username = os.getenv('PRODUCTION_SERVER_DB_USERNAME', Config.username)
     password = os.getenv('PRODUCTION_SERVER_DB_PASSWORD', Config.password)

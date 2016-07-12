@@ -930,25 +930,25 @@ body {
   color: #FF67A0;
 }
 .flash-message-danger img {
-  background-image: url('//static.profireader.com/static/images/flash-message-danger.png');
+  background-image: url('../images/flash-message-danger.png');
 }
 .flash-message-success h3 {
   color: #A6F284;
 }
 .flash-message-success img {
-  background-image: url('//static.profireader.com/static/images/flash-message-success.png');
+  background-image: url('../images/flash-message-success.png');
 }
 .flash-message-warning h3 {
   color: #f7ff06;
 }
 .flash-message-warning img {
-  background-image: url('//static.profireader.com/static/images/flash-message-warning.png');
+  background-image: url('../images/flash-message-warning.png');
 }
 .flash-message-info h3 {
   color: #00d8ff;
 }
 .flash-message-info img {
-  background-image: url('//static.profireader.com/static/images/flash-message-info.png');
+  background-image: url('../images/flash-message-info.png');
 }
 /*--- PORTALS LIST ---*/
 .serch-portal {
@@ -1077,7 +1077,7 @@ body {
   padding: 5px 15px;
 }
 .mess-bg {
-  background-image: url("/static/images/develop-img.jpeg");
+  background-image: url("../images/develop-img.jpeg");
   min-height: 100%;
   min-width: 1024px;
   width: 100%;

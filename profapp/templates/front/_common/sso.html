@@ -5,5 +5,5 @@
             window.location.reload();
         }
     }, false);
-    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: none; left: -1px;" src="https://profireader.com/tools/SSO/' + $.cookie('beaker.session.id') + '/"></iframe>');
+    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: none; left: -1px;" src="https://{{ MAIN_DOMAIN }}/tools/SSO/' + $.cookie('beaker.session.id') + '/"></iframe>');
 </script>

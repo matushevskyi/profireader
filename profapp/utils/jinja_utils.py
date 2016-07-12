@@ -1,5 +1,4 @@
 from flask import Flask, g, request, current_app, session
-from flask.ext.babel import Babel
 import jinja2
 from jinja2 import Markup, escape
 import datetime
@@ -9,7 +8,9 @@ import json
 from ..models.tools import HtmlHelper
 from ..models.pr_base import MLStripper
 from .. import utils
-from ..models.config import Config
+from .. import Config
+from ..models.config import Config as ModelConfig
+
 
 def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):
     template = context.name
@@ -32,9 +33,6 @@ def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):
     return r.sub(replaceinphrase, translated)
 
 
-
-
-
 def get_url_adapter():
     from flask import globals as flask_globals
     appctx = flask_globals._app_ctx_stack.top
@@ -44,6 +42,7 @@ def get_url_adapter():
     else:
         url_adapter = appctx.url_adapter
     return url_adapter
+
 
 # TODO: OZ by OZ: add kwargs just like in url_for
 def raw_url_for(endpoint):
@@ -69,7 +68,6 @@ def pre(value):
     return '<pre>' + '\n'.join(res) + '</pre>'
 
 
-
 def translates(template):
     phrases = g.db.query(TranslateTemplate).filter_by(template=template).all()
     ret = {}
@@ -82,19 +80,20 @@ def translates(template):
 
 
 def prImageUrl(url):
-    return Markup(
-        ' src="//static.profireader.com/static/images/0.gif" style="background-position: center; background-size: contain; background-repeat: no-repeat; background-image: url(\'%s\')" ' % (
-            url,))
+    from . import static_address
+    return Markup(' src="' + static_address('images/0.gif') +
+                  '" style="background-position: center; background-size: contain; background-repeat: no-repeat; '
+                  'background-image: url(\'%s\')" ' % (url,))
 
-
+# TODO: OZ by OZ: remove this function
 def prImage(id=None, if_no_image=None):
-    noimage_url = if_no_image if if_no_image else "//static.profireader.com/static/images/no_image.png"
+    from . import static_address
+    noimage_url = if_no_image if if_no_image else static_address('images/no_image.png')
     return prImageUrl((utils.fileUrl(id, False, noimage_url)) if id else noimage_url)
 
 
-
 def config_variables():
-    variables = g.db.query(Config).filter_by(server_side=1).all()
+    variables = g.db.query(ModelConfig).filter_by(server_side=1).all()
     ret = {}
     for variable in variables:
         var_id = variable.id
@@ -110,7 +109,10 @@ def config_variables():
             ret[var_id] = '\'' + variable.value.replace('\\', '\\\\').replace('\n', '\\n').replace('\'', '\\\'') + '\''
 
     return "<script>\n_LANG = '" + g.lang + "'; \nConfig = {};\n" + ''.join(
-        [("Config['%s']=%s;\n" % (var_id, ret[var_id])) for var_id in ret]) + '</script>'
+        [("Config['%s']=%s;\n" % (var_id, ret[var_id])) for var_id in ret]) + \
+           "static_address = function (relative_file_name) {return '//static." + \
+           Config.MAIN_DOMAIN + "/static/' + relative_file_name; };\n" \
+                                "MAIN_DOMAIN = '" + Config.MAIN_DOMAIN + "';\n</script>"
 
 
 @jinja2.contextfunction
@@ -122,6 +124,9 @@ def translate_phrase(context, phrase, dictionary=None):
 def translate_html(context, phrase, dictionary=None):
     return Markup(translate_phrase_or_html(context, phrase, dictionary, '*'))
 
+def static_address_html(relative_file_name):
+    return Markup(utils.static_address(relative_file_name))
+
 
 @jinja2.contextfunction
 def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
@@ -130,7 +135,6 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
         '<span popover-placement="' + placement + '" popover-trigger="' + trigger + '" class="' + classes +
         '" uib-popover-html="\'' + HtmlHelper.quoteattr(
             translate_phrase_or_html(context, 'help tooltip ' + phrase, None, '*')) + '\'"></span>')
-
 
 
 def moment(value, out_format=None):
@@ -165,8 +169,8 @@ def nl2br(value):
 def raise_helper(msg):
     raise Exception(msg)
 
-def update_jinja_engine(app):
 
+def update_jinja_engine(app):
     app.jinja_env.globals.update(raw_url_for=raw_url_for)
     app.jinja_env.globals.update(pre=pre)
     app.jinja_env.globals.update(utils=utils)
@@ -176,8 +180,10 @@ def update_jinja_engine(app):
     app.jinja_env.globals.update(prImageUrl=prImageUrl)
     app.jinja_env.globals.update(config_variables=config_variables)
     app.jinja_env.globals.update(_=translate_phrase)
-    app.jinja_env.globals.update(moment=moment)
     app.jinja_env.globals.update(__=translate_html)
+    app.jinja_env.globals.update(moment=moment)
+    app.jinja_env.globals.update(static_address=static_address_html)
+    app.jinja_env.globals.update(MAIN_DOMAIN=Config.MAIN_DOMAIN)
     app.jinja_env.globals['raise'] = raise_helper
     app.jinja_env.globals.update(tinymce_format_groups=HtmlHelper.tinymce_format_groups)
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)

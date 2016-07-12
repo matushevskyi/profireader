@@ -22,8 +22,8 @@
         <div class="row">
             <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-6 col-sm-offset-2 col-sm-8 col-xs-12 ">
                 <div class="thumbnail profile-window">
-                    <div class="avatar-user">
-                        <img src="{{ user.profireader_small_avatar_url }}">
+                    <div class="avatar-user" />
+                        <img class="w100 h100" {{ prImageUrl(user.avatar.url) }}/>
                     </div>
                     <div class="caption">
                         <h3 pr-test="UserProfiName">{{ user.profireader_name }}</h3>

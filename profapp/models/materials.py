@@ -18,6 +18,7 @@ from .files import FileImg, FileImgDescriptor
 from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument
+from config import Config
 
 
 class Material(Base, PRBase, PRElasticDocument):
@@ -336,20 +337,21 @@ class Publication(Base, PRBase, PRElasticDocument):
         return visibilities.keys(), employer
 
     def article_visibility_details(self):
+        # TODO: OZ by OZ: remove hardcided urls!
         actions = {Publication.VISIBILITIES['OPEN']: lambda: True,
                    Publication.VISIBILITIES['REGISTERED']:
                        lambda: True if getattr(g.user, 'id', False) else
-                       dict(redirect_url='//profireader.com/auth/login_signup',
+                       dict(redirect_url='//'+Config.MAIN_DOMAIN+'/auth/login_signup',
                             message='This article can read only by users which are logged in.',
                             context='log in'),
                    Publication.VISIBILITIES['PAYED']: lambda:
-                   dict(redirect_url='//profireader.com/reader/buy_subscription',
+                   dict(redirect_url='//'+Config.MAIN_DOMAIN+'/reader/buy_subscription',
                         message='This article can read only by users which bought subscription on this portal.',
                         context='buy subscription'),
                    Publication.VISIBILITIES['CONFIDENTIAL']:
                        lambda portal_id=self.portal.id: True if
                        Publication.articles_visibility_for_user(portal_id)[1] else
-                       dict(redirect_url='//profireader.com/auth/login_signup',
+                       dict(redirect_url='//'+Config.MAIN_DOMAIN+'/auth/login_signup',
                             message='This article can read only employees of this company.',
                             context='login as employee')
                    }
