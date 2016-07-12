@@ -94,6 +94,10 @@
     width: 100%;
 }
 
+.h100 {
+    height: 100%;
+}
+
 .notitledialog .ui-dialog-titlebar {
     display: none
 }
@@ -403,6 +407,22 @@ div.pr-row:last-child div.pr-cell {
 
 .m025em {
     margin: 0.25em;
+}
+
+.mr05em {
+    margin-right: 0.5em;
+}
+
+.ml05em {
+    margin-left: 0.5em;
+}
+
+.mt05em {
+    margin-top: 0.5em;
+}
+
+.mb05em {
+    margin-bottom: 0.5em;
 }
 
 .mr1em {

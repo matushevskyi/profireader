@@ -27,6 +27,7 @@ def register_profi(app):
     # the following string must be exactly here. why?
     from . import views_auth
     from . import views_tutorial
+    from . import views_front
 
 
     app.register_blueprint(index_bp, url_prefix='/')
@@ -46,7 +47,7 @@ def register_profi(app):
 
     app.register_blueprint(front_bp, url_prefix='/')
 
-    from . import views_front
+
 
 
 
