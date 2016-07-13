@@ -41,10 +41,15 @@ def edit_profile_load(json, user_id):
         ret['user']['avatar'] = g.user.avatar
         return ret
     else:
-        json['user']['profireader_name'] = json['user']['profireader_first_name'] + ' ' + json['user'][
-            'profireader_last_name']
+        user_data = utils.filter_json(json['user'],
+                                      'profireader_first_name, profireader_last_name, birth_tm, lang, country_id, location, profireader_gender, profireader_link, profireader_phone')
+
+        user_data['country_id'] = user_data['country_id'] if user_data[
+            'country_id'] else '56f52e6b-1273-4001-b15d-d5471ebfc075'
+        user_data['profireader_name'] = user_data['profireader_first_name'] + ' ' + user_data['profireader_last_name']
+        user_data['birth_tm'] = user_data['birth_tm'] if user_data['birth_tm'] else None
         avatar = json['user']['avatar']
-        g.user.attr(utils.dict_merge(json['user'], remove='avatar'))
+        g.user.attr(user_data)
         if action == 'validate':
             g.user.detach()
             validate = g.user.validate(False)
@@ -55,7 +60,7 @@ def edit_profile_load(json, user_id):
             if json['change_password']['password1']:
                 g.user.password = json['change_password']['password1']
             g.user.avatar = avatar
-            ret = {'user': g.user.get_client_side_dict()}
+            ret = {'user': g.user.save().get_client_side_dict()}
 
             return ret
 
