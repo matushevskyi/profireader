@@ -757,8 +757,8 @@ class FileImgDescriptor(object):
             increase_width = (h * self.aspect_ratio[1] - w)
             l, w = l - increase_width / 2, w + increase_width
 
-        if l < 0 or t < 0 or t + h > img.height or l + w > img.width:
-            raise Exception("cant fit coordinates in image %s, %s, %s, %s" % (l, t, w, h))
+        if l < 0 or t < 0 or h > img.height or w > img.width:
+            raise Exception("cant fit coordinates %s, %s, %s, %s in image with size %s x %s" % (l, t, w, h, img.width, img.height))
 
         if self.min_size and (w < self.min_size[0] or h < self.min_size[1]):
             raise Exception("cant fit coordinates in min image %s, %s:  %s" % (w, h, self.min_size))
