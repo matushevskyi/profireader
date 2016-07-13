@@ -728,6 +728,7 @@
                     storeState();
                     $scope.loading = true;
                     if ($scope.loading_image) delete $scope.loading_image;
+                    // debugger;
                     $scope.loading_image = new Image()
                     $scope.loading_image.crossOrigin = "anonymous";
                     $scope.loading_image.onerror = err;

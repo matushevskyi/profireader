@@ -108,9 +108,9 @@
                 </div>
                 <div class="row company">
                     <div class="col-lg-5 col-md-5 col-sm-7 col-xs-12 image-company-profile">
-
                         <!-- TODO: MY by OZ: 400x300 -> some class -->
-                        <img ng-show="!editing" class="company-profile-logo-img" pr-image-url-watch="data.logo.url" alt="image">
+                        <img ng-show="!editing" class="company-profile-logo-img"
+                             pr-image-url-watch="data.logo.url" alt="image"/>
 
                         <div ng-if="editing">
                         <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
@@ -142,9 +142,7 @@
                                            class="form-control border-radius"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.name"
                                            oles_name="company_name" oles_ng-pattern="/[\wа-яёі']{3}/i">
-                                    <div ng-if=" 0 && formCompany.company_name.$error.pattern" class="error-input">{{
-                                        _('The company name should be longer!') }}
-                                    </div>
+
                                 </div>
 
                                 <div class="col-lg-2">{{ _('Country:') }}</div>

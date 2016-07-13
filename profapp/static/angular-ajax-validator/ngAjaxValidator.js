@@ -387,6 +387,11 @@
 
                 element.attr('uib-popover', "{{ "+model_name+".errors."+field_name+" || "+model_name+".warnings."+field_name+"" +
                     " || "+model_name+".notices."+field_name+" }}");
+                element.attr('popover-is-open', model_name+".errors['"+field_name + "'] !== undefined");
+                element.attr('popover-trigger', 'none');
+                element.attr('popover-placement', 'auto right-top');
+
+
                 element.attr('ng-class', "{'pr-validation-error': "+model_name+".errors."+field_name+", 'pr-validation-warning':" +
                     " "+model_name+".warnings."+field_name+", 'pr-validation-notice': "+model_name+".notices."+field_name+"}");
                 element.removeAttr("pr-validation-answer"); //remove the attribute to avoid indefinite loop

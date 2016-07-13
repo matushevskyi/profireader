@@ -127,7 +127,7 @@ body {
 .menu-company img.menu-company-logo {
   margin: 0px 5px;
   padding: 0px;
-  /*background: none;*/
+  background: none;
   float: right;
 }
 .menu-company.menu-company-portal a {
@@ -739,6 +739,15 @@ body {
   border-color: #ffff00;
 }
 .pr-validation-notice {
+  border-color: #C70000;
+}
+.pr-validation-error:focus {
+  border-color: #C70000;
+}
+.pr-validation-warning:focus {
+  border-color: #ffff00;
+}
+.pr-validation-notice:focus {
   border-color: #C70000;
 }
 .error-input {
