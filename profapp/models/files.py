@@ -803,13 +803,14 @@ class FileImgDescriptor(object):
         else:
             raise Exception('Unknown selected by user image source type `%s`', sel_by_user_type)
 
+        sel_by_user_crop = sel_by_user['crop']
+        
         provenance_img, l, t, w, h = self.get_correct_coordinates(sel_by_user_crop, user_img)
 
         if not file_img:
             setattr(instance, self.relation_name, FileImg())
             file_img = getattr(instance, self.relation_name)
 
-        sel_by_user_crop = sel_by_user['crop']
         file_img.origin_left, file_img.origin_top, file_img.origin_zoom = \
             sel_by_user_crop['origin_left'], sel_by_user_crop['origin_top'], sel_by_user_crop['origin_zoom']
 
