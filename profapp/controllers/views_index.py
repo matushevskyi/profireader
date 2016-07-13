@@ -33,15 +33,18 @@ def portals_list():
 @index_bp.route('portals_list/', methods=['OK'])
 @check_right(AllowAll)
 def portals_list_load(json):
-    ret, page, page2 = Search().search(
-        {'class': Portal,
-         'filter': (~Portal.id.in_(
-             db(UserPortalReader.portal_id).filter(UserPortalReader.user_id == g.user.id).all())) if g.user else None,
-         'return_fields': 'default_dict'},
-        page=1, search_text=json.get('text'), pagination=True, items_per_page=5 * json.get('next_page', 1))
-    return {'list_portals': [utils.dict_merge(p, {'subscribed': True if UserPortalReader.get(portal_id=p_id) else
-    False})
-                             for p_id, p in ret.items()], 'end': True if page == 1 or page == 0 else False}
+    filter = (Portal.name.like("%" + json['text'] + "%"))
+    if g.user:
+        filter = and_(filter, ~Portal.id.in_(
+            db(UserPortalReader.portal_id).filter(UserPortalReader.user_id == g.user.id).all()))
+
+    portals, next_page = Portal.get_page(filter=filter, page=json.get('next_page'), per_page=10)
+
+    return {'list_portals':
+                [utils.dict_merge(p.get_client_side_dict(),
+                                  {'subscribed': True if UserPortalReader.get(portal_id=p.id) else False}) for
+                 p in portals],
+            'end': True}
 
 
 @index_bp.route('subscribe/<string:portal_id>', methods=['GET'])
@@ -115,36 +118,25 @@ def list_reader():
 @index_bp.route('', methods=['OK'])
 @check_right(UserNonBanned)
 def list_reader_load(json):
-    page = json.get('next_page') if json.get('next_page') else 1
-
     favorite = request.args.get('favorite') == 'True'
-    # favorite = False
     localtime = time.gmtime(time.time())
-    per_page = 10
 
     if favorite:
         filter = (Publication.id == db(ReaderPublication, user_id=g.user.id, favorite=True).subquery().c.publication_id)
     else:
         division_filter = \
-            and_(
-                PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id
-                # ,
-                # PortalDivision.id == db(ReaderDivision, reader_portal_id=UserPortalReader.id).subquery().c.division_id,
-            )
+            and_(PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id)
         filter = and_(
             Publication.portal_division_id == db(PortalDivision).filter(division_filter).subquery().c.id,
             Publication.status == Publication.STATUSES['PUBLISHED'],
             Publication.publishing_tm < datetime.datetime(*localtime[:6]))
 
-    publications = g.db.query(Publication).filter(filter).order_by(desc(Publication.publishing_tm)).limit(
-        per_page + 1).offset((page - 1) * per_page).all()
-
-    articles = [p.create_article() for p in publications[0:per_page]]
-
+    publications, next_page = Publication.get_page(filter=filter, order_by=desc(Publication.publishing_tm),
+                                                   page=json.get('next_page'), per_page=10)
     return {
-        'next_page': page + 1 if len(publications) > per_page else -1,
-        'end': len(publications) <= per_page,
-        'articles': articles,
+        'next_page': next_page,
+        'end': next_page < 0,
+        'articles': [p.create_article() for p in publications],
         'favorite': favorite
     }
 

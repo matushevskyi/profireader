@@ -192,7 +192,14 @@ class Publication(Base, PRBase, PRElasticDocument):
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
     VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
 
-    division = relationship('PortalDivision', cascade="save-update, merge, delete")
+    division = relationship('PortalDivision', cascade="save-update, delete")
+
+    portal = relationship('Portal',
+                          secondary='portal_division',
+                          primaryjoin="Publication.portal_division_id == PortalDivision.id",
+                          secondaryjoin="PortalDivision.portal_id == Portal.id",
+                          back_populates='publications',
+                          uselist=False)
 
     company = relationship(Company, secondary='material',
                            primaryjoin="Publication.material_id == Material.id",
@@ -211,13 +218,13 @@ class Publication(Base, PRBase, PRElasticDocument):
             'user_id': PRElasticField(analyzed=False, setter=lambda: ''),
             'publisher_company_id': PRElasticField(analyzed=False, setter=lambda: self.material.company_id),
             'material_id': PRElasticField(analyzed=False, setter=lambda: self.material_id),
-            'portal': PRElasticField(setter=lambda: self.portal.name),
+            'portal': PRElasticField(setter=lambda: self.division.portal.name),
             'long': PRElasticField(setter=lambda: self.strip_tags(self.material.long)),
             'author': PRElasticField(setter=lambda: self.strip_tags(self.material.author)),
             'short': PRElasticField(setter=lambda: self.strip_tags(self.material.short), boost=2),
             'subtitle': PRElasticField(setter=lambda: self.strip_tags(self.material.subtitle), boost=5),
             'title': PRElasticField(setter=lambda: self.material.title, boost=10),
-            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id),
+            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.division.portal_id),
             'division': PRElasticField(setter=lambda: self.division.name, boost=2),
             'portal_division_id': PRElasticField(analyzed=False, setter=lambda: self.division.id)
         }
@@ -318,12 +325,6 @@ class Publication(Base, PRBase, PRElasticDocument):
         session['recently_read_articles'] = list(
             filter(bool, set(session.get('recently_read_articles', []) + [self.id])))
 
-    portal = relationship('Portal',
-                          secondary='portal_division',
-                          primaryjoin="Publication.portal_division_id == PortalDivision.id",
-                          secondaryjoin="PortalDivision.portal_id == Portal.id",
-                          back_populates='publications',
-                          uselist=False)
 
     @staticmethod
     def articles_visibility_for_user(portal_id):
@@ -454,10 +455,11 @@ class Publication(Base, PRBase, PRElasticDocument):
         tag_position = 0
         for tag in self.tags:
             tag_position += 1
-            tag_pub = db(TagPublication).filter(and_(TagPublication.tag_id == tag.id,
-                                                     TagPublication.publication_id == self.id)).one()
-            tag_pub.position = tag_position
-            tag_pub.save()
+            tag.position = tag_position
+            # tag_pub = db(TagPublication).filter(and_(TagPublication.tag_id == tag.id,
+            #                                          TagPublication.publication_id == self.id)).one()
+            # tag_pub.position = tag_position
+            # tag_pub.save()
         return self
 
     def get_related_articles(self, count=5):

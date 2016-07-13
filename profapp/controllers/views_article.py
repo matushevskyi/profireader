@@ -166,7 +166,8 @@ def submit_publish(json, article_action):
         return utils.dict_merge(ret, more_data_to_ret)
     else:
 
-        publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
+        # publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
+        publication.division = PortalDivision.get(json['publication']['portal_division_id'])
         # publication.division = PortalDivision.get(json['publication']['portal_division_id'])
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
         publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))
@@ -192,7 +193,7 @@ def submit_publish(json, article_action):
             # if article_action == 'SUBMIT':
             #     publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,
             #                                                                          publication)
-            publication.save().set_tags_positions()
+            publication.save()
             return get_portal_dict_for_material(publication.portal, company, publication=publication,
                                                 submit=article_action == 'SUBMIT')
 
