@@ -161,7 +161,7 @@ gulp.task('install_bootstrap', function () {
 });
 
 gulp.task('less', function () {
-    var layouts = ['spring', 'bird', 'forester'];
+    var layouts = ['clover', 'simple'];
 
     var dirs = ['./css/*.less',];
     for (var i = 0; i < layouts.length; i++) {
