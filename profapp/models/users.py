@@ -83,15 +83,18 @@ class User(Base, UserMixin, PRBase):
 
     avatar = FileImgDescriptor(relation_name='avatar_file_img',
                                file_decorator=lambda u, r, f: f.attr(
-                              name='%s_for_user_avatar_%s' % (f.name, u.id),
-                              parent_id=u.system_folder_file_id,
-                              root_folder_id=u.system_folder_file_id),
+                                   name='%s_for_user_avatar_%s' % (f.name, u.id),
+                                   parent_id=u.system_folder_file_id,
+                                   root_folder_id=u.system_folder_file_id),
                                image_size=[300, 400],
                                min_size=[100, 100],
                                aspect_ratio=[0.5, 2.],
                                after_get=lambda u, r, v: u.get_avatar_preset(r, v),
                                before_set=lambda u, r, v: u.set_avatar_preset(r, v),
                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_user_avatar()))
+
+    def get_avatar(self):
+        return self.avatar
 
     email_conf_token = Column(TABLE_TYPES['token'])
     email_conf_tm = Column(TABLE_TYPES['timestamp'])
@@ -306,11 +309,9 @@ class User(Base, UserMixin, PRBase):
     def validate(self, is_new):
 
         ret = super().validate(is_new)
-        if not re.match(r'[^\s]{3}', str(self.profireader_name)):
-            ret['errors']['profireader_name'] = 'Your username must be at least 3 characters long.'
-        if not re.match(r'[^\s]{3}', str(self.profireader_first_name)):
+        if not re.match(r'[^\s]{3}', self.profireader_first_name):
             ret['errors']['profireader_first_name'] = 'Your First name must be at least 3 characters long.'
-        if not re.match(r'[^\s]{3}', str(self.profireader_last_name)):
+        if not re.match(r'[^\s]{3}', self.profireader_last_name):
             ret['errors']['profireader_last_name'] = 'Your Last name must be at least 3 characters long.'
         if self.profireader_phone and not self.profireader_phone.isdigit():
             ret['errors']['profireader_phone'] = 'pls enter only digits'

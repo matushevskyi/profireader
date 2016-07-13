@@ -100,3 +100,5 @@ tmp*
 
 wget-log.*
 profireader_haproxy.key.pem*
+main_domain.py
+

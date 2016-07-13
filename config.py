@@ -1,5 +1,6 @@
 import os
 import secret_data
+from main_domain import MAIN_DOMAIN
 
 
 def database_uri(host, username, password, db_name):
@@ -20,7 +21,7 @@ class Config(object):
     # to /etc/hosts
 
     SITE_TITLE = 'Profireader'
-    MAIN_DOMAIN = 'profireader.com'
+    MAIN_DOMAIN = MAIN_DOMAIN
 
     # Statement for enabling the development environment
     DEBUG = False

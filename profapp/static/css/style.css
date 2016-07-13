@@ -741,6 +741,15 @@ body {
 .pr-validation-notice {
   border-color: #C70000;
 }
+.pr-validation-error:focus {
+  border-color: #C70000;
+}
+.pr-validation-warning:focus {
+  border-color: #ffff00;
+}
+.pr-validation-notice:focus {
+  border-color: #C70000;
+}
 .error-input {
   color: #CA2027;
 }

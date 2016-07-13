@@ -65,13 +65,6 @@ def login_signup_general(*soc_network_names):
                         for elem in SOC_NET_FIELDS_SHORT:
                             setattr(user, db_fields_profireader[elem], getattr(result_user, elem))
 
-                        try:
-                            user.get_avatar(logged_via_soc or 'gravatar',
-                                    url=result_user.data.get('pictureUrl') if logged_via_soc == 'linkedin' else None,
-                                    size=AVATAR_SIZE, small_size=AVATAR_SMALL_SIZE)
-                        except:
-                            print('avatar loading error', sys.exc_info()[0])
-
                     g.db.add(user)
                     user.confirmed = True
                     g.db.commit()
@@ -168,7 +161,6 @@ def signup():
             PROFIREADER_ALL=profireader_all,
             password=password  # # pass is automatically hashed
         )
-        user.get_avatar('gravatar', size=AVATAR_SIZE, small_size=AVATAR_SMALL_SIZE)
         user.generate_confirmation_token()
         g.db.add(user)
         g.db.commit()

@@ -4,7 +4,9 @@ rand=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
 
 PWD=$(pwd)
 
-if [[ $(dpkg -l dialog | grep Version) == '' ]]; then
+dialog_installed=$(dpkg-query -W --showformat='${Status}\n' dialog|grep "install ok installed")
+
+if [[ "$dialog_installed" == "" ]]; then
     sudo apt-get install dialog
 fi
 
@@ -164,7 +166,7 @@ function menu_elastic {
     elastic_version=$(rr 'elasticsearch version' 2.3.3)
     conf_comm "apt-get install openjdk-8-jre 
 wget https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/"$elastic_version"/elasticsearch-"$elastic_version".deb
-apt  install ./elasticsearch-"$elastic_version".deb
+dpkg -i ./elasticsearch-"$elastic_version".deb
 rm ./elasticsearch-"$elastic_version".deb" sudo deb
 }
 
@@ -234,7 +236,8 @@ service haproxy restart" sudo apache2_config
 
 function menu_apache2_config {
     conf_comm "cat profi-wsgi-apache2.conf | sed -e 's#----directory----#$PWD#g' > /etc/apache2/sites-enabled/profi-wsgi-apache2.conf
-rm /etc/apache2/sites-available/000-default.conf
+cp ./ports.conf /etc/apache2/
+rm /etc/apache2/sites-enabled/000-default.conf
 mkdir /var/log/profi
 service apache2 restart" sudo secret_data
     }
