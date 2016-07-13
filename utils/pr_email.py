@@ -12,7 +12,17 @@ class SendEmail:
         self.username = username
         self.password = password
 
-    def send_email(self, subject='', html='', send_to=(Config.MAIL_GMAIL, )):
+    def send_email_from_template(self, send_to_email = None, subject = '', template = None, **kwargs):
+        from flask import current_app, render_template
+        app = current_app._get_current_object()
+        return self.send_email(
+            subject = app.config['PROFIREADER_MAIL_SUBJECT_PREFIX'] + ' ' + subject,
+            html = render_template(template + '.html', **kwargs),
+            text = render_template(template + '.txt', **kwargs),
+            send_to=(send_to_email,))
+
+
+    def send_email(self, subject='', html='', text = None, send_to=(Config.MAIL_GMAIL, )):
 
         # if exception:
         #     _, _, tb = sys.exc_info()

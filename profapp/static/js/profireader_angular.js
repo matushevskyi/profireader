@@ -1350,6 +1350,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             var args = [].slice.call(arguments);
             return pr_dictionary(args.shift(), args, '', this, $ok);
         },
+        MAIN_DOMAIN: MAIN_DOMAIN,
         static_address: function (relative_file_name) {
             return static_address(relative_file_name);
         },
