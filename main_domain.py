@@ -1,1 +1,1 @@
-MAIN_DOMAIN = 'nazar.com'
+MAIN_DOMAIN = 'kupyty.com'
