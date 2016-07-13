@@ -591,7 +591,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             element.attr('src', static_address('images/0.gif'));
             element.addClass('bg-contain');
             scope.$watch('prImageUrlWatch', function (newval, oldval) {
-                element.css({backgroundImage: "url('" + newval + "')"});
+                if (newval)
+                    element.css({backgroundImage: "url('" + newval + "')"});
             });
         }
     };

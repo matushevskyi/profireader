@@ -82,6 +82,14 @@ class Company(Base, PRBase):
     # ERROR employees.position.1#
     employments = relationship('UserCompany', back_populates='company')
 
+    def __init__(self, **kwargs):
+        # TODO: OZ by OZ: check default value for all columns
+        if 'lon' not in kwargs:
+            kwargs['lon'] = self.__table__.c.lon.default.arg
+        if 'lat' not in kwargs:
+            kwargs['lat'] = self.__table__.c.lat.default.arg
+        Base.__init__(self, **kwargs)
+
     youtube_playlists = relationship('YoutubePlaylist')
 
     # # todo: add company time creation
@@ -124,14 +132,15 @@ class Company(Base, PRBase):
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)
 
-        if self.lon is not None and utils.putInRange(self.lon, 180, 180, check_only=True):
-            ret['errors']['lon'] = 'pls longitude in range [-180,180]'
+        if self.lon is not None or self.lat is not None:
+            if self.lon is None or not utils.putInRange(self.lon, -180, 180, check_only=True):
+                ret['errors']['lon'] = 'pls longitude in range [-180,180]'
+            if self.lat is None or not utils.putInRange(self.lat, -90, 90, check_only=True):
+                ret['errors']['lat'] = 'pls latitude in range [-90,90]'
 
-        if self.lat is not None and utils.putInRange(self.lat, 90, 90, check_only=True):
-            ret['errors']['lat'] = 'pls latitude in range [-90,90]'
 
-        if (self.lat is None and self.lon is not None) or (self.lat is not None and self.lon is None):
-            ret['errors']['long_lat'] = 'pls enter both lon and lat or none of them'
+        # if (self.lat is None and self.lon is not None) or (self.lat is not None and self.lon is None):
+        #     ret['errors']['lon_lat'] = 'pls enter both lon and lat or none of them'
 
         return ret
 
