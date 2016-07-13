@@ -127,7 +127,7 @@ body {
 .menu-company img.menu-company-logo {
   margin: 0px 5px;
   padding: 0px;
-  /*background: none;*/
+  background: none;
   float: right;
 }
 .menu-company.menu-company-portal a {
@@ -1078,9 +1078,10 @@ body {
 }
 .mess-bg {
   background-image: url("../images/develop-img.jpeg");
+  background-size: cover;
   min-height: 100%;
   min-width: 1024px;
-  width: 100%;
+  width: 110%;
   height: auto;
   position: fixed;
   top: 0;

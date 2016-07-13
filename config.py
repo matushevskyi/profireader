@@ -20,7 +20,7 @@ class Config(object):
     # to /etc/hosts
 
     SITE_TITLE = 'Profireader'
-    MAIN_DOMAIN = 'kupyty.com'
+    MAIN_DOMAIN = 'profireader.com'
 
     # Statement for enabling the development environment
     DEBUG = False
