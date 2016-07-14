@@ -7,7 +7,7 @@
            class="item-company">{{ article['company']['name']|safe }}</a>
         <div class="item-publication-date">
             {% if article.division.portal_division_type_id == 'events' %}
-                {{ moment(article.event_begin_tm, 'dd, LL') }}-{{ moment(article.event_end_tm, 'dd, LL') }}
+                {{ moment(article.event_begin_tm, 'MM.DD.YYYY') }}-{{ moment(article.event_end_tm, 'MM.DD.YYYY') }}
             {% else %}
                 {{ moment(article.publishing_tm) }}
             {% endif %}
