@@ -407,8 +407,10 @@ class PRBase:
 
     @classmethod
     def get_page(cls, select_from=None, order_by=None, filter=None, page=1, per_page=10):
-        sel_from = select_from if select_from else cls
-        ord = order_by if order_by else desc(sel_from.id)
+        page = 1 if page is None else page
+        per_page = 10 if per_page is None else per_page
+        sel_from = cls if select_from is None else select_from
+        ord = desc(sel_from.id) if order_by is None else order_by
         sql = g.db.query(sel_from)
         if filter is not None:
             sql = sql.filter(filter)
