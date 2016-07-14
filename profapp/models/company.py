@@ -20,9 +20,10 @@ from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from .. import utils
 import re
 from .files import FileImg, FileImgDescriptor
+from .elastic import PRElasticDocument
 
 
-class Company(Base, PRBase):
+class Company(Base, PRBase, PRElasticDocument):
     __tablename__ = 'company'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     name = Column(TABLE_TYPES['name'], unique=True, nullable=False, default='')
@@ -59,7 +60,7 @@ class Company(Base, PRBase):
     lat = Column(TABLE_TYPES['float'], nullable=True, default=49.8418907)
     lon = Column(TABLE_TYPES['float'], nullable=True, default=24.0316261)
 
-    portal_members = relationship('MemberCompanyPortal', uselist=False)
+    portal_members = relationship(MemberCompanyPortal, uselist=True)
 
     own_portal = relationship(Portal,
                               back_populates='own_company', uselist=False,
@@ -302,6 +303,21 @@ class Company(Base, PRBase):
         # list_sorts.append({'value': 'desc', 'field': Company.name})
         sub_query = Grid.subquery_grid(sub_query, filters=list_filters)
         return sub_query
+
+    @classmethod
+    def __declare_last__(cls):
+        cls.elastic_listeners(cls)
+
+    def elastic_insert(self):
+        pass
+
+    def elastic_update(self):
+        for m in self.portal_members:
+            m.elastic_update()
+
+    def elastic_delete(self):
+        for m in self.portal_members:
+            m.elastic_delete()
 
 
 class UserCompany(Base, PRBase):

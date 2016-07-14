@@ -18,6 +18,7 @@ import datetime
 import json
 from functools import reduce
 from sqlalchemy.sql import and_
+from .elastic import PRElasticField, PRElasticDocument
 
 
 class Portal(Base, PRBase):
@@ -51,7 +52,6 @@ class Portal(Base, PRBase):
                              min_size=[100, 100],
                              aspect_ratio=[0.25, 4.],
                              no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
-
 
     favicon_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
@@ -119,8 +119,6 @@ class Portal(Base, PRBase):
             MemberCompanyPortal(portal=self, company=company_owner, status=MemberCompanyPortal.STATUSES['ACTIVE'],
                                 plan=db(MemberCompanyPortalPlan).first())]
 
-
-
     def setup_created_portal(self, client_data):
         # TODO: OZ by OZ: move this to some event maybe
         """This method create portal in db. Before define this method you have to create
@@ -148,8 +146,8 @@ class Portal(Base, PRBase):
     #
     #     return default
 
-    #TODO: OZ by OZ fix this
-    def get_value_from_config(self, key=None, division_name=None, default = None):
+    # TODO: OZ by OZ fix this
+    def get_value_from_config(self, key=None, division_name=None, default=None):
         return default
 
         """
@@ -183,7 +181,6 @@ class Portal(Base, PRBase):
                 ret['errors']['tags'][unique[tag['text']]] = 'Tag names should be unique'
             unique[tag['text']] = tag_id
         return ret
-
 
     def set_tags(self, new_portal_tags, new_division_tags_matrix):
         tags_to_remove = []
@@ -219,7 +216,6 @@ class Portal(Base, PRBase):
                     division.tags.append(new_tag)
 
         return self
-
 
     def validate(self, is_new):
         ret = super().validate(is_new)
@@ -310,6 +306,7 @@ class Portal(Base, PRBase):
                 portals.append(portal.get_client_side_dict())
         return portals
 
+
 class PortalAdvertisment(Base, PRBase):
     __tablename__ = 'portal_adv'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
@@ -319,20 +316,18 @@ class PortalAdvertisment(Base, PRBase):
     portal = relationship(Portal, uselist=False)
 
     def __init__(self, portal_id=None, place=None, html=None):
-        self.portal_id=portal_id
-        self.place=place
-        self.html=html
+        self.portal_id = portal_id
+        self.place = place
+        self.html = html
 
     def get_portal_advertisments(self, portal_id=None, filters=None):
         return db(PortalAdvertisment, portal_id=portal_id).order_by(PortalAdvertisment.place)
-
 
     def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
         return self.to_dict(fields, more_fields)
 
 
-
-class MemberCompanyPortal(Base, PRBase):
+class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     __tablename__ = 'member_company_portal'
 
     class RIGHT_AT_PORTAL(BinaryRights):
@@ -346,7 +341,7 @@ class MemberCompanyPortal(Base, PRBase):
                     default={RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: True},
                     nullable=False)
 
-    tags = relationship(Tag, secondary = 'tag_membership')
+    tags = relationship(Tag, secondary='tag_membership')
 
     member_company_portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
 
@@ -363,6 +358,35 @@ class MemberCompanyPortal(Base, PRBase):
 
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    # elasticsearch begin
+    def elastic_get_fields(self):
+        return {
+            'id': PRElasticField(analyzed=False, setter=lambda: self.id),
+            'tags': PRElasticField(analyzed=False, setter=lambda: ' '.join([t.text for t in self.tags]), boost=5),
+            'tag_ids': PRElasticField(analyzed=False, setter=lambda: [t.id for t in self.tags]),
+            'status': PRElasticField(setter=lambda: self.status, analyzed=False),
+            'company_name': PRElasticField(setter=lambda: self.company.name, boost=100),
+            'company_about': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=10),
+            'company_short_description': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description), boost=10),
+            'company_city': PRElasticField(setter=lambda: self.company.city, boost=2),
+            'company_id': PRElasticField(setter=lambda: self.company.id, analyzed=False),
+            'portal': PRElasticField(setter=lambda: self.portal.name),
+            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id)
+        }
+
+    def elastic_get_index(self):
+        return 'company_membership'
+
+    def elastic_get_doctype(self):
+        return 'company_membership'
+
+    def elastic_get_id(self):
+        return self.id
+
+    @classmethod
+    def __declare_last__(cls):
+        cls.elastic_listeners(cls)
 
     def is_active(self):
         if self.status != MemberCompanyPortal.STATUSES['ACTIVE']:
@@ -394,7 +418,7 @@ class MemberCompanyPortal(Base, PRBase):
             g.db.flush()
 
     @staticmethod
-    def get(portal_id=None, company_id=None):
+    def get_by_portal_id_company_id(portal_id=None, company_id=None):
         return db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
 
     @staticmethod
@@ -461,6 +485,7 @@ class PortalLayout(Base, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
+
 class MemberCompanyPortalPlan(Base, PRBase):
     __tablename__ = 'member_company_portal_plan'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
@@ -490,7 +515,8 @@ class PortalDivision(Base, PRBase):
 
     settings = None
 
-    TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events', 'catalog': 'catalog'}
+    TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
+             'catalog': 'catalog'}
 
     def is_active(self):
         return True
