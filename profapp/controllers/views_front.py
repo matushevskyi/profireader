@@ -112,7 +112,7 @@ def get_urls_change_tag_page(url_tags, search_text, selected_tag_names):
 
 def get_members_tags_pages_search_text(portal, dvsn, page, tags, search_text, company_publisher=None):
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=1)
+                                                  division_name=dvsn.name, default=10)
 
     def url_tags(tag_names):
         url_args = {'division_name': dvsn.name}
@@ -138,7 +138,7 @@ def get_members_tags_pages_search_text(portal, dvsn, page, tags, search_text, co
                                                         items_per_page=items_per_page,
                                                         must=[{"multi_match": {'query': search_text,
                                                                                'fields': ["company_name^100",
-                                                                                          'company_about^50',
+                                                                                          'company_short_description^50',
                                                                                           'company_city^2']}}]
                                                         if search_text else [])
 
