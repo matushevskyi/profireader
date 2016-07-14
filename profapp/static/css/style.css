@@ -11,6 +11,7 @@
 }
 body {
   padding-top: 80px;
+  background-color: #e1e1e1;
 }
 .item-company {
   color: #00BBA1;
@@ -127,7 +128,6 @@ body {
 .menu-company img.menu-company-logo {
   margin: 0px 5px;
   padding: 0px;
-  background: none;
   float: right;
 }
 .menu-company.menu-company-portal a {
@@ -143,12 +143,13 @@ body {
 .menu-company .selected {
   color: #fff;
   text-decoration: none;
-  background-color: #00ceb1;
+  /*background-coищвнlor: #00ceb1;*/
   padding: 15px;
 }
 .company-logo img {
   margin-right: -15px;
 }
+
 /* ---Global menu--- */
 /*change language*/
 .dropbtn {
@@ -383,8 +384,9 @@ body {
   margin-top: 30px;
 }
 .join-company h3 {
-  margin-top: 5px;
+  margin-top: -9px;
   color: #383838;
+  width: 110%;
 }
 .search-company input {
   border-radius: 0px;
@@ -545,6 +547,7 @@ body {
 }
 .some-company-info h3 {
   text-align: center;
+  overflow-wrap: break-word;
 }
 .some-company-info a {
   color: #00BBA1;
