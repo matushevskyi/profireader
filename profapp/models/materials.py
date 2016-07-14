@@ -429,10 +429,10 @@ class Publication(Base, PRBase, PRElasticDocument):
         if not self.publishing_tm:
             ret['errors']['publishing_tm'] = 'Please select publication date'
 
-        if not self.portal_division_id:
+        if not self.portal_division_id and not self.division:
             ret['errors']['portal_division_id'] = 'Please select portal division'
         else:
-            portalDivision = PortalDivision.get(self.portal_division_id)
+            portalDivision = PortalDivision.get(self.portal_division_id if self.portal_division_id else self.division.id)
             if portalDivision.portal_division_type_id == 'events':
                 if not self.event_begin_tm:
                     ret['errors']['event_begin_tm'] = 'Please select event start date'
