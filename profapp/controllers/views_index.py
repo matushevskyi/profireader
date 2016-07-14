@@ -122,16 +122,16 @@ def list_reader_load(json):
     localtime = time.gmtime(time.time())
 
     if favorite:
-        filter = (Publication.id == db(ReaderPublication, user_id=g.user.id, favorite=True).subquery().c.publication_id)
+        publication_filter = (Publication.id == db(ReaderPublication, user_id=g.user.id, favorite=True).subquery().c.publication_id)
     else:
         division_filter = \
             and_(PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id)
-        filter = and_(
+        publication_filter = and_(
             Publication.portal_division_id == db(PortalDivision).filter(division_filter).subquery().c.id,
             Publication.status == Publication.STATUSES['PUBLISHED'],
             Publication.publishing_tm < datetime.datetime(*localtime[:6]))
 
-    publications, next_page = Publication.get_page(filter=filter, order_by=desc(Publication.publishing_tm),
+    publications, next_page = Publication.get_page(filter=publication_filter, order_by=desc(Publication.publishing_tm),
                                                    page=json.get('next_page'), per_page=10)
     return {
         'next_page': next_page,
