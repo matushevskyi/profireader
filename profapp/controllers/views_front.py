@@ -77,24 +77,23 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
 def publication_id_to_article(p_id):
     return Publication.get(p_id).create_article()
 
-def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, company_publisher=None):
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=200)
 
-    pdt = dvsn.portal_division_type_id
+def get_tag_elastic_filter(all_tags, tags_selected_by_user):
+    wrong_tag_found = False
+    elastic_filter = []
+    all_tags_text_id = {t['text']: t['id'] for t in all_tags}
+    selected_tag_names = []
+    if tags_selected_by_user:
+        for t in tags_selected_by_user.split('+'):
+            if t in all_tags_text_id:
+                selected_tag_names.append(t)
+                elastic_filter.append({'term': {'tag_ids': all_tags_text_id[t]}})
+            else:
+                wrong_tag_found = True
+    return None if wrong_tag_found else elastic_filter, selected_tag_names
 
-    def url_tags(tag_names):
-        url_args = {}
 
-        if pdt != 'index':
-            url_args['division_name'] = dvsn.name
-        if len(tag_names) > 0:
-            url_args['tags'] = '+'.join(tag_names)
-
-        s = ('?search=' + search_text) if search_text else ''
-
-        return url_for(request.endpoint, **url_args) + s
-
+def get_urls_change_tag_page(url_tags, search_text, selected_tag_names):
     def url_page_division(page=1):
         s = ('?search=' + search_text) if search_text else ''
         url_args = utils.dict_merge(request.view_args, {'page': page} if page > 1 else {},
@@ -108,30 +107,83 @@ def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, c
 
         return url_tags(new_tags)
 
-    afilter = [
-        {'term': {'status': Publication.STATUSES['PUBLISHED']}},
-        {'term': {'portal_id': portal.id}}] if pdt == 'index' else [{'term': {'portal_division_id': dvsn.id}}]
+    return url_toggle_tag, url_page_division
+
+
+def get_members_tags_pages_search_text(portal, dvsn, page, tags, search_text, company_publisher=None):
+    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
+                                                  division_name=dvsn.name, default=1)
+
+    def url_tags(tag_names):
+        url_args = {'division_name': dvsn.name}
+
+        if len(tag_names) > 0:
+            url_args['tags'] = '+'.join(tag_names)
+
+        return url_for(request.endpoint, **url_args) + (('?search=' + search_text) if search_text else '')
+
+    afilter = [{'term': {'status': MemberCompanyPortal.STATUSES['ACTIVE']}}, {'term': {'portal_id': portal.id}}]
+
+    all_tags = portal.get_client_side_dict(fields='tags')['tags']
+
+    elastic_filter, selected_tag_names = get_tag_elastic_filter(all_tags, tags)
+
+    if elastic_filter is None:
+        return dict(company_members=False, redirect=redirect(url_tags(selected_tag_names)))
+
+    afilter += elastic_filter
+
+    company_members, pages, page = elasticsearch.search('company_membership', 'company_membership',
+                                                        sort=[{"id": "desc"}], filter=afilter, page=page,
+                                                        items_per_page=items_per_page,
+                                                        must=[{"multi_match": {'query': search_text,
+                                                                               'fields': ["company_name^100",
+                                                                                          'company_about^50',
+                                                                                          'company_city^2']}}]
+                                                        if search_text else [])
+
+    url_toggle_tag, url_page_division = get_urls_change_tag_page(url_tags, search_text, selected_tag_names)
+
+    return dict(members=OrderedDict((member.id, member.get_client_side_dict(fields="id|company|tags"))
+                                    for member in [MemberCompanyPortal.get(m['id']) for m in company_members]),
+                tags={'all': all_tags, 'selected_names': selected_tag_names,
+                      'url_construct_toggle': url_toggle_tag},
+                pager={'total': pages, 'current': page, 'neighbours': Config.PAGINATION_BUTTONS,
+                       'url_construct': url_page_division},
+                search_text=search_text)
+
+
+def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, company_publisher=None):
+    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
+                                                  division_name=dvsn.name, default=10)
+
+    pdt = dvsn.portal_division_type_id
+
+    def url_tags(tag_names):
+        url_args = {}
+
+        if pdt != 'index':
+            url_args['division_name'] = dvsn.name
+        if len(tag_names) > 0:
+            url_args['tags'] = '+'.join(tag_names)
+
+        return url_for(request.endpoint, **url_args) + (('?search=' + search_text) if search_text else '')
+
+    afilter = [{'term': {'status': Publication.STATUSES['PUBLISHED']}},
+               {'term': {'portal_id': portal.id} if pdt == 'index' else {'portal_division_id': dvsn.id}}]
 
     if company_publisher:
         afilter.append({'term': {'publisher_company_id': company_publisher.id}})
 
-    wrong_tag = False
     all_tags = (portal.get_client_side_dict(fields='tags') if pdt == 'index' else dvsn.get_client_side_dict(
         fields='tags'))['tags']
-    all_tags_text_id = {t['text']: t['id'] for t in all_tags}
-    selected_tag_names = []
-    if tags:
-        for t in tags.split('+'):
-            if t in all_tags_text_id:
-                selected_tag_names.append(t)
-                afilter.append({'term': {'tag_ids': all_tags_text_id[t]}})
-            else:
-                wrong_tag = True
 
-    if wrong_tag:
-        return dict(articles = False, redirect = redirect(url_tags(selected_tag_names)))
-        # url_for(request.endpoint,
-        #                     **utils.dict_merge(request.view_args, {'tags': '+'.join(selected_tag_names)})))
+    elastic_filter, selected_tag_names = get_tag_elastic_filter(all_tags, tags)
+
+    if elastic_filter is None:
+        return dict(articles=False, redirect=redirect(url_tags(selected_tag_names)))
+
+    afilter += elastic_filter
 
     publications, pages, page = elasticsearch.search('publications', 'publications',
                                                      sort=[{"date": "desc"}], filter=afilter, page=page,
@@ -142,6 +194,8 @@ def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, c
                                                                                        "long^1",
                                                                                        'author^50',
                                                                                        'keywords^10']}}] if search_text else [])
+
+    url_toggle_tag, url_page_division = get_urls_change_tag_page(url_tags, search_text, selected_tag_names)
 
     return dict(articles=OrderedDict((p['id'], publication_id_to_article(p['id'])) for p in publications),
                 tags={'all': all_tags, 'selected_names': selected_tag_names, 'url_construct_toggle': url_toggle_tag},
@@ -190,13 +244,15 @@ def company_page(portal, member_company_id, member_company_name, member_company_
 @get_portal
 def division(portal, division_name=None, page=1, tags=None, member_company_id=None, member_company_name=None):
     if member_company_id is None:
+
         search_text, dvsn = get_search_text_and_division(portal, division_name)
 
-        articles_data = get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text)
-        if 'redirect' in articles_data:
-            return articles_data['redirect']
-
         if dvsn.portal_division_type_id in ['index', 'news', 'events']:
+
+            articles_data = get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text)
+            if 'redirect' in articles_data:
+                return articles_data['redirect']
+
             return render_template(
                 'front/' + g.portal_layout_path + 'division_articles.html',
                 division=dvsn.get_client_side_dict(),
@@ -204,24 +260,27 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                 **articles_data)
 
         elif dvsn.portal_division_type_id == 'catalog':
-            members = {member.id: member.get_client_side_dict(fields="id|company|tags") for
-                       member in dvsn.portal.company_members}
+
+            membership_data = get_members_tags_pages_search_text(portal, dvsn, page, tags, search_text)
+
             return render_template('front/' + g.portal_layout_path + 'division_catalog.html',
-                                   members=members,
                                    division=dvsn.get_client_side_dict(),
-                                   portal=portal_and_settings(portal))
+                                   portal=portal_and_settings(portal),
+                                   **membership_data
+                                   )
 
         else:
             return 'unknown division.portal_division_type_id = %s' % (dvsn.portal_division_type_id,)
 
     else:
+
         # TODO: OZ by OZ: redirect if company name is wrong. 404 if id is wrong
         member_company, dvsn = \
             get_company_member_and_division(portal, member_company_id, member_company_name)
         search_text, subportal_dvsn = get_search_text_and_division(portal, division_name)
 
         articles_data = get_articles_tags_pages_search_text(portal, subportal_dvsn, page, tags, search_text,
-                                                                     company_publisher=member_company)
+                                                            company_publisher=member_company)
         if 'redirect' in articles_data:
             return articles_data['redirect']
 
@@ -292,6 +351,6 @@ def send_message(json, member_company_id):
     SendEmail().send_email_from_template(
         send_to_email=send_to.profireader_email, subject='New message', template='messenger/email_send_message',
         user_to=send_to, user_from=g.user.get_client_side_dict() if g.user else None,
-               in_company=Company.get(member_company_id), message=json['message'])
+        in_company=Company.get(member_company_id), message=json['message'])
 
     return {}

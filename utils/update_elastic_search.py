@@ -1,7 +1,8 @@
 import sys
 
 sys.path.append('..')
-from profapp.models.materials import Material, Publication
+from profapp.models.materials import Publication
+from profapp.models.portal import MemberCompanyPortal
 from profapp.models.elastic import elasticsearch
 
 
@@ -9,14 +10,7 @@ from profapp import create_app, load_database
 import argparse
 
 
-# if __name__ == '__main__':
-
-
-# classes = [ArticlePortalDivision, Article, ArticleCompany, ArticleCompanyHistory,
-#            Company, UserCompany, File, User, Portal]
-
-classes = [Publication]
-
+classes = [Publication, MemberCompanyPortal]
 
 
 def recreate_documents():

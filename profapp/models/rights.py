@@ -224,7 +224,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
         if not employee:
             return "Sorry!You are not employee in this company!"
 
-        membership = MemberCompanyPortal.get(portal_id=membership_portal_id, company_id=company.id)
+        membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=membership_portal_id, company_id=company.id)
         if not membership:
             raise Exception('Bad data!')
         company_object = self.division.portal.own_company
@@ -300,8 +300,8 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
                                 'employee': self.employee, 'material': self.material, 'user': g.user}
         if self.portal:
             check_objects_rights.update(
-                {'membership': MemberCompanyPortal.get(portal_id=self.portal.id, company_id=self.material.company.id)})
-            check_objects_status.update({'membership': MemberCompanyPortal.get(portal_id=self.portal.id,
+                {'membership': MemberCompanyPortal.get_by_portal_id_company_id(portal_id=self.portal.id, company_id=self.material.company.id)})
+            check_objects_status.update({'membership': MemberCompanyPortal.get_by_portal_id_company_id(portal_id=self.portal.id,
                                                                                company_id=self.material.company.id),
                                          'company where you want submit material': self.portal.own_company})
 

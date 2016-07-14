@@ -190,7 +190,7 @@ def save_portal_banner(json, company_id):
 @portal_bp.route('/portals_partners_change_status/<string:company_id>/<string:portal_id>', methods=['OK'])
 @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def portals_partners_change_status(json, company_id, portal_id):
-    partner = MemberCompanyPortal.get(portal_id=portal_id, company_id=json.get('partner_id'))
+    partner = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
     employee = UserCompany.get(company_id=company_id)
     if MembershipRights(company=json.get('partner_id'), member_company=partner).action_is_allowed(json.get('action'),
                                                                                                   employee) == True:
@@ -203,7 +203,7 @@ def portals_partners_change_status(json, company_id, portal_id):
 @portal_bp.route('/membership_set_tags/<string:company_id>/<string:portal_id>/', methods=['OK'])
 # @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def membership_set_tags(json, company_id, portal_id):
-    membership = MemberCompanyPortal.get(portal_id=portal_id, company_id=company_id)
+    membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=company_id)
     action = g.req('action', allowed=['load', 'validate', 'save'])
     if action == 'load':
         return membership.get_client_side_dict(fields='id,portal,portal.tags,company,tags')
@@ -223,7 +223,7 @@ def membership_set_tags(json, company_id, portal_id):
 def company_partner_update(company_id, member_id):
     return render_template('company/company_partner_update.html',
                            company=Company.get(company_id),
-                           member=MemberCompanyPortal.get(Company.get(company_id).own_portal.id,
+                           member=MemberCompanyPortal.get_by_portal_id_company_id(Company.get(company_id).own_portal.id,
                                                           company_id=member_id).company.get_client_side_dict(
                                'id, status'))
 
@@ -232,7 +232,7 @@ def company_partner_update(company_id, member_id):
 @check_right(PortalManageMembersCompaniesRight, ['company_id', 'member_id'])
 def company_update_load(json, company_id, member_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
-    member = MemberCompanyPortal.get(Company.get(company_id).own_portal.id, member_id)
+    member = MemberCompanyPortal.get_by_portal_id_company_id(Company.get(company_id).own_portal.id, member_id)
     if action == 'load':
         return {'member': member.get_client_side_dict(more_fields='company'),
                 'statuses_available': MembersRights.get_avaliable_statuses(),
@@ -251,7 +251,7 @@ def company_update_load(json, company_id, member_id):
 @portal_bp.route('/company_partners_change_status/<string:company_id>/<string:portal_id>', methods=['OK'])
 @check_right(PortalManageMembersCompaniesRight, ['company_id'])
 def company_partners_change_status(json, company_id, portal_id):
-    partner = MemberCompanyPortal.get(portal_id=portal_id, company_id=json.get('partner_id'))
+    partner = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
     employee = UserCompany.get(company_id=company_id)
     if MembersRights(company=json.get('partner_id'), member_company=partner).action_is_allowed(json.get('action'),
                                                                                                employee) == True:
