@@ -164,7 +164,7 @@ apt-get install postgresql-9.4" sudo elastic
 
 function menu_elastic {
     elastic_version=$(rr 'elasticsearch version' 2.3.3)
-    conf_comm "apt-get install openjdk-8-jre 
+    conf_comm "apt-get install openjdk-7-jre 
 wget https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/"$elastic_version"/elasticsearch-"$elastic_version".deb
 dpkg -i ./elasticsearch-"$elastic_version".deb
 rm ./elasticsearch-"$elastic_version".deb" sudo deb

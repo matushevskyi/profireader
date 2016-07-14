@@ -405,6 +405,16 @@ class PRBase:
 
     # TODO: YG by OZ: move this (to next comment) static methods to utils (just like `putInRange` moved)
 
+    @classmethod
+    def get_page(cls, select_from=None, order_by=None, filter=None, page=1, per_page=10):
+        sel_from = select_from if select_from else cls
+        ord = order_by if order_by else desc(sel_from.id)
+        sql = g.db.query(sel_from)
+        if filter is not None:
+            sql = sql.filter(filter)
+        ret = sql.order_by(ord).limit(per_page + 1).offset((page - 1) * per_page).all()
+        return ret[0:per_page], page + 1 if len(ret) > per_page else -1,
+
     @staticmethod
     def get_ordered_dict(list_of_dicts, **kwargs):
         ret = OrderedDict()
@@ -524,7 +534,7 @@ class PRBase:
         g.db.delete(self)
         g.db.commit()
 
-    def refreshSession(self):
+    def refresh(self):
         g.db.refresh(self)
         return self
 

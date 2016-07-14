@@ -7,7 +7,7 @@ from ..models.company import Company
 from ..models.users import User
 from ..utils.session_utils import back_to_url
 from config import Config
-from ..utils.pr_email import send_email
+from ..utils.pr_email import SendEmail
 from .request_wrapers import check_right, get_portal
 from ..models.rights import AllowAll
 from ..models.elastic import elasticsearch
@@ -166,7 +166,7 @@ def company_page(portal, member_company_id, member_company_name, member_company_
                            portal=portal_and_settings(portal),
                            division=dvsn.get_client_side_dict(),
                            member_company=member_company.get_client_side_dict(
-                               more_fields='employments,employments.user'),
+                               more_fields='employments,employments.user,employments.user.avatar.url'),
                            company_menu_selected_item=member_company_page,
                            member_company_page=member_company_page,
                            )
@@ -289,8 +289,9 @@ def add_delete_liked(json, publication_id):
 @check_right(AllowAll)
 def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
-    send_email(send_to.profireader_email, 'New message',
-               'messenger/email_send_message', user_to=send_to,
-               user_from=g.user.get_client_side_dict() if g.user else None,
+    SendEmail().send_email_from_template(
+        send_to_email=send_to.profireader_email, subject='New message', template='messenger/email_send_message',
+        user_to=send_to, user_from=g.user.get_client_side_dict() if g.user else None,
                in_company=Company.get(member_company_id), message=json['message'])
+
     return {}

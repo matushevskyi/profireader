@@ -126,7 +126,12 @@ class PRElasticDocument:
         return None
 
     def elastic_get_document(self):
-        return {k: v.setter() for k, v in self.elastic_get_fields().items()}
+        print(self)
+        ret = {}
+        for k, v in self.elastic_get_fields().items():
+            ret[k] = v.setter()
+        return ret
+        # return {k: v.setter() for k, v in self.elastic_get_fields().items()}
 
     def create_index_if_not_exist(self):
         index_name = self.elastic_get_index()
@@ -203,15 +208,15 @@ class PRElasticDocument:
 
     @staticmethod
     def event_insert_elastic(mapper, connection, target):
-        target.__class__.get(target.id).elastic_insert()
+        target.elastic_insert()
 
     @staticmethod
     def event_update_elastic(mapper, connection, target):
-        target.__class__.get(target.id).elastic_update()
+        target.elastic_update()
 
     @staticmethod
     def event_delete_elastic(mapper, connection, target):
-        target.__class__.get(target.id).elastic_delete()
+        target.elastic_delete()
 
     @staticmethod
     def elastic_listeners(cls):
