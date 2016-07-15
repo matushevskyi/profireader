@@ -1441,7 +1441,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
                     var prefix_img = '';
                     if (col.img_url) {
-                        var prefix_img = '<img src="'+static_address('images/0.gif')+'" class="pr-grid-cell-img-prefix" style="background-size: contain; background-repeat: no-repeat; background-position: center center; background-color: #fff; background-image: url({{ row.entity.' + col.img_url + ' }})" />';
+                        var prefix_img = '<img src="' + static_address('images/0.gif') + '" class="pr-grid-cell-img-prefix" style="background-size: contain; background-repeat: no-repeat; background-position: center center; background-color: #fff; background-image: url({{ row.entity.' + col.img_url + ' }})" />';
                     }
                     switch (col.type) {
                         case 'link':
@@ -1965,9 +1965,9 @@ function fileUrl(id, down, if_no_file) {
 
     var server = id.replace(/^[^-]*-[^-]*-4([^-]*)-.*$/, "$1");
     if (down) {
-        return '//file' + server + '.'+MAIN_DOMAIN+'/' + id + '?d'
+        return '//file' + server + '.' + MAIN_DOMAIN + '/' + id + '?d'
     } else {
-        return '//file' + server + '.'+MAIN_DOMAIN+'/' + id + '/'
+        return '//file' + server + '.' + MAIN_DOMAIN + '/' + id + '/'
     }
 }
 
@@ -2091,9 +2091,10 @@ function buildAllowedTagsAndAttributes() {
     return allowed_tags;
 }
 
-function find_and_build_url_for_endpoint(dict, rules) {
+function find_and_build_url_for_endpoint(dict, rules, host) {
     var found = false;
     var dict1 = {};
+
     $.each(rules, function (ind, rule) {
         var ret = rule;
         var prop = null;
@@ -2116,7 +2117,7 @@ function find_and_build_url_for_endpoint(dict, rules) {
         if (_.size(dict1) > 0) {
             console.warn("Too many parameters passed in dictionary for endpoint rule", dict, rules);
         }
-        return found;
+        return (host ? ('//' + host) : '') + found;
     }
 }
 

@@ -55,7 +55,7 @@ def raw_url_for(endpoint):
 
     rules_simplified = [re.compile('<[^:]*:').sub('<', rule.rule) for rule in rules]
 
-    return "function (dict) { return find_and_build_url_for_endpoint(dict, %s); }" % (json.dumps(rules_simplified))
+    return "function (dict, host) { return find_and_build_url_for_endpoint(dict, %s, host); }" % (json.dumps(rules_simplified))
     # \
     #        " { var ret = '" + ret + "'; " \
     #                                                " for (prop in dict) ret = ret.replace('<'+prop+'>',dict[prop]); return ret; }"
