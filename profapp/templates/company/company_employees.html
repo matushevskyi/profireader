@@ -193,12 +193,22 @@
                         name: 'position',
                         onclick: 'change_position',
                         width: '20%', afilter: {type: 'input'}
-                    }
-                    ,
+                    },
+                    {
+                        name: 'profireader_email',
+                        onclick: 'change_position',
+                        width: '20%', afilter: {type: 'input'}
+                    },
+                    {
+                        name: 'profireader_phone',
+                        onclick: 'change_position',
+                        width: '20%', afilter: {type: 'input'}
+                    },
+  
                     {name: 'status', width: '10%', afilter: {type: 'input'}},
                     {
                         name: 'rights',
-                        width: '*',
+                        width: '20%',
                         type: 'icons',
                         afilter: {type: 'input'},
                         classes: function (id, entity, field) {
@@ -206,7 +216,7 @@
                         }
                     },
                     {
-                        name: 'actions', width: '*', type: 'actions',
+                        name: 'actions', width: '20%', type: 'actions',
                         onclick: 'grid_action',
                         afilter: {type: 'input'}, classes: function (id,
                                                                      entity, field) {
