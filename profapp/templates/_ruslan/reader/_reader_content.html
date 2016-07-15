@@ -12,6 +12,7 @@
             $scope.add_delete_favorite = '{{ url_for('index.add_delete_favorite') }}';
             $scope.add_delete_like = '{{ url_for('index.add_delete_like') }}';
             $scope.tag_url = {{ raw_url_for('front.division')|safe }};
+            $scope.url_publication_details = {{ raw_url_for('front.article_details')|safe }};
 
 {#            @front_bp.route('tags/<string:tags>/', methods=['GET'])#}
             $scope.add_to_favorite = function (article) {
@@ -75,14 +76,13 @@
                             </div>
                         </div>
                     </div>
-                    <a target="_blank" type="link" href="//{{ article.portal.host}}/details/{{ article.id }}">
-                        <img class="list-reader-image" style="background-size: cover;"
-                             pr-image-url="{{ article.illustration.url }}"
+                    <a target="_blank" type="link" href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">
+                        <img class="list-reader-image" pr-image-url="{{ article.illustration.url }}"
                              alt="img">
                     </a>
                     <h3 class="item-title">
                         <a target="_blank"
-                           href="//{{ article.portal.host}}/details/{{ article.id }}">{{ article.title}}</a>
+                           href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">{{ article.title}}</a>
                     </h3>
                     <div class="item-short-content">
                         <p>{{ article.short}}</p>
