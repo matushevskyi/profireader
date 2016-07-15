@@ -18,9 +18,6 @@ from utils.pr_email import SendEmail
 from ..models.rights import AllowAll
 import sys
 
-EMAIL_REGEX = re.compile(r'[^@]+@[^@]+\.[^@]+')
-
-
 
 def login_signup_general(*soc_network_names):
 
@@ -133,7 +130,11 @@ def login_signup_load(json_data):
     action = g.req('action', allowed=['validate', 'save'])
     # user registration
     if True:
-        new_user = User(**g.filter_json(json_data, 'first_name,last_name,email,password,password_confirmation'))
+        params = g.filter_json(json_data, 'first_name,last_name,email,password,password_confirmation')
+        params['address_email'] = params['email']
+        del params['email']
+        new_user = User(**params)
+
         if action == 'validate':
             return new_user.validate(True)
         else:

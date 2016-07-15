@@ -6,6 +6,7 @@ from urllib import request as req
 from config import Config
 import re
 from ..constants.TABLE_TYPES import TABLE_TYPES
+from ..constants import REGEXP
 from ..constants.SOCIAL_NETWORKS import SOCIAL_NETWORKS, SOC_NET_NONE
 from ..constants.USER_REGISTERED import REGISTERED_WITH_FLIPPED, \
     REGISTERED_WITH
@@ -41,7 +42,6 @@ class User(Base, UserMixin, PRBase):
     first_name = Column(TABLE_TYPES['string_100'])
     last_name = Column(TABLE_TYPES['string_100'])
     full_name = Column(TABLE_TYPES['string_200'])
-
 
     # full_name = Column(TABLE_TYPES['name'])
     gender = Column(TABLE_TYPES['gender'])
@@ -174,6 +174,7 @@ class User(Base, UserMixin, PRBase):
 
     # YAHOO
     yahoo_id = Column(TABLE_TYPES['id_soc_net'])
+
     # yahoo_email = Column(TABLE_TYPES['email'], unique=True, index=True)
     # yahoo_first_name = Column(TABLE_TYPES['name'])
     # yahoo_last_name = Column(TABLE_TYPES['name'])
@@ -307,21 +308,25 @@ class User(Base, UserMixin, PRBase):
     def validate(self, is_new):
 
         ret = super().validate(is_new)
-        if not re.match(r'[^\s]{3}', self.first_name):
-            ret['errors']['first_name'] = 'Your First name must be at least 3 characters long.'
-        if not re.match(r'[^\s]{3}', self.last_name):
-            ret['errors']['last_name'] = 'Your Last name must be at least 3 characters long.'
-        if self.address_phone and not self.address_phone.isdigit():
-            ret['errors']['address_phone'] = 'pls enter only digits'
-        return ret
+        if not re.match(r'[^\s]{2}', self.first_name):
+            ret['errors']['first_name'] = 'Your First name must be at least 2 characters long.'
+        if not re.match(r'[^\s]{2}', self.last_name):
+            ret['errors']['last_name'] = 'Your Last name must be at least 2 characters long.'
 
+        if not re.match(REGEXP.EMAIL, self.address_email):
+            ret['errors']['email'] = 'Please enter correct email'
+        elif is_new and db(User, address_email=self.address_email).first():
+            ret['errors']['email'] = 'Sorry. this email is taken'
+
+
+        # if self.address_phone and not self.address_phone.isdigit():
+        #     ret['errors']['address_phone'] = 'pls enter only digits'
+        return ret
 
     @staticmethod
     def user_query(user_id):
         ret = db(User, id=user_id).one()
         return ret
-
-
 
     def ping(self):
         self.last_seen_tm = datetime.datetime.utcnow()
@@ -581,4 +586,4 @@ class Group(Base, PRBase):
     id = Column(TABLE_TYPES['string_30'], primary_key=True)
 
 
-# profireader_(name|first_name|last_name|email|gender|phone|link)
+    # profireader_(name|first_name|last_name|email|gender|phone|link)

@@ -11,6 +11,9 @@
 {% block portal_content %}
     <script>
         module.controller('signup_via_email', function ($scope, $af) {
+
+            $scope.new_user = {};
+
             $scope.beforeLoad = function () {
                 return {
                     'first_name': '',
@@ -51,17 +54,22 @@
                      af-before-load="beforeLoad"
                      ng-model="new_user"
                      class="register-form-profireader">
-                    <input class="form-control" ng-model="new_user.email" placeholder="email"/>
-                    <input class="form-control" ng-model="new_user.first_name" placeholder="first_name"/>
-                    <input class="form-control" ng-model="new_user.second_name" placeholder="second_name"/>
-                    <input class="form-control" ng-model="new_user.password" placeholder="password"/>
-                    <input class="form-control" ng-model="new_user.password_confirmation"
-                           placeholder="confirm password"/>
-                    <button class="submit-form" type="submit">{{ _('Sign up') }}</button>
+                    <input class="form-control" ng-model="new_user.email" placeholder="email"
+                           pr-validation-answer="new_user_validation:email"/>
+                    <input class="form-control" ng-model="new_user.first_name" placeholder="first_name"
+                           pr-validation-answer="new_user_validation:first_name"/>
+                    <input class="form-control" ng-model="new_user.last_name" placeholder="last_name"
+                           pr-validation-answer="new_user_validation:last_name"/>
+                    <input class="form-control" ng-model="new_user.password" placeholder="password"
+                           pr-validation-answer="new_user_validation:password"/>
+                    <input class="form-control" ng-model="new_user.password_confirmation" placeholder="confirm password"
+                           pr-validation-answer="new_user_validation:password_confirmation"/>
+                    <button class="submit-form" type="submit" type="button" ng-click="$af.save(new_user)"
+                            ng-disabled="!$af.isActionAllowed(new_user, 'save')" >{{ _('Sign up') }}</button>
                 </div>
 
             </span>
-            <div ng-if="login_signup != 'signup'">
+            <div ng-if=" login_signup !='signup'">
                 <h3>{{ _('Login via social') }}:</h3>
                 {% include 'partials/login_or_signup_via_social.html' %}
                 {% include 'partials/login_via_email.html' %}
