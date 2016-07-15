@@ -9,37 +9,58 @@
 {% endblock portal_base %}
 
 {% block portal_content %}
-    <div ng-cloak class="auth-input auth-form col-lg-4 col-md-5 col-sm-6 col-xs-10" ng-controller="UserLoginController">
+    <script>
+        module.controller('signup_via_email', function ($scope, $af) {
+            $scope.new_user = {'first_name': 'Oles'}
+            $scope.beforeLoad = function () {
+                return $scope.new_user;
+            }
+        });
+    </script>
+
+    <div ng-cloak class="auth-input auth-form col-lg-4 col-md-5 col-sm-6 col-xs-10" ng-controller="user_controller">
         <div class="tabs">
-            <div ng-hide="login_signup==='signup'" class="tab-link">
+            <div ng-hide="login_signup == 'signup'" class="tab-link">
                 <a pr-test="TabLogIn" class="tab actual" title="Log in to Profireader">{{ _('Log in') }}</a>
-                <a pr-test="TabSignUp" class="tab" ng-click="login_signup='signup'" href="" title="Sign up to Profireader">{{ _('Sign up') }}</a>
+                <a pr-test="TabSignUp" class="tab" ng-click="login_signup='signup'" href=""
+                   title="Sign up to Profireader">{{ _('Sign up') }}</a>
             </div>
-            <div ng-show="login_signup==='signup'" class="tab-link">
-                <a class="tab" ng-click="login_signup='login'" href="" title="Log in to Profireader">{{ _('Log in') }}</a>
+            <div ng-show="login_signup == 'signup'" class="tab-link">
+                <a class="tab" ng-click="login_signup='login'" href=""
+                   title="Log in to Profireader">{{ _('Log in') }}</a>
                 <a class="tab actual" title="Sign up to Profireader">{{ _('Sign up') }}</a>
             </div>
         </div>
 
         <div class="content-block">
-            <stan ng-if="login_signup==='signup'">
+            <span ng-if="login_signup == 'signup'" ng-controller="signup_via_email">
                 <h3>{{ _('Sign up via social') }}:</h3>
-                {% include 'partials/LoginSignup - Soc Networks.html' %}
-                {% include 'partials/Signup - Profireader.html' %}
-            </stan>
-            <div ng-if="login_signup!=='signup'">
+                {% include 'partials/login_or_signup_via_social.html' %}
+
+
+                <h3>{{ _('register by email') }}</h3>
+                {{ new_user }}
+
+                <div af af-after-save="afterSave"
+                     af-before-load="beforeLoad"
+                     ng-model="new_user"
+                     class="register-form-profireader">
+                    <input class="form-control" ng-model="new_user.email" placeholder="email"/>
+                    <input class="form-control" ng-model="new_user.first_name" placeholder="first_name"/>
+                    <input class="form-control" ng-model="new_user.second_name" placeholder="second_name"/>
+                    <input class="form-control" ng-model="new_user.password" placeholder="password"/>
+                    <input class="form-control" ng-model="new_user.password_confirmation" placeholder="confirm password"/>
+                    <button class="submit-form" type="submit">{{ _('Sign up') }}</button>
+                </div>
+
+            </span>
+            <div ng-if="login_signup != 'signup'">
                 <h3>{{ _('Login via social') }}:</h3>
-                {% include 'partials/LoginSignup - Soc Networks.html' %}
-                {% include 'partials/Log in - Profireader.html' %}
+                {% include 'partials/login_or_signup_via_social.html' %}
+                {% include 'partials/login_via_email.html' %}
             </div>
-    </div>
+        </div>
 
     </div>
 
-    {#
-    <div>
-    <div class="by-socials-block"><h2>Sign up using any of the following
-        services:</h2>{% include 'partials/Signup - Soc Networks.html' %}</div>
-    <div class="by-profireader-block"><h2>Simple registration</h2>{% include 'partials/Signup - Profireader.html' %}</div>
-    #}
 {% endblock portal_content %}

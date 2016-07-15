@@ -1,7 +1,7 @@
 {# меню для користування профірідером #}
 <script>
 
-    module.controller('UserLoginController', ['$scope', '$uibModal', '$ok', '$timeout', function ($scope, $uibModal, $ok, $timeout) {
+    module.controller('user_controller', ['$scope', '$uibModal', '$ok', '$timeout', function ($scope, $uibModal, $ok, $timeout) {
         $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
         $scope.tos = function () {
             var accepted = $scope.user.tos;
@@ -12,7 +12,7 @@
         };
         login_signup = '{{ login_signup }}';  // login_signup = 'login' or 'signup' or None
         $scope.login_signup = (login_signup === 'signup') ? 'signup' : 'login';
-        $scope.$$translate = {{ translates('UserLoginController')|safe }};
+        $scope.$$translate = {{ translates('user_controller')|safe }};
         $scope.open_filemanager = function () {
             window.location.href = '/filemanager/';
         };
@@ -26,7 +26,7 @@
 
 </script>
 
-<nav ng-controller="UserLoginController" class="navbar navbar-default widewrapper ">
+<nav ng-controller="user_controller" class="navbar navbar-default widewrapper ">
 
     <div class="top-style-line" style="height: 1px;"></div>
     <div class="container">

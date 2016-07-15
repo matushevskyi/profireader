@@ -22,7 +22,7 @@
         }
     });
 
-    module.controller('UserLoginController', function ($scope, $uibModal, $ok, $timeout) {
+    module.controller('user_controller', function ($scope, $uibModal, $ok, $timeout) {
         $scope.user = {{ g.user.get_client_side_dict()| tojson|safe if g.user else 'null'}};
         $scope.languages = {{ g.languages|tojson|safe }}
         $scope.lang = {{ g.lang|tojson|safe }}
@@ -67,7 +67,7 @@
         $scope.login_or_none_href = function(){
             return $scope.user?'#':$scope.login_url;
         };
-        $scope.$$translate = {{ translates('UserLoginController')|safe }};
+        $scope.$$translate = {{ translates('user_controller')|safe }};
         $scope.open_filemanager = function () {
             if ($scope.user) {
                 window.location.href = '/filemanager/';
@@ -91,7 +91,7 @@
 
 </script>
 {% raw %}
-<nav ng-controller="UserLoginController" class="navbar navbar-fixed-top nav-bg">
+<nav ng-controller="user_controller" class="navbar navbar-fixed-top nav-bg">
     <div class="container" ng-cloak>
             <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
 
@@ -149,7 +149,7 @@
                         </li>
 
                         <li ng-if="!user" role="presentation" class="menu-profile">
-                            <a pr_test="LogIn" class="login-profile" href="{{ login_url }}?login_signup=login">{{ _('Login') }}</a>
+                            <a pr_test="LogIn" class="login-profile" href="{{ login_url }}">{{ _('Login') }}</a>
                         </li>
                     </ul>
                 </div>

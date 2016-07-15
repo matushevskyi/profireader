@@ -8,7 +8,7 @@
 <script>
 
     module.controller('info',  function($scope, $ok){
-      angularControllerFunction('UserLoginController', 'set_selected_user_menu')('info');
+      angularControllerFunction('user_controller', 'set_selected_user_menu')('info');
       $scope.$$translate = {{ translates('info')|safe }};
       $scope.help_message = '{{ url_for('auth.help_message') }}';
       $scope.data = {{ data | tojson}}

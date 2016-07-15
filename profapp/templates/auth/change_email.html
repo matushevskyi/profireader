@@ -6,7 +6,7 @@
 
 {% block portal_content %}
     <!-- покищо не використовується але буде потрібне -->
-<div ng-controller="UserLoginController" ng-cloak>
+<div ng-controller="user_controller" ng-cloak>
 
     <h1 class="nice-title">{{ _('Change Your Email Address') }}<span></span></h1>
 </div>
@@ -17,5 +17,5 @@
     {{ form.csrf_token }}
 </form>
 </div>
-<p ng-cloak ng-controller="UserLoginController">{{ _('Forgot your password') }}? <a href="{{ url_for('auth.password_reset_request') }}">{{ _('Click here to reset it') }}</a>.</p>
+<p ng-cloak ng-controller="user_controller">{{ _('Forgot your password') }}? <a href="{{ url_for('auth.password_reset_request') }}">{{ _('Click here to reset it') }}</a>.</p>
 {% endblock portal_content %}

@@ -8,7 +8,7 @@
 
     <script xmlns="http://www.w3.org/1999/html">
         module.controller('companies_list', ['$scope', '$ok', '$timeout', function ($scope, $ok, $timeout) {
-            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('companies');
+            angularControllerFunction('user_controller', 'set_selected_user_menu')('companies');
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.url_search_for_company = {{ raw_url_for('company.search_for_company_to_join')|safe }};
             $scope.url_join = {{ raw_url_for('company.join_to_company')|safe }};

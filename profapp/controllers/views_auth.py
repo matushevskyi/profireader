@@ -127,6 +127,11 @@ def login_signup_endpoint():
     return render_template('auth/login_signup.html',
                            login_signup=login_signup)
 
+@auth_bp.route('/login_signup/', methods=['OK'])
+@check_right(AllowAll)
+def login_signup_load(json):
+    return json
+
 
 @auth_bp.route('/signup/', methods=['POST'])
 @check_right(AllowAll)
