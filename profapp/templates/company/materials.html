@@ -44,10 +44,7 @@
                 }
             };
 
-            $scope.url_publication_details = function(host, publication_id) {
-                return '//'+host+'/details/'+publication_id
-            }
-
+            $scope.url_publication_details = {{ raw_url_for('front.article_details')|safe }};
 
             {% raw %}
 
@@ -73,7 +70,8 @@
                         afilter: {type: 'date_range'}
                     },{
                         name: 'portal.name', type: 'link',
-                        href: 'url_publication_details(row.entity.portal.host, row.entity.id)',
+                        //TODO: OZ by OZ: fix it, data from server is constructed in wrong way. If I understand material/publication field are mixed up
+                        href: "url_publication_details({'publication_id': row.entity.id, 'publication_title': row.entity.title}, row.entity.portal.host)",
                         classes: 'link',
                         filter: {type:'multi_select'}
                     },{
