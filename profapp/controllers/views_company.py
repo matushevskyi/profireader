@@ -400,7 +400,7 @@ def readers_load(json, company_id):
     company_readers, pages, page, count = pagination(query=company.get_readers_for_portal(json.get('filter')),
                                                      **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [reader.get_client_side_dict(
-        'id,profireader_email,profireader_name,profireader_first_name,profireader_last_name') for reader in
+        'id,address_email,full_name,first_name,last_name') for reader in
                           company_readers],
             'total': count
             }

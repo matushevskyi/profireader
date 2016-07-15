@@ -48,7 +48,7 @@ def login_signup_general(*soc_network_names):
                 user = g.db.query(User).filter(getattr(User, db_fields['email']) == result_user.email).first()
 
                 if not user:
-                    user = g.db.query(User).filter(User.profireader_email == result_user.email).first()
+                    user = g.db.query(User).filter(User.address_email == result_user.email).first()
                     ind = False
 
                     if not user:
@@ -66,10 +66,10 @@ def login_signup_general(*soc_network_names):
                             setattr(user, db_fields_profireader[elem], getattr(result_user, elem))
 
                     g.db.add(user)
-                    user.confirmed = True
+                    user.email_confirmed = True
                     g.db.commit()
 
-                if user.is_banned():
+                if user.banned:
                     flash('Sorry, you cannot login into the Profireader. Contact the profireader'
                           'administrator, please: ' + current_app.config['PROFIREADER_MAIL_SENDER'])
 
@@ -110,7 +110,7 @@ def login_signup_general(*soc_network_names):
 def before_request():
     if current_user.is_authenticated():
         current_user.ping()
-        if not current_user.confirmed and request.endpoint[:5] != 'auth.' and request.endpoint != 'static' and \
+        if not current_user.email_confirmed and request.endpoint[:5] != 'auth.' and request.endpoint != 'static' and \
                 not (request.endpoint == 'tools.save_translate' or request.endpoint == 'tools.change_allowed_html' or request.endpoint == 'tools.update_last_accessed'):
             return redirect(url_for('auth.unconfirmed'))
 
@@ -129,8 +129,19 @@ def login_signup_endpoint():
 
 @auth_bp.route('/login_signup/', methods=['OK'])
 @check_right(AllowAll)
-def login_signup_load(json):
-    return json
+def login_signup_load(json_data):
+    action = g.req('action', allowed=['validate', 'save'])
+    # user registration
+    if True:
+        new_user = User(**g.filter_json(json_data, 'first_name,last_name,email,password,password_confirmation'))
+        if action == 'validate':
+            return new_user.validate(True)
+        else:
+            return new_user.save()
+    # user sign in
+    else:
+        return {}
+
 
 
 @auth_bp.route('/signup/', methods=['POST'])
@@ -153,7 +164,7 @@ def signup():
                     return False
                 elif form.get('password') != form.get('password1'):
                     return False
-        if db(User, profireader_email=request.form.get('email')).first():
+        if db(User, address_email=request.form.get('email')).first():
             flash('User with this email already exist')
             return False
         return True
@@ -175,7 +186,7 @@ def signup():
             session.pop('portal_id')
         SendEmail().send_email(subject='Confirm Your Account',
                                html=render_template('auth/email/resend_confirmation.html', user=user, addtourl=addtourl),
-                               send_to=(user.profireader_email, ))
+                               send_to=(user.address_email, ))
         flash('A confirmation email has been sent to you by email.')
         return redirect(url_for('auth.login_signup_endpoint'))
     return render_template('auth/login_signup.html',
@@ -230,10 +241,10 @@ def login():
 
     if email and password:
 
-        user = g.db.query(User).filter(User.profireader_email == email).first()
+        user = g.db.query(User).filter(User.address_email == email).first()
 
 
-        if user and user.is_banned():
+        if user and user.banned:
             flash('You can not be logged in. Please contact the Profireader administration.')
             return redirect(url_for('index.index'))
         if user and user.verify_password(password):
@@ -267,7 +278,7 @@ def logout():
 @auth_bp.route('/unconfirmed', methods=['GET'])
 @check_right(AllowAll)
 def unconfirmed():
-    if current_user.confirmed:
+    if current_user.email_confirmed:
         return redirect(url_for('index.index'))
     return render_template('auth/unconfirmed.html')
 
@@ -278,7 +289,7 @@ def resend_confirmation(json):
     current_user.generate_confirmation_token().save()
     SendEmail().send_email(subject='Confirm Your Account',
                            html=render_template('auth/email/resend_confirmation.html', user=current_user),
-                           send_to=(current_user.profireader_email, ))
+                           send_to=(current_user.address_email, ))
     flash('A new confirmation email has been sent to you by email.')
     return True
 
@@ -288,14 +299,14 @@ def resend_confirmation(json):
 def confirm(token):
     user = db(User, email_conf_token=token).first()
     portal_id = request.args.get('subscribe_to_portal')
-    if user and user.confirmed:
+    if user and user.email_confirmed:
         return render_template("auth/confirm_email.html", message='Your account has been already confirmed!')
     elif not user or not user.confirm_email():
         return render_template("auth/unconfirmed.html", message='Wrong or expired token',
-                               email=user.profireader_email if user else '')
+                               email=user.address_email if user else '')
     else:
         logout_user()
-        user.confirmed = True
+        user.email_confirmed = True
         user.save()
         login_user(user)
         if portal_id:
@@ -357,10 +368,10 @@ def password_reset_request(json):
         redirect(url_for('index.list_reader'))
         return False
 
-    user = db(User, profireader_email=json.get('email')).first()
+    user = db(User, address_email=json.get('email')).first()
     if user:
         user.generate_pass_reset_token().save()
-        SendEmail().send_email(subject='Reset password', send_to=(user.profireader_email, ""),
+        SendEmail().send_email(subject='Reset password', send_to=(user.address_email, ""),
                                html=render_template('auth/email/reset_password.html', user=user),)
         flash('An email with instructions to reset your password has been sent to you.')
     else:
@@ -380,7 +391,7 @@ def password_reset(token):
 @check_right(AllowAll)
 def password_reset_change(json, token):
     user = g.db.query(User).\
-        filter_by(profireader_email=json['data'].get('email')).first()
+        filter_by(address_email=json['data'].get('email')).first()
     if not user or user.pass_reset_token != token:
         return 'Your put wrong email.'
     def check_fields():
@@ -396,7 +407,7 @@ def password_reset_change(json, token):
         return True
     check = check_fields()
     if check == True:
-        if (user is None) or user.is_banned():
+        if (user is None) or user.banned:
             return 'You cannot update password.You are baned.'
         if user.reset_password(json['data'].get('password')):
             return True

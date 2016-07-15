@@ -140,6 +140,8 @@ TABLE_TYPES = {
     'name': String(200),
     'subtitle': String(1000),
     'string_30': String(30),
+    'string_100': String(100),
+    'string_200': String(200),
     'string_500': String(500),
     'string_1000': String(1000),
     'short_name': String(50),

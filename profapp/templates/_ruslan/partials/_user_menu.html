@@ -137,7 +137,7 @@
                             <a pr_test="UserProfile"  href="{{ url_user_profile({user_id:user.id}) }}" role="button" aria-haspopup="true"
                                aria-expanded="false">
                                 <img class="person-small-cover" pr-image="" pr-no-image="{{ user_avatar_url }}">
-                                {{user.profireader_name}}
+                                {{user.full_name}}
                             </a>
                             <a pr_test="LogOut" class="login-profile" href="{{ url_auth_logout() }}">{{ _('Log out') }}</a>
                             <!--<ul class="dropdown-menu">

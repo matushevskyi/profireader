@@ -11,9 +11,14 @@
 {% block portal_content %}
     <script>
         module.controller('signup_via_email', function ($scope, $af) {
-            $scope.new_user = {'first_name': 'Oles'}
             $scope.beforeLoad = function () {
-                return $scope.new_user;
+                return {
+                    'first_name': '',
+                    'last_name': '',
+                    'last_name': '',
+                    'password': '',
+                    'password_confirmation': ''
+                };
             }
         });
     </script>
@@ -42,6 +47,7 @@
                 {{ new_user }}
 
                 <div af af-after-save="afterSave"
+                     af-url-load=""
                      af-before-load="beforeLoad"
                      ng-model="new_user"
                      class="register-form-profireader">
@@ -49,7 +55,8 @@
                     <input class="form-control" ng-model="new_user.first_name" placeholder="first_name"/>
                     <input class="form-control" ng-model="new_user.second_name" placeholder="second_name"/>
                     <input class="form-control" ng-model="new_user.password" placeholder="password"/>
-                    <input class="form-control" ng-model="new_user.password_confirmation" placeholder="confirm password"/>
+                    <input class="form-control" ng-model="new_user.password_confirmation"
+                           placeholder="confirm password"/>
                     <button class="submit-form" type="submit">{{ _('Sign up') }}</button>
                 </div>
 

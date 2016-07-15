@@ -20,7 +20,7 @@ from .errors import BadDataProvided
 def help():
     email = None
     if g.user:
-        email = g.user.profireader_email
+        email = g.user.address_email
     return render_template('help.html', data={'email': email})
 
 

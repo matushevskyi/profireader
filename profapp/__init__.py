@@ -130,10 +130,6 @@ class AnonymousUser(AnonymousUserMixin):
     def is_administrator():
         return False
 
-    @staticmethod
-    def is_banned():
-        return False
-
     def get_id(self):
         return self.id
 
@@ -149,7 +145,7 @@ class AnonymousUser(AnonymousUserMixin):
     def gravatar(self, size=100, default='identicon', rating='g'):
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
             url='https://secure.gravatar.com/avatar' if request.is_secure else 'http://www.gravatar.com/avatar',
-            hash=hashlib.md5(getattr(self, 'profireader_email', 'guest@' + Config.MAIN_DOMAIN).encode('utf-8')).hexdigest(),
+            hash=hashlib.md5(getattr(self, 'address_email', 'guest@' + Config.MAIN_DOMAIN).encode('utf-8')).hexdigest(),
             size=size, default=default, rating=rating)
 
     def __repr__(self):

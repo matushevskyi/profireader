@@ -4,7 +4,7 @@
     {% for employment in member_company.employments if employment['status'] == 'ACTIVE' %}
         <div class="person-item" id="company_employees">
             <img width="50" height="50" class="round-avatar" {{ prImageUrl(employment.user['avatar']['url']) }} />
-            <b>{{ employment.user['profireader_name'] }}</b><br/>
+            <b>{{ employment.user['full_name'] }}</b><br/>
             {% if employment['position'] %}
                 <div class="role">{{ employment['position'] }}&nbsp;</div>{% endif %}
             <a data-user-id="{{ employment.user['id'] }}" style="clear: both" href="#"><span

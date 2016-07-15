@@ -7,7 +7,7 @@
 <script>
     module.controller('unconfirmed',  function($scope, $ok){
       $scope.$$translate = {{ translates('unconfirmed')|safe }};
-      $scope.current_user = '{{ current_user.profireader_name | safe}}'
+      $scope.current_user = '{{ current_user.full_name | safe}}'
         console.log($scope.$$translate)
       $scope.resend_confirmation = function() {
           return $ok('{{ url_for('auth.resend_confirmation') }}', {},function(resp){

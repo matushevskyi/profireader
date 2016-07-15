@@ -1,5 +1,5 @@
 {% extends "index_lazy_layout.html" %}
-{% block title %}Profireader - {{ current_user.profireader_name }}{% endblock title %}
+{% block title %}Profireader - {{ current_user.full_name }}{% endblock title %}
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_crop.html' %}
@@ -54,22 +54,22 @@
                 <form name="formUser" class="edit-grup">
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your first name') }}</span>
-                        <input pr-validation-answer="data_validation:profireader_first_name" class="form-control"
+                        <input pr-validation-answer="data_validation:first_name" class="form-control"
                                aria-describedby="sizing-addon1" type="text"
-                               placeholder="first name" ng-model="data.user.profireader_first_name">
+                               placeholder="first name" ng-model="data.user.first_name">
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your last name') }}</span>
-                        <input pr-test="LastNameEdit" pr-validation-answer="data_validation:profireader_last_name"
+                        <input pr-test="LastNameEdit" pr-validation-answer="data_validation:last_name"
                                class="form-control"
                                aria-describedby="sizing-addon1" type="text"
-                               placeholder="last name" ng-model="data.user.profireader_last_name"
-                               name="profireader_last_name" ng-pattern="/[\wа-яёі']{2}/">
+                               placeholder="last name" ng-model="data.user.last_name"
+                               name="last_name" ng-pattern="/[\wа-яёі']{2}/">
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your email') }}</span>
                         <input class="form-control" aria-describedby="sizing-addon1" type="text" disabled="disabled"
-                               placeholder="youremail@example.com" ng-model="data.user.profireader_email">
+                               placeholder="youremail@example.com" ng-model="data.user.address_email">
                     </div>
 
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
@@ -79,9 +79,9 @@
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Gender') }}</span>
-                        <input type="radio" id="male" ng-model="data.user.profireader_gender" ng-value="'male'">
+                        <input type="radio" id="male" ng-model="data.user.gender" ng-value="'male'">
                         <label for="male">{{ _('Male') }}</label>
-                        <input type="radio" id="female" ng-model="data.user.profireader_gender" ng-value="'female'">
+                        <input type="radio" id="female" ng-model="data.user.gender" ng-value="'female'">
                         <label for="female">{{ _('Female') }}</label>
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
@@ -93,7 +93,7 @@
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your web-page') }}</span>
                         <input class="form-control" aria-describedby="sizing-addon1" type="text"
-                               placeholder="www.your.webpage.com" name="link" ng-model="data.user.profireader_link">
+                               placeholder="www.your.webpage.com" name="link" ng-model="data.user.address_url">
                     </div>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                         <span class="input-group-addon" id="sizing-addon1">{{ _('Your country') }}</span>
@@ -118,8 +118,8 @@
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Phone') }}</span>
-                    <input class="form-control" ng-model="data.user.profireader_phone" aria-describedby="sizing-addon1"
-                           placeholder="your phone" pr-validation-answer="data_validation:profireader_phone">
+                    <input class="form-control" ng-model="data.user.address_phone" aria-describedby="sizing-addon1"
+                           placeholder="your phone" pr-validation-answer="data_validation:address_phone">
                 </div>
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 input-group input-group-sm ">
                     <span class="input-group-addon" id="sizing-addon1">{{ _('Location') }}</span>
@@ -131,7 +131,7 @@
                         <textarea class="form-control" style="height: 100px;" aria-describedby="sizing-addon1"
                                   type="text" name="about" placeholder="Give us some information about you please"
                                   rows="8"
-                                  cols="40" ng-model="data.user.about_me"></textarea>
+                                  cols="40" ng-model="data.user.about"></textarea>
                     </div>
                     <div class="item">
                         <button pr-test="SaveProfileButton"

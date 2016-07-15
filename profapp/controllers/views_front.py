@@ -349,7 +349,7 @@ def add_delete_liked(json, publication_id):
 def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
     SendEmail().send_email_from_template(
-        send_to_email=send_to.profireader_email, subject='New message', template='messenger/email_send_message',
+        send_to_email=send_to.address_email, subject='New message', template='messenger/email_send_message',
         user_to=send_to, user_from=g.user.get_client_side_dict() if g.user else None,
         in_company=Company.get(member_company_id), message=json['message'])
 
