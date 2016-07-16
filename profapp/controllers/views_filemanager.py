@@ -3,7 +3,7 @@ import re
 from flask import render_template, g, make_response
 from profapp.models.files import File, YoutubeApi
 from .blueprints_declaration import filemanager_bp
-from .request_wrapers import ok, tos_required, check_right
+from .request_wrapers import check_right
 from functools import wraps
 from flask import jsonify, json
 import json as jsonmodule

@@ -7,7 +7,7 @@ from ..models.translate import TranslateTemplate
 from utils.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
     PortalDivisionSettingsCompanySubportal, PortalConfig, PortalAdvertisment
-from .request_wrapers import ok, tos_required, check_right
+from .request_wrapers import ok, check_right
 # from ..models.bak_articles import Publication, ArticleCompany, Article
 from ..models.company import UserCompany
 from ..models.tag import Tag, TagPortalDivision

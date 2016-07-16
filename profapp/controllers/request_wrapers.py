@@ -93,37 +93,37 @@ def check_rights(*rights_business_rule):
 
     return decorator
 
-def convert_col_to_arrays(*args):
-    pass
+# def convert_col_to_arrays(*args):
+#     pass
+
+#
+# def need_we_column(name, arr, is_relationship=False):
+#     realname = name if name in arr else '*'
+#     if not is_relationship:
+#         if realname in arr:
+#             if len(arr[realname]) > 0:
+#                 raise ValueError("you ask for sub-attribute of Column instance `%s` (not Relationship)" % (realname,))
+#             return True
+#         else:
+#             return False
+#     else:
+#         if realname in arr:
+#             if len(arr[name]) == 0:
+#                 raise ValueError(
+#                     "You ask for Relationship `%s` instance, but don't ask for any sun-attribute in it" % (realname,))
+#             return arr[name]
+#         else:
+#             return False
 
 
-def need_we_column(name, arr, is_relationship=False):
-    realname = name if name in arr else '*'
-    if not is_relationship:
-        if realname in arr:
-            if len(arr[realname]) > 0:
-                raise ValueError("you ask for sub-attribute of Column instance `%s` (not Relationship)" % (realname,))
-            return True
-        else:
-            return False
-    else:
-        if realname in arr:
-            if len(arr[name]) == 0:
-                raise ValueError(
-                    "You ask for Relationship `%s` instance, but don't ask for any sun-attribute in it" % (realname,))
-            return arr[name]
-        else:
-            return False
-
-
-def tos_required(func):
-    @wraps(func)
-    def decorated_view(*args, **kwargs):
-        if not g.user or not g.user.tos:
-            # flash('You have not accept licence and terms')
-            return redirect(url_for('index.index'))
-        return func(*args, **kwargs)
-    return decorated_view
+# def tos_required(func):
+#     @wraps(func)
+#     def decorated_view(*args, **kwargs):
+#         if not g.user or not g.user.tos:
+#             # flash('You have not accept licence and terms')
+#             return redirect(url_for('index.index'))
+#         return func(*args, **kwargs)
+#     return decorated_view
 
 def get_portal(func):
     @wraps(func)

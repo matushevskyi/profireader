@@ -106,6 +106,12 @@ def index():
         return render_template('_ruslan/reader/_reader_content.html', favorite=request.args.get('favorite') == 'True')
     return render_template('general/index.html')
 
+@index_bp.route('welcome/', methods=['GET'])
+@check_right(AllowAll)
+def welcome():
+    if g.user and g.user.is_authenticated():
+        return render_template('general/welcome.html')
+
 
 @index_bp.route('', methods=['GET'])
 @check_right(UserNonBanned)
@@ -122,7 +128,8 @@ def list_reader_load(json):
     localtime = time.gmtime(time.time())
 
     if favorite:
-        publication_filter = (Publication.id == db(ReaderPublication, user_id=g.user.id, favorite=True).subquery().c.publication_id)
+        publication_filter = (
+        Publication.id == db(ReaderPublication, user_id=g.user.id, favorite=True).subquery().c.publication_id)
     else:
         division_filter = \
             and_(PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id)
@@ -201,6 +208,7 @@ def add_delete_like(json):
 @index_bp.route('subscribe/<string:portal_id>/', methods=['GET'])
 @check_right(UserNonBanned)
 def reader_subscribe(portal_id):
+    # TODO: OZ by OZ: remove this endpoint!!! move subscription to model (function Portal.subscribe_user(self, user))
     user_dict = g.user.get_client_side_dict()
     portal = Portal.get(portal_id)
     if not portal:

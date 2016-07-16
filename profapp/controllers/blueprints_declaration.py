@@ -14,6 +14,7 @@ class PrBlueprint(Blueprint):
     def route(self, rule, **options):
         from .request_wrapers import ok, function_profiler
         def decorator(f):
+
             f.__endpoint__ = self.name
             f.__method__ = options['methods'] if 'methods' in options else ["GET"]
             if options and 'methods' in options and 'OK' in options['methods'] and self.name in self.bluprints and f.__name__ in self.bluprints[self.name]:

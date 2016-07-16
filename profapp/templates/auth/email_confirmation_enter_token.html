@@ -1,0 +1,26 @@
+{% extends "_ruslan/_index_layout.html" %}
+{% block title %}Profireader - {{ _('Confirmation') }}{% endblock title %}
+
+{% block portal_content %}
+    <div class="container">
+        {% if already_confirmed %}
+            <h3>{{ _('You email is already confirmed') }}</h3>
+            <a href="{{ url_for('index.index') }}">{{ _('Welcome to profireader') }}</a>
+
+        {% else %}
+            {% if wrong_token_entered %}
+                <h3>{{ _('Sorry you have entered wrong token') }}</h3>
+            {% elif wrong_email_entered %}
+                <h3>{{ _('Sorry you have entered wrong email') }}</h3>
+            {% endif %}
+
+            <form method="get" action="{{ url_for('auth.email_confirmation') }}">
+                <h3>{{ _('You can regenerate new token') }}</h3>
+                <input name="email" value="{{ email }}" placeholder="email"/>
+                <button type="submit">{{ _('Regenerate token') }}</button>
+                <br/>
+            </form>
+
+        {% endif %}
+    </div>
+{% endblock portal_content %}

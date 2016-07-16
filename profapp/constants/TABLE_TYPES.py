@@ -113,7 +113,7 @@ TABLE_TYPES = {
 
     'id_profireader': String(36),
 
-    'password_hash': String(128),  # String(128) SHA-256
+    'string_128': String(128),  # String(128) SHA-256
     'token': String(128),
     'timestamp': TIMESTAMP,
     'id_soc_net': String(50),

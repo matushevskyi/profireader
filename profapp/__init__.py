@@ -84,6 +84,7 @@ def setup_authomatic(app):
 def load_user(apptype):
     g.user = current_user if current_user.is_authenticated() else None
 
+
     lang = session['language'] if 'language' in session else 'uk'
     g.lang = g.user.lang if g.user else lang
     g.languages = Config.LANGUAGES

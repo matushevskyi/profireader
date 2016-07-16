@@ -29,6 +29,7 @@ from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 import random
 import time
 from .files import FileImg, FileImgDescriptor
+from flask.ext.login import logout_user, current_user, login_user
 
 
 class User(Base, UserMixin, PRBase):
@@ -52,7 +53,6 @@ class User(Base, UserMixin, PRBase):
     address_location = Column(TABLE_TYPES['string_500'], default='', nullable=False)
     lang = Column(String(2), default='uk')
 
-    password_hash = Column(TABLE_TYPES['password_hash'])
     email_confirmed = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
     banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
 
@@ -97,6 +97,17 @@ class User(Base, UserMixin, PRBase):
                                before_set=lambda u, r, v: u.set_avatar_preset(r, v),
                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_user_avatar()))
 
+    def login(self):
+        if self.email_confirmed and not self.banned:
+            self.ping()
+            login_user(self)
+        return True
+
+
+    @staticmethod
+    def logout():
+        logout_user()
+
     def get_avatar(self):
         return self.avatar
 
@@ -115,6 +126,7 @@ class User(Base, UserMixin, PRBase):
 
     password = ''
     password_confirmation = ''
+    password_hash = Column(TABLE_TYPES['string_128'], nullable=False)
 
     # FB_NET_FIELD_NAMES = ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
     # SOCIAL_NETWORKS = ['profireader', 'google', 'facebook', 'linkedin', 'twitter', 'microsoft', 'yahoo']
@@ -182,7 +194,7 @@ class User(Base, UserMixin, PRBase):
     # yahoo_gender = Column(TABLE_TYPES['gender'])
     # yahoo_link = Column(TABLE_TYPES['link'])
     # yahoo_phone = Column(TABLE_TYPES['phone'])
-    # tos = Column(TABLE_TYPES['boolean'], default=False)
+    tos = Column(TABLE_TYPES['boolean'], default=False)
 
     # search_fields = {'full_name': {'relevance': lambda field='full_name': RELEVANCE.full_name},
     #                  'about_me': {'relevance': lambda field='about_me': RELEVANCE.about_me},
@@ -318,15 +330,27 @@ class User(Base, UserMixin, PRBase):
         elif is_new and db(User, address_email=self.address_email).first():
             ret['errors']['email'] = 'Sorry. this email is taken'
 
+        if self.password == '':
+            self.password = None
 
-        # if self.address_phone and not self.address_phone.isdigit():
-        #     ret['errors']['address_phone'] = 'pls enter only digits'
+        if is_new and not self.password:
+            ret['errors']['password'] = 'Please provide password'
+
+        if self.password and self.password != self.password_confirmation:
+            ret['errors']['password_confirmation'] = 'Password and confirmation does not match'
+
         return ret
 
     @staticmethod
     def user_query(user_id):
         ret = db(User, id=user_id).one()
         return ret
+
+    def set_password_hash(self):
+        if self.password and self.password != '':
+            self.password_hash = generate_password_hash(self.password,
+                                                        method='pbkdf2:sha256',
+                                                        salt_length=32)
 
     def ping(self):
         self.last_seen_tm = datetime.datetime.utcnow()
@@ -486,9 +510,6 @@ class User(Base, UserMixin, PRBase):
         attr_value = getattr(self, full_attr)
         return attr_value
 
-    @property
-    def password(self):
-        raise AttributeError('password is not a readable attribute')
 
     # we use SHA256.
     # https://crackstation.net/hashing-security.htm
@@ -497,22 +518,34 @@ class User(Base, UserMixin, PRBase):
     # another (simplier) approach can be user here.
     # see: http://sqlalchemy-utils.readthedocs.org/en/latest/data_types.html#module-sqlalchemy_utils.types.password
     # https://pythonhosted.org/passlib/lib/passlib.context-tutorial.html#full-integration-example
-    @password.setter
-    def password(self, password):
-        self.password_hash = None
-        if password:
-            self.password_hash = \
-                generate_password_hash(password,
-                                       method='pbkdf2:sha256',
-                                       salt_length=32)  # salt_length=8
+    # @password.setter
+    # def password(self, password):
+    #     self.password_hash = None
+    #     if password:
+    #         self.password_hash = \
+    #             generate_password_hash(password,
+    #                                    method='pbkdf2:sha256',
+    #                                    salt_length=32)  # salt_length=8
 
     def verify_password(self, password):
         return self.password_hash and \
                check_password_hash(self.password_hash, password)
 
-    def generate_confirmation_token(self):
+    def generate_confirmation_token(self, addtourl):
+        from flask import url_for, render_template
+        from utils.pr_email import SendEmail
+
         self.email_conf_token = random.getrandbits(128)
         self.email_conf_tm = datetime.datetime.now()
+
+        SendEmail().send_email(subject='Confirm Your Account',
+                               html=render_template('auth/email/resend_confirmation.html', user=self,
+                                                    confirmation_url=url_for('auth.email_confirmation',
+                                                                             token=self.email_conf_token,
+                                                                             _external=True, **addtourl)
+                                                    ),
+                               send_to=(self.address_email,))
+
         return self
 
     def confirm_email(self):
@@ -543,6 +576,7 @@ class User(Base, UserMixin, PRBase):
         g.db.add(self)
         g.db.commit()
         return True
+
 
     def generate_email_change_token(self, new_email, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
@@ -575,7 +609,7 @@ class User(Base, UserMixin, PRBase):
     def get_client_side_dict(self,
                              fields='id|full_name'
                                     '|address_email|first_name|last_name|address_url'
-                                    '|address_phone|location|gender|lang|about|country_id|tos|address_phone'
+                                    '|address_phone|address_location|gender|lang|about|country_id|tos|address_phone'
                                     '|birth_tm',
                              more_fields=None):
         return self.to_dict(fields, more_fields)

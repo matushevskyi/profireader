@@ -3,7 +3,7 @@ from flask import render_template, redirect, url_for, request, g, make_response,
 from profapp.models.portal import PortalDivision, UserPortalReader, Portal, MemberCompanyPortal
 from ..models.pr_base import Search, PRBase, Grid
 from .blueprints_declaration import article_bp
-from .request_wrapers import ok, tos_required, check_right
+from .request_wrapers import ok, check_right
 from .pagination import pagination
 from config import Config
 from .views_file import crop_image
