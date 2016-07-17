@@ -1,9 +1,10 @@
-from flask import request, current_app, g, flash
+from flask import request, current_app, g, flash, url_for
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship, backref
 from flask import session, json
 from urllib import request as req
 from config import Config
+from ..controllers import errors
 import re
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..constants import REGEXP
@@ -306,14 +307,18 @@ class User(Base, UserMixin, PRBase):
     #     self.yahoo_link = YAHOO_ALL['link']
     #     self.yahoo_phone = YAHOO_ALL['phone']
 
-    def is_active(self, check_only_banned=None):
-
+    def is_active(self, check_only_banned=None, raise_exception_redirect_if_not = False):
         if self.banned:
-            return "Sorry!You were baned!Plese send a message to the administrator to know details!"
-        if not check_only_banned:
-            if not self.tos:
-                return "Sorry!You must confirm license first!"
+            if raise_exception_redirect_if_not:
+                raise errors.NoRights(redirect_to=url_for('index.banned'))
+            return "Sorry!You were baned! Please send a message to the administrator to know details!"
+        if not check_only_banned and not self.tos:
+            if raise_exception_redirect_if_not:
+                raise errors.NoRights(redirect_to=url_for('index.welcome'))
+            return "Sorry!You must confirm license first!"
         if not self.email_confirmed:
+            if raise_exception_redirect_if_not:
+                raise errors.NoRights(redirect_to=url_for('auth.email_confirmation'))
             return "Sorry!You must be confirmed!"
         return True
 

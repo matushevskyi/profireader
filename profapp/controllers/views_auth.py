@@ -152,6 +152,7 @@ def signup(json_data):
 
 
 @auth_bp.route('/login/', methods=['OK'])
+@check_right(AllowAll)
 def login(json_data):
     # portal = Portal.get(session.get('portal_id'), True)
     # # back_to = session.get('back_to')
@@ -193,42 +194,51 @@ def login(json_data):
 @check_right(AllowAll)
 def email_confirmation(token=None):
     email = request.args.get('email', None)
-    if email:
+
+    if not token:
+        return render_template("auth/email_confirmation_enter_token.html", email='')
+
+    user = db(User, email_conf_token=token).first()
+
+    if not user:
+        return render_template("auth/email_confirmation_enter_token.html", email='', wrong_token_entered=True)
+    elif not user.confirm_email():
+        return render_template("auth/email_confirmation_enter_token.html", email=user.address_email,
+                               wrong_token_entered=True)
+    elif user.email_confirmed:
+        return render_template("auth/email_confirmation_enter_token.html", email=email, already_confirmed=True)
+    else:
+        User.logout()
+        user.save()
+        g.db.commit()
+        user.login()
+        portal = Portal.get(request.args.get('subscribe_to_portal'), returnNoneIfNotExists=True)
+        if portal:
+            portal.subscribe_user(user)
+        return redirect(url_for('auth.welcome'))
+
+@auth_bp.route('request_new_email_confirmation_token/', methods=["OK"])
+@check_right(AllowAll)
+def request_new_email_confirmation_token(json_data):
+    from ..constants import REGEXP
+    email = json_data.get('email', '')
+
+    if not re.match(REGEXP.EMAIL, email):
+        return {'error': 'Please enter correct email'}
+    else:
         user = db(User, address_email=email).first()
         if user:
             if user.email_confirmed:
-                return render_template("auth/email_confirmation_enter_token.html", email=email, already_confirmed=True)
+                return {'error': 'You email is already confirmed'}
             else:
                 user.generate_confirmation_token({}).save()
-                return render_template("auth/email_confirmation_enter_token.html", email=email)
+                return {}
         else:
-            return render_template("auth/email_confirmation_enter_token.html", email=email, wrong_email_entered=True)
-    else:
-
-        if not token:
-            return render_template("auth/email_confirmation_enter_token.html", email='')
-
-        user = db(User, email_conf_token=token).first()
-
-        if not user:
-            return render_template("auth/email_confirmation_enter_token.html", email='', wrong_token_entered=True)
-        elif user.email_confirmed:
-            return render_template("auth/email_confirmation_enter_token.html", email=email, already_confirmed=True)
-        elif not user.confirm_email():
-            return render_template("auth/email_confirmation_enter_token.html", email=user.address_email,
-                                   wrong_token_entered=True)
-        else:
-            User.logout()
-            user.save()
-            g.db.commit()
-            user.login()
-            portal = Portal.get(request.args.get('subscribe_to_portal'), returnNoneIfNotExists=True)
-            if portal:
-                portal.subscribe_user(user)
-            return redirect(url_for('auth.tos'))
+            return {'error': 'User with this email is not registered'}
 
 
-# @auth_bp.route('/tos/', methods=['GET'])
+
+            # @auth_bp.route('/tos/', methods=['GET'])
 # @check_right(AllowAll)
 # def tos():
 #     if not g.user or g.user.tos:
@@ -237,14 +247,15 @@ def email_confirmation(token=None):
 #         return render_template("auth/tos.html")
 #
 #
-# @auth_bp.route('/tos/', methods=['OK'])
-# def tos_load(json):
-#     if json.get('accept', False):
-#         current_user.tos = True
-#         current_user.save()
-#         return {'redirect': url_for('index.welcome')}
-#     else:
-#         return {'error': 'tos acceptation error'}
+@auth_bp.route('tos/', methods=['OK'])
+@check_right(AllowAll)
+def tos(json):
+    if json.get('accept', False):
+        current_user.tos = True
+        current_user.save()
+        return current_user.tos
+    else:
+        return {'error': 'tos acceptation error'}
 
 
         # user = db(User, email_conf_token=token).first()

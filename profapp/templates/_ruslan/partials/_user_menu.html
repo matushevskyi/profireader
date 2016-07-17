@@ -1,49 +1,9 @@
-<script type="text/ng-template" id="tos_dialog.html">
-    <div class="modal-header">
-        <h3 pr-test="LicenceTitle" class="modal-title">{{ _('Please accept tos dialog header') }}</h3>
-    </div>
-    <div class="modal-body">
-        {{ __('Licence text') }}
-    </div>
-
-    <div class="modal-footer">
-        <button pr-test="AcceptLicence" type="button" class="btn btn-default"
-                ng-click="accept_tos('accept')">{{ __('Accept') }}</button>
-        <button pr-test="DeclineLicence" type="button" class="btn btn-default"
-                ng-click="accept_tos('decline')">{{ __('Decline') }}</button>
-    </div>
-    </div>
-</script>
-
 <script>
-{#    module.controller('tos_dialog_controller', function ($scope, $uibModal, $ok, $uibModalInstance) {#}
-{#        $scope.accept_tos = function (accept_or_decline) {#}
-{#            $ok('{{ url_for('auth.tos') }}', {'accept': accept_or_decline}, function (resp) {#}
-{#                $uibModalInstance.close(resp['tos']);#}
-{#            });#}
-{#        }#}
-{#    });#}
 
     module.controller('user_controller', function ($scope, $uibModal, $ok, $timeout) {
         $scope.user = {{ g.user.get_client_side_dict()| tojson|safe if g.user else 'null'}};
         $scope.languages = {{ g.languages|tojson|safe }};
         $scope.lang = {{ g.lang|tojson|safe }};
-
-{#                        $scope.tos = function () {#}
-{#                            if (!$scope.user || $scope.user.tos) {#}
-{#                                return;#}
-{#                            }#}
-{#                            if ($scope.user && $scope.user.tos != true) {#}
-{#                                var modalInstance = $uibModal.open({#}
-{#                                    templateUrl: 'tos_dialog.html',#}
-{#                                    controller: 'tos_dialog_controller'#}
-{#                                });#}
-{#                                modalInstance.result.then(function (accepted) {#}
-{#                                    $scope.user.tos = accepted;#}
-{#                                });#}
-{#                                return true#}
-{#                            }#}
-{#                        };#}
 
 
         $scope.url_list_reader = {{ raw_url_for('index.list_reader')|safe }}
@@ -118,15 +78,15 @@
                                         title="{{ _('Стрічкa читача') }}"
                                         ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
                             class="fa fa-newspaper-o"></i><span>{{ _('Стрічкa читача') }}</span></a></li>
-                    <li class="dropdown" ng-if="user && user.tos"><a pr_test="UserMassages" href="{{ url_messenger }}"
+                    <li class="dropdown" ng-if="user"><a pr_test="UserMassages" href="{{ url_messenger }}"
                                                     title="{{ _('Всі повідомлення') }}"
                                                     ng-class="{'selected': selected_user_menu == 'messages'}"><i
                             class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span></a></li>
-                    <li class="dropdown" ng-if="user.tos"><a pr_test="CompaniesList" href="{{ url_company_companies() }}"
+                    <li class="dropdown"><a pr_test="CompaniesList" href="{{ url_company_companies() }}"
                                             title="{{ _('Компанії') }}"
                                             ng-class="{'selected': selected_user_menu == 'companies'}"><i
                             class="fa fa-building-o"></i><span>{{ _('Компанії') }}</span></a></li>
-                    <li class="dropdown" ng-if="user.tos"><a pr_test="FileManeger" href="{{ login_or_none_href() }}"
+                    <li class="dropdown"><a pr_test="FileManeger" href="{{ login_or_none_href() }}"
                                             ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
                                             ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
                             class="fa fa-folder-open-o"></i><span>{{ _('Менеджер файлів') }}</span></a></li>

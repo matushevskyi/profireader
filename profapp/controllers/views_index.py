@@ -15,6 +15,7 @@ from sqlalchemy import and_, desc
 from .errors import BadDataProvided
 from utils.pr_email import SendEmail
 import re
+from ..controllers import errors
 
 
 @index_bp.route('portals_list/', methods=['GET'])
@@ -95,7 +96,11 @@ def list_reader_from_front(portal_id):
 @index_bp.route('', methods=['GET'])
 @check_right(AllowAll)
 def index():
-    if g.user and g.user.is_authenticated() and getattr(g.user, 'tos', False):
+    if g.user and g.user.is_authenticated():
+        try:
+            UserIsActive().is_allowed(raise_exception_redirect_if_not=True)
+        except errors.NoRights as e:
+            return redirect(e.url)
         return render_template('_ruslan/reader/_reader_content.html', favorite=request.args.get('favorite') == 'True')
     return render_template('general/index.html')
 
@@ -105,6 +110,8 @@ def index():
 def welcome():
     if g.user and g.user.is_authenticated():
         return render_template('general/welcome.html')
+    else:
+        return redirect(url_for('index.index'))
 
 
 @index_bp.route('', methods=['GET'])
