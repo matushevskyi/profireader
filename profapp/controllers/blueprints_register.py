@@ -17,7 +17,7 @@ from flask import Blueprint
 from .blueprints_declaration import *
 
 from . import views_index, views_user, views_filemanager, views_article, \
-    views_company, views_portal, errors, views_file, views_admin, views_tools, views_help, views_tutorial, \
+    views_company, views_portal, errors, views_file, views_admin, views_tools, views_tutorial, \
     views_messanger
 
 
@@ -41,7 +41,6 @@ def register_profi(app):
     app.register_blueprint(company_bp, url_prefix='/company')
     app.register_blueprint(portal_bp, url_prefix='/portal')
     app.register_blueprint(exception_bp, url_prefix='/exception')
-    app.register_blueprint(help_bp, url_prefix='/help')
     app.register_blueprint(messenger_bp, url_prefix='/messenger')
     app.register_blueprint(tutorial_bp, url_prefix='/tutorial')
 

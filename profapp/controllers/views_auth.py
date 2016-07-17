@@ -228,23 +228,23 @@ def email_confirmation(token=None):
             return redirect(url_for('auth.tos'))
 
 
-@auth_bp.route('/tos/', methods=['GET'])
-@check_right(AllowAll)
-def tos():
-    if not g.user or g.user.tos:
-        return redirect(url_for('index.welcome'))
-    else:
-        return render_template("auth/tos.html")
-
-
-@auth_bp.route('/tos/', methods=['OK'])
-def tos_load(json):
-    if json.get('accept', False):
-        current_user.tos = True
-        current_user.save()
-        return {'redirect': url_for('index.welcome')}
-    else:
-        return {'error': 'tos acceptation error'}
+# @auth_bp.route('/tos/', methods=['GET'])
+# @check_right(AllowAll)
+# def tos():
+#     if not g.user or g.user.tos:
+#         return redirect(url_for('index.welcome'))
+#     else:
+#         return render_template("auth/tos.html")
+#
+#
+# @auth_bp.route('/tos/', methods=['OK'])
+# def tos_load(json):
+#     if json.get('accept', False):
+#         current_user.tos = True
+#         current_user.save()
+#         return {'redirect': url_for('index.welcome')}
+#     else:
+#         return {'error': 'tos acceptation error'}
 
 
         # user = db(User, email_conf_token=token).first()
@@ -395,12 +395,12 @@ def logout():
     return redirect(url_for('index.index'))
 
 
-@auth_bp.route('/unconfirmed', methods=['GET'])
-@check_right(AllowAll)
-def unconfirmed():
-    if current_user.email_confirmed:
-        return redirect(url_for('index.index'))
-    return render_template('auth/unconfirmed.html')
+# @auth_bp.route('/unconfirmed', methods=['GET'])
+# @check_right(AllowAll)
+# def unconfirmed():
+#     if current_user.email_confirmed:
+#         return redirect(url_for('index.index'))
+#     return render_template('auth/unconfirmed.html')
 
 
 # @auth_bp.route('/tos', methods=['OK'])
@@ -410,23 +410,6 @@ def unconfirmed():
 #     g.user.tos = json['accept'] == 'accept'
 #     return {'tos': g.user.tos}
 
-
-@auth_bp.route('/help', methods=["OK"])
-@check_right(AllowAll)
-def help_message(json):
-    if not 'email' in json['data']:
-        return 'Please enter valid email!'
-    else:
-        print(json['data']['email'])
-    if not 'message' in json['data']:
-        return 'Please write message!'
-
-    SendEmail().send_email(subject='Send help message', send_to=("profireader.service@gmail.com", ''),
-                           html=('From ' + json['data']['email'] + ': ' + json['data']['message']))
-
-    flash('Your message has been sent! ')
-    redirect(url_for('index.list_reader'))
-    return True
 
 
 # @auth_bp.route('/change-password', methods=['GET', 'OK'])
