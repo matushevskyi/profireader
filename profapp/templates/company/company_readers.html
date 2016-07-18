@@ -44,16 +44,16 @@ th, td {
         $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
              urlLoadGridData: $scope.get_readers({company_id: $scope.own_company_id}),
              columnDefs: [
-                 { name: 'profireader_first_name', type: 'link', href:'get_link_user_profile({user_id : row.entity.id})', enableSorting: false,enableCellEdit: false, enableColumnMenu: false, displayName: 'User profile', width: '35%',
+                 { name: 'first_name', type: 'link', href:'get_link_user_profile({user_id : row.entity.id})', enableSorting: false,enableCellEdit: false, enableColumnMenu: false, displayName: 'User profile', width: '35%',
                      filter: {type:'input'}
                  },
-                 { name: 'profireader_email', enableSorting: false,enableCellEdit: false, enableColumnMenu: false, displayName: 'Email',
+                 { name: 'address_email', enableSorting: false,enableCellEdit: false, enableColumnMenu: false, displayName: 'Email',
                      filter: {type:'input'}
                  },
-                 { name: 'profireader_name', enableSorting: false,displayName: 'Nickname', enableCellEdit: false, enableColumnMenu: false,
+                 { name: 'full_name', enableSorting: false,displayName: 'Nickname', enableCellEdit: false, enableColumnMenu: false,
                      filter: {type:'input'}
                  },
-                 { name: 'profireader_last_name', enableSorting: false,displayName: 'Last Name', enableCellEdit: false, enableColumnMenu: false,
+                 { name: 'last_name', enableSorting: false,displayName: 'Last Name', enableCellEdit: false, enableColumnMenu: false,
                      filter: {type:'input'}
                  }
              ]

@@ -1,6 +1,6 @@
-{{ _('Hello `%(name)s`', {'name': user_to.profireader_name}) }},
+{{ _('Hello `%(name)s`', {'name': user_to.full_name}) }},
 {% if user_from and user_from.id %}
-    {{ _('User `%(name)s` sent you email as member of company `%(company_name)s`', {'name': user_from.profireader_name, 'company_name': in_company.name}) }}
+    {{ _('User `%(name)s` sent you email as member of company `%(company_name)s`', {'name': user_from.full_name, 'company_name': in_company.name}) }}
 {% else %}
     {{ _('Anonymous sent you email as member of company `%(company_name)s`', {'company_name': in_company.name}) }}
 {% endif %}

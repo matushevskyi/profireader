@@ -148,15 +148,15 @@ class Company(Base, PRBase, PRElasticDocument):
     @property
     def readers_query(self):
         return g.db.query(User.id,
-                          User.profireader_email,
-                          User.profireader_name,
-                          User.profireader_first_name,
-                          User.profireader_last_name
+                          User.address_email,
+                          User.full_name,
+                          User.first_name,
+                          User.last_name
                           ). \
             join(UserPortalReader). \
             join(Portal). \
             join(self.__class__). \
-            order_by(User.profireader_name). \
+            order_by(User.full_name). \
             filter(self.__class__.id == self.id)
 
         # get all users in company : company.user_employees
@@ -466,9 +466,9 @@ class UserCompany(Base, PRBase):
     def search_for_user_to_join(company_id, searchtext):
         """Return all users in current company which have characters
         in their name like searchtext"""
-        return [user.get_client_side_dict(fields='profireader_name|id') for user in
+        return [user.get_client_side_dict(fields='full_name|id') for user in
                 db(User).filter(~db(UserCompany, user_id=User.id, company_id=company_id).exists()).
-                    filter(User.profireader_name.ilike("%" + searchtext + "%")).all()]
+                    filter(User.full_name.ilike("%" + searchtext + "%")).all()]
 
         # @staticmethod
         # def permissions(needed_rights_iterable, user_object, company_object):

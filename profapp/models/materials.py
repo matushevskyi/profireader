@@ -101,7 +101,7 @@ class Material(Base, PRBase, PRElasticDocument):
     @staticmethod
     def get_material_grid_data(material):
         from ..models.rights import PublishUnpublishInPortal
-        dict = material.get_client_side_dict(fields='md_tm,title,editor.profireader_name,id,illustration.url')
+        dict = material.get_client_side_dict(fields='md_tm,title,editor.full_name,id,illustration.url')
         dict.update({'portal.name': None if len(material.publications) == 0 else '', 'level': True})
         dict.update({'actions': None if len(material.publications) == 0 else '', 'level': True})
         list = [utils.dict_merge(
@@ -535,14 +535,14 @@ class ReaderPublication(Base, PRBase):
                 liked=True).first()
         limit = 15
         articles = db(ReaderPublication, publication_id=publication_id, liked=True)
-        liked_users = [User.get(article.user_id).profireader_name for article in articles.limit(limit)]
+        liked_users = [User.get(article.user_id).full_name for article in articles.limit(limit)]
         if me:
-            if g.user.profireader_name in liked_users:
-                index = liked_users.index(g.user.profireader_name)
+            if g.user.full_name in liked_users:
+                index = liked_users.index(g.user.full_name)
                 del liked_users[index]
             else:
                 del liked_users[-1]
-            liked_users.insert(0, g.user.profireader_name)
+            liked_users.insert(0, g.user.full_name)
         if articles.count() > limit:
             liked_users.append('and ' + str((articles.count() - limit)) + ' more...')
         return liked_users

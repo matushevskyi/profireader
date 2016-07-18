@@ -118,10 +118,9 @@ def employees(company_id):
 @check_right(UserIsEmployee, ['company_id'])
 def employees_load(json, company_id):
     company = Company.get(company_id)
-    employees_list = [
-        utils.dict_merge(employment.user_employee.get_client_side_dict(), employment.get_client_side_dict(),
+    employees_list = [utils.dict_merge(employment.user.get_client_side_dict(), employment.get_client_side_dict(),
                          {'actions': EmployeesRight(company=company, employment=employment).actions()})
-        for employment in company]
+                      for employment in company.employments]
 
     return {
         'company': company.get_client_side_dict(fields='id,name'),
@@ -400,7 +399,7 @@ def readers_load(json, company_id):
     company_readers, pages, page, count = pagination(query=company.get_readers_for_portal(json.get('filter')),
                                                      **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [reader.get_client_side_dict(
-        'id,profireader_email,profireader_name,profireader_first_name,profireader_last_name') for reader in
+        'id,address_email,full_name,first_name,last_name') for reader in
                           company_readers],
             'total': count
             }

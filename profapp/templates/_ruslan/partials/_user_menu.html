@@ -1,82 +1,46 @@
-<script type="text/ng-template" id="tos_dialog.html">
-            <div class="modal-header">
-                <h3 pr-test="LicenceTitle" class="modal-title">{{ _('Please accept tos dialog header') }}</h3>
-            </div>
-            <div class="modal-body">
-                {{ __('Licence text') }}
-            </div>
-
-            <div class="modal-footer">
-            <button pr-test="AcceptLicence" type="button" class="btn btn-default" ng-click="accept_tos('accept')">{{ __('Accept') }}</button>
-            <button pr-test="DeclineLicence" type="button" class="btn btn-default" ng-click="accept_tos('decline')">{{ __('Decline') }}</button>
-            </div>
-        </div>
-    </script>
-
 <script>
-    module.controller('tos_dialog_controller', function ($scope, $uibModal, $ok, $uibModalInstance) {
-        $scope.accept_tos = function (accept_or_decline) {
-            $ok('{{ url_for('auth.tos') }}', {'accept': accept_or_decline}, function(resp) {
-                $uibModalInstance.close(resp['tos']);
-            });
-        }
-    });
 
-    module.controller('UserLoginController', function ($scope, $uibModal, $ok, $timeout) {
+    module.controller('user_controller', function ($scope, $uibModal, $ok, $timeout) {
         $scope.user = {{ g.user.get_client_side_dict()| tojson|safe if g.user else 'null'}};
-        $scope.languages = {{ g.languages|tojson|safe }}
-        $scope.lang = {{ g.lang|tojson|safe }}
-        $scope.tos = function () {
-            if (!$scope.user || $scope.user.tos) {
-                return;
-            }
-            if ($scope.user && $scope.user.tos != true) {
-                var modalInstance = $uibModal.open({
-                            templateUrl: 'tos_dialog.html',
-                            controller: 'tos_dialog_controller'
-                        });
-                modalInstance.result.then(function (accepted) {
-                    $scope.user.tos = accepted;
-                });
-                return true
-            }
-        };
+        $scope.languages = {{ g.languages|tojson|safe }};
+        $scope.lang = {{ g.lang|tojson|safe }};
 
 
         $scope.url_list_reader = {{ raw_url_for('index.list_reader')|safe }}
-                $scope.url_general = function(){
-                    if ($scope.user){
-                        return'{{ url_for('index.list_reader')|safe }}'
+                $scope.url_general = function () {
+                    if ($scope.user) {
+                        return '{{ url_for('index.list_reader')|safe }}'
                     }
                     else {
-                   return '{{ url_for('index.index')|safe }}'}
+                        return '{{ url_for('index.index')|safe }}'
+                    }
                 };
 
         $scope.url_company_companies = {{ raw_url_for('company.companies')|safe }}
-        $scope.url_general_help = {{ raw_url_for('index.help')|safe }}
-        $scope.url_tutorial = {{ raw_url_for('tutorial.tutorial')|safe }}
-        $scope.url_auth_logout = {{ raw_url_for('auth.logout')|safe }}
-        $scope.url_user_profile = {{ raw_url_for('user.profile')|safe }}
-        $scope.user_avatar_url = '{{ current_user.get_avatar()['url'] }}';
+                $scope.url_general_help = {{ raw_url_for('index.contact_us')|safe }}
+                        $scope.url_tutorial = {{ raw_url_for('tutorial.tutorial')|safe }}
+                                $scope.url_auth_logout = {{ raw_url_for('auth.logout')|safe }}
+                                        $scope.url_user_profile = {{ raw_url_for('user.profile')|safe }}
+                                                $scope.user_avatar_url = '{{ current_user.get_avatar()['url'] }}';
         $scope.url_messenger = '{{ url_for('messenger.messenger'|safe) }}';
         $scope.login_url = '{{ url_for('auth.login_signup_endpoint')|safe }}';
 
 
         login_signup = '{{ login_signup }}';  // login_signup = 'login' or 'signup' or None
         $scope.login_signup = (login_signup === 'signup') ? 'signup' : 'login';
-        $scope.login_or_none_href = function(){
-            return $scope.user?'#':$scope.login_url;
+        $scope.login_or_none_href = function () {
+            return $scope.user ? '#' : $scope.login_url;
         };
-        $scope.$$translate = {{ translates('UserLoginController')|safe }};
+        $scope.$$translate = {{ translates('user_controller')|safe }};
         $scope.open_filemanager = function () {
             if ($scope.user) {
                 window.location.href = '/filemanager/';
             }
         };
 
-        $scope.changeLanguage = function(lang){
+        $scope.changeLanguage = function (lang) {
             console.log(lang)
-            $ok('{{ url_for('user.change_language') }}', {'language': lang}, function(resp) {
+            $ok('{{ url_for('user.change_language') }}', {'language': lang}, function (resp) {
                 location.reload();
             });
         }
@@ -91,69 +55,81 @@
 
 </script>
 {% raw %}
-<nav ng-controller="UserLoginController" class="navbar navbar-fixed-top nav-bg">
+<nav ng-controller="user_controller" class="navbar navbar-fixed-top nav-bg">
     <div class="container" ng-cloak>
-            <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
+        <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
 
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
-                        data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="{{ url_general()}}">
-                    <img ng-src="{{ static_address('front/img/profi.png') }}">
-                </a>
-            </div>
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="{{ url_general()}}">
+                <img ng-src="{{ static_address('front/img/profi.png') }}">
+            </a>
+        </div>
 
-            <div class="col-lg-offset-2 col-md-offset-1 col-lg-6 col-md-7 col-sm-8 col-xs-12 menu-site">
-                <button pr-test="HeaderAcceptLicence" type="button" ng-click="tos()" class="btn btn-info" style="float: left;margin-top: 15px" ng-if="user && !user.tos">{{ _('Accept licence') }}</button>
-                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                    <ul>
-                        <li ng-if="user"><a pr_test="ReadLine" href="{{ url_list_reader() }}" title="{{ _('Стрічкa читача') }}" ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
-                                class="fa fa-newspaper-o"></i><span>{{ _('Стрічкa читача') }}</span></a></li>
-                        <li ng-if="user && user.tos"><a pr_test="UserMassages" href="{{ url_messenger }}" title="{{ _('Всі повідомлення') }}"
-                               ng-class="{'selected': selected_user_menu == 'messages'}"><i
-                                class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span></a></li>
-                        <li ng-if="user.tos"><a pr_test="CompaniesList" href="{{ url_company_companies() }}" title="{{ _('Компанії') }}"
-                               ng-class="{'selected': selected_user_menu == 'companies'}"><i
-                                class="fa fa-building-o"></i><span>{{ _('Компанії') }}</span></a></li>
-                        <li ng-if="user.tos"><a pr_test="FileManeger" href="{{ login_or_none_href() }}" ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
-                               ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
-                                class="fa fa-folder-open-o"></i><span>{{ _('Менеджер файлів') }}</span></a></li>
-                        <li class="info-padding"><a pr_test="UserInfo" href="{{ url_general_help() }}" title="{{ _('Help information') }}" target="_blank"
-                               ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-info"></i><span>{{ _('Help information') }}</span></a></li>
-                        <li class="info-padding"><a pr_test="Tutorial" href="{{ url_tutorial() }}" title="{{ _('tutorial') }}"
-                               ng-class="{'selected': selected_user_menu == 'info'}"><i class="fa fa-file-video-o"></i><span>{{ _('Tutorial') }}</span></a></li>
+        <div class="col-lg-offset-2 col-md-offset-1 col-lg-6 col-md-7 col-sm-8 col-xs-12 menu-site">
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul>
+                    <li class="dropdown" ng-if="user"><a pr_test="ReadLine" href="{{ url_list_reader() }}"
+                                        title="{{ _('Стрічкa читача') }}"
+                                        ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
+                            class="fa fa-newspaper-o"></i><span>{{ _('Стрічкa читача') }}</span></a></li>
+                    <li class="dropdown" ng-if="user"><a pr_test="UserMassages" href="{{ url_messenger }}"
+                                                    title="{{ _('Всі повідомлення') }}"
+                                                    ng-class="{'selected': selected_user_menu == 'messages'}"><i
+                            class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span></a></li>
+                    <li class="dropdown"><a pr_test="CompaniesList" href="{{ url_company_companies() }}"
+                                            title="{{ _('Компанії') }}"
+                                            ng-class="{'selected': selected_user_menu == 'companies'}"><i
+                            class="fa fa-building-o"></i><span>{{ _('Компанії') }}</span></a></li>
+                    <li class="dropdown"><a pr_test="FileManeger" href="{{ login_or_none_href() }}"
+                                            ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
+                                            ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
+                            class="fa fa-folder-open-o"></i><span>{{ _('Менеджер файлів') }}</span></a></li>
+                    <li class="dropdown"><a pr_test="UserInfo" href="{{ url_general_help() }}"
+                                                title="{{ _('Contact us') }}" target="_blank"
+                                                ng-class="{'selected': selected_user_menu == 'contact_us'}"><i
+                            class="fa fa-question-circle"></i><span>{{ _('Contact us') }}</span></a></li>
 
-                        <li class="dropdown"><a class="dropbtn" title="{{ _('Language') }}"><i class="fa fa-language"></i><span>{{ _('Language') }}</span></a>
+                    <li class="dropdown"><a pr_test="Tutorial" href="{{ url_tutorial() }}"
+                                                title="{{ _('tutorial') }}"
+                                                ng-class="{'selected': selected_user_menu == 'tutorial'}"><i
+                            class="fa fa-file-video-o"></i><span>{{ _('Tutorial') }}</span></a></li>
+
+                    <li class="dropdown"><a title="{{ _('Language') }}"><i
+                            class="fa fa-language"></i><span>{{ _('Language') }}</span></a>
                         <div class="dropdown-content">
-                            <a ng-repeat="language in languages" ng-class="{'selected': language.name == lang}" style="cursor: pointer" ng-click="changeLanguage(language.name)">{{language.display}}</a>
-                          </div>
-                        </li>
+                            <a ng-repeat="language in languages" ng-class="{'selected': language.name == lang}"
+                               style="cursor: pointer" ng-click="changeLanguage(language.name)">{{language.display}}</a>
+                        </div>
+                    </li>
 
-                        <li ng-if="user" role="presentation" class="menu-profile">
-                            <a pr_test="UserProfile"  href="{{ url_user_profile({user_id:user.id}) }}" role="button" aria-haspopup="true"
-                               aria-expanded="false">
-                                <img class="person-small-cover" pr-image="" pr-no-image="{{ user_avatar_url }}">
-                                {{user.profireader_name}}
-                            </a>
-                            <a pr_test="LogOut" class="login-profile" href="{{ url_auth_logout() }}">{{ _('Log out') }}</a>
-                            <!--<ul class="dropdown-menu">
-                                <li ng-show="user.id"><a href="{{ url_user_profile({user_id:user.id}) }}">{{ _('Profile') }}</a></li>
-                                <li ng-show="user.id" ><a href="{{ url_auth_logout() }}" >{{_('Log Out') }}</a></li>
-                                <li ng-show="!user.id" class="dropdown-link"><a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=login' }}">{{_('Log In') }}</a></li>
-                                <li ng-show="!user.id" class="dropdown-link"><a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=signup' }}">{{_('Sign Up') }}</a></li>
-                            </ul>-->
-                        </li>
+                    <li ng-if="user" role="presentation" class="menu-profile">
+                        <a pr_test="UserProfile" href="{{ url_user_profile({user_id:user.id}) }}" role="button"
+                           aria-haspopup="true"
+                           aria-expanded="false">
+                            <img class="person-small-cover" pr-image="" pr-no-image="{{ user_avatar_url }}">
+                            {{user.full_name}}
+                        </a>
+                        <a pr_test="LogOut" class="login-profile" href="{{ url_auth_logout() }}">{{ _('Log out') }}</a>
+                        <!--<ul class="dropdown-menu">
+                            <li ng-show="user.id"><a href="{{ url_user_profile({user_id:user.id}) }}">{{ _('Profile') }}</a></li>
+                            <li ng-show="user.id" ><a href="{{ url_auth_logout() }}" >{{_('Log Out') }}</a></li>
+                            <li ng-show="!user.id" class="dropdown-link"><a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=login' }}">{{_('Log In') }}</a></li>
+                            <li ng-show="!user.id" class="dropdown-link"><a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=signup' }}">{{_('Sign Up') }}</a></li>
+                        </ul>-->
+                    </li>
 
-                        <li ng-if="!user" role="presentation" class="menu-profile">
-                            <a pr_test="LogIn" class="login-profile" href="{{ login_url }}?login_signup=login">{{ _('Login') }}</a>
-                        </li>
-                    </ul>
-                </div>
+                    <li ng-if="!user" role="presentation" class="menu-profile">
+                        <a pr_test="LogIn" class="login-profile" href="{{ login_url }}">{{ _('Login') }}</a>
+                    </li>
+                </ul>
             </div>
         </div>
+    </div>
 </nav>
 {% endraw %}
