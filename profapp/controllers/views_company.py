@@ -118,10 +118,9 @@ def employees(company_id):
 @check_right(UserIsEmployee, ['company_id'])
 def employees_load(json, company_id):
     company = Company.get(company_id)
-    employees_list = [
-        utils.dict_merge(employment.user_employee.get_client_side_dict(), employment.get_client_side_dict(),
+    employees_list = [utils.dict_merge(employment.user.get_client_side_dict(), employment.get_client_side_dict(),
                          {'actions': EmployeesRight(company=company, employment=employment).actions()})
-        for employment in company]
+                      for employment in company.employments]
 
     return {
         'company': company.get_client_side_dict(fields='id,name'),

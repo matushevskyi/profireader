@@ -197,7 +197,7 @@
                     {name: 'status', width: '10%', afilter: {type: 'input'}},
                     {
                         name: 'rights',
-                        width: '*',
+                        width: '20%',
                         type: 'icons',
                         afilter: {type: 'input'},
                         classes: function (id, entity, field) {
@@ -205,7 +205,17 @@
                         }
                     },
                     {
-                        name: 'actions', width: '*', type: 'actions',
+                       name: 'profireader_email',
+                       onclick: 'change_position',
+                       width: '20%', afilter: {type: 'input'}
+                    },
+                    {
+                       name: 'profireader_phone',
+                       onclick: 'change_position',
+                       width: '20%', afilter: {type: 'input'}
+                    },
+                    {
+                        name: 'actions', width: '20%', type: 'actions',
                         onclick: 'grid_action',
                         afilter: {type: 'input'}, classes: function (id,
                                                                      entity, field) {
@@ -218,7 +228,6 @@
         })
         {% endraw %}
     </script>
-    {{ json }}
     <div ng-controller="company_employees_controller">
         {% raw %}
         <h2>{{ _('Employees at company `%(company.name)s`') }}</h2>
