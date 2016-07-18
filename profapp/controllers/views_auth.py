@@ -193,20 +193,17 @@ def login(json_data):
 @auth_bp.route('/email_confirmation/<string:token>/', methods=['GET'])
 @check_right(AllowAll)
 def email_confirmation(token=None):
-    email = request.args.get('email', None)
-
     if not token:
-        return render_template("auth/email_confirmation_enter_token.html", email='')
+        return render_template("auth/confirm_email.html", email='')
 
     user = db(User, email_conf_token=token).first()
 
     if not user:
-        return render_template("auth/email_confirmation_enter_token.html", email='', wrong_token_entered=True)
+        return render_template("auth/confirm_email.html", email='',
+                               wrong_email_confirmation_token_entered=True)
     elif not user.confirm_email():
-        return render_template("auth/email_confirmation_enter_token.html", email=user.address_email,
-                               wrong_token_entered=True)
-    elif user.email_confirmed:
-        return render_template("auth/email_confirmation_enter_token.html", email=email, already_confirmed=True)
+        return render_template("auth/confirm_email.html", email=user.address_email,
+                               wrong_email_confirmation_token_entered=True)
     else:
         User.logout()
         user.save()
@@ -215,7 +212,8 @@ def email_confirmation(token=None):
         portal = Portal.get(request.args.get('subscribe_to_portal'), returnNoneIfNotExists=True)
         if portal:
             portal.subscribe_user(user)
-        return redirect(url_for('auth.welcome'))
+        return redirect(url_for('index.welcome'))
+
 
 @auth_bp.route('request_new_email_confirmation_token/', methods=["OK"])
 @check_right(AllowAll)
@@ -237,16 +235,6 @@ def request_new_email_confirmation_token(json_data):
             return {'error': 'User with this email is not registered'}
 
 
-
-            # @auth_bp.route('/tos/', methods=['GET'])
-# @check_right(AllowAll)
-# def tos():
-#     if not g.user or g.user.tos:
-#         return redirect(url_for('index.welcome'))
-#     else:
-#         return render_template("auth/tos.html")
-#
-#
 @auth_bp.route('tos/', methods=['OK'])
 @check_right(AllowAll)
 def tos(json):
@@ -438,69 +426,111 @@ def logout():
 #             flash('Invalid password.')
 #     return render_template("auth/bak_change_password.html", form=form)
 
-@auth_bp.route('/reset_password', methods=['GET'])
+# @auth_bp.route('/reset_password/', methods=['GET'])
+# @check_right(AllowAll)
+# def reset_password():
+#     return render_template('auth/reset_password.html')
+
+
+
+@auth_bp.route('/request_new_password/', methods=['GET'])
 @check_right(AllowAll)
-def reset_password():
-    return render_template('auth/reset_password.html')
+def request_new_reset_password_token():
+    return render_template("auth/request_new_password.html")
 
 
-@auth_bp.route('/reset_password', methods=['OK'])
+@auth_bp.route('/request_new_password/', methods=["OK"])
 @check_right(AllowAll)
-def reset_password_request(json):
-    if not current_user.is_anonymous():
-        flash('To reset your password logout first please.')
-        redirect(url_for('index.list_reader'))
-        return False
+def request_new_reset_password_token_load(json_data):
+    from ..constants import REGEXP
+    email = json_data.get('email', '')
 
-    user = db(User, address_email=json.get('email')).first()
-    if user:
-        user.generate_pass_reset_token().save()
-        SendEmail().send_email(subject='Reset password', send_to=(user.address_email, ""),
-                               html=render_template('auth/email/reset_password.html', user=user), )
-        flash('An email with instructions to reset your password has been sent to you.')
+    if not re.match(REGEXP.EMAIL, email):
+        return {'error': 'Please enter correct email'}
     else:
-        flash('You are not Profireader user yet. Sign up Profireader first please.')
-    return {}
-
-
-@auth_bp.route('/reset/<token>', methods=['GET'])
-@check_right(AllowAll)
-def password_reset(token):
-    if not current_user.is_anonymous():
-        return redirect(url_for('auth/reset_password_token.html'))
-    return render_template('auth/reset_password_token.html', token=token)
-
-
-@auth_bp.route('/reset/<token>', methods=['OK'])
-@check_right(AllowAll)
-def password_reset_change(json, token):
-    user = g.db.query(User). \
-        filter_by(address_email=json['data'].get('email')).first()
-    if not user or user.pass_reset_token != token:
-        return 'Your put wrong email.'
-
-    def check_fields():
-        required_fields = ['email', 'password', 'password1']
-        for field in required_fields:
-            if field not in json['data'].keys():
-                return 'Data is wrong.'
-            else:
-                if not json['data'].get(field):
-                    return 'Fill all fields.'
-                elif json['data'].get('password') != json['data'].get('password1'):
-                    return 'Put the same passwords.'
-        return True
-
-    check = check_fields()
-    if check == True:
-        if (user is None) or user.banned:
-            return 'You cannot update password.You are baned.'
-        if user.reset_password(json['data'].get('password')):
-            return True
+        user = db(User, address_email=email).first()
+        if user:
+            user.generate_pass_reset_token().save()
+            return {}
         else:
-            return 'Something wrong.'
+            return {'error': 'User with this email is not registered'}
+
+
+@auth_bp.route('/reset_password/<string:token>/', methods=['GET'])
+@check_right(AllowAll)
+def reset_password(token):
+    return render_template("auth/reset_password.html",
+                           reset_pass_user=db(User, pass_reset_token=token).first())
+
+
+    # User.logout()
+    # user.save()
+    # g.db.commit()
+    # user.login()
+    # portal = Portal.get(request.args.get('subscribe_to_portal'), returnNoneIfNotExists=True)
+    # if portal:
+    #     portal.subscribe_user(user)
+    # return redirect(url_for('auth.welcome'))
+
+
+@auth_bp.route('/reset_password/<string:token>/', methods=['OK'])
+@check_right(AllowAll)
+def reset_password_load(json_data, token):
+    user = db(User, pass_reset_token=token).first()
+    if user:
+        user.password = json_data['password']
+        user.password_confirmation = json_data['password_confirmation']
+        validation = user.validate(False)
+        if validation['errors']:
+            return {'error': list(validation['errors'].values())[0]}
+        elif not user.reset_password():
+            return {'error': 'cant set new password'}
+        else:
+            User.logout()
+            user.login()
+            return {}
     else:
-        return check
+        return {'error': 'Wrong token. or token outdated'}
+
+#
+# @auth_bp.route('/reset/<token>', methods=['GET'])
+# @check_right(AllowAll)
+# def password_reset(token):
+#     if not current_user.is_anonymous():
+#         return redirect(url_for('auth/reset_password_token.html'))
+#     return render_template('auth/reset_password_token.html', token=token)
+#
+#
+# @auth_bp.route('/reset/<token>', methods=['OK'])
+# @check_right(AllowAll)
+# def password_reset_change(json, token):
+#     user = g.db.query(User). \
+#         filter_by(address_email=json['data'].get('email')).first()
+#     if not user or user.pass_reset_token != token:
+#         return 'Your put wrong email.'
+#
+#     def check_fields():
+#         required_fields = ['email', 'password', 'password1']
+#         for field in required_fields:
+#             if field not in json['data'].keys():
+#                 return 'Data is wrong.'
+#             else:
+#                 if not json['data'].get(field):
+#                     return 'Fill all fields.'
+#                 elif json['data'].get('password') != json['data'].get('password1'):
+#                     return 'Put the same passwords.'
+#         return True
+#
+#     check = check_fields()
+#     if check == True:
+#         if (user is None) or user.banned:
+#             return 'You cannot update password.You are baned.'
+#         if user.reset_password(json['data'].get('password')):
+#             return True
+#         else:
+#             return 'Something wrong.'
+#     else:
+#         return check
 
 # наразі не використовується але потрібна в майбутньому
 # @auth_bp.route('/change-email', methods=['GET', 'POST'])
