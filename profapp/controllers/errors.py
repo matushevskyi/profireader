@@ -58,10 +58,9 @@ class SubscribeToOwn(Error):
 
 
 class PortalAlreadyExist(Error):
-
-            # except errors.PortalAlreadyExist as e:
-            #     details = e.args[0]
-            #     print(details['message'])
+    # except errors.PortalAlreadyExist as e:
+    #     details = e.args[0]
+    #     print(details['message'])
     pass
 
 
@@ -84,7 +83,7 @@ class VideoAlreadyExistInPlaylist(Error):
 class ValidationException(Error):
     """ Inappropriate argument value (of correct type). """
 
-    def __init__(self, validation_result): # real signature unknown
+    def __init__(self, validation_result):  # real signature unknown
         self.result = validation_result
         pass
 
@@ -95,6 +94,13 @@ class WrongNumberOfParameters(Error):
 
 class WrongMandatoryParametersPassedToFunction(Error):
     pass
+
+
+class NoRights(Exception):
+    url = '/'
+
+    def __init__(self, redirect_to='/'):
+        self.url = redirect_to
 
 #
 # @csrf.error_handler

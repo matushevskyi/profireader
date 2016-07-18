@@ -1,0 +1,82 @@
+{% extends "_ruslan/_index_layout.html" %}
+{% block title %}Profireader - {{ _('Welcome') }}{% endblock title %}
+
+{% block portal_content %}
+    <script type="text/ng-template" id="tos_dialog.html">
+        <div class="modal-header">
+            <h3 pr-test="LicenceTitle" class="modal-title">{{ _('Please accept tos dialog header') }}</h3>
+        </div>
+        <div class="modal-body">
+            {{ __('Licence text') }}
+        </div>
+
+        <div class="modal-footer">
+            <button pr-test="AcceptLicence" type="button" class="btn btn-default"
+                    ng-click="accept_tos(true)">{{ _('Accept') }}</button>
+            <button pr-test="DeclineLicence" type="button" class="btn btn-default"
+                    ng-click="accept_tos(false)">{{ _('Decline') }}</button>
+        </div>
+        </div>
+    </script>
+
+    <script>
+        module.controller('tos', function ($scope, $uibModal, $ok, $uibModalInstance) {
+            $scope.accept_tos = function (accept) {
+                if (accept) {
+                    $ok('{{ url_for('auth.tos') }}', {'accept': true}, function (resp) {
+                        if (resp['error']) {
+                            $uibModalInstance.close(resp['error']);
+                        }
+                        else {
+                            $uibModalInstance.close(resp);
+                        }
+                    });
+                }
+                else {
+                    return $uibModalInstance.close(false);
+                }
+            }
+        });
+
+        module.controller('welcome', function ($scope, $ok, $uibModal) {
+
+            $scope.tos = {{ g.user.tos }};
+            $scope.sorry = 'sorry, you have to accept tos if u wanna work with profireader';
+            $scope.thanks = 'thanks for accepting tos';
+
+            $scope.check_tos = function () {
+
+                if ($scope.tos) {
+                    return;
+                }
+
+                $uibModal.open({
+                    templateUrl: 'tos_dialog.html',
+                    controller: 'tos',
+                    resolve: {}
+                }).result.then(function (resp) {
+                    if (resp === true) {
+                        $scope.tos = true;
+                        add_message($scope.thanks, 'success')
+                    }
+                    else if (resp === false) {
+                        add_message($scope.sorry)
+                    }
+                    else {
+                        add_message(resp)
+                    }
+                }, function () {
+                    add_message($scope.sorry)
+                });
+
+            };
+        });
+
+
+    </script>
+
+    <div class="container" ng-controller="welcome" ng-init="check_tos()">
+        {{ __('Welcome to profireader') }}
+        <button ng-if="!tos" ng-click="check_tos()">{{ _('You have to accept tos') }}</button>
+    </div>
+{% endblock portal_content %}

@@ -48,7 +48,7 @@
                 <h3 class="modal-title">{{ _(action + ' employee') }}</h3>
             </div>
             <div class="modal-body">
-                {{ _('You are going to ' + action + ' employee `%(user.profireader_name)s` at portal
+                {{ _('You are going to ' + action + ' employee `%(user.full_name)s` at portal
                 `%(company.name)s`') }}<br/>
             </div>
 
@@ -182,7 +182,7 @@
                 loadGridData: $scope.loadData,
                 columnDefs: [
                     {
-                        name: 'profireader_name', width: '20%', atype: 'link',
+                        name: 'full_name', width: '20%', atype: 'link',
                         href: 'url_employee_update({company_id:grid.appScope.company.id, user_id: row.entity' +
                         '.user_id})',
                         afilter: {type: 'input'}

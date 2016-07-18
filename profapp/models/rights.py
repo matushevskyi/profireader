@@ -670,25 +670,22 @@ class UserIsActive(BaseRightsInProfireader):
             value = User.get(value)
         return key, value
 
-    def is_allowed(self, check_only_banned=None):
+    def is_allowed(self, check_only_banned=None, raise_exception_redirect_if_not = False):
         if not self.user:
-            raise Exception('Wrong data!')
-        allow = self.user.is_active(check_only_banned)
-        if allow != True:
-            return allow
-        return True
+            raise Exception('nouser')
+        return self.user.is_active(check_only_banned, raise_exception_redirect_if_not= raise_exception_redirect_if_not)
 
 
 class UserNonBanned(UserIsActive):
     def __init__(self, user=None):
         super(UserNonBanned, self).__init__(user=user)
 
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         return UserIsActive.is_allowed(self, check_only_banned=True)
 
 
 class AllowAll(BaseRightsInProfireader):
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         return True
 
 
@@ -706,7 +703,7 @@ class UserEditProfieRight(BaseRightsInProfireader):
             value = User.get(value)
         return key, value
 
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         if self.user == g.user:
             return self._is_action_allowed(self.user, self.ACTIONS['EDIT_USER_PROFILE'], {'user': self.user},
                                            actions=self.ACTIONS)
@@ -727,7 +724,7 @@ class UserIsEmployee(BaseRightsEmployeeInCompany):
         super(UserIsEmployee, self).__init__(company=company)
         self.material = material if isinstance(material, Material) else Material.get(material) if material else None
 
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         self.company = self.company if self.company else self.material.company
         employee = UserCompany.get(company_id=self.company.id)
         if not employee:
@@ -736,7 +733,7 @@ class UserIsEmployee(BaseRightsEmployeeInCompany):
 
 
 class EditCompanyRight(BaseRightsEmployeeInCompany):
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         return self.action_is_allowed(self.ACTIONS['EDIT_COMPANY'])
 
 
@@ -745,14 +742,14 @@ class EditPortalRight(BaseRightsEmployeeInCompany):
         super(EditPortalRight, self).__init__(company=company)
         self.portal = portal
 
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         if self.company == None and self.portal:
             self.company = self.portal.own_company
         return self.action_is_allowed(self.ACTIONS['EDIT_PORTAL'])
 
 
 class RequireMembereeAtPortalsRight(BaseRightsEmployeeInCompany):
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         return self.action_is_allowed(self.ACTIONS['COMPANY_REQUIRE_MEMBEREE_AT_PORTALS'])
 
 
@@ -761,7 +758,7 @@ class PortalManageMembersCompaniesRight(BaseRightsEmployeeInCompany):
         super(PortalManageMembersCompaniesRight, self).__init__(company=company)
         self.member_id = member_id
 
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         if self.company.id == self.member_id:
             return False
         return self.action_is_allowed(self.ACTIONS['PORTAL_MANAGE_MEMBERS_COMPANIES'])
@@ -772,7 +769,7 @@ class EmployeeAllowRight(EmployeesRight):
         super(EmployeeAllowRight, self).__init__(company=company)
         self.user = user
 
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         self.employment = UserCompany.get(user_id=self.user.id, company_id=self.company.id)
         return self.action_is_allowed(self.ACTIONS['ALLOW'])
 
@@ -784,7 +781,7 @@ class CanMaterialBePublished(PublishUnpublishInPortal):
 
 
 class EditMaterialRight(EditOrSubmitMaterialInPortal):
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         return self.action_is_allowed(self.ACTIONS['EDIT'])
 
 
@@ -792,7 +789,7 @@ class EditPublicationRight(PublishUnpublishInPortal):
     def __init__(self, publication=None, company=None):
         super(EditPublicationRight, self).__init__(publication=publication, company=company)
 
-    def is_allowed(self):
+    def is_allowed(self, raise_exception_redirect_if_not = False):
         self.division = self.publication.division
         return self.actions()[self.ACTIONS['EDIT']]
 

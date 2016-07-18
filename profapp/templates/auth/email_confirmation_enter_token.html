@@ -1,0 +1,48 @@
+{% extends "_ruslan/_index_layout.html" %}
+{% block title %}Profireader - {{ _('Confirmation') }}{% endblock title %}
+
+{% block portal_content %}
+    <div class="container">
+        {% if already_confirmed %}
+            <h3>{{ _('You email is already confirmed') }}</h3>
+            <a href="{{ url_for('index.welcome') }}">{{ _('Welcome to profireader') }}</a>
+
+        {% else %}
+            {% if wrong_token_entered %}
+                <h3>{{ _('Sorry you have entered wrong token') }}</h3>
+            {% endif %}
+
+            <script>
+
+                module.controller('regenerate_token', function ($scope, $ok) {
+                    $scope.$$translate = {{ translates('regenerate_token')|safe }};
+                    $scope.sending = false;
+                    $scope.data = {'email': '{{ email }}'};
+
+
+                    $scope.requestNewToken = function () {
+                        $scope.sending = true;
+                        $ok('{{ url_for('auth.request_new_email_confirmation_token') }}', $scope.data, function (resp) {
+                            if (resp['error']) {
+                                add_message(resp['error'], 'danger')
+                            } else {
+                                add_message('New token was created and sent to provided email', 'success')
+                            }
+                            $scope.sending = false;
+                        })
+                    }
+                });
+            </script>
+
+            <form ng-controller="regenerate_token">
+                {% raw %}
+                <h3>{{ _('You can regenerate new token') }}</h3>
+                <input  ng-disabled="sending" name="email" ng-model="data.email" placeholder="email"/>
+                <button  ng-disabled="sending" ng-click="requestNewToken()" type="submit">{{ _('Regenerate token') }}</button>
+                <br/>
+                {% endraw %}
+            </form>
+
+        {% endif %}
+    </div>
+{% endblock portal_content %}

@@ -306,6 +306,21 @@ class Portal(Base, PRBase):
                 portals.append(portal.get_client_side_dict())
         return portals
 
+    def subscribe_user(self, user = None):
+        user = user if user else g.user
+        free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
+                               ReaderUserPortalPlan.amount).filter_by(name='free').one()
+
+        start_tm = datetime.datetime.utcnow()
+        end_tm = datetime.datetime.fromtimestamp(start_tm.timestamp() + free_plan[1])
+        reader_portal = UserPortalReader(user.id, self.id, status='active', portal_plan_id=free_plan[0],
+                                         start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
+                                         show_divisions_and_comments=[division_show for division_show in
+                                                                      [ReaderDivision(portal_division=division)
+                                                                       for division in self.divisions]])
+        g.db.add(reader_portal)
+        g.db.commit()
+
 
 class PortalAdvertisment(Base, PRBase):
     __tablename__ = 'portal_adv'

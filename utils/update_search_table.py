@@ -38,8 +38,6 @@ def add_to_search(target=None):
             md_time = getattr(target, 'md_tm', default_time)
         elif hasattr(target, 'cr_tm'):
             md_time = getattr(target, 'cr_tm', default_time)
-        elif hasattr(target, 'registered_tm'):
-            md_time = getattr(target, 'registered_tm', default_time)
         for field in target_fields.split(','):
             field_options = target.search_fields[field]
             field_options.update({key: options[key] for key in options

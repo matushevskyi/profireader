@@ -13,15 +13,9 @@ from ..models.materials import Publication, ReaderPublication
 from ..models.portal import PortalDivision, UserPortalReader, Portal, ReaderUserPortalPlan, ReaderDivision
 from sqlalchemy import and_, desc
 from .errors import BadDataProvided
-
-
-@index_bp.route('help/')
-@check_right(AllowAll)
-def help():
-    email = None
-    if g.user:
-        email = g.user.profireader_email
-    return render_template('help.html', data={'email': email})
+from utils.pr_email import SendEmail
+import re
+from ..controllers import errors
 
 
 @index_bp.route('portals_list/', methods=['GET'])
@@ -102,9 +96,22 @@ def list_reader_from_front(portal_id):
 @index_bp.route('', methods=['GET'])
 @check_right(AllowAll)
 def index():
-    if g.user and g.user.is_authenticated() and getattr(g.user, 'tos', False):
+    if g.user and g.user.is_authenticated():
+        try:
+            UserIsActive().is_allowed(raise_exception_redirect_if_not=True)
+        except errors.NoRights as e:
+            return redirect(e.url)
         return render_template('_ruslan/reader/_reader_content.html', favorite=request.args.get('favorite') == 'True')
     return render_template('general/index.html')
+
+
+@index_bp.route('welcome/', methods=['GET'])
+@check_right(AllowAll)
+def welcome():
+    if g.user and g.user.is_authenticated():
+        return render_template('general/welcome.html')
+    else:
+        return redirect(url_for('index.index'))
 
 
 @index_bp.route('', methods=['GET'])
@@ -122,7 +129,8 @@ def list_reader_load(json):
     localtime = time.gmtime(time.time())
 
     if favorite:
-        publication_filter = (Publication.id == db(ReaderPublication, user_id=g.user.id, favorite=True).subquery().c.publication_id)
+        publication_filter = (
+            Publication.id == db(ReaderPublication, user_id=g.user.id, favorite=True).subquery().c.publication_id)
     else:
         division_filter = \
             and_(PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id)
@@ -201,6 +209,7 @@ def add_delete_like(json):
 @index_bp.route('subscribe/<string:portal_id>/', methods=['GET'])
 @check_right(UserNonBanned)
 def reader_subscribe(portal_id):
+    # TODO: OZ by OZ: remove this endpoint!!! move subscription to model (function Portal.subscribe_user(self, user))
     user_dict = g.user.get_client_side_dict()
     portal = Portal.get(portal_id)
     if not portal:
@@ -324,3 +333,24 @@ def edit_profile_submit(json, reader_portal_id):
 @check_right(UserNonBanned)
 def buy_subscription():
     return render_template('partials/reader/buy_subscription.html')
+
+
+@index_bp.route('contact_us/', methods=["GET"])
+@check_right(AllowAll)
+def contact_us():
+    return render_template('contact_us.html', data={'email': g.user.address_email if g.user else '', 'message': ''})
+
+
+@index_bp.route('contact_us/', methods=["OK"])
+@check_right(AllowAll)
+def contact_us_load(json_data):
+    from ..constants import REGEXP
+    if not re.match(r'([^\s]{3}[\s]*.*){10}', json_data.get('message', '')):
+        return {'error': 'Please write message. at least ten words'}
+    elif not re.match(REGEXP.EMAIL, json_data.get('email', '')):
+        return {'error': 'Please enter correct email'}
+    else:
+        SendEmail().send_email(subject='Send help message', send_to=("profireader.service@gmail.com", ''),
+                               html=('From ' + json_data['email'] + ': ' + json_data['message']))
+
+        return {}

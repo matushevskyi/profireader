@@ -1,45 +1,139 @@
 {% extends "_ruslan/_index_layout.html" %}
 {% block title %}Profireader - {{ _('SignUp') }}{% endblock title %}
-{% block head %}
-    {{ super() }}
-{% endblock head %}
-
-{% block portal_base %}
-    {{ super() }}
-{% endblock portal_base %}
 
 {% block portal_content %}
-    <div ng-cloak class="auth-input auth-form col-lg-4 col-md-5 col-sm-6 col-xs-10" ng-controller="UserLoginController">
+    <script>
+        module.controller('login_signup', function ($scope, $af, $ok) {
+
+            $scope.first_validation = false;
+            $scope.sent_new_user = false;
+            $scope.sent_login = false;
+            $scope.existing_user = {email: '', password: ''};
+
+            $scope.login = function () {
+                $scope.sent_login = true;
+                $ok('{{ url_for('auth.login') }}', $scope.existing_user, function (resp) {
+                    if (!resp['error']) {
+                        add_message('Welcome to profireader!', 'success');
+                        window.location = '{{ url_for('index.index') }}';
+                    }
+                    else {
+                        add_message(resp['error'], 'info');
+                        $scope.sent_login = false;
+                    }
+                });
+            }
+
+
+            $scope.beforeLoad = function () {
+                return {
+                    'first_name': '',
+                    'last_name': '',
+                    'last_name': '',
+                    'password': '',
+                    'password_confirmation': ''
+                };
+            }
+
+            $scope.beforeSave = function (resp, deff) {
+                $scope.sent_new_user = true;
+                return deff(resp);
+            }
+
+            $scope.afterValidation = function (resp, deff) {
+                $scope.first_validation = true;
+                return deff(resp);
+            }
+
+            $scope.afterSave = function (resp, deff) {
+                if (resp['error']) {
+                    add_message(resp['error'], 'error');
+                    $scope.sent_new_user = false;
+                }
+                else {
+                    add_message('We have send you email with confirmation key. pls find url in email and click it', 'success');
+
+                }
+            };
+
+        });
+    </script>
+
+    <div ng-cloak class="auth-input auth-form col-lg-4 col-md-5 col-sm-6 col-xs-10" ng-controller="login_signup">
+        {% raw %}
         <div class="tabs">
-            <div ng-hide="login_signup==='signup'" class="tab-link">
+            <div ng-hide="login_signup == 'signup'" class="tab-link">
                 <a pr-test="TabLogIn" class="tab actual" title="Log in to Profireader">{{ _('Log in') }}</a>
-                <a pr-test="TabSignUp" class="tab" ng-click="login_signup='signup'" href="" title="Sign up to Profireader">{{ _('Sign up') }}</a>
+                <a pr-test="TabSignUp" class="tab" ng-click="login_signup='signup'" href=""
+                   title="Sign up to Profireader">{{ _('Sign up') }}</a>
             </div>
-            <div ng-show="login_signup==='signup'" class="tab-link">
-                <a class="tab" ng-click="login_signup='login'" href="" title="Log in to Profireader">{{ _('Log in') }}</a>
+            <div ng-show="login_signup == 'signup'" class="tab-link">
+                <a class="tab" ng-click="login_signup='login'" href=""
+                   title="Log in to Profireader">{{ _('Log in') }}</a>
                 <a class="tab actual" title="Sign up to Profireader">{{ _('Sign up') }}</a>
             </div>
         </div>
 
         <div class="content-block">
-            <stan ng-if="login_signup==='signup'">
+            <span ng-if="login_signup == 'signup'">
                 <h3>{{ _('Sign up via social') }}:</h3>
-                {% include 'partials/LoginSignup - Soc Networks.html' %}
-                {% include 'partials/Signup - Profireader.html' %}
-            </stan>
-            <div ng-if="login_signup!=='signup'">
+                {% endraw %}
+                {% include 'partials/login_or_signup_via_social.html' %}
+                {% raw %}
+                <h3>{{ _('register by email') }}</h3>
+
+                <span onsubmit="return false" class="login-form-profirider"
+                      af af-url-load="" af-before-load="beforeLoad" af-after-validate="afterValidation"
+                      af-after-save="afterSave" af-before-save="beforeSave" ng-model="new_user">
+                    <input ng-disabled="sent_new_user" class="form-control" ng-model="new_user.email"
+                           placeholder="email" name="email"
+                           pr-validation-answer="new_user_validation:email"/>
+                    <input ng-disabled="sent_new_user" class="form-control" ng-model="new_user.first_name"
+                           placeholder="first_name" name="first_name"
+                           pr-validation-answer="new_user_validation:first_name"/>
+                    <input ng-disabled="sent_new_user" class="form-control" ng-model="new_user.last_name"
+                           placeholder="last_name" name="last_name"
+                           pr-validation-answer="new_user_validation:last_name"/>
+                    <input ng-disabled="sent_new_user" class="form-control" ng-model="new_user.password"
+                           placeholder="password" name="password"
+                           pr-validation-answer="new_user_validation:password" type="password"/>
+                    <input ng-disabled="sent_new_user" class="form-control" ng-model="new_user.password_confirmation"
+                           placeholder="confirm password" name="password_confirmation"
+                           pr-validation-answer="new_user_validation:password_confirmation" type="password"/>
+                    <input type="button" value="{{ _('Sign up') }}" class="submit-form" type="submit" type="button"
+                           ng-click="$af.save(new_user)"
+                           ng-disabled="!first_validation || sent_new_user || !$af.isActionAllowed(new_user, 'save')"/>
+                    </span>
+
+            </span>
+            <span ng-if=" login_signup !='signup'">
                 <h3>{{ _('Login via social') }}:</h3>
-                {% include 'partials/LoginSignup - Soc Networks.html' %}
-                {% include 'partials/Log in - Profireader.html' %}
-            </div>
+                {% endraw %}
+                {% include 'partials/login_or_signup_via_social.html' %}
+                {% raw %}
+                <h3>{{ _('Log in using email') }}</h3>
+                    <span class="login-form-profirider" id="login-form-profirider" action="{{ url_for('auth.login') }}"
+                          onsubmit="return false">
+                        <input ng-disabled="sent_login" class="form-control" placeholder="email" name="email"
+                               ng-model="existing_user.email"/>
+                        <input ng-disabled="sent_login" class="form-control" type="password" placeholder="password"
+                               name="password"
+                               ng-model="existing_user.password"/>
+                        <input ng-disabled="sent_login" ng-click="login()" class="submit-form" type="submit"
+                               value="{{ _('Sign in') }}"/>
+                        {% endraw %}
+                        {{ __('If you forgot you password you can <a href="%(url)s">reset it</a>', {'url': url_for('auth.reset_password') } ) }}
+                        <br/>
+                        {{ __('If you lost email confirmation token you can <a href="%(url)s">regenerate it</a>', {'url': url_for('auth.email_confirmation') } ) }}
+                        <br/>
+                        {{ __('If you have any other problems <a href="%(url)s">contact us</a>', {'url': url_for('index.contact_us') } ) }}
+
+                        {% raw %}
+                    </span>
+            </span>
+
+        </div>
+        {% endraw %}
     </div>
 
-    </div>
-
-    {#
-    <div>
-    <div class="by-socials-block"><h2>Sign up using any of the following
-        services:</h2>{% include 'partials/Signup - Soc Networks.html' %}</div>
-    <div class="by-profireader-block"><h2>Simple registration</h2>{% include 'partials/Signup - Profireader.html' %}</div>
-    #}
 {% endblock portal_content %}

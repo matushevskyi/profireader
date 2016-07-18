@@ -42,11 +42,11 @@ def edit_profile_load(json, user_id):
         return ret
     else:
         user_data = utils.filter_json(json['user'],
-                                      'profireader_first_name, profireader_last_name, birth_tm, lang, country_id, location, profireader_gender, profireader_link, profireader_phone')
+                                      'first_name, last_name, birth_tm, lang, country_id, location, gender, address_url, address_phone')
 
         user_data['country_id'] = user_data['country_id'] if user_data[
             'country_id'] else '56f52e6b-1273-4001-b15d-d5471ebfc075'
-        user_data['profireader_name'] = user_data['profireader_first_name'] + ' ' + user_data['profireader_last_name']
+        user_data['full_name'] = user_data['first_name'] + ' ' + user_data['last_name']
         user_data['birth_tm'] = user_data['birth_tm'] if user_data['birth_tm'] else None
         avatar = json['user']['avatar']
         g.user.attr(user_data)

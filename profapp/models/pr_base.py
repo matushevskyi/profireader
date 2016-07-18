@@ -569,8 +569,9 @@ class PRBase:
         return self.to_dict(fields, more_fields)
 
     @classmethod
-    def get(cls, id):
-        return g.db().query(cls).filter(cls.id == id).one()
+    def get(cls, id, returnNoneIfNotExists=False):
+        return g.db().query(cls).filter(cls.id == id).first() if returnNoneIfNotExists else g.db().query(cls).filter(
+            cls.id == id).one()
 
     def to_dict_object_property(self, object_name):
         object_property = getattr(self, object_name)
