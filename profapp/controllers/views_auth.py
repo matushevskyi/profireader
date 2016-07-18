@@ -137,18 +137,18 @@ def signup(json_data):
     if action == 'validate':
         return new_user.validate(True)
     else:
-        try:
-            if session.get('portal_id'):
-                addtourl = {'subscribe_to_portal': session['portal_id']}
-                session.pop('portal_id')
-            else:
-                addtourl = {}
-            new_user.set_password_hash()
-            new_user.generate_confirmation_token(addtourl).save()
-            g.db.commit()
-            return {}
-        except:
-            return {'error': 'signup error'}
+        # try:
+        if session.get('portal_id'):
+            addtourl = {'subscribe_to_portal': session['portal_id']}
+            session.pop('portal_id')
+        else:
+            addtourl = {}
+        new_user.set_password_hash()
+        new_user.generate_confirmation_token(addtourl).save()
+        g.db.commit()
+        return {}
+        # except Exception as e:
+        #     return {'error': e.__str__()}
 
 
 @auth_bp.route('/login/', methods=['OK'])
