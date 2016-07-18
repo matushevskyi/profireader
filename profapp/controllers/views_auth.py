@@ -18,7 +18,7 @@ from utils.pr_email import SendEmail
 from ..models.rights import AllowAll
 from ..models.portal import Portal
 import sys
-
+import string
 
 def login_signup_general(*soc_network_names):
     portal_id = session.get('portal_id')
@@ -348,8 +348,8 @@ def login_signup_soc_network(soc_network_name):
             # ok, new user
             if not user:
                 user = User(registered_via=soc_network_name, first_name=result_user.first_name,
-                            last_name=result_user.last_name, email=result_user.email)
-                setattr(user, soc_network_name + '_id', result.id)
+                            last_name=result_user.last_name, address_email=result_user.email)
+                setattr(user, soc_network_name + '_id', result_user.id)
                 user.email_confirmed = True
                 g.db.add(user)
                 user.save()
@@ -372,6 +372,8 @@ def login_signup_soc_network(soc_network_name):
                 return render_template('error.html', error='cant login/signup user')
         elif result.error:
             return render_template('error.html', debug=result.error)
+
+    response.location = response.location.replace('redirect_uri=http', 'redirect_uri=https')
 
     return response
 
