@@ -402,7 +402,7 @@
                     " || " + model_name + ".notices." + field_name + " }}");
                 element.attr('popover-is-open', model_name + ".errors['" + field_name + "'] !== undefined");
                 element.attr('popover-trigger', 'none');
-                element.attr('popover-placement', 'auto right-top');
+                element.attr('popover-placement', 'auto bottom-right');
 
 
                 element.attr('ng-class', "{'pr-validation-error': " + model_name + ".errors." + field_name + ", 'pr-validation-warning':" +

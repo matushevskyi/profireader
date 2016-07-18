@@ -1,5 +1,5 @@
 {% extends "_ruslan/_index_layout.html" %}
-{% block title %}Profireader - {{ _('Confirmation') }}{% endblock title %}
+{% block title %}Profireader - {{ _('Email confirmation') }}{% endblock title %}
 
 {% block portal_content %}
     <div class="container">
@@ -8,14 +8,14 @@
             <a href="{{ url_for('index.welcome') }}">{{ _('Welcome to profireader') }}</a>
 
         {% else %}
-            {% if wrong_token_entered %}
-                <h3>{{ _('Sorry you have entered wrong token') }}</h3>
+            {% if wrong_email_confirmation_token_entered %}
+                <h3>{{ _('Sorry you have entered wrong email confirmation token') }}</h3>
             {% endif %}
 
             <script>
 
-                module.controller('regenerate_token', function ($scope, $ok) {
-                    $scope.$$translate = {{ translates('regenerate_token')|safe }};
+                module.controller('regenerate_email_confirmation_token', function ($scope, $ok) {
+                    $scope.$$translate = {{ translates('regenerate_email_confirmation_token')|safe }};
                     $scope.sending = false;
                     $scope.data = {'email': '{{ email }}'};
 
@@ -26,7 +26,7 @@
                             if (resp['error']) {
                                 add_message(resp['error'], 'danger')
                             } else {
-                                add_message('New token was created and sent to provided email', 'success')
+                                add_message('New email confirmation token was created and sent to provided email', 'success')
                             }
                             $scope.sending = false;
                         })
@@ -34,9 +34,9 @@
                 });
             </script>
 
-            <form ng-controller="regenerate_token">
+            <form ng-controller="regenerate_email_confirmation_token">
                 {% raw %}
-                <h3>{{ _('You can regenerate new token') }}</h3>
+                <h3>{{ _('You can regenerate email confirmation token') }}</h3>
                 <input  ng-disabled="sending" name="email" ng-model="data.email" placeholder="email"/>
                 <button  ng-disabled="sending" ng-click="requestNewToken()" type="submit">{{ _('Regenerate token') }}</button>
                 <br/>

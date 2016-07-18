@@ -122,7 +122,7 @@
                         <input ng-disabled="sent_login" ng-click="login()" class="submit-form" type="submit"
                                value="{{ _('Sign in') }}"/>
                         {% endraw %}
-                        {{ __('If you forgot you password you can <a href="%(url)s">reset it</a>', {'url': url_for('auth.reset_password') } ) }}
+                        {{ __('If you forgot you password you can <a href="%(url)s">reset it</a>', {'url': url_for('auth.request_new_reset_password_token') } ) }}
                         <br/>
                         {{ __('If you lost email confirmation token you can <a href="%(url)s">regenerate it</a>', {'url': url_for('auth.email_confirmation') } ) }}
                         <br/>

@@ -37,12 +37,12 @@ def edit_profile_load(json, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     if action == 'load':
         ret = {'user': g.user.get_client_side_dict(), 'languages': Config.LANGUAGES,
-               'countries': Country.get_countries(), 'change_password': {'password1': '', 'password2': ''}}
+               'countries': Country.get_countries()}
         ret['user']['avatar'] = g.user.avatar
         return ret
     else:
         user_data = utils.filter_json(json['user'],
-                                      'first_name, last_name, birth_tm, lang, country_id, location, gender, address_url, address_phone')
+                                      'first_name, last_name, birth_tm, lang, country_id, location, gender, address_url, address_phone, password, password_confirmation')
 
         user_data['country_id'] = user_data['country_id'] if user_data[
             'country_id'] else '56f52e6b-1273-4001-b15d-d5471ebfc075'
@@ -50,18 +50,16 @@ def edit_profile_load(json, user_id):
         user_data['birth_tm'] = user_data['birth_tm'] if user_data['birth_tm'] else None
         avatar = json['user']['avatar']
         g.user.attr(user_data)
+        if g.user.password == '':
+            g.user.password = None
         if action == 'validate':
             g.user.detach()
             validate = g.user.validate(False)
-            if json['change_password']['password1'] != json['change_password']['password2']:
-                validate['errors']['password2'] = 'pls enter the same passwords'
             return validate
         else:
-            if json['change_password']['password1']:
-                g.user.password = json['change_password']['password1']
             g.user.avatar = avatar
+            g.user.set_password_hash()
             ret = {'user': g.user.save().get_client_side_dict()}
-
             return ret
 
 

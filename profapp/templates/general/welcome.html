@@ -16,7 +16,6 @@
             <button pr-test="DeclineLicence" type="button" class="btn btn-default"
                     ng-click="accept_tos(false)">{{ _('Decline') }}</button>
         </div>
-        </div>
     </script>
 
     <script>
@@ -76,7 +75,7 @@
     </script>
 
     <div class="container" ng-controller="welcome" ng-init="check_tos()">
-        {{ __('Welcome to profireader') }}
+        {{ __('Hello %(first_name)s<br/> Welcome to profireader', g.user.get_client_side_dict() ) }}
         <button ng-if="!tos" ng-click="check_tos()">{{ _('You have to accept tos') }}</button>
     </div>
 {% endblock portal_content %}
