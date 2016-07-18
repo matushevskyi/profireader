@@ -314,12 +314,66 @@ def tos(json):
 
 
 # TODO: YG by OZ:
-@auth_bp.route('//', methods=['POST'])
+# @auth_bp.route('//', methods=['POST'])
 @auth_bp.route('/login_signup/<soc_network_name>', methods=['GET', 'POST'])
 @check_right(AllowAll)
 def login_signup_soc_network(soc_network_name):
-    ret = login_signup_general('profireader', soc_network_name)
-    return ret
+    # TODO: fix it!
+    portal_id = session.get('portal_id')
+    back_to = session.get('back_to')
+    response = make_response()
+
+    result = g.authomatic.login(WerkzeugAdapter(request, response), soc_network_name)
+
+    if result:
+        if result.user:
+            result.user.update()
+            result_user = result.user
+            if result_user.email is None:
+                return render_template('error.html',
+                                       error="You haven't confirm email bound to your soc-network account yet. ")
+            # db_fields = DB_FIELDS[soc_network_names[-1]]
+            # user = g.db.query(User).filter(getattr(User, db_fields['id']) == result_user.id).first()
+
+            user = g.db.query(User).filter(getattr(User, soc_network_name + '_id') == result_user.email).first()
+
+            # we have already this user registered
+            if not user:
+                user = g.db.query(User).filter(User.address_email == result_user.email).first()
+                if user:
+                    setattr(user, soc_network_name + '_id', result.id)
+                    user.email_confirmed = True
+                    user.save()
+
+            # ok, new user
+            if not user:
+                user = User(registered_via=soc_network_name, first_name=result_user.first_name,
+                            last_name=result_user.last_name, email=result_user.email)
+                setattr(user, soc_network_name + '_id', result.id)
+                user.email_confirmed = True
+                g.db.add(user)
+                user.save()
+
+
+
+            if user:
+                User.logout()
+                user.login()
+                return redirect(url_for('index.index'))
+                # if portal_id:
+                #     session.pop('portal_id')
+                #     return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
+                # elif back_to:
+                #     session.pop('back_to')
+                #     return redirect(back_to)
+
+
+            else:
+                return render_template('error.html', error='cant login/signup user')
+        elif result.error:
+            return render_template('error.html', debug=result.error)
+
+    return response
 
 
 # @auth_bp.route('/login/<soc_network_name>', methods=['GET', 'POST'])

@@ -4,7 +4,7 @@
 {% block portal_content %}
     <div class="container">
         {% if already_confirmed %}
-            <h3>{{ _('You email is already confirmed') }}</h3>
+            <h3>{{ _('Your email confirmed') }}</h3>
             <a href="{{ url_for('index.welcome') }}">{{ _('Welcome to profireader') }}</a>
 
         {% else %}

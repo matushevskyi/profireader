@@ -9,7 +9,7 @@ Werkzeug==0.10.4
 future==0.14.3
 itsdangerous==0.24
 psycopg2==2.6.1
-Authomatic==0.1.0.post1
+Authomatic==0.0.13
 alembic==0.7.6
 Flask-Login==0.2.11
 Pillow==2.9.0
