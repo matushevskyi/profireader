@@ -14,7 +14,7 @@ from ..models.config import Config as ModelConfig
 
 def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):
     template = context.name
-    translated = TranslateTemplate.getTranslate(template, phrase, None, allow_html)
+    translated = TranslateTemplate.getTranslate(template, phrase[0:200], None, allow_html)
     r = re.compile("%\\(([^)]*)\\)s")
 
     def getFromContext(context, indexes, default):
