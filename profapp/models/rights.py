@@ -492,12 +492,12 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
         STATUSES['ACTIVE']: {
             ACTIONS['FIRE']:
                 {'employee': [lambda kwargs: 'You can`t fire company owner'
-                if kwargs['employment'].user_id == kwargs['employee'].employer.author_user_id else True,
+                if kwargs['employment'].user_id == kwargs['employee'].company.author_user_id else True,
                               UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
                  },
             ACTIONS['ALLOW']:
                 {'employee': [lambda kwargs: 'Company owner have all permissions and you can do nothing with that'
-                if kwargs['employment'].user_id == kwargs['employee'].employer.author_user_id else True,
+                if kwargs['employment'].user_id == kwargs['employee'].company.author_user_id else True,
                               UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
         }
     }
@@ -512,7 +512,7 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
             return "Sorry!You are not employee in this company!"
         get_objects_for_check = {'employee': employee,
                                  'employeer': self.company,
-                                 'user': self.employment.employee}
+                                 'user': self.employment.user}
         return BaseRightsInProfireader._is_action_allowed(self.employment, action_name,
                                                           get_objects_for_check,
                                                           {'employee': employee, 'employment': self.employment},
