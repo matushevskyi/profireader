@@ -1302,14 +1302,15 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
         });
     }
 
-    try {
-        if (!dictionaries.length) {
-            dictionaries = [true];
-        }
-        var ret = scope.$$translate[phrase]['lang'];
-        ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
-            var indexes = g1.split('.');
-            var d = {};
+
+    if (!dictionaries.length) {
+        dictionaries = [true];
+    }
+    var ret = scope.$$translate[phrase]['lang'];
+    ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
+        var indexes = g1.split('.');
+        var d = {};
+        try {
             $.each(dictionaries, function (ind, dict) {
                 $.extend(d, dict === true ? scope : dict);
             });
@@ -1323,12 +1324,14 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
                 }
             }
             return d;
-        });
-        return ret;
-    } catch (a) {
-        return phrase
-    }
+        }
+        catch (a) {
+            return g0
+        }
+    });
+    return ret;
 }
+
 module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $templateCache) {
     //$rootScope.theme = 'bs3'; // bootstrap3 theme. Can be also 'bs2', 'default'
     angular.extend($rootScope, {
@@ -1347,6 +1350,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             return $sce.trustAsHtml(pr_dictionary(args.shift(), args, '*', this, $ok));
         },
         _: function () {
+            // debugger;
             var args = [].slice.call(arguments);
             return pr_dictionary(args.shift(), args, '', this, $ok);
         },

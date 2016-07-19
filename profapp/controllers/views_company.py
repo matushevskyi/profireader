@@ -162,8 +162,8 @@ def employee_update_load(json, company_id, user_id):
 
     if action == 'load':
         return {'employment': employment.get_client_side_dict(),
-                'employee': employment.employee.get_client_side_dict(),
-                'employer': employment.employer.get_client_side_dict(fields='id|name, logo.url'),
+                'employee': employment.user.get_client_side_dict(),
+                'employer': employment.company.get_client_side_dict(fields='id|name, logo.url'),
                 # 'statuses_available': UserCompany.get_statuses_avaible(company_id),
                 # 'rights_available': employment.get_rights_avaible()
                 }
@@ -191,7 +191,7 @@ def employment_action(json, company_id, employment_id, action):
 
     employment.save()
 
-    return utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
+    return utils.dict_merge(employment.user.get_client_side_dict(), employment.get_client_side_dict(),
                             {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
