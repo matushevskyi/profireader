@@ -106,12 +106,14 @@ class Material(Base, PRBase, PRElasticDocument):
         dict.update({'actions': None if len(material.publications) == 0 else '', 'level': True})
         list = [utils.dict_merge(
             publication.get_client_side_dict(fields='portal.name|host,status, id, portal_division_id'),
-            {'actions':
-                 {'edit': PublishUnpublishInPortal(publication=publication,
-                                                   division=publication.division, company=material.company)
-                     .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]
-                  } if publication.status != 'SUBMITTED' and publication.status != "DELETED" else {}
-             })
+            {
+             #    'actions':
+             #     {'edit': PublishUnpublishInPortal(publication=publication,
+             #                                       division=publication.division, company=material.company)
+             #         .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]
+             #      } if publication.status != 'SUBMITTED' and publication.status != "DELETED" else {}
+             }
+        )
                 for publication in material.publications]
         return dict, list
 
