@@ -11,6 +11,7 @@
     <script>
         module.controller('company_employee_update', function ($scope, $ok) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_employees');
+            $scope.$$translate = {{ translates('company_employee_update')|safe }};
 
             $scope.url_company_employee_list = {{ raw_url_for('company.employees')|safe }};
             $scope.after_save = function () {
@@ -34,12 +35,12 @@
 
             <img pr-image-url="{{ employer.logo.url }}"/>
             {{ _('permissions') }}<br>
-            <div ng-class="{disabled: !permitted}" ng-repeat="(right_name, permitted) in data.employment.rights">
+            <div ng-repeat="(right_name, permitted) in data.employment.rights">
                 <img ng-src="{{ static_address('images/0.gif') }}"
                      class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"/>
                 <label>
-                    <i class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"></i>
-                   <input ng-model="data.employment.rights[right_name]" type="checkbox"/> {{ right_name }}</label>
+                    <i ng-class="{disabled: !permitted}"  class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"></i>
+                   <input style="width: 0px; height: 0px;" ng-model="data.employment.rights[right_name]" type="checkbox"/> {{ right_name }}</label>
             </div>
             <button class="btn fr" type="button" ng-disabled="!$af.isActionAllowed(data, 'save')"
                     ng-click="$af.save(data)">{{ _('Save') }}
