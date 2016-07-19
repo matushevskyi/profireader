@@ -166,7 +166,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
     ACTIONS = {
         'PUBLISH': 'PUBLISH',
         'UNPUBLISH': 'UNPUBLISH',
-        'EDIT': 'EDIT',
+        # 'EDIT': 'EDIT',
         'REPUBLISH': 'REPUBLISH',
         'DELETE': 'DELETE',
         'UNDELETE': 'UNDELETE'
@@ -193,17 +193,17 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
         STATUSES['SUBMITTED']: {
             ACTIONS['PUBLISH']: publish_rights,
             ACTIONS['DELETE']: delete_rights,
-            ACTIONS['EDIT']: edit_rights,
+            # ACTIONS['EDIT']: edit_rights,
         },
         STATUSES['PUBLISHED']: {
             ACTIONS['REPUBLISH']: republish_rights,
             ACTIONS['UNPUBLISH']: unpublish_rights,
-            ACTIONS['EDIT']: edit_rights,
+            # ACTIONS['EDIT']: edit_rights,
             ACTIONS['DELETE']: delete_rights
         },
         STATUSES['UNPUBLISHED']: {
             ACTIONS['REPUBLISH']: publish_rights,
-            ACTIONS['EDIT']: edit_rights,
+            # ACTIONS['EDIT']: edit_rights,
             ACTIONS['DELETE']: delete_rights
         },
         STATUSES['DELETED']: {
