@@ -3,7 +3,11 @@
 
 {% block portal_content %}
     <div class="container">
-        {{ __(error) }}
-        {{ debug|safe }}
+        {% if error %}
+            {{ __(error) }}
+        {% endif %}
+        {% if debug %}
+            {{ debug|safe }}
+        {% endif %}
     </div>
 {% endblock portal_content %}

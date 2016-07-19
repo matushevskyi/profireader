@@ -92,7 +92,7 @@ class Config(object):
 
     # Secret key for wtforms
     WTF_CSRF_ENABLED = False
-    WTF_CSRF_SECRET_KEY = secret_data.WTF_CSRF_SECRET_KEY
+    # WTF_CSRF_SECRET_KEY = secret_data.WTF_CSRF_SECRET_KEY
 
     host = secret_data.DB_HOST
     username = secret_data.DB_USER
