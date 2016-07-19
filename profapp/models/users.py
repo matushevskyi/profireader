@@ -26,6 +26,8 @@ from ..constants.SEARCH import RELEVANCE
 # from ..utils import fileUrl
 from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+from flask import url_for, render_template
+from utils.pr_email import SendEmail
 
 import random
 import time
@@ -117,7 +119,7 @@ class User(Base, UserMixin, PRBase):
     pass_reset_token = Column(TABLE_TYPES['token'])
     pass_reset_conf_tm = Column(TABLE_TYPES['timestamp'])
 
-    # registered_via = Column(_T['REGISTERED_VIA'])
+    registered_via = Column(TABLE_TYPES['string_30'])
     # employers = relationship('Company', secondary='user_company',
     #                          backref=backref("employees", lazy='dynamic'))  # Correct
 
@@ -125,8 +127,8 @@ class User(Base, UserMixin, PRBase):
 
     companies = relationship('Company', back_populates='user_owner')
 
-    password = ''
-    password_confirmation = ''
+    password = None
+    password_confirmation = None
     password_hash = Column(TABLE_TYPES['string_128'], nullable=False)
 
     # FB_NET_FIELD_NAMES = ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
@@ -335,13 +337,16 @@ class User(Base, UserMixin, PRBase):
         elif is_new and db(User, address_email=self.address_email).first():
             ret['errors']['email'] = 'Sorry. this email is taken'
 
-        if self.password == '':
-            self.password = None
-
-        if is_new and not self.password:
+        if is_new and (self.password is None or self.password == ''):
             ret['errors']['password'] = 'Please provide password'
 
-        if self.password and self.password != self.password_confirmation:
+        if self.password is not None:
+            if self.check_password_strength() < 30:
+                ret['errors']['password'] = 'password is too weak'
+            elif self.check_password_strength() < 50:
+                ret['warnings']['password'] = 'password weak, but ok'
+
+        if self.password is not None and self.password != self.password_confirmation:
             ret['errors']['password_confirmation'] = 'Password and confirmation does not match'
 
         return ret
@@ -352,7 +357,7 @@ class User(Base, UserMixin, PRBase):
         return ret
 
     def set_password_hash(self):
-        if self.password and self.password != '':
+        if self.password is not None:
             self.password_hash = generate_password_hash(self.password,
                                                         method='pbkdf2:sha256',
                                                         salt_length=32)
@@ -536,10 +541,10 @@ class User(Base, UserMixin, PRBase):
         return self.password_hash and \
                check_password_hash(self.password_hash, password)
 
-    def generate_confirmation_token(self, addtourl):
-        from flask import url_for, render_template
-        from utils.pr_email import SendEmail
+    def check_password_strength(self):
+        return len(self.password)*10
 
+    def generate_confirmation_token(self, addtourl):
         self.email_conf_token = random.getrandbits(128)
         self.email_conf_tm = datetime.datetime.now()
 
@@ -557,27 +562,37 @@ class User(Base, UserMixin, PRBase):
         if self.email_conf_tm.timestamp() > int(time.time()) - current_app.config.get('EMAIL_CONFIRMATION_TOKEN_TTL',
                                                                                       3600 * 24):
             self.email_confirmed = True
+            self.email_conf_token = None
         return self.email_confirmed
 
     def generate_pass_reset_token(self):
         self.pass_reset_token = random.getrandbits(128)
         self.pass_reset_conf_tm = datetime.datetime.now()
-        # if self.pass_reset_conf_tm.timestamp() > int(time.time()) - current_app.config.get('PASSWORD_CONFIRMATION_TOKEN_TTL', 3600*24):
-        #     self.email_confirmed = True
-        #     return self.email_confirmed
+
+        SendEmail().send_email(subject='Reset password',
+                               html=render_template('auth/email/reset_password.html', user=self,
+                                                    reset_password_url=url_for('auth.reset_password',
+                                                                             token=self.pass_reset_token,
+                                                                             _external=True)
+                                                    ),
+                               send_to=(self.address_email,))
+
+
         return self
 
-    def generate_reset_token(self):
-        self.email_conf_token = random.getrandbits(128)
-        if self.pass_reset_conf_tm.timestamp() > int(time.time()) - current_app.config.get(
-                'PASSWORD_CONFIRMATION_TOKEN_TTL', 3600 * 24):
-            self.email_confirmed = True
-            return self.email_confirmed
-        return self
+    # def generate_reset_token(self):
+    #     self.email_conf_token = random.getrandbits(128)
+    #     if self.pass_reset_conf_tm.timestamp() > int(time.time()) - current_app.config.get(
+    #             'PASSWORD_CONFIRMATION_TOKEN_TTL', 3600 * 24):
+    #         self.email_confirmed = True
+    #         return self.email_confirmed
+    #     return self
 
-    def reset_password(self, new_password):
+    def reset_password(self):
         self.pass_reset_token = None
-        self.password = new_password
+        self.set_password_hash()
+        self.email_confirmed = True
+        self.email_conf_token = None
         g.db.add(self)
         g.db.commit()
         return True
