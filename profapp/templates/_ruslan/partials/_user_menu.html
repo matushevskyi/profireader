@@ -100,8 +100,8 @@
                                                 ng-class="{'selected': selected_user_menu == 'tutorial'}"><i
                             class="fa fa-file-video-o"></i><span>{{ _('Tutorial') }}</span></a></li>
 
-                    <li class="dropdown"><a class="dropbtn" title="{{ _('Language') }}"><i
-                            class="fa fa-language"></i><span class="ng-binding">{{ _('Language') }}</span></a>
+                    <li class="dropdown"><a title="{{ _('Language') }}"><i
+                            class="fa fa-language"></i><span>{{ _('Language') }}</span></a>
                         <div class="dropdown-content">
                             <a ng-repeat="language in languages" ng-class="{'selected': language.name == lang}"
                                style="cursor: pointer" ng-click="changeLanguage(language.name)">{{language.display}}</a>
