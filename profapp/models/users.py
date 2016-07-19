@@ -119,7 +119,7 @@ class User(Base, UserMixin, PRBase):
     pass_reset_token = Column(TABLE_TYPES['token'])
     pass_reset_conf_tm = Column(TABLE_TYPES['timestamp'])
 
-    registered_via = Column(TABLE_TYPES['string_30'])
+    registered_via = Column(TABLE_TYPES['string_30'], nullable=False, default='email')
     # employers = relationship('Company', secondary='user_company',
     #                          backref=backref("employees", lazy='dynamic'))  # Correct
 

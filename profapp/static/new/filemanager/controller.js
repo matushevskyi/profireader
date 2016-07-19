@@ -3,10 +3,9 @@
     angular.module('FileManagerApp').controller('FileManagerCtrl', ['$http',
         '$scope', '$translate', '$cookies', '$timeout', 'fileManagerConfig', 'item', 'Upload', 'fileNavigator', 'fileUploader','$q','$filter','$ok',
         function ($http, $scope, $translate, $cookies, $timeout, fileManagerConfig, Item, Upload, FileNavigator, fileUploader, $q, $filter, $ok) {
-            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('file_manager');
+            angularControllerFunction('user_controller', 'set_selected_user_menu')('file_manager');
             $scope.config = fileManagerConfig;
             $scope.appName = fileManagerConfig.appName;
-            $scope.path_profireader = 'http://profireader.com';
             $scope.orderProp = ['model.type', 'model.name'];
             $scope.query = '';
             $scope.rootdirs = filemanager_company_list;

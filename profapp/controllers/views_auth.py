@@ -341,7 +341,7 @@ def login_signup_soc_network(soc_network_name):
             if not user:
                 user = g.db.query(User).filter(User.address_email == result_user.email).first()
                 if user:
-                    setattr(user, soc_network_name + '_id', result.id)
+                    setattr(user, soc_network_name + '_id', result_user.id)
                     user.email_confirmed = True
                     user.save()
 
@@ -373,7 +373,7 @@ def login_signup_soc_network(soc_network_name):
         elif result.error:
             return render_template('error.html', debug=result.error)
 
-    response.location = response.location.replace('redirect_uri=http', 'redirect_uri=https')
+    # response.location = response.location.replace('redirect_uri=http', 'redirect_uri=https')
 
     return response
 
