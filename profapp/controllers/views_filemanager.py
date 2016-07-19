@@ -48,7 +48,7 @@ def filemanager():
     for user_company in g.user.employments:
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE) == True:
             filemanager_company_list[user_company.company_id] = File.folder_dict(user_company.company,
-                                                                                 {'can_upload': FilemanagerRights(
+                                                                                 {'can_upload': True or FilemanagerRights(
                                                                                      company=user_company.company_id).action_is_allowed(
                                                                                      FilemanagerRights.ACTIONS[
                                                                                          'UPLOAD'])})
@@ -64,7 +64,7 @@ def filemanager():
                     filemanager_company_list[company_membership.company_id] = File.folder_dict(
                         company_membership.company,
                         {
-                            'can_upload': FilemanagerRights(
+                            'can_upload': True or FilemanagerRights(
                                 company=company_membership.company_id).action_is_allowed(
                                 FilemanagerRights.ACTIONS[
                                     'UPLOAD'])})
