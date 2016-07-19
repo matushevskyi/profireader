@@ -1306,7 +1306,8 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     if (!dictionaries.length) {
         dictionaries = [true];
     }
-    var ret = scope.$$translate[phrase]['lang'];
+
+    var ret = phrase_dict['lang'];
     ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
         var indexes = g1.split('.');
         var d = {};
@@ -1326,7 +1327,8 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
             return d;
         }
         catch (a) {
-            return g0
+            console.log(g0, g1);
+            return g1
         }
     });
     return ret;
