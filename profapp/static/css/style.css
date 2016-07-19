@@ -11,7 +11,6 @@
 }
 body {
   padding-top: 80px;
-  background-color: #e1e1e1;
 }
 .item-company {
   color: #00BBA1;
@@ -128,6 +127,7 @@ body {
 .menu-company img.menu-company-logo {
   margin: 0px 5px;
   padding: 0px;
+  background: none;
   float: right;
 }
 .menu-company.menu-company-portal a {
@@ -143,18 +143,16 @@ body {
 .menu-company .selected {
   color: #fff;
   text-decoration: none;
-  /*background-coищвнlor: #00ceb1;*/
+  background-color: #00ceb1;
   padding: 15px;
 }
 .company-logo img {
   margin-right: -15px;
 }
-
 /* ---Global menu--- */
 /*change language*/
 .dropbtn {
   padding-bottom: 15px;
-  padding-left: 15px;
   border: none;
   cursor: pointer;
 }
@@ -164,7 +162,7 @@ body {
 }
 .dropdown-content {
   display: none;
-  margin-left: 20px;
+  margin-left: 120px;
   position: absolute;
   background-color: #212121;
   min-width: 160px;
@@ -349,7 +347,7 @@ body {
 .register-form-profireader input {
   margin-bottom: 10px;
 }
-.register-form-profireader .sabmit-form {
+.register-form-profireader .submit-form {
   background-color: #00c853;
   border: 0;
   color: #fff;
@@ -357,7 +355,7 @@ body {
   padding: 10px;
   width: 100%;
 }
-.register-form-profireader .sabmit-form:hover {
+.register-form-profireader .submit-form:hover {
   background-color: #00e676;
   transition: all 0.2s ease-out;
 }
@@ -384,9 +382,8 @@ body {
   margin-top: 30px;
 }
 .join-company h3 {
-  margin-top: -9px;
+  margin-top: 5px;
   color: #383838;
-  width: 110%;
 }
 .search-company input {
   border-radius: 0px;
@@ -547,7 +544,6 @@ body {
 }
 .some-company-info h3 {
   text-align: center;
-  overflow-wrap: break-word;
 }
 .some-company-info a {
   color: #00BBA1;
