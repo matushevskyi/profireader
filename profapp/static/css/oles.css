@@ -571,6 +571,25 @@ div.pr-row:last-child div.pr-cell {
 }
 
 
+.pal {
+    position: absolute;
+    left: 0px;
+}
+
+.par {
+    position: absolute;
+    right: 0px;
+}
+
+.pat {
+    position: absolute;
+    top: 0px;
+}
+
+.pab {
+    position: absolute;
+    bottom: 0px;
+}
 .company-profile-logo-img {
     width: 400px; height: 300px; position: relative
 }
