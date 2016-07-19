@@ -167,7 +167,7 @@ def submit_publish(json, article_action):
     else:
 
         # publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
-        publication.division = PortalDivision.get(json['publication']['portal_division_id'])
+        publication.division = PortalDivision.get(json['publication']['portal_division_id'], returnNoneIfNotExists=True)
         # publication.division = PortalDivision.get(json['publication']['portal_division_id'])
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
         publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))
@@ -196,7 +196,6 @@ def submit_publish(json, article_action):
             publication.save()
             return get_portal_dict_for_material(publication.portal, company, publication=publication,
                                                 submit=article_action == 'SUBMIT')
-
 
 # @article_bp.route('/list_reader')
 # @article_bp.route('/list_reader/<int:page>/')
