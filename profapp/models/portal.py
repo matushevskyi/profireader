@@ -408,26 +408,27 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             return False
         return True
 
-    def __init__(self, company_id=None, portal=None, company=None, plan=None, status=None):
-        if company_id and company:
-            raise BadDataProvided
-        if company_id:
-            self.company_id = company_id
-        else:
-            self.company = company
-        self.portal = portal
-        self.plan = plan
-        self.status = status
+    # def __init__(self, company_id=None, portal=None, company=None, plan=None, status=None):
+    #     if company_id and company:
+    #         raise BadDataProvided
+    #     if company_id:
+    #         self.company_id = company_id
+    #     else:
+    #         self.company = company
+    #     self.portal = portal
+    #     self.plan = plan
+    #     self.status = status
 
     @staticmethod
     def apply_company_to_portal(company_id, portal_id):
+        from ..models.company import Company
         """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
         member = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
         if member:
             member.set_client_side_dict(MemberCompanyPortal.STATUSES['APPLICANT'])
             member.save()
         else:
-            g.db.add(MemberCompanyPortal(company_id=company_id,
+            g.db.add(MemberCompanyPortal(company=Company.get(company_id),
                                          portal=db(Portal, id=portal_id).one(),
                                          plan=db(MemberCompanyPortalPlan).first()))
             g.db.flush()
