@@ -86,6 +86,8 @@ class User(Base, UserMixin, PRBase):
         if self.avatar_selected_preset is not None:
             v['selected_by_user']['type'] = 'preset'
             v['selected_by_user']['preset_id'] = self.avatar_selected_preset
+        if self.avatar_selected_preset in v['cropper']['preset_urls']:
+            v['url'] = v['cropper']['preset_urls'][self.avatar_selected_preset]
         return v
 
     avatar = FileImgDescriptor(relation_name='avatar_file_img',
