@@ -24,7 +24,7 @@
                             })
                         }
                         if (resp === true) {
-                            add_message('You have successfully subscribed to this portal', 'info', 3000)
+                            add_message('You have successfully subscribed to this portal', 'success')
                             $timeout(function () {
                                 window.location.href = '{{ url_for('index.list_reader') }}'
                             }, 1500)
@@ -96,7 +96,7 @@
             </div>
             <div class="col-lg-2 col-md-2 col-sm-2 col-xs-6 portal-block-resp">
                 <button pr-test-portal-id="{{ portal.id }}" pr-test="SearchAndSubscribeBtn"
-                        ng-disabled="portal.subscribed" class="btn-search-portal" ng-click="subscribe(portal.id)">
+                        class="btn-search-portal" ng-click="subscribe(portal.id)">
                     {{ _('Subscribe') }}
                 </button>
             </div>
