@@ -351,6 +351,7 @@ def login_signup_soc_network(soc_network_name):
                             last_name=result_user.last_name, address_email=result_user.email)
                 setattr(user, soc_network_name + '_id', result_user.id)
                 user.email_confirmed = True
+                user.avatar_selected_preset = 'gravatar'
                 g.db.add(user)
                 user.save()
 

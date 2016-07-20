@@ -317,7 +317,8 @@ ALTER USER $psqluser WITH PASSWORD '$psqlpass';" compare_local_makarony
 
 makaronyaddress='m.ntaxa.com/profireader/54322'
 localaddress='localhost/profireader/5432'
-artekaddress='a.ntaxa.com/profireader/54321'
+kupytyaddress='kupyty.com/profireader/54143'
+artekaddress='a.ntaxa.com/profireader/54141'
 
 function menu_bower_components_dev {
     conf_comm "cd profapp/static/bower_components_dev
@@ -327,7 +328,11 @@ git checkout ids" nosudo db_user_pass
     }
 
 function menu_compare_local_makarony {
-    conf_comm "./postgres.dump_and_compare_structure.sh $makaronyaddress $localaddress" nosudo compare_local_artek
+    conf_comm "./postgres.dump_and_compare_structure.sh $makaronyaddress $localaddress" nosudo compare_local_kupyty
+    }
+
+function menu_compare_local_kupyty {
+    conf_comm "./postgres.dump_and_compare_structure.sh $localaddress $kupytyaddress" nosudo compare_makarony_artek
     }
 
 function menu_compare_local_artek {
@@ -453,6 +458,7 @@ dialog --title "profireader" --nocancel --default-item $next --menu "Choose an o
 "db_reindex_search" "reindex search table" \
 "db_reassign_ownership" "reassign ownership" \
 "compare_local_makarony" "compare local database and dev version" \
+"compare_local_kupyty" "compare local database and testing version" \
 "compare_local_artek" "compare local database and production version" \
 "compare_makarony_artek" "compare dev database and production version" \
 "exit" "Exit" 2> /tmp/"$rand"selected_menu_
