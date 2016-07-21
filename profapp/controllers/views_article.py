@@ -3,7 +3,7 @@ from flask import render_template, redirect, url_for, request, g, make_response,
 from profapp.models.portal import PortalDivision, UserPortalReader, Portal, MemberCompanyPortal
 from ..models.pr_base import Search, PRBase, Grid
 from .blueprints_declaration import article_bp
-from .request_wrapers import ok, tos_required, check_right
+from .request_wrapers import ok, check_right
 from .pagination import pagination
 from config import Config
 from .views_file import crop_image
@@ -167,7 +167,7 @@ def submit_publish(json, article_action):
     else:
 
         # publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
-        publication.division = PortalDivision.get(json['publication']['portal_division_id'])
+        publication.division = PortalDivision.get(json['publication']['portal_division_id'], returnNoneIfNotExists=True)
         # publication.division = PortalDivision.get(json['publication']['portal_division_id'])
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
         publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))
@@ -196,7 +196,6 @@ def submit_publish(json, article_action):
             publication.save()
             return get_portal_dict_for_material(publication.portal, company, publication=publication,
                                                 submit=article_action == 'SUBMIT')
-
 
 # @article_bp.route('/list_reader')
 # @article_bp.route('/list_reader/<int:page>/')

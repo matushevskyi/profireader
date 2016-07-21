@@ -4,6 +4,7 @@ from functools import reduce
 from ..controllers import errors
 import time
 from utils.db_utils import db
+from ..controllers import errors
 
 def ok(func):
     @wraps(func)
@@ -63,17 +64,17 @@ def function_profiler(func):
     return wrapper
 
 
-def replace_brackets(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if kwargs:
-            for ch in ['{', '}', ' ']:
-                for key in kwargs:
-                    if ch in kwargs[key]:
-                        kwargs[key] = kwargs[key].replace(ch, "")
-        return func(*args, **kwargs)
-
-    return wrapper
+# def replace_brackets(func):
+#     @wraps(func)
+#     def wrapper(*args, **kwargs):
+#         if kwargs:
+#             for ch in ['{', '}', ' ']:
+#                 for key in kwargs:
+#                     if ch in kwargs[key]:
+#                         kwargs[key] = kwargs[key].replace(ch, "")
+#         return func(*args, **kwargs)
+#
+#     return wrapper
 
 
 # TODO (AA to AA): may be change it to check_user_company_rights(*rights_business_rule):
@@ -93,37 +94,37 @@ def check_rights(*rights_business_rule):
 
     return decorator
 
-def convert_col_to_arrays(*args):
-    pass
+# def convert_col_to_arrays(*args):
+#     pass
+
+#
+# def need_we_column(name, arr, is_relationship=False):
+#     realname = name if name in arr else '*'
+#     if not is_relationship:
+#         if realname in arr:
+#             if len(arr[realname]) > 0:
+#                 raise ValueError("you ask for sub-attribute of Column instance `%s` (not Relationship)" % (realname,))
+#             return True
+#         else:
+#             return False
+#     else:
+#         if realname in arr:
+#             if len(arr[name]) == 0:
+#                 raise ValueError(
+#                     "You ask for Relationship `%s` instance, but don't ask for any sun-attribute in it" % (realname,))
+#             return arr[name]
+#         else:
+#             return False
 
 
-def need_we_column(name, arr, is_relationship=False):
-    realname = name if name in arr else '*'
-    if not is_relationship:
-        if realname in arr:
-            if len(arr[realname]) > 0:
-                raise ValueError("you ask for sub-attribute of Column instance `%s` (not Relationship)" % (realname,))
-            return True
-        else:
-            return False
-    else:
-        if realname in arr:
-            if len(arr[name]) == 0:
-                raise ValueError(
-                    "You ask for Relationship `%s` instance, but don't ask for any sun-attribute in it" % (realname,))
-            return arr[name]
-        else:
-            return False
-
-
-def tos_required(func):
-    @wraps(func)
-    def decorated_view(*args, **kwargs):
-        if not g.user or not g.user.tos:
-            # flash('You have not accept licence and terms')
-            return redirect(url_for('index.index'))
-        return func(*args, **kwargs)
-    return decorated_view
+# def tos_required(func):
+#     @wraps(func)
+#     def decorated_view(*args, **kwargs):
+#         if not g.user or not g.user.tos:
+#             # flash('You have not accept licence and terms')
+#             return redirect(url_for('index.index'))
+#         return func(*args, **kwargs)
+#     return decorated_view
 
 def get_portal(func):
     @wraps(func)
@@ -138,27 +139,30 @@ def check_right(classCheck, params=None, action=None):
         @wraps(func)
         def decorated_view(*args, **kwargs):
             allow = True
-            if not params:
-                allow = classCheck().is_allowed()
-            else:
-                set_attrs = [params] if isinstance(params, str) else params
-                instance = classCheck()
-                check = True
-                for param in set_attrs:
-                    if param in kwargs and kwargs[param]:
-                        setattr(instance, param, kwargs[param])
-                    else:
-                        check = False
-                if check:
-                    if action:
-                        if action in kwargs:
-                            allow = instance.action_is_allowed(kwargs[action])
+            try:
+                if not params:
+                    allow = classCheck().is_allowed(raise_exception_redirect_if_not = True)
+                else:
+                    set_attrs = [params] if isinstance(params, str) else params
+                    instance = classCheck()
+                    check = True
+                    for param in set_attrs:
+                        if param in kwargs and kwargs[param]:
+                            setattr(instance, param, kwargs[param])
                         else:
-                            allow = instance.action_is_allowed(action)
-                    else:
-                        allow = instance.is_allowed()
-            if allow != True:
-                abort(403)
+                            check = False
+                    if check:
+                        if action:
+                            if action in kwargs:
+                                allow = instance.action_is_allowed(kwargs[action])
+                            else:
+                                allow = instance.action_is_allowed(action)
+                        else:
+                            allow = instance.is_allowed(raise_exception_redirect_if_not = True)
+                if allow != True:
+                    abort(403)
+            except errors.NoRights as e:
+                return redirect(e.url)
             return func(*args, **kwargs)
         decorated_view.__check_rights__ = True
         return decorated_view

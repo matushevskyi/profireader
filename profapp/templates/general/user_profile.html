@@ -1,5 +1,5 @@
 {% extends "index_lazy_layout.html" %}
-{% block title %}Profireader - {{ current_user.profireader_name }}{% endblock title %}
+{% block title %}Profireader - {{ current_user.full_name }}{% endblock title %}
 {% block head %}
     {{ super() }}
 {% endblock head %}
@@ -26,19 +26,19 @@
                         <img class="w100 h100" {{ prImageUrl(user.avatar.url) }}/>
                     </div>
                     <div class="caption">
-                        <h3 pr-test="UserProfiName">{{ user.profireader_name }}</h3>
+                        <h3 pr-test="UserProfiName">{{ user.full_name }}</h3>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Email:') }}</div>
                             <div pr-test="UserProfiEmail"
-                                 class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_email }}</div>
+                                 class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.address_email }}</div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('First name:') }}</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_first_name or '' }}</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.first_name or '' }}</div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Last name:') }}</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_last_name or '' }}</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.last_name or '' }}</div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Birthday:') }}</div>
@@ -46,7 +46,7 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Gender:') }}</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_gender or '' }}</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.gender or '' }}</div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Country:') }}</div>
@@ -55,11 +55,11 @@
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Web-page:') }}</div>
                             <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">
-                                <span>{{ user.profireader_link or '' }}</span></div>
+                                <span>{{ user.address_url or '' }}</span></div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Phone:') }}</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.profireader_phone or '' }}</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.address_phone or '' }}</div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Location:') }}</div>
@@ -67,11 +67,11 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('About:') }}</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.about_me or '' }}</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ user.about or '' }}</div>
                         </div>
                         <div class="row">
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 line-user-info">{{ _('Member since:') }}</div>
-                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ moment(user.registered_tm) }}</div>
+                            <div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">{{ moment(user.cr_tm) }}</div>
                         </div>
                     </div>
                 </div>

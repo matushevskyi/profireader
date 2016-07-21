@@ -5,15 +5,16 @@
     {% include '_ruslan/reader/_reader_nav.html' %}
     <script>
         module.controller('list_reader', function ($scope, $ok, $sce) {
-            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('list_reader');
+            angularControllerFunction('user_controller', 'set_selected_user_menu')('list_reader');
             $scope.$$translate = {{ translates('list_reader')|safe }};
             $scope.favorite = {{ favorite }}
                     $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
             $scope.add_delete_favorite = '{{ url_for('index.add_delete_favorite') }}';
             $scope.add_delete_like = '{{ url_for('index.add_delete_like') }}';
             $scope.tag_url = {{ raw_url_for('front.division')|safe }};
+            $scope.url_publication_details = {{ raw_url_for('front.article_details')|safe }};
 
-{#            @front_bp.route('tags/<string:tags>/', methods=['GET'])#}
+            {#            @front_bp.route('tags/<string:tags>/', methods=['GET'])#}
             $scope.add_to_favorite = function (article) {
                 article.is_favorite = article['is_favorite'] ? False : True
                 $ok($scope.add_delete_favorite, {'article': article}, function (resp) {
@@ -60,68 +61,63 @@
                         </div>
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
                             <span class="fr ml05em label label-default item-tags" ng-repeat="tag in article.tags">
-                                <a href="//{{ article.portal.host }}{{ tag_url({tags: tag.text}) }}">{{ tag.text }}</a>
+                                <a target="_blank" href="//{{ article.portal.host }}{{ tag_url({tags: tag.text}) }}">{{ tag.text }}</a>
                             </span>
-
+                            <a target="_blank" href="//{{ article.portal.host }}/{{ article.division.name}}/">{{article.division.name}}</a>
+                            <div class="item-publication-date">{{ get_local_time(article.publishing_tm) }}</div>
                             <a target="_blank"
                                href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
-                               class="item-company">{{ article.company.name}}</a>-><a pr-test="ArticleDivision"
-                                                                                      target="_blank"
-                                                                                      href="//{{ article.portal.host }}/{{ article.division.name}}/">{{article.division.name}}</a>
-                            <div style=""
-                                 class="item-publication-date">{{ get_local_time(article.publishing_tm) }}
-                            </div>
-                            <div class="pull-right item-read_count"><i class="fa fa-eye"></i> {{ article.read_count }}
-                            </div>
+                               class="item-company">{{ article.company.name}}</a>
+                            <span class="fr">{{ article.author}}</span>
                         </div>
+
                     </div>
-                    <a target="_blank" type="link" href="//{{ article.portal.host}}/details/{{ article.id }}">
-                        <img class="list-reader-image" style="background-size: cover;"
-                             pr-image-url="{{ article.illustration.url }}"
-                             alt="img">
-                    </a>
+
+                </div>
+                <a target="_blank" type="link"
+                   href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">
+                    <img class="list-reader-image" pr-image-url="{{ article.illustration.url }}"
+                         alt="img">
+                </a>
+
+                <div class="item-short-content">
+
                     <h3 class="item-title">
                         <a target="_blank"
-                           href="//{{ article.portal.host}}/details/{{ article.id }}">{{ article.title}}</a>
+                           href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">{{
+                            article.title}}</a>
                     </h3>
-                    <div class="item-short-content">
-                        <p>{{ article.short}}</p>
-                        </h3>
-                        <div class="row liked-favorite-band">
-                            <div class="col-lg-3 col-md-3 col-sm-6 col-xs-6">
-                                <li ng-click="add_to_favorite(article)">
-                                    <i ng-if="!article.is_favorite" class="fa fa-bookmark-o"></i>
-                                    <i ng-if="article.is_favorite" class="fa fa-bookmark"></i>
-                                    {{_('Bookmark') }}
-                                </li>
-                            </div>
-                            <div class="col-lg-3 col-md-3 col-sm-6 col-xs-6">
-                                <li class="liked" ng-click="like(article)" popover-trigger="mouseenter"
-                                    popover-placement="top"
-                                    uib-popover-html="getPopoverContent(article.list_liked_reader)">
-                                    <i class="fa fa-thumbs-o-up"></i>
-                                    {{ article.liked }}
-                                </li>
-                            </div>
-                            <div class="col-lg-3 col-md-3 col-sm-6 col-xs-6">
-                                <li><i class="fa fa-comments-o"></i>604</li>
-                            </div>
-                            <div class="col-lg-3 col-md-3 col-sm-6 col-xs-6">
-                                <li><i class="fa fa-share"></i>{{ _('Share') }}</li>
-                            </div>
+                    <p>{{ article.short}}</p>
+                    <hr/>
+                    </h3>
+                    <div class="row liked-favorite-band">
+
+                        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                            <li><i class="fa fa-eye"></i> {{ article.read_count }}</li>
+                            <li class="liked" ng-click="like(article)" popover-trigger="mouseenter"
+                                popover-placement="top"
+                                uib-popover-html="getPopoverContent(article.list_liked_reader)">
+                                <i class="fa fa-thumbs-o-up"></i> 0</li>
+                            <li><i class="fa fa-comments-o"></i> 0</li>
+                            <li ng-click="add_to_favorite(article)">
+                                <i ng-if="!article.is_favorite" class="fa fa-bookmark-o"></i>
+                                <i ng-if="article.is_favorite" class="fa fa-bookmark"></i>
+                                {{_('Bookmark') }}</li>
+                            <li><i class="fa fa-share"></i>{{ _('Share') }}</li>
                         </div>
-                        <div class="item-additional-info">
-                        </div>
-                        <div class="bottom-hide"></div>
-                        <img pr-image="article.image_file_id" class="block-item-img bg-contain"/>
                     </div>
+                    <div class="item-additional-info">
+                    </div>
+                    <div class="bottom-hide"></div>
+                    <img pr-image="article.image_file_id" class="block-item-img bg-contain"/>
                 </div>
             </div>
-            <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-7">
-                <h3 ng-if="loading" class="tac">{{ __('loading articles') }}</h3>
-                <h3 ng-if="data.end && !loading" class="tac">{{ __('No more articles to load') }}</h3>
-                <h3 ng-if="!data.articles && !loading" class="tac">{{ __('Your portals does"t have articles') }}</h3>
-            </div>
         </div>
-        {% endraw %}
+        <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-7">
+            <h3 ng-if="loading" class="tac">{{ __('loading articles') }}</h3>
+            <h3 ng-if="data.end && !loading" class="tac">{{ __('No more articles to load') }}</h3>
+            <h3 ng-if="!data.articles && !loading" class="tac">{{ __('Your portals does"t have articles') }}</h3>
+        </div>
+    </div>
+    {% endraw %}
 {% endblock portal_content %}

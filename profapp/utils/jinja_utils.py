@@ -14,7 +14,7 @@ from ..models.config import Config as ModelConfig
 
 def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):
     template = context.name
-    translated = TranslateTemplate.getTranslate(template, phrase, None, allow_html)
+    translated = TranslateTemplate.getTranslate(template, phrase[0:200], None, allow_html)
     r = re.compile("%\\(([^)]*)\\)s")
 
     def getFromContext(context, indexes, default):
@@ -55,7 +55,7 @@ def raw_url_for(endpoint):
 
     rules_simplified = [re.compile('<[^:]*:').sub('<', rule.rule) for rule in rules]
 
-    return "function (dict) { return find_and_build_url_for_endpoint(dict, %s); }" % (json.dumps(rules_simplified))
+    return "function (dict, host) { return find_and_build_url_for_endpoint(dict, %s, host); }" % (json.dumps(rules_simplified))
     # \
     #        " { var ret = '" + ret + "'; " \
     #                                                " for (prop in dict) ret = ret.replace('<'+prop+'>',dict[prop]); return ret; }"

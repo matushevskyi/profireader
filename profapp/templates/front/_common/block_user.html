@@ -4,7 +4,7 @@
        href="//{{ MAIN_DOMAIN }}{{ url_for('user.profile', user_id = g.user.id) }}"
        aria-expanded="false">
         <img style="width: 35px" pr-image-url="{{ g.user.avatar.url }}"
-             class="person-small-cover">{{ g.user.profireader_name }}
+             class="person-small-cover">{{ g.user.full_name }}
     </a>
 {% else %}
 {% endif %}

@@ -1,6 +1,6 @@
 from .blueprints_declaration import reader_bp
 from flask import render_template, redirect, jsonify, json, request, g, url_for, flash, session
-from .request_wrapers import tos_required, check_right
+from .request_wrapers import check_right
 from sqlalchemy import and_
 from ..models.pr_base import Search
 from ..models.materials import Publication, ReaderPublication

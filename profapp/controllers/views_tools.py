@@ -45,6 +45,12 @@ def change_allowed_html(json):
 def empty():
     return render_template('tools/empty.html')
 
+@tools_bp.route('/pass/<string:password>/', methods=['GET'])
+def getpasshash(password):
+    from werkzeug.security import generate_password_hash
+    return generate_password_hash(password, method='pbkdf2:sha256',
+                           salt_length=32)
+
 
 @tools_bp.route('/filecheck/', methods=['GET'])
 def filecheck():

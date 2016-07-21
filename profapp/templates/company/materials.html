@@ -44,10 +44,7 @@
                 }
             };
 
-            $scope.url_publication_details = function(host, publication_id) {
-                return '//'+host+'/details/'+publication_id
-            }
-
+            $scope.url_publication_details = {{ raw_url_for('front.article_details')|safe }};
 
             {% raw %}
 
@@ -55,7 +52,7 @@
                 urlLoadGridData: $scope.url_search_article({company_id: $scope.company.id}),
                 category: [{
                     name: 'searching',
-                    field: 'title&editor.profireader_name',
+                    field: 'title&editor.full_name',
                     visible: true,
                     filtering: true,
                     filter: {type: 'input'}
@@ -67,13 +64,14 @@
                         img_url: 'illustration.url',
                         href: 'url_material_details({company_id:grid.appScope.company.id,material_id:row.entity.id})'
                     },{
-                        name: 'editor.profireader_name', category:"searching"
+                        name: 'editor.full_name', category:"searching"
                     },{
                         name: 'md_tm',enableCellEdit: true,
                         afilter: {type: 'date_range'}
                     },{
                         name: 'portal.name', type: 'link',
-                        href: 'url_publication_details(row.entity.portal.host, row.entity.id)',
+                        //TODO: OZ by OZ: fix it, data from server is constructed in wrong way. If I understand material/publication field are mixed up
+                        href: "url_publication_details({'publication_id': row.entity.id, 'publication_title': row.entity.title}, row.entity.portal.host)",
                         classes: 'link',
                         filter: {type:'multi_select'}
                     },{

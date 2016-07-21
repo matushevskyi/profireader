@@ -1,0 +1,13 @@
+{% extends "_ruslan/_index_layout.html" %}
+{% block title %}Profireader - {{ _('Error') }}{% endblock title %}
+
+{% block portal_content %}
+    <div class="container">
+        {% if error %}
+            {{ __(error) }}
+        {% endif %}
+        {% if debug %}
+            {{ debug|safe }}
+        {% endif %}
+    </div>
+{% endblock portal_content %}

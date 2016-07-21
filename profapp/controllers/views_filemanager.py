@@ -3,7 +3,7 @@ import re
 from flask import render_template, g, make_response
 from profapp.models.files import File, YoutubeApi
 from .blueprints_declaration import filemanager_bp
-from .request_wrapers import ok, tos_required, check_right
+from .request_wrapers import check_right
 from functools import wraps
 from flask import jsonify, json
 import json as jsonmodule
@@ -48,7 +48,7 @@ def filemanager():
     for user_company in g.user.employments:
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE) == True:
             filemanager_company_list[user_company.company_id] = File.folder_dict(user_company.company,
-                                                                                 {'can_upload': FilemanagerRights(
+                                                                                 {'can_upload': True or FilemanagerRights(
                                                                                      company=user_company.company_id).action_is_allowed(
                                                                                      FilemanagerRights.ACTIONS[
                                                                                          'UPLOAD'])})
@@ -64,7 +64,7 @@ def filemanager():
                     filemanager_company_list[company_membership.company_id] = File.folder_dict(
                         company_membership.company,
                         {
-                            'can_upload': FilemanagerRights(
+                            'can_upload': True or FilemanagerRights(
                                 company=company_membership.company_id).action_is_allowed(
                                 FilemanagerRights.ACTIONS[
                                     'UPLOAD'])})

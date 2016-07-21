@@ -1,7 +1,7 @@
 {# меню для користування профірідером #}
 <script>
 
-    module.controller('UserLoginController', ['$scope', '$uibModal', '$ok', '$timeout', function ($scope, $uibModal, $ok, $timeout) {
+    module.controller('user_controller', ['$scope', '$uibModal', '$ok', '$timeout', function ($scope, $uibModal, $ok, $timeout) {
         $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
         $scope.tos = function () {
             var accepted = $scope.user.tos;
@@ -12,7 +12,7 @@
         };
         login_signup = '{{ login_signup }}';  // login_signup = 'login' or 'signup' or None
         $scope.login_signup = (login_signup === 'signup') ? 'signup' : 'login';
-        $scope.$$translate = {{ translates('UserLoginController')|safe }};
+        $scope.$$translate = {{ translates('user_controller')|safe }};
         $scope.open_filemanager = function () {
             window.location.href = '/filemanager/';
         };
@@ -26,7 +26,7 @@
 
 </script>
 
-<nav ng-controller="UserLoginController" class="navbar navbar-default widewrapper ">
+<nav ng-controller="user_controller" class="navbar navbar-default widewrapper ">
 
     <div class="top-style-line" style="height: 1px;"></div>
     <div class="container">
@@ -64,7 +64,7 @@
                                     {#                        <img src="{{ current_user.profireader_small_avatar_url }}" style="width:18px;border:0">#}
                                     {#TODO: AA by OZ: in next line http://bla-bla/None (404 error) if no user loged in #}
                                     <img class="person-small-cover" {{ prImageUrl(user.avatar.url) }} />
-                                    {{ '{{' }} user.profireader_name {{ '}}' }}
+                                    {{ '{{' }} user.full_name {{ '}}' }}
                                     <b class="caret"></b>
                                 </a>
                                 <ul class="dropdown-menu">
@@ -97,7 +97,7 @@
                     <li><a class="filemanager_btn" href="#" ng-click="open_filemanager()"
                            title="{{ _('File manager') }}"><span
                             class="tooltip">{{ _('File manager') }}</span></a></li>
-                    <li><a class="help_btn" href="{{ url_for('index.help') }}" title="{{ _('Read help') }}"><span
+                    <li><a class="help_btn" href="{{ url_for('index.contact_us') }}" title="{{ _('Read help') }}"><span
                             class="tooltip">{{ _('Read help') }}</span></a></li>
 
                 </ul>

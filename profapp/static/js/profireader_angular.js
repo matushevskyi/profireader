@@ -1302,14 +1302,16 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
         });
     }
 
-    try {
-        if (!dictionaries.length) {
-            dictionaries = [true];
-        }
-        var ret = scope.$$translate[phrase]['lang'];
-        ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
-            var indexes = g1.split('.');
-            var d = {};
+
+    if (!dictionaries.length) {
+        dictionaries = [true];
+    }
+
+    var ret = phrase_dict['lang'];
+    ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
+        var indexes = g1.split('.');
+        var d = {};
+        try {
             $.each(dictionaries, function (ind, dict) {
                 $.extend(d, dict === true ? scope : dict);
             });
@@ -1323,12 +1325,15 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
                 }
             }
             return d;
-        });
-        return ret;
-    } catch (a) {
-        return phrase
-    }
+        }
+        catch (a) {
+            console.log(g0, g1);
+            return g1
+        }
+    });
+    return ret;
 }
+
 module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $templateCache) {
     //$rootScope.theme = 'bs3'; // bootstrap3 theme. Can be also 'bs2', 'default'
     angular.extend($rootScope, {
@@ -1347,6 +1352,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             return $sce.trustAsHtml(pr_dictionary(args.shift(), args, '*', this, $ok));
         },
         _: function () {
+            // debugger;
             var args = [].slice.call(arguments);
             return pr_dictionary(args.shift(), args, '', this, $ok);
         },
@@ -1441,7 +1447,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
                     var prefix_img = '';
                     if (col.img_url) {
-                        var prefix_img = '<img src="'+static_address('images/0.gif')+'" class="pr-grid-cell-img-prefix" style="background-size: contain; background-repeat: no-repeat; background-position: center center; background-color: #fff; background-image: url({{ row.entity.' + col.img_url + ' }})" />';
+                        var prefix_img = '<img src="' + static_address('images/0.gif') + '" class="pr-grid-cell-img-prefix" style="background-size: contain; background-repeat: no-repeat; background-position: center center; background-color: #fff; background-image: url({{ row.entity.' + col.img_url + ' }})" />';
                     }
                     switch (col.type) {
                         case 'link':
@@ -1965,9 +1971,9 @@ function fileUrl(id, down, if_no_file) {
 
     var server = id.replace(/^[^-]*-[^-]*-4([^-]*)-.*$/, "$1");
     if (down) {
-        return '//file' + server + '.'+MAIN_DOMAIN+'/' + id + '?d'
+        return '//file' + server + '.' + MAIN_DOMAIN + '/' + id + '?d'
     } else {
-        return '//file' + server + '.'+MAIN_DOMAIN+'/' + id + '/'
+        return '//file' + server + '.' + MAIN_DOMAIN + '/' + id + '/'
     }
 }
 
@@ -2091,9 +2097,10 @@ function buildAllowedTagsAndAttributes() {
     return allowed_tags;
 }
 
-function find_and_build_url_for_endpoint(dict, rules) {
+function find_and_build_url_for_endpoint(dict, rules, host) {
     var found = false;
     var dict1 = {};
+
     $.each(rules, function (ind, rule) {
         var ret = rule;
         var prop = null;
@@ -2116,7 +2123,7 @@ function find_and_build_url_for_endpoint(dict, rules) {
         if (_.size(dict1) > 0) {
             console.warn("Too many parameters passed in dictionary for endpoint rule", dict, rules);
         }
-        return found;
+        return (host ? ('//' + host) : '') + found;
     }
 }
 
