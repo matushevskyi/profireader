@@ -10,6 +10,7 @@ from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDiv
 from .request_wrapers import ok, check_right
 # from ..models.bak_articles import Publication, ArticleCompany, Article
 from ..models.company import UserCompany
+from ..models.materials import Publication, Material
 from ..models.tag import Tag, TagPortalDivision
 from profapp.models.rights import RIGHTS
 from ..controllers import errors
@@ -331,8 +332,18 @@ def get_publication_dict(publication):
 def publications_load(json, company_id):
     company = Company.get(company_id)
     portal = company.own_portal
-    subquery = Company.subquery_portal_articles(portal.id, json.get('filter'), json.get('sort'))
-    publications, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
+
+    publications = db(Publication).join(PortalDivision, PortalDivision.id == Publication.portal_division_id).\
+        filter(PortalDivision.portal_id == portal.id).all()
+
+
+
+    # subquery = Company.subquery_portal_articles(portal.id, json.get('filter'), json.get('sort'))
+    # publications, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
+
+
+
+
     # grid_filters = {
     #     'publication_status':Grid.filter_for_status(Publication.STATUSES),
     #     'company': [{'value': company_id, 'label': company} for company_id, company  in
@@ -342,7 +353,7 @@ def publications_load(json, company_id):
             'portal': portal.get_client_side_dict(),
             'rights_user_in_company': UserCompany.get(company_id=company_id).rights,
             'grid_data': list(map(get_publication_dict, publications)),
-            'total': count}
+            'total': len(publications)}
 
 
 @portal_bp.route('/company/<string:company_id>/tags/', methods=['GET'])
