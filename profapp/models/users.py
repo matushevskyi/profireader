@@ -631,7 +631,7 @@ class User(Base, UserMixin, PRBase):
     def get_client_side_dict(self,
                              fields='id|full_name'
                                     '|address_email|first_name|last_name|address_url'
-                                    '|address_phone|address_location|gender|lang|about|country_id|tos|address_phone'
+                                    '|address_phone|address_location|address_city|gender|lang|about|country_id|tos|address_phone'
                                     '|birth_tm',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
