@@ -123,7 +123,7 @@
             <h3 class="modal-title">{{ _(action + ' ' + object_name + ' at portal') }}</h3>
         </div>
         <div class="modal-body">
-            {{ _('You are going to ' + action + ' ' + object_name + ' `%(data.publication.title)s` at portal
+            {{ _('You are going to ' + action + ' ' + object_name + ' `%(data.publication.material.title)s` at portal
             `%(data.portal.name)s`') }}<br/>
             <div ng-if="action !== 'UNPUBLISH' && action !== 'DELETE' && action !== 'UNDELETE'">
                 <br/>
