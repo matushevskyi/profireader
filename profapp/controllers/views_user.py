@@ -42,7 +42,7 @@ def edit_profile_load(json, user_id):
         return ret
     else:
         user_data = utils.filter_json(json['user'],
-                                      'first_name, last_name, birth_tm, lang, country_id, location, gender, address_url, address_phone, password, password_confirmation')
+                                      'first_name, last_name, birth_tm, lang, country_id, location, gender, address_url, address_phone, address_city, address_location, about, password, password_confirmation')
 
         user_data['country_id'] = user_data['country_id'] if user_data[
             'country_id'] else '56f52e6b-1273-4001-b15d-d5471ebfc075'

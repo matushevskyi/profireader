@@ -188,7 +188,8 @@ def submit_publish(json, article_action):
 
         if action == 'validate':
             publication.detach()
-            return publication.validate(True if article_action == 'SUBMIT' else False)
+            return (publication.validate(True if article_action == 'SUBMIT' else False)
+                if (article_action in ['SUBMIT', 'PUBLISH', 'REPUBLISH']) else publication.DEFAULT_VALIDATION_ANSWER())
         else:
             # if article_action == 'SUBMIT':
             #     publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,

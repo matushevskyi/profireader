@@ -34,8 +34,9 @@
                 else {
                     $scope.data['material']['illustration'] = resp['material']['illustration'];
                     add_message($scope._('material was saved'), 'success', 3000);
+                    window.location.href = {{ raw_url_for('article.material_details')|safe}}({company_id: resp.material.company_id,
+                        material_id: resp.material.id})
                 }
-
             };
 
             $scope.goToArticle = function (material) {
@@ -172,7 +173,7 @@
                             ng-click="$af.save(data)">&nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;{{
                         data.material.id ? _('save') : _('create') }}
                     </button>
-                    <button class="pr-button" ng-click="goToArticle(data.material)" ng-if="article_type"><span class="fa
+                    <button class="pr-button" ng-click="goToArticle(data.article)" ng-if="article_type"><span class="fa
                     fa-external-link">{{ _(article_type +
                         ' preview') }}</span></button>
                 </div>
