@@ -323,7 +323,7 @@ def get_publication_dict(publication):
     ret['id'] = publication.id
     ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.division,
                                               company=publication.division.portal.own_company).actions()
-
+    print(publication.get_client_side_dict())
     return ret
 
 
@@ -335,6 +335,7 @@ def publications_load(json, company_id):
 
     publications = db(Publication).join(PortalDivision, PortalDivision.id == Publication.portal_division_id).\
         filter(PortalDivision.portal_id == portal.id).all()
+    print(publications)
 
 
 

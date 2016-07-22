@@ -27,14 +27,16 @@
                 return division_name ? ('//' + host + $scope.url_front_publication_division({division_name: division_name})) : '';
             }
 
-            $scope.url_front_publication_details_host = function (publication_id, host) {
-                return publication_id ? ('//' + host + $scope.url_front_publication_details({publication_id: publication_id})) : '';
+            $scope.url_front_publication_details_host = function (publication, host) {
+                console.log(host)
+                return publication ? ('//' + host + $scope.url_front_publication_details({publication_id: publication.id, publication_title : publication.material.title})) : '';
             }
 
             {% raw %}
             $scope.noData = 'No publications';
 
             $scope.loadPublications = function (data, callback) {
+                console.log(data)
                 $scope.loading = true
                 $ok($scope.url_search_article({company_id: $scope.company.id}), data, function (resp) {
                     callback(resp);
@@ -71,12 +73,12 @@
                 columnDefs: [
                     {
                         name: 'publication.division.name', type: 'link', target: 'front',
-                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.portal.host)'
+                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.publication.portal.host)'
                     }
                     ,
                     {
-                        name: 'publication.title', type: 'link', target: 'front',
-                        href: 'url_front_publication_details_host(row.entity.publication.id, row.entity.portal.host)'
+                        name: 'publication.material.title', type: 'link', target: 'front',
+                        href: 'url_front_publication_details_host(row.entity.publication, row.entity.publication.portal.host)'
                     },
                     {
                         name: 'publication.status', afilter: {type: 'select'}, width: 100
