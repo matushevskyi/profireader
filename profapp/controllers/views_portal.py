@@ -323,7 +323,6 @@ def get_publication_dict(publication):
     ret['id'] = publication.id
     ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.division,
                                               company=publication.division.portal.own_company).actions()
-
     return ret
 
 
