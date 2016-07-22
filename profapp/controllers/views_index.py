@@ -206,31 +206,31 @@ def add_delete_like(json):
             'list_liked_reader': ReaderPublication.get_list_reader_liked(json.get('article')['id'])}
 
 
-@index_bp.route('subscribe/<string:portal_id>/', methods=['GET'])
-@check_right(UserNonBanned)
-def reader_subscribe(portal_id):
-    # TODO: OZ by OZ: remove this endpoint!!! move subscription to model (function Portal.subscribe_user(self, user))
-    user_dict = g.user.get_client_side_dict()
-    portal = Portal.get(portal_id)
-    if not portal:
-        raise BadDataProvided
-    reader_portal = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
-    if not reader_portal:
-        free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
-                               ReaderUserPortalPlan.amount).filter_by(name='free').one()
-        start_tm = datetime.datetime.utcnow()
-        end_tm = datetime.datetime.fromtimestamp(start_tm.timestamp() + free_plan[1])
-        reader_portal = UserPortalReader(user_dict['id'], portal_id, status='active', portal_plan_id=free_plan[0],
-                                         start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
-                                         show_divisions_and_comments=[division_show for division_show in
-                                                                      [ReaderDivision(portal_division=division)
-                                                                       for division in portal.divisions]])
-        g.db.add(reader_portal)
-        g.db.commit()
-        # TODO: OZ by OZ: remove it
-        from flask import flash
-        flash('You have successfully subscribed to this portal')
-    return redirect(url_for('index.list_reader'))
+# @index_bp.route('subscribe/<string:portal_id>/', methods=['GET'])
+# @check_right(UserNonBanned)
+# def reader_subscribe(portal_id):
+#     # TODO: OZ by OZ: remove this endpoint!!! move subscription to model (function Portal.subscribe_user(self, user))
+#     user_dict = g.user.get_client_side_dict()
+#     portal = Portal.get(portal_id)
+#     if not portal:
+#         raise BadDataProvided
+#     reader_portal = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
+#     if not reader_portal:
+#         free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
+#                                ReaderUserPortalPlan.amount).filter_by(name='free').one()
+#         start_tm = datetime.datetime.utcnow()
+#         end_tm = datetime.datetime.fromtimestamp(start_tm.timestamp() + free_plan[1])
+#         reader_portal = UserPortalReader(user_dict['id'], portal_id, status='active', portal_plan_id=free_plan[0],
+#                                          start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
+#                                          show_divisions_and_comments=[division_show for division_show in
+#                                                                       [ReaderDivision(portal_division=division)
+#                                                                        for division in portal.divisions]])
+#         g.db.add(reader_portal)
+#         g.db.commit()
+#         # TODO: OZ by OZ: remove it
+#         from flask import flash
+#         flash('You have successfully subscribed to this portal')
+#     return redirect(url_for('index.list_reader'))
 
 
 @index_bp.route('subscribe/', methods=['OK'])
