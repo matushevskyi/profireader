@@ -29,7 +29,7 @@
             $('#profireader_link').attr('href', '//{{ MAIN_DOMAIN }}');
         }
         else if (messageevent.data && !messageevent.data.user) {
-            $('#profireader_user_link').attr('href', '//{{ MAIN_DOMAIN }}/');
+            $('#profireader_user_link').attr('href', '//{{ url_join }}/');
             $('#profireader_user_link span').html(messageevent.data.welcome);
             $('#profireader_user_link img').css('background-image', 'none').hide();
             $('#profireader_link').attr('href', '{{ url_join }}');
