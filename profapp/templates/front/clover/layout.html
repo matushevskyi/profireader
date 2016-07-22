@@ -1,22 +1,27 @@
 {% extends '_common/html.html' %}
-
 {% block body %}
-    <div class="container">
-        <div class="row site_content">
+    <div class="container pl0 pr0">
+        <div class="row site_content" style="margin-top: 50px;">
             {% block site_content %}
-                <div class="col-md-12 top_content">
+                <div class="col-md-12 top_content pl0 pr0">
                     {% block top_content %}{% include '_common/block_menu.html' %}{% endblock %}
                 </div>
-                <div class="col-md-9 left_content">
-                    {% block left_content %}{% endblock %}
+                <div style="position: relative;">
+                    <div class="col-md-12 center_content">
+                        {% block center_content %}{% endblock %}
+                    </div>
+                    <div class="col-md-6 left_content">
+                        {% block left_content %}{% endblock %}
+                    </div>
+                    <div class="col-md-6 right_content">
+                        {% block right_content %}{% endblock %}
+                    </div>
                 </div>
-                <div class="col-md-3 right_content">
-                    {% block right_content %}{% endblock %}
-                </div>
-                <div class="col-md-12 bottom_content">
+                <div class="col-md-12 bottom_content pl0 pr0">
                     {% block bottom_content %}{% endblock %}
                 </div>
-            {% endblock  %}
+
+            {% endblock %}
         </div>
     </div>
 {% endblock %}
