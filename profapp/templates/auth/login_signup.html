@@ -9,16 +9,17 @@
             $scope.sent_new_user = false;
             $scope.sent_login = false;
             $scope.existing_user = {email: '', password: ''};
+            $scope.login_signup = '{{ login_signup }}';
 
             $scope.login = function () {
                 $scope.sent_login = true;
                 $ok('{{ url_for('auth.login') }}', $scope.existing_user, function (resp) {
                     if (!resp['error']) {
                         add_message('Welcome to profireader!', 'success');
-                        window.location = '{{ url_for('index.index') }}';
+                        window.location = resp['back_to']?resp['back_to']:'{{ url_for('index.index') }}';
                     }
                     else {
-                        add_message(resp['error'], 'info');
+                        add_message(resp['error'], 'danger');
                         $scope.sent_login = false;
                     }
                 });

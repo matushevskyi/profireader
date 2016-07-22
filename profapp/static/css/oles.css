@@ -593,3 +593,16 @@ div.pr-row:last-child div.pr-cell {
 .company-profile-logo-img {
     width: 400px; height: 300px; position: relative
 }
+
+.front-user-avatar-img {
+    border-radius: 50%;
+    border: 3px #999 solid;
+    width: 36px;
+    height: 36px;
+    margin: 0px 1em;
+}
+
+#profireader_link img {
+    width: 35px;
+    height: 35px;
+}
