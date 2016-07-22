@@ -606,3 +606,7 @@ div.pr-row:last-child div.pr-cell {
     width: 35px;
     height: 35px;
 }
+
+.dn {
+    display: none;
+}

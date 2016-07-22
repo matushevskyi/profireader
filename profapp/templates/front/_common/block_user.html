@@ -2,7 +2,9 @@
 <a role="button" aria-haspopup="true" id="profireader_user_link"
    href="{% if g.user %}//{{ MAIN_DOMAIN }}/user/profile/{{ g.user.id }}{% else %}{{ url_join }}{% endif %}">
     {%- if g.user -%}
-    <img {{ prImageUrl(g.user.avatar.url) }} class="front-user-avatar-img">
+    <img {{ prImageUrl(g.user.avatar.url) }} class="front-user-avatar-img"/>
+        {% else %}
+        <img {{ prImageUrl(static_address('images/0.gif')) }} class="front-user-avatar-img dn"/>
     {%- endif -%}
     <span>{%- if g.user and g.user.id -%}
         {{ _('Hello %(full_name)s', {'full_name': g.user.full_name} ) }}

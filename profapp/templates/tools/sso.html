@@ -8,7 +8,7 @@
                 var data = {'profireader_session_id': '{{ profi_cookie }}'};
                 {% if g.user and g.user.id %}
                     data['user'] = {{ g.user.get_client_side_dict(fields = 'id,full_name,avatar.url')|tojson }};
-                    data['welcome'] = '{{ _('Hello %(full_name)s', {full_name: g.user.full_name}) }}'
+                    data['welcome'] = '{{ _('Hello %(full_name)s', {'full_name': g.user.full_name}) }}'
                 {% else %}
                     data['welcome'] = '{{ _('Welcome to profireader' ) }}'
                 {% endif %}
