@@ -22,7 +22,7 @@ from .utils.jinja_utils import update_jinja_engine, get_url_adapter
 
 def req(name, allowed=None, default=None, exception=True):
     ret = request.args.get(name)
-    if allowed and (ret in allowed):
+    if allowed is None or (ret in allowed):
         return ret
     elif default is not None:
         return default
