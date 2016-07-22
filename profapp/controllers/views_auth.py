@@ -19,86 +19,86 @@ from ..models.rights import AllowAll
 from ..models.portal import Portal
 import sys
 import string
-
-def login_signup_general(*soc_network_names):
-    portal_id = session.get('portal_id')
-    back_to = session.get('back_to')
-    response = make_response()
-    registred_via_soc = False
-    logged_via_soc = list(filter(lambda x: x != 'profireader', soc_network_names))[0] \
-        if len(soc_network_names) > 1 else 'profireader'
-
-    try:
-        result = g.authomatic.login(WerkzeugAdapter(request, response), soc_network_names[-1])
-        if result:
-            if result.user:
-                result.user.update()
-                result_user = result.user
-                if result_user.email is None:
-                    flash("you haven't confirm email bound to your soc-network account yet. "
-                          "Please confirm email first or choose another way of authentication.")
-                    # redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
-                    redirect(redirect_url())
-                db_fields = DB_FIELDS[soc_network_names[-1]]
-                # user = g.db.query(User).filter(getattr(User, db_fields['id']) == result_user.id).first()
-
-                user = g.db.query(User).filter(getattr(User, db_fields['email']) == result_user.email).first()
-
-                if not user:
-                    user = g.db.query(User).filter(User.address_email == result_user.email).first()
-                    ind = False
-
-                    if not user:
-                        ind = True
-                        user = User()
-
-                    for elem in SOC_NET_FIELDS:
-                        setattr(user, db_fields[elem], getattr(result_user, elem))
-                    registred_via_soc = len(soc_network_names) > 1
-
-                    if ind:  # ToDo (AA): introduce field signup_via instead.
-                        # Todo (AA): If signed_up not via profireader then...
-                        db_fields_profireader = DB_FIELDS['profireader']
-                        for elem in SOC_NET_FIELDS_SHORT:
-                            setattr(user, db_fields_profireader[elem], getattr(result_user, elem))
-
-                    g.db.add(user)
-                    user.email_confirmed = True
-                    g.db.commit()
-
-                if user.banned:
-                    flash('Sorry, you cannot login into the Profireader. Contact the profireader'
-                          'administrator, please: ' + current_app.config['PROFIREADER_MAIL_SENDER'])
-
-                    return redirect(url_for('index.index'))
-
-                # session['user_id'] = user.id assignment
-                # is automatically executed by login_user(user)
-                if user:
-                    login_user(user)
-                    flash("You were successfully logged in")
-                    if portal_id:
-                        session.pop('portal_id')
-                        return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
-                    elif back_to:
-                        session.pop('back_to')
-                        return redirect(back_to)
-                    # return redirect(request.args.get('next') or url_for('index.index'))
-                    return redirect(redirect_url())
-                # return redirect(url_for('index.index'))  # #  http://profireader.com/
-                # url = redirect_url()
-                # print(url)
-                if registred_via_soc:
-                    return redirect(url_for('help.help'))
-
-                return redirect(redirect_url())  # #  http://profireader.com/
-            elif result.error:
-                redirect_path = '#/?msg={}'.format(quote(soc_network_names[-1] + ' login failed.'))
-                return redirect(redirect_path)
-    except:
-        print(sys.exc_info()[0])
-        raise
-    return response
+#
+# def login_signup_general(*soc_network_names):
+#     portal_id = session.get('portal_id')
+#     back_to = session.get('back_to')
+#     response = make_response()
+#     registred_via_soc = False
+#     logged_via_soc = list(filter(lambda x: x != 'profireader', soc_network_names))[0] \
+#         if len(soc_network_names) > 1 else 'profireader'
+#
+#     try:
+#         result = g.authomatic.login(WerkzeugAdapter(request, response), soc_network_names[-1])
+#         if result:
+#             if result.user:
+#                 result.user.update()
+#                 result_user = result.user
+#                 if result_user.email is None:
+#                     flash("you haven't confirm email bound to your soc-network account yet. "
+#                           "Please confirm email first or choose another way of authentication.")
+#                     # redirect(url_for('auth.login_signup_endpoint') + '?login_signup=login')
+#                     redirect(redirect_url())
+#                 db_fields = DB_FIELDS[soc_network_names[-1]]
+#                 # user = g.db.query(User).filter(getattr(User, db_fields['id']) == result_user.id).first()
+#
+#                 user = g.db.query(User).filter(getattr(User, db_fields['email']) == result_user.email).first()
+#
+#                 if not user:
+#                     user = g.db.query(User).filter(User.address_email == result_user.email).first()
+#                     ind = False
+#
+#                     if not user:
+#                         ind = True
+#                         user = User()
+#
+#                     for elem in SOC_NET_FIELDS:
+#                         setattr(user, db_fields[elem], getattr(result_user, elem))
+#                     registred_via_soc = len(soc_network_names) > 1
+#
+#                     if ind:  # ToDo (AA): introduce field signup_via instead.
+#                         # Todo (AA): If signed_up not via profireader then...
+#                         db_fields_profireader = DB_FIELDS['profireader']
+#                         for elem in SOC_NET_FIELDS_SHORT:
+#                             setattr(user, db_fields_profireader[elem], getattr(result_user, elem))
+#
+#                     g.db.add(user)
+#                     user.email_confirmed = True
+#                     g.db.commit()
+#
+#                 if user.banned:
+#                     flash('Sorry, you cannot login into the Profireader. Contact the profireader'
+#                           'administrator, please: ' + current_app.config['PROFIREADER_MAIL_SENDER'])
+#
+#                     return redirect(url_for('index.index'))
+#
+#                 # session['user_id'] = user.id assignment
+#                 # is automatically executed by login_user(user)
+#                 if user:
+#                     login_user(user)
+#                     flash("You were successfully logged in")
+#                     if portal_id:
+#                         session.pop('portal_id')
+#                         return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
+#                     elif back_to:
+#                         session.pop('back_to')
+#                         return redirect(back_to)
+#                     # return redirect(request.args.get('next') or url_for('index.index'))
+#                     return redirect(redirect_url())
+#                 # return redirect(url_for('index.index'))  # #  http://profireader.com/
+#                 # url = redirect_url()
+#                 # print(url)
+#                 if registred_via_soc:
+#                     return redirect(url_for('help.help'))
+#
+#                 return redirect(redirect_url())  # #  http://profireader.com/
+#             elif result.error:
+#                 redirect_path = '#/?msg={}'.format(quote(soc_network_names[-1] + ' login failed.'))
+#                 return redirect(redirect_path)
+#     except:
+#         print(sys.exc_info()[0])
+#         raise
+#     return response
 
 
 # @auth_bp.before_app_request
@@ -110,18 +110,46 @@ def login_signup_general(*soc_network_names):
 #             return redirect(url_for('auth.unconfirmed'))
 
 
+def set_after_logination_params():
+    back_to = g.req('back_to')
+    if back_to:
+        session['back_to'] = back_to
+    portal_id = g.req('portal_id')
+    if portal_id:
+        session['portal_id'] = portal_id
+
+
+def check_after_logination_params(user):
+    if session.get('portal_id'):
+        portal = Portal.get(session.get('portal_id'), returnNoneIfNotExists=True)
+        if portal:
+            portal.subscribe_user(user)
+            session.pop('portal_id')
+    if session.get('back_to'):
+        session.pop('back_to')
+        return session['back_to']
+    else:
+        return False
+
+def get_after_logination_params():
+    ret = {}
+    if session.get('portal_id'):
+        ret['portal_id'] = session['portal_id']
+        session.pop('portal_id')
+    if session.get('back_to'):
+        ret['back_to'] = session['back_to']
+        session.pop('back_to')
+    return ret
+
 @auth_bp.route('/login_signup/', methods=['GET'])
 @check_right(AllowAll)
 def login_signup_endpoint():
     if current_user.is_authenticated():
-        if session.get('portal_id'):
-            return redirect(url_for('index.reader_subscribe', portal_id=session['portal_id']))
-        elif session.get('back_to'):
-            return redirect(session['back_to'])
-
-    login_signup = request.args.get('login_signup', 'login')
-    return render_template('auth/login_signup.html',
-                           login_signup=login_signup)
+        back_to = check_after_logination_params(current_user)
+        return redirect(back_to if back_to else url_for('index.index'))
+    else:
+        set_after_logination_params()
+        return render_template('auth/login_signup.html', login_signup=request.args.get('login_signup', 'login'))
 
 
 @auth_bp.route('/login_signup/', methods=['OK'])
@@ -137,36 +165,22 @@ def signup(json_data):
     if action == 'validate':
         return new_user.validate(True)
     else:
-        # try:
-        if session.get('portal_id'):
-            addtourl = {'subscribe_to_portal': session['portal_id']}
-            session.pop('portal_id')
-        else:
-            addtourl = {}
         new_user.set_password_hash()
-        new_user.generate_confirmation_token(addtourl).save()
+        new_user.generate_confirmation_token(get_after_logination_params()).save()
         g.db.commit()
         return {}
-        # except Exception as e:
-        #     return {'error': e.__str__()}
+
 
 
 @auth_bp.route('/login/', methods=['OK'])
 @check_right(AllowAll)
 def login(json_data):
-    # portal = Portal.get(session.get('portal_id'), True)
-    # # back_to = session.get('back_to')
-    # if current_user.is_authenticated() and portal:
-    #     session.pop('portal_id')
-    #     current_user.subscribe_user()
-    #     return redirect(url_for('index.index'))
     email = json_data.get('email', '')
     password = json_data.get('password', '')
 
     user = g.db.query(User).filter(User.address_email == email).first()
 
     if user and user.banned:
-        flash()
         return {'error': 'You can not be logged in. Please contact the Profireader administration'}
     elif user and not user.email_confirmed:
         return {'error': 'You email is unconfirmed. Please confirm your email'}
@@ -174,25 +188,14 @@ def login(json_data):
         return {'error': 'Email or password is wrong'}
     else:
         user.login()
-        return {}
-        # if portal_id:
-        #     session.pop('portal_id')
-        #     return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
-        # elif back_to:
-        #     session.pop('back_to')
-        #     return redirect(back_to)
-        # # return redirect(request.args.get('next') or url_for('index.index'))
-        # return redirect(redirect_url())
-        # flash('Invalid username or password.')
-        # redirect_url_str = url_for('auth.login_signup_endpoint') + '?login_signup=login'
-        # redirect_url += ('&' + 'portal_id=' + portal_id) if portal_id else ''
-        # return redirect(redirect_url_str)
+        return {'back_to': check_after_logination_params(user)}
 
 
 @auth_bp.route('/email_confirmation/', methods=['GET'])
 @auth_bp.route('/email_confirmation/<string:token>/', methods=['GET'])
 @check_right(AllowAll)
 def email_confirmation(token=None):
+    set_after_logination_params()
     if not token:
         return render_template("auth/confirm_email.html", email='')
 
@@ -209,10 +212,8 @@ def email_confirmation(token=None):
         user.save()
         g.db.commit()
         user.login()
-        portal = Portal.get(request.args.get('subscribe_to_portal'), returnNoneIfNotExists=True)
-        if portal:
-            portal.subscribe_user(user)
-        return redirect(url_for('index.welcome'))
+        back_to = check_after_logination_params(user)
+        return redirect(back_to if back_to else url_for('index.welcome'))
 
 
 @auth_bp.route('request_new_email_confirmation_token/', methods=["OK"])
@@ -229,7 +230,7 @@ def request_new_email_confirmation_token(json_data):
             if user.email_confirmed:
                 return {'error': 'You email is already confirmed'}
             else:
-                user.generate_confirmation_token({}).save()
+                user.generate_confirmation_token(get_after_logination_params()).save()
                 return {}
         else:
             return {'error': 'User with this email is not registered'}
@@ -355,20 +356,11 @@ def login_signup_soc_network(soc_network_name):
                 g.db.add(user)
                 user.save()
 
-
-
             if user:
                 User.logout()
                 user.login()
-                return redirect(url_for('index.index'))
-                # if portal_id:
-                #     session.pop('portal_id')
-                #     return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
-                # elif back_to:
-                #     session.pop('back_to')
-                #     return redirect(back_to)
-
-
+                back_to = check_after_logination_params(user)
+                return redirect(back_to if back_to else url_for('index.index'))
             else:
                 return render_template('error.html', error='cant login/signup user')
         elif result.error:
@@ -545,7 +537,8 @@ def reset_password_load(json_data, token):
         else:
             User.logout()
             user.login()
-            return {}
+            back_to = check_after_logination_params(user)
+            return {'back_to': back_to}
     else:
         return {'error': 'Wrong token. or token outdated'}
 

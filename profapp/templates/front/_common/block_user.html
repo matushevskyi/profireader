@@ -1,12 +1,39 @@
-{% if g.user %}
-    <a pr_test="UserProfile" role="button"
-       aria-haspopup="true"
-       href="//{{ MAIN_DOMAIN }}{{ url_for('user.profile', user_id = g.user.id) }}"
-       aria-expanded="false">
-        <img style="width: 35px" pr-image-url="{{ g.user.avatar.url }}"
-             class="person-small-cover">{{ g.user.full_name }}
-    </a>
-{% else %}
-{% endif %}
-<a target="profireader_subscribe" href="//{{ MAIN_DOMAIN }}/reader/list_reader_from_front/{{ g.portal.id }}"><img
+{% set url_join = '//' + MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + portal.id %}
+<a role="button" aria-haspopup="true" id="profireader_user_link"
+   href="{% if g.user %}//{{ MAIN_DOMAIN }}/user/profile/{{ g.user.id }}{% else %}{{ url_join }}{% endif %}">
+    {%- if g.user -%}
+    <img {{ prImageUrl(g.user.avatar.url) }} class="front-user-avatar-img">
+    {%- endif -%}
+    <span>{%- if g.user and g.user.id -%}
+        {{ _('Hello %(full_name)s', {'full_name': g.user.full_name} ) }}
+    {%- else -%}
+        {{ _('Welcome to profireader' ) }}
+    {%- endif -%}</span></a>
+&nbsp;&nbsp;
+<a id="profireader_link" target="profireader_subscribe"
+   href="{% if g.user %}//{{ MAIN_DOMAIN }}/{% else %}{{ url_join }}{% endif %}"><img
         style="width: 35px" src="{{ static_address('favicon.ico') }}"/></a>
+<script>
+    window.addEventListener("message", function (messageevent) {
+        console.log(messageevent);
+        if (messageevent.data && messageevent.data.profireader_session_id) {
+            $.cookie('beaker.session.id', messageevent.data.profireader_session_id, {path: '/'});
+
+            {#            window.location.reload();#}
+        }
+        if (messageevent.data && messageevent.data.user {% if g.user and g.user.id %}
+                    && messageevent.data.user.id !== '{{ g.user.id }}'{% endif %}) {
+            $('#profireader_user_link').attr('href', '//{{ MAIN_DOMAIN }}/user/profile/' + messageevent.data.user.id);
+            $('#profireader_user_link span').html(messageevent.data.welcome);
+            $('#profireader_user_link img').css('background-image', 'url(' + messageevent.data.user.avatar.url + ')').show();
+            $('#profireader_link').attr('href', '//{{ MAIN_DOMAIN }}');
+        }
+        else if (messageevent.data && !messageevent.data.user) {
+            $('#profireader_user_link').attr('href', '//{{ MAIN_DOMAIN }}/');
+            $('#profireader_user_link span').html(messageevent.data.welcome);
+            $('#profireader_user_link img').css('background-image', 'none').hide();
+            $('#profireader_link').attr('href', '{{ url_join }}');
+        }
+    }, false);
+    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: hidden; left: -1px; top: -1px;" src="//{{ MAIN_DOMAIN }}/tools/SSO/' + $.cookie('beaker.session.id') + '/"></iframe>');
+</script>
