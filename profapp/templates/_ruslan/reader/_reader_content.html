@@ -63,6 +63,8 @@
                             <span class="fr ml05em label label-default item-tags" ng-repeat="tag in article.tags">
                                 <a target="_blank" href="//{{ article.portal.host }}{{ tag_url({tags: tag.text}) }}">{{ tag.text }}</a>
                             </span>
+                            <a target="_blank" href="//{{ article.portal.host }}/">{{article.portal.name}}</a>
+                            &rightarrow;
                             <a target="_blank" href="//{{ article.portal.host }}/{{ article.division.name}}/">{{article.division.name}}</a>
                             <div class="item-publication-date">{{ get_local_time(article.publishing_tm) }}</div>
                             <a target="_blank"
