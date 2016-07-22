@@ -29,11 +29,10 @@ def save_translate(json):
 def update_last_accessed(json):
     return TranslateTemplate.update_last_accessed(json['template'], json['phrase'])
 
-@tools_bp.route('/SSO/<string:local_cookie>/', methods=['GET'])
+@tools_bp.route('/SSO/<string:front_cookie>/', methods=['GET'])
 @check_right(AllowAll)
-def SSO(local_cookie):
-    return render_template('tools/sso.html', local_cookie=local_cookie, profi_cookie=request.cookies.get('beaker.session.id'))
-
+def SSO(front_cookie):
+    return render_template('tools/sso.html', local_cookie=front_cookie, profi_cookie=request.cookies.get('beaker.session.id'))
 
 @tools_bp.route('/change_allowed_html/', methods=['OK'])
 @check_right(AllowAll)

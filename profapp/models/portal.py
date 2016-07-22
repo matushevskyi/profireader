@@ -23,8 +23,7 @@ from .elastic import PRElasticField, PRElasticDocument
 
 class Portal(Base, PRBase):
     __tablename__ = 'portal'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False,
-                primary_key=True)
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     name = Column(TABLE_TYPES['name'])
     host = Column(TABLE_TYPES['short_name'])
     lang = Column(TABLE_TYPES['short_name'])
@@ -306,8 +305,12 @@ class Portal(Base, PRBase):
                 portals.append(portal.get_client_side_dict())
         return portals
 
-    def subscribe_user(self, user = None):
+    def subscribe_user(self, user=None):
         user = user if user else g.user
+
+        if db(UserPortalReader, portal_id=self.id, user_id=user.id).first():
+            return
+
         free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
                                ReaderUserPortalPlan.amount).filter_by(name='free').one()
 
@@ -320,6 +323,28 @@ class Portal(Base, PRBase):
                                                                        for division in self.divisions]])
         g.db.add(reader_portal)
         g.db.commit()
+
+        # # TODO: OZ by OZ: remove this endpoint!!! move subscription to model (function Portal.subscribe_user(self, user))
+        # user_dict = g.user.get_client_side_dict()
+        # portal = Portal.get(portal_id)
+        # if not portal:
+        #     raise BadDataProvided
+        # reader_portal = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
+        # if not reader_portal:
+        #     free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
+        #                            ReaderUserPortalPlan.amount).filter_by(name='free').one()
+        #     start_tm = datetime.datetime.utcnow()
+        #     end_tm = datetime.datetime.fromtimestamp(start_tm.timestamp() + free_plan[1])
+        #     reader_portal = UserPortalReader(user_dict['id'], portal_id, status='active', portal_plan_id=free_plan[0],
+        #                                      start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
+        #                                      show_divisions_and_comments=[division_show for division_show in
+        #                                                                   [ReaderDivision(portal_division=division)
+        #                                                                    for division in portal.divisions]])
+        #     g.db.add(reader_portal)
+        #     g.db.commit()
+        #     # TODO: OZ by OZ: remove it
+        #     from flask import flash
+        #     flash('You have successfully subscribed to this portal')
 
 
 class PortalAdvertisment(Base, PRBase):
@@ -383,7 +408,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             'status': PRElasticField(setter=lambda: self.status, analyzed=False),
             'company_name': PRElasticField(setter=lambda: self.company.name, boost=100),
             'company_about': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=10),
-            'company_short_description': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description), boost=10),
+            'company_short_description': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description),
+                                                        boost=10),
             'company_city': PRElasticField(setter=lambda: self.company.city, boost=2),
             'company_id': PRElasticField(setter=lambda: self.company.id, analyzed=False),
             'portal': PRElasticField(setter=lambda: self.portal.name),
