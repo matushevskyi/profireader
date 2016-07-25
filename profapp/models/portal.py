@@ -220,7 +220,7 @@ class Portal(Base, PRBase):
         ret = super().validate(is_new)
         if db(Portal, company_owner_id=self.own_company.id).filter(Portal.id != self.id).count():
             ret['errors']['form'] = 'portal for company already exists'
-        if not re.match('[^\s]{3,}', self.name):
+        if not re.match('[^\s]{2,}', self.name):
             ret['errors']['name'] = 'pls enter a bit longer name'
         if not re.match(
                 '^(([a-z]|[a-z][a-z0-9\-]*[a-z0-9])\.)+([a-z]|[a-z][a-z0-9\-]*[a-z0-9]{1,})$',
