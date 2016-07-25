@@ -1,2 +1,2 @@
 {{ _('Welcome %(user_name)s. Plese click %(url)s for email confirmation', {'user_name': user.full_name,
-'url': confirmation_url}) }}
+'url': 'http://'+MAIN_DOMAIN+confirmation_url, _external:True}) }}
