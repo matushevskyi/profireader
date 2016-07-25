@@ -122,13 +122,17 @@ class Company(Base, PRBase, PRElasticDocument):
             ret['errors']['region'] = 'Your Region name must be at least 3 characters long.'
         if not re.match(r'[^\s]{3}', str(self.city)):
             ret['errors']['city'] = 'Your City name must be at least 3 characters long.'
+        if not re.match(r'^[a-zA-Z0-9_.+-]{4,}', str(self.postcode)):
+            ret['errors']['postcode'] = 'Your Postcode must be at least 4 digits or characters long.'
+        if not re.match(r'[^\s]{3}', str(self.address)):
+            ret['errors']['address'] = 'Your Address must be at least 3 characters long.'
         if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", str(self.email)):
             ret['errors']['email'] = 'Invalid email address'
         if not re.match('[^\s]{3,}', self.name):
             ret['errors']['name'] = 'Your Company name must be at least 3 characters long.'
         # phone validation
-        # if not re.match('^\+?[0-9]{3}-?[0-9]{6,12}$', self.phone):
-        #     ret['errors']['phone'] = 'pls enter a correct number'
+        if not re.match('^\+?[0-9]{3}-?[0-9]{6,12}$', self.phone):
+            ret['errors']['phone'] = 'pls enter a correct number'
 
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)
