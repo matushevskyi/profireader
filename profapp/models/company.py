@@ -124,7 +124,7 @@ class Company(Base, PRBase, PRElasticDocument):
             ret['errors']['city'] = 'Your City name must be at least 3 characters long.'
         if not re.match(r'^[a-zA-Z0-9_.+-]{4,}', str(self.postcode)):
             ret['errors']['postcode'] = 'Your Postcode must be at least 4 digits or characters long.'
-        if not re.match(r'^[a-zA-Z0-9_.+-]{3,}', str(self.address)):
+        if not re.match(r'[^\s]{3}', str(self.address)):
             ret['errors']['address'] = 'Your Address must be at least 3 characters long.'
         if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", str(self.email)):
             ret['errors']['email'] = 'Invalid email address'
