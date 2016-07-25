@@ -223,7 +223,7 @@ class Portal(Base, PRBase):
         if not re.match('[^\s]{3,}', self.name):
             ret['errors']['name'] = 'pls enter a bit longer name'
         if not re.match(
-                '^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9]{1,})$',
+                '^(([a-z]|[a-z][a-z0-9\-]*[a-z0-9])\.)+([a-z]|[a-z][a-z0-9\-]*[a-z0-9]{1,})$',
                 self.host):
             ret['errors']['host'] = 'pls enter valid host name'
         if not 'host' in ret['errors'] and db(Portal, host=self.host).filter(Portal.id != self.id).count():
