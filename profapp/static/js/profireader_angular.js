@@ -1440,7 +1440,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         classes_for_row += '{{ grid.options.columnDefs[' + columnindex + '].classes(row.entity.id, row.entity, col.field) }}';
                     }
 
-                    var attributes_for_cell = ' ng-if="row.entity.' + col.name + '" pr-id="{{ row.entity.id }}" ';
+                    var attributes_for_cell =  + col.name + '" pr-id="{{ row.entity.id }}" ';
                     if (col.onclick && col.type !== 'actions' && col.type !== 'editable') {
                         attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\') "';
                     }
