@@ -330,7 +330,6 @@ class UserCompany(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'), nullable=False)
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), nullable=False)
-    position = Column(TABLE_TYPES['id_profireader'], ForeignKey('position'), nullable=False)
 
     # TODO: OZ by OZ: remove `SUSPENDED` status from db type
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED'}
