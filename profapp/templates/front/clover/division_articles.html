@@ -2,13 +2,16 @@
 {% block title %}
     {{ _('%(division_name)s - %(portal_name)s', {'portal_name': portal.name, 'division_name': division.name}) }}{% endblock %}
 
-{% block right_content %}
+{% block left_content %}
     {% include '_common/block_search.html' %}
-    <a href="#" class="right_banner_1">{{ portal.advs.right_banner_1|safe }}</a>
+{% endblock %}
+
+{% block right_content %}
+    <a href="#" class="right_banner_1">{{ portal.advs.right_banner_1|safe }}</a><br/><br/>
     <a href="#" class="right_banner_2">{{ portal.advs.right_banner_2|safe }}</a>
 {% endblock %}
 
-{% block left_content %}
+{% block center_content %}
     {% import '_common/macros.html' as frontmacros %}
     {% set wide_banners = {2:'1',6:'2'} %}
     {% for article_id, article in articles.items() %}
