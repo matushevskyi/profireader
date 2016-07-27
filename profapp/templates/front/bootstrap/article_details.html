@@ -27,13 +27,9 @@
     {% include 'article_social.html' %}
     <div>{{ article['short']|safe }}</div>
 
-    <div>
-        {% if article['tags'] %}
-            {% for tag in article.tags %}
-                {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = [], toogle_tag = True) }}
-            {% endfor %}
-        {% endif %}
-    </div>
+    <div>{% if article['tags'] %}{% for tag in article.tags %}
+        {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = [], toogle_tag = True) }}
+    {% endfor %}{% endif %}</div>
 
     {% if article_visibility %}
         <div>{{ article['long'] |safe }}</div>

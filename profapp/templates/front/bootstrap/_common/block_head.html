@@ -12,10 +12,8 @@
       type="image/gif"/>
 
 <link rel="stylesheet" href="{{ static_address('jquery/smoothness/jquery-ui.css') }}">
-{#<link href="{{ static_address('front/css/bootstrap.css') }}" rel="stylesheet">#}
+<link href="{{ static_address('front/css/bootstrap.css') }}" rel="stylesheet">
 
-
-<link href="{{ static_address('front/css/style.css') }}" rel="stylesheet">
 <link href="{{ static_address('front/' + portal.layout.name + '/css/style.css') }}" rel="stylesheet">
 <link href="{{ static_address('css/article.css') }}" rel="stylesheet">
 <link href="{{ static_address('front/' + portal.layout.name + '/css/article.css') }}" rel="stylesheet">
@@ -28,7 +26,7 @@
 <script src="{{ static_address('jquery/jquery-ui.min.js') }}"></script>
 
 {#<script src="{{ static_address('js/profireader.js') }}"></script>#}
-<script src="{{ static_address('js/front.js') }}"></script>
+<script src="{{ static_address('front/' + portal.layout.name + '/js/script.js') }}"></script>
 
 <script src="{{ static_address('new/moment/moment.min.js') }}"></script>
 {% if g.lang != 'en' -%}
@@ -36,4 +34,4 @@
 {%- endif %}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
-{#<script src="{{ static_address('front/js/bootstrap.js') }}"></script>#}
+<script src="{{ static_address('front/js/bootstrap.js') }}"></script>

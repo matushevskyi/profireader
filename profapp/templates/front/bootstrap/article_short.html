@@ -4,7 +4,8 @@
     </div>
     <div>{{ article.author }}</div>
     <div>{% for tag in article.tags %}
-        {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }} {% endfor %}</div>
+        {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }} {% endfor %}
+    </div>
     <div>
         <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article['title']|safe }}</a>
     </div>
@@ -24,5 +25,4 @@
             {{ moment(article.publishing_tm) }}
         {% endif %}
     </div>
-
 </div>

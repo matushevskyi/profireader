@@ -3,11 +3,9 @@
 
 {% block center_content %}
     {% for member_id, member in members.items() %}
-        <div>
-            {% if member['tags'] %}{% for tag in member.tags %}
-                {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
-            {% endfor %}{% endif %}
-        </div>
+        <div>{% if member['tags'] %}{% for tag in member.tags %}
+            {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
+        {% endfor %}{% endif %}</div>
 
         <div><img class="{{ classes.image.company }}" {{ prImageUrl(member['company']['logo']['url']) }}/></div>
 
