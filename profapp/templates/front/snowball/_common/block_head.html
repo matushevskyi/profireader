@@ -12,37 +12,28 @@
       type="image/gif"/>
 
 <link rel="stylesheet" href="{{ static_address('jquery/smoothness/jquery-ui.css') }}">
-<!-- Bootstrap Core CSS -->
-<link href="{{ static_address('front/css/bootstrap.css') }}" rel="stylesheet">
+{#<link href="{{ static_address('front/css/bootstrap.css') }}" rel="stylesheet">#}
 
-
-<!-- Custom CSS -->
-<link href='https://fonts.googleapis.com/css?family=Droid+Serif:400,400italic,700,700italic' rel='stylesheet'
-      type='text/css'>
-<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,300italic,400italic,600,600italic,700,700italic,800,800italic&subset=latin,cyrillic,cyrillic-ext,latin-ext'
-      rel='stylesheet' type='text/css'>
-
-<link href="{{ static_address('front/css/bootstrap-social.css') }}" rel="stylesheet">
-<link href="{{ static_address('front/css/font-awesome.css') }}" rel="stylesheet">
 
 <link href="{{ static_address('front/css/style.css') }}" rel="stylesheet">
 <link href="{{ static_address('front/' + portal.layout.name + '/css/style.css') }}" rel="stylesheet">
 <link href="{{ static_address('css/article.css') }}" rel="stylesheet">
 <link href="{{ static_address('front/' + portal.layout.name + '/css/article.css') }}" rel="stylesheet">
 
-<link rel="stylesheet" href="{{ static_address('css/oles.css') }}">
+<link href="{{ static_address('front/css/font-awesome.css') }}" rel="stylesheet">
 
 {{ config_variables()|safe }}
 
 <script src="{{ static_address('jquery/jquery.min.js') }}"></script>
 <script src="{{ static_address('jquery/jquery-ui.min.js') }}"></script>
 
-<script src="{{ static_address('js/profireader.js') }}"></script>
+{#<script src="{{ static_address('js/profireader.js') }}"></script>#}
 <script src="{{ static_address('js/front.js') }}"></script>
 
 <script src="{{ static_address('new/moment/moment.min.js') }}"></script>
-{% if g.lang != 'en' %}
-    <script src="{{ static_address('new/moment/' + g.lang + '.js') }}"></script>{% endif %}
+{% if g.lang != 'en' -%}
+    <script src="{{ static_address('new/moment/' + g.lang + '.js') }}"></script>
+{%- endif %}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
-<script src="{{ static_address('front/js/bootstrap.js') }}"></script>
+{#<script src="{{ static_address('front/js/bootstrap.js') }}"></script>#}

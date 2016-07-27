@@ -1,0 +1,28 @@
+<div>
+    <div>
+        <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
+    </div>
+    <div>{{ article.author }}</div>
+    <div>{% for tag in article.tags %}
+        {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }} {% endfor %}</div>
+    <div>
+        <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article['title']|safe }}</a>
+    </div>
+    <div>{{ article.subtitle }}</div>
+    <div>
+        <img class="{{ classes.image.illustration }}" {{ prImageUrl(article['illustration']['url']) }}/>
+    </div>
+    <div>{{ article.short|safe }}</div>
+
+    <div>
+        <a href="{{ url_for('front.company_page', member_company_name = article['company']['name'], member_company_id = article['company']['id']) }}">{{ article['company']['name']|safe }}</a>
+    </div>
+    <div>
+        {% if article.division.portal_division_type_id == 'events' %}
+            {{ moment(article.event_begin_tm, 'MM.DD.YYYY') }} - {{ moment(article.event_end_tm, 'MM.DD.YYYY') }}
+        {% else %}
+            {{ moment(article.publishing_tm) }}
+        {% endif %}
+    </div>
+
+</div>

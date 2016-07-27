@@ -1,0 +1,18 @@
+{% include 'block_user.html' %}
+<a href="/"><img class="{{ classes.image.portal }}" {{ prImageUrl(portal.logo.url) }} /></a>
+<ul>
+    {% for division_id, di in portal.divisions.items() %}
+        {% if di.portal_division_type_id in ['news', 'events', 'catalog'] %}
+            <li {% if di.id == division.id %}class="{{ classes.menu.selected }}"{% endif %}>
+                <a href=" {{ url_for('front.division', division_name=di.name) }}">{{ di.name }}</a>
+            </li>
+        {% elif di.portal_division_type_id in ['company_subportal'] %}
+            <li {% if di.id == division.id %}class="{{ classes.menu.selected }}"{% endif %}>
+                <a href=" {{ url_for('front.company_page', member_company_id = di['subportal_company'].id, member_company_name = di['subportal_company'].name) }}">{{ di.name }}</a>
+            </li>
+        {% elif di.portal_division_type_id in ['index'] %}
+        {% else %}
+            {{ raise("Unknown division type `" + di.portal_division_type_id +  "`") }}
+        {% endif %}
+    {% endfor %}
+</ul>
