@@ -4,8 +4,8 @@
         <button type="submit"><i class="fa fa-search"> {{ _('Search') }}</i></button>
     </form>
     {% import 'macros.html' as frontmacros %}
-    {% for tag in tags.all %}
+    <div>{% for tag in tags.all %}
         {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
-    {% endfor %}
+    {% endfor %}</div>
 {% endif %}
 
