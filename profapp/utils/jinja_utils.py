@@ -187,5 +187,6 @@ def update_jinja_engine(app):
     app.jinja_env.globals['raise'] = raise_helper
     app.jinja_env.globals.update(tinymce_format_groups=HtmlHelper.tinymce_format_groups)
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
-
+    app.jinja_env.globals['classes'] = {}
+    # app.jinja_env.globals['article_unavaible'] = {'message': 'lala', 'url': '//'}
     app.jinja_env.filters['nl2br'] = nl2br

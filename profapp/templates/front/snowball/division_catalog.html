@@ -1,0 +1,30 @@
+{% import '_common/macros.html' as frontmacros %}
+{% extends 'layout.html' %}
+
+{% block center_content %}
+    {% for member_id, member in members.items() %}
+        <div>
+            {% if member['tags'] %}{% for tag in member.tags %}
+                {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
+            {% endfor %}{% endif %}
+        </div>
+
+        <div><img class="{{ classes.image.company }}" {{ prImageUrl(member['company']['logo']['url']) }}/></div>
+
+        <div>
+            <a href="{{ url_for('front.company_page', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}">{{ member['company']['name'] }}</a>
+        </div>
+
+        {{ member['company']['short_description']|safe }}
+
+        {% if member['company']['country'] != '' %}
+            <div>{{ __('Country') }}: {{ member['company']['country']|safe }}</div>
+        {% endif %}
+        {% if member['company']['city'] != '' %}
+            <div>{{ __('City') }}: {{ member['company']['city']|safe }}</div>
+        {% endif %}
+
+    {% endfor %}
+
+    {% include '_common/block_pager.html' %}
+{% endblock %}
