@@ -1,0 +1,23 @@
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="">
+<meta name="author" content="">
+
+<link rel="shortcut icon"
+      href="{{ fileUrl(portal.favicon_file_id, if_no_file=static_address('favicon.ico')) }}"
+      type="image/x-icon"/>
+<link rel="icon" href="{{ fileUrl(portal.favicon_file_id, if_no_file=static_address('favicon.ico')) }}"
+      type="image/gif"/>
+
+
+<link href="{{ static_address('front/' + portal.layout.name + '/css/style.css') }}" rel="stylesheet">
+<link href="{{ static_address('css/article.css') }}" rel="stylesheet">
+<link href="{{ static_address('front/' + portal.layout.name + '/css/article.css') }}" rel="stylesheet">
+
+{{ config_variables()|safe }}
+
+<script src="{{ static_address('front/' + portal.layout.name + '/js/script.js') }}"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>

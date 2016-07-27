@@ -8,10 +8,16 @@
     {% for article_id, article in articles.items() %}
         {% include 'article_short.html' %}
         {% if loop.index in wide_banners and portal.advs['wide_banner_' + wide_banners[loop.index]] %}
-            <div><a href="#" class="{{ classes.banner.in_article }}">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a></div>
+            <div><a href="#"
+                    class="{{ classes.banner.in_article }}">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a>
+            </div>
         {% endif %}
     {% else %}
-        <h1>{{ _('There are no articles in this division') }}</h1>
+        {% if tags.selected_names or search_text != '' %}
+            <div>{{ _('There are no articles with current search criteria') }}</div>
+        {% else %}
+            <div>{{ _('There are no articles in this division') }}</div>
+        {% endif %}
     {% endfor %}
 
     {% include '_common/block_pager.html' %}
