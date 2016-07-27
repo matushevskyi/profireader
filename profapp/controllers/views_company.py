@@ -203,7 +203,7 @@ def employment_change_position(json, company_id, employment_id):
     employment.position = json['position']
     employment.save()
 
-    return utils.dict_merge(employment.employee.get_client_side_dict(), employment.get_client_side_dict(),
+    return utils.dict_merge(employment.get_client_side_dict(),
                             {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
