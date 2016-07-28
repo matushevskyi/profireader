@@ -48,7 +48,7 @@ def filemanager():
     for user_company in g.user.employments:
         if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE) == True:
             filemanager_company_list[user_company.company_id] = File.folder_dict(user_company.company,
-                                                                                 {'can_upload': True or FilemanagerRights(
+                                                                                 {'can_upload': FilemanagerRights(
                                                                                      company=user_company.company_id).action_is_allowed(
                                                                                      FilemanagerRights.ACTIONS[
                                                                                          'UPLOAD'])})
@@ -60,14 +60,19 @@ def filemanager():
                 .join(Company).filter(Company.status == 'ACTIVE').all()
 
             for company_membership in company_membership_in_portal:
-                if company_membership.company_id not in filemanager_company_list:
-                    filemanager_company_list[company_membership.company_id] = File.folder_dict(
-                        company_membership.company,
-                        {
-                            'can_upload': True or FilemanagerRights(
+                # YG: needed for check rights companies
+                right = FilemanagerRights(
+                    company=company_membership.company_id).action_is_allowed(
+                    FilemanagerRights.ACTIONS[
+                        'UPLOAD'])
+                if company_membership.company_id not in filemanager_company_list and right == True:
+                    # print(
+                    #     company_membership.company)
+                    filemanager_company_list[company_membership.company_id] = {
+                            'can_upload': FilemanagerRights(
                                 company=company_membership.company_id).action_is_allowed(
                                 FilemanagerRights.ACTIONS[
-                                    'UPLOAD'])})
+                                    'UPLOAD'])}
     # filemanager_company_list.sort(key=lambda k: k['name'])
     file_manager_called_for = request.args[
         'file_manager_called_for'] if 'file_manager_called_for' in request.args else ''
