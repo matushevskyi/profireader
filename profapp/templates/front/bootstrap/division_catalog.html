@@ -36,6 +36,12 @@
 
             </div>
         </div>
+    {% else %}
+        {% if tags.selected_names or search_text != '' %}
+            <h3 class="tac">{{ _('There are no companies with current search criteria') }}</h3>
+        {% else %}
+            <h3 class="tac">{{ _('There are no active companies joined to this portal') }}</h3>
+        {% endif %}
     {% endfor %}
 
     {% include '_common/block_pager.html' %}
