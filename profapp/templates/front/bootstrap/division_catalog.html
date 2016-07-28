@@ -3,25 +3,39 @@
 
 {% block center_content %}
     {% for member_id, member in members.items() %}
-        <div>{% if member['tags'] %}{% for tag in member.tags %}
-            {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
-        {% endfor %}{% endif %}</div>
+        <div class="member {% if member['company']['logo']['selected_by_user']['type'] != 'none' %}member-with-logo{% endif %}">
+            <div class="tags-at-right nw">
+                {% for tag in member.tags %}
+                    {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
+                {% endfor %}
+            </div>
+            <h3>
+                <a href="{{ url_for('front.company_page', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}">{{ member['company']['name'] }}</a>
+            </h3>
+            <table class="t200logo">
+                <tr>
+                    <td>{% if member['company']['logo']['selected_by_user']['type'] != 'none' %}
+                        <img src="{{ member['company']['logo']['url'] }}"/>{% endif %}
+                    </td>
+                    <td>
+                        <div class="short-text">{{ member['company']['short_description']|safe }}</div>
+                        {% if member['company']['country'] != '' %}
+                            <div>{{ __('Country') }}: {{ member['company']['country']|safe }}</div>
+                        {% endif %}
+                        {% if member['company']['city'] != '' %}
+                            <div>{{ __('City') }}: {{ member['company']['city']|safe }}</div>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+            <div class="pr">
 
-        <div><img class="{{ classes.image.company }}" {{ prImageUrl(member['company']['logo']['url']) }}/></div>
+            </div>
+            <div class="member-address pr">
 
-        <div>
-            <a href="{{ url_for('front.company_page', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}">{{ member['company']['name'] }}</a>
+
+            </div>
         </div>
-
-        {{ member['company']['short_description']|safe }}
-
-        {% if member['company']['country'] != '' %}
-            <div>{{ __('Country') }}: {{ member['company']['country']|safe }}</div>
-        {% endif %}
-        {% if member['company']['city'] != '' %}
-            <div>{{ __('City') }}: {{ member['company']['city']|safe }}</div>
-        {% endif %}
-
     {% endfor %}
 
     {% include '_common/block_pager.html' %}

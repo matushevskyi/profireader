@@ -9,6 +9,7 @@ from ..models.tools import HtmlHelper
 from ..models.pr_base import MLStripper
 from .. import utils
 from .. import Config
+from config import secret_data
 from ..models.config import Config as ModelConfig
 
 
@@ -171,6 +172,7 @@ def raise_helper(msg):
 
 
 def update_jinja_engine(app):
+
     app.jinja_env.globals.update(raw_url_for=raw_url_for)
     app.jinja_env.globals.update(pre=pre)
     app.jinja_env.globals.update(utils=utils)
@@ -179,6 +181,7 @@ def update_jinja_engine(app):
     app.jinja_env.globals.update(prImage=prImage)
     app.jinja_env.globals.update(prImageUrl=prImageUrl)
     app.jinja_env.globals.update(config_variables=config_variables)
+    app.jinja_env.globals.update(secret_data=secret_data)
     app.jinja_env.globals.update(_=translate_phrase)
     app.jinja_env.globals.update(__=translate_html)
     app.jinja_env.globals.update(moment=moment)

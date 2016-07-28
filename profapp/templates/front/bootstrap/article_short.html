@@ -3,7 +3,7 @@
         <div class="division nw">
             <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
         </div>
-        <div class="article-tags nw">
+        <div class="tags-at-right nw">
             {% if article.tags|length %}{% set tag = article.tags[0] %}
                 {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
             {% endif %}
@@ -24,13 +24,7 @@
             <i class="fa fa-building-o"></i> <a href="{{ url_for('front.company_page', member_company_name = article['company']['name'], member_company_id = article['company']['id']) }}">{{ article['company']['name']|safe }}</a>
         </div>
         <div class="article-date nw">
-            <i class="fa fa-calendar"></i>
-            {% if article.division.portal_division_type_id == 'events' %}
-                {{ moment(article.event_begin_tm, 'MM.DD.YYYY') }} -
-                {{ moment(article.event_end_tm, 'MM.DD.YYYY') }}
-            {% else %}
-                {{ moment(article.publishing_tm) }}
-            {% endif %}
+            {{ frontmacros.date(article.division.portal_division_type_id, article) }}
         </div>
     </div>
 

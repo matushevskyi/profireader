@@ -30,6 +30,61 @@ body {
     text-align: center;
 }
 
+.mr05em {
+    margin-right: 0.5em;
+}
+
+
+/*dialog*/
+
+#messageModal textarea {
+    width: 100%;
+    height: 8em;
+}
+
+
+/*tables*/
+table.t200logo {
+    width: 100%;
+    vertical-align: top;
+}
+
+table.t200logo tr td:first-child {
+    width: 200px;
+}
+
+table.t200logo tr td:last-child {
+    width: 100%;
+}
+
+table.t200logo tr td {
+    padding: 5px;
+    vertical-align: top;
+}
+
+table.tablelist {
+    width: 100%;
+    vertical-align: top;
+}
+
+table.tablelist tr td:first-child {
+    width: 10px;
+    text-align: right;
+    font-style: italic;
+    white-space: nowrap;
+}
+
+table.tablelist tr td:last-child {
+    width: 100%;
+    text-align: left;
+}
+
+table.tablelist tr td {
+    padding: 2px;
+    vertical-align: top;
+}
+
+
 /*images*/
 .portal-logo {
     height: 50px;
@@ -67,7 +122,6 @@ body {
     top: 0px;
     left: 0px;
     width: 215px;
-    background-color: red;
     margin-bottom: 5px;
 }
 
@@ -82,7 +136,6 @@ body {
     top: 0px;
     right: 0px;
     width: 215px;
-    background-color: yellow;
     margin-bottom: 5px;
 }
 
@@ -145,10 +198,17 @@ body.no-search .center-content {
     color: white;
 }
 
+.tags-at-right {
+    position: absolute;
+    text-align: right;
+    right: 5px;
+    top: 0px;
+    width: 30%;
+}
+
 /*article*/
 .article {
-    border-bottom: solid #AAEEEE thin;
-    border-top: solid #AAEEEE thin;
+    border: solid #AAEEEE thin;
     background-color: #faffff;
 }
 
@@ -164,14 +224,6 @@ body.no-search .center-content {
 
 .article-division {
     margin-right: 70%;
-}
-
-.article-tags {
-    position: absolute;
-    text-align: right;
-    right: 5px;
-    top: 0px;
-    width: 30%;
 }
 
 .article-company-and-date {
@@ -235,4 +287,38 @@ body.no-search .center-content {
     .article-short .short-text-and-illustration {
         max-height: 480px;
     }
+}
+
+/*company catalog*/
+.member {
+    border: solid #EEAAEE thin;
+    background-color: #fffaff;
+    margin-bottom: 5px;
+    padding: 0px 5px;
+}
+
+.member img {
+    max-width: 200px;
+}
+
+/*company pages*/
+.company-contact-item {
+    width: 300px;
+    float: left;
+}
+
+/*search*/
+.search-form {
+    padding: 5px;
+    border: solid #EEEEAA thin;
+}
+
+.search-form input {
+    width: 100%;
+    display: inline;
+}
+
+.search-form button {
+    margin-top: 5px;
+    float: right;
 }

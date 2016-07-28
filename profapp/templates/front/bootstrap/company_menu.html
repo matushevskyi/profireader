@@ -1,27 +1,45 @@
-<div><img class="{{ classes.image.company }}" {{ prImageUrl(member_company['logo']['url']) }} /></div>
+<table class="t200logo">
+    <tr>
+        <td>{% if member_company['logo']['selected_by_user']['type'] != 'none' %}
+            <img class="{{ classes.image.company }}" {{ prImageUrl(member_company['logo']['url']) }} />{% endif %}
+        </td>
+        <td>
+            <div class="short-text">{{ member_company['short_description']|safe }}</div>
+        </td>
 
-<ul>
-    <li {% if company_menu_selected_item == 'about' %}class="{{ classes.menu.selected }}"{% endif %}><a href="{{ url_for('front.company_page',
+    </tr>
+</table>
+
+<nav class="navbar navbar-default navbar-static-top">
+    <div id="company-navbar" class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+            <li {% if company_menu_selected_item == 'about' %}class="{{ classes.menu.selected }}"{% endif %}><a
+                    href="{{ url_for('front.company_page',
                                    member_company_id = member_company['id'] ,
                                    member_company_name = member_company['name']) }}">{{ _('About') }}</a></li>
 
-    {% for division_id, division in portal.divisions.items() %}
-        {% if division.portal_division_type_id == 'news' or division.portal_division_type_id == 'events' %}
-            <li {% if 'id' in company_menu_selected_item and company_menu_selected_item['id'] == division.id %}class="{{ classes.menu.selected }}"{% endif %}>
-                <a href="{{ url_for('front.division',
+            {% for division_id, division in portal.divisions.items() %}
+                {% if division.portal_division_type_id == 'news' or division.portal_division_type_id == 'events' %}
+                    <li {% if 'id' in company_menu_selected_item and company_menu_selected_item['id'] == division.id %}class="{{ classes.menu.selected }}"{% endif %}>
+                        <a href="{{ url_for('front.division',
                                    member_company_id = member_company['id'] ,
                                    member_company_name = member_company['name'],
                                    division_name=division.name) }}">{{ division.name }}</a>
-            </li>
-        {% endif %}
-    {% endfor %}
+                    </li>
+                {% endif %}
+            {% endfor %}
 
-    <li {% if company_menu_selected_item == 'address' %}class="{{ classes.menu.selected }}"{% endif %}><a href="{{ url_for('front.company_page',
+            <li {% if company_menu_selected_item == 'address' %}class="{{ classes.menu.selected }}"{% endif %}><a
+                    href="{{ url_for('front.company_page',
                                    member_company_id = member_company['id'] ,
                                    member_company_name = member_company['name'], member_company_page = 'address') }}">{{ _('Address') }}</a>
-    </li>
-    <li {% if company_menu_selected_item == 'contacts' %}class="{{ classes.menu.selected }}"{% endif %}><a href="{{ url_for('front.company_page',
+            </li>
+            <li {% if company_menu_selected_item == 'contacts' %}class="{{ classes.menu.selected }}"{% endif %}><a
+                    href="{{ url_for('front.company_page',
                                    member_company_id = member_company['id'] ,
                                    member_company_name = member_company['name'], member_company_page = 'contacts') }}">{{ _('Contacts') }}</a>
-    </li>
-</ul>
+            </li>
+        </ul>
+    </div>
+
+</nav>
