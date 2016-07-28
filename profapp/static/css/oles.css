@@ -106,6 +106,10 @@
     overflow: hidden;
 }
 
+#send-message-form textarea {
+    width: 100%;
+}
+
 /*div[aria-label="Insert/edit video"] > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) {*/
 /*display: none*/
 /*}*/

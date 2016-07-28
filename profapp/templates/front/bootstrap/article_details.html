@@ -11,7 +11,7 @@
             <div class="article-division nw">
                 <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
             </div>
-            <div class="article-tags nw">
+            <div class="tags-at-right nw">
                 {% for tag in article.tags %}
                     {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
                 {% endfor %}

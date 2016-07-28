@@ -3,7 +3,7 @@
         <div class="division nw">
             <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
         </div>
-        <div class="article-tags nw">
+        <div class="tags-at-right nw">
             {% if article.tags|length %}{% set tag = article.tags[0] %}
                 {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
             {% endif %}
