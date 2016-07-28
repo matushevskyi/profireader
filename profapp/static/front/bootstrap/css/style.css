@@ -34,6 +34,7 @@ body {
     margin-right: 0.5em;
 }
 
+
 /*dialog*/
 
 #messageModal textarea {
@@ -121,7 +122,6 @@ table.tablelist tr td {
     top: 0px;
     left: 0px;
     width: 215px;
-    background-color: red;
     margin-bottom: 5px;
 }
 
@@ -136,7 +136,6 @@ table.tablelist tr td {
     top: 0px;
     right: 0px;
     width: 215px;
-    background-color: yellow;
     margin-bottom: 5px;
 }
 
@@ -209,8 +208,7 @@ body.no-search .center-content {
 
 /*article*/
 .article {
-    border-bottom: solid #AAEEEE thin;
-    border-top: solid #AAEEEE thin;
+    border: solid #AAEEEE thin;
     background-color: #faffff;
 }
 
@@ -293,8 +291,7 @@ body.no-search .center-content {
 
 /*company catalog*/
 .member {
-    border-bottom: solid #EEAAEE thin;
-    border-top: solid #EEAAEE thin;
+    border: solid #EEAAEE thin;
     background-color: #fffaff;
     margin-bottom: 5px;
     padding: 0px 5px;
@@ -310,3 +307,18 @@ body.no-search .center-content {
     float: left;
 }
 
+/*search*/
+.search-form {
+    padding: 5px;
+    border: solid #EEEEAA thin;
+}
+
+.search-form input {
+    width: 100%;
+    display: inline;
+}
+
+.search-form button {
+    margin-top: 5px;
+    float: right;
+}

@@ -1,12 +1,13 @@
 {% if pager.total>1 %}
-    <ul>
+    <div style="text-align: right">
+    <ul class="pagination">
         {% if pager.current>1 %}
             <li>
                 <a href="{{ pager.url_construct(page=1) }}">{{ 1 }}</a>
             </li>
         {% endif %}
         {% if pager.current-pager.neighbours>2 %}
-            <li>...</li>
+            <li><a>...</a></li>
         {% endif %}
 
         {% for pg in range(2 if 2 > pager.current-pager.neighbours else pager.current-pager.neighbours, pager.current) %}
@@ -23,7 +24,7 @@
             </li>
         {% endfor %}
         {% if pager.current+pager.neighbours<pager.total - 1 %}
-            <li>...</li>
+            <li><a>...</a></li>
         {% endif %}
         {% if pager.current<pager.total %}
             <li>
@@ -31,4 +32,5 @@
             </li>
         {% endif %}
     </ul>
+    </div>
 {% endif %}

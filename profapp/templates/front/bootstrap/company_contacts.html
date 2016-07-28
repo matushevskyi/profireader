@@ -32,7 +32,7 @@
                     <textarea></textarea>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-info" onclick="sendMessage()"></button>
+                    <button type="button" class="btn btn-success" onclick="sendMessage()"></button>
                     <button type="button" class="btn btn-danger" data-dismiss="modal">{{ _('Cancel') }}</button>
                 </div>
             </div>
@@ -43,7 +43,7 @@
     <script>
 
         function openMessageDialog(user_id, user_name) {
-            $('#messageModal button.btn-info').html('{{ _('Send') }}');
+            $('#messageModal button.btn-success').html('{{ _('Send') }}');
             $('#messageModal .modal-title span').html(user_name);
             $('#messageModal input[name=user_id]').val(user_id);
             $('#messageModal textarea').val('');
@@ -59,7 +59,7 @@
         function sendMessage() {
             $('#messageModal button').prop('disabled', true);
             $('#messageModal textarea').prop('disabled', true);
-            $('#messageModal button.btn-info').html('{{ _('Sending...') }}');
+            $('#messageModal button.btn-success').html('{{ _('Sending...') }}');
 
             $ok('{{ url_for('front.send_message', member_company_id = member_company['id']) }}',
                     {
