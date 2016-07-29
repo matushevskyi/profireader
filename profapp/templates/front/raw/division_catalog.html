@@ -7,7 +7,7 @@
             {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
         {% endfor %}{% endif %}</div>
 
-        <div><img class="{{ classes.image.company }}" {{ prImageUrl(member['company']['logo']['url']) }}/></div>
+        <div><img class="company-logo" {{ prImageUrl(member['company']['logo']['url']) }}/></div>
 
         <div>
             <a href="{{ url_for('front.company_page', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}">{{ member['company']['name'] }}</a>

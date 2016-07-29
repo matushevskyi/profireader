@@ -9,7 +9,7 @@
         {% include 'article_short.html' %}
         {% if loop.index in wide_banners and portal.advs['wide_banner_' + wide_banners[loop.index]] %}
             <div><a href="#"
-                    class="{{ classes.banner.in_article }}">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a>
+                    class="wide-banner">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a>
             </div>
         {% endif %}
     {% else %}

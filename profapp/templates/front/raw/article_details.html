@@ -21,7 +21,7 @@
 
     <div>{{ article['subtitle']|safe }}</div>
     {% if article['illustration']['selected_by_user']['type'] != 'none' %}
-        <div><img class="{{ classes.image.illustration }}" {{ prImageUrl(url = article['illustration']['url']) }}></div>
+        <div><img class="article-illustration" {{ prImageUrl(url = article['illustration']['url']) }}></div>
     {% endif %}
 
     {% include 'article_social.html' %}
