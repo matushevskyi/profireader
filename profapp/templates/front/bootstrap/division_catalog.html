@@ -15,7 +15,7 @@
             <table class="t200logo">
                 <tr>
                     <td>{% if member['company']['logo']['selected_by_user']['type'] != 'none' %}
-                        <img src="{{ member['company']['logo']['url'] }}"/>{% endif %}
+                        <img class="company-logo" {{ prImageUrl(member['company']['logo']['url']) }} />{% endif %}
                     </td>
                     <td>
                         <div class="short-text">{{ member['company']['short_description']|safe }}</div>
