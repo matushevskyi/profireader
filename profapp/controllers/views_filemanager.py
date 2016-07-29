@@ -60,11 +60,12 @@ def filemanager():
                 .join(Company).filter(Company.status == 'ACTIVE').all()
 
             for company_membership in company_membership_in_portal:
-                # YG: needed for check rights companies
+                # YG: needed for check user rights in companies
                 right = FilemanagerRights(
                     company=company_membership.company_id).action_is_allowed(
                     FilemanagerRights.ACTIONS[
                         'UPLOAD'])
+                print(right)
                 if company_membership.company_id not in filemanager_company_list and right == True:
                     # print(
                     #     company_membership.company)
