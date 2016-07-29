@@ -43,6 +43,11 @@
                 <td>{{ _('Company region') }}</td>
                 <td>{{ member_company['region'] }}</td>
             </tr>{% endif %}
+        {% if member_company['city'] %}
+            <tr>
+                <td>{{ _('Company city') }}</td>
+                <td>{{ member_company['city'] }}</td>
+            </tr>{% endif %}
         {% if member_company['address'] %}
             <tr>
                 <td>{{ _('Company address') }}</td>
@@ -62,6 +67,11 @@
             <tr>
                 <td>{{ _('Company email') }}</td>
                 <td>{{ member_company['email'] }}</td>
+            </tr>{% endif %}
+        {% if member_company['own_portal']['host'] %}
+            <tr>
+                <td>{{ _('Company page') }}</td>
+                <td>{{ member_company['own_portal']['host'] }}</td>
             </tr>{% endif %}
     </table>
     <br/>
