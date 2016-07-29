@@ -299,11 +299,10 @@ body.no-search .center-content {
     background-color: #fffaff;
     margin-bottom: 5px;
     padding: 0px 5px;
+    overflow-x: hidden;
 }
 
-.member img {
-    max-width: 200px;
-}
+
 
 /*company pages*/
 .company-contact-item {

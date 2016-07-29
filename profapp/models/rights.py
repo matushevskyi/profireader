@@ -9,7 +9,7 @@ from ..models.materials import Material, Publication
 from ..models.users import User
 from .pr_base import PRBase
 import re
-
+import werkzeug
 
 # COMPANY_OWNER = ['edit', 'publish', 'unpublish', 'upload_files', 'delete_files', 'add_employee',
 #                 'suspend_employee', 'submit_publications', 'manage_rights_company', 'manage_portal',
@@ -672,7 +672,7 @@ class UserIsActive(BaseRightsInProfireader):
 
     def is_allowed(self, check_only_banned=None, raise_exception_redirect_if_not = False):
         if not self.user:
-            raise Exception('nouser')
+            raise werkzeug.exceptions.Unauthorized(description=None, response=None)
         return self.user.is_active(check_only_banned, raise_exception_redirect_if_not= raise_exception_redirect_if_not)
 
 
