@@ -170,6 +170,7 @@ def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, c
         return url_for(request.endpoint, **url_args) + (('?search=' + search_text) if search_text else '')
 
     afilter = [{'term': {'status': Publication.STATUSES['PUBLISHED']}},
+               {'range': {"date": {"lt": "now"}}},
                {'term': {'portal_id': portal.id} if pdt == 'index' else {'portal_division_id': dvsn.id}}]
 
     if company_publisher:
