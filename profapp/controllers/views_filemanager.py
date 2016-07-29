@@ -65,8 +65,7 @@ def filemanager():
                     company=company_membership.company_id).action_is_allowed(
                     FilemanagerRights.ACTIONS[
                         'UPLOAD'])
-                print(right)
-                if company_membership.company_id not in filemanager_company_list and right == True:
+                if company_membership.company_id not in filemanager_company_list and right is True:
                     # print(
                     #     company_membership.company)
                     filemanager_company_list[company_membership.company_id] = {
