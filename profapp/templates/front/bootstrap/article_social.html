@@ -3,7 +3,7 @@
 </i></div>
 
 <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12 nw">
-    <div class="{{ classes.disabled }}"><i class="fa fa-commenting-o">
+    <div class="disabled"><i class="fa fa-commenting-o">
         <span>{{ _('Comments') }}</span>
         <comments_count>0</comments_count>
     </i></div>
@@ -14,7 +14,7 @@
             {% if g.user.id %}onclick="switch_something(this, '{{ url_for('front.add_delete_liked', publication_id =
          article['id']) }}', '.fa-thumbs-o-up', '.fa-thumbs-up', {'liked_count': '.liked_count'});"{% else %}title="
          {{ _('You need log in to att to bookmark article') }}"{% endif %}>
-        <i class="fa fa-thumbs-o-up {% if g.user.id %}link{% endif %} {% if liked %}{{ classes.hidden }}{% endif %}">
+        <i class="fa fa-thumbs-o-up {% if g.user.id %}link{% endif %} {% if liked %}dn{% endif %}">
             <span>{{ _('Like') }}</span>
             <liked_count>{{ liked_count }}</liked_count>
         </i>

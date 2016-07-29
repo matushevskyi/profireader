@@ -1,5 +1,5 @@
 {% include 'block_user.html' %}
-<a href="/"><img class="{{ classes.image.portal }}" {{ prImageUrl(portal.logo.url) }} /></a>
+<a href="/"><img class="profireader-logo" {{ prImageUrl(portal.logo.url) }} /></a>
 <ul>
     {% for division_id, di in portal.divisions.items() %}
         {% if di.portal_division_type_id in ['news', 'events', 'catalog'] %}

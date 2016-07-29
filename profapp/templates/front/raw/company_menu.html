@@ -1,4 +1,4 @@
-<div><img class="{{ classes.image.company }}" {{ prImageUrl(member_company['logo']['url']) }} /></div>
+<div><img class="company-logo" {{ prImageUrl(member_company['logo']['url']) }} /></div>
 
 <ul>
     <li {% if company_menu_selected_item == 'about' %}class="{{ classes.menu.selected }}"{% endif %}><a href="{{ url_for('front.company_page',

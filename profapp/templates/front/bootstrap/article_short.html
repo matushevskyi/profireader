@@ -15,7 +15,7 @@
     <h4>{{ article.subtitle }}</h4>
     <div class="short-text-and-illustration pr">
         {% if article['illustration']['selected_by_user']['type'] != 'none' %}
-            <img class="{{ classes.image.illustration }}" {{ prImageUrl(article['illustration']['url']) }}/>{% endif %}
+            <img class="article-illustration" {{ prImageUrl(article['illustration']['url']) }}/>{% endif %}
         <div class="short-text">{{ article.short|safe }}</div>
         <div class="author nw">{{ article.author }}</div>
     </div>
