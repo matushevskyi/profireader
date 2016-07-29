@@ -24,7 +24,7 @@
 
         <div class="short-text-and-illustration pr">
             {% if article['illustration']['selected_by_user']['type'] != 'none' %}
-                <img class="{{ classes.image.illustration }}" {{ prImageUrl(article['illustration']['url']) }}/>{% endif %}
+                <img class="article-illustration" {{ prImageUrl(article['illustration']['url']) }}/>{% endif %}
             <div class="short-text"><h5>{{ article.short|safe }}</h5></div>
         </div>
 

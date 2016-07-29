@@ -15,7 +15,7 @@
                 <a href="{{ pager.url_construct(page=pg) }}">{{ pg }}</a>
             </li>
         {% endfor %}
-        <li class="{{ classes.pager.selected }}">
+        <li class="active">
             <a href="{{ pager.url_construct(page=1) }}" style="background-color: #eee;">{{ pager.current }}</a>
         </li>
         {% for pg in range(pager.current+1, pager.current+pager.neighbours + 1 if pager.current+pager.neighbours < pager.total - 1 else pager.total) %}

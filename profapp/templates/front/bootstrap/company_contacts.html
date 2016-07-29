@@ -5,7 +5,7 @@
         <div class="company-contact-item">
             <table class="tablelist company_employees">
                 <tr>
-                    <td><img class="{{ classes.image.user }}" {{ prImageUrl(employment.user['avatar']['url']) }} /></td>
+                    <td><img class="user-avatar" {{ prImageUrl(employment.user['avatar']['url']) }} /></td>
                     <td>
                         <div>{{ employment.user['full_name'] }}</div>
                         <div>{% if employment['position'] %}{{ employment['position'] }}{% endif %}</div>

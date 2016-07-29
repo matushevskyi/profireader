@@ -2,9 +2,9 @@
 <a role="button" aria-haspopup="true" id="profireader_user_link"
    href="{% if g.user %}//{{ MAIN_DOMAIN }}/user/profile/{{ g.user.id }}{% else %}{{ url_join }}{% endif %}">
     {%- if g.user -%}
-        <img {{ prImageUrl(g.user.avatar.url) }} class="{{ classes.image.user }}"/>
+        <img {{ prImageUrl(g.user.avatar.url) }} class="user-avatar"/>
     {%- else -%}
-        <img  {{ prImageUrl(static_address('images/0.gif')) }} class="{{ classes.image.user }} {{ classes.hidden }}"/>
+        <img  {{ prImageUrl(static_address('images/0.gif')) }} class="user-avatar {{ classes.hidden }}"/>
     {%- endif -%}
     <span>{%- if g.user and g.user.id -%}
         {{ _('Hello %(full_name)s', {'full_name': g.user.full_name} ) }}
@@ -14,7 +14,7 @@
 &nbsp;&nbsp;
 <a id="profireader_link" target="profireader_subscribe"
    href="{% if g.user %}//{{ MAIN_DOMAIN }}/{% else %}{{ url_join }}{% endif %}"><img
-        class="{{ classes.image.profireader }}" src="{{ static_address('favicon.ico') }}"/></a>
+        class="profireader-logo" src="{{ static_address('favicon.ico') }}"/></a>
 <script>
     window.addEventListener("message", function (messageevent) {
         console.log(messageevent);
