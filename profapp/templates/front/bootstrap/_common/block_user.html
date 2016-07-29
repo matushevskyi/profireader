@@ -1,9 +1,9 @@
 {% set p_main_domain = 'https://' + MAIN_DOMAIN %}
 {% set url_join = p_main_domain + '/auth/login_signup/?login_signup=signup&portal_id=' + portal.id %}
 
-<a role="button" style="{% if not g.user %}display: none; {% endif %}" aria-haspopup="true" id="profireader_user_link"
+<a style="{% if not g.user %}display: none; {% endif %}" aria-haspopup="true" id="profireader_user_link"
    href="
-           {% if g.user %}{{ p_main_domain }}/user/profile/{{ g.user.id }}{% else %}{{ url_join }}{% endif %}"><img {{ prImageUrl(g.user.avatar.url if g.user else static_address('images/0.gif')) }}
+           {% if g.user %}{{ p_main_domain }}/users/profile/{{ g.user.id }}{% else %}{{ url_join }}{% endif %}"><img {{ prImageUrl(g.user.avatar.url if g.user else static_address('images/0.gif')) }}
         class="user-avatar"/></a>
 
 <a id="profireader_link" style="{% if g.user %}display: none; {% endif %}" target="profireader_subscribe"
