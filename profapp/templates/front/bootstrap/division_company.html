@@ -1,5 +1,7 @@
 {% extends 'division_articles.html' %}
-{% block top_content %}
-    {{ super() }}
+{% block body_class %}no-search{% endblock %}
+
+{% block center_content %}
     {% include 'company_menu.html' %}
+    {{ super() }}
 {% endblock %}

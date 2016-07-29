@@ -1,28 +1,32 @@
-<div>
-    <div>
-        <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
+<div class="article article-short {% if article['illustration']['selected_by_user']['type'] != 'none' %}with-illustration{% endif %}">
+    <div class="division-and-tags pr">
+        <div class="division nw">
+            <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
+        </div>
+        <div class="tags-at-right nw">
+            {% if article.tags|length %}{% set tag = article.tags[0] %}
+                {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
+            {% endif %}
+        </div>
     </div>
-    <div>{{ article.author }}</div>
-    <div>{% for tag in article.tags %}
-        {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }} {% endfor %}
-    </div>
-    <div>
+    <h3>
         <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article['title']|safe }}</a>
+    </h3>
+    <h4>{{ article.subtitle }}</h4>
+    <div class="short-text-and-illustration pr">
+        {% if article['illustration']['selected_by_user']['type'] != 'none' %}
+            <img class="{{ classes.image.illustration }}" {{ prImageUrl(article['illustration']['url']) }}/>{% endif %}
+        <div class="short-text">{{ article.short|safe }}</div>
+        <div class="author nw">{{ article.author }}</div>
     </div>
-    <div>{{ article.subtitle }}</div>
-    <div>
-        <img class="{{ classes.image.illustration }}" {{ prImageUrl(article['illustration']['url']) }}/>
+    <div class="article-company-and-date pr">
+        <div class="article-company nw">
+            <i class="fa fa-building-o"></i> <a href="{{ url_for('front.company_page', member_company_name = article['company']['name'], member_company_id = article['company']['id']) }}">{{ article['company']['name']|safe }}</a>
+        </div>
+        <div class="article-date nw">
+            {{ frontmacros.date(article.division.portal_division_type_id, article) }}
+        </div>
     </div>
-    <div>{{ article.short|safe }}</div>
 
-    <div>
-        <a href="{{ url_for('front.company_page', member_company_name = article['company']['name'], member_company_id = article['company']['id']) }}">{{ article['company']['name']|safe }}</a>
-    </div>
-    <div>
-        {% if article.division.portal_division_type_id == 'events' %}
-            {{ moment(article.event_begin_tm, 'MM.DD.YYYY') }} - {{ moment(article.event_end_tm, 'MM.DD.YYYY') }}
-        {% else %}
-            {{ moment(article.publishing_tm) }}
-        {% endif %}
-    </div>
+
 </div>

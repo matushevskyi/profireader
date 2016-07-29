@@ -1,39 +1,49 @@
 {% extends 'layout.html' %}
 {% import '_common/macros.html' as frontmacros %}
+{% block body_class %}no-search{% endblock %}
 {% block title %}
     {{ _('%(article_title)s - %(portal_name)s', {'article_title': article.title, 'portal_name': portal.name}) }}{% endblock %}
 
 {% block left_content %}{% endblock %}
 {% block center_content %}
-    <div>
-        <a href="{{ url_for('front.company_page', member_company_id = article['company']['id'], member_company_name = article['company']['name']) }}">{{ article['company']['name']|safe }}</a>
-    </div>
-    <div>
-        {% if article.division.portal_division_type_id == 'events' %}
-            {{ moment(article.event_begin_tm, 'MM.DD.YYYY') }}-
-            {{ moment(article.event_end_tm, 'MM.DD.YYYY') }}
+    <div class="article article-details {% if article['illustration']['selected_by_user']['type'] != 'none' %}article-with-illustration{% endif %}">
+        <div class="article-division-and-tags pr">
+            <div class="article-division nw">
+                <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
+            </div>
+            <div class="tags-at-right nw">
+                {% for tag in article.tags %}
+                    {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
+                {% endfor %}
+            </div>
+        </div>
+        <h3>
+            <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article['title']|safe }}</a>
+        </h3>
+        <h4>{{ article.subtitle }}</h4>
+
+        <div class="short-text-and-illustration pr">
+            {% if article['illustration']['selected_by_user']['type'] != 'none' %}
+                <img class="{{ classes.image.illustration }}" {{ prImageUrl(article['illustration']['url']) }}/>{% endif %}
+            <div class="short-text"><h5>{{ article.short|safe }}</h5></div>
+        </div>
+
+        {% if article_visibility %}
+            <div>{{ article['long'] |safe }}</div>
         {% else %}
-            {{ moment(article.publishing_tm) }}
+            {% include 'article_unavailable.html' %}
         {% endif %}
+        <div class="article-company-and-date pr">
+            <div class="article-company nw">
+                <i class="fa fa-building-o"></i> <a
+                    href="{{ url_for('front.company_page', member_company_name = article['company']['name'], member_company_id = article['company']['id']) }}">{{ article['company']['name']|safe }}</a>
+            </div>
+            <div class="article-date nw">
+                {{ frontmacros.date(article.division.portal_division_type_id, article) }}
+            </div>
+        </div>
+
     </div>
-
-    <div>{{ article['title']|safe }}</div>
-
-    <div>{{ article['subtitle']|safe }}</div>
-    {% if article['illustration']['selected_by_user']['type'] != 'none' %}
-        <div><img class="{{ classes.image.illustration }}" {{ prImageUrl(url = article['illustration']['url']) }}></div>
-    {% endif %}
-
-    {% include 'article_social.html' %}
-    <div>{{ article['short']|safe }}</div>
-
-    <div>{% if article['tags'] %}{% for tag in article.tags %}
-        {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = [], toogle_tag = True) }}
-    {% endfor %}{% endif %}</div>
-
-    {% if article_visibility %}
-        <div>{{ article['long'] |safe }}</div>
-    {% else %}
-        {% include 'article_unavailable.html' %}
-    {% endif %}
+    <br/>
+    <div class="row">{% include 'article_social.html' %}</div>
 {% endblock %}

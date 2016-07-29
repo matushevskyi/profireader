@@ -14,9 +14,9 @@
         {% endif %}
     {% else %}
         {% if tags.selected_names or search_text != '' %}
-            <div>{{ _('There are no articles with current search criteria') }}</div>
+            <h3 class="tac">{{ _('There are no articles with current search criteria') }}</h3>
         {% else %}
-            <div>{{ _('There are no articles in this division') }}</div>
+            <h3 class="tac">{{ _('There are no articles in this division') }}</h3>
         {% endif %}
     {% endfor %}
 
