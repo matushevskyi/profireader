@@ -77,7 +77,7 @@ class Material(Base, PRBase, PRElasticDocument):
         return True
 
     def get_client_side_dict(self,
-                             fields='id,cr_tm,md_tm,company_id,illustration.url,title,subtitle,author,short,keywords,company.id|name',
+                             fields='id,cr_tm,md_tm,company_id,illustration.url,title,subtitle,author,short,long,keywords,company.id|name',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
