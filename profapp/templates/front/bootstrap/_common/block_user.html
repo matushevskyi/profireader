@@ -1,36 +1,37 @@
-{% set url_join = '//' + MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + portal.id %}
-{%- if g.user -%}
-    <a role="button" aria-haspopup="true" id="profireader_user_link"
-       href="{% if g.user %}//{{ MAIN_DOMAIN }}/user/profile/{{ g.user.id }}{% else %}{{ url_join }}{% endif %}"><img {{ prImageUrl(g.user.avatar.url) }}
-            class="user-avatar"/></a>
-{%- else -%}
-    <a id="profireader_link" target="profireader_subscribe"
-       href="{% if g.user %}//{{ MAIN_DOMAIN }}/{% else %}{{ url_join }}{% endif %}"><img
-            class="profireader-logo" src="{{ static_address('favicon.ico') }}"/></a>
-{%- endif -%}
+{% set p_main_domain = 'https://' + MAIN_DOMAIN %}
+{% set url_join = p_main_domain + '/auth/login_signup/?login_signup=signup&portal_id=' + portal.id %}
 
+<a role="button" style="{% if not g.user %}display: none; {% endif %}" aria-haspopup="true" id="profireader_user_link"
+   href="
+           {% if g.user %}{{ p_main_domain }}/user/profile/{{ g.user.id }}{% else %}{{ url_join }}{% endif %}"><img {{ prImageUrl(g.user.avatar.url if g.user else static_address('images/0.gif')) }}
+        class="user-avatar"/></a>
+
+<a id="profireader_link" style="{% if g.user %}display: none; {% endif %}" target="profireader_subscribe"
+   href="{% if g.user %}{{ p_main_domain }}/{% else %}{{ url_join }}{% endif %}"><img
+        class="profireader-logo" src="{{ static_address('favicon.ico') }}"/></a>
 
 <script>
     window.addEventListener("message", function (messageevent) {
         console.log(messageevent);
         if (messageevent.data && messageevent.data.profireader_session_id) {
             $.cookie('beaker.session.id', messageevent.data.profireader_session_id, {path: '/'});
-
-            {#            window.location.reload();#}
         }
+
         if (messageevent.data && messageevent.data.user {% if g.user and g.user.id %}
                     && messageevent.data.user.id !== '{{ g.user.id }}'{% endif %}) {
-            $('#profireader_user_link').attr('href', '//{{ MAIN_DOMAIN }}/user/profile/' + messageevent.data.user.id);
+            $('#profireader_user_link').attr('href', '{{ p_main_domain }}/users/profile/' + messageevent.data.user.id);
             $('#profireader_user_link span').html(messageevent.data.welcome);
-            $('#profireader_user_link img').css('background-image', 'url(' + messageevent.data.user.avatar.url + ')').show();
-            $('#profireader_link').attr('href', '//{{ MAIN_DOMAIN }}');
+            $('#profireader_user_link img').css('background-image', 'url(' + messageevent.data.user.avatar.url + ')');
+            $('#profireader_user_link').show();
+            $('#profireader_link').attr('href', '{{ p_main_domain }}').hide();
         }
         else if (messageevent.data && !messageevent.data.user) {
             $('#profireader_user_link').attr('href', '//{{ url_join }}/');
             $('#profireader_user_link span').html(messageevent.data.welcome);
-            $('#profireader_user_link img').css('background-image', 'none').hide();
-            $('#profireader_link').attr('href', '{{ url_join }}');
+            $('#profireader_user_link img').css('background-image', 'none');
+            $('#profireader_user_link').hide();
+            $('#profireader_link').attr('href', '{{ url_join }}').show();
         }
     }, false);
-    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: hidden; left: -1px; top: -1px;" src="//{{ MAIN_DOMAIN }}/tools/SSO/' + $.cookie('beaker.session.id') + '/"></iframe>');
+    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: hidden; left: -1px; top: -1px;" src="{{ p_main_domain }}/tools/SSO/' + $.cookie('beaker.session.id') + '/"></iframe>');
 </script>
