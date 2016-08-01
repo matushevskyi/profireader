@@ -112,7 +112,8 @@ class Material(Base, PRBase, PRElasticDocument):
              #                                       division=publication.division, company=material.company)
              #         .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]
              #      } if publication.status != 'SUBMITTED' and publication.status != "DELETED" else {}
-             }
+             },
+            material.get_client_side_dict(fields='title')
         )
                 for publication in material.publications]
         return dict, list
