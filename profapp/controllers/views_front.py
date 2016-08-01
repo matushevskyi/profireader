@@ -308,7 +308,7 @@ def article_details(portal, publication_id, publication_title):
     if article_visibility is True:
         publication.add_recently_read_articles_to_session()
     else:
-        back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
+        back_to_url('front.article_details', host=portal.host, publication_id=publication_id, publication_title=publication_title)
 
     def url_toggle_tag(toggle_tag):
         return url_for('front.division', tags=toggle_tag)
