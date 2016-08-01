@@ -1,17 +1,21 @@
-<nav class="navbar navbar-default navbar-static-top">
-    <div class="container">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
+
+<nav id="topmenu" class="navbar navbar-default navbar-static-top">
+    <div class="container plr0">
+        <div class="navbar-header pull-left" style="margin-left: 0px; margin-right: 0px; ">
+            <a href="/" style="margin-right: 1em"><img
+                    class="portal-logo" {{ prImageUrl(portal.logo.url, position = 'left') }} /></a>
+        </div>
+        <div class="navbar-header pull-right" style="margin-left: 0px; margin-right: 0px;">
+            <div style="float: right; margin-left: 1em">{% include 'block_user.html' %}</div>
+            <button type="button" class="navbar-toggle collapsed mlr05" data-toggle="collapse" data-target="#navbar"
                     aria-expanded="false" aria-controls="navbar">
                 <span class="sr-only">Toggle navigation</span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#"><a href="/"><img
-                    class="portal-logo" {{ prImageUrl(portal.logo.url) }} /></a></a>
         </div>
-        <div id="navbar" class="navbar-collapse collapse">
+        <div id="navbar" class="navbar-collapse collapse pull-right">
             <ul class="nav navbar-nav">
                 {% for division_id, di in portal.divisions.items() %}
                     {% if di.portal_division_type_id in ['news', 'events', 'catalog'] %}
@@ -28,9 +32,6 @@
                     {% endif %}
                 {% endfor %}
             </ul>
-
-            {% include 'block_user.html' %}
-
-        </div><!--/.nav-collapse -->
+        </div>
     </div>
 </nav>

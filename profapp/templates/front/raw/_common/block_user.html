@@ -1,5 +1,6 @@
 {% set url_join = '//' + MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + portal.id %}
 <a role="button" aria-haspopup="true" id="profireader_user_link"
+   {{ g.user }}
    href="{% if g.user %}//{{ MAIN_DOMAIN }}/user/profile/{{ g.user.id }}{% else %}{{ url_join }}{% endif %}">
     {%- if g.user -%}
         <img {{ prImageUrl(g.user.avatar.url) }} class="user-avatar"/>

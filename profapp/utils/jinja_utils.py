@@ -56,7 +56,8 @@ def raw_url_for(endpoint):
 
     rules_simplified = [re.compile('<[^:]*:').sub('<', rule.rule) for rule in rules]
 
-    return "function (dict, host) { return find_and_build_url_for_endpoint(dict, %s, host); }" % (json.dumps(rules_simplified))
+    return "function (dict, host) { return find_and_build_url_for_endpoint(dict, %s, host); }" % (
+        json.dumps(rules_simplified))
     # \
     #        " { var ret = '" + ret + "'; " \
     #                                                " for (prop in dict) ret = ret.replace('<'+prop+'>',dict[prop]); return ret; }"
@@ -80,17 +81,18 @@ def translates(template):
     return json.dumps(ret)
 
 
-def prImageUrl(url):
+def prImageUrl(url, position='center'):
     from . import static_address
     return Markup(' src="' + static_address('images/0.gif') +
-                  '" style="background-position: center; background-size: contain; background-repeat: no-repeat; '
-                  'background-image: url(\'%s\')" ' % (url,))
+                  '" style="background-position: ' + position + '; background-size: contain; background-repeat: no-repeat; '
+                                                                'background-image: url(\'%s\')" ' % (url,))
+
 
 # TODO: OZ by OZ: remove this function
-def prImage(id=None, if_no_image=None):
+def prImage(id=None, if_no_image=None, position='center'):
     from . import static_address
     noimage_url = if_no_image if if_no_image else static_address('images/no_image.png')
-    return prImageUrl((utils.fileUrl(id, False, noimage_url)) if id else noimage_url)
+    return prImageUrl((utils.fileUrl(id, False, noimage_url)) if id else noimage_url, position=position)
 
 
 def config_variables():
@@ -124,6 +126,7 @@ def translate_phrase(context, phrase, dictionary=None):
 @jinja2.contextfunction
 def translate_html(context, phrase, dictionary=None):
     return Markup(translate_phrase_or_html(context, phrase, dictionary, '*'))
+
 
 def static_address_html(relative_file_name):
     return Markup(utils.static_address(relative_file_name))
@@ -172,7 +175,6 @@ def raise_helper(msg):
 
 
 def update_jinja_engine(app):
-
     app.jinja_env.globals.update(raw_url_for=raw_url_for)
     app.jinja_env.globals.update(pre=pre)
     app.jinja_env.globals.update(utils=utils)
@@ -190,6 +192,7 @@ def update_jinja_engine(app):
     app.jinja_env.globals['raise'] = raise_helper
     app.jinja_env.globals.update(tinymce_format_groups=HtmlHelper.tinymce_format_groups)
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
+    # TODO: remove next line (used only in `raw` front layout)
     app.jinja_env.globals['classes'] = {}
     # app.jinja_env.globals['article_unavaible'] = {'message': 'lala', 'url': '//'}
     app.jinja_env.filters['nl2br'] = nl2br

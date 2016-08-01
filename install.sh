@@ -317,7 +317,7 @@ ALTER USER $psqluser WITH PASSWORD '$psqlpass';" compare_local_makarony
 
 makaronyaddress='m.ntaxa.com/profireader/54322'
 localaddress='localhost/profireader/5432'
-kupytyaddress='kupyty.com/profireader/54143'
+kupytyaddress='a.ntaxa.com/profireader/54143'
 artekaddress='a.ntaxa.com/profireader/54141'
 
 function menu_bower_components_dev {
