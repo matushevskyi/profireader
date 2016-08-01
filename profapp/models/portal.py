@@ -221,11 +221,11 @@ class Portal(Base, PRBase):
         if db(Portal, company_owner_id=self.own_company.id).filter(Portal.id != self.id).count():
             ret['errors']['form'] = 'portal for company already exists'
         if not re.match('[^\s]{2,}', self.name):
-            ret['errors']['name'] = 'pls enter a bit longer name'
+            ret['errors']['name'] = 'Please enter at least 2 symbols'
         if not re.match(
                 '^(([a-z]|[a-z][a-z0-9\-]*[a-z0-9])\.)+([a-z]|[a-z][a-z0-9\-]*[a-z0-9]{1,})$',
                 self.host):
-            ret['errors']['host'] = 'pls enter valid host name'
+            ret['errors']['host'] = 'Please enter valid host name(lower case)'
         if not 'host' in ret['errors'] and db(Portal, host=self.host).filter(Portal.id != self.id).count():
             ret['errors']['host'] = 'host already taken by another portal'
 
