@@ -13,7 +13,7 @@
             </div>
             <div class="tags-at-right nw">
                 {% for tag in article.tags %}
-                    {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
+                    {{ frontmacros.tag(tag, tags) }}
                 {% endfor %}
             </div>
         </div>
@@ -21,6 +21,7 @@
             <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article['title']|safe }}</a>
         </h3>
         <h4>{{ article.subtitle }}</h4>
+        <div class="article-author">{{ article.author }}</div>
 
         <div class="short-text-and-illustration pr">
             {% if article['illustration']['selected_by_user']['type'] != 'none' %}
