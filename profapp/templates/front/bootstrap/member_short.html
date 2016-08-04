@@ -6,7 +6,7 @@
         {% endfor %}
     </div>
     <h3>
-        <a href="{{ url_for('front.company_page', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}">{{ member['company']['name'] }}</a>
+        <a href="{{ url_for('front.company_page', member_company_id = member['company']['id'], member_company_name = member['company']['name']) }}">{{ member['company']['name']|safe }}</a>
     </h3>
     <table class="t200logo">
         <tr>
@@ -24,11 +24,4 @@
             </td>
         </tr>
     </table>
-    <div class="pr">
-
-    </div>
-    <div class="member-address pr">
-
-
-    </div>
 </div>

@@ -86,12 +86,11 @@ def elastic_article_to_orm_article(item):
 
 
 def elastic_company_to_orm_company(item):
-    print(item)
     member = MemberCompanyPortal.get(item['id'])
     ret = member.get_client_side_dict(fields="id|company|tags")
 
     if '_highlight' in item:
-        for k, modef_field in {'title': 'title', 'subtitle': 'about', 'short': 'short_description'}.items():
+        for k, modef_field in {'title': 'name', 'subtitle': 'about', 'short': 'short_description'}.items():
             if k in item['_highlight']:
                 ret['company'][modef_field] = '...'.join(item['_highlight'][k])
     return ret
@@ -254,8 +253,7 @@ def get_articles_tags_pages_search(portal, dvsn, page, tags, search_text, compan
     if company_publisher:
         afilter.append({'term': {'company_id': company_publisher.id}})
 
-    all_tags = (portal.get_client_side_dict(fields='tags') if pdt == 'index' else dvsn.get_client_side_dict(
-        fields='tags'))['tags']
+    all_tags = portal.get_client_side_dict(fields='tags')['tags']
 
     elastic_filter, selected_tag_names = get_tag_elastic_filter(all_tags, tags)
 

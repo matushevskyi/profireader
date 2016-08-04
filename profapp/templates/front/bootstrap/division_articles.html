@@ -13,7 +13,7 @@
             </div>
         {% endif %}
     {% else %}
-        {% if tags.selected_names or search_text != '' %}
+        {% if tags.selected_names or search_text %}
             <h3 class="tac">{{ _('There are no articles with current search criteria') }}</h3>
         {% else %}
             <h3 class="tac">{{ _('There are no articles in this division') }}</h3>
