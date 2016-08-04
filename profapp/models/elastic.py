@@ -7,6 +7,7 @@ import inspect
 from sqlalchemy import event
 from flask import g
 
+
 # engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
 # db_session = scoped_session(sessionmaker(autocommit=False,
 #                                          autoflush=False,
@@ -24,7 +25,6 @@ class PRElasticConnection:
         self.host = host
 
     def path(self, *args, params=None):
-        print(1)
         return (self.host + '/' + '/'.join(args)) + '?' + \
                ('&'.join(["%s=%s" % (k, v) for k, v in params.items()]) if params else '')
 
@@ -90,12 +90,76 @@ class PRElasticConnection:
     def remove_index(self, index_name):
         return self.rq(path=self.path(index_name), method='DELETE')
 
-    def search(self, index_name, document_type, sort=["_score"], filter=[], must=[], should=[], page=1,
+    def search(self, index_name, document_type, sort=["_score"], afilter=[],
+               must=None,
+               highlight=None,
+               text=None,
+               fields={},
+               should=[], page=1,
                items_per_page=10):
 
-        req = {
-            "sort": sort,
-            "query": {"bool": {"filter": filter, "must": must, "should": should}}}
+        def get_param(params, param_name):
+            par_and_def = {
+                'boost': 1,
+                'number_of_fragments': 0
+            }
+            if isinstance(params, int):
+                params = {'boost': params}
+
+            return params.get(param_name, par_and_def[param_name])
+
+        messages = {}
+
+        if not text or text == '':
+            text = None
+
+        if text is not None:
+            import re
+            words = re.compile("\s+").split(text)
+            remove = re.compile('[^\w]+')
+            words = [remove.sub('', w) for w in words]
+            longwords = {}
+            shortwords = {}
+            for w in words:
+                (shortwords if len(w) < 3 else longwords)[w] = w
+            text = ' AND '.join(['*' + w + '*' for w in longwords])
+
+        if len(shortwords) > 0:
+            messages["words %(words)s was excluded as too short (minimum 3 characters required)"] = \
+                {'words': '`' + '`, `'.join(
+                    ['<span class="search_highlighted">' + w + '</span>' for w in shortwords]) + '`'}
+
+        if not text or text == '':
+            text = None
+
+        if must is None and fields is not None and text is not None:
+            must = [{"query_string": {'query': text,
+
+                                      'fields': [f + '^' + str(get_param(pm, 'boost')) for f, pm in fields.items()]}}]
+            # must = [{"multi_match": {'query': text,
+            #                          "operator": "and",
+            #                          'fields': [f + '^' + str(get_param(pm, 'boost')) for f, pm in fields.items()]}}]
+
+        if highlight is None and fields is not None and text is not None:
+            highlight = {
+                "pre_tags": ['<span class="search_highlighted">'],
+                "post_tags": ["</span>"],
+                'fields': {f: {'number_of_fragments': get_param(pm, 'number_of_fragments')} for f, pm in fields.items()}
+            }
+
+        req = {}
+        if sort:
+            req['sort'] = sort
+        if highlight:
+            req['highlight'] = highlight
+        if afilter or must or should:
+            req['query'] = {'bool': {}}
+            if afilter:
+                req['query']['bool']['filter'] = afilter
+            if must:
+                req['query']['bool']['must'] = must
+            if should:
+                req['query']['bool']['should'] = should
 
         count = self.rq(path=self.path(index_name, document_type, '_count'),
                         req=req, method='GET')['count']
@@ -104,16 +168,19 @@ class PRElasticConnection:
 
         p = utils.putInRange(page, 1, pages)
         p = 1 if p == 0 else p
-        print(page, p, pages)
         items = utils.putInRange(items_per_page, 1, 100)
 
         res = self.rq(
             path=self.path(index_name, document_type, '_search', params={'size': items,
                                                                          'from': (p - 1) * items}),
             req=req, method='GET')
-        found = [h['_source'] for h in res['hits']['hits']]
 
-        return (found, pages, p)
+        found = [utils.dict_merge(h['_source'],
+                                  {'_index': h['_index'], '_highlight': h.get('highlight', {}), '_type': h['_type'],
+                                   '_id': h['_id']})
+                 for h in res['hits']['hits']]
+
+        return (found, pages, p, messages)
 
 
 elasticsearch = PRElasticConnection('http://elastic.profi:9200')
@@ -142,7 +209,18 @@ class PRElasticDocument:
                 self.elastic_cached_index_doctype[index_name] = {}
                 return True
 
-            ret = elasticsearch.rq(path=elasticsearch.path(index_name), req={"settings": {}}, method='PUT')
+            ret = elasticsearch.rq(path=elasticsearch.path(index_name), req={"settings": {
+
+                "analysis": {
+                    "filter": {
+                        "mynGram": {
+                            "type": "nGram",
+                            "min_gram": 2,
+                            "max_gram": 50
+                        }
+                    }
+                }
+            }}, method='PUT')
             if ret:
                 print('created index:', index_name)
                 self.elastic_cached_index_doctype[index_name] = {}
@@ -225,43 +303,42 @@ class PRElasticDocument:
         event.listen(cls, "after_delete", cls.event_delete_elastic)
 
 
-    # @staticmethod
-    # def after_update_elastic(mapper, connection, target):
-    #     a = target.__class__.get(target.id)
-    #     print(a)
-    #
-    # @staticmethod
-    # def after_delete_elastic(mapper, connection, target):
-    #     a = target.__class__.get(target.id)
-    #     print(a)
+        # @staticmethod
+        # def after_update_elastic(mapper, connection, target):
+        #     a = target.__class__.get(target.id)
+        #     print(a)
+        #
+        # @staticmethod
+        # def after_delete_elastic(mapper, connection, target):
+        #     a = target.__class__.get(target.id)
+        #     print(a)
 
 
-    # @staticmethod
-    # def after_insert_elastic(session = None, target=None):
-    #     target.elastic_insert()
-    #
-    # @staticmethod
-    # def after_update_elastic(mapper=None, connection=None, target=None):
-    #     target.elastic_update()
-    #
-    # @staticmethod
-    # def after_delete_elastic(mapper=None, connection=None, target=None):
-    #     target.elastic_delete()
-    #
-    # @classmethod
-    # def __declare_last__(cls):
-    #     event.listen(cls, 'after_insert', cls.after_insert_elastic)
-    # #     event.listen(cls, 'after_update', cls.after_update_elastic)
-    # #     event.listen(cls, 'after_delete', cls.after_delete_elastic)
+        # @staticmethod
+        # def after_insert_elastic(session = None, target=None):
+        #     target.elastic_insert()
+        #
+        # @staticmethod
+        # def after_update_elastic(mapper=None, connection=None, target=None):
+        #     target.elastic_update()
+        #
+        # @staticmethod
+        # def after_delete_elastic(mapper=None, connection=None, target=None):
+        #     target.elastic_delete()
+        #
+        # @classmethod
+        # def __declare_last__(cls):
+        #     event.listen(cls, 'after_insert', cls.after_insert_elastic)
+        # #     event.listen(cls, 'after_update', cls.after_update_elastic)
+        # #     event.listen(cls, 'after_delete', cls.after_delete_elastic)
 
-    # @classmethod
-    # def __declare_last__(cls):
-    #     # event.listen(g.db, "pending_to_persistent", PRElasticDocument.after_insert_elastic)
-    #     pass
+        # @classmethod
+        # def __declare_last__(cls):
+        #     # event.listen(g.db, "pending_to_persistent", PRElasticDocument.after_insert_elastic)
+        #     pass
         # event.listen(cls, 'pending_to_persistent', cls.after_insert_elastic)
         # event.listen(cls, 'after_update', cls.after_update_elastic)
         # event.listen(cls, 'after_delete', cls.after_delete_elastic)
-
 
 
 # from sqlalchemy.orm import sessionmaker

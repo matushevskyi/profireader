@@ -5,19 +5,19 @@
         </div>
         <div class="tags-at-right nw">
             {% if article.tags|length %}{% set tag = article.tags[0] %}
-                {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
+                {{ frontmacros.tag(tag, tags) }}
             {% endif %}
         </div>
     </div>
     <h3>
         <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article['title']|safe }}</a>
     </h3>
-    <h4>{{ article.subtitle }}</h4>
+    <h4>{{ article.subtitle|safe }}</h4>
     <div class="short-text-and-illustration pr">
         {% if article['illustration']['selected_by_user']['type'] != 'none' %}
             <img class="article-illustration" {{ prImageUrl(article['illustration']['url']) }}/>{% endif %}
         <div class="short-text">{{ article.short|safe }}</div>
-        <div class="author nw">{{ article.author }}</div>
+        <div class="article-author">{{ article.author|safe }}</div>
     </div>
     <div class="article-company-and-date pr">
         <div class="article-company nw">

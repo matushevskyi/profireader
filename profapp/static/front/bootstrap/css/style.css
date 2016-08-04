@@ -21,6 +21,10 @@ body {
     overflow: hidden;
 }
 
+.fr {
+    float: right;
+}
+
 .h1, .h2, .h3, .h4, h1, h2, h3, h4 {
     margin-bottom: 5px;
     margin-top: 5px;
@@ -45,7 +49,6 @@ body {
     width: 100%;
     height: 8em;
 }
-
 
 /*tables*/
 table.t200logo {
@@ -88,16 +91,15 @@ table.tablelist tr td {
     vertical-align: top;
 }
 
-
 /*images*/
 .portal-logo {
-    height: 50px;
-    width: 150px;
+    height: 100px;
+    width: 200px;
 }
 
 .profireader-logo {
-    width: 50px;
-    height: 50px;
+    width: 34px;
+    height: 34px;
 }
 
 .user-avatar {
@@ -270,12 +272,9 @@ body.no-search .center-content {
 }
 
 .article-author {
-    position: absolute;
-    right: 0px;
-    bottom: 0px;
     padding: 0px 5px;
     text-align: right;
-    background-color: lightblue;
+    font-style: italic;
 }
 
 @media only screen and (max-width: 600px) {
@@ -302,8 +301,6 @@ body.no-search .center-content {
     overflow-x: hidden;
 }
 
-
-
 /*company pages*/
 .company-contact-item {
     width: 300px;
@@ -311,18 +308,47 @@ body.no-search .center-content {
 }
 
 /*search*/
-.search-form {
-    padding: 5px;
-    border: solid #EEEEAA thin;
-}
 
 .search-form input {
-    width: 100%;
+
     display: inline;
+    width: auto;
 }
 
 .search-form button {
-    margin-top: 5px;
-    float: right;
+    display: inline;
+    vertical-align: baseline;
+    margin-right: 15px;
 }
 
+span.search_highlighted {
+    color: #dd0000;
+}
+
+/*menu */
+#topmenu #topmenu_button_sandwich {
+    margin-top: 0px;
+}
+
+#navbar {
+    margin-left: 200px;
+}
+
+#home-url {
+    height: 50px;
+    width: 200px;
+    overflow: visible;
+}
+
+@media only screen and (max-width: 767px) {
+    #home-url {
+        width: 150px;
+    }
+
+    .portal-logo {
+        height: 50px;
+        width: 150px;
+    }
+
+
+}

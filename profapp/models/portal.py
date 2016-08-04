@@ -375,6 +375,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         PUBLICATION_UNPUBLISH = 2
 
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    cr_tm = Column(TABLE_TYPES['timestamp'])
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
     rights = Column(TABLE_TYPES['binary_rights'](RIGHT_AT_PORTAL),
@@ -403,24 +404,50 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def elastic_get_fields(self):
         return {
             'id': PRElasticField(analyzed=False, setter=lambda: self.id),
-            'tags': PRElasticField(analyzed=False, setter=lambda: ' '.join([t.text for t in self.tags]), boost=5),
+
+            'tags': PRElasticField(setter=lambda: ' '.join([t.text for t in self.tags])),
             'tag_ids': PRElasticField(analyzed=False, setter=lambda: [t.id for t in self.tags]),
+
             'status': PRElasticField(setter=lambda: self.status, analyzed=False),
-            'company_name': PRElasticField(setter=lambda: self.company.name, boost=100),
-            'company_about': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=10),
-            'company_short_description': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description),
-                                                        boost=10),
-            'company_city': PRElasticField(setter=lambda: self.company.city, boost=2),
-            'company_id': PRElasticField(setter=lambda: self.company.id, analyzed=False),
-            'portal': PRElasticField(setter=lambda: self.portal.name),
-            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id)
+
+            'company_id': PRElasticField(analyzed=False, setter=lambda: self.company.id),
+            'company_name': PRElasticField(setter=lambda: self.company.name),
+
+            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id),
+            'portal_name': PRElasticField(setter=lambda: self.portal.name),
+
+            'division_id': PRElasticField(analyzed=False, setter=lambda: db(PortalDivision, portal_id=self.portal.id,
+                                                                            portal_division_type_id='catalog').one().id),
+            'division_type': PRElasticField(analyzed=False, setter=lambda: 'catalog'),
+            'division_name': PRElasticField(setter=lambda: self.portal.name),
+
+            'date': PRElasticField(ftype='date', setter=lambda: int(self.cr_tm.timestamp() * 1000)),
+
+            'title': PRElasticField(setter=lambda: self.company.name, boost=10),
+            'subtitle': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=5),
+            'keywords': PRElasticField(setter=lambda: '', boost=5),
+            'short': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description), boost=2),
+
+            'long': PRElasticField(setter=lambda: ''),
+
+            'author': PRElasticField(setter=lambda: ''),
+            'address': PRElasticField(setter=lambda: ''),
+
+            'custom_data': PRElasticField(analyzed=False, setter=lambda: simplejson.dumps({}))
+
+            # 'company_name': PRElasticField(setter=lambda: self.company.name, boost=100),
+            # 'company_about': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=10),
+            # 'company_short_description': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description),
+            #                                             boost=10),
+            # 'company_city': PRElasticField(setter=lambda: self.company.city, boost=2),
+
         }
 
     def elastic_get_index(self):
-        return 'company_membership'
+        return 'front'
 
     def elastic_get_doctype(self):
-        return 'company_membership'
+        return 'company'
 
     def elastic_get_id(self):
         return self.id

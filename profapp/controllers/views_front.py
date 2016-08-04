@@ -74,8 +74,15 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
     return member_company, di
 
 
-def publication_id_to_article(p_id):
-    return Publication.get(p_id).create_article()
+def elastic_article_to_orm_article(item):
+    ret = Publication.get(item['id']).create_article()
+    if '_highlight' in item:
+        for k in ['short', 'title', 'subtitle', 'keywords', 'author']:
+            if k in item['_highlight']:
+                ret[k] = '...'.join(item['_highlight'][k])
+        if 'short' not in item['_highlight'] and 'long' in item['_highlight']:
+            ret['short'] = '...' + '...'.join(item['_highlight']['long']) + '...'
+    return ret
 
 
 def get_tag_elastic_filter(all_tags, tags_selected_by_user):
@@ -110,7 +117,65 @@ def get_urls_change_tag_page(url_tags, search_text, selected_tag_names):
     return url_toggle_tag, url_page_division
 
 
-def get_members_tags_pages_search_text(portal, dvsn, page, tags, search_text, company_publisher=None):
+def get_search_tags_pages_search(portal, page, tags, search_text):
+    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
+                                                  division_name='', default=10)
+
+    def url_tags(tag_names):
+        url_args = {}
+
+        if len(tag_names) > 0:
+            url_args['tags'] = '+'.join(tag_names)
+
+        return url_for(request.endpoint, **url_args) + (('?search=' + search_text) if search_text else '')
+
+    afilter = [{'or': [{'term': {'status': 'ACTIVE'}}, {'term': {'status': 'PUBLISHED'}}]},
+               {'term': {'portal_id': portal.id}}]
+
+    all_tags = portal.get_client_side_dict(fields='tags')['tags']
+
+    elastic_filter, selected_tag_names = get_tag_elastic_filter(all_tags, tags)
+
+    if elastic_filter is None:
+        return dict(redirect=redirect(url_tags(selected_tag_names)))
+
+    afilter += elastic_filter
+
+    search_items, pages, page, messages = elasticsearch.search('front', 'company,article',
+                                                     sort=[{"id": "desc"}], afilter=afilter, page=page,
+                                                     items_per_page=items_per_page,
+                                                     fields={'title': 100, 'subtitle': 50, 'keywords': 10, 'short': 10,
+                                                             'author': 50, 'long': {'number_of_fragments': 5}},
+                                                     text=search_text)
+
+    def convertelastic_to_model(item):
+        if item['_type'] == 'company':
+            member = MemberCompanyPortal.get(item['id'])
+            ret = member.get_client_side_dict(fields="id|company|tags")
+        if item['_type'] == 'article':
+            ret = elastic_article_to_orm_article(item)
+        ret['_type'] = item['_type']
+        return ret
+
+    def url_tags(tag_names):
+        url_args = {}
+
+        if len(tag_names) > 0:
+            url_args['tags'] = '+'.join(tag_names)
+
+        return url_for(request.endpoint, **url_args) + (('?search=' + search_text) if search_text else '')
+
+    url_toggle_tag, url_page_division = get_urls_change_tag_page(url_tags, search_text, selected_tag_names)
+
+    return dict(search_results=[convertelastic_to_model(i) for i in search_items],
+                tags={'all': all_tags, 'selected_names': selected_tag_names, 'url_toggle_tag': url_toggle_tag},
+                pager={'total': pages, 'current': page,
+                       'url_construct': url_page_division,
+                       'neighbours': Config.PAGINATION_BUTTONS},
+                search={'text': search_text, 'url': '', 'messages': messages})
+
+
+def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company_publisher=None):
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
                                                   division_name=dvsn.name, default=10)
 
@@ -133,27 +198,26 @@ def get_members_tags_pages_search_text(portal, dvsn, page, tags, search_text, co
 
     afilter += elastic_filter
 
-    company_members, pages, page = elasticsearch.search('company_membership', 'company_membership',
-                                                        sort=[{"id": "desc"}], filter=afilter, page=page,
+    company_members, pages, page, messages = elasticsearch.search('front', 'company',
+                                                        sort=[{"id": "desc"}], afilter=afilter, page=page,
                                                         items_per_page=items_per_page,
-                                                        must=[{"multi_match": {'query': search_text,
-                                                                               'fields': ["company_name^100",
-                                                                                          'company_short_description^50',
-                                                                                          'company_city^2']}}]
-                                                        if search_text else [])
+                                                        fields={'title': 100, 'subtitle': 50, 'keywords': 10,
+                                                                'short': 10,
+                                                                'author': 50, 'long': {'number_of_fragments': 5}},
+                                                        text=search_text)
 
     url_toggle_tag, url_page_division = get_urls_change_tag_page(url_tags, search_text, selected_tag_names)
 
     return dict(members=OrderedDict((member.id, member.get_client_side_dict(fields="id|company|tags"))
                                     for member in [MemberCompanyPortal.get(m['id']) for m in company_members]),
                 tags={'all': all_tags, 'selected_names': selected_tag_names,
-                      'url_construct_toggle': url_toggle_tag},
+                      'url_toggle_tag': url_toggle_tag},
                 pager={'total': pages, 'current': page, 'neighbours': Config.PAGINATION_BUTTONS,
                        'url_construct': url_page_division},
-                search_text=search_text)
+                search={'text': search_text, 'url': url_for('front.search')})
 
 
-def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, company_publisher=None):
+def get_articles_tags_pages_search(portal, dvsn, page, tags, search_text, company_publisher=None):
     items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
                                                   division_name=dvsn.name, default=10)
 
@@ -171,10 +235,10 @@ def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, c
 
     afilter = [{'term': {'status': Publication.STATUSES['PUBLISHED']}},
                {'range': {"date": {"lt": "now"}}},
-               {'term': {'portal_id': portal.id} if pdt == 'index' else {'portal_division_id': dvsn.id}}]
+               {'term': {'portal_id': portal.id} if pdt == 'index' else {'division_id': dvsn.id}}]
 
     if company_publisher:
-        afilter.append({'term': {'publisher_company_id': company_publisher.id}})
+        afilter.append({'term': {'company_id': company_publisher.id}})
 
     all_tags = (portal.get_client_side_dict(fields='tags') if pdt == 'index' else dvsn.get_client_side_dict(
         fields='tags'))['tags']
@@ -186,23 +250,20 @@ def get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text, c
 
     afilter += elastic_filter
 
-    publications, pages, page = elasticsearch.search('publications', 'publications',
-                                                     sort=[{"date": "desc"}], filter=afilter, page=page,
+    publications, pages, page, messages = elasticsearch.search('front', 'article',
+                                                     sort=[{"date": "desc"}], afilter=afilter, page=page,
                                                      items_per_page=items_per_page,
-                                                     must=[{"multi_match": {'query': search_text,
-                                                                            'fields': ["title^100", 'subtitle^50',
-                                                                                       'short^10',
-                                                                                       "long^1",
-                                                                                       'author^50',
-                                                                                       'keywords^10']}}] if search_text else [])
+                                                     fields={'title': 100, 'subtitle': 50, 'keywords': 10, 'short': 10,
+                                                             'author': 50, 'long': {'number_of_fragments': 5}},
+                                                     text=search_text)
 
     url_toggle_tag, url_page_division = get_urls_change_tag_page(url_tags, search_text, selected_tag_names)
 
-    return dict(articles=OrderedDict((p['id'], publication_id_to_article(p['id'])) for p in publications),
-                tags={'all': all_tags, 'selected_names': selected_tag_names, 'url_construct_toggle': url_toggle_tag},
+    return dict(articles=OrderedDict((p['id'], elastic_article_to_orm_article(p)) for p in publications),
+                tags={'all': all_tags, 'selected_names': selected_tag_names, 'url_toggle_tag': url_toggle_tag},
                 pager={'total': pages, 'current': page, 'neighbours': Config.PAGINATION_BUTTONS,
                        'url_construct': url_page_division},
-                search_text=search_text)
+                search={'text': search_text, 'url': url_for('front.search')})
 
 
 subportal_prefix = '_c/<string:member_company_id>/<string:member_company_name>/'
@@ -239,18 +300,19 @@ def company_page(portal, member_company_id, member_company_name, member_company_
 @front_bp.route(subportal_prefix + '_d/<string:division_name>/', methods=['GET'])
 @front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/', methods=['GET'])
 @front_bp.route(subportal_prefix + '_d/<string:division_name>/tags/<string:tags>/', methods=['GET'])
-@front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/', methods=['GET'])
 @front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'])
 @check_right(AllowAll)
 @get_portal
 def division(portal, division_name=None, page=1, tags=None, member_company_id=None, member_company_name=None):
+    # this function was created to work with search in division also. I just commented this feature in case we will want back it
+    # functions get_members_tags_pages_search and get_articles_tags_pages_search still works (should work) with search text but we pass there None
     if member_company_id is None:
 
         search_text, dvsn = get_search_text_and_division(portal, division_name)
 
         if dvsn.portal_division_type_id in ['index', 'news', 'events']:
 
-            articles_data = get_articles_tags_pages_search_text(portal, dvsn, page, tags, search_text)
+            articles_data = get_articles_tags_pages_search(portal, dvsn, page, tags, None)
             if 'redirect' in articles_data:
                 return articles_data['redirect']
 
@@ -262,7 +324,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
 
         elif dvsn.portal_division_type_id == 'catalog':
 
-            membership_data = get_members_tags_pages_search_text(portal, dvsn, page, tags, search_text)
+            membership_data = get_members_tags_pages_search(portal, dvsn, page, tags, None)
 
             return render_template('front/' + g.portal_layout_path + 'division_catalog.html',
                                    division=dvsn.get_client_side_dict(),
@@ -280,8 +342,8 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
             get_company_member_and_division(portal, member_company_id, member_company_name)
         search_text, subportal_dvsn = get_search_text_and_division(portal, division_name)
 
-        articles_data = get_articles_tags_pages_search_text(portal, subportal_dvsn, page, tags, search_text,
-                                                            company_publisher=member_company)
+        articles_data = get_articles_tags_pages_search(portal, subportal_dvsn, page, tags, None,
+                                                       company_publisher=member_company)
         if 'redirect' in articles_data:
             return articles_data['redirect']
 
@@ -302,7 +364,7 @@ def article_details(portal, publication_id, publication_title):
     publication = Publication.get(publication_id)
     articles_related = publication.get_related_articles()
     article_visibility = publication.article_visibility_details()
-    article_dict = publication_id_to_article(publication.id)
+    article_dict = publication.create_article()
 
     division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()
     if article_visibility is True:
@@ -310,8 +372,8 @@ def article_details(portal, publication_id, publication_title):
     else:
         back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
 
-    def url_toggle_tag(toggle_tag):
-        return url_for('front.division', tags=toggle_tag)
+    def url_search_tag(tag):
+        return url_for('front.search', tags=tag)
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
@@ -320,14 +382,29 @@ def article_details(portal, publication_id, publication_title):
                            article_visibility=article_visibility,
                            articles_related=articles_related,
                            tags={'all': [], 'selected_names': [],
-                                 'url_construct_toggle': url_toggle_tag},
+                                 'url_toggle_tag': url_search_tag},
                            article_social_activity={
                                'favorite': publication.check_favorite_status(),
                                'liked': publication.check_liked_status(),
                                'liked_count': publication.check_liked_count()
-                           },
-                           url_toggle_tag=url_toggle_tag,
+                           }
                            )
+
+
+@front_bp.route('_s/', methods=['GET'])
+@front_bp.route('_s/<int:page>/', methods=['GET'])
+@front_bp.route('_s/tags/<string:tags>/', methods=['GET'])
+@front_bp.route('_s/tags/<string:tags>/<int:page>/', methods=['GET'])
+@check_right(AllowAll)
+@get_portal
+def search(portal, page=1, tags=None):
+    search_data = get_search_tags_pages_search(portal, page, tags, request.args.get('search') or '')
+
+    return render_template('front/' + g.portal_layout_path + 'search.html',
+                           portal=portal_and_settings(portal),
+                           **search_data
+                           )
+    pass
 
 
 @front_bp.route('_/add_delete_favorite/<string:publication_id>/', methods=['OK'])
