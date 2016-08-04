@@ -33,6 +33,7 @@ def companies():
 @company_bp.route('/', methods=['OK'])
 @check_right(UserIsActive)
 def companies_load(json):
+    print(json.get('array'))
     page = json.get('next_page') if json.get('next_page') else 1
     per_page = 6
     print(json)
@@ -40,16 +41,14 @@ def companies_load(json):
         query=db(Company).filter(Company.id == db(UserCompany, user_id=g.user.id).subquery().c.company_id),
         items_per_page=per_page, page=page)
     comp = [usr_cmp.get_client_side_dict() for usr_cmp in companies]
-    q = comp.count('name') // 6 + 1
     print(comp)
-    print(q)
-    if comp == []:
+
+    if len(comp) < per_page:
         return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],
                 'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()},
                 'user_id': g.user.id, 'end': True}
     l=[x['name'] for x in comp]
     print(l)
-
 
 
 
