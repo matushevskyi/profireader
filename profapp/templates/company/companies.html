@@ -76,7 +76,6 @@
             };
 
             $scope.loadNextPage('{{ url_for('company.companies_load')|safe }}', function (resp) {
-                console.log(resp['companies']);
                 $scope.data.companies = $scope.data.companies ? $scope.data.companies : [];
                 $scope.data.companies = $scope.data.companies.concat(resp['companies']);
             });
