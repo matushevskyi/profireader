@@ -85,6 +85,18 @@ def elastic_article_to_orm_article(item):
     return ret
 
 
+def elastic_company_to_orm_company(item):
+    print(item)
+    member = MemberCompanyPortal.get(item['id'])
+    ret = member.get_client_side_dict(fields="id|company|tags")
+
+    if '_highlight' in item:
+        for k, modef_field in {'title': 'title', 'subtitle': 'about', 'short': 'short_description'}.items():
+            if k in item['_highlight']:
+                ret['company'][modef_field] = '...'.join(item['_highlight'][k])
+    return ret
+
+
 def get_tag_elastic_filter(all_tags, tags_selected_by_user):
     wrong_tag_found = False
     elastic_filter = []
@@ -142,16 +154,17 @@ def get_search_tags_pages_search(portal, page, tags, search_text):
     afilter += elastic_filter
 
     search_items, pages, page, messages = elasticsearch.search('front', 'company,article',
-                                                     sort=[{"id": "desc"}], afilter=afilter, page=page,
-                                                     items_per_page=items_per_page,
-                                                     fields={'title': 100, 'subtitle': 50, 'keywords': 10, 'short': 10,
-                                                             'author': 50, 'long': {'number_of_fragments': 5}},
-                                                     text=search_text)
+                                                               sort=[{"id": "desc"}], afilter=afilter, page=page,
+                                                               items_per_page=items_per_page,
+                                                               fields={'title': 100, 'subtitle': 50, 'keywords': 10,
+                                                                       'short': 10,
+                                                                       'author': 50,
+                                                                       'long': {'number_of_fragments': 5}},
+                                                               text=search_text)
 
     def convertelastic_to_model(item):
         if item['_type'] == 'company':
-            member = MemberCompanyPortal.get(item['id'])
-            ret = member.get_client_side_dict(fields="id|company|tags")
+            ret = elastic_company_to_orm_company(item)
         if item['_type'] == 'article':
             ret = elastic_article_to_orm_article(item)
         ret['_type'] = item['_type']
@@ -199,12 +212,13 @@ def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company
     afilter += elastic_filter
 
     company_members, pages, page, messages = elasticsearch.search('front', 'company',
-                                                        sort=[{"id": "desc"}], afilter=afilter, page=page,
-                                                        items_per_page=items_per_page,
-                                                        fields={'title': 100, 'subtitle': 50, 'keywords': 10,
-                                                                'short': 10,
-                                                                'author': 50, 'long': {'number_of_fragments': 5}},
-                                                        text=search_text)
+                                                                  sort=[{"id": "desc"}], afilter=afilter, page=page,
+                                                                  items_per_page=items_per_page,
+                                                                  fields={'title': 100, 'subtitle': 50, 'keywords': 10,
+                                                                          'short': 10,
+                                                                          'author': 50,
+                                                                          'long': {'number_of_fragments': 5}},
+                                                                  text=search_text)
 
     url_toggle_tag, url_page_division = get_urls_change_tag_page(url_tags, search_text, selected_tag_names)
 
@@ -251,11 +265,13 @@ def get_articles_tags_pages_search(portal, dvsn, page, tags, search_text, compan
     afilter += elastic_filter
 
     publications, pages, page, messages = elasticsearch.search('front', 'article',
-                                                     sort=[{"date": "desc"}], afilter=afilter, page=page,
-                                                     items_per_page=items_per_page,
-                                                     fields={'title': 100, 'subtitle': 50, 'keywords': 10, 'short': 10,
-                                                             'author': 50, 'long': {'number_of_fragments': 5}},
-                                                     text=search_text)
+                                                               sort=[{"date": "desc"}], afilter=afilter, page=page,
+                                                               items_per_page=items_per_page,
+                                                               fields={'title': 100, 'subtitle': 50, 'keywords': 10,
+                                                                       'short': 10,
+                                                                       'author': 50,
+                                                                       'long': {'number_of_fragments': 5}},
+                                                               text=search_text)
 
     url_toggle_tag, url_page_division = get_urls_change_tag_page(url_tags, search_text, selected_tag_names)
 

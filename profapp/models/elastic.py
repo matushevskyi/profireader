@@ -113,13 +113,14 @@ class PRElasticConnection:
         if not text or text == '':
             text = None
 
+        longwords = {}
+        shortwords = {}
+
         if text is not None:
             import re
             words = re.compile("\s+").split(text)
             remove = re.compile('[^\w]+')
             words = [remove.sub('', w) for w in words]
-            longwords = {}
-            shortwords = {}
             for w in words:
                 (shortwords if len(w) < 3 else longwords)[w] = w
             text = ' AND '.join(['*' + w + '*' for w in longwords])
