@@ -1,7 +1,7 @@
 /*general*/
 body {
     /*min-height: 2000px;*/
-    /*padding-top: 70px;*/
+    padding-bottom: 100px;
 }
 
 .pa {
@@ -123,6 +123,22 @@ table.tablelist tr td {
     display: block;
 }
 
+.wide-banner {
+    margin-bottom: 10px;
+    width: 100%;
+    height: 100px;
+    overflow: hidden;
+    display: block;
+}
+
+.bottom-banner {
+    margin-bottom: 5px;
+    display: block;
+    width: 100%;
+    height: 100px;
+    overflow: hidden;
+}
+
 /*blocks*/
 .left-content {
     top: 0px;
@@ -195,13 +211,24 @@ body.no-search .center-content {
 }
 
 /*tags*/
-.label {
+.tag {
+    background-color: #aaffaa;
+    margin: 2px;
+    display: inline-block;
+    padding: 1px 3px;
+    color: #555;
+    border: 1px solid transparent;
+    border-radius: 2px;
+}
+
+.tag-selected {
+    background-color: #ffaaaa;
     margin-right: 3px;
 }
 
-.label a {
+.tag a {
     white-space: nowrap;
-    color: white;
+    color: #555;
 }
 
 .tags-at-right {
@@ -293,12 +320,13 @@ body.no-search .center-content {
 }
 
 /*company catalog*/
-.member {
+.membership {
     border: solid #EEAAEE thin;
     background-color: #fffaff;
     margin-bottom: 5px;
     padding: 0px 5px;
     overflow-x: hidden;
+    position: relative;
 }
 
 /*company pages*/

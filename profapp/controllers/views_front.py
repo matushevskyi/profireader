@@ -13,6 +13,7 @@ from ..models.rights import AllowAll
 from ..models.elastic import elasticsearch
 from collections import OrderedDict
 from .. import utils
+from utils.db_utils import db
 
 
 def get_search_text_and_division(portal, division_name):
@@ -86,8 +87,8 @@ def elastic_article_to_orm_article(item):
 
 
 def elastic_company_to_orm_company(item):
-    member = MemberCompanyPortal.get(item['id'])
-    ret = member.get_client_side_dict(fields="id|company|tags")
+    membership = MemberCompanyPortal.get(item['id'])
+    ret = membership.get_client_side_dict(fields="id|company|tags")
 
     if '_highlight' in item:
         for k, modef_field in {'title': 'name', 'subtitle': 'about', 'short': 'short_description'}.items():
@@ -153,7 +154,7 @@ def get_search_tags_pages_search(portal, page, tags, search_text):
     afilter += elastic_filter
 
     search_items, pages, page, messages = elasticsearch.search('front', 'company,article',
-                                                               sort=[{"id": "desc"}], afilter=afilter, page=page,
+                                                               afilter=afilter, page=page,
                                                                items_per_page=items_per_page,
                                                                fields={'title': 100, 'subtitle': 50, 'keywords': 10,
                                                                        'short': 10,
@@ -211,7 +212,7 @@ def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company
     afilter += elastic_filter
 
     company_members, pages, page, messages = elasticsearch.search('front', 'company',
-                                                                  sort=[{"id": "desc"}], afilter=afilter, page=page,
+                                                                  sort=[{"date": "desc"}], afilter=afilter, page=page,
                                                                   items_per_page=items_per_page,
                                                                   fields={'title': 100, 'subtitle': 50, 'keywords': 10,
                                                                           'short': 10,
@@ -221,8 +222,8 @@ def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company
 
     url_toggle_tag, url_page_division = get_urls_change_tag_page(url_tags, search_text, selected_tag_names)
 
-    return dict(members=OrderedDict((member.id, member.get_client_side_dict(fields="id|company|tags"))
-                                    for member in [MemberCompanyPortal.get(m['id']) for m in company_members]),
+    return dict(memberships=OrderedDict((membership.id, membership.get_client_side_dict(fields="id|company|tags"))
+                                        for membership in [MemberCompanyPortal.get(m['id']) for m in company_members]),
                 tags={'all': all_tags, 'selected_names': selected_tag_names,
                       'url_toggle_tag': url_toggle_tag},
                 pager={'total': pages, 'current': page, 'neighbours': Config.PAGINATION_BUTTONS,
@@ -283,6 +284,12 @@ def get_articles_tags_pages_search(portal, dvsn, page, tags, search_text, compan
 subportal_prefix = '_c/<string:member_company_id>/<string:member_company_name>/'
 
 
+def url_catalog_toggle_tag(portal, tag_text):
+    catalog_division = db(PortalDivision, portal_id=portal.id,
+                          portal_division_type_id=PortalDivision.TYPES['catalog']).one()
+    return url_for('front.division', division_name=catalog_division.name, tags=tag_text)
+
+
 @front_bp.route(subportal_prefix)
 @front_bp.route(subportal_prefix + '<string:member_company_page>/')
 @check_right(AllowAll)
@@ -295,10 +302,12 @@ def company_page(portal, member_company_id, member_company_name, member_company_
     return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
                            portal=portal_and_settings(portal),
                            division=dvsn.get_client_side_dict(),
+                           membership=db(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one(),
+                           url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
                            member_company=member_company.get_client_side_dict(
                                more_fields='employments,employments.user,employments.user.avatar.url'),
                            company_menu_selected_item=member_company_page,
-                           member_company_page=member_company_page,
+                           member_company_page=member_company_page
                            )
 
 
@@ -361,10 +370,16 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
         if 'redirect' in articles_data:
             return articles_data['redirect']
 
+        membership = db(MemberCompanyPortal, company_id=member_company.id,
+                        portal_id=portal.id).one()
+        membership = MemberCompanyPortal.get(membership.id).get_client_side_dict(fields="id|company|tags")
+
         return render_template('front/' + g.portal_layout_path + 'division_company.html',
                                portal=portal_and_settings(portal),
                                division=dvsn.get_client_side_dict(),
                                member_company=member_company.get_client_side_dict(),
+                               membership=membership,
+                               url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
                                company_menu_selected_item=subportal_dvsn.get_client_side_dict(),
                                **articles_data
                                )
@@ -387,7 +402,7 @@ def article_details(portal, publication_id, publication_title):
         back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
 
     def url_search_tag(tag):
-        return url_for('front.search', tags=tag)
+        return url_for('front.division', tags=tag, division_name=division.name)
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
@@ -401,8 +416,7 @@ def article_details(portal, publication_id, publication_title):
                                'favorite': publication.check_favorite_status(),
                                'liked': publication.check_liked_status(),
                                'liked_count': publication.check_liked_count()
-                           }
-                           )
+                           })
 
 
 @front_bp.route('_s/', methods=['GET'])

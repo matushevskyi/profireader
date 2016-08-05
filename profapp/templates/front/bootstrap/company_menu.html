@@ -1,14 +1,4 @@
-<table class="t200logo">
-    <tr>
-        <td>{% if member_company['logo']['selected_by_user']['type'] != 'none' %}
-            <img class="company-logo" {{ prImageUrl(member_company['logo']['url']) }} />{% endif %}
-        </td>
-        <td>
-            <div class="short-text">{{ member_company['short_description']|safe }}</div>
-        </td>
-
-    </tr>
-</table>
+{% include 'member_short.html' %}
 
 <nav class="navbar navbar-default navbar-static-top">
     <div class="navbar-header pull-right" style="margin-left: 0px; margin-right: 0px;">

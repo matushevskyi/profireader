@@ -139,9 +139,10 @@ def portals_partners(company_id):
 
 def membership_grid_row(membership):
     return utils.dict_merge(membership.get_client_side_dict(fields='id,status,portal.own_company,portal,rights,tags'),
-                       {'actions': MembershipRights(company=membership.company_id,
-                                                    member_company=membership).actions()},
-                       {'who': MembershipRights.MEMBERSHIP})
+                            {'actions': MembershipRights(company=membership.company_id,
+                                                         member_company=membership).actions()},
+                            {'who': MembershipRights.MEMBERSHIP})
+
 
 @portal_bp.route('/portals_partners/<string:company_id>/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
@@ -169,14 +170,21 @@ def portal_banners(company_id):
 @portal_bp.route('/portal_banners/<string:company_id>/', methods=['OK'])
 @check_right(UserIsEmployee, 'company_id')
 def portal_banners_load(json, company_id):
-    subquery = PortalAdvertisment().get_portal_advertisments(Company.get(company_id).own_portal.id, json.get('filter'))
+    portal = Company.get(company_id).own_portal
+    if 'action_name' in json:
+        if json['action_name'] == 'create':
+            newrow = PortalAdvertisment(portal_id=portal.id, html='', place=json['row']['place']).save()
+            return {'grid_action': 'refresh_row', 'row': newrow.get_client_side_dict()}
 
-    banners, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
-    banners_list = [banner.get_client_side_dict() for banner in banners]
-    return {'page': current_page,
-            'grid_data': banners_list,
-            'grid_filters': {},
-            'total': count}
+        if json['action_name'] == 'delete':
+            PortalAdvertisment.get(json['id']).delete()
+            return {'grid_action': 'delete_row'}
+    else:
+        banners = PortalAdvertisment.get_portal_advertisments(portal)
+        return {'page': 1,
+                'grid_data': banners,
+                'grid_filters': {},
+                'total': len(banners)}
 
 
 @portal_bp.route('/save_portal_banner/<string:company_id>/', methods=['OK'])
@@ -225,7 +233,7 @@ def company_partner_update(company_id, member_id):
     return render_template('company/company_partner_update.html',
                            company=Company.get(company_id),
                            member=MemberCompanyPortal.get_by_portal_id_company_id(Company.get(company_id).own_portal.id,
-                                                          company_id=member_id).company.get_client_side_dict(
+                                                                                  company_id=member_id).company.get_client_side_dict(
                                'id, status'))
 
 
@@ -263,11 +271,8 @@ def company_partners_change_status(json, company_id, portal_id):
             'company_id': company_id,
             'portal_id': db(Portal, company_owner_id=company_id).first().id,
             'actions': MembersRights(company=company_id,
-                              member_company=partner).actions(),
+                                     member_company=partner).actions(),
             'id': partner.id}
-
-
-
 
 
 @portal_bp.route('/companies_partners/<string:company_id>/', methods=['GET'])
@@ -285,11 +290,11 @@ def companies_partners_load(json, company_id):
                                                  filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
     members, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [utils.dict_merge({'member': member.get_client_side_dict(more_fields='company'),
-                                              'company_id': company_id,
-                                              'portal_id': db(Portal, company_owner_id=company_id).first().id},
-                                             {'actions': MembersRights(company=company_id,
-                                                                       member_company=member).actions()},
-                                             {'id': member.id})
+                                            'company_id': company_id,
+                                            'portal_id': db(Portal, company_owner_id=company_id).first().id},
+                                           {'actions': MembersRights(company=company_id,
+                                                                     member_company=member).actions()},
+                                           {'id': member.id})
                           for member in members],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'member.status': [{'value': status, 'label': status} for status in
@@ -332,10 +337,8 @@ def publications_load(json, company_id):
     company = Company.get(company_id)
     portal = company.own_portal
 
-    publications = db(Publication).join(PortalDivision, PortalDivision.id == Publication.portal_division_id).\
+    publications = db(Publication).join(PortalDivision, PortalDivision.id == Publication.portal_division_id). \
         filter(PortalDivision.portal_id == portal.id).all()
-
-
 
     # subquery = Company.subquery_portal_articles(portal.id, json.get('filter'), json.get('sort'))
     # publications, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
