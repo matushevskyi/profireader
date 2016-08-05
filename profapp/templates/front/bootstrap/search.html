@@ -12,7 +12,7 @@
         {% if search_item._type == 'article' %}
             {% with article=search_item %}{% include 'article_short.html' %}{% endwith %}
         {% elif search_item._type == 'company' %}
-            {% with member=search_item %}{% include 'member_short.html' %}{% endwith %}
+            {% with membership=search_item %}{% include 'member_short.html' %}{% endwith %}
         {% endif %}
     {% else %}
         <h3 class="tac">{{ _('There are no items with current search criteria') }}</h3>

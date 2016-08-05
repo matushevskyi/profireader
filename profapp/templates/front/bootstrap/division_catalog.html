@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block center_content %}
-    {% for member_id, member in members.items() %}
+    {% for member_id, membership in memberships.items() %}
         {% include 'member_short.html' %}
     {% else %}
         {% if tags.selected_names or search_text != '' %}
