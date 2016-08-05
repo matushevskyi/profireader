@@ -1,20 +1,9 @@
 {% macro tag(tag, tags) %}
-    <span class="label {{ 'label-danger' if tag.text in tags.selected_names else 'label-default' }}">
-{#    href="{{ url_for('front.search', tags = tag.text) }}"#}
+    <span class="tag {{ 'label-danger' if tag.text in tags.selected_names else 'tag-selected' }}">
             <a {% if tags.url_toggle_tag %}href="{{ tags.url_toggle_tag(tag.text) }}"{% endif %} class="fa {{ 'fa-minus' if tag.text in tags.selected_names else 'fa-plus' }}"> {{ tag.text }}</a>
     </span>
 {% endmacro %}
 
-{#{% macro tag(tag, url_toggle_tag = None, selected_tag_names = [], toogle_tag = False, endpoint = None) %}#}
-{#    <span class="label {{ 'label-danger' if tag.text in selected_tag_names else 'label-default' }}">#}
-{#    {% if toogle_tag and url_toggle_tag -%}#}
-{#        <a class="fa {{ 'fa-minus' if tag.text in selected_tag_names else 'fa-plus' }}"#}
-{#           href="{{ url_toggle_tag(toggle_tag = tag.text) }}"> {{ tag.text }}</a>#}
-{#    {%- else -%}#}
-{#        {{ tag.text }}#}
-{#    {%- endif %}#}
-{#    </span>#}
-{#{% endmacro %}#}
 
 {% macro date(division_type, article) %}
     {% if division_type == 'events' %}
