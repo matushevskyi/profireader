@@ -1,7 +1,7 @@
 /*general*/
 body {
     /*min-height: 2000px;*/
-    /*padding-top: 70px;*/
+    padding-bottom: 100px;
 }
 
 .pa {
@@ -121,6 +121,22 @@ table.tablelist tr td {
 .vertical-banner {
     margin-bottom: 5px;
     display: block;
+}
+
+.wide-banner {
+    margin-bottom: 10px;
+    width: 100%;
+    height: 100px;
+    overflow: hidden;
+    display: block;
+}
+
+.bottom-banner {
+    margin-bottom: 5px;
+    display: block;
+    width: 100%;
+    height: 100px;
+    overflow: hidden;
 }
 
 /*blocks*/

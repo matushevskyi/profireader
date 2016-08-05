@@ -14,23 +14,24 @@
     {% endblock company_base %}
 
     <script type="text/ng-template" id="banners.html">
-            <div class="modal-header"><h3 class="modal-title">{{ _('Edit banners with HTML tag!') }}</h3></div>
-            <div class="modal-body"><textarea rows="5" style="width: 100%" class='modal-content' ng-model='EdittextWithHtml'></textarea></div>
-            <div class="modal-footer">
-                <button id='buttonDelete' class='btn btn-warning' ng-click='save()'>{{ _('Save') }}</button>
-                <button class="btn btn-warning" ng-click="cancel()">{{ _('Cancel') }}</button>
-            </div>
+        <div class="modal-header"><h3 class="modal-title">{{ _('Edit banners with HTML tag!') }}</h3></div>
+        <div class="modal-body"><textarea rows="5" style="width: 100%" class='modal-content'
+                                          ng-model='EdittextWithHtml'></textarea></div>
+        <div class="modal-footer">
+            <button id='buttonDelete' class='btn btn-warning' ng-click='save()'>{{ _('Save') }}</button>
+            <button class="btn btn-warning" ng-click="cancel()">{{ _('Cancel') }}</button>
+        </div>
     </script>
 
     <script>
         module.controller('banners_controller', function ($scope, $uibModalInstance, EdittextWithHtml) {
-              $scope.EdittextWithHtml = EdittextWithHtml;
-              $scope.save = function () {
+            $scope.EdittextWithHtml = EdittextWithHtml;
+            $scope.save = function () {
                 $uibModalInstance.close($scope.EdittextWithHtml);
-              };
-              $scope.cancel = function () {
+            };
+            $scope.cancel = function () {
                 $uibModalInstance.dismiss('cancel');
-              };
+            };
         });
 
         module.controller('portal_banners', function ($scope, $ok, $uibModal) {
@@ -39,9 +40,9 @@
             $scope.url_banners = '{{ url_for('portal.portal_banners_load', company_id=company.id)}}';
             $scope.url_save_banners = {{ raw_url_for('portal.save_portal_banner')|safe }};
             $scope.company = {{ company.get_client_side_dict()|safe }}
-            {% raw %}
+                    {% raw %}
 
-            $scope.showModalForEdit = function (row, col, text) {
+                    $scope.showModalForEdit = function (row, col, text) {
 
                         var modalInstance = $uibModal.open({
                             templateUrl: 'banners.html',
@@ -60,31 +61,35 @@
 
 
             $scope.sendData = function (grid_data, setdatafuctions) {
-                        $scope.loading = true;
-                        $ok($scope.url_save_banners({company_id:$scope.company.id}), grid_data, setdatafuctions).finally(function () {
-                            $scope.gridApi.grid.setGridData();
-                            $scope.loading = false;
-                            $scope.load_contr = true;
-                        });
-                    };
+                $scope.loading = true;
+                $ok($scope.url_save_banners({company_id: $scope.company.id}), grid_data, setdatafuctions).finally(function () {
+                    $scope.gridApi.grid.setGridData();
+                    $scope.loading = false;
+                    $scope.load_contr = true;
+                });
+            };
 
             $scope.saveTranslWithHtml = function (text, row, col) {
-                        var grid_data = $scope.gridApi.grid.all_grid_data;
-                        grid_data['editBanners'] = {
-                            'html': text,
-                            'portal_id':row.entity.portal_id,
-                            'id': row.entity.id
-                        };
-                        $scope.sendData(grid_data);
-                    };
+                var grid_data = $scope.gridApi.grid.all_grid_data;
+                grid_data['editBanners'] = {
+                    'html': text,
+                    'portal_id': row.entity.portal_id,
+                    'id': row.entity.id
+                };
+                $scope.sendData(grid_data);
+            };
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
                 urlLoadGridData: $scope.url_banners,
                 columnDefs: [
                     {name: 'place'},
-                    {name: 'html', type: 'editable',subtype:'tinymce',
-                                    modal: "grid.appScope.showModalForEdit(row, col, row.entity[col.field])",
-                                    filter: {type:'input'}}
+
+                    {
+                        name: 'html', type: 'editable', subtype: 'tinymce',
+                        modal: "grid.appScope.showModalForEdit(row, col, row.entity[col.field])",
+                        filter: {type: 'input'}
+                    },
+                    {name: 'actions', type: 'server_actions'}
                 ]
             });
             {% endraw %}
