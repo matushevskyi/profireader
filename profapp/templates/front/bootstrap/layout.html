@@ -2,23 +2,30 @@
 {% block body %}
     {% block top_content %}{% include '_common/block_menu.html' %}{% endblock %}
 
-    <div class="pr container">
+    <div class="container p0 middle-content">
         {% block middle_content %}
-            <div class="pa center-content">
+            <div class="center-content">
                 {% block center_content %}{% endblock %}
+            {% if portal.advs['bottom_banner'] -%}
                 <a href="#" class="bottom-banner">{{ portal.advs['bottom_banner']|safe }}</a>
+            {%- endif %}
             </div>
-            <div class="pa left-content">
+            <div class="left-content">
                 {% block left_content %}{% include '_common/block_tags.html' %}{% endblock %}
             </div>
-            <div class="pa right-content">
+            <div class="right-content">
                 {% block right_content %}
                     <a href="#" class="vertical-banner">{{ portal.advs.right_banner_1|safe }}</a>
                     <a href="#" class="vertical-banner">{{ portal.advs.right_banner_2|safe }}</a>
                 {% endblock %}
             </div>
         {% endblock %}
-
     </div>
+
+    {% block bottom_content %}
+        <div class="bottom-content">
+        {{ _('Profireader bottom text') }}
+        </div>
+   {% endblock %}
 
 {% endblock %}
