@@ -1,7 +1,13 @@
 /*general*/
+html {
+    height: 100%;
+}
+
 body {
-    /*min-height: 2000px;*/
-    padding-bottom: 100px;
+    min-height: 100%;
+    position: relative;
+    padding-bottom: 2em;
+    padding-top: 0.2em;
 }
 
 .pa {
@@ -12,8 +18,8 @@ body {
     position: relative;
 }
 
-.pa {
-    position: absolute;
+.p0 {
+    padding: 0px;
 }
 
 .nw {
@@ -132,55 +138,44 @@ table.tablelist tr td {
 }
 
 .bottom-banner {
-    margin-bottom: 5px;
     display: block;
-    width: 100%;
+    width: 700px;
     height: 100px;
     overflow: hidden;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /*blocks*/
 .left-content {
-    top: 0px;
-    left: 0px;
     width: 215px;
-    margin-bottom: 5px;
+    float: left;
+    margin: 0px 5px 5px 0px;
 }
 
 .center-content {
-    top: 0px;
-    left: 220px;
     width: calc(100% - 220px - 220px);
-    margin-bottom: 5px;
+    display: inline-block;
+    margin: 0px 5px 5px 0px;
 }
 
 .right-content {
-    top: 0px;
-    right: 0px;
-    width: 215px;
-    margin-bottom: 5px;
+    float: right;
+    margin: 0px 0px 5px 0px;
+}
+
+.bottom-content {
+    width: 100%;
+    background-color: #ccc;
+    height: 1.5em;
+    position: absolute;
+    bottom: 0px;
 }
 
 @media only screen and (max-width: 992px) {
     .center-content {
-        left: 0px;
         width: 100%;
-        position: relative;
         float: left;
-    }
-
-    .left-content {
-        left: 0px;
-        top: 5px;
-        position: relative;
-        float: left;
-    }
-
-    .right-content {
-        left: 0px;
-        top: 5px;
-        position: relative;
-        float: right;
     }
 }
 
@@ -377,6 +372,5 @@ span.search_highlighted {
         height: 50px;
         width: 150px;
     }
-
 
 }
