@@ -1,5 +1,5 @@
 {% macro tag(tag, tags) %}
-    <span class="tag {{ 'label-danger' if tag.text in tags.selected_names else 'tag-selected' }}">
+    <span class="tag {{ 'tag-selected' if tag.text in tags.selected_names else 'tag-not-selected' }}">
             <a {% if tags.url_toggle_tag %}href="{{ tags.url_toggle_tag(tag.text) }}"{% endif %} class="fa {{ 'fa-minus' if tag.text in tags.selected_names else 'fa-plus' }}"> {{ tag.text }}</a>
     </span>
 {% endmacro %}
