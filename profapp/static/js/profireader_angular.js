@@ -1356,6 +1356,9 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             var args = [].slice.call(arguments);
             return pr_dictionary(args.shift(), args, '', this, $ok);
         },
+        moment: function (value, out_format) {
+            return moment.utc(value).local().format(out_format ? out_format : 'dddd, LL (HH:mm)', value)
+        },
         MAIN_DOMAIN: MAIN_DOMAIN,
         static_address: function (relative_file_name) {
             return static_address(relative_file_name);
@@ -1936,26 +1939,6 @@ $.fn.scrollTo = function () {
             scrollTop: $(this).offset().top
         }, 1000);
     });
-}
-
-function getPopoverContent(content_list, width) {
-    if (content_list.length === 0) {
-        return '';
-    }
-    $('.liked-favorite-band .popover').css({
-        'background-color': 'black', 'color': 'white',
-        'width': width ? width.toString() : '160' + 'px', 'overflow': 'hidden'
-    })
-    var content = '';
-    var limit = width ? width : 160 / 10;
-    for (var i = 0; i < content_list.length; i += 1) {
-        if (content_list[i].length > limit) {
-            content += '<spam class="ellipsis">' + content_list[i].substring(0, limit) + '...' + '</spam><br>';
-        } else {
-            content += '<spam class="ellipsis">' + content_list[i] + '</spam><br>';
-        }
-    }
-    return content
 }
 
 function scrool($el) {

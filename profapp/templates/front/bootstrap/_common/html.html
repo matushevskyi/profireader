@@ -1,8 +1,22 @@
 <!DOCTYPE html>
 <html lang="{{ g.lang }}">
 <title>{% block title %}{{ _('%(portal_name)s', {'portal_name': portal.name}) }}{% endblock %}</title>
-<head>{% block head %}{% include 'block_head.html' %}{% endblock head %}</head>
+<head>
+    <meta name="description" content="{% block description %}{% endblock %}">
+    {% block og -%}
+    <meta property="og:site_name" content="{% block og_name %}{{ portal.name }}{% endblock %}"/>
+    <meta property="og:title" content="{% block og_title %}{{ self.title()|trim }}{% endblock %}"/>
+    <meta property="og:description" content="{% block og_description %}{{ self.description()|trim }}{% endblock %}"/>
+    <meta property="og:image" content="{% block og_img_url %}{{ portal.logo.url }}{% endblock %}"/>
+    {%- endblock %}
+
+    {% block head %}{% include 'block_head.html' %}{% endblock head %}
+</head>
 <body class="{% block body_class %}{% endblock %}">
 {% block body %}{% endblock %}
+
+<!-- Go to www.addthis.com/dashboard to customize your tools -->
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-57acef603e90361a"></script>
+
 </body>
 </html>

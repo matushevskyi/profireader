@@ -1,4 +1,3 @@
-
 function $ok(url, data, success, fail) {
     $.ajax({
         url: url,
@@ -21,5 +20,6 @@ function $ok(url, data, success, fail) {
 }
 
 function add_message(message, type) {
-    
+
 }
+

@@ -237,6 +237,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.wsgi_app = SessionMiddleware(app.wsgi_app, session_opts)
     app.session_interface = BeakerSessionInterface()
+    app.type = apptype
 
     return app
 
