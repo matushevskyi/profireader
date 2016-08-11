@@ -228,6 +228,15 @@ apt-get update
 apt-get install haproxy" sudo haproxy_config
     }
 
+function menu_haproxy_letsencrypt {
+    conf_comm "
+#echo 'deb http://ftp.debian.org/debian jessie-backports main' > /etc/apt/sources.list.d/jessie-backports.list
+#apt-get update
+#apt-get install certbot -t jessie-backports
+certbot certonly
+" sudo apache2_config
+    }
+
 function menu_haproxy_config {
     conf_comm "cp ./haproxy.cfg /etc/haproxy/
 cp ./profireader_haproxy.key.pem /etc/haproxy/
@@ -422,49 +431,53 @@ next='_'
 #eval $a
 
 #exit
-
-while :
-do
+if [[ "$1" == "" ]]; then
+  while :
+  do
 #next='exit'
-dialog --title "profireader" --nocancel --default-item $next --menu "Choose an option" 22 78 17 \
-"origin" "change git origin and add new remote repo" \
-"postgres_9_4" "install postgres 9.4" \
-"elastic" "install elastic search" \
-"deb" "install deb packages" \
-"npm" "install nodejs, npm, bower and gulp globally" \
-"bower" "download bower components in ./profapp/static/bower_components" \
-"bower_dev" "download bower development components in ./profapp/static/bower_components_dev" \
-"gulp" "install gulp in ./profapp/static" \
-"hosts" "create virtual domain zone in /etc/hosts" \
-"haproxy_compile" "compile and install haproxy" \
-"haproxy_config" "copy haproxy config to /etc/haproxy" \
-"apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
-"secret_data" "download secret data" \
-"secret_client" "download secret client data" \
-"download_key_pem" "download https key and pem file" \
-"python_3" "install python 3" \
-"venv" "create virtual environment" \
-"modules" "install required python modules (via pip)" \
-"bower_components_dev" "get bower components (development version)" \
-"db_user_pass" "create postgres user/password" \
-"db_rename" "rename database (create backup)" \
-"db_create" "create empty database" \
-"db_save_minimal" "save initial database to file" \
-"db_download_minimal" "get minimal database from x.m.ntaxa.com" \
-"db_load_minimal" "load minimal database from file" \
-"db_save_full" "save full database to file" \
-"db_download_full" "get full database from x.m.ntaxa.com" \
-"db_load_full" "load full database from file" \
-"db_reindex_search" "reindex search table" \
-"db_reassign_ownership" "reassign ownership" \
-"compare_local_makarony" "compare local database and dev version" \
-"compare_local_kupyty" "compare local database and testing version" \
-"compare_local_artek" "compare local database and production version" \
-"compare_makarony_artek" "compare dev database and production version" \
-"exit" "Exit" 2> /tmp/"$rand"selected_menu_
-reset
-datev="date +%y_%m_%d___%H_%M_%S"
-gitv='git rev-parse --short HEAD'
-menu_`cat /tmp/"$rand"selected_menu_`
+    dialog --title "profireader" --nocancel --default-item $next --menu "Choose an option" 22 78 17 \
+      "origin" "change git origin and add new remote repo" \
+      "postgres_9_4" "install postgres 9.4" \
+      "elastic" "install elastic search" \
+      "deb" "install deb packages" \
+      "npm" "install nodejs, npm, bower and gulp globally" \
+      "bower" "download bower components in ./profapp/static/bower_components" \
+      "bower_dev" "download bower development components in ./profapp/static/bower_components_dev" \
+      "gulp" "install gulp in ./profapp/static" \
+      "hosts" "create virtual domain zone in /etc/hosts" \
+      "haproxy_compile" "compile and install haproxy" \
+      "haproxy_config" "copy haproxy config to /etc/haproxy" \
+      "haproxy_letsencrypt" "install haproxy letsencrypt" \
+      "apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
+      "secret_data" "download secret data" \
+      "secret_client" "download secret client data" \
+      "download_key_pem" "download https key and pem file" \
+      "python_3" "install python 3" \
+      "venv" "create virtual environment" \
+      "modules" "install required python modules (via pip)" \
+      "bower_components_dev" "get bower components (development version)" \
+      "db_user_pass" "create postgres user/password" \
+      "db_rename" "rename database (create backup)" \
+      "db_create" "create empty database" \
+      "db_save_minimal" "save initial database to file" \
+      "db_download_minimal" "get minimal database from x.m.ntaxa.com" \
+      "db_load_minimal" "load minimal database from file" \
+      "db_save_full" "save full database to file" \
+      "db_download_full" "get full database from x.m.ntaxa.com" \
+      "db_load_full" "load full database from file" \
+      "db_reindex_search" "reindex search table" \
+      "db_reassign_ownership" "reassign ownership" \
+      "compare_local_makarony" "compare local database and dev version" \
+      "compare_local_kupyty" "compare local database and testing version" \
+      "compare_local_artek" "compare local database and production version" \
+      "compare_makarony_artek" "compare dev database and production version" \
+      "exit" "Exit" 2> /tmp/"$rand"selected_menu_
+  reset
+  datev="date +%y_%m_%d___%H_%M_%S"
+  gitv='git rev-parse --short HEAD'
+  menu_`cat /tmp/"$rand"selected_menu_`
+  done
+else
+  menu_$1
+fi
 
-done
