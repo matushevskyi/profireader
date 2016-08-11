@@ -19,6 +19,7 @@ from .. import utils
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument
 from config import Config
+import simplejson
 
 
 class Material(Base, PRBase, PRElasticDocument):
@@ -112,7 +113,8 @@ class Material(Base, PRBase, PRElasticDocument):
              #                                       division=publication.division, company=material.company)
              #         .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]
              #      } if publication.status != 'SUBMITTED' and publication.status != "DELETED" else {}
-             }
+             },
+            material.get_client_side_dict(fields='title')
         )
                 for publication in material.publications]
         return dict, list
@@ -212,30 +214,42 @@ class Publication(Base, PRBase, PRElasticDocument):
     def elastic_get_fields(self):
         return {
             'id': PRElasticField(analyzed=False, setter=lambda: self.id),
-            'tags': PRElasticField(analyzed=False, setter=lambda: ' '.join([t.text for t in self.tags]), boost=5),
+
+            'tags': PRElasticField(setter=lambda: ' '.join([t.text for t in self.tags])),
             'tag_ids': PRElasticField(analyzed=False, setter=lambda: [t.id for t in self.tags]),
-            'date': PRElasticField(ftype='date', setter=lambda: int(self.publishing_tm.timestamp() * 1000)),
-            'user': PRElasticField(analyzed=False, setter=lambda: ''),
+
             'status': PRElasticField(setter=lambda: self.status, analyzed=False),
-            'user_id': PRElasticField(analyzed=False, setter=lambda: ''),
-            'publisher_company_id': PRElasticField(analyzed=False, setter=lambda: self.material.company_id),
-            'material_id': PRElasticField(analyzed=False, setter=lambda: self.material_id),
-            'portal': PRElasticField(setter=lambda: self.division.portal.name),
-            'long': PRElasticField(setter=lambda: self.strip_tags(self.material.long)),
-            'author': PRElasticField(setter=lambda: self.strip_tags(self.material.author)),
-            'short': PRElasticField(setter=lambda: self.strip_tags(self.material.short), boost=2),
-            'subtitle': PRElasticField(setter=lambda: self.strip_tags(self.material.subtitle), boost=5),
-            'title': PRElasticField(setter=lambda: self.material.title, boost=10),
+
+            'company_id': PRElasticField(analyzed=False, setter=lambda: self.material.company_id),
+            'company_name': PRElasticField(setter=lambda: self.material.company_id),
+
             'portal_id': PRElasticField(analyzed=False, setter=lambda: self.division.portal_id),
-            'division': PRElasticField(setter=lambda: self.division.name, boost=2),
-            'portal_division_id': PRElasticField(analyzed=False, setter=lambda: self.division.id)
+            'portal_name': PRElasticField(setter=lambda: self.division.portal.name),
+
+            'division_id': PRElasticField(analyzed=False, setter=lambda: self.division.id),
+            'division_type': PRElasticField(analyzed=False, setter=lambda: self.division.id),
+            'division_name': PRElasticField(setter=lambda: self.division.name),
+
+            'date': PRElasticField(ftype='date', setter=lambda: int(self.publishing_tm.timestamp() * 1000)),
+
+            'title': PRElasticField(setter=lambda: self.material.title, boost=10),
+            'subtitle': PRElasticField(setter=lambda: self.strip_tags(self.material.subtitle), boost=5),
+            'keywords': PRElasticField(setter=lambda: self.material.keywords, boost=5),
+            'short': PRElasticField(setter=lambda: self.strip_tags(self.material.short), boost=2),
+            'long': PRElasticField(setter=lambda: self.strip_tags(self.material.long)),
+
+            'author': PRElasticField(setter=lambda: self.strip_tags(self.material.author)),
+            'address': PRElasticField(setter=lambda: ''),
+
+            'custom_data': PRElasticField(analyzed=False, setter=lambda: simplejson.dumps({'material_id': self.material_id})),
+
         }
 
     def elastic_get_index(self):
-        return 'publications'
+        return 'front'
 
     def elastic_get_doctype(self):
-        return 'publications'
+        return 'article'
 
     def elastic_get_id(self):
         return self.id
@@ -264,7 +278,7 @@ class Publication(Base, PRBase, PRElasticDocument):
         return utils.dict_merge(
             self.get_client_side_dict(more_fields='division.portal_division_type_id,portal.logo.url'),
             Material.get(self.material_id).get_client_side_dict(
-                fields='long|short|title|subtitle|keywords|illustration'), remove={'material': True})
+                fields='long|short|title|subtitle|keywords|illustration|author'), remove={'material': True})
 
     def like_dislike_user_article(self, liked):
         article = db(ReaderPublication, publication_id=self.id,

@@ -8,12 +8,11 @@
     {% for article_id, article in articles.items() %}
         {% include 'article_short.html' %}
         {% if loop.index in wide_banners and portal.advs['wide_banner_' + wide_banners[loop.index]] %}
-            <div><a href="#"
+            <a href="#"
                     class="wide-banner">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a>
-            </div>
         {% endif %}
     {% else %}
-        {% if tags.selected_names or search_text != '' %}
+        {% if tags.selected_names or search_text %}
             <h3 class="tac">{{ _('There are no articles with current search criteria') }}</h3>
         {% else %}
             <h3 class="tac">{{ _('There are no articles in this division') }}</h3>

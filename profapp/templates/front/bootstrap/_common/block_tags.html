@@ -1,0 +1,4 @@
+{% if tags %}{% import 'macros.html' as frontmacros %}
+{% for tag in tags.all %}
+    <div>{{ frontmacros.tag(tag, tags) }}</div>
+{% endfor %}{% endif %}

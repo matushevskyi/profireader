@@ -1,7 +1,13 @@
 /*general*/
+html {
+    height: 100%;
+}
+
 body {
-    /*min-height: 2000px;*/
-    /*padding-top: 70px;*/
+    min-height: 100%;
+    position: relative;
+    padding-bottom: 2em;
+    padding-top: 0.2em;
 }
 
 .pa {
@@ -12,13 +18,17 @@ body {
     position: relative;
 }
 
-.pa {
-    position: absolute;
+.p0 {
+    padding: 0px;
 }
 
 .nw {
     white-space: nowrap;
     overflow: hidden;
+}
+
+.fr {
+    float: right;
 }
 
 .h1, .h2, .h3, .h4, h1, h2, h3, h4 {
@@ -45,7 +55,6 @@ body {
     width: 100%;
     height: 8em;
 }
-
 
 /*tables*/
 table.t200logo {
@@ -88,16 +97,15 @@ table.tablelist tr td {
     vertical-align: top;
 }
 
-
 /*images*/
 .portal-logo {
-    height: 50px;
-    width: 150px;
+    height: 100px;
+    width: 200px;
 }
 
 .profireader-logo {
-    width: 50px;
-    height: 50px;
+    width: 34px;
+    height: 34px;
 }
 
 .user-avatar {
@@ -121,48 +129,53 @@ table.tablelist tr td {
     display: block;
 }
 
+.wide-banner {
+    margin-bottom: 10px;
+    width: 100%;
+    height: 100px;
+    overflow: hidden;
+    display: block;
+}
+
+.bottom-banner {
+    display: block;
+    width: 700px;
+    height: 100px;
+    overflow: hidden;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /*blocks*/
 .left-content {
-    top: 0px;
-    left: 0px;
     width: 215px;
-    margin-bottom: 5px;
+    float: left;
+    margin: 0px 5px 5px 0px;
 }
 
 .center-content {
-    top: 0px;
-    left: 220px;
     width: calc(100% - 220px - 220px);
-    margin-bottom: 5px;
+    display: inline-block;
+    margin: 0px 5px 5px 0px;
 }
 
 .right-content {
-    top: 0px;
-    right: 0px;
-    width: 215px;
-    margin-bottom: 5px;
+    float: right;
+    margin: 0px 0px 5px 0px;
+}
+
+.bottom-content {
+    width: 100%;
+    background-color: #ccc;
+    height: 1.5em;
+    position: absolute;
+    bottom: 0px;
 }
 
 @media only screen and (max-width: 992px) {
     .center-content {
-        left: 0px;
         width: 100%;
-        position: relative;
         float: left;
-    }
-
-    .left-content {
-        left: 0px;
-        top: 5px;
-        position: relative;
-        float: left;
-    }
-
-    .right-content {
-        left: 0px;
-        top: 5px;
-        position: relative;
-        float: right;
     }
 }
 
@@ -193,13 +206,24 @@ body.no-search .center-content {
 }
 
 /*tags*/
-.label {
+.tag {
+    background-color: #aaffaa;
+    margin: 2px;
+    display: inline-block;
+    padding: 1px 3px;
+    color: #555;
+    border: 1px solid transparent;
+    border-radius: 2px;
+}
+
+.tag-selected {
+    background-color: #ffaaaa;
     margin-right: 3px;
 }
 
-.label a {
+.tag a {
     white-space: nowrap;
-    color: white;
+    color: #555;
 }
 
 .tags-at-right {
@@ -270,12 +294,9 @@ body.no-search .center-content {
 }
 
 .article-author {
-    position: absolute;
-    right: 0px;
-    bottom: 0px;
     padding: 0px 5px;
     text-align: right;
-    background-color: lightblue;
+    font-style: italic;
 }
 
 @media only screen and (max-width: 600px) {
@@ -294,15 +315,14 @@ body.no-search .center-content {
 }
 
 /*company catalog*/
-.member {
+.membership {
     border: solid #EEAAEE thin;
     background-color: #fffaff;
     margin-bottom: 5px;
     padding: 0px 5px;
     overflow-x: hidden;
+    position: relative;
 }
-
-
 
 /*company pages*/
 .company-contact-item {
@@ -311,18 +331,46 @@ body.no-search .center-content {
 }
 
 /*search*/
-.search-form {
-    padding: 5px;
-    border: solid #EEEEAA thin;
-}
 
 .search-form input {
-    width: 100%;
+
     display: inline;
+    width: auto;
 }
 
 .search-form button {
-    margin-top: 5px;
-    float: right;
+    display: inline;
+    vertical-align: baseline;
+    margin-right: 15px;
 }
 
+span.search_highlighted {
+    color: #dd0000;
+}
+
+/*menu */
+#topmenu #topmenu_button_sandwich {
+    margin-top: 0px;
+}
+
+#navbar {
+    margin-left: 200px;
+}
+
+#home-url {
+    height: 50px;
+    width: 200px;
+    overflow: visible;
+}
+
+@media only screen and (max-width: 767px) {
+    #home-url {
+        width: 150px;
+    }
+
+    .portal-logo {
+        height: 50px;
+        width: 150px;
+    }
+
+}

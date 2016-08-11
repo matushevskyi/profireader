@@ -221,11 +221,11 @@ class Portal(Base, PRBase):
         if db(Portal, company_owner_id=self.own_company.id).filter(Portal.id != self.id).count():
             ret['errors']['form'] = 'portal for company already exists'
         if not re.match('[^\s]{2,}', self.name):
-            ret['errors']['name'] = 'pls enter a bit longer name'
+            ret['errors']['name'] = 'Please enter at least 2 symbols'
         if not re.match(
                 '^(([a-z]|[a-z][a-z0-9\-]*[a-z0-9])\.)+([a-z]|[a-z][a-z0-9\-]*[a-z0-9]{1,})$',
                 self.host):
-            ret['errors']['host'] = 'pls enter valid host name'
+            ret['errors']['host'] = 'Please enter valid host name(lower case)'
         if not 'host' in ret['errors'] and db(Portal, host=self.host).filter(Portal.id != self.id).count():
             ret['errors']['host'] = 'host already taken by another portal'
 
@@ -347,6 +347,30 @@ class Portal(Base, PRBase):
         #     flash('You have successfully subscribed to this portal')
 
 
+class PortalLayout(Base, PRBase):
+    __tablename__ = 'portal_layout'
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    name = Column(TABLE_TYPES['name'], nullable=False)
+    path = Column(TABLE_TYPES['name'], nullable=False)
+
+    def __init__(self, name=None):
+        self.name = name
+
+    def get_client_side_dict(self, fields='id|name',
+                             more_fields=None):
+        return self.to_dict(fields, more_fields)
+
+
+class PortalAdvertismentPlace(Base, PRBase):
+    __tablename__ = 'portal_layout_adv_places'
+
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(PortalLayout.id))
+    name = Column(TABLE_TYPES['short_text'], nullable=False)
+
+    portal_layout = relationship(PortalLayout, uselist=False)
+
+
 class PortalAdvertisment(Base, PRBase):
     __tablename__ = 'portal_adv'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
@@ -355,13 +379,24 @@ class PortalAdvertisment(Base, PRBase):
     html = Column(TABLE_TYPES['text'], nullable=False)
     portal = relationship(Portal, uselist=False)
 
-    def __init__(self, portal_id=None, place=None, html=None):
-        self.portal_id = portal_id
-        self.place = place
-        self.html = html
+    @staticmethod
+    def get_portal_advertisments(portal):
+        exists = {p.name: False for p in
+                  db(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id).all()}
+        banners = db(PortalAdvertisment, portal_id=portal.id).all()
+        ret = []
+        for b in banners:
+            if b.place in exists:
+                exists[b.place] = True
+                ret.append(utils.dict_merge(b.get_client_side_dict(), {'actions': {}}))
+            else:
+                ret.append(utils.dict_merge(b.get_client_side_dict(), {'actions': {'delete': True}}))
 
-    def get_portal_advertisments(self, portal_id=None, filters=None):
-        return db(PortalAdvertisment, portal_id=portal_id).order_by(PortalAdvertisment.place)
+        for b in exists:
+            if exists[b] is False:
+                ret.append({'id': '', 'portal_id': portal.id, 'place': b, 'html': '', 'actions': {'create': True}})
+
+        return ret
 
     def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
         return self.to_dict(fields, more_fields)
@@ -375,6 +410,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         PUBLICATION_UNPUBLISH = 2
 
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    cr_tm = Column(TABLE_TYPES['timestamp'])
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
     rights = Column(TABLE_TYPES['binary_rights'](RIGHT_AT_PORTAL),
@@ -403,24 +439,50 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def elastic_get_fields(self):
         return {
             'id': PRElasticField(analyzed=False, setter=lambda: self.id),
-            'tags': PRElasticField(analyzed=False, setter=lambda: ' '.join([t.text for t in self.tags]), boost=5),
+
+            'tags': PRElasticField(setter=lambda: ' '.join([t.text for t in self.tags])),
             'tag_ids': PRElasticField(analyzed=False, setter=lambda: [t.id for t in self.tags]),
+
             'status': PRElasticField(setter=lambda: self.status, analyzed=False),
-            'company_name': PRElasticField(setter=lambda: self.company.name, boost=100),
-            'company_about': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=10),
-            'company_short_description': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description),
-                                                        boost=10),
-            'company_city': PRElasticField(setter=lambda: self.company.city, boost=2),
-            'company_id': PRElasticField(setter=lambda: self.company.id, analyzed=False),
-            'portal': PRElasticField(setter=lambda: self.portal.name),
-            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id)
+
+            'company_id': PRElasticField(analyzed=False, setter=lambda: self.company.id),
+            'company_name': PRElasticField(setter=lambda: self.company.name),
+
+            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id),
+            'portal_name': PRElasticField(setter=lambda: self.portal.name),
+
+            'division_id': PRElasticField(analyzed=False, setter=lambda: db(PortalDivision, portal_id=self.portal.id,
+                                                                            portal_division_type_id='catalog').one().id),
+            'division_type': PRElasticField(analyzed=False, setter=lambda: 'catalog'),
+            'division_name': PRElasticField(setter=lambda: self.portal.name),
+
+            'date': PRElasticField(ftype='date', setter=lambda: int(self.cr_tm.timestamp() * 1000)),
+
+            'title': PRElasticField(setter=lambda: self.company.name, boost=10),
+            'subtitle': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=5),
+            'keywords': PRElasticField(setter=lambda: '', boost=5),
+            'short': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description), boost=2),
+
+            'long': PRElasticField(setter=lambda: ''),
+
+            'author': PRElasticField(setter=lambda: ''),
+            'address': PRElasticField(setter=lambda: ''),
+
+            'custom_data': PRElasticField(analyzed=False, setter=lambda: simplejson.dumps({}))
+
+            # 'company_name': PRElasticField(setter=lambda: self.company.name, boost=100),
+            # 'company_about': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=10),
+            # 'company_short_description': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description),
+            #                                             boost=10),
+            # 'company_city': PRElasticField(setter=lambda: self.company.city, boost=2),
+
         }
 
     def elastic_get_index(self):
-        return 'company_membership'
+        return 'front'
 
     def elastic_get_doctype(self):
-        return 'company_membership'
+        return 'company'
 
     def elastic_get_id(self):
         return self.id
@@ -512,20 +574,6 @@ class ReaderUserPortalPlan(Base, PRBase):
         self.time = time
         self.price = price
         self.amount = amount
-
-
-class PortalLayout(Base, PRBase):
-    __tablename__ = 'portal_layout'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
-    name = Column(TABLE_TYPES['name'], nullable=False)
-    path = Column(TABLE_TYPES['name'], nullable=False)
-
-    def __init__(self, name=None):
-        self.name = name
-
-    def get_client_side_dict(self, fields='id|name',
-                             more_fields=None):
-        return self.to_dict(fields, more_fields)
 
 
 class MemberCompanyPortalPlan(Base, PRBase):
