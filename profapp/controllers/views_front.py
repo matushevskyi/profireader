@@ -391,13 +391,11 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
 def article_details(portal, publication_id, publication_title):
     # TODO: OZ by OZ: redirect if title is wrong
     publication = Publication.get(publication_id)
-    articles_related = publication.get_related_articles()
     article_visibility = publication.article_visibility_details()
-    article_dict = publication.create_article()
 
     division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()
     if article_visibility is True:
-        publication.add_recently_read_articles_to_session()
+        publication.add_to_read()
     else:
         back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
 
@@ -407,16 +405,11 @@ def article_details(portal, publication_id, publication_title):
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
                            division=division.get_client_side_dict(),
-                           article=article_dict,
+                           article=publication.create_article(),
                            article_visibility=article_visibility,
-                           articles_related=articles_related,
+                           articles_related=publication.get_related_articles(),
                            tags={'all': [], 'selected_names': [],
-                                 'url_toggle_tag': url_search_tag},
-                           article_social_activity={
-                               'favorite': publication.check_favorite_status(),
-                               'liked': publication.check_liked_status(),
-                               'liked_count': publication.check_liked_count()
-                           })
+                                 'url_toggle_tag': url_search_tag})
 
 
 @front_bp.route('_s/', methods=['GET'])
@@ -429,25 +422,21 @@ def search(portal, page=1, tags=None):
     search_data = get_search_tags_pages_search(portal, page, tags, request.args.get('search') or '')
 
     return render_template('front/' + g.portal_layout_path + 'search.html',
-                           portal=portal_and_settings(portal),
-                           **search_data
-                           )
-    pass
+                           portal=portal_and_settings(portal), **search_data)
 
 
 @front_bp.route('_/add_delete_favorite/<string:publication_id>/', methods=['OK'])
 @check_right(AllowAll)
 def add_delete_favorite(json, publication_id):
-    ReaderPublication.add_delete_favorite_user_article(publication_id, json['on'])
-    return {'on': False if json['on'] else True}
+    publication = Publication.get(publication_id).add_delete_favorite(json['on'])
+    return {'on': True if json['on'] else False, 'favorite_count': publication.favorite_count()}
 
 
 @front_bp.route('_/add_delete_liked/<string:publication_id>/', methods=['OK'])
 @check_right(AllowAll)
 def add_delete_liked(json, publication_id):
-    article = Publication.get(publication_id)
-    ReaderPublication.add_delete_liked_user_article(publication_id, json['on'])
-    return {'on': False if json['on'] else True, 'liked_count': article.check_liked_count()}
+    publication = Publication.get(publication_id).add_delete_like(json['on'])
+    return {'on': True if json['on'] else False, 'liked_count': publication.liked_count()}
 
 
 @front_bp.route('_/<string:member_company_id>/send_message/', methods=['OK'])
@@ -458,5 +447,4 @@ def send_message(json, member_company_id):
         send_to_email=send_to.address_email, subject='New message', template='messenger/email_send_message',
         user_to=send_to, user_from=g.user.get_client_side_dict() if g.user else None,
         in_company=Company.get(member_company_id), message=json['message'])
-
     return {}

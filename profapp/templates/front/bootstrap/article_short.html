@@ -24,7 +24,7 @@
             <i class="fa fa-building-o"></i> <a href="{{ url_for('front.company_page', member_company_name = article['company']['name'], member_company_id = article['company']['id']) }}">{{ article['company']['name']|safe }}</a>
         </div>
         <div class="article-date nw">
-            {{ frontmacros.date(article.division.portal_division_type_id, article) }}
+            {{ frontmacros.article_date(article.division.portal_division_type_id, article) }}
         </div>
     </div>
 

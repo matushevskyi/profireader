@@ -1,8 +1,9 @@
 {% extends 'layout.html' %}
 {% import '_common/macros.html' as frontmacros %}
 {% block body_class %}no-search{% endblock %}
-{% block title %}
-    {{ _('%(article_title)s - %(portal_name)s', {'article_title': article.title, 'portal_name': portal.name}) }}{% endblock %}
+{% block title -%}
+    {{ _('%(article_title)s - %(portal_name)s', {'article_title': article.title, 'portal_name': portal.name}) }}
+{%- endblock %}
 
 {% block left_content %}{% endblock %}
 {% block center_content %}
@@ -40,11 +41,11 @@
                     href="{{ url_for('front.company_page', member_company_name = article['company']['name'], member_company_id = article['company']['id']) }}">{{ article['company']['name']|safe }}</a>
             </div>
             <div class="article-date nw">
-                {{ frontmacros.date(article.division.portal_division_type_id, article) }}
+                {{ frontmacros.article_date(article.division.portal_division_type_id, article) }}
             </div>
         </div>
 
     </div>
     <br/>
-    <div class="row">{% include 'article_social.html' %}</div>
+    {% include 'article_social.html' %}
 {% endblock %}

@@ -2,9 +2,6 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<meta name="description" content="">
-<meta name="author" content="">
-
 <link rel="shortcut icon"
       href="{{ fileUrl(portal.favicon_file_id, if_no_file=static_address('favicon.ico')) }}" type="image/x-icon"/>
 
@@ -27,5 +24,6 @@
 <link href="{{ static_address('front/' + portal.layout.name + '/css/article.css') }}" rel="stylesheet">
 
 <script src="{{ static_address('front/' + portal.layout.name + '/js/script.js') }}"></script>
+
 
 {{ config_variables()|safe }}

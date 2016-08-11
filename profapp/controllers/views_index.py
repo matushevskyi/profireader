@@ -61,23 +61,23 @@ def send_email():
     return email_send(**{name: str(val) for name, val in request.form.items()})
 
 
-@index_bp.route('details_reader/<string:publication_id>')
-@check_right(UserNonBanned)
-def details_reader(publication_id):
-    article = Publication.get(publication_id)
-    article.add_recently_read_articles_to_session()
-    article_dict = article.get_client_side_dict(fields='id, title,short, cr_tm, md_tm, '
-                                                       'publishing_tm, keywords, status, long, image_file_id,'
-                                                       'division.name, division.portal.id,'
-                                                       'company.name|id')
-    article_dict['tags'] = article.tags
-    ReaderPublication.add_to_table_if_not_exists(publication_id)
-    favorite = article.check_favorite_status()
-
-    return render_template('partials/reader/reader_details.html',
-                           article=article_dict,
-                           favorite=favorite
-                           )
+# @index_bp.route('details_reader/<string:publication_id>')
+# @check_right(UserNonBanned)
+# def details_reader(publication_id):
+#     article = Publication.get(publication_id)
+#     article.add_recently_read_articles_to_session()
+#     article_dict = article.get_client_side_dict(fields='id, title,short, cr_tm, md_tm, '
+#                                                        'publishing_tm, keywords, status, long, image_file_id,'
+#                                                        'division.name, division.portal.id,'
+#                                                        'company.name|id')
+#     article_dict['tags'] = article.tags
+#     ReaderPublication.add_to_table_if_not_exists(publication_id)
+#     favorite = article.check_favorite_status()
+#
+#     return render_template('partials/reader/reader_details.html',
+#                            article=article_dict,
+#                            favorite=favorite
+#                            )
 
 
 @index_bp.route('list_reader_from_front/<string:portal_id>', methods=['GET'])
@@ -354,3 +354,18 @@ def contact_us_load(json_data):
                                html=('From ' + json_data['email'] + ': ' + json_data['message']))
 
         return {}
+
+
+@index_bp.route('_/add_delete_favorite/<string:publication_id>/', methods=['OK'])
+@check_right(AllowAll)
+def reader_add_delete_favorite(json, publication_id):
+    publication = Publication.get(publication_id).add_delete_favorite(json['on'])
+    return {'on': True if json['on'] else False, 'favorite_count': publication.favorite_count()}
+
+
+@index_bp.route('_/add_delete_liked/<string:publication_id>/', methods=['OK'])
+@check_right(AllowAll)
+def reader_add_delete_liked(json, publication_id):
+    publication = Publication.get(publication_id).add_delete_like(json['on'])
+    return {'on': True if json['on'] else False, 'liked_count': publication.liked_count()}
+

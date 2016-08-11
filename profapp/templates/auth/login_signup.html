@@ -83,7 +83,7 @@
                 {% raw %}
                 <h3>{{ _('register by email') }}</h3>
 
-                <span onsubmit="return false" class="login-form-profirider"
+                <form onsubmit="return false" class="login-form-profirider"
                       af af-url-load="" af-before-load="beforeLoad" af-after-validate="afterValidation"
                       af-after-save="afterSave" af-before-save="beforeSave" ng-model="new_user">
                     <input ng-disabled="sent_new_user" class="form-control" ng-model="new_user.email"
@@ -104,7 +104,7 @@
                     <input type="button" value="{{ _('Sign up') }}" class="submit-form" type="submit" type="button"
                            ng-click="$af.save(new_user)"
                            ng-disabled="!first_validation || sent_new_user || !$af.isActionAllowed(new_user, 'save')"/>
-                    </span>
+                    </form>
 
             </span>
             <span ng-if=" login_signup !='signup'">
@@ -113,7 +113,7 @@
                 {% include 'partials/login_or_signup_via_social.html' %}
                 {% raw %}
                 <h3>{{ _('Log in using email') }}</h3>
-                    <span class="login-form-profirider" id="login-form-profirider" action="{{ url_for('auth.login') }}"
+                    <form class="login-form-profirider" id="login-form-profirider" action="{{ url_for('auth.login') }}"
                           onsubmit="return false">
                         <input ng-disabled="sent_login" class="form-control" placeholder="email" name="email"
                                ng-model="existing_user.email"/>
@@ -130,7 +130,7 @@
                         {{ __('If you have any other problems <a href="%(url)s">contact us</a>', {'url': url_for('index.contact_us') } ) }}
 
                         {% raw %}
-                    </span>
+                    </form>
             </span>
 
         </div>

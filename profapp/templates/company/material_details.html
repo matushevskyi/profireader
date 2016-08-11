@@ -44,7 +44,7 @@
                 $ok('', data, function (resp) {
                     callback(resp.portals);
                     $scope.data = resp
-                }).finally(function(){
+                }).finally(function () {
                     $scope.loading = false
                 });
 
@@ -52,18 +52,20 @@
 
 
             $scope.updateMaterial = function (material_id, company_id) {
-                window.location.href = $scope.url_update_material({'company_id': company_id,'material_id': material_id})
-            };
-
-            $scope.get_local_time = function (date) {
-                return moment(new Date(date)).format('Do MMMM YYYY, H:mm:ss');
+                window.location.href = $scope.url_update_material({
+                    'company_id': company_id,
+                    'material_id': material_id
+                })
             };
 
 
             $scope.grid_action = function (id, action, row, column_name) {
                 'use strict';
                 if (action === 'EDIT') {
-                    window.location.href = $scope.url_update_material({'company_id':row['company_id'],'publication_id': row['publication']['id']});
+                    window.location.href = $scope.url_update_material({
+                        'company_id': row['company_id'],
+                        'publication_id': row['publication']['id']
+                    });
                     return;
                 }
 
@@ -109,11 +111,11 @@
                         name: 'publication.material.title', type: 'link', target: 'front',
                         href: 'url_front_publication_details_host(row.entity.material.id, row.entity.portal.host)'
                     },
-                        {
+                    {
                         name: 'publication.status', afilter: {type: 'multi_select'}, width: '100'
                     },
-                        {
-                        name: 'publication.tags', afilter: {type: 'multi_select'}, type: 'tags' ,width: '100'
+                    {
+                        name: 'publication.tags', afilter: {type: 'multi_select'}, type: 'tags', width: '100'
                     }
                     , {
                         name: 'publication.visibility', width: '100'
@@ -151,23 +153,28 @@
     <div ng-controller="material_details" ng-cloak>
         {% raw %}
         <h2>{{ _('Material details `%(title)s`', {title: data.material.title}) }}</h2>
-        <h4>{{ _('Created at') }} {{get_local_time(data.material.cr_tm)}}</h4>
-        <h4>{{ _('Last modified at') }} {{get_local_time(data.material.md_tm)}}</h4>
+        <h4>{{ _('Created at') }} {{ moment(data.material.cr_tm) }}</h4>
+        <h4>{{ _('Last modified at') }} {{ moment(data.material.md_tm) }}</h4>
         <hr/>
-        <button pr-user-can="data.actions.EDIT" class="btn fr" ng-click="updateMaterial(data.material.id, data.material.company_id)">{{ _('Update material') }}</button>
+        <button pr-user-can="data.actions.EDIT" class="btn fr"
+                ng-click="updateMaterial(data.material.id, data.material.company_id)">{{ _('Update material') }}
+        </button>
         <div class="material-details-article-preview">
 
             {% endraw %}{% include 'partials/article_details.html' %}{% raw %}
         </div>
-        <button pr-user-can="data.actions.EDIT" class="btn fr" ng-click="updateMaterial(data.material.id, data.material.company_id)">{{ _('Update
-            material') }}</button>
+        <button pr-user-can="data.actions.EDIT" class="btn fr"
+                ng-click="updateMaterial(data.material.id, data.material.company_id)">{{ _('Update
+            material') }}
+        </button>
         <br/><br/>
         <hr/>
 
         <h2>{{ _('Material is published or can be published at portals') }}</h2>
         <div class="grid" id="grid1" ui-grid-edit ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
-              <i class="fa fa-spin fa-spinner"></i><div>{{ _('Data Loading...') }}</div>
+                <i class="fa fa-spin fa-spinner"></i>
+                <div>{{ _('Data Loading...') }}</div>
             </div>
         </div>
         {% endraw %}

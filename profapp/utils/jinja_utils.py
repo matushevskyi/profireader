@@ -10,6 +10,7 @@ from ..models.pr_base import MLStripper
 from .. import utils
 from .. import Config
 from config import secret_data
+from main_domain import MAIN_DOMAIN
 from ..models.config import Config as ModelConfig
 
 
@@ -175,6 +176,7 @@ def update_jinja_engine(app):
     def tbvm():
         return ' target="_blank" ' if g.user and g.user.id in ['561e3eaf-2188-4001-b542-e607537567b2'] else ''
 
+
     app.jinja_env.globals.update(raw_url_for=raw_url_for)
     app.jinja_env.globals.update(pre=pre)
     app.jinja_env.globals.update(utils=utils)
@@ -189,12 +191,11 @@ def update_jinja_engine(app):
     app.jinja_env.globals.update(moment=moment)
     app.jinja_env.globals.update(static_address=static_address_html)
     app.jinja_env.globals.update(MAIN_DOMAIN=Config.MAIN_DOMAIN)
+    app.jinja_env.globals.update(MAIN_DOMAIN=Config.MAIN_DOMAIN)
     app.jinja_env.globals['raise'] = raise_helper
     app.jinja_env.globals.update(tinymce_format_groups=HtmlHelper.tinymce_format_groups)
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
     app.jinja_env.globals.update(tbvm=tbvm)
-
-    # TODO: remove next line (used only in `raw` front layout)
-    app.jinja_env.globals['classes'] = {}
-    # app.jinja_env.globals['article_unavaible'] = {'message': 'lala', 'url': '//'}
+    app.jinja_env.globals.update(
+        _URL_JOIN=lambda: 'https://' +MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + g.portal_id if g.portal_id else None)
     app.jinja_env.filters['nl2br'] = nl2br

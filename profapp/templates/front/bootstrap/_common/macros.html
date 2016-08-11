@@ -5,7 +5,7 @@
 {% endmacro %}
 
 
-{% macro date(division_type, article) %}
+{% macro article_date(division_type, article) %}
     {% if division_type == 'events' %}
         {% if article.event_begin_tm and article.event_begin_tm %}
             <i class="fa fa-calendar"></i>
