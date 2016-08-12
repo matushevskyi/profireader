@@ -28,6 +28,9 @@ class Portal(Base, PRBase):
     host = Column(TABLE_TYPES['short_name'])
     lang = Column(TABLE_TYPES['short_name'])
 
+    status = Column(TABLE_TYPES['status'])
+    aliases = Column(TABLE_TYPES['text'])
+
     url_facebook = Column(TABLE_TYPES['url'])
     url_google = Column(TABLE_TYPES['url'])
     url_tweeter = Column(TABLE_TYPES['url'])
