@@ -248,6 +248,7 @@ function menu_apache2_config {
 cp ./ports.conf /etc/apache2/
 rm /etc/apache2/sites-enabled/000-default.conf
 mkdir /var/log/profi
+a2enmod wsgi
 service apache2 restart" sudo secret_data
     }
 
