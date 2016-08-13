@@ -58,6 +58,11 @@ function conf {
     fi
 }
 
+function get_main_domain {
+    echo "from main_domain import MAIN_DOMAIN
+print(MAIN_DOMAIN)" | python
+}
+
 function down {
     filetoget=$1
     if [[ "$2" == "" ]]; then
@@ -228,32 +233,49 @@ apt-get update
 apt-get install haproxy" sudo haproxy_config
     }
 
-function menu_haproxy_letsencrypt {
-    conf_comm "
-#echo 'deb http://ftp.debian.org/debian jessie-backports main' > /etc/apt/sources.list.d/jessie-backports.list
-#apt-get update
-#apt-get install certbot -t jessie-backports
-certbot certonly
-" sudo apache2_config
-    }
-
 function menu_haproxy_config {
     conf_comm "cp ./haproxy.cfg /etc/haproxy/
 cp ./profireader_haproxy.key.pem /etc/haproxy/
-service haproxy restart" sudo apache2_config
+service haproxy restart" sudo letsencrypt
     }
 
+function menu_letsencrypt {
+    conf_comm "echo 'deb http://ftp.debian.org/debian jessie-backports main' > /etc/apt/sources.list.d/jessie-backports.list
+apt-get update
+apt-get install certbot -t jessie-backports" sudo apache2_config
+    }
+
+
 function menu_apache2_config {
-    maindom=$(echo "from main_domain import MAIN_DOMAIN
-print(MAIN_DOMAIN)" | python)
     wwwdir=$(rr 'Enter http dir' $PWD)
-    maindomain=$(rr 'Enter main domain' $maindom)
-    conf_comm "cat ./conf/profi-wsgi-apache2.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/sites-enabled/profi-wsgi-apache2.conf
-cp ./conf/ports.conf /etc/apache2/
+    maindomain=$(rr 'Enter main domain' `get_main_domain`)
+    conf_comm "cat ./conf/apache2/directory-access.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/directory-access.conf
+cat ./conf/apache2/lets-encrypt-requests.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/lets-encrypt-requests.conf
+cp ./conf/apache2/ports.conf /etc/apache2/
 rm /etc/apache2/sites-enabled/000-default.conf
 mkdir /var/log/profi
 a2enmod wsgi
-service apache2 restart" sudo apache2_check_ssls
+a2enmod ssl
+service apache2 restart" sudo apache2_profi_vh_ssl
+    }
+
+function menu_apache2_profi_vh_ssl {
+    wwwdir=$(rr 'Enter http dir' $PWD)
+    maindomain=$(rr 'Enter main domain' `get_main_domain`)
+    conf_comm "cat ./conf/apache2/main-domain.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/main-domain.conf
+cd `pwd`/utils
+./get_ssl_for_domain.sh `pwd`/letsencryptrequests $maindomain www.$maindomain static.$maindomain file001.$maindomain 
+service apache2 restart" sudo apache2_fronts_vh_ssl
+    }
+
+
+function menu_apache2_fronts_vh_ssl {
+    venvdir=$(rr 'venv directory' .venv)
+    conf_comm "cd `pwd`
+source $venvdir/bin/activate
+cd utils
+python check_ssl.py
+service apache2 restart" sudo secret_data
     }
 
 function menu_apache2_check_ssls {
@@ -446,7 +468,7 @@ next='_'
 #/bin/ls"
 
 
-#eval $a
+	#eval $a
 
 #exit
 if [[ "$1" == "" ]]; then
@@ -465,9 +487,10 @@ if [[ "$1" == "" ]]; then
       "hosts" "create virtual domain zone in /etc/hosts" \
       "haproxy_compile" "compile and install haproxy" \
       "haproxy_config" "copy haproxy config to /etc/haproxy" \
-      "haproxy_letsencrypt" "install haproxy letsencrypt" \
+      "letsencrypt" "install letsencrypt" \
       "apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
-      "apache2_check_ssls" "check for front ssls by letsencrypt" \
+      "apache2_profi_vh_ssl" "create vh conf file and create/update ssl for main domain (with www., static. and file001. aliases)" \
+      "apache2_fronts_vh_ssl" "create vh conf file for fronts and create/update ssl via letsencrypt" \
       "secret_data" "download secret data" \
       "secret_client" "download secret client data" \
       "download_key_pem" "download https key and pem file" \
