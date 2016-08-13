@@ -20,7 +20,6 @@ from sqlalchemy import String
 from . import country
 import hashlib
 from flask.ext.login import UserMixin
-from .files import File, FileImg
 from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
 # from ..utils import fileUrl

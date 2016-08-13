@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append('..')
 
 from profapp.models.materials import Publication
@@ -14,7 +15,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from config import ProductionDevelopmentConfig
 import datetime
 
-
 engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
@@ -22,7 +22,6 @@ db_session = scoped_session(sessionmaker(autocommit=False,
 
 
 def add_to_search(target=None):
-
     if hasattr(target, 'search_fields'):
         target_fields = ','.join(target.search_fields.keys())
         target_dict = target.get_client_side_dict(fields=target_fields + ',id')
@@ -40,7 +39,7 @@ def add_to_search(target=None):
         for field in target_fields.split(','):
             field_options = target.search_fields[field]
             field_options.update({key: options[key] for key in options
-                                 if key not in field_options.keys()})
+                                  if key not in field_options.keys()})
             pos = getattr(target, 'position', 0)
             position = pos if pos else 0
             db_session.add(Search(index=field_options['index'](target_dict['id']),
@@ -49,8 +48,8 @@ def add_to_search(target=None):
                                   text=field_options['processing'](str(target_dict[field])),
                                   position=position, md_tm=md_time))
 
-def update_search_table(target=None):
 
+def update_search_table(target=None):
     if hasattr(target, 'search_fields'):
         if delete_from_search(target):
             add_to_search(target)
@@ -65,55 +64,75 @@ def delete_from_search(target):
         return True
     return False
 
+import os
 
 if __name__ == '__main__':
     all_portals = db_session.query(Portal).filter_by(status='ACTIVE')
+    with open('../conf/front-wsgi-apache2.conf', 'r') as content_file:
+        template = content_file.read()
+
+    # print(template)
 
     for portal in all_portals:
-        print(portal.host)
-        print(portal.aliases)
-    # time = datetime.datetime.now()
-    # elem_count = 0
-    # quantity = 0
-    # percent_to_str = ''
-    # percents = []
-    # answer = input(
-    #     "Are you sure? \n If you'l start this process, your database will be overwritten. "
-    #     "Yes|No")
-    # prompt = True if answer in ['yes', 'Yes', 'y', 'YES', 'tak'] else False
-    # if not prompt:
-    #     exit('The script has been closed.')
-    # for cls in classes:
-    #     if hasattr(cls, 'search_fields'):
-    #         elem_count += db_session.query(cls).count()
-    #         quantity = elem_count
-    #
-    # for cls in classes:
-    #     variables = vars(cls).copy()
-    #     variables = variables.keys()
-    #
-    #     for key in variables:
-    #         if type(key) is not bool:
-    #             keys = getattr(cls, str(key), None)
-    #             try:
-    #                 stripped_key = str(keys).split('.')[1]
-    #                 type_of_field = str(cls.__table__.c[stripped_key].type)
-    #                 chars_int = int(re.findall(r'\b\d+\b', type_of_field)[0])
-    #                 if chars_int > 36:
-    #                     for c in db_session.query(cls).all():
-    #                         persent = int(100 * int(elem_count)/int(quantity))
-    #                         elem_count -= 1
-    #                         original_field = getattr(c, stripped_key)
-    #                         modify_field = original_field + ' '
-    #                         update_search_table(target=c)
-    #                         if persent >= 0 and persent not in percents:
-    #                             percents.append(persent)
-    #                             percent_to_str += '='
-    #                             print(percent_to_str+'>', str(persent-100).replace('-', '')+'%')
-    #                     break
-    #             except Exception as e:
-    #                 pass
-    # execute_time = datetime.datetime.now()-time
-    # print('Updated successfully')
-    # print('Execution time: {time}'.format(time=execute_time))
-    # db_session.commit()
+        conf_file = re.sub(r'----domain----', portal.host, template)
+        if portal.aliases and portal.aliases != '':
+            conf_file = re.sub(r'----aliases----', portal.aliases, conf_file)
+        else:
+            conf_file = re.sub(r'.*----aliases----.*', '', conf_file)
+        # pass
+
+        retvalue = os.system("./get_ssl_for_domain.sh %s/letsencryptrequests/ %s %s" % (
+        '/home/oles/profireader', portal.host, portal.aliases))
+
+        with open('/etc/apache2/sites-enabled/' + portal.host + '.conf', 'w') as host_file:
+            host_file.write(conf_file)
+
+
+
+        # print(retvalue)
+        # print(portal.aliases)
+        # time = datetime.datetime.now()
+        # elem_count = 0
+        # quantity = 0
+        # percent_to_str = ''
+        # percents = []
+        # answer = input(
+        #     "Are you sure? \n If you'l start this process, your database will be overwritten. "
+        #     "Yes|No")
+        # prompt = True if answer in ['yes', 'Yes', 'y', 'YES', 'tak'] else False
+        # if not prompt:
+        #     exit('The script has been closed.')
+        # for cls in classes:
+        #     if hasattr(cls, 'search_fields'):
+        #         elem_count += db_session.query(cls).count()
+        #         quantity = elem_count
+        #
+        # for cls in classes:
+        #     variables = vars(cls).copy()
+        #     variables = variables.keys()
+        #
+        #     for key in variables:
+        #         if type(key) is not bool:
+        #             keys = getattr(cls, str(key), None)
+        #             try:
+        #                 stripped_key = str(keys).split('.')[1]
+        #                 type_of_field = str(cls.__table__.c[stripped_key].type)
+        #                 chars_int = int(re.findall(r'\b\d+\b', type_of_field)[0])
+        #                 if chars_int > 36:
+        #                     for c in db_session.query(cls).all():
+        #                         persent = int(100 * int(elem_count)/int(quantity))
+        #                         elem_count -= 1
+        #                         original_field = getattr(c, stripped_key)
+        #                         modify_field = original_field + ' '
+        #                         update_search_table(target=c)
+        #                         if persent >= 0 and persent not in percents:
+        #                             percents.append(persent)
+        #                             percent_to_str += '='
+        #                             print(percent_to_str+'>', str(persent-100).replace('-', '')+'%')
+        #                     break
+        #             except Exception as e:
+        #                 pass
+        # execute_time = datetime.datetime.now()-time
+        # print('Updated successfully')
+        # print('Execution time: {time}'.format(time=execute_time))
+        # db_session.commit()

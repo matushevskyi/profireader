@@ -7,6 +7,8 @@ from functools import wraps
 from flask import jsonify, render_template
 
 
+# TODO: YG by OZ: remove this file
+
 class SendEmail:
     def __init__(self, username=Config.MAIL_USERNAME, password=Config.MAIL_PASSWORD):
         self.username = username
