@@ -1,0 +1,39 @@
+<div class="container">
+    <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-7">
+        <ul class="pager" style="margin-left: -245px">
+            {% if pager.current>1 %}
+                <li>
+                    <a href="{{ pager.url_construct(page=1) }}">{{ 1 }}</a>
+                </li>
+            {% endif %}
+            {% if pager.current-pager.neighbours>2 %}
+                <li>...</li>
+            {% endif %}
+
+            {% for pg in range(2 if 2 > pager.current-pager.neighbours else pager.current-pager.neighbours, pager.current) %}
+                <li>
+                    <a href="{{ pager.url_construct(page=pg) }}">{{ pg }}</a>
+                </li>
+            {% endfor %}
+            <li class="current-page">
+                <a href="{{ pager.url_construct(page=1) }}" style="background-color: #eee;">{{ pager.current }}</a>
+            </li>
+            {% for pg in range(pager.current+1, pager.current+pager.neighbours + 1 if pager.current+pager.neighbours < pager.total - 1 else pager.total) %}
+                <li>
+                    <a href="{{ pager.url_construct(page=pg) }}">{{ pg }}</a>
+                </li>
+            {% endfor %}
+            {% if pager.current+pager.neighbours<pager.total - 1 %}
+                <li>...</li>
+            {% endif %}
+            {% if pager.current<pager.total %}
+                <li>
+                    <a href="{{ pager.url_construct(page=pager.total) }}">{{ pager.total }}</a>
+                </li>
+            {% endif %}
+        </ul>
+        <div class="col-md-3">
+            <a href="#" class="bottom_banner_1">{{ portal.advs['bottom_banner']|safe }}</a>
+        </div>
+    </div>
+</div>

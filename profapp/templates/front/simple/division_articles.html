@@ -1,0 +1,28 @@
+{% extends 'layout.html' %}
+{% block title %}
+    {{ _('%(division_name)s - %(portal_name)s', {'portal_name': portal.name, 'division_name': division.name}) }}{% endblock %}
+
+{% block right_content %}
+    {% include '_common/block_search.html' %}
+    <a href="#" class="right_banner_1">{{ portal.advs.right_banner_1|safe }}</a>
+    <br/>
+    <a href="#" class="right_banner_2">{{ portal.advs.right_banner_2|safe }}</a>
+{% endblock %}
+
+{% block left_content %}
+    {% import '_common/macros.html' as frontmacros %}
+    {% set wide_banners = {2:'1',6:'2'} %}
+    {% for article_id, article in articles.items() %}
+        {% include 'article_short.html' %}
+        {% if loop.index in wide_banners and portal.advs['wide_banner_' + wide_banners[loop.index]] %}
+            <div class="block-item list-elements">
+                <a href="#"
+                   class="wide_banners">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a>
+            </div>
+        {% endif %}
+    {% else %}
+        <h1>{{ _('There are no articles in this division') }}</h1>
+    {% endfor %}
+
+    {% include '_common/block_pager.html' %}
+{% endblock %}

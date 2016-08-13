@@ -2,6 +2,8 @@ from .blueprints_declaration import admin_bp
 from flask import g, request, url_for, render_template, flash, current_app
 from .request_wrapers import ok
 from .pagination import pagination
+from .request_wrapers import check_right
+from flask.ext.login import login_required
 from ..models.translate import TranslateTemplate
 from ..models.ip import Ips
 from utils.db_utils import db
@@ -9,39 +11,41 @@ from sqlalchemy.sql import expression
 import datetime
 from ..models.config import Config
 from flask import session
-from ..models.pr_base import PRBase, Grid
+from ..models.pr_base import Grid
+from ..models.rights import UserIsActive
 
 @admin_bp.route('/translations', methods=['GET'])
+@check_right(UserIsActive)
 def translations():
     return render_template('admin/translations.html',
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
 
-class test:
-    a = 1
+# class test:
+#     a = 1
+#
+#     def __init__(self, n):
+#         self.a = n
+#
+# @admin_bp.route('/set_session_a', methods=['OK'])
+# @check_right(UserIsActive)
+# def set_session_a(json):
+#     z = session['test'] if 'test' in session else None
+#     # print(z.a)
+#     y = test('a')
+#     session['test'] = y
+#     return {'old_value': z.__repr__(), 'new_value': session['test'].__repr__()}
+#
+# @admin_bp.route('/set_session_b', methods=['OK'])
+# @check_right(UserIsActive)
+# def set_session_b(json):
+#     z = session['test'] if 'test' in session else None
+#     # print(z.a)
+#     y = test('b')
+#     session['test'] = y
+#     return {'old_value': z.__repr__(), 'new_value': session['test'].__repr__()}
 
-    def __init__(self, n):
-        self.a = n
-
-@admin_bp.route('/set_session_a', methods=['GET'])
-@ok
-def set_session_a(json):
-    z = session['test'] if 'test' in session else None
-    # print(z.a)
-    y = test('a')
-    session['test'] = y
-    return {'old_value': z.__repr__(), 'new_value': session['test'].__repr__()}
-
-@admin_bp.route('/set_session_b', methods=['GET'])
-@ok
-def set_session_b(json):
-    z = session['test'] if 'test' in session else None
-    # print(z.a)
-    y = test('b')
-    session['test'] = y
-    return {'old_value': z.__repr__(), 'new_value': session['test'].__repr__()}
-
-@admin_bp.route('/translations', methods=['POST'])
-@ok
+@admin_bp.route('/translations', methods=['OK'])
+@check_right(UserIsActive)
 def translations_load(json):
     subquery = TranslateTemplate.subquery_search(json.get('filter'), json.get('sort') , json.get('editItem'))
 
@@ -62,25 +66,27 @@ def translations_load(json):
             }
 
 
-@admin_bp.route('/translations_save', methods=['POST'])
-@ok
+@admin_bp.route('/translations_save', methods=['OK'])
+@check_right(UserIsActive)
 def translations_save(json):
     exist = db(TranslateTemplate, template=json['row'], name=json['col']).first()
     return TranslateTemplate.get(exist.id).attr({json['lang']: json['val']}).save().get_client_side_dict()
 
-@admin_bp.route('/delete', methods=['POST'])
-@ok
+@admin_bp.route('/delete', methods=['OK'])
+@check_right(UserIsActive)
 def delete_translates(json):
     return TranslateTemplate.delete_translates(json['objects'])
 
 # Greckas ips
 
 @admin_bp.route('/ips', methods=['GET'])
+@check_right(UserIsActive)
 def ips():
     return render_template('admin/ips.html',
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
-@admin_bp.route('/ips', methods=['POST'])
-@ok
+
+@admin_bp.route('/ips', methods=['OK'])
+@check_right(UserIsActive)
 def ips_load(json):
     page = json.get('paginationOptions')['pageNumber']
     pageSize = json.get('paginationOptions')['pageSize']
@@ -123,22 +129,22 @@ def ips_load(json):
             'total': subquery.count()
             }
 
-@admin_bp.route('/ips_save', methods=['POST'])
-@ok
+@admin_bp.route('/ips_save', methods=['OK'])
+@check_right(UserIsActive)
 def ips_save(json):
     exist = db(Ips, template=json['row'], name=json['col']).first()
     return Ips.get(exist.id).attr({json['lang']: json['val']}).save().get_client_side_dict()
 
 
-@admin_bp.route('/ips_add', methods=['POST'])
-@ok
+@admin_bp.route('/ips_add', methods=['OK'])
+@check_right(UserIsActive)
 def ips_add(json):
 
      exist = db(Ips, template=json['row'], name=json['col']).first()
      return Ips.get(exist.id).attr({json['lang']: json['val']}).add().get_client_side_dict()
 
-@admin_bp.route('/ips_delete', methods=['POST'])
-@ok
+@admin_bp.route('/ips_delete', methods=['OK'])
+@check_right(UserIsActive)
 def ips_delete(json):
     return Ips.delete(json['objects'])
 
@@ -148,13 +154,14 @@ def ips_delete(json):
 
 
 @admin_bp.route('/config', methods=['GET'])
+@check_right(UserIsActive)
 def config():
     return render_template('admin/config.html',
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
 
 
-@admin_bp.route('/config', methods=['POST'])
-@ok
+@admin_bp.route('/config', methods=['OK'])
+@check_right(UserIsActive)
 def config_load(json):
     page = json.get('paginationOptions')['pageNumber']
     pageSize = json.get('paginationOptions')['pageSize']

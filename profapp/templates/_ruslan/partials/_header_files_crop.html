@@ -1,6 +1,6 @@
 <!---cropper---->
-<script src="//static.profireader.com/static/new/angular-crop/ng-img-crop.js"></script>
-<link rel="stylesheet" type="text/css" href="//static.profireader.com/static/new/angular-crop/ng-img-crop.css">
+<link href="{{ static_address('new/angular-crop/ng-crop.css') }}" rel="stylesheet">
+<script src="{{ static_address('new/angular-crop/ng-crop.js') }}"></script>
 <script>
-    pr_angular_modules.push('ngImgCrop');
+    pr_angular_modules.push('ngCrop');
 </script>

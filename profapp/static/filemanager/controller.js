@@ -1,9 +1,10 @@
+
 (function (window, angular, $) {
     "use strict";
     angular.module('FileManagerApp').controller('FileManagerCtrl', ['$http',
-        '$scope', '$translate', '$cookies', '$timeout', 'fileManagerConfig', 'item', 'Upload', 'fileNavigator', 'fileUploader','$q','$filter',
-        function ($http, $scope, $translate, $cookies, $timeout, fileManagerConfig, Item, Upload, FileNavigator, fileUploader, $q, $filter) {
-
+        '$scope', '$translate', '$cookies', '$timeout', 'fileManagerConfig', 'item', 'Upload', 'fileNavigator', 'fileUploader','$q','$filter','$ok',
+        function ($http, $scope, $translate, $cookies, $timeout, fileManagerConfig, Item, Upload, FileNavigator, fileUploader, $q, $filter, $ok) {
+            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('file_manager');
             $scope.config = fileManagerConfig;
             $scope.appName = fileManagerConfig.appName;
             $scope.path_profireader = 'http://profireader.com';
@@ -12,11 +13,12 @@
             $scope.rootdirs = library;
             $scope.last_visit_root = last_visit_root;
             $scope.last_root_id = last_root_id;
+            $scope.$$translate = translates;
             $scope.temp = new Item();
             $scope.fileNavigator = new FileNavigator($scope.last_root_id? $scope.last_root_id:($scope.rootdirs[0]?$scope.rootdirs[0]['id']: ""), file_manager_called_for);
             $scope.fileUploader = fileUploader;
             $scope.uploadFileList = [];
-            $scope.viewTemplate = $cookies.viewTemplate || 'main-table.html';
+            $scope.viewTemplate = $cookies.get('viewTemplate') || 'main-table.html';
             $scope.error = error;
             $scope.file_manager_called_for = file_manager_called_for;
             $scope.file_manager_on_action = file_manager_on_action;
@@ -29,20 +31,27 @@
             $scope.name = '';
             $scope.upload_file_id = '';
             $scope.uploadingProgress = false;
-
+            $scope.can_upload = false;
             $scope.last_visit = document.referrer;
+            
+            $scope._ = function(phrase){
+                var args = [].slice.call(arguments);
+                return pr_dictionary(args.shift(), args, '', $scope, $ok, 'FileManagerCtrl');
+            };
 
             $scope.setTemplate = function (name) {
-                $scope.viewTemplate = $cookies.viewTemplate = name;
+                $cookies.put('viewTemplate', name);
+                $scope.viewTemplate = name;
+            };
+            
+            $scope.changeRoot = function (root) {
+                $scope.can_upload=root.can_upload;
+                $cookies.put('last_root' ,root.id);
+                $scope.root_name = root.name;
+                $scope.fileNavigator.setRoot(root.id);
             };
 
-
-            $scope.changeRoot = function (root_id, root_name) {
-                $scope.fileNavigator.setRoot(root_id);
-                $cookies.last_root = root_id;
-                $scope.root_name = root_name;
-            };
-
+            
             $scope.touch = function (item) {
                 item = item instanceof Item ? item : new Item();
                 item.revert && item.revert();
@@ -120,18 +129,21 @@
                 }
             };
 
-
             $scope.cut = function (item) {
-                $scope.cut_file_id = $cookies.cut_file_id = item.model.id;
-                $scope.copy_file_id = $cookies.copy_file_id = '';
+                $cookies.put('cut_file_id' , item.model.id);
+                $cookies.put('copy_file_id' , '');
+                $scope.cut_file_id = $cookies.get('cut_file_id');
+                $scope.copy_file_id = $cookies.get('copy_file_id');
                 item.cut(function () {
                     $scope.fileNavigator.refresh();
                 });
             };
 
             $scope.copy = function (item) {
-                $scope.copy_file_id = $cookies.copy_file_id = item.model.id;
-                $scope.cut_file_id = $cookies.cut_file_id = '';
+                $cookies.put('copy_file_id' , item.model.id);
+                $cookies.put('cut_file_id' , '');
+                $scope.cut_file_id = $cookies.get('cut_file_id');
+                $scope.copy_file_id = $cookies.get('copy_file_id');
                 item.copy(function () {
                     $scope.fileNavigator.refresh();
                 });
@@ -143,25 +155,26 @@
                     $scope.timer = false
                 }, 2000);
             };
-
-
+            
             $scope.paste = function (item) {
                 if ($scope.copy_file_id !== '' && $scope.cut_file_id === '') {
                     item.tempModel.mode = 'copy';
                     item.tempModel.id = $scope.copy_file_id;
-                    item.tempModel.error = $translate.instant('error_copy');
+                    item.tempModel.error = $scope._('error_copy');
                 } else if ($scope.copy_file_id == '' && $scope.cut_file_id != '') {
                     item.tempModel.mode = 'cut';
                     item.tempModel.id = $scope.cut_file_id;
-                    item.tempModel.error = $translate.instant('error_cut');
+                    item.tempModel.error = $scope._('error_cut');
                 }
                 item.tempModel.len = $scope.fileNavigator.fileList.length;
                 item.tempModel.time_o = $scope.time_out();
                 item.tempModel.folder_id = $scope.fileNavigator.getCurrentFolder();
                 item.paste(function () {
                     $scope.fileNavigator.refresh();
-                    $scope.cut_file_id = $cookies.cut_file_id = '';
-                    $scope.copy_file_id = $cookies.copy_file_id = ''
+                    $cookies.put('cut_file_id' , '');
+                    $cookies.put('copy_file_id' , '');
+                    $scope.cut_file_id = $cookies.get('cut_file_id');
+                    $scope.copy_file_id = $cookies.get('copy_file_id');
                 });
             };
 
@@ -184,7 +197,7 @@
             };
 
             $scope.remove = function (item) {
-                item.tempModel.error = $translate.instant('error_remove');
+                item.tempModel.error = $scope._('error_remove');
                 item.remove(function () {
                     $scope.fileNavigator.refresh();
                     $('#remove').modal('hide');
@@ -194,7 +207,7 @@
 
             $scope.set_property = function (item) {
                 if ($scope.fileNavigator.fileNameExists(item.tempModel.name) && item.tempModel.name.trim() !== item.model.name.trim()) {
-                    item.error = $translate.instant('error_invalid_filename');
+                    item.error = $scope._('error_invalid_filename');
                     return false;
                 }
                 item.set_properties(function () {
@@ -217,13 +230,15 @@
                         $('#newfolder').modal('hide');
                     });
                 } else {
-                    $scope.temp.error = $translate.instant('error_invalid_filename');
+                    $scope.temp.error = $scope._('error_invalid_filename');
                     return false;
                 }
             };
 
             $scope.take_action = function (item, actionname, permitted) {
                 $scope.modal = '';
+                if(permitted !== true)
+                    return false
                 if ($scope.file_manager_on_action[actionname] !== '' && actionname === 'download') {
                     try {
                         eval('item' + '.' + actionname + '();');//$scope.file_manager_on_action[actionname] + '(item);');
@@ -244,7 +259,6 @@
             };
 
             $scope.auto_remove = function(list, folder){
-                console.log(list)
                 var data = {
                     'list':list,
                     'folder_id':folder
@@ -267,7 +281,6 @@
 
             $scope.abort = function(){
                 if($scope.uploadFileList.length>0){
-                    console.log($scope.list_file_id)
                     if($scope.f){
                         $scope.f.upload.abort();
                         $scope.f.progress = 0;
@@ -334,7 +347,7 @@
                         $scope.uploadingProgress = false;
                         $scope.thisprogress = 0
                         $scope.f.progress = 0;
-                        var errorMsg =  $translate.instant('error_uploading_files');
+                        var errorMsg =  $scope._('error_uploading_files');
                         //for(var i=0;i<$scope.uploadFileList.length;i++){
                         //    $scope.auto_remove($scope.uploadFileList[i].name, $scope.fileNavigator.getCurrentFolder());
                         //}
@@ -452,21 +465,20 @@
                     if($scope.last_visit_root && $scope.rootdirs){
                         for(var n = 0;n < $scope.rootdirs.length;n++){
                             if($scope.rootdirs[n]['name'] === $scope.last_visit_root){
-                                $scope.changeRoot($scope.rootdirs[n]['id'], $scope.rootdirs[n]['name']);
+                                $scope.changeRoot($scope.rootdirs[n]);
                             }
                         }
                     }else{
-                        $scope.changeRoot($scope.rootdirs[0]['id'], $scope.rootdirs[0]['name'])
+                        $scope.changeRoot($scope.rootdirs[0])
                     }
                 } else {
-                    $scope.changeRoot('', '')
+                    $scope.changeRoot('')
                 }
             };
 
-            $scope.errMsg = "You do not belong to any company!";
-            $scope.changeRoots();//(_.keys($scope.rootdirs)[0], _.values($scope.rootdirs)[0]['name']);
+            $scope.errMsg = $scope._("You do not belong to any company!");
+            $scope.changeRoots();
             $scope.isWindows = $scope.getQueryParam('server') === 'Windows';
-            $scope.fileNavigator.refresh();
 
         }]);
 })(window, angular, jQuery);

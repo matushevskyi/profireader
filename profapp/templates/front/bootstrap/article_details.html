@@ -1,0 +1,51 @@
+{% extends 'layout.html' %}
+{% import '_common/macros.html' as frontmacros %}
+{% block body_class %}no-search{% endblock %}
+{% block title -%}
+    {{ _('%(article_title)s - %(portal_name)s', {'article_title': article.title, 'portal_name': portal.name}) }}
+{%- endblock %}
+
+{% block left_content %}{% endblock %}
+{% block center_content %}
+    <div class="article article-details {% if article['illustration']['selected_by_user']['type'] != 'none' %}article-with-illustration{% endif %}">
+        <div class="article-division-and-tags pr">
+            <div class="article-division nw">
+                <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
+            </div>
+            <div class="tags-at-right nw">
+                {% for tag in article.tags %}
+                    {{ frontmacros.tag(tag, tags) }}
+                {% endfor %}
+            </div>
+        </div>
+        <h3>
+            <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article['title']|safe }}</a>
+        </h3>
+        <h4>{{ article.subtitle }}</h4>
+        <div class="article-author">{{ article.author }}</div>
+
+        <div class="short-text-and-illustration pr">
+            {% if article['illustration']['selected_by_user']['type'] != 'none' %}
+                <img class="article-illustration" {{ prImageUrl(article['illustration']['url']) }}/>{% endif %}
+            <div class="short-text"><h5>{{ article.short|safe }}</h5></div>
+        </div>
+
+        {% if article_visibility %}
+            <div>{{ article['long'] |safe }}</div>
+        {% else %}
+            {% include 'article_unavailable.html' %}
+        {% endif %}
+        <div class="article-company-and-date pr">
+            <div class="article-company nw">
+                <i class="fa fa-building-o"></i> <a
+                    href="{{ url_for('front.company_page', member_company_name = article['company']['name'], member_company_id = article['company']['id']) }}">{{ article['company']['name']|safe }}</a>
+            </div>
+            <div class="article-date nw">
+                {{ frontmacros.article_date(article.division.portal_division_type_id, article) }}
+            </div>
+        </div>
+
+    </div>
+    <br/>
+    {% include 'article_social.html' %}
+{% endblock %}

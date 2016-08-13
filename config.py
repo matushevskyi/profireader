@@ -1,5 +1,6 @@
 import os
-import secret_data
+import secret_data as secret_data
+from main_domain import MAIN_DOMAIN
 
 
 def database_uri(host, username, password, db_name):
@@ -19,8 +20,8 @@ class Config(object):
     # 0.0.0.0    profireader.a
     # to /etc/hosts
 
-    # SERVER_NAME = 'profireader.com'
     SITE_TITLE = 'Profireader'
+    MAIN_DOMAIN = MAIN_DOMAIN
 
     # Statement for enabling the development environment
     DEBUG = False
@@ -48,6 +49,7 @@ class Config(object):
 
 # Ratio for image_editor, can be :
 # 1.7777777777777777, 1.3333333333333333, 0.6666666666666666, 1
+    THUMBNAILS_SIZE = (100, 100)
     IMAGE_EDITOR_RATIO = 1.3333333333333333
     HEIGHT_IMAGE = 300   # px
     ALLOWED_IMAGE_FORMATS = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG',
@@ -56,7 +58,7 @@ class Config(object):
                              'XV Thumbnails']
 
 # Pagination
-    ITEMS_PER_PAGE = 5
+    ITEMS_PER_PAGE = 10
     PAGINATION_BUTTONS = 2
 
 # GOOGLE API
@@ -64,7 +66,7 @@ class Config(object):
     GOOGLE_API_SECRET_JSON = secret_data.GOOGLE_API_SECRET_JSON
     GOOGLE_API_KEY_SIMPLE = secret_data.GOOGLE_API_KEY_SIMPLE
     YOUTUBE_API = dict(SCOPE="https://www.googleapis.com/auth/youtube",
-                       UPLOAD=dict(REDIRECT_URI="http://profireader.com/filemanager/uploader/",
+                       UPLOAD=dict(REDIRECT_URI= '//' + MAIN_DOMAIN + "/filemanager/uploader/",
                                    SEND_URI="https://www.googleapis.com/upload/youtube/v3/"
                                             "videos?%s"),
                        CREATE_PLAYLIST=dict(SEND_URI="https://www.googleapis.com/youtube/v3/"
@@ -90,7 +92,7 @@ class Config(object):
 
     # Secret key for wtforms
     WTF_CSRF_ENABLED = False
-    WTF_CSRF_SECRET_KEY = secret_data.WTF_CSRF_SECRET_KEY
+    # WTF_CSRF_SECRET_KEY = secret_data.WTF_CSRF_SECRET_KEY
 
     host = secret_data.DB_HOST
     username = secret_data.DB_USER
@@ -113,6 +115,7 @@ class Config(object):
 class ProductionDevelopmentConfig(Config):
 
     #Define database connection parameters
+
     host = os.getenv('PRODUCTION_SERVER_DB_HOST', Config.host)
     username = os.getenv('PRODUCTION_SERVER_DB_USERNAME', Config.username)
     password = os.getenv('PRODUCTION_SERVER_DB_PASSWORD', Config.password)

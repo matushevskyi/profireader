@@ -18,21 +18,20 @@
 
         module.controller('material_details', function ($scope, $ok, $uibModal, $timeout, $publish) {
             $scope.$$translate = {{ translates('material_details')|safe }};
-            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials')
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
 
             $scope.url_search_for_user = {{ raw_url_for('company.search_for_user')|safe }};
             $scope.url_update_material = {{ raw_url_for('article.article_show_form')|safe }};
             $scope.url_company = {{ raw_url_for('company.profile')|safe }};
-            $scope.url_front_publication_details = {{ raw_url_for('front.details')|safe }};
+            $scope.url_front_publication_details = {{ raw_url_for('front.article_details')|safe }};
             $scope.url_front_publication_division = {{ raw_url_for('front.division')|safe }};
-            $scope.rights = {{ user_rights_in_company|safe }}
 
             $scope.url_front_publication_division_host = function (division_name, host) {
                 return division_name ? ('//' + host + $scope.url_front_publication_division({division_name: division_name})) : '';
             }
 
             $scope.url_front_publication_details_host = function (publication_id, host) {
-                return publication_id ? ('//' + host + $scope.url_front_publication_details({article_portal_division_id: publication_id})) : '';
+                return publication_id ? ('//' + host + $scope.url_front_publication_details({publication_id: publication_id})) : '';
             }
 
             $scope.url_front_publication_index_host = function (host) {
@@ -41,26 +40,32 @@
 
 
             $scope.loadMaterialDetails = function (data, callback) {
-                $scope.loading = true
+                $scope.loading = true;
                 $ok('', data, function (resp) {
                     callback(resp.portals);
-                    $scope.data = resp;
-                }).finally(function(){
+                    $scope.data = resp
+                }).finally(function () {
                     $scope.loading = false
                 });
 
             };
 
 
-            $scope.updateMaterial = function (material_id) {
-                window.location.href = $scope.url_update_material({'material_id': material_id})
+            $scope.updateMaterial = function (material_id, company_id) {
+                window.location.href = $scope.url_update_material({
+                    'company_id': company_id,
+                    'material_id': material_id
+                })
             };
 
 
             $scope.grid_action = function (id, action, row, column_name) {
-                'use strict'
+                'use strict';
                 if (action === 'EDIT') {
-                    window.location.href = $scope.url_update_material({'publication_id': row['publication']['id']});
+                    window.location.href = $scope.url_update_material({
+                        'company_id': row['company_id'],
+                        'publication_id': row['publication']['id']
+                    });
                     return;
                 }
 
@@ -69,12 +74,12 @@
                         material_or_publication_id: (action === 'SUBMIT') ? $scope.data['material']['id'] :
                                 row['publication']['id'],
                         action: action,
-                        portal_id: row['id'],
-                        company_id: $scope.data.company['id']
+                        portal_id: row['portal']['id'],
+                        company_id: row['company_id']
                     });
 
                     modalInstance.result.then(function (updated_row) {
-                        $scope.grid_change_row($scope.data.portals, updated_row);
+                        $scope.gridApi.grid.grid_change_row(updated_row);
                     });
                 }
             };
@@ -91,23 +96,26 @@
                      }
                      ,*/
                     {
-                        name: 'name',
+                        name: 'portal.name',
                         type: 'link',
                         target: 'front',
-                        href: 'url_front_publication_index_host(row.entity.host)',
-                        img: 'logo_file_id'
+                        href: 'url_front_publication_index_host(row.entity.portal.host)',
+                        img_url: 'portal.logo.url'
                     }
                     , {
                         name: 'publication.division.name', type: 'link', target: 'front',
-                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.host)'
+                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.portal.host)'
                     }
 
                     , {
-                        name: 'publication.title', type: 'link', target: 'front',
-                        href: 'url_front_publication_details_host(row.entity.publication.id, row.entity.host)'
+                        name: 'publication.material.title', type: 'link', target: 'front',
+                        href: 'url_front_publication_details_host(row.entity.material.id, row.entity.portal.host)'
                     },
-                        {
+                    {
                         name: 'publication.status', afilter: {type: 'multi_select'}, width: '100'
+                    },
+                    {
+                        name: 'publication.tags', afilter: {type: 'multi_select'}, type: 'tags', width: '100'
                     }
                     , {
                         name: 'publication.visibility', width: '100'
@@ -145,23 +153,28 @@
     <div ng-controller="material_details" ng-cloak>
         {% raw %}
         <h2>{{ _('Material details `%(title)s`', {title: data.material.title}) }}</h2>
-        <h4>{{ _('Created at') }} {{data.material.cr_tm}}</h4>
-        <h4>{{ _('Last modified at') }} {{data.material.md_tm}}</h4>
+        <h4>{{ _('Created at') }} {{ moment(data.material.cr_tm) }}</h4>
+        <h4>{{ _('Last modified at') }} {{ moment(data.material.md_tm) }}</h4>
         <hr/>
-        <button pr-user-can="data.actions.EDIT" class="btn fr" ng-click="updateMaterial(data.material.id)
-        ">{{ _('Update material') }}</button>
+        <button pr-user-can="data.actions.EDIT" class="btn fr"
+                ng-click="updateMaterial(data.material.id, data.material.company_id)">{{ _('Update material') }}
+        </button>
         <div class="material-details-article-preview">
+
             {% endraw %}{% include 'partials/article_details.html' %}{% raw %}
         </div>
-        <button pr-user-can="data.actions.EDIT" class="btn fr" ng-click="updateMaterial(data.material.id)">{{ _('Update
-            material') }}</button>
+        <button pr-user-can="data.actions.EDIT" class="btn fr"
+                ng-click="updateMaterial(data.material.id, data.material.company_id)">{{ _('Update
+            material') }}
+        </button>
         <br/><br/>
         <hr/>
 
         <h2>{{ _('Material is published or can be published at portals') }}</h2>
         <div class="grid" id="grid1" ui-grid-edit ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
-              <i class="fa fa-spin fa-spinner"></i><div>{{ _('Data Loading...') }}</div>
+                <i class="fa fa-spin fa-spinner"></i>
+                <div>{{ _('Data Loading...') }}</div>
             </div>
         </div>
         {% endraw %}

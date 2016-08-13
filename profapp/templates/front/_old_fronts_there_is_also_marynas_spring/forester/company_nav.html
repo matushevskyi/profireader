@@ -1,0 +1,33 @@
+<div class="collapse navbar-collapse navbar-inverse subportal" id="bs-example-navbar-collapse-1">
+
+    <div class="subportal-cover">
+        <img src="{{ fileUrl(member_company['logo_file_id']) }}"/>
+        {#        {{ member_company['short_description']|safe }}#}
+    </div>
+
+
+    <ul class="nav navbar-nav">
+
+        <li {% if current_subportal_division_name == 'index' %}class="active"{% endif %}><a href="{{ url_for('front.company_member',
+                                   member_company_id = member_company['id'] ,
+                                   member_company_name = member_company['name']) }}">{{ _('About') }}</a></li>
+
+        {% for division in portal.divisions %}
+            {% if division.portal_division_type_id == 'news' or division.portal_division_type_id == 'events' %}
+                <li {% if current_subportal_division and division.id == current_subportal_division.id %}class="active"{% endif %}>
+                    <a href="{{ url_for('front.division',
+                                   member_company_id = member_company['id'] ,
+                                   member_company_name = member_company['name'],
+                                   division_name=division.name) }}">{{ division.name }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        <li {% if current_subportal_division_name == 'address' %}class="active"{% endif %}><a href="{{ url_for('front.subportal_address',
+                                   member_company_id = member_company['id'] ,
+                                   member_company_name = member_company['name']) }}">{{ _('Address') }}</a></li>
+        <li {% if current_subportal_division_name == 'contacts' %}class="active"{% endif %}><a href="{{ url_for('front.subportal_contacts',
+                                   member_company_id = member_company['id'] ,
+                                   member_company_name = member_company['name']) }}">{{ _('Contacts') }}</a></li>
+    </ul>
+</div>

@@ -136,12 +136,26 @@ var prDatePicker_and_DateTimePicker = function (name, $timeout) {
     }
 }
 
-angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip'])
+angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip', 'ui.select'])
     .factory('$publish', ['$http', '$uibModal', function ($http, $uibModal) {
         return function (dict) {
             var modalInstance = $uibModal.open({
                 templateUrl: 'submit_publish_dialog.html',
                 controller: 'submit_publish_dialog',
+                backdrop: 'static',
+                keyboard: false,
+                resolve: resolveDictForAngularController(dict)
+            });
+            return modalInstance;
+        }
+    }])
+    .factory('$membership_tags', ['$http', '$uibModal', function ($http, $uibModal) {
+        return function (dict) {
+            var modalInstance = $uibModal.open({
+                templateUrl: 'membership_tags.html',
+                controller: 'membership_tags',
+                backdrop: 'static',
+                keyboard: false,
                 resolve: resolveDictForAngularController(dict)
             });
             return modalInstance;
@@ -206,632 +220,240 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
             }
         };
     })
-    .directive('prCrop', ['$compile', '$templateCache', '$timeout', function ($compile, $templateCache, $timeout) {
+    .directive('prCrop', function ($compile, $templateCache, $timeout) {
         return {
             restrict: 'A',
+            replace: false,
+            terminal: true,
+            priority: 1000,
             scope: {
                 prCrop: '='
             },
+            link: function link(scope, element, attrs) {
+                element.attr('ng-crop', 'selectedurl');
+                element.attr('ng-crop-coordinates', 'coordinates');
+                element.attr('ng-crop-options', 'options');
+                element.attr('ng-crop-zoom', 'zoom');
+                element.attr('ng-crop-origin', 'origin');
+                element.attr('logic', 'logic');
+                element.attr('ng-crop-disabled', 'disabled');
+                element.attr('ng-crop-loading', 'loading');
 
-            link: function (scope, element, attrs, model) {
+                element.attr('ng-crop-on-error', 'onerror');
+                element.attr('ng-crop-on-load', 'onload');
 
-                //TODO: OZ by OZ: move it to angular attrs
+
+                element.removeAttr("pr-crop");
+
+                scope.logic = null;
                 scope.zoomable = true;
-                scope.resetable = true;
-                scope.noneurl = true;
-                scope.aspect_ratio = false;
-                //scope.minimal = 0.1;
+                scope.disabled = false;
+                scope.original_model = null;
+                scope.preset_button_classes = {'gravatar': 'glyphicon-share'};
 
-                scope.croper_loaded = false;
-                //scope.originalModel = $.extend(true, {}, scope.prCrop);
-                scope.fallback_url = '//static.profireader.com/static/images/0.png';
-
-
-                scope.setModel = function () {
-                    scope.uploadable = false;
-                    scope.browsable = false;
-                    scope.noneurl = false;
-                    scope.cropable = false;
-                    scope.aspect_ratio = false;
-                    scope.no_selection_url = scope.fallback_url;
-                    if (scope.prCrop) {
-                        scope.noneurl = scope.prCrop['none'] ? scope.prCrop['none'] : false;
-                        scope.uploadable = scope.prCrop['upload'] ? true : false;
-                        scope.browsable = scope.prCrop['browse'] ? true : false;
-                        scope.cropable = scope.prCrop['cropper'] ? scope.prCrop['cropper'] : false;
-                        scope.no_selection_url = scope.prCrop['no_selection_url'];
-
-                    }
+                scope.onerror = function (m) {
+                    add_message(m, 'warning')
                 };
 
+                $(element).after($templateCache.get('pr-crop-buttons.html'));
 
-                var updateCoordinates = function (dict) {
-                    if (!scope.prCrop['selected_by_user']['crop_coordinates']) {
-                        scope.prCrop['selected_by_user']['crop_coordinates'] = {}
+                scope.$watch('zoom', function (newv, oldv) {
+                        if (newv) {
+                            if (!scope.prCrop['selected_by_user']['crop'])
+                                scope.prCrop['selected_by_user']['crop'] = {};
+                            scope.prCrop['selected_by_user']['crop']['origin_zoom'] = newv;
+                        }
                     }
-                    $.extend(scope.prCrop['selected_by_user']['crop_coordinates'], dict);
-                }
+                );
 
-                var getFromCoordinates = function (key, ifnotset) {
-                    return (!scope.prCrop['selected_by_user']['crop_coordinates']
-                    || scope.prCrop['selected_by_user']['crop_coordinates'][key] === undefined
-                    || scope.prCrop['selected_by_user']['crop_coordinates'][key] === null) ?
-                        (ifnotset === undefined ? null : ifnotset) :
-                        scope.prCrop['selected_by_user']['crop_coordinates'][key];
-                }
+                scope.$watch('origin', function (newv, oldv) {
+                        if (newv) {
+                            if (!scope.prCrop['selected_by_user']['crop'])
+                                scope.prCrop['selected_by_user']['crop'] = {};
+                            if (newv) {
+                                scope.prCrop['selected_by_user']['crop']['origin_left'] = newv[0];
+                                scope.prCrop['selected_by_user']['crop']['origin_top'] = newv[1];
+                            }
+                            else {
+                                scope.prCrop['selected_by_user']['crop']['origin_left'] = 0;
+                                scope.prCrop['selected_by_user']['crop']['origin_top'] = 0;
+                            }
 
+                        }
+                    }
+                );
 
-                scope.setModel();
+                scope.$watchCollection('coordinates', function (newv, oldv) {
+                    if (newv) {
+                        if (!scope.prCrop['selected_by_user']['crop'])
+                            scope.prCrop['selected_by_user']['crop'] = {};
+                        scope.prCrop['selected_by_user']['crop']['crop_left'] = newv[0];
+                        scope.prCrop['selected_by_user']['crop']['crop_top'] = newv[1];
+                        scope.prCrop['selected_by_user']['crop']['crop_width'] = newv[2] - newv[0];
+                        scope.prCrop['selected_by_user']['crop']['crop_height'] = newv[3] - newv[1];
+                    }
+                });
 
-                element.html($templateCache.get('cropper.html'));
+                scope.$watch('prCrop', function (newv, oldv) {
+                    console.log('prCrop prCrop', newv, oldv);
+                    // scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
+                    if (!newv) return;
+                    console.log(newv);
 
-                $compile(element.contents())(scope);
+                    var selected_by_user = newv['selected_by_user'];
+                    var cropper_options = newv['cropper'];
+                    console.log(cropper_options);
+                    // if (!scope.original_model) {
 
+                    scope.preset_urls = cropper_options['preset_urls'] ? cropper_options['preset_urls'] : {};
+                    scope.original_model = $.extend(true, {}, selected_by_user);
+                    // }
+                    scope.coordinates = [];
+                    scope.state = {};
+                    scope.browsable = cropper_options['browse'] ? true : false;
+                    scope.uploadable = cropper_options['upload'] ? true : false;
+                    scope.resetable = true;
+                    scope.noneurl = cropper_options['no_selection_url'];
+                    scope.options = {};
+                    if (cropper_options.min_size) {
+                        scope.options['min_width'] = cropper_options.min_size[0];
+                        scope.options['min_height'] = cropper_options.min_size[1];
+                    }
+
+                    if (cropper_options.aspect_ratio) {
+                        scope.options['min_aspect'] = cropper_options.aspect_ratio[0];
+                        scope.options['max_aspect'] = cropper_options.aspect_ratio[1];
+                    }
+                    scope.setModel(selected_by_user, false);
+                });
+
+                scope.selectPresetUrl = function (preset_id) {
+                    if (scope.preset_urls && scope.preset_urls[preset_id]) {
+                        scope.setModel({'type': 'preset', 'preset_id': preset_id});
+                    }
+                };
 
                 var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
 
+
                 window[callback_name] = function (item) {
+                    scope.setModel({'type': 'browse', 'image_file_id': item.id, crop_coordinates: null});
                     closeFileManager();
-                    restartCropper(fileUrl(item.id), {
-                        'type': 'browse',
-                        'image_file_id': item.id,
-                        'crop_coordinates': {
-                            'zoom': null,
-                            'rotate': 0
-                        }
-                    });
-                };
-
-                scope.zoom = function (ratio, only_check_posibility) {
-                    if (!scope.croper_loaded) return false;
-                    var curent_zoom = getFromCoordinates('zoom', null);
-
-                    if (ratio < 0 && curent_zoom <= scope.minzoom) return false;
-                    if (ratio > 0 && curent_zoom >= scope.maxzoom) return false;
-
-                    if (!only_check_posibility) {
-                        $image.cropper('zoom', ratio);
-                    }
-                    return true;
-                };
-
-                scope.selectPresetUrl = function (className) {
-                    if (scope.prCrop['preset_urls'] && scope.prCrop['preset_urls'][className]) {
-                        restartCropper(scope.prCrop['preset_urls'][className], {
-                            'type': 'preset',
-                            'class': className
-                        }, true);
-
-                    }
                 };
 
                 scope.selectNone = function () {
-                    if (scope.noneurl) {
-                        restartCropper(scope.noneurl, {'type': 'none'}, true);
+                    scope.setModel({'type': 'none'});
+                };
+
+                scope.resetModel = function () {
+                    scope.setModel($.extend(true, {}, scope.original_model));
+                };
+
+
+                scope.setModel = function (model, do_not_set_ng_crop) {
+
+                    console.log('set_model', model);
+
+                    switch (model['type']) {
+                        case 'browse':
+                            console.log(model);
+                            scope.selectedurl = fileUrl(model['image_file_id']);
+                            scope.disabled = false;
+                            scope.coordinates = null;
+                            scope.zoom = null;
+                            scope.origin = null;
+                            break;
+                        case 'provenance':
+                            var crd = model.crop;
+                            scope.selectedurl = fileUrl(model['provenance_file_id']);
+                            scope.disabled = false;
+                            scope.coordinates = crd ? [crd.crop_left, crd.crop_top, crd.crop_width + crd.crop_left, crd.crop_height + crd.crop_top] : null;
+                            scope.origin = crd ? [crd.origin_left, crd.origin_top] : null;
+                            scope.zoom = crd ? crd.origin_zoom : null;
+                            break;
+                        case 'none':
+                            scope.selectedurl = scope.noneurl;
+                            scope.disabled = true;
+                            scope.coordinates = null;
+                            scope.zoom = null;
+                            scope.origin = null;
+                            // scope.state = null;
+                            break;
+                        case 'upload':
+                            scope.selectedurl = model['file']['content'];
+                            scope.disabled = false;
+                            scope.coordinates = null;
+                            scope.zoom = null;
+                            scope.origin = null;
+                            // scope.state = null;
+                            break;
+                        case 'preset':
+                            scope.selectedurl = scope.preset_urls[model['preset_id']];
+                            scope.disabled = true;
+                            scope.coordinates = null;
+                            scope.zoom = null;
+                            scope.origin = null;
+                            // scope.state = null;
+                            break;
+                        default:
+                            console.log('unknown model type');
+                            break;
+                    }
+
+                    scope.onload = function (cropper_logic) {
+                        if (!do_not_set_ng_crop) {
+                            $timeout(function () {
+                                scope.prCrop['selected_by_user'] = model;
+                            })
+                        }
+                    }
+
+                };
+
+                scope.fileUploaded = function (event) {
+                    var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
+                    $(this).val('');
+                    if (the_file) {
+                        var fr = new FileReader();
+                        fr.onload = function (e) {
+                            scope.setModel({
+                                'type': 'upload',
+                                'file': {'mime': the_file.type, 'name': the_file.name, 'content': fr.result}
+                            })
+                        };
+                        fr.onerror = function (e) {
+                            add_message('File loading error', 'warning');
+                        };
+                        fr.readAsDataURL(the_file);
                     }
                 };
 
                 scope.chooseImage = function (setImage) {
-                    if (setImage) {
-                        scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.prCrop['browse']);
-                    }
+                    scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.original_model['browse']);
                 };
 
-                scope.resetModel = function () {
-                    scope.prCrop = $.extend(true, {}, scope.originalModel);
-                    scope.setModel();
+
+                scope.zoom_by = function (by, check_only) {
+                    if (scope.loading || scope.disabled || !scope.logic) return false;
+                    // console.log(scope.logic, scope.logic.ctr);
+                    // debugger;
+                    var ok = false;
+                    if (by > 1 && scope.zoom <= scope.logic.ctr.max_zoom * 0.99) ok = true;
+                    if (by < 1 && scope.zoom >= scope.logic.ctr.min_zoom * 1.01) ok = true;
+                    if (!check_only && ok) $timeout(function () {
+                        scope.zoom *= by;
+                        console.log(scope.zoom);
+                    })
+                    return ok;
                 };
 
-                var $image = $('img', element);
-                var $outer_container = $('.img-container', element);
-                var $inner_container = $('.img-container-cropper', element);
 
-
-                scope.fileUploaded = function (event) {
-                    var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
-                    if (the_file) {
-                        var fr = new FileReader();
-                        if (/^image\/\w+$/.test(the_file.type)) {
-                            fr.onload = function (e) {
-                                var uploaded_file = (window.URL || window.webkitURL).createObjectURL(the_file);
-                                restartCropper(uploaded_file, {
-                                    'type': 'upload',
-                                    'file': {
-                                        'mime': the_file.type,
-                                        'name': the_file.name,
-                                        'content': fr.result
-                                    },
-                                    'crop_coordinates': {zoom: null, 'rotate': 0}
-                                });
-                            }
-                            fr.onerror = function (e) {
-                                loadImage(false);
-                                add_message('File loading error', 'warning');
-                            }
-                            loadImage(true);
-                            fr.readAsDataURL(the_file);
-                        }
-                        else {
-                            add_message('Please choose an image file', 'warning');
-                        }
-                    }
-                };
-
-                var resizeContainer = function (loadedimg) {
-
-                    if (!loadedimg) {
-                        $inner_container.css({
-                            'width': '100%',
-                            'height': '100%',
-                            'top': '0px',
-                            'left': '0px'
-                        });
-                        return;
-                    }
-
-
-                    if (scope.prCrop['min_size'] &&
-                        (scope.prCrop['min_size'][0] && loadedimg.width < scope.prCrop['min_size'][0] ||
-                        scope.prCrop['min_size'][1] && loadedimg.height < scope.prCrop['min_size'][1])) {
-                        return scope.$root._('Image too small. minimum size is %(0)sx%(1)s', scope.prCrop['min_size'])
-                    }
-
-
-                    var options = {};
-
-                    var image_wider = loadedimg.width * $outer_container.height() / loadedimg.height / $outer_container.width()
-                    if (image_wider > 1) {
-                        $inner_container.css({
-                            'width': $outer_container.width() + 'px',
-                            'height': $outer_container.height() / image_wider + 'px',
-                            'top': $outer_container.height() * (1 - 1 / image_wider) / 2 + 'px',
-                            'left': '0px'
-                        });
-                        options['minContainerWidth'] = $outer_container.width();
-                        options['minContainerHeight'] = $outer_container.height() / image_wider;
-                        scope.minzoom = 1.0 * $inner_container.width() / loadedimg.width;
-                    }
-                    else {
-                        $inner_container.css({
-                            'width': $outer_container.width() * image_wider + 'px',
-                            'height': $outer_container.height() + 'px',
-                            'top': '0px',
-                            'left': $outer_container.width() * (1 - image_wider ) / 2 + 'px'
-
-                        });
-                        options['minContainerWidth'] = $outer_container.width() * image_wider;
-                        options['minContainerHeight'] = $outer_container.height();
-                        scope.minzoom = 1.0 * $inner_container.height() / loadedimg.height;
-                    }
-
-                    scope.maxzoom = 1.0;
-
-                    if (scope.minzoom > scope.maxzoom) {
-                        scope.minzoom = scope.maxzoom;
-                    }
-
-                    if (scope.prCrop['cropper']) {
-                        options['minCanvasWidth'] = options['minContainerWidth'];
-                        options['minCanvasHeight'] = options['minContainerHeight'];
-                        //if (scope.prCrop) {
-                        //    console.log(scope.prCrop['min_size']);
-                        //    options['minCropBoxWidth'] = scope.prCrop['min_size'][0] * scope.maxzoom;
-                        //    options['minCropBoxHeight'] = scope.prCrop['min_size'][1] * scope.maxzoom;
-                        //}
-                        scope.aspect_ratio = false;
-                        scope.previous_data = null;
-                        if (_.isArray(scope.prCrop['cropper']['aspect_ratio']) && scope.prCrop['cropper']['aspect_ratio'].length == 2
-                            && scope.prCrop['cropper']['aspect_ratio'][0] > 0 && scope.prCrop['cropper']['aspect_ratio'][1] > 0 &&
-                            scope.prCrop['cropper']['aspect_ratio'][0] <= scope.prCrop['cropper']['aspect_ratio'][1]) {
-                            scope.aspect_ratio = [scope.prCrop['cropper']['aspect_ratio'][0], scope.prCrop['cropper']['aspect_ratio'][1]]
-                        }
-                    }
-                    return options;
-                }
-
-                var normalize_coordinates = function (coordinates, size, aspect, east, west, north, south) {
-                    var changed = false;
-                    if (!coordinates) {
-                        coordinates = {};
-                        changed = true;
-                    }
-
-                    if (!(coordinates.x >= 0 && coordinates.x <= size[0] - 1 && coordinates.width >= 1 && coordinates.width <= size[0] - coordinates.x)) {
-
-                        coordinates.x = size[0] / 10.
-                        coordinates.width = 8 * size[0] / 10.
-                        changed = true;
-                    }
-
-                    if (!(coordinates.y >= 0 && coordinates.y <= size[1] - 1 && coordinates.height >= 1 && coordinates.height <= size[1] - coordinates.y)) {
-                        coordinates.y = size[1] / 10.
-                        coordinates.height = 8 * size[1] / 10.
-                        changed = true;
-                    }
-
-                    if (aspect) {
-                        var img_aspect = coordinates.width / coordinates.height;
-                        if (img_aspect < aspect[0]) {
-                            coordinates.y += (coordinates.height - coordinates.width / aspect[0]) / 2.
-                            coordinates.height -= (coordinates.height - coordinates.width / aspect[0])
-                            changed = true;
-                        }
-                        if (img_aspect > aspect[1]) {
-                            coordinates.x += (coordinates.width - coordinates.height * aspect[1]) / 2.
-                            coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
-                            changed = true;
-                        }
-                    }
-                    return changed;
-
-                }
-
-                var normalize_coordinates1 = function (x1, y1, x2, y2, size, container_size, minsize, aspect, corner_action) {
-                    console.log(aspect);
-
-                    coordinates = {
-                        x: Math.min(x1, x2) / container_size[0] * size[0],
-                        y: Math.min(y1, y2) / container_size[1] * size[1]
-                    }
-                    coordinates['width'] = coordinates.x + Math.max(x1, x2) / container_size[0] * size[0];
-                    coordinates['height'] = coordinates.y + Math.max(y1, y2) / container_size[1] * size[1];
-
-                    //console.log(coordinates);
-
-
-                    var changed = false;
-                    //if (!coordinates) {
-                    //    coordinates = {
-                    //        x: size[0] / 10.,
-                    //        y: size[1] / 10.,
-                    //        width: 9. * size[0] / 10.,
-                    //        height: 9. * size[1] / 10.
-                    //    };
-                    //}
-
-                    //coordinates.x = coordinates.x >= 0 ? coordinates.x : 0;
-                    //coordinates.y = coordinates.y >= 0 ? coordinates.y : 0;
-                    //coordinates.width = coordinates.x + coordinates.width <= size[0] ? coordinates.width : size[0] - coordinates.x;
-                    //coordinates.height = coordinates.y + coordinates.height <= size[1] ? coordinates.height : size[1] - coordinates.y;
-
-                    //if (!(coordinates.x >= 0))
-                    //
-                    //    coordinates.x = size[0] / 10.
-                    //    coordinates.width = 8 * size[0] / 10.
-                    //    changed = true;
-                    //}
-                    //
-                    //if (!(coordinates.y >= 0 && coordinates.y <= size[1] - 1 && coordinates.height >= 1 && coordinates.height <= size[1] - coordinates.y)) {
-                    //    coordinates.y = size[1] / 10.
-                    //    coordinates.height = 8 * size[1] / 10.
-                    //    changed = true;
-                    //}
-
-                    var xmove = 0;
-                    var ymove = 0;
-                    switch (corner_action) {
-                        case 'nw':
-                            xmove = 1.;
-                            ymove = 1.;
-                            break;
-                        case 'n':
-                            xmove = 0.5;
-                            ymove = 1.;
-                            break;
-                        case 'ne':
-                            xmove = 0;
-                            ymove = 1.;
-                            break;
-                        case 'e':
-                            xmove = 0;
-                            ymove = 0.5;
-                            break;
-                        case 'se':
-                            xmove = 0;
-                            ymove = 0;
-                            break;
-                        case 's':
-                            xmove = 0.5;
-                            ymove = 0;
-                            break;
-                        case 'sw':
-                            xmove = 0;
-                            ymove = 1;
-                            break;
-                        case 'w':
-                            xmove = 1;
-                            ymove = 0.5;
-                            break;
-                    }
-
-                    if (aspect) {
-                        var img_aspect = coordinates.width / coordinates.height;
-                        if (img_aspect < aspect[0]) {
-                            console.log(img_aspect, aspect, 'to wide', coordinates);
-                            coordinates.y += (coordinates.height - coordinates.width / aspect[0]) * ymove;
-                            coordinates.height -= (coordinates.height - coordinates.width / aspect[0])
-                            changed = true;
-                        }
-                        else if (img_aspect > aspect[1]) {
-                            console.log(img_aspect, aspect, 'to tall', coordinates);
-                            coordinates.x += (coordinates.width - coordinates.height * aspect[1]) * xmove;
-                            coordinates.width -= (coordinates.width - coordinates.height * aspect[1])
-                            changed = true;
-                        }
-                    }
-                    return coordinates;
-
-                }
-
-                var runCropper = function (options, image_size) {
-
-                    var optionsa = {};
-
-                    options['strict'] = true;
-                    options['viewMode'] = 3;
-                    //options['aspectRatio'] = 1;
-                    options['zoomable'] = scope.zoomable;
-
-                    options['zoom'] = function (e) {
-                        if (e.ratio < scope.minzoom * 1.01 && e.ratio !== scope.minzoom) {
-                            e.preventDefault();
-                            if (Math.abs(e.oldRatio - scope.minzoom) / scope.minzoom > 0.01) {
-                                $(this).cropper('zoomTo', scope.minzoom);
-                            }
-                            return false;
-                        }
-
-                        if (e.ratio > scope.maxzoom * 0.99 && e.ratio !== scope.maxzoom) {
-                            e.preventDefault();
-                            if (Math.abs(e.oldRatio !== scope.maxzoom) / scope.maxzoom > 0.01) {
-                                $(this).cropper('zoomTo', scope.maxzoom);
-                            }
-                            return false;
-                        }
-
-                        updateCoordinates({'zoom': e.ratio});
-
-
-                        var data = $image.cropper('getData');
-                        var zoomed = false;
-
-                        if (data.width < scope.prCrop['min_size'][0] * scope.maxzoom) {
-                            data.width = scope.prCrop['min_size'][0] * scope.maxzoom;
-                            if (data.width + data.x > image_size[0]) {
-                                data.x = image_size[0] - data.width;
-                            }
-                            zoomed = true;
-                        }
-                        if (data.height < scope.prCrop['min_size'][1] * scope.maxzoom) {
-                            data.height = scope.prCrop['min_size'][1] * scope.maxzoom;
-                            if (data.height + data.y > image_size[1]) {
-                                data.y = image_size[1] - data.height;
-                            }
-                            zoomed = true;
-                        }
-                        if (zoomed) {
-                            $image.cropper('setData', scope.previous_data)
-                            updateCoordinates({'x': data.x, 'y': data.y, 'width': data.width, 'height': data.height});
-                        }
-
-
-                    }
-
-                    options['built'] = function (e) {
-                        scope.croper_loaded = true;
-                        if (scope.zoomable) {
-                            $(this).cropper('zoomTo', getFromCoordinates('zoom', scope.minzoom));
-                        }
-                    }
-
-                    options['cropstart'] = function (e) {
-                        console.log(e);
-                        scope.click_data = {'action': e.action, 'x': e.originalEvent.x, 'y': e.originalEvent.y};
-//'e': resize the east side of the crop box
-//'w': resize the west side of the crop box
-//'s': resize the south side of the crop box
-//'n': resize the north side of the crop box
-//'se': resize the southeast side of the crop box
-//'sw': resize the southwest side of the crop box
-//'ne': resize the northeast side of the crop box
-//'nw': resize the northwest side of the crop box
-                    }
-
-                    options['cropmove'] = function (e) {
-                        //console.log(e.width);
-                        console.log(e.originalEvent.x, (e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y));
-                        if ((e.originalEvent.x - scope.click_data.x) / (e.originalEvent.y - scope.click_data.y) > 1.0) {
-                            e.originalEvent.x = e.originalEvent.y - scope.click_data.y + scope.click_data.x;
-
-                        }
-                        e.originalEvent.x = 100;
-                        console.log(e.originalEvent.x);
-                        return;
-                        var data = {x: e.x, y: e.y, width: e.width, height: e.height}
-                        console.log(e.originalEvent.x);
-                        var new_data = normalize_coordinates1(scope.click_data.x, scope.click_data.y,
-                            e.originalEvent.x, e.originalEvent.y, image_size,
-                            [options['minCanvasWidth'], options['minCanvasHeight']],
-                            [100, 100], scope.aspect_ratio, scope.click_data.action);
-                        if (new_data) {
-                            e.originalEvent.x = (new_data.x + new_data.width) / image_size[0] * options['minCanvasWidth'];
-                            e.originalEvent.y = (new_data.y + new_data.height) / image_size[1] * options['minCanvasHeight'];
-                        }
-                        console.log(e.originalEvent.x);
-
-                    }
-
-
-                    optionsa['crop'] = function (e) {
-
-                        if (e.width / e.height > 1) {
-                            e.width = e.height;
-
-                            $image.cropper('setData', {width: e.width});
-                            e.preventDefault();
-                        }
-                        return;
-
-                        var data = {x: e.x, y: e.y, width: e.width, height: e.height}
-
-                        var changed = normalize_coordinates1(data, image_size, image_size, scope.aspect_ratio, scope.corner_action);
-                        if (changed) {
-                            e.x = data.x;
-                            e.y = data.y;
-                            e.width = data.width;
-                            e.height = data.height;
-                            e.preventDefault();
-                            $image.cropper('setData', data);
-                            $timeout(function () {
-                                updateCoordinates({
-                                    'width': data.width,
-                                    'height': data.height,
-                                    'y': data.y,
-                                    'x': data.x
-                                });
-                            })
-                        }
-                        else {
-                            $timeout(function () {
-                                updateCoordinates({
-                                    'width': data.width,
-                                    'height': data.height,
-                                    'y': data.y,
-                                    'x': data.x
-                                });
-                            })
-                        }
-
-
-                        //if (scope.aspect_ratio) {
-                        //    var data = $image.cropper('getData');
-                        //
-                        //    var asp = data.width / data.height;
-                        //    if (asp < scope.aspect_ratio[0] || asp > scope.aspect_ratio[1]) {
-                        //        event.preventDefault();
-                        //        if (scope.previous_data) {
-                        //            $image.cropper('setData', scope.previous_data)
-                        //        }
-                        //        return false;
-                        //    }
-                        //    if (data.width < scope.prCrop['min_size'][0] * scope.maxzoom || data.height < scope.prCrop['min_size'][1] * scope.maxzoom) {
-                        //        event.preventDefault();
-                        //        if (scope.previous_data) {
-                        //            $image.cropper('setData', scope.previous_data)
-                        //        }
-                        //        return false;
-                        //    }
-                        //    else {
-                        //        scope.previous_data = data;
-                        //    }
-                        //}
-
-
-                    }
-                    $image.cropper(options);
-                }
-
-                var loadImage = function (load) {
-                    if (load) {
-                        $inner_container.hide();
-                        $outer_container.removeClass('cropper-bg');
-                        $outer_container.addClass('loading');
-                    }
-                    else {
-                        $outer_container.removeClass('loading');
-                        $outer_container.addClass('cropper-bg');
-                        $inner_container.show();
-                    }
-                }
-
-                var setNewModelValue = function (new_selection_by_user) {
-                    if (new_selection_by_user) {
-                        $timeout(function () {
-                            scope.prCrop['selected_by_user'] = new_selection_by_user;
-                        }, 0);
-                    }
-                }
-
-
-                var restartCropper = function (src, new_selection_by_user, force_image_src_on_error) {
-                    var fr = new Image();
-                    fr.addEventListener('load', function (e) {
-
-                        loadImage(false);
-                        var options = resizeContainer(fr);
-                        if (typeof options === 'string') {
-                            add_message(options, 'warning');
-                            return false;
-                        }
-
-
-                        scope.croper_loaded = false;
-                        $image.cropper('destroy');
-                        $image.attr('src', src);
-
-                        var selection = new_selection_by_user ? new_selection_by_user : scope.prCrop['selected_by_user'];
-
-                        options['autoCrop'] = true;
-
-                        options['data'] = normalize_coordinates(selection['crop_coordinates'], [fr.width, fr.height],
-                            (scope.aspect_ratio ? [scope.aspect_ratio[0], scope.aspect_ratio[1]] : false));
-                        if (scope.prCrop['cropper'] && ((selection['type'] === 'browse') || (selection['type'] === 'upload'))) {
-                            runCropper(options, [fr.width, fr.height]);
-                        }
-                        setNewModelValue(new_selection_by_user);
-                    }, false);
-                    fr.addEventListener('error', function (e) {
-                            if (force_image_src_on_error) {
-                                $image.attr('src', src);
-                                resizeContainer(false);
-                                scope.croper_loaded = false;
-                                $image.cropper('destroy');
-                                setNewModelValue(new_selection_by_user);
-                            }
-                            loadImage(false);
-                            add_message('Image loading error', 'warning');
-                        }
-                    );
-                    loadImage(true)
-                    fr.src = src;
-                }
-
-
-                scope.$watch('prCrop', function (newv, oldv) {
-                    var imageUrlFromUserSelection = function () {
-                        if (scope.prCrop['selected_by_user']['type'] === 'browse') {
-                            return fileUrl(scope.prCrop['selected_by_user']['image_file_id']);
-                        }
-                        else if (scope.prCrop['selected_by_user']['type'] === 'preset') {
-                            var selected_classname = scope.prCrop['selected_by_user']['class'];
-                            if (scope.prCrop['preset_urls'] && selected_classname && scope.prCrop['preset_urls'][selected_classname]) {
-                                return scope.prCrop['preset_urls'][selected_classname]
-                                //restartCropper(scope.prCrop['preset_urls'][selected_classname], {
-                                //    'type': 'preset',
-                                //    'class': selected_classname
-                                //});
-                            }
-                            else {
-                                return scope.prCrop['no_selection_url'];
-                            }
-                        }
-                        else {
-                            return scope.prCrop['no_selection_url'];
-                        }
-                    }
-
-                    scope.originalModel = $.extend(true, {}, scope.prCrop);
-                    scope.setModel();
-                    if (scope.prCrop && scope.prCrop['selected_by_user']) {
-                        restartCropper(imageUrlFromUserSelection(), null, true);
-                    }
-                });
-
-
+                $compile(element)(scope);
+                $compile($(element).next())(scope);
             }
         }
-            ;
-    }])
+    })
+
     .directive('dateTimestampFormat', function () {
         return {
             require: 'ngModel',
@@ -856,8 +478,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
     .directive('prDateTimePicker', function ($timeout) {
         return prDatePicker_and_DateTimePicker('prDateTimePicker', $timeout);
     }).directive('prDatePicker', function ($timeout) {
-        return prDatePicker_and_DateTimePicker('prDatePicker', $timeout);
-    })
+    return prDatePicker_and_DateTimePicker('prDatePicker', $timeout);
+})
     .directive('prDatepicker', function () {
         return {
             replace: false,
@@ -897,12 +519,13 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
         };
     }])
 
-    .directive('prImage', ['$timeout', function ($timeout) {
+    .directive('prImage', [function () {
         return {
             restrict: 'A',
             scope: {
                 prImage: '=',
-                prNoImage: '@'
+                prNoImage: '@',
+
             },
             link: function (scope, element, attrs) {
                 var image_reference = attrs['prImage'].split('.').pop();
@@ -918,16 +541,63 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
                         // backgroundImage: "url('" + newval + "')"
                     });
                 });
-                element.attr('src', '//static.profireader.com/static/images/0.gif');
-                element.css({
-                    backgroundPosition: 'center',
-                    backgroundSize: 'contain',
-                    backgroundRepeat: 'no-repeat'
-                });
+                element.attr('src', static_address('images/0.gif'));
+                element.addClass('bg-contain');
             }
         };
-    }])
-    //TODO: SS by OZ: better use actions (prUserCan) not rights. action can depend on many rights
+    }]).directive('prImageWatch', [function () {
+    return {
+        restrict: 'A',
+        scope: {
+            prImageWatch: '=',
+            prNoImage: '@',
+
+        },
+        link: function (scope, element, attrs) {
+            var image_reference = attrs['prImageWatch'].split('.').pop();
+            var no_image = attrs['prNoImage'] ? attrs['prNoImage'] : false;
+
+            if (!no_image) {
+                no_image = noImageForImageName(image_reference);
+            }
+
+            scope.$watch('prImageWatch', function (newval, oldval) {
+                element.css({
+                    backgroundImage: "url('" + fileUrl(newval, false, no_image) + "')"
+                });
+            });
+            element.attr('src', static_address('images/0.gif'));
+            element.addClass('bg-contain');
+        }
+    };
+}])
+    .directive('prImageUrl', [function () {
+        return {
+            restrict: 'A',
+            scope: {},
+            link: function (scope, element, attrs) {
+                element.attr('src', static_address('images/0.gif'));
+                element.css({backgroundImage: 'url(' + attrs['prImageUrl'] + ')'});
+                element.addClass('bg-contain');
+            }
+        };
+    }]).directive('prImageUrlWatch', [function () {
+    return {
+        restrict: 'A',
+        scope: {
+            prImageUrlWatch: '=',
+        },
+        link: function (scope, element, attrs) {
+            element.attr('src', static_address('images/0.gif'));
+            element.addClass('bg-contain');
+            scope.$watch('prImageUrlWatch', function (newval, oldval) {
+                if (newval)
+                    element.css({backgroundImage: "url('" + newval + "')"});
+            });
+        }
+    };
+}])
+//TODO: SS by OZ: better use actions (prUserCan) not rights. action can depend on many rights
     .directive('prUserRights', function ($timeout) {
         return {
             restrict: 'AE',
@@ -1093,7 +763,37 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip']
         };
 
         return objectTransformation;
-    })
+    }).filter('propsFilter', function () {
+    return function (items, props) {
+        var out = [];
+
+        if (angular.isArray(items)) {
+            var keys = Object.keys(props);
+
+            items.forEach(function (item) {
+                var itemMatches = false;
+
+                for (var i = 0; i < keys.length; i++) {
+                    var prop = keys[i];
+                    var text = props[prop].toLowerCase();
+                    if (item[prop].toString().toLowerCase().indexOf(text) !== -1) {
+                        itemMatches = true;
+                        break;
+                    }
+                }
+
+                if (itemMatches) {
+                    out.push(item);
+                }
+            });
+        } else {
+            // Let the output be the input untouched
+            out = items;
+        }
+
+        return out;
+    };
+});
 
 
 areAllEmpty = function () {
@@ -1117,19 +817,21 @@ areAllEmpty = function () {
     return are;
 };
 
+
 function file_choose(selectedfile) {
+    console.log(selectedfile)
     var args = top.tinymce.activeEditor.windowManager.getParams();
     var win = (args.window);
     var input = (args.input);
     if (selectedfile['type'] === 'file_video') {
         win.document.getElementById(input).value = "https://youtu.be/" + selectedfile['youtube_data']['id'] + "?list=" + selectedfile['youtube_data']['playlist_id'];
     } else {
-        win.document.getElementById(input).value = selectedfile['url'];
+        win.document.getElementById(input).value = selectedfile['file_url'];
     }
     top.tinymce.activeEditor.windowManager.close();
 }
 
-// 'ui.select' uses "//static.profireader.com/static/js/select.js" included in _index_layout.html
+// 'ui.select' uses static_address('js/select.js') included in _index_layout.html
 //module = angular.module('Profireader', ['ui.bootstrap', 'profireaderdirectives', 'ui.tinymce', 'ngSanitize', 'ui.select']);
 
 module = angular.module('Profireader', pr_angular_modules);
@@ -1554,35 +1256,44 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     if (typeof phrase !== 'string') {
         return '';
     }
-    if (!scope.$$translate) {
-        scope.$$translate = {};
-    }
+    // if (!scope.$$translate) {
+    //     scope.$$translate = {};
+    // }
     //console.log(scope.$$translate)
     new Date;
     var t = Date.now() / 1000;
     //TODO OZ by OZ hasOwnProperty
     var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
-    if (scope.$$translate[phrase] === undefined) {
-        scope.$$translate[phrase] = {'lang': phrase, 'time': t};
-        console.log(phrase)
-        $ok('/tools/save_translate/', {
-            template: CtrlName,
-            phrase: phrase,
-            allow_html: allow_html,
-            url: window.location.href
-        }, function (resp) {
 
-        });
+    if (!scope.$$translate || !scope.$$translate[phrase]) {
+        phrase_dict = {'lang': phrase, 'time': t, allow_html: allow_html}
     }
 
-    if ((t - scope.$$translate[phrase]['time']) > 86400) {
-        scope.$$translate[phrase]['time'] = t;
+    if (scope.$$translate) {
+        if (!scope.$$translate[phrase]) {
+            scope.$$translate[phrase] = phrase_dict;
+            $ok('/tools/save_translate/', {
+                template: CtrlName,
+                phrase: phrase,
+                allow_html: allow_html,
+                url: window.location.href
+            }, function (resp) {
+
+            });
+        }
+        else {
+            phrase_dict = scope.$$translate[phrase];
+        }
+    }
+
+    if ((t - phrase_dict['time']) > 86400) {
+        phrase_dict['time'] = t;
         $ok('/tools/update_last_accessed/', {template: CtrlName, phrase: phrase}, function (resp) {
         });
     }
 
-    if (scope.$$translate[phrase]['allow_html'] !== allow_html) {
-        scope.$$translate[phrase]['allow_html'] = allow_html;
+    if (phrase_dict['allow_html'] !== allow_html) {
+        phrase_dict['allow_html'] = allow_html;
         $ok('/tools/change_allowed_html/', {
             template: CtrlName,
             phrase: phrase,
@@ -1591,14 +1302,16 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
         });
     }
 
-    try {
-        if (!dictionaries.length) {
-            dictionaries = [true];
-        }
-        var ret = scope.$$translate[phrase]['lang'];
-        ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
-            var indexes = g1.split('.');
-            var d = {};
+
+    if (!dictionaries.length) {
+        dictionaries = [true];
+    }
+
+    var ret = phrase_dict['lang'];
+    ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
+        var indexes = g1.split('.');
+        var d = {};
+        try {
             $.each(dictionaries, function (ind, dict) {
                 $.extend(d, dict === true ? scope : dict);
             });
@@ -1612,11 +1325,13 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
                 }
             }
             return d;
-        });
-        return ret;
-    } catch (a) {
-        return phrase
-    }
+        }
+        catch (a) {
+            console.log(g0, g1);
+            return g1
+        }
+    });
+    return ret;
 }
 
 module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $templateCache) {
@@ -1637,8 +1352,16 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             return $sce.trustAsHtml(pr_dictionary(args.shift(), args, '*', this, $ok));
         },
         _: function () {
+            // debugger;
             var args = [].slice.call(arguments);
             return pr_dictionary(args.shift(), args, '', this, $ok);
+        },
+        moment: function (value, out_format) {
+            return moment.utc(value).local().format(out_format ? out_format : 'dddd, LL (HH:mm)', value)
+        },
+        MAIN_DOMAIN: MAIN_DOMAIN,
+        static_address: function (relative_file_name) {
+            return static_address(relative_file_name);
         },
         highlight: function (text, search) {
             if (!search) {
@@ -1646,17 +1369,34 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             }
             return $sce.trustAsHtml(text.replace(new RegExp(search, 'gi'), '<span pr-test="MachedLightedText" class="highlightedText">$&</span>'));
         },
-        grid_change_row: function (grid_data, new_row) {
-            $.each(grid_data['grid_data'], function (index, old_row) {
-                if (old_row['id'] === new_row['id']) {
-                    grid_data['grid_data'][index] = new_row;
-                }
-            });
-        },
 
         setGridExtarnals: function (gridApi) {
             var scope = this;
             scope.gridApi = gridApi;
+
+            gridApi.grid.server_action_click = function (id, action_name, row, column_name) {
+                // TODO: YG by OZ: disable all action buttons on click (in row)
+                $ok('', {action_name: action_name, row: row, id: id, column_name: column_name}, function (resp) {
+                        // TODO: YG by OZ: enable disabled actions buttons on click (in row)
+                        // TODO: YG by OZ: handle action
+                        if (resp['grid_action'] == 'delete_row') {
+
+                        }
+                        if (resp['grid_action'] == 'refresh_row') {
+
+                        }
+                        if (resp['grid_action'] == 'refresh_grid') {
+
+                        }
+                        if (resp['grid_action'] == 'refresh_page') {
+
+                        }
+                        window.location.reload();
+                    },
+                    function (resp) {
+                    });
+            }
+
             gridApi.grid['all_grid_data'] = {
                 paginationOptions: {pageNumber: 1, pageSize: 1},
                 filter: {},
@@ -1674,10 +1414,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 }, c);
             });
 
-            gridApi.grid.options.headerTemplate = '<div class="ui-grid-header" ><div class="ui-grid-top-panel"><div class="ui-grid-header-viewport"><div class="ui-grid-header"></div><div class="ui-grid-header-canvas" >' +
+            gridApi.grid.options.headerTemplate = '<div class="ui-grid-header" ><div class="ui-grid-top-panel"><div class="ui-grid-header-viewport"><div class="ui-grid-header"></div><div id="ui-grid-to-height" class="ui-grid-header-canvas">' +
                 '<div class="ui-grid-header-cell-wrapper" ng-style="colContainer.headerCellWrapperStyle()"><div role="row" class="ui-grid-header-cell-row">' +
                 '<div class="ui-grid-header-cell ui-grid-clearfix ui-grid-category" ng-repeat="cat in grid.options.category" ng-if="cat.visible && (colContainer.renderedColumns | filter:{ colDef:{category: cat.name} }).length > 0"> ' +
-                '<div class="ui-grid-filter-container"><input type="text" class="ui-grid-filter-input ui-grid-filter-input-{{$index}}" ng-enter="grid.searchItemGrid(cat)" ng-model="cat.filter.text" aria-label="{{colFilter.ariaLabel || aria.defaultFilterLabel}}" placeholder="{{ grid.appScope._(\'search\') }}"> ' +
+                '<div class="ui-grid-filter-container"><input type="text" class="form-control" ng-enter="grid.searchItemGrid(cat)" ng-model="cat.filter.text" aria-label="{{colFilter.ariaLabel || aria.defaultFilterLabel}}" placeholder="{{ grid.appScope._(\'search\') }}"> ' +
                 '<div role="button" class="ui-grid-filter-button" ng-click="grid.refreshGrid(cat)" ng-if="!colFilter.disableCancelFilterButton" ng-disabled="cat.filter.text === undefined || cat.filter.text === null || cat.filter.text === \'\'" ng-show="cat.filter.text !== undefined && cat.filter.text !== null && cat.filter.text !== \'\'"> <i class="ui-grid-icon-cancel" ui-grid-one-bind-aria-label="aria.removeFilter">&nbsp;</i> </div> </div> ' +
                 '<div class="ui-grid-header-cell ui-grid-clearfix" ng-if="col.colDef.category === cat.name && grid.options.category" ng-repeat="col in colContainer.renderedColumns | filter:{ colDef:{category: cat.name} }" ui-grid-header-cell col="col" render-index="$index"> <div ng-class="{ \'sortable\': sortable }" class="ng-scope sortable"> <div ui-grid-filter="" ng-show="col.colDef.category !== undefined"></div> </div> </div> </div>' +
                 '<div class="ui-grid-header-cell ui-grid-clearfix" ng-if="col.colDef.category === undefined || grid.options.category === undefined"  ng-repeat="col in colContainer.renderedColumns track by col.colDef.name" ui-grid-header-cell col="col" render-index="$index" ng-style="$index === 0 && colContainer.columnStyle($index)"></div>' +
@@ -1696,21 +1436,20 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     switch (col.filter.type) {
                         case 'input':
                             return '<div class="ui-grid-filter-container">' +
-                                '<input type="text" class="ui-grid-filter-input ui-grid-filter-input-{{$index}}" ng-enter="grid.searchItemGrid(col)" ng-model="col.filter.text"  aria-label="{{colFilter.ariaLabel || aria.defaultFilterLabel}}">' +
+                                '<input type="text" class="form-control" ng-enter="grid.searchItemGrid(col)" ng-model="col.filter.text"  aria-label="{{colFilter.ariaLabel || aria.defaultFilterLabel}}">' +
                                 '<div role="button" class="ui-grid-filter-button" ng-click="grid.refreshGrid(col)" ng-if="!colFilter.disableCancelFilterButton" ng-disabled="col.filter.text === undefined || col.filter.text === null || col.filter.text === \'\'" ng-show="col.filter.text !== undefined && col.filter.text !== null && col.filter.text !== \'\'">' +
                                 '<i class="ui-grid-icon-cancel" ui-grid-one-bind-aria-label="aria.removeFilter">&nbsp;</i></div></div>'
                         case 'date_range':
-                            // TODO: SS by OZ: use here our directive pr-datepicker (<div pr-datepicker ng-model="model"></div>)
-                            return '<div class="ui-grid-filter-container"><input  style="width: 48%; display: inline" type="date" class="form-control" uib-datepicker-popup ng-model="col.filters[0].term" ng-required="true" datepicker-options="dateOptions" close-text="Close"/>' +
-                                '<input style="width: 48%; display: inline" type="date" class="form-control" uib-datepicker-popup ng-model="col.filters[1].term" ng-required="true" datepicker-options="dateOptions" close-text="Close"/>' +
+                            return '<div class="ui-grid-filter-container" style="position: fixed; top:auto; left: auto; width: 25%;cursor: pointer;z-index: 1"><input placeholder="from"  style="width: 48%; display: inline;" class="form-control" pr-date-picker ng-model="col.filters[0].term" ng-required="true" close-text="Close"/>' +
+                                '<input style="width: 48%; display: inline;" class="form-control" pr-date-picker ng-model="col.filters[1].term" ng-required="true" placeholder="to"  close-text="Close"/>' +
                                 '<span class="input-group-btn"></span><div role="button" class="ui-grid-filter-button" ng-click="grid.refreshGrid(col)" ng-if="!colFilter.disableCancelFilterButton" ng-disabled="col.filters[1].term === undefined || col.filters[0].term === undefined" ng-show="col.filters[1].term !== undefined && col.filters[1].term !== \'\' && col.filters[0].term !== undefined && col.filters[0].term !== \'\'">' +
                                 '<i class="ui-grid-icon-cancel" ui-grid-one-bind-aria-label="aria.removeFilter" style="right:0.5px;">&nbsp;</i></div></div>'
                         case 'multi_select':
                             return '<div class="ui-grid-filter-container"><div ng-dropdown-multiselect="" parent-scope="grid.appScope" data="grid.all_grid_data" add-data="grid.additionalDataForMS[col.name]" send="grid.setGridData" options = "grid.listsForMS[col.name]" selected-model="grid.listOfSelectedFilterGrid"></div></div>'
                         case 'range':
                             return '<div class="ui-grid-filter-container">' +
-                                '<input type="number" class="ui-grid-filter-input ui-grid-filter-input-{{$index}}"  ng-model="col.filters[0].term"  aria-label="{{colFilter.ariaLabel || aria.defaultFilterLabel}}" style="margin-bottom: 10px;width: 100%" placeholder="From:">' +
-                                '<input type="number" class="ui-grid-filter-input ui-grid-filter-input-{{$index}}"  ng-model="col.filters[1].term"  aria-label="{{colFilter.ariaLabel || aria.defaultFilterLabel}}" style="margin-bottom: 5px;width: 100%" placeholder="To:">' +
+                                '<input type="number" class="form-control"  ng-model="col.filters[0].term"  aria-label="{{colFilter.ariaLabel || aria.defaultFilterLabel}}" style="margin-bottom: 10px;width: 100%" placeholder="From:">' +
+                                '<input type="number" class="form-control"  ng-model="col.filters[1].term"  aria-label="{{colFilter.ariaLabel || aria.defaultFilterLabel}}" style="margin-bottom: 5px;width: 100%" placeholder="To:">' +
                                 '<button class="btn btn-group" ng-click="grid.filterForGridRange(col)" ng-disabled="col.filters[1].term === undefined || col.filters[0].term === undefined || col.filters[1].term === null || col.filters[1].term === \'\' || col.filters[0].term === null || col.filters[0].term === \'\'">Filter</button> ' +
                                 '<div role="button" class="ui-grid-filter-button" ng-click="grid.refreshGrid(col)" ng-if="!colFilter.disableCancelFilterButton" ng-disabled="col.filters[1].term === undefined || col.filters[0].term === undefined" ng-show="col.filters[1].term !== undefined && col.filters[1].term !== \'\' && col.filters[0].term !== undefined && col.filters[0].term !== \'\'">' +
                                 '<i class="ui-grid-icon-cancel" ui-grid-one-bind-aria-label="aria.removeFilter" style="right:0.5px;top:83%">&nbsp;</i></div></div>'
@@ -1728,28 +1467,38 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         classes_for_row += '{{ grid.options.columnDefs[' + columnindex + '].classes(row.entity.id, row.entity, col.field) }}';
                     }
 
-                    var attributes_for_cell = ' pr-id="{{ row.entity.id }}" ';
+                    var attributes_for_cell = +col.name + '" pr-id="{{ row.entity.id }}" ';
                     if (col.onclick && col.type !== 'actions' && col.type !== 'editable') {
                         attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\') "';
                     }
 
                     var prefix_img = '';
-                    if (col.img) {
-                        //var imgwidth = col.imgwidth?col.imgwidth:'2em';
-                        var prefix_img = '<img class="pr-grid-cell-img-prefix" pr-image="row.entity.' + col.img + '"/>';
-                        //classes_for_row += ' pr-grid-cell-with-img '
+                    if (col.img_url) {
+                        var prefix_img = '<img src="' + static_address('images/0.gif') + '" class="pr-grid-cell-img-prefix" style="background-size: contain; background-repeat: no-repeat; background-position: center center; background-color: #fff; background-image: url({{ row.entity.' + col.img_url + ' }})" />';
                     }
                     switch (col.type) {
                         case 'link':
                             return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-style="grid.appScope.' + col.cellStyle + '"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>{{COL_FIELD}}</a></div>';
                         case 'img':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="{{ COL_FIELD }}" alt="image" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
+                        case 'tags':
+                            return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '">' + prefix_img + '<span ng-repeat="tag in COL_FIELD"' +
+                                ' class="m025em label label-danger">{{ tag.text }}</span></div>';
                         case 'show_modal':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-click="' + col.modal + '" ng-bind="COL_FIELD"></a></div>';
+                        // TODO: YG by OZ: 1. change type from 'actions' to 'server_actions' where it CAN be changes. 1a. remove obsolete javascript code in controllers (onclick)
+                        // TODO: YG by OZ: 2. (low priority) handle server response (replace, delete) see server_action_click
+                        // TODO: YG by OZ: 3. (low priority) if now from server come delete: True - that's mean action allowed. delete: 'explanation message' - acvtion dissallowed. how to show some message from server if action is allowed? we need to change format?
+                        case 'server_actions':
+                            return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '">' + prefix_img + '<button ' +
+                                ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
+                                ' ng-repeat="(action_name, enabled) in COL_FIELD" ng-disabled="enabled !== true" ng-style="{width:grid.getLengthOfAssociativeArray(COL_FIELD)>3?\'2.5em\':\'5em\'}"' +
+                                ' ng-click="grid.server_action_click(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')" ' +
+                                ' title="{{ grid.appScope._((enabled === true)?(action_name + \' grid action\'):enabled) }}">{{ grid.appScope._(action_name + \' grid action\') }}</button></div>';
                         case 'actions':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '">' + prefix_img + '<button ' +
                                 ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
-                                ' ng-repeat="(action_name, enabled) in COL_FIELD" ng-disabled="enabled !== true" ' +
+                                ' ng-repeat="(action_name, enabled) in COL_FIELD" ng-disabled="enabled !== true" ng-style="{width:grid.getLengthOfAssociativeArray(COL_FIELD)>3?\'2.5em\':\'5em\'}"' +
                                 ' ng-click="grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')" ' +
                                 ' title="{{ grid.appScope._((enabled === true)?(action_name + \' grid action\'):enabled) }}">{{ grid.appScope._(action_name + \' grid action\') }}</button></div>';
                         case 'icons':
@@ -1791,11 +1540,26 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
             }
 
+            gridApi.grid['getLengthOfAssociativeArray'] = function (array) {
+                return Object.keys(array).length
+            };
+
             gridApi.grid['searchItemGrid'] = function (col) {
                 //highLightSubstring(col.filter.text, 'ui-grid-canvas',col.field)
                 gridApi.grid.all_grid_data.paginationOptions.pageNumber = 1;
                 gridApi.grid.all_grid_data['filter'][col.field] = col.filter.text;
                 gridApi.grid.setGridData()
+            };
+
+            gridApi.grid['grid_change_row'] = function (new_row) {
+                $.each(gridApi.grid.options.data, function (index, old_row) {
+                    if (old_row['id'] === new_row['id']) {
+                        if (new_row.hasOwnProperty('replace_id')) {
+                            new_row['id'] = new_row['replace_id']
+                        }
+                        gridApi.grid.options.data[index] = new_row;
+                    }
+                });
             };
 
             gridApi.grid['set_data_function'] = function (grid_data) {
@@ -2021,41 +1785,35 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 }
             });
         },
-        loadNextPage: function (url) {
+        loadNextPage: function (url, after_load) {
+            var lnpf = function (onscroll) {
+                var atend = onscroll ?
+                    ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) :
+                    (($(document).height() - $(window).height() === 0));
+                if (atend && !scope.loading && !scope.data.end) {
+                    scope.next_page += 1;
+                    scope.loading = true;
+                    load();
+                }
+            }
             var scope = this;
             scope.next_page = 1;
             $(window).scroll(function () {
-                if ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
-
-                    if (scope.loading === false && scope.data.end !== true) {
-
-                        scope.loading = true;
-                        scope.next_page += 1;
-                        if (scope.scroll_data) {
-                            scope.scroll_data.next_page = scope.next_page
-                        }
-                        load()
-                    }
+                if (scope.scroll_data) {
+                    scope.scroll_data.next_page = scope.next_page
                 }
+                lnpf(true);
             });
-            $timeout(function () {
-                if (scope.data.end === false && ($(document).height() - $(window).height() === 0)) {
-                    scope.next_page += 1;
-                    load()
-                }
-            }, 500);
+
+            $timeout(lnpf, 500);
             var load = function () {
                 $ok(url, scope.scroll_data ? scope.scroll_data : {next_page: scope.next_page}, function (resp) {
-                    scope.data = resp;
-                    if (scope.data.end)
-                        scope.next_page = 1
+                    scope.data.end = resp.end;
+                    after_load(resp);
+                    scope.loading = false;
                 }).finally(function () {
                     $timeout(function () {
-                        scope.loading = false;
-                        if ($(document).height() - $(window).height() === 0 && !scope.data.end) {
-                            scope.next_page += 1;
-                            load()
-                        }
+                        lnpf();
                     }, 1000)
                 });
             }
@@ -2067,6 +1825,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
         tinymceImageOptions: {
             inline: false,
             menu: [],
+            width: 750,
             plugins: 'advlist autolink link image charmap print paste table media',
             skin: 'lightgray',
             theme: 'modern',
@@ -2099,13 +1858,13 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             //valid_elements: Config['article_html_valid_elements'],
             //valid_elements: 'a[class],img[class|width|height],p[class],table[class|width|height],th[class|width|height],tr[class],td[class|width|height],span[class],div[class],ul[class],ol[class],li[class]',
             //TODO: OZ by OZ: select css for current theme. also look for another place with same todo
-            content_css: ["//static.profireader.com/static/front/css/bootstrap.css", "//static.profireader.com/static/css/article.css", "//static.profireader.com/static/front/bird/css/article.css"],
+            content_css: [static_address('front/css/bootstrap.css'), static_address('css/article.css'), static_address('front/bird/css/article.css')],
 
 
             //paste_auto_cleanup_on_paste : true,
             //paste_remove_styles: true,
             //paste_remove_styles_if_webkit: true,
-            //paste_strip_class_attributes: "all",
+            //paste_strip_class_attributes: "all'),
 
             //style_formats: [
             //    {title: 'Bold text', inline: 'b'},
@@ -2133,33 +1892,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
         }
     })
 });
-
-// function getGMT(date){
-//     console.log(date)
-//     var prdate = new Date(date).getTime()
-//     var offset = new Date().getTimezoneOffset();
-//     console.log(prdate)
-//     console.log(offset)
-//     var ptTime = new Date(prdate+(offset * 60000))
-//     console.log(ptTime)
-//     return ptTime
-// }
-
-
-function getLocalTime(date, needtime) {
-    var monthdict = {
-        1: "January", 2: "February", 3: "March", 4: "April", 5: "May",
-        6: "June", 7: "July", 8: "August", 9: "September", 10: "October", 11: "November", 12: "December"
-    }
-    var time = new Date(date);
-    // var month = monthdict[time.getMonth() + 1];
-    // var minutes = time.getMinutes() > 9 ? time.getMinutes() : '0' + time.getMinutes();
-    if (needtime) {
-        return time.toLocaleString()
-        // return time.getDate()+' '+month+' '+time.getFullYear()+', '+ time.getHours()+':'+minutes
-    }
-    return new time.toDateString()
-}
 
 
 function cleanup_html(html) {
@@ -2224,12 +1956,11 @@ function highlight($el) {
 function highLightSubstring(substring, block, element) {
     var elements = element.split('&');
     var re = new RegExp(substring, "gi");
-    $("." + block).find(".search-highlight").remove()
+    $("." + block).find(".search-highlight").remove();
     $.each(elements, function (index) {
-        var el = elements[index]
-        console.log(el);
+        var el = elements[index];
         $("." + block).find("#" + el).each(function () {
-            var rex = $(this).html().match(re)
+            var rex = $(this).html().match(re);
             $(this).html($(this).html().replace(re, '<span class="search-highlight">' + rex[0] + '</span>'));
         })
     })
@@ -2256,9 +1987,9 @@ function fileUrl(id, down, if_no_file) {
 
     var server = id.replace(/^[^-]*-[^-]*-4([^-]*)-.*$/, "$1");
     if (down) {
-        return '//file' + server + '.profireader.com/' + id + '?d'
+        return '//file' + server + '.' + MAIN_DOMAIN + '/' + id + '?d'
     } else {
-        return '//file' + server + '.profireader.com/' + id + '/'
+        return '//file' + server + '.' + MAIN_DOMAIN + '/' + id + '/'
     }
 }
 
@@ -2268,6 +1999,11 @@ function cloneObject(o) {
 
 function add_message(amessage, atype, atime, aunique_id) {
     return angularControllerFunction('message-controller', 'add_message')(amessage, atype, atime, aunique_id);
+}
+
+
+function getLengthOfAssociativeArray(array) {
+    return Object.keys(array).length
 }
 
 function randomHash() {
@@ -2377,9 +2113,10 @@ function buildAllowedTagsAndAttributes() {
     return allowed_tags;
 }
 
-function find_and_build_url_for_endpoint(dict, rules) {
+function find_and_build_url_for_endpoint(dict, rules, host) {
     var found = false;
     var dict1 = {};
+
     $.each(rules, function (ind, rule) {
         var ret = rule;
         var prop = null;
@@ -2402,7 +2139,7 @@ function find_and_build_url_for_endpoint(dict, rules) {
         if (_.size(dict1) > 0) {
             console.warn("Too many parameters passed in dictionary for endpoint rule", dict, rules);
         }
-        return found;
+        return (host ? ('//' + host) : '') + found;
     }
 }
 
@@ -2523,13 +2260,13 @@ var convert_python_format_to_tinymce_format = function (python_format) {
 };
 
 
+// #TODO: OZ by OZ: remove this function. urls should be formed at ss
 var noImageForImageName = function (image_name) {
     if (image_name === 'logo_file_id') {
-        return '//static.profireader.com/static/images/company_no_logo.png';
+        return static_address('images/company_no_logo.png');
     }
     else {
-        return '//static.profireader.com/static/images/no_image.png';
+        return static_address('images/no_image.png');
     }
 }
-
 

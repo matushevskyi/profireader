@@ -3,29 +3,25 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_articles.html' %}
-    {#    {% include '_ruslan/partials/_header_files_crop.html' %}#}
+    {% include '_ruslan/partials/_header_files_crop.html' %}
 {% endblock head %}
 
 {% block portal_content %}
     {% block company_base %}
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
-    {% from 'macros.html' import scripts %}
-    {{ scripts(names=['cropper']) }}
     <script>
         module.controller('CompanyProfile', function ($scope, $timeout) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');
             $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
             $scope.$$translate = {{translates('CompanyProfile') | safe}};
             $scope.cropper_for_copmany = true;
-            $scope.user_have_company = true;
-            {#            $scope.company = {{company.get_client_side_dict() | tojson | safe}};#}
 
             $scope.url_back = {{raw_url_for('company.companies') | safe}};
             $scope.url_portal_profile = {{raw_url_for('portal.profile') | safe}};
 
             $scope.data = {};
-            $scope.rights_user_in_company = {{rights_user_in_company | tojson | safe}};
+            $scope.coordinates = [];
 
             $scope.editing = false;
 
@@ -37,18 +33,18 @@
                 window.location.href =
                         $scope.url_portal_profile({'create_or_update': 'create', 'company_id': company_id});
             };
-
-            $scope.portal_update = function (company_id, portal_id) {
-                window.location.href =
-                        $scope.url_portal_profile({
-                            'create_or_update': 'update', 'company_id': company_id,
-                            'portal_id': portal_id
-                        });
-            };
+{#            YG--- fix creating new portal if portal of company already exist #}
+{#            $scope.portal_update = function (company_id, portal_id) {#}
+{#                window.location.href =#}
+{#                        $scope.url_portal_profile({#}
+{#                            'create_or_update': 'update', 'company_id': company_id,#}
+{#                            'portal_id': portal_id#}
+{#                        });#}
+{#            };#}
 
 
             $scope.edit = function () {
-                $scope.editing = $scope.can_edit;
+                $scope.editing = $scope.can_edit_company;
             };
 
             $scope.afterSave = function (resp, deff) {
@@ -61,7 +57,8 @@
             };
 
             $scope.afterLoad = function (resp, deff) {
-                $scope.can_edit = resp['actions']['edit'];
+                $scope.can_edit_company = resp['actions']?resp['actions']['edit_company_profile'] === true:false;
+                $scope.can_edit_portal = resp['actions']?resp['actions']['edit_portal_profile'] === true:false;
                 $scope.editing = resp.id ? false : true;
                 deff(resp);
 //                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
@@ -85,47 +82,43 @@
              af-after-save="afterSave"
              af-after-load="afterLoad"
              ng-model="data">
-            <div class="row company">
-                <div class="col-lg-5 col-md-5 col-sm-12 col-xs-12 image-company-profile">
-
-                    <!-- TODO: MY by OZ: 400x300 -> some class -->
-                    <img ng-show="!editing" style="width: 400px; height: 300px; position: relative"
-                         pr-image="data.logo_file_id" alt="image">
-
-                    <div ng-if="editing">
-                        <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 edit-company">
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <button ng-if="!data.id" class="btn btn-default save-profile pull-right border-radius"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
+                    </button>
+                    <div ng-if="data.id">
+                        <button class="btn btn-default go-portal pull-right border-radius" type="button"
+                                ng-if="data.own_portal && can_edit_portal" ng-click="portal_update(data.id, data.own_portal.id)">
+                            {{_('Portal profile') }}
+                        </button>
+                        <button class="btn btn-default go-portal pull-right border-radius" type="button"
+                                ng-if="!data.own_portal && can_edit_portal" ng-click="portal_create(data.id)">{{
+                            _('Launch portal')}}
+                        </button>
+                        <button ng-if="editing" class="btn btn-default save-profile pull-right border-radius"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save profile') }}
+                        </button>
+                        <button class="btn btn-default edit-profile pull-right border-radius" type="button"
+                                ng-click="edit()" ng-if="can_edit_company && !editing">{{ _('Edit profile') }}
+                        </button>
                     </div>
                 </div>
+                <div class="row company">
+                    <div class="col-lg-5 col-md-5 col-sm-7 col-xs-12 image-company-profile">
+                        <!-- TODO: MY by OZ: 400x300 -> some class -->
+                        <img ng-show="!editing" class="company-profile-logo-img"
+                             pr-image-url-watch="data.logo.url" alt="image"/>
 
-                <div class="col-lg-7 col-md-7 col-sm-12 col-xs-12 edit-company">
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                        <div ng-if="data.id">
-                            <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                    ng-if="data.own_portal" ng-click="portal_update(data.id, data.own_portal.id)">
-                                {{_('Portal profile') }}
-                            </button>
-                            <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                    ng-if="!data.own_portal" ng-click="portal_create(data.id)">{{
-                                _('Launch portal') }}
-                            </button>
-                            <button ng-if="editing" class="btn btn-default save-profile pull-right border-radius"
-                                    type="button" ng-click="$af.save(data)"
-                                    ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Save profile') }}
-                            </button>
-                            <button class="btn btn-default edit-profile pull-right border-radius" type="button"
-                                    ng-click="edit()" ng-if="can_edit && !editing">{{ _('Edit profile') }}
-                            </button>
+                        <div ng-if="editing">
+                        <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
                         </div>
-                        <div ng-if="!data.id">
-                            <button class="btn btn-default save-profile pull-right border-radius"
-                                    type="button" ng-click="$af.save(data)"
-                                    ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
-                            </button>
-                        </div>
-
-
                     </div>
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+
+
+                    <div class="col-lg-7 col-md-7 col-sm-5 col-xs-12">
                         <ul class="edit-block" ng-if="!editing">
                             <li ng-show="data.name"><h3>{{ data.name }}</h3></li>
                             <li ng-show="data.country">{{ _('Country:') }} {{ data.country }}</li>
@@ -148,10 +141,8 @@
                                     <input pr-validation-answer="data_validation:name" oles_type="text"
                                            class="form-control border-radius"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.name"
-                                           oles_name="company_name" oles_oles_ng-pattern="/[\wа-яёі']{3}/">
-                                    <div ng-if=" 0 && formCompany.company_name.$error.pattern" class="error-input">The
-                                        company name should be longer!
-                                    </div>
+                                           oles_name="company_name" oles_ng-pattern="/[\wа-яёі']{3}/i">
+
                                 </div>
 
                                 <div class="col-lg-2">{{ _('Country:') }}</div>
@@ -159,10 +150,9 @@
                                     <input pr-validation-answer="data_validation:country" oles_type="text"
                                            class="form-control border-radius"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.country"
-                                           oles_name="company_country" oles_ng-pattern="/[\wа-яёі]{2}/">
+                                           oles_name="company_country" oles_ng-pattern="/[\wа-яёі]{2}/i">
                                     <div ng-if=" 0 && formCompany.company_country.$error.pattern" class="error-input">
-                                        The
-                                        country name should be longer!
+                                        {{ _('The country name should be longer!') }}
                                     </div>
                                 </div>
                                 <div class="col-lg-2">{{ _('Region:') }}</div>
@@ -177,9 +167,9 @@
                                            class="form-control border-radius" oles_name="company_city"
                                            oles_ng-pattern="/[\wа-яёі]{2}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.city">
-                                    <div ng-if=" 0 && formCompany.company_city.$error.pattern" class="error-input">The
-                                        city
-                                        name should be longer!
+                                    <div ng-if=" 0 && formCompany.company_city.$error.pattern" class="error-input">{{
+                                        _('The
+                                        city name should be longer!') }}
                                     </div>
 
                                 </div>
@@ -190,8 +180,7 @@
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.postcode"
                                            oles_name="company_postcode">
                                     <div ng-if=" 0 && formCompany.company_postcode.$error.pattern" class="error-input">
-                                        The
-                                        postcode should be longer!
+                                        {{ _('The postcode should be longer!') }}
                                     </div>
 
                                 </div>
@@ -202,8 +191,7 @@
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.address"
                                            oles_name="company_address">
                                     <div ng-if=" 0 && formCompany.company_address.$error.pattern" class="error-input">
-                                        The
-                                        address should be longer!
+                                        {{ _('The address should be longer!') }}
                                     </div>
 
                                 </div>
@@ -214,8 +202,9 @@
                                            class="form-control border-radius" oles_ng-pattern="/[0-9]{6}/"
                                            placeholder="+38(098)7654321" id="basic-url" aria-describedby="basic-addon3"
                                            ng-model="data.phone" oles_name="company_phone">
-                                    <div  ng-if=" 0 && formCompany.company_phone.$error.pattern" class="error-input">The
-                                        phone should be longer!
+                                    <div ng-if=" 0 && formCompany.company_phone.$error.pattern" class="error-input">{{
+                                        _('The
+                                        phone should be longer!') }}
                                     </div>
 
                                 </div>
@@ -232,8 +221,9 @@
                                            oles_ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/"
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.email"
                                            oles_name="company_email">
-                                    <div ng-if=" 0 && formCompany.company_email.$error.pattern" class="error-input">The
-                                        email not validate!
+                                    <div ng-if=" 0 && formCompany.company_email.$error.pattern" class="error-input">{{
+                                        _('The
+                                        email not validate!') }}
                                     </div>
 
                                 </div>
@@ -250,7 +240,7 @@
                                            id="basic-url" aria-describedby="basic-addon3" ng-model="data.lon"
                                            oles_name="company_lon">
                                 </div>
-
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -283,7 +273,3 @@
     </div>
     {% endraw %}
 {% endblock portal_content %}
-
-{% block footer %}
-    {% include 'partials/portal_footer_Profireader.html' %}
-{% endblock footer %}

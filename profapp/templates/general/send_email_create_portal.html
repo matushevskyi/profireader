@@ -14,18 +14,18 @@
             var text = $('#send_message_text').val();
             var subject = {{_('Some one would like to create portal')|tojson}}
                     $.ajax({
-                        url: '{{ url_for('general.send_email') }}',
+                        url: '{{ url_for('index.send_email') }}',
                         type: 'post',
                         data: {'subject': subject, 'text': text},
                         success: function (e) {
                             add_message('message was sent');
-                            window.location.href = '{{ url_for('general.index') }}';
+                            window.location.href = '{{ url_for('index.index') }}';
                         }
                     })
         };
 
     </script>
-    <div id="send_email_wrapper" ng-cloak>
+    <div id="send_email_wrapper" class="block-resp" ng-cloak>
         <label for="send_message_text">{{ _('Send message to profireader') }}</label></br>
 <textarea id='send_message_text'
           style="width: 500px; height: 200px">{{ _('Default input text') }}

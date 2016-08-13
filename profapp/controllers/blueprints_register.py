@@ -15,8 +15,9 @@ from flask import Blueprint
 # help_bp = Blueprint('help', __name__)
 
 from .blueprints_declaration import *
+
 from . import views_index, views_user, views_filemanager, views_article, \
-    views_company, views_portal, errors, views_file, views_admin, views_tools, views_help, views_reader, \
+    views_company, views_portal, errors, views_file, views_admin, views_tools, views_tutorial, \
     views_messanger
 
 
@@ -25,8 +26,11 @@ def register_profi(app):
     # we can not change this url_prefix due to soc-network authentication
     # the following string must be exactly here. why?
     from . import views_auth
+    from . import views_tutorial
+    from . import views_front
 
-    app.register_blueprint(general_bp, url_prefix='/')
+
+    app.register_blueprint(index_bp, url_prefix='/')
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(tools_bp, url_prefix='/tools')
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -37,16 +41,14 @@ def register_profi(app):
     app.register_blueprint(company_bp, url_prefix='/company')
     app.register_blueprint(portal_bp, url_prefix='/portal')
     app.register_blueprint(exception_bp, url_prefix='/exception')
-    app.register_blueprint(help_bp, url_prefix='/help')
     app.register_blueprint(messenger_bp, url_prefix='/messenger')
-
-    from . import views_front
-
-    app.register_blueprint(reader_bp, url_prefix='/reader')
+    app.register_blueprint(tutorial_bp, url_prefix='/tutorial')
 
     app.register_blueprint(front_bp, url_prefix='/')
 
-    # app.register_blueprint(reader_bp, url_prefix='/')
+
+
+
 
 
 def register_front(app):

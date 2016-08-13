@@ -1,0 +1,105 @@
+<table class="social_activity container p0 noselect">
+    <tr>
+        <td class="narrow">
+            <span class="fl"><i class="fa fa-eye"> <span>{{ _('Readers') }}</span>
+                <readers_count>{{ article['read_count'] }}</readers_count>
+            </i></span>
+        </td>
+        <td class="wide">
+        </td>
+        <td class="narrow">
+                <span class="disabled"><i class="fa fa-commenting-o">
+                    <span>{{ _('Comments') }}</span>
+                    <comments_count>0</comments_count>
+                </i></span>
+        </td>
+        <td class="wide">
+        </td>
+        <td class="narrow">
+                <span
+                        if-not-authenticated="{{ _('If you want like article pls login or register in profireader') }}"
+                        onclick="switch_something(this, '{{ url_for('front.add_delete_liked', publication_id =
+         article['id']) }}', '.fa-thumbs-o-up', '.fa-thumbs-up', {'liked_count': 'liked_count'});">
+                    <i class="fa fa-thumbs-o-up link {% if article.social_activity.liked %}dn{% endif %}">
+                        <span>{{ _('Like') }}</span>
+                        <liked_count>{{ article.social_activity.liked_count }}</liked_count>
+                    </i>
+                    <i class="fa fa-thumbs-up link {% if not article.social_activity.liked %}dn{% endif %}">
+                        <span>{{ _('Unlike') }}</span>
+                        <liked_count>{{ article.social_activity.liked_count }}</liked_count>
+                    </i>
+                </span>
+
+        </td>
+        <td class="wide">
+        </td>
+        <td class="narrow">
+                <span
+                        if-not-authenticated="{{ _('If you want bookmark this article pls login or register in profireader') }}"
+                        onclick="switch_something(this, '{{ url_for('front.add_delete_favorite',
+         publication_id = article['id']) }}', '.fa-bookmark-o', '.fa-bookmark', {'favorite_count': 'bookmarked_count'});">
+                    <i class="fa fa-bookmark-o link {% if article.social_activity.favorite %}dn{% endif %}">
+                        <span>{{ _('Add to bookmark') }}</span>
+                        <bookmarked_count>{{ article.social_activity.favorite_count }}</bookmarked_count>
+                    </i>
+                    <i class="fa fa-bookmark link {% if not article.social_activity.favorite %}dn{% endif %}">
+                        <span>{{ _('Remove from bookmark') }} <bookmarked_count>{{ article.social_activity.favorite_count }}</bookmarked_count></span></i>
+                </span>
+
+        </td>
+    </tr>
+</table>
+
+<div class="modal fade" id="UnAuthenticated_dialog" role="dialog" data-keyboard="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title"><span>{{ _('You are not authenticated') }}</span></h4>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer">
+                <a onclick="close_switch_something_modal()" href="{{ _URL_JOIN() }}" target="profireader_subscribe">
+                    <button type="button"
+                            class="btn btn-success">{{ _('Go to profireader registration page') }}</button>
+                </a>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">{{ _('Close') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    function close_switch_something_modal() {
+        $('#UnAuthenticated_dialog').modal('hide');
+        return true;
+    }
+
+    function switch_something(element, url, selector_off, selector_on, replace_key_selector) {
+        if ($(element).attr('if-not-authenticated') && (!_USER || !_USER.id)) {
+            $('.modal-body', $('#UnAuthenticated_dialog')).html($(element).attr('if-not-authenticated'));
+            $('#UnAuthenticated_dialog').modal({
+                backdrop: 'static',
+                keyboard: true
+            }).modal('show');
+            return;
+
+        }
+
+        $ok(url, {'on': $(selector_on, element).is(':visible') ? false : true}, function (resp) {
+            $(selector_off, element).hide();
+            $(selector_on, element).hide();
+            (resp && resp['on']) ? $(selector_on, element).show() : $(selector_off, element).show();
+
+            if (replace_key_selector)
+                $.each(replace_key_selector, function (key, selector) {
+                    if (key in resp) {
+                        $(selector, element).html(resp[key]);
+                    }
+                })
+        })
+    }
+
+
+</script>

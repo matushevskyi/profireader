@@ -1,0 +1,38 @@
+{# starting layout #}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    {% include 'head.html' %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+</head>
+
+<body>
+<script>
+    window.addEventListener("message", function (messageevent) {
+        if (messageevent.data && messageevent.data.profireader_session_id) {
+            $.cookie('beaker.session.id', messageevent.data.profireader_session_id, {path: '/'});
+            window.location.reload();
+        }
+    }, false);
+    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: none; left: -1px;" src="https://profireader.com/tools/SSO/' + $.cookie('beaker.session.id') + '/"></iframe>');
+</script>
+{% block header %}{% include 'header.html' %}{% endblock header %}
+
+<div class="container">
+    <div class="row site-content">
+        {% block content %}
+            {% block top_content %}{% endblock top_content %}
+            <div class="col-md-9">
+                {% block left_content %}{% endblock left_content %}
+            </div>
+            <div class="col-md-3">
+                {% block right_content %}{% endblock right_content %}
+            </div>
+            {% block bottom_content %}{% endblock bottom_content %}
+        {% endblock content %}
+    </div>
+</div>
+{% block footer %}{% include 'footer.html' %}{% endblock footer %}
+
+</body>
+</html>

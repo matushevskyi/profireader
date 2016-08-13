@@ -1,0 +1,12 @@
+{% if search_text is not none and search_text is not undefined %}
+    {% import 'macros.html' as frontmacros %}
+    <form class="search-form">
+        <input style="width: 10em" type="text" name="search" placeholder="{{ _('Search') }}" value="{{ search_text }}">
+        <button class="btn btn-default search-btn" type="submit"><span
+                class="glyphicon glyphicon-search"></span></button>
+    </form>
+    {% for tag in tags.all %}
+        {{ frontmacros.tag(tag, tags.url_construct_toggle, selected_tag_names = tags.selected_names, toogle_tag = True) }}
+    {% endfor %}
+    <br/><br/>
+{% endif %}

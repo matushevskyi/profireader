@@ -1,0 +1,14 @@
+{% extends 'layout_company_page.html' %}
+
+{% block company_content %}
+    {% for employment in member_company.employments if employment['status'] == 'ACTIVE' %}
+        {#        TODO: OZ by OZ: change id="company_employees" to class="company_employees" (script_send_message_to_user.html stop work)#}
+        <div><img class="user-avatar" {{ prImageUrl(employment.user['avatar']['url']) }} /></div>
+        <div>{{ employment.user['full_name'] }}</div>
+        <div>{% if employment['position'] %}{{ employment['position'] }}{% endif %}</div>
+        <div><a data-user-id="{{ employment.user['id'] }}" href="#"><span
+                class="fa fa-envelope"></span>&nbsp;{{ _('send message') }}</a></div>
+    {% endfor %}
+
+    {% include '_common/script_send_message_to_user.html' %}
+{% endblock %}

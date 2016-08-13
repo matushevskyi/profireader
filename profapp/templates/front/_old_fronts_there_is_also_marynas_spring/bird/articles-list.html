@@ -1,0 +1,104 @@
+
+{% block search %}{% endblock search %}
+{% block content_left %}{% include 'search_block.html' %}
+    <a href="#" class="right_banner_1">{{ portal.advs['right_banner_1']|safe }}</a>
+    <a href="#" class="right_banner_2">{{ portal.advs['right_banner_2']|safe }}</a>
+{% endblock content_left %}
+
+
+
+{# цикл статей і баннери між ними з функцією пошуку #}
+<script>
+    var searchText = {{ search_text|tojson }};
+    var re = new RegExp(searchText, 'g');
+    var indexFound = 0;
+    function getColored(article) {
+        var text = article.short;
+        var coloredText = addColoredSpan(text);
+        document.write(coloredText);
+    }
+    function findIndex(text) {
+        var index = text.indexOf(searchText);
+        if (index > 0) {
+            indexFound = index;
+            return index
+        }
+        else {
+            indexFound = 0;
+            return false
+        }
+    }
+    function foundText(article) {
+        if (findIndex(article.title)) {
+            return article.title
+        }
+        else if (findIndex(article.short)) {
+            return article.short
+        }
+        else if (findIndex(article.long_stripped)) {
+            return article.long_stripped
+        }
+    }
+    function addColoredSpan(text) {
+        return text.replace(re, '<span style="color:#49c414">' + searchText + '</span>');
+    }
+    function getSearchBlock(article) {
+        var text = foundText(article);
+        if (!text) return '';
+        var index = indexFound;
+        var size = 45;
+        document.write(text ? addColoredSpan((index > size ? '...' : '') +
+                text.substring(Math.max(0, index - size), Math.min(index + size, text.length))
+                + (index + size < text.length ? '...' : '')) : text);
+    }
+
+</script>
+{% set article_count = 0 %}
+{% set wide_banners = {2:'1',6:'2'} %}
+{% import 'partials/front-macros.html' as frontmacros %}
+
+{% for article_id, article in articles.items() %}
+    {% set article_count = article_count + 1 %}
+    <div class="block-item list-elements">
+        <div class="item-type article">
+            <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
+            <span class="fr">{{ article.author }}</span>
+        </div>
+        <div style="text-align: right">{% for tag in article.tags %}
+            {{ frontmacros.tag(tag, url_toggle_tag, selected_tag_names = selected_tag_names, toogle_tag = True) }} {% endfor %}</div>
+        <h2 class="item-title">
+            <a href="{{ url_for('front.article_details', publication_id=article['id']) }}">{{ article['title']|safe }}</a>
+        </h2>
+        <div class="item-short-content">
+            <script type="text/javascript">
+                getColored({{ article|tojson }});
+            </script>
+        </div>
+        <div class="item-additional-info">
+            <a href="{{ url_for('front.division', member_company_name = article['company']['name']) }}"
+               class="item-company">{{ article['company']['name']|safe }}</a>
+            <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
+            <div><br>
+                <script type="text/javascript">getSearchBlock({{ article|tojson }})</script>
+            </div>
+        </div>
+
+        <div class="bottom-hide"></div>
+
+        <img {{ prImageUrl(article['illustration']['url']) }} class="block-item-img bg-contain"/>
+    </div>
+    {% if article_count in wide_banners and portal.advs['wide_banner_' + wide_banners[article_count]] %}
+        <div class="block-item list-elements">
+            <a href="#" class="wide_banners">{{ portal.advs['wide_banner_' + wide_banners[article_count]]|safe }}</a>
+
+        </div>
+    {% endif %}
+{% else %}
+    <h1>{{ _('There are no articles in this division') }}</h1>
+{% endfor %}
+
+{% block pager %}{% if pages and articles %}
+    {% include 'partials/pager.html' %}
+{% endif %}{% endblock pager %}
+
+

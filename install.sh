@@ -4,7 +4,11 @@ rand=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
 
 PWD=$(pwd)
 
-sudo apt-get install dialog
+dialog_installed=$(dpkg-query -W --showformat='${Status}\n' dialog|grep "install ok installed")
+
+if [[ "$dialog_installed" == "" ]]; then
+    sudo apt-get install dialog
+fi
 
 function e {
     echo "$*"
@@ -155,19 +159,58 @@ function menu_postgres_9_4 {
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
 sudo apt-key add -
 sudo apt-get update
-apt-get install postgresql-9.4" sudo deb
+apt-get install postgresql-9.4" sudo elastic
     }
+
+function menu_elastic {
+    elastic_version=$(rr 'elasticsearch version' 2.3.3)
+    conf_comm "apt-get install openjdk-7-jre 
+wget https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/"$elastic_version"/elasticsearch-"$elastic_version".deb
+dpkg -i ./elasticsearch-"$elastic_version".deb
+rm ./elasticsearch-"$elastic_version".deb" sudo deb
+}
 
 function menu_deb {
     conf_comm "apt-get update
-apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached" sudo hosts
+apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached" sudo npm
     }
 
+function menu_npm {
+    conf_comm "apt-get install nodejs
+apt-get install npm
+ln -s /usr/bin/nodejs /usr/bin/node 
+npm install -g bower
+npm install -g gulp" sudo bower
+    }
+
+function menu_bower {
+    conf_comm "cd ./profapp/static
+bower install" nosudo menu_bower_dev
+    }
+
+function menu_bower_dev {
+    conf_comm "cd ./profapp/static/bower_components_dev
+mkdir ./angular-db-filemanager
+cd ./angular-db-filemanager
+git clone git@github.com:kakabomba/angular-server-driven-filemanager.git .
+cd ..
+mkdir ./angular-crop
+cd ./angular-crop
+git clone git@github.com:kakabomba/ng-crop.git .
+" nosudo hosts
+    }
+
+function menu_gulp {
+     conf_comm "cd ./profapp/static
+npm install gulp del gulp-less-sourcemap gulp-watch run-sequence gulp-task-listing
+gulp" nosudo hosts
+     }
+
 function menu_hosts {
-    conf_comm "sed -i '/\(db\|web\|mail\|memcached\).profi/d' /etc/hosts
+    conf_comm "sed -i '/\(db\|web\|mail\|memcached\|elastic\).profi/d' /etc/hosts
 sed -i '/profireader.com/d' /etc/hosts
 echo '' >> /etc/hosts
-echo '127.0.0.1 db.profi web.profi mail.profi memcached.profi' >> /etc/hosts
+echo '127.0.0.1 db.profi web.profi mail.profi memcached.profi elastic.profi' >> /etc/hosts
 echo '127.0.0.1 file001.profireader.com' >> /etc/hosts
 echo '127.0.0.1 static.profireader.com' >> /etc/hosts
 echo '127.0.0.1 profireader.com rodynni.firmy oles.profireader.com rodynnifirmy.profireader.com derevoobrobka.profireader.com viktor.profireader.com md.profireader.com oleh.profireader.com fsm.profireader.com' >> /etc/hosts
@@ -185,6 +228,15 @@ apt-get update
 apt-get install haproxy" sudo haproxy_config
     }
 
+function menu_haproxy_letsencrypt {
+    conf_comm "
+#echo 'deb http://ftp.debian.org/debian jessie-backports main' > /etc/apt/sources.list.d/jessie-backports.list
+#apt-get update
+#apt-get install certbot -t jessie-backports
+certbot certonly
+" sudo apache2_config
+    }
+
 function menu_haproxy_config {
     conf_comm "cp ./haproxy.cfg /etc/haproxy/
 cp ./profireader_haproxy.key.pem /etc/haproxy/
@@ -192,9 +244,24 @@ service haproxy restart" sudo apache2_config
     }
 
 function menu_apache2_config {
-    conf_comm "cat profi-wsgi-apache2.conf | sed -e 's#----directory----#$PWD#g' > /etc/apache2/sites-enabled/profi-wsgi-apache2.conf
-rm /etc/apache2/sites-available/000-default.conf
+    maindom=$(echo "from main_domain import MAIN_DOMAIN
+print(MAIN_DOMAIN)" | python)
+    wwwdir=$(rr 'Enter http dir' $PWD)
+    maindomain=$(rr 'Enter main domain' $maindom)
+    conf_comm "cat ./conf/profi-wsgi-apache2.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/sites-enabled/profi-wsgi-apache2.conf
+cp ./conf/ports.conf /etc/apache2/
+rm /etc/apache2/sites-enabled/000-default.conf
 mkdir /var/log/profi
+a2enmod wsgi
+service apache2 restart" sudo apache2_check_ssls
+    }
+
+function menu_apache2_check_ssls {
+    venvdir=$(rr 'venv directory' .venv)
+    conf_comm "cd `pwd`
+source $venvdir/bin/activate
+cd utils
+python check_ssl.py
 service apache2 restart" sudo secret_data
     }
 
@@ -217,8 +284,8 @@ function menu_python_3 {
     if [[ -e $destdir ]]; then
 	echo "error: $destdir exists"
     else
-	warn_about_rm '/usr/bin/python3'
-	warn_about_rm '/usr/bin/pyvenv'
+#	warn_about_rm '/usr/bin/python3'
+#	warn_about_rm '/usr/bin/pyvenv'
 	conf_comm "cd /tmp/
 rm -rf 'Python-$pversion/*'
 rm 'Python-$pversion.tgz'
@@ -228,10 +295,6 @@ cd 'Python-$pversion'
 ./configure --prefix='$destdir'
 make
 make install
-rm /usr/bin/python3
-rm /usr/bin/pyvenv
-ln -s $destdir/bin/python3 /usr/bin/python3
-ln -s $destdir/bin/pyvenv /usr/bin/pyvenv
 cd /tmp
 rm -rf 'Python-$pversion'" sudo venv
     fi
@@ -239,10 +302,11 @@ rm -rf 'Python-$pversion'" sudo venv
 
 function menu_venv {
     destdir=$(rr 'destination dir for virtual directory' .venv)
+    pythondir=$(rr 'python dir' /usr/local/opt/python-3.4.2)
     if [[ -e $destdir ]]; then
 	echo "error: $destdir exists"
     else
-	conf_comm "pyvenv $destdir
+	conf_comm "$pythondir/bin/pyvenv $destdir
 cp ./activate_this.py $destdir/bin" nosudo modules
     fi
     }
@@ -276,7 +340,8 @@ ALTER USER $psqluser WITH PASSWORD '$psqlpass';" compare_local_makarony
 
 makaronyaddress='m.ntaxa.com/profireader/54322'
 localaddress='localhost/profireader/5432'
-artekaddress='a.ntaxa.com/profireader/54321'
+kupytyaddress='a.ntaxa.com/profireader/54143'
+artekaddress='a.ntaxa.com/profireader/54141'
 
 function menu_bower_components_dev {
     conf_comm "cd profapp/static/bower_components_dev
@@ -286,15 +351,23 @@ git checkout ids" nosudo db_user_pass
     }
 
 function menu_compare_local_makarony {
-    conf_comm "./postgres.dump_and_compare_structure.sh $makaronyaddress $localaddress" nosudo compare_local_artek
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $makaronyaddress $localaddress" nosudo compare_local_kupyty
+    }
+
+function menu_compare_local_kupyty {
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $localaddress $kupytyaddress" nosudo compare_makarony_artek
     }
 
 function menu_compare_local_artek {
-    conf_comm "./postgres.dump_and_compare_structure.sh $localaddress $artekaddress" nosudo compare_makarony_artek
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $localaddress $artekaddress" nosudo compare_makarony_artek
     }
 
 function menu_compare_makarony_artek {
-    conf_comm "./postgres.dump_and_compare_structure.sh $makaronyaddress $artekaddress" nosudo db_rename
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $makaronyaddress $artekaddress" nosudo db_rename
     }
 
 function menu_db_rename {
@@ -376,43 +449,54 @@ next='_'
 #eval $a
 
 #exit
-
-while :
-do
+if [[ "$1" == "" ]]; then
+  while :
+  do
 #next='exit'
-dialog --title "profireader" --nocancel --default-item $next --menu "Choose an option" 22 78 17 \
-"origin" "change git origin and add new remote repo" \
-"postgres_9_4" "install postgres 9.4" \
-"deb" "install deb packages" \
-"hosts" "create virtual domain zone in /etc/hosts" \
-"haproxy_compile" "compile and install haproxy" \
-"haproxy_config" "copy haproxy config to /etc/haproxy" \
-"apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
-"secret_data" "download secret data" \
-"secret_client" "download secret client data" \
-"download_key_pem" "download https key and pem file" \
-"python_3" "install python 3" \
-"venv" "create virtual environment" \
-"modules" "install required python modules (via pip)" \
-"bower_components_dev" "get bower components (development version)" \
-"db_user_pass" "create postgres user/password" \
-"db_rename" "rename database (create backup)" \
-"db_create" "create empty database" \
-"db_save_minimal" "save initial database to file" \
-"db_download_minimal" "get minimal database from x.m.ntaxa.com" \
-"db_load_minimal" "load minimal database from file" \
-"db_save_full" "save full database to file" \
-"db_download_full" "get full database from x.m.ntaxa.com" \
-"db_load_full" "load full database from file" \
-"db_reindex_search" "reindex search table" \
-"db_reassign_ownership" "reassign ownership" \
-"compare_local_makarony" "compare local database and dev version" \
-"compare_local_artek" "compare local database and production version" \
-"compare_makarony_artek" "compare dev database and production version" \
-"exit" "Exit" 2> /tmp/"$rand"selected_menu_
-reset
-datev="date +%y_%m_%d___%H_%M_%S"
-gitv='git rev-parse --short HEAD'
-menu_`cat /tmp/"$rand"selected_menu_`
+    dialog --title "profireader" --nocancel --default-item $next --menu "Choose an option" 22 78 17 \
+      "origin" "change git origin and add new remote repo" \
+      "postgres_9_4" "install postgres 9.4" \
+      "elastic" "install elastic search" \
+      "deb" "install deb packages" \
+      "npm" "install nodejs, npm, bower and gulp globally" \
+      "bower" "download bower components in ./profapp/static/bower_components" \
+      "bower_dev" "download bower development components in ./profapp/static/bower_components_dev" \
+      "gulp" "install gulp in ./profapp/static" \
+      "hosts" "create virtual domain zone in /etc/hosts" \
+      "haproxy_compile" "compile and install haproxy" \
+      "haproxy_config" "copy haproxy config to /etc/haproxy" \
+      "haproxy_letsencrypt" "install haproxy letsencrypt" \
+      "apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
+      "apache2_check_ssls" "check for front ssls by letsencrypt" \
+      "secret_data" "download secret data" \
+      "secret_client" "download secret client data" \
+      "download_key_pem" "download https key and pem file" \
+      "python_3" "install python 3" \
+      "venv" "create virtual environment" \
+      "modules" "install required python modules (via pip)" \
+      "bower_components_dev" "get bower components (development version)" \
+      "db_user_pass" "create postgres user/password" \
+      "db_rename" "rename database (create backup)" \
+      "db_create" "create empty database" \
+      "db_save_minimal" "save initial database to file" \
+      "db_download_minimal" "get minimal database from x.m.ntaxa.com" \
+      "db_load_minimal" "load minimal database from file" \
+      "db_save_full" "save full database to file" \
+      "db_download_full" "get full database from x.m.ntaxa.com" \
+      "db_load_full" "load full database from file" \
+      "db_reindex_search" "reindex search table" \
+      "db_reassign_ownership" "reassign ownership" \
+      "compare_local_makarony" "compare local database and dev version" \
+      "compare_local_kupyty" "compare local database and testing version" \
+      "compare_local_artek" "compare local database and production version" \
+      "compare_makarony_artek" "compare dev database and production version" \
+      "exit" "Exit" 2> /tmp/"$rand"selected_menu_
+  reset
+  datev="date +%y_%m_%d___%H_%M_%S"
+  gitv='git rev-parse --short HEAD'
+  menu_`cat /tmp/"$rand"selected_menu_`
+  done
+else
+  menu_$1
+fi
 
-done

@@ -1,6 +1,6 @@
 {% extends "index_lazy_layout.html" %}
 
-{% block title %}Profireader{% endblock title %}
+{% block title %}Profireader - {{ _('Partners') }}{% endblock title %}
 
 {% block head %}
     {{ super() }}
@@ -20,7 +20,7 @@
             $scope.url_companies_partners = '{{ url_for('portal.companies_partners_load', company_id=company.id)
          }}';
             $scope.url_company_partner_details = {{ raw_url_for('portal.company_partner_update')| safe}};
-            $scope.url_change_status = {{ raw_url_for('portal.portals_partners_change_status')|safe }};
+            $scope.url_change_status = {{ raw_url_for('portal.company_partners_change_status')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
 
             {% raw %}
@@ -34,30 +34,24 @@
             };
 
             $scope.grid_update_row = function (updated_row) {
-                console.log($scope, updated_row);
 //                    TODO: SS by OZ: how i can access grid data without data cariable in my scope?
-                $scope.grid_change_row($scope.data, updated_row);
+                $scope.gridApi.grid.grid_change_row(updated_row);
             };
 
             $scope.grid_action = function (id, action, row, column_name) {
                 if (column_name == 'actions') {
                     if (action === 'ALLOW') {
                         window.location.href = $scope.url_company_partner_details({
-                            employeer_id: row.company_id, member_id: row.member.company.id
+                            company_id: row.company_id, member_id: row.member.company.id
                         });
                         return;
                     } else {
-                        if (row.actions[action] == true) {
                             return $ok($scope.url_change_status({
-                                partner_id: row.member.company.id,
+                                company_id: row.company_id,
                                 portal_id: row.portal_id
-                            }), {action: action, who: row.who, company_id: row.company_id}, function (resp) {
-                            }).finally(function () {
-                                $scope.gridApi.grid.setGridData();
-                            })
-                        } else {
-                            add_message(row.actions[action], 'danger', 3000)
-                        }
+                            }), {action: action, who: row.who, partner_id: row.member.company.id}, function (resp) {
+                               $scope.gridApi.grid.grid_change_row(resp);
+                            }).finally(function () {})
                     }
                 }
             };
@@ -68,7 +62,7 @@
                     {
                         name: 'member.company.name',
                         type: 'link',
-                        img: 'member.company.logo_file_id',
+                        img_url: 'member.company.logo.url',
                         href: 'portal_link(row.entity.member.company.own_portal.host)'
                     },
                     {name: 'member.status', filter: {type: 'multi_select', default_selected: true}},

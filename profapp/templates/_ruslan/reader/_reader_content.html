@@ -1,43 +1,50 @@
 {% extends "_ruslan/_index_layout.html" %}
-{% block title %}{{ _('Profireader reader list') }}{% endblock title %}
+{% block title %}Profireader{% endblock title %}
 
 {% block portal_content %}
     {% include '_ruslan/reader/_reader_nav.html' %}
     <script>
         module.controller('list_reader', function ($scope, $ok, $sce) {
-            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('list_reader');
+            angularControllerFunction('user_controller', 'set_selected_user_menu')('list_reader');
             $scope.$$translate = {{ translates('list_reader')|safe }};
             $scope.favorite = {{ favorite }}
-            $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
-            $scope.add_delete_favorite = '{{ url_for('reader.add_delete_favorite') }}'
-            $scope.add_delete_like = '{{ url_for('reader.add_delete_like') }}'
-            $scope.add_to_favorite = function (article) {
-                article.is_favorite = article['is_favorite']? False: True
-                $ok($scope.add_delete_favorite, {'article': article}, function (resp) {
-                    article.is_favorite = resp
+                    $scope.favorite ? addToMenu_Selected('favorite') : addToMenu_Selected('list');
+            $scope.add_delete_favorite = '{{ url_for('index.add_delete_favorite') }}';
+            $scope.add_delete_like = '{{ url_for('index.add_delete_like') }}';
+
+            $scope.add_delete_liked = {{ raw_url_for('index.reader_add_delete_liked')|safe }};
+            $scope.add_delete_favorite = {{ raw_url_for('index.reader_add_delete_favorite')|safe    }};
+            {#            url_for('front.add_delete_liked', publication_id =#}
+            {#         article['id'])#}
+
+
+            $scope.tag_url = {{ raw_url_for('front.division')|safe }};
+            $scope.url_publication_details = {{ raw_url_for('front.article_details')|safe }};
+
+            {#            @front_bp.route('tags/<string:tags>/', methods=['GET'])#}
+            {#            $scope.add_to_favorite = function (article) {#}
+            {#                article.is_favorite = article['is_favorite'] ? False : True#}
+            {#                $ok($scope.add_delete_favorite, {'article': article}, function (resp) {#}
+            {#                    article.is_favorite = resp#}
+            {#                })#}
+            {#            };#}
+
+            $scope.loadNextPage('', function (resp) {
+                $scope.data.articles = $scope.data.articles ? $scope.data.articles : [];
+                $scope.data.articles = $scope.data.articles.concat(resp['articles']);
+            });
+
+            $scope.switch_like_or_favorite = function (article, what) {
+
+                var url = $scope[(what == 'liked') ? 'add_delete_liked' : 'add_delete_favorite']({publication_id: article['id']});
+                $ok(url, {'on': article['social_activity'][what] ? false : true}, function (resp) {
+                    console.log(article['social_activity'], resp['on'])
+                    article['social_activity'][what] = resp['on'];
+                    article['social_activity'][what + '_count'] = resp[what + '_count'];
+                    console.log(article['social_activity'])
                 })
             };
-            $scope.like = function(article){
-                $ok($scope.add_delete_like, {'article': article}, function (resp) {
-                    article.liked = resp
-                })
-            };
-            $scope.loadNextPage('');
-            var trusted = {};
 
-            $scope.get_local_time = function (date) {
-                return moment(date).format();
-            };
-
-{#            $scope.getPopoverContent = function(article) {#}
-{#                var tool = '\n';#}
-{#                for(var i =0;i<article.list_liked_reader.length;i+=1){#}
-{#                    tool += article.list_liked_reader[i]+'\n';#}
-{#                }#}
-{#                var content = tool;#}
-{#                content = '<span style="width:10px">'+tool+'</span>';#}
-{#              return trusted[content] || (trusted[content] = $sce.trustAsHtml(content));#}
-{#            }#}
         });
 
     </script>
@@ -50,55 +57,80 @@
                     <div class="item-type article">
                         <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
                             <a href="//{{ article.portal.host }}">
-                                <img class="logo-portal-news" ng-src="{{ article.portal.logo }}">
+                                <img class="logo-portal-news" style="height: 65px"
+                                     pr-image-url="{{ article.portal.logo.url }}"/>
                             </a>
                         </div>
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
-
-                        <span class="label label-success"><a pr-test="ArticleDivision" target="_blank"
-                                                             href="//{{ article.portal.host }}/{{ article.division.name}}/1/?search_text=">{{
-                            article.division.name}}</a></span>
-                            <a pr-test="ArticlePortal" target="_blank"
+                            <span class="fr ml05em label label-default item-tags" ng-repeat="tag in article.tags">
+                                <a target="_blank" href="//{{ article.portal.host }}{{ tag_url({tags: tag.text}) }}">{{ tag.text }}</a>
+                            </span>
+                            <a target="_blank" href="//{{ article.portal.host }}/">{{article.portal.name}}</a>
+                            &rightarrow;
+                            <a target="_blank" href="//{{ article.portal.host }}/{{ article.division.name}}/">{{article.division.name}}</a>
+                            <div class="item-publication-date">{{ moment(article.publishing_tm) }}</div>
+                            <a target="_blank"
                                href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
-                               class="item-company">{{ article.portal.name}}</a>
-                            <div style=""
-                                 class="item-publication-date">{{ get_local_time(article.publishing_tm) }}
-                            </div>
-                            <div class="pull-right item-read_count"><i class="fa fa-eye"></i> {{ article.read_count }}</div>
+                               class="item-company">{{ article.company.name}}</a>
+                            <span class="fr">{{ article.author}}</span>
                         </div>
+
                     </div>
-                    <a target="_blank" type="link" href="//{{ article.portal.host}}/details/{{ article.id }}">
-                        <img class="list-reader-image" style="background-size: cover;" pr-image="article.image_file_id"
-                             alt="img">
-                    </a>
+
+                </div>
+                <a target="_blank" type="link"
+                   href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">
+                    <img class="list-reader-image" pr-image-url="{{ article.illustration.url }}"
+                         alt="img">
+                </a>
+
+                <div class="item-short-content">
                     <h3 class="item-title">
                         <a target="_blank"
-                           href="//{{ article.portal.host}}/details/{{ article.id }}">{{ article.title}}</a>
-                        <span ng-if="article.tags" class="tag-in-article">
-                                <a target="_blank" href="#" ng-repeat="tag in article.tags">{{ tag }}</a>
-                        </span>
+                           href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">{{
+                            article.title}}</a>
                     </h3>
-                    <div class="item-short-content">
-                        <p>{{ article.short}}</p>
-                </h3>
-                    <div class="row">
-                        <ul style="list-style: none; border-top: 1px solid #E3E3E3; padding-top: 15px;">
-                            <li style="display: inline-block; margin-right: 85px; cursor: pointer" ng-click="add_to_favorite(article)"><i ng-if="!article.is_favorite" class="fa fa-bookmark-o"></i><i ng-if="article.is_favorite" class="fa fa-bookmark"></i>
-                             {{_('Favorite') }}</li>
-                            <li class="liked" style=" display: inline-block; margin-right: 85px;cursor: pointer" ng-click="like(article)" popover-popup-delay="50" popover-trigger="mouseenter" popover-placement="top" uib-popover-html="getPopoverContent(article)"><i class="fa fa-thumbs-o-up"></i>{{ article.liked }}</li>
-                            <li style=" display: inline-block; margin-right: 85px;"><i class="fa fa-comments-o"></i>604</li>
-                            <li style=" display: inline-block; margin-right: 30px;"><i class="fa fa-share"></i>{{ _('Share') }}</li>
-                        </ul>
-                    </div>
-                    <div class="item-additional-info">
-                    </div>
-                    <div class="bottom-hide"></div>
-                    <img pr-image="article.image_file_id" src="//static.profireader.com/static/images/0.gif"
-                         class="block-item-img"/>
+                    <div>{{ article.short}}</div>
+                    <div ng-visible="article.author" class="fr">{{ article.author }}</div>
                 </div>
+                <br/>
+                <table class="w100 noselect">
+                    <tr>
+                        <td class="w25">
+                            <span class="fl"><i class="fa fa-eye"> <span>{{ _('Readers') }}</span>
+                            <readers_count>{{ article['read_count'] }}</readers_count>
+                            </i></span>
+                        </td>
+
+                        <td class="w25"><span class="disabled"><i class="fa fa-commenting-o">
+                            <span>{{ _('Comments') }}</span>
+                            <comments_count>0</comments_count></i></span>
+                        </td>
+                        <td class="w25"><span
+                                ng-click="switch_like_or_favorite(article, 'liked')">
+                    <i ng-class="{'fa-thumbs-o-up': !article.social_activity.liked, 'fa-thumbs-up': article.social_activity.liked}"
+                       class="fa link">
+                        <span>{{ _('Like') }}</span>
+                        <liked_count>{{ article.social_activity.liked_count }}</liked_count>
+                    </i></span></td>
+
+                        <td class="w25">
+                            <span ng-click="switch_like_or_favorite(article, 'favorite')">
+                            <i ng-class="{'fa-bookmark-o': !article.social_activity.favorite, 'fa-bookmark': article.social_activity.favorite}"
+                               class="fa link">
+                        <span>{{ _('Bookmark') }}</span>
+                        <bookmarked_count>{{ article.social_activity.favorite_count }}</bookmarked_count>
+                    </i></span></td>
+                    </tr>
+                </table>
+
+
             </div>
-            <h3 ng-if="!data.articles && !loading" style="text-align: center">{{ __('Your portals does"t have articles')
-                }}</h3>
+        </div>
+        <div class="col-lg-offset-3 col-lg-6 col-md-offset-3 col-md-7">
+            <h3 ng-if="loading" class="tac">{{ __('loading articles') }}</h3>
+            <h3 ng-if="data.end && !loading" class="tac">{{ __('No more articles to load') }}</h3>
+            <h3 ng-if="!data.articles && !loading" class="tac">{{ __('Your portals does"t have articles') }}</h3>
         </div>
     </div>
     {% endraw %}

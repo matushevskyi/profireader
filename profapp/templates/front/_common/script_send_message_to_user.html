@@ -1,0 +1,49 @@
+<script>
+
+    function sendMessage() {
+        $("#send-message-form input").attr('disabled', 'disabled');
+        $ok('{{ url_for('front.send_message', member_company_id = member_company['id']) }}',
+                {
+                    message: $("#send-message-form textarea").val(),
+                    user_id: $('#send-message-user-id').val()
+                }, function (resp) {
+                    $("#send-message-form").dialog("close");
+                });
+
+    }
+    $(function () {
+        var dialog = $("#send-message-form").dialog({
+            autoOpen: false,
+            height: 300,
+            width: 350,
+            modal: false,
+            dialogClass: "notitledialog",
+            appendTo: '#company_employees',
+            buttons: {
+                "{{ _('Send message') }}": sendMessage,
+                "{{ _('Cancel') }}": function () {
+                    dialog.dialog("close");
+                }
+            },
+            close: function () {
+                $("#send-message-form")[0].reset();
+            }
+        });
+
+        $("#send-message-form").on("submit", function (event) {
+            event.preventDefault();
+            sendMessage();
+        });
+
+        $("#company_employees a").on("click", function () {
+            $("#send-message-form").dialog("option", "position", {
+                my: "left top",
+                at: "left bottom",
+                of: this
+            }).dialog("open");
+            $('#send-message-user-id').val($(this).attr('data-user-id'));
+            $("#send-message-form textarea").focus();
+            return false;
+        });
+    });
+</script>

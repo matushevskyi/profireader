@@ -1,90 +1,52 @@
-<html lang="en">
-<head>
-    <!--
-      * Angular FileManager v0.9 (https://github.com/joni2back/angular-filemanager)
-      * Jonas Sciangula Street <joni2back@gmail.com>
-      * Licensed under MIT (https://github.com/joni2back/angular-filemanager/blob/master/LICENSE)
-    -->
-    {#    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">#}
-    {#    <meta charset="utf-8">#}
-    {#    <title>angular-filemanager</title>#}
-
+{% extends "index_lazy_layout.html" %}
+{% block title %}{{ _('Profireader filemanager') }}{% endblock %}
+{% block head %}
+    {{ super() }}
     <script>
-
-        var pr_angular_modules = [];
-        var library = {{ library|safe }};
+        var filemanager_company_list = {{ filemanager_company_list|safe }};
         var error = '{{ err }}';
         var file_manager_called_for = '{{ file_manager_called_for|safe }}';
         var file_manager_on_action = {{ file_manager_on_action|safe }};
         var file_manager_default_action = '{{ file_manager_default_action|safe }}';
         var last_visit_root = '{{ last_visit_root|safe }}';
         var last_root_id = '{{ last_root_id|safe }}';
-
-        {#    console.log(file_manager_on_action);#}
-        {#    var app = angular.module('FileUpload', ['ngFileUpload']);#}
-        {#    angular.module('FileManagerApp').controller('MyCtrl', ['$scope', 'Upload', function ($scope, Upload) {#}
-        {#        // upload later on form submit or something similar#}
-        {#        $scope.submit = function () {#}
-        {#            $scope.upload($scope.files);#}
-        {#        };#}
-        {##}
-        {##}
-        {#        // for multiple files:#}
-        {#        $scope.upload = function (files) {#}
-        {#            if (files && files.length) {#}
-        {#                for (var i = 0; i < files.length; i++) {#}
-        {#                    Upload.upload({#}
-        {#                                url: '/filemanager/upload/',#}
-        {#                                file: files[i]#}
-        {#                            }#}
-        {#                    );#}
-        {#                }#}
-        {#            }#}
-        {#        }#}
-        {#    }]);#}
-
+        var translates = {{ translates('FileManagerCtrl')|safe }};
+    </script>
+    <script>
+        pr_angular_modules.push('FileManagerApp');
     </script>
 
-    <script src="//static.profireader.com/static/jquery/jquery.min.js"></script>
-    <script src="//static.profireader.com/static/angular/angular.min.js"></script>
-    <script src="//static.profireader.com/static/angular/angular-cookies.min.js"></script>
-    <script src="//static.profireader.com/static/angular/angular-translate.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-cookies.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-translate/2.4.2/angular-translate.js"></script>
+
+    <script src="{{ static_address('new/filemanager/app.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/config.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/chmod.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/item.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/filenavigator.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/fileuploader.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/translations.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/controller.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/selector-controller.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/angular-filemanager.min.js') }}"></script>
+
+    <link rel="stylesheet" href="{{ static_address('new/filemanager/angular-filemanager.css') }}">
+    <script src="{{ static_address('file_uploader/dist/ng-file-upload.js') }}"></script>
+    <!--<script src="{{ static_address('fileuploader/ng-file-upload.min.js') }}"></script>-->
 
 
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-    <script src="//static.profireader.com/static/angular-bootstrap/ui-bootstrap.min.js"></script>
-    <script src="//static.profireader.com/static/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
-    <script src="//static.profireader.com/static/angular-animate/angular-animate.min.js"></script>
-    {##}
-    {##}
-    <link rel="stylesheet"
-          href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"/>
+{%- endblock head %}
 
+{% block navbar %}
+    {% if file_manager_called_for == "" %}
+    {% include '_ruslan/partials/_user_menu.html' %}
+    {% endif %}
+{% endblock navbar %}
 
-
-
-    <!-- Comment if you need to use raw source code -->
-    {#  <link rel="stylesheet" href="dist/angular-filemanager.css">#}
-    {#  <script src="dist/angular-filemanager.min.js"></script>#}
-    <script src="//static.profireader.com/static/filemanager/app.js"></script>
-    <script src="//static.profireader.com/static/filemanager/config.js"></script>
-    <script src="//static.profireader.com/static/filemanager/chmod.js"></script>
-    <script src="//static.profireader.com/static/filemanager/item.js"></script>
-    <script src="//static.profireader.com/static/filemanager/filenavigator.js"></script>
-    <script src="//static.profireader.com/static/filemanager/fileuploader.js"></script>
-    <script src="//static.profireader.com/static/filemanager/translations.js"></script>
-    <script src="//static.profireader.com/static/filemanager/controller.js"></script>
-    <script src="//static.profireader.com/static/filemanager/selector-controller.js"></script>
-    <script src="//static.profireader.com/static/filemanager/angular-filemanager.min.js"></script>
-    <link rel="stylesheet" href="//static.profireader.com/static/filemanager/angular-filemanager.css">
-    <script src="//static.profireader.com/static/js/underscore-min.js"></script>
-    <script src="//static.profireader.com/static/file_uploader/dist/ng-file-upload.js"></script>
-    <!--<script src="//static.profireader.com/static/fileuploader/ng-file-upload.min.js"></script>-->
-    <script src="//static.profireader.com/static/js/profireader_angular.js"></script>
-    <script src="//static.profireader.com/static/js/profireader.js"></script>
-
-
-<body ng-app="FileManagerApp">
-<angular-filemanager></angular-filemanager>
-</body>
-</html>
+{% block content %}
+    <div class="container-fluid widewrapper">
+        {% block portal_content %}
+            <angular-filemanager></angular-filemanager>
+        {% endblock portal_content %}
+    </div>
+{% endblock content %}

@@ -1,4 +1,4 @@
-Dear {{ user.profireader_name }},
+Dear {{ user.full_name }},
 
 Welcome to Profireader!
 

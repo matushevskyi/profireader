@@ -1,126 +1,82 @@
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from sqlalchemy import Column, ForeignKey, UniqueConstraint, CheckConstraint
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy import CheckConstraint
+from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint
+from sqlalchemy.orm import relationship
 from .pr_base import PRBase, Base
-from ..controllers import errors
-from flask import g
-from utils.db_utils import db
-#from .portal import Portal
-# from .articles import ArticlePortalDivision
 
 
-# TODO (AA to AA): Add constraint: name shouldn't start or end with blank
 class Tag(Base, PRBase):
     __tablename__ = 'tag'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
-    name = Column(TABLE_TYPES['short_name'], index=True, unique=True)
 
-    portal_divisions_assoc = relationship('TagPortalDivision', back_populates='tag')
+    text = Column(TABLE_TYPES['name'], nullable=False, default='')
 
-    def __init__(self, name=None):
-        super(Tag, self).__init__()
-        self.name = name
+    description = Column(TABLE_TYPES['string_500'], nullable=False, default='')
 
-    def attach(self):
-        pass
+    portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id', onupdate='CASCADE', ondelete='CASCADE'),
+                       primary_key=True, nullable=False)
 
-    def remove(self):
-        pass
+    portal = relationship('Portal', uselist=False)
 
-    def delete(self):
-        pass
+    def __init__(self, text='', description='', portal=None):
+        self.text = text
+        self.description = description
+        self.portal = portal
 
+    def get_client_side_dict(self, fields='id|text|description', more_fields=None):
+        return self.to_dict(fields, more_fields)
 
-# TODO (AA to AA): We have to add a trigger that checks the intersection of tags from
-# TODO (AA to AA) TagPortal and TagPortalDivision. This intersection must be empty.
-class TagPortal(Base, PRBase):
-    """ This table contains ONLY portal tags not bound to any division"""
-    __tablename__ = 'tag_portal'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
-    tag_id = Column(TABLE_TYPES['id_profireader'],
-                    ForeignKey(Tag.id, onupdate='CASCADE', ondelete='CASCADE'),
-                    nullable=False)
-    portal_id = Column(TABLE_TYPES['id_profireader'],
-                       ForeignKey('portal.id', onupdate='CASCADE', ondelete='CASCADE'),
-                       nullable=False)
-
-    tag = relationship('Tag')
-
-    UniqueConstraint('tag_id', 'portal_id', name='uc_tag_id_portal_id')
-
-    def __init__(self, tag_id=None, portal_id=None):
-        super(TagPortal, self).__init__()
-        self.tag_id = tag_id
-        self.portal_id = portal_id
 
 
 class TagPortalDivision(Base, PRBase):
     __tablename__ = 'tag_portal_division'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+
+    portal_division_id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
+
     tag_id = Column(TABLE_TYPES['id_profireader'],
                     ForeignKey(Tag.id, onupdate='CASCADE', ondelete='CASCADE'),
-                    nullable=False)
-    portal_division_id = Column(TABLE_TYPES['id_profireader'],
-                                ForeignKey('portal_division.id',
-                                           onupdate='CASCADE',
-                                           ondelete='CASCADE'),
-                                nullable=False)
+                    primary_key=True, nullable=False)
 
-    UniqueConstraint('tag_id', 'portal_division_id', name='uc_tag_id_portal_division_id')
-
-    tag = relationship('Tag', back_populates='portal_divisions_assoc')
-    portal_division = relationship('PortalDivision', back_populates='tags_assoc')
-    # articles = relationship('ArticlePortalDivision', secondary='tag_portal_division_article',
-    #                         back_populates='portal_division_tags', lazy='dynamic')
-
-    def __init__(self, tag_id=None, portal_division_id=None):
-        super(TagPortalDivision, self).__init__()
-        self.tag_id = tag_id
-        self.portal_division_id = portal_division_id
-
-    # def validate(self, tag_name):
-    #     ret = {'errors': {}, 'warnings': {}, 'notices': {}}
-    #
-    #     if tag_name == '':
-    #         ret['errors']['name'] = 'empty tag is not allowed'
-    #
-    #     portal_bound_tags_dynamic = db(Portal, id=self.portal_division.portal_id).portal_bound_tags_dynamic
-    #     portal_bound_tag_names = map(lambda obj: getattr(obj, 'name'), portal_bound_tags_dynamic)
-    #     if tag_name in portal_bound_tag_names:
-    #         ret['errors']['name'] = 'this portal tag already exists'
-    #
-    #     return ret
+    portal_id = Column(TABLE_TYPES['id_profireader'], nullable=False)
 
 
-# TODO (AA to AA): create trigger for article_portal_division_id and article_portal_division_id:
-# they should refer the same portal_division_id
-# TODO (AA to AA): add a trigger t: position >= 1
-class TagPortalDivisionArticle(Base, PRBase):
-    __tablename__ = 'tag_portal_division_article'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
-    article_portal_division_id = Column(TABLE_TYPES['id_profireader'],
-                                        ForeignKey('article_portal_division.id'),
-                                        nullable=False)
-    tag_portal_division_id = Column(TABLE_TYPES['id_profireader'],
-                                    ForeignKey('tag_portal_division.id'),
-                                    nullable=False)
-    position = Column(TABLE_TYPES['int'],
-                      CheckConstraint('position >= 1', name='cc_position_ge_1'),
-                      nullable=False)
-
-    # article_portal_division = relationship('ArticlePortalDivision', backref=backref('tag_assoc', lazy='dynamic'))
-    article_portal_division_select = relationship('ArticlePortalDivision', back_populates='tag_assoc_select')
-    tag_portal_division = relationship('TagPortalDivision', cascade='save-update, merge')
-#     TODO: many to (many to many)...
-    UniqueConstraint('article_portal_division_id', 'tag_portal_division_id', name='uc_article_tag_id')
-
-    def __init__(self, article_portal_division_id=None, tag_portal_division_id=None, position=None):
-        super(TagPortalDivisionArticle, self).__init__()
-        self.article_portal_division_id = article_portal_division_id
-        self.tag_portal_division_id = tag_portal_division_id
-        self.position = position
+    ForeignKeyConstraint((portal_division_id, portal_id), ('portal_division.id', 'portal_division.portal_id'),
+                         onupdate='CASCADE', ondelete='CASCADE')
 
 
-# class KeyWords(Base, PRBase):
+
+
+class TagPublication(Base, PRBase):
+    __tablename__ = 'tag_publication'
+
+    publication_id = Column(TABLE_TYPES['id_profireader'],
+                                        primary_key=True, nullable=False)
+    tag_id = Column(TABLE_TYPES['id_profireader'],
+                                        ForeignKey(Tag.id),
+                                        primary_key=True, nullable=False)
+
+    portal_division_id = Column(TABLE_TYPES['id_profireader'],nullable=False)
+
+    ForeignKeyConstraint((publication_id, portal_division_id), ('publication.id',
+                                                                            'publication.portal_division_id'),
+                         onupdate='CASCADE', ondelete='CASCADE')
+
+    position = Column(TABLE_TYPES['position'], nullable=True, default=1)
+
+
+class TagMembership(Base, PRBase):
+    __tablename__ = 'tag_membership'
+
+    member_company_portal_id = Column(TABLE_TYPES['id_profireader'],
+                                        primary_key=True, nullable=False)
+    tag_id = Column(TABLE_TYPES['id_profireader'],
+                                        ForeignKey(Tag.id),
+                                        primary_key=True, nullable=False)
+
+    portal_id = Column(TABLE_TYPES['id_profireader'],nullable=False)
+
+    ForeignKeyConstraint((member_company_portal_id, portal_id), ('member_company_portal.id',
+                                                                            'member_company_portal.portal_id'),
+                         onupdate='CASCADE', ondelete='CASCADE')
+
+    position = Column(TABLE_TYPES['position'], nullable=True, default=1)
 

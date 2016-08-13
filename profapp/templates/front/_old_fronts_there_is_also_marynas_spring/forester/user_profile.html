@@ -1,0 +1,19 @@
+{% if g.user %}
+<a pr_test="UserProfile" role="button"
+   aria-haspopup="true"
+   href="//profireader.com{{ url_for('user.profile', user_id = g.user.id) }}"
+   aria-expanded="false">
+    <img style="width: 35px" pr-image=""
+         src="{{ g.user.profireader_avatar_url }}"
+         class="person-small-cover" >{{ g.user.profireader_name }}
+</a>
+{% else %}
+   <a pr_test="UserProfile" role="button" style="display: none;"
+   aria-haspopup="true"
+   href="//profireader.com{{ url_for('user.profile', user_id = g.user.id) }}"
+   aria-expanded="false">
+    <img style="width: 35px" pr-image=""
+         src="{{ g.user.profireader_avatar_url }}"
+         class="person-small-cover" >{{ g.user.profireader_name }}
+</a>
+{% endif %}
