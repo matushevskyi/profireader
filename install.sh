@@ -244,11 +244,24 @@ service haproxy restart" sudo apache2_config
     }
 
 function menu_apache2_config {
-    conf_comm "cat profi-wsgi-apache2.conf | sed -e 's#----directory----#$PWD#g' > /etc/apache2/sites-enabled/profi-wsgi-apache2.conf
-cp ./ports.conf /etc/apache2/
+    maindom=$(echo "from main_domain import MAIN_DOMAIN
+print(MAIN_DOMAIN)" | python)
+    wwwdir=$(rr 'Enter http dir' $PWD)
+    maindomain=$(rr 'Enter main domain' $maindom)
+    conf_comm "cat ./conf/profi-wsgi-apache2.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/sites-enabled/profi-wsgi-apache2.conf
+cp ./conf/ports.conf /etc/apache2/
 rm /etc/apache2/sites-enabled/000-default.conf
 mkdir /var/log/profi
 a2enmod wsgi
+service apache2 restart" sudo apache2_check_ssls
+    }
+
+function menu_apache2_check_ssls {
+    venvdir=$(rr 'venv directory' .venv)
+    conf_comm "cd `pwd`
+source $venvdir/bin/activate
+cd utils
+python check_ssl.py
 service apache2 restart" sudo secret_data
     }
 
@@ -338,19 +351,23 @@ git checkout ids" nosudo db_user_pass
     }
 
 function menu_compare_local_makarony {
-    conf_comm "./postgres.dump_and_compare_structure.sh $makaronyaddress $localaddress" nosudo compare_local_kupyty
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $makaronyaddress $localaddress" nosudo compare_local_kupyty
     }
 
 function menu_compare_local_kupyty {
-    conf_comm "./postgres.dump_and_compare_structure.sh $localaddress $kupytyaddress" nosudo compare_makarony_artek
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $localaddress $kupytyaddress" nosudo compare_makarony_artek
     }
 
 function menu_compare_local_artek {
-    conf_comm "./postgres.dump_and_compare_structure.sh $localaddress $artekaddress" nosudo compare_makarony_artek
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $localaddress $artekaddress" nosudo compare_makarony_artek
     }
 
 function menu_compare_makarony_artek {
-    conf_comm "./postgres.dump_and_compare_structure.sh $makaronyaddress $artekaddress" nosudo db_rename
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $makaronyaddress $artekaddress" nosudo db_rename
     }
 
 function menu_db_rename {
@@ -450,6 +467,7 @@ if [[ "$1" == "" ]]; then
       "haproxy_config" "copy haproxy config to /etc/haproxy" \
       "haproxy_letsencrypt" "install haproxy letsencrypt" \
       "apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
+      "apache2_check_ssls" "check for front ssls by letsencrypt" \
       "secret_data" "download secret data" \
       "secret_client" "download secret client data" \
       "download_key_pem" "download https key and pem file" \

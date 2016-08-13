@@ -28,10 +28,10 @@ client_secret.*
 /client_secret.json
 
 # database
-database_full.*
-/database_full.*
-database.*.bak
-*.sql
+db/database_full.*
+db/database.*.bak
+db/*.sql
+
 *.bak
 *.js.map
 *.css.map

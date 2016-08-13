@@ -12,7 +12,7 @@ psycopg2==2.6.1
 Authomatic==0.1.0.post1
 alembic==0.7.6
 Flask-Login==0.2.11
-Pillow==2.9.0
+Pillow==3.3.0
 SQLAlchemy-Utils==0.30.16
 furl==0.4.7
 phonenumbers==7.0.8

@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship, backref
 from flask import g
 from .pr_base import PRBase, Base
 from ..controllers.errors import VideoAlreadyExistInPlaylist
-from PIL import Image
+# from PIL import Image
 import json
 from config import Config
 from urllib import request as req
@@ -20,6 +20,12 @@ import sys
 import os, urllib
 from time import gmtime, strftime, clock
 from .. import utils
+from PIL import Image
+from io import BytesIO
+import base64
+import sys
+from sqlalchemy.ext.associationproxy import association_proxy
+from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 
 
 class FileContent(Base, PRBase):
@@ -666,13 +672,6 @@ class FileImg(Base, PRBase):
 
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
-
-from PIL import Image
-from io import BytesIO
-import base64
-import sys
-from sqlalchemy.ext.associationproxy import association_proxy
-from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 
 
 class FileImgDescriptor(object):
