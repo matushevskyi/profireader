@@ -14,59 +14,76 @@ import re
 from sqlalchemy.orm import scoped_session, sessionmaker
 from config import ProductionDevelopmentConfig
 import datetime
+import sys
+
+import os
+import argparse
+
+
+from os import listdir
+from os.path import isfile, join
 
 engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
                                          bind=engine))
 
-
-def add_to_search(target=None):
-    if hasattr(target, 'search_fields'):
-        target_fields = ','.join(target.search_fields.keys())
-        target_dict = target.get_client_side_dict(fields=target_fields + ',id')
-        options = {'relevance': lambda field_name: getattr(RELEVANCE, field_name),
-                   'processing': lambda text: MLStripper().strip_tags(text),
-                   'index': lambda target_id: target_id}
-        md_time = datetime.datetime.now()
-        default_time = datetime.datetime.now()
-        if hasattr(target, 'publishing_tm'):
-            md_time = getattr(target, 'publishing_tm', default_time)
-        elif hasattr(target, 'md_tm'):
-            md_time = getattr(target, 'md_tm', default_time)
-        elif hasattr(target, 'cr_tm'):
-            md_time = getattr(target, 'cr_tm', default_time)
-        for field in target_fields.split(','):
-            field_options = target.search_fields[field]
-            field_options.update({key: options[key] for key in options
-                                  if key not in field_options.keys()})
-            pos = getattr(target, 'position', 0)
-            position = pos if pos else 0
-            db_session.add(Search(index=field_options['index'](target_dict['id']),
-                                  table_name=target.__tablename__,
-                                  relevance=field_options['relevance'](field), kind=field,
-                                  text=field_options['processing'](str(target_dict[field])),
-                                  position=position, md_tm=md_time))
+parser = argparse.ArgumentParser()
+parser.add_argument("vhostdir", help="directory with virtual host names")
+parser.add_argument("--disable-inactive", help="disable inactive virtual hosts")
+parser.add_argument("--apache-template", help="apache template file")
+parser.add_argument("--skip-existing-vhost", help="do not create vhost conf file if exists")
+parser.add_argument("--www-dir", help="directory with run.wsgi")
+parser.add_argument("--force-existing-ssl", help="get ssl even if exists")
 
 
-def update_search_table(target=None):
-    if hasattr(target, 'search_fields'):
-        if delete_from_search(target):
-            add_to_search(target)
-        else:
-            add_to_search(target)
+parser.add_argument("--template", help="template file")
+args = parser.parse_args()
 
+def disable_inactive_vhosts():
+    print('disabling inactive virtual hosts')
+    onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+    pass 
 
-def delete_from_search(target):
-    if hasattr(target, 'search_fields') and \
-            db_session.query(Search).filter_by(index=target.id).count():
-        db_session.query(Search).filter_by(index=target.id).delete()
-        return True
-    return False
+def create_active_vhosts():
+    
+    all_portals = db_session.query(Portal).filter_by(status='ACTIVE')
+    with open(args.apache_template, 'r') as content_file:
+        template = content_file.read()
 
-import os
+    # print(template)
+
+    for portal in all_portals:
+        destination_conf = args.vhostdir + '/' + portal.host + '-front.conf'
+        if not args.skip_existing_vhost or not os.path.isfile(destination_conf):
+            conf_file = re.sub(r'----domain----', portal.host, re.sub(r'----directory----', args.www_dir, template))
+            if portal.aliases and portal.aliases != '':
+                conf_file = re.sub(r'----aliases----', portal.aliases, conf_file)
+            else:
+                conf_file = re.sub(r'.*----aliases----.*', '', conf_file)
+        
+            with open(destination_conf, 'w') as host_file:
+                host_file.write(conf_file)
+        
+        destination_ssl = '/etc/letsencrypt/live/' + portal.host
+        if args.force_existing_ssl or not os.path.isdir(destination_ssl):
+            retvalue = os.system("./get_ssl_for_domain.sh %s/letsencryptrequests/ %s %s" % (args.www_dir, portal.host, portal.aliases))
+
+        # pass
+
+#        retvalue = os.system("./get_ssl_for_domain.sh %s/letsencryptrequests/ %s %s" % (
+#        '/home/oles/profireader', portal.host, portal.aliases))
+#
+#        with open('/etc/apache2/sites-enabled/' + portal.host + '.conf', 'w') as host_file:
+#            host_file.write(conf_file)
+
 
 if __name__ == '__main__':
+    if args.disable_inactive:
+        disable_inactive_vhosts()
+    create_active_vhosts()
+
+else:    
     all_portals = db_session.query(Portal).filter_by(status='ACTIVE')
     with open('../conf/front-wsgi-apache2.conf', 'r') as content_file:
         template = content_file.read()
