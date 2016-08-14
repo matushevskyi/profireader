@@ -1,0 +1,15 @@
+{# поки що не використовується  #}
+                    <h4>{{ _('Search') }}</h4>
+{#TODO: YG by OZ: we need this file?#}
+<h4>{{ _('Search') }}</h4>
+
+<div class="input-group">
+    <form action="{{ url_for('front.division', division_name=article['division']['name'], page=1, search_text='') }}">
+        <input type="text" name="search_text" class="form-control" placeholder="Search">
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="submit">
+                                    <span class="glyphicon glyphicon-search"></span>
+                                </button>
+                            </span>
+    </form>
+</div>

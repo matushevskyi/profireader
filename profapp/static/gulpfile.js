@@ -8,12 +8,14 @@ var path = require('path');
 
 // Vars
 var src = 'bower_components/';
+var src_dev = 'bower_components_dev/';
 var dst = 'new/';
 
 var watch = require('gulp-watch');
 var runSequence = require('run-sequence');
 var gutil = require('gulp-util');
 var taskListing = require('gulp-task-listing');
+var exec = require('child_process').exec;
 
 //var ext_replace = require('gulp-ext-replace');
 
@@ -24,8 +26,7 @@ gulp.task('clean', function (cb) {
 });
 
 gulp.task('install_filemanager', function () {
-    return true;
-    return gulp.src(src + 'filemanager/dist/*')
+    return gulp.src(src_dev + 'angular-server-driven-filemanager/dist/*')
         .pipe(gulp.dest(dst + 'filemanager/'));
 });
 
@@ -81,9 +82,58 @@ gulp.task('install_datepicker', function () {
 });
 
 gulp.task('install_angular_crop', function () {
-    return gulp.src([src + 'ngImgCrop/compile/minified/*'])
+    return gulp.src([src + 'angular-crop/ng-crop.*'])
         .pipe(gulp.dest(dst + 'angular-crop/'));
 });
+
+
+gulp.task('install_angular-db-filemanager', function () {
+    return gulp.src([src + 'angular-db-filemanager/dist/*.*'])
+        .pipe(gulp.dest(dst + 'filemanager/'));
+});
+
+gulp.task('install_angular-db-filemanager_from_dev', function () {
+    var csrc = src_dev + 'angular-db-filemanager/'
+
+    gulp.watch([csrc + 'src/css/*.*', csrc + 'src/js/*.*', csrc + 'src/templates/*.*']).on('change',
+        function (file) {
+            console.log(file.path + ' changed');
+            exec('cd ' + csrc + '; gulp --gulpfile ./gulpfile.js',
+                function (error, stdout, stderr) {
+                    console.log(stdout);
+                    if (error) {
+                        console.log(error, stderr);
+                    }
+                    else {
+                        return gulp.src([csrc + 'dist/*.*'])
+                            .pipe(gulp.dest(dst + 'filemanager/'));
+                    }
+                });
+        })
+});
+
+gulp.task('install_angular_crop_from_dev', function () {
+    var csrc = src_dev + 'angular-crop/'
+    
+    gulp.watch([csrc + 'ng-crop.*']).on('change',
+        function (file) {
+            console.log(file.path + ' changed');
+            exec('cd ' + csrc + '; gulp --gulpfile ./gulpfile.js',
+                function (error, stdout, stderr) {
+                    console.log(stdout);
+                    if (error) {
+                        console.log(error, stderr);
+                    }
+                    else {
+                        return gulp.src([csrc + 'ng-crop.*'])
+                            .pipe(gulp.dest(dst + 'angular-crop/'));
+                    }
+                });
+
+
+        })
+});
+
 
 gulp.task('install_angular_xeditable', function () {
     return gulp.src([src + 'angular-xeditable/dist/css/xeditable.css', src + 'angular-xeditable/dist/js/xeditable.js'])
@@ -111,33 +161,33 @@ gulp.task('install_bootstrap', function () {
 });
 
 gulp.task('less', function () {
-    var layouts = ['spring', 'bird', 'forester'];
+    var layouts = ['clover', 'simple'];
 
-    var dirs = ['./css/*.less', ];
+    var dirs = ['./css/*.less',];
     for (var i = 0; i < layouts.length; i++) {
         dirs.push('./front/' + layouts[i] + '/css/*.less');
     }
 
     for (var i = 0; i < dirs.length; i++) {
-        gutil.log(gutil.colors.yellow('recompiling ' + ' (' + dirs[i] +  ')'));
+        gutil.log(gutil.colors.yellow('recompiling ' + ' (' + dirs[i] + ')'));
         gulp.src(dirs[i])
-        .pipe(less({
-            sourceMap: {
-                sourceMapRootpath: dirs[i].replace(/\/[^\/]*$/, '')
-            }
-        }))
-        .pipe(gulp.dest(dirs[i].replace(/\/[^\/]*$/,'')));
+            .pipe(less({
+                sourceMap: {
+                    sourceMapRootpath: dirs[i].replace(/\/[^\/]*$/, '')
+                }
+            }))
+            .pipe(gulp.dest(dirs[i].replace(/\/[^\/]*$/, '')));
     }
 
-    gulp.watch(dirs).on('change', function(file) {
-        gutil.log(gutil.colors.yellow('JS changed' + ' (' + file.path.replace(/.less$/, '.css,.map') +' created)'));
+    gulp.watch(dirs).on('change', function (file) {
+        gutil.log(gutil.colors.yellow('JS changed' + ' (' + file.path.replace(/.less$/, '.css,.map') + ' created)'));
         gulp.src(file.path)
-        .pipe(less({
-            sourceMap: {
-                sourceMapRootpath: file.path.replace(/.less$/, '')
-            }
-        }))
-        .pipe(gulp.dest(file.path.replace(/\/[^\/]*$/,'')));
+            .pipe(less({
+                sourceMap: {
+                    sourceMapRootpath: file.path.replace(/.less$/, '')
+                }
+            }))
+            .pipe(gulp.dest(file.path.replace(/\/[^\/]*$/, '')));
     })
 
 });
@@ -149,7 +199,7 @@ gulp.task('install_jquery_datetimepicker', function () {
 
 gulp.task('install_eonasdan-bootstrap-datetimepicker', function () {
     return gulp.src([src + 'eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js',
-    src + 'eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css'])
+        src + 'eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css'])
         .pipe(gulp.dest(dst + 'eonasdan-bootstrap-datetimepicker/'));
 });
 
@@ -161,8 +211,20 @@ gulp.task('install_moment', function () {
 
 gulp.task('default', taskListing);
 
-gulp.task('all', ['install_fileuploader', 'install_angular', 'install_angular_translate', 'install_angular_cookies',
+gulp.task('all', [
+    'install_fileuploader',
+    'install_angular',
+    'install_angular_translate',
+    'install_angular_cookies',
     'install_angular_ui_select',
-'install_angular_ui_tinymce', 'install_tinymce', 'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
-'install_slider','install_bootstrap', 'install_angular_crop', 'install_eonasdan-bootstrap-datetimepicker', 'install_moment']);
+    'install_angular_crop',
+    'install_angular_crop_from_dev',
+    'install_angular-db-filemanager',
+    'install_angular-db-filemanager_from_dev',
+    'install_angular_ui_tinymce', 'install_tinymce',
+    'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',
+    'install_slider',
+    'install_bootstrap',
+    'install_eonasdan-bootstrap-datetimepicker',
+    'install_moment']);
 

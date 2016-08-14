@@ -230,8 +230,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 prCrop: '='
             },
             link: function link(scope, element, attrs) {
-
-
                 element.attr('ng-crop', 'selectedurl');
                 element.attr('ng-crop-coordinates', 'coordinates');
                 element.attr('ng-crop-options', 'options');
@@ -251,6 +249,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 scope.zoomable = true;
                 scope.disabled = false;
                 scope.original_model = null;
+                scope.preset_button_classes = {'gravatar': 'glyphicon-share'};
 
                 scope.onerror = function (m) {
                     add_message(m, 'warning')
@@ -260,24 +259,24 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.$watch('zoom', function (newv, oldv) {
                         if (newv) {
-                            if (!scope.prCrop['selected_by_user']['crop_coordinates'])
-                                scope.prCrop['selected_by_user']['crop_coordinates'] = {};
-                            scope.prCrop['selected_by_user']['crop_coordinates']['zoom'] = newv;
+                            if (!scope.prCrop['selected_by_user']['crop'])
+                                scope.prCrop['selected_by_user']['crop'] = {};
+                            scope.prCrop['selected_by_user']['crop']['origin_zoom'] = newv;
                         }
                     }
                 );
 
                 scope.$watch('origin', function (newv, oldv) {
                         if (newv) {
-                            if (!scope.prCrop['selected_by_user']['crop_coordinates'])
-                                scope.prCrop['selected_by_user']['crop_coordinates'] = {};
+                            if (!scope.prCrop['selected_by_user']['crop'])
+                                scope.prCrop['selected_by_user']['crop'] = {};
                             if (newv) {
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_x'] = newv[0];
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_y'] = newv[1];
+                                scope.prCrop['selected_by_user']['crop']['origin_left'] = newv[0];
+                                scope.prCrop['selected_by_user']['crop']['origin_top'] = newv[1];
                             }
                             else {
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_x'] = 0;
-                                scope.prCrop['selected_by_user']['crop_coordinates']['origin_y'] = 0;
+                                scope.prCrop['selected_by_user']['crop']['origin_left'] = 0;
+                                scope.prCrop['selected_by_user']['crop']['origin_top'] = 0;
                             }
 
                         }
@@ -286,41 +285,51 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.$watchCollection('coordinates', function (newv, oldv) {
                     if (newv) {
-                        if (!scope.prCrop['selected_by_user']['crop_coordinates'])
-                            scope.prCrop['selected_by_user']['crop_coordinates'] = {};
-                        scope.prCrop['selected_by_user']['crop_coordinates']['x'] = newv[0];
-                        scope.prCrop['selected_by_user']['crop_coordinates']['y'] = newv[1];
-                        scope.prCrop['selected_by_user']['crop_coordinates']['width'] = newv[2] - newv[0];
-                        scope.prCrop['selected_by_user']['crop_coordinates']['height'] = newv[3] - newv[1];
+                        if (!scope.prCrop['selected_by_user']['crop'])
+                            scope.prCrop['selected_by_user']['crop'] = {};
+                        scope.prCrop['selected_by_user']['crop']['crop_left'] = newv[0];
+                        scope.prCrop['selected_by_user']['crop']['crop_top'] = newv[1];
+                        scope.prCrop['selected_by_user']['crop']['crop_width'] = newv[2] - newv[0];
+                        scope.prCrop['selected_by_user']['crop']['crop_height'] = newv[3] - newv[1];
                     }
                 });
 
                 scope.$watch('prCrop', function (newv, oldv) {
-                    // console.log('prCrop prCrop');
-                    scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
+                    console.log('prCrop prCrop', newv, oldv);
+                    // scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
                     if (!newv) return;
+                    console.log(newv);
 
                     var selected_by_user = newv['selected_by_user'];
-                    if (!scope.original_model) {
-                        scope.original_model = $.extend(true, {}, selected_by_user);
-                    }
+                    var cropper_options = newv['cropper'];
+                    console.log(cropper_options);
+                    // if (!scope.original_model) {
+
+                    scope.preset_urls = cropper_options['preset_urls'] ? cropper_options['preset_urls'] : {};
+                    scope.original_model = $.extend(true, {}, selected_by_user);
+                    // }
                     scope.coordinates = [];
                     scope.state = {};
-                    scope.browsable = newv['browse'] ? true : false;
-                    scope.uploadable = newv['upload'] ? true : false;
+                    scope.browsable = cropper_options['browse'] ? true : false;
+                    scope.uploadable = cropper_options['upload'] ? true : false;
                     scope.resetable = true;
-                    scope.noneurl = newv['no_selection_url'];
+                    scope.noneurl = cropper_options['no_selection_url'];
                     scope.options = {};
-                    if (newv.min_size) scope.options['min_width'] = newv.min_size[0];
-                    if (newv.min_size) scope.options['min_height'] = newv.min_size[1];
-                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['min_aspect'] = newv.cropper.aspect_ratio[0];
-                    if (newv.cropper && newv.cropper.aspect_ratio) scope.options['max_aspect'] = newv.cropper.aspect_ratio[1];
+                    if (cropper_options.min_size) {
+                        scope.options['min_width'] = cropper_options.min_size[0];
+                        scope.options['min_height'] = cropper_options.min_size[1];
+                    }
+
+                    if (cropper_options.aspect_ratio) {
+                        scope.options['min_aspect'] = cropper_options.aspect_ratio[0];
+                        scope.options['max_aspect'] = cropper_options.aspect_ratio[1];
+                    }
                     scope.setModel(selected_by_user, false);
                 });
 
-                scope.selectPresetUrl = function (className) {
-                    if (scope.prCrop['preset_urls'] && scope.prCrop['preset_urls'][className]) {
-                        scope.setModel({'type': 'preset', 'class': className});
+                scope.selectPresetUrl = function (preset_id) {
+                    if (scope.preset_urls && scope.preset_urls[preset_id]) {
+                        scope.setModel({'type': 'preset', 'preset_id': preset_id});
                     }
                 };
 
@@ -343,17 +352,24 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.setModel = function (model, do_not_set_ng_crop) {
 
-                    // console.log('set_model',model);
+                    console.log('set_model', model);
 
                     switch (model['type']) {
                         case 'browse':
-                            var crd = model.crop_coordinates;
+                            console.log(model);
                             scope.selectedurl = fileUrl(model['image_file_id']);
                             scope.disabled = false;
-                            scope.coordinates = crd ? [crd.x, crd.y, crd.width + crd.x, crd.height + crd.y] : null;
-                            scope.origin = crd ? [crd.origin_x, crd.origin_y] : null;
-                            scope.zoom = crd ? crd.zoom : null;
-                            // scope.state = null;
+                            scope.coordinates = null;
+                            scope.zoom = null;
+                            scope.origin = null;
+                            break;
+                        case 'provenance':
+                            var crd = model.crop;
+                            scope.selectedurl = fileUrl(model['provenance_file_id']);
+                            scope.disabled = false;
+                            scope.coordinates = crd ? [crd.crop_left, crd.crop_top, crd.crop_width + crd.crop_left, crd.crop_height + crd.crop_top] : null;
+                            scope.origin = crd ? [crd.origin_left, crd.origin_top] : null;
+                            scope.zoom = crd ? crd.origin_zoom : null;
                             break;
                         case 'none':
                             scope.selectedurl = scope.noneurl;
@@ -372,12 +388,15 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                             // scope.state = null;
                             break;
                         case 'preset':
-                            scope.selectedurl = scope.prCrop['preset_urls'][model['class']];
+                            scope.selectedurl = scope.preset_urls[model['preset_id']];
                             scope.disabled = true;
                             scope.coordinates = null;
                             scope.zoom = null;
                             scope.origin = null;
                             // scope.state = null;
+                            break;
+                        default:
+                            console.log('unknown model type');
                             break;
                     }
 
@@ -433,7 +452,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 $compile($(element).next())(scope);
             }
         }
-            ;
     })
 
     .directive('dateTimestampFormat', function () {
@@ -460,8 +478,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
     .directive('prDateTimePicker', function ($timeout) {
         return prDatePicker_and_DateTimePicker('prDateTimePicker', $timeout);
     }).directive('prDatePicker', function ($timeout) {
-        return prDatePicker_and_DateTimePicker('prDatePicker', $timeout);
-    })
+    return prDatePicker_and_DateTimePicker('prDatePicker', $timeout);
+})
     .directive('prDatepicker', function () {
         return {
             replace: false,
@@ -501,12 +519,13 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
         };
     }])
 
-    .directive('prImage', ['$timeout', function ($timeout) {
+    .directive('prImage', [function () {
         return {
             restrict: 'A',
             scope: {
                 prImage: '=',
-                prNoImage: '@'
+                prNoImage: '@',
+
             },
             link: function (scope, element, attrs) {
                 var image_reference = attrs['prImage'].split('.').pop();
@@ -522,16 +541,63 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                         // backgroundImage: "url('" + newval + "')"
                     });
                 });
-                element.attr('src', '//static.profireader.com/static/images/0.gif');
-                element.css({
-                    backgroundPosition: 'center',
-                    backgroundSize: 'contain',
-                    backgroundRepeat: 'no-repeat'
-                });
+                element.attr('src', static_address('images/0.gif'));
+                element.addClass('bg-contain');
             }
         };
-    }])
-    //TODO: SS by OZ: better use actions (prUserCan) not rights. action can depend on many rights
+    }]).directive('prImageWatch', [function () {
+    return {
+        restrict: 'A',
+        scope: {
+            prImageWatch: '=',
+            prNoImage: '@',
+
+        },
+        link: function (scope, element, attrs) {
+            var image_reference = attrs['prImageWatch'].split('.').pop();
+            var no_image = attrs['prNoImage'] ? attrs['prNoImage'] : false;
+
+            if (!no_image) {
+                no_image = noImageForImageName(image_reference);
+            }
+
+            scope.$watch('prImageWatch', function (newval, oldval) {
+                element.css({
+                    backgroundImage: "url('" + fileUrl(newval, false, no_image) + "')"
+                });
+            });
+            element.attr('src', static_address('images/0.gif'));
+            element.addClass('bg-contain');
+        }
+    };
+}])
+    .directive('prImageUrl', [function () {
+        return {
+            restrict: 'A',
+            scope: {},
+            link: function (scope, element, attrs) {
+                element.attr('src', static_address('images/0.gif'));
+                element.css({backgroundImage: 'url(' + attrs['prImageUrl'] + ')'});
+                element.addClass('bg-contain');
+            }
+        };
+    }]).directive('prImageUrlWatch', [function () {
+    return {
+        restrict: 'A',
+        scope: {
+            prImageUrlWatch: '=',
+        },
+        link: function (scope, element, attrs) {
+            element.attr('src', static_address('images/0.gif'));
+            element.addClass('bg-contain');
+            scope.$watch('prImageUrlWatch', function (newval, oldval) {
+                if (newval)
+                    element.css({backgroundImage: "url('" + newval + "')"});
+            });
+        }
+    };
+}])
+//TODO: SS by OZ: better use actions (prUserCan) not rights. action can depend on many rights
     .directive('prUserRights', function ($timeout) {
         return {
             restrict: 'AE',
@@ -765,7 +831,7 @@ function file_choose(selectedfile) {
     top.tinymce.activeEditor.windowManager.close();
 }
 
-// 'ui.select' uses "//static.profireader.com/static/js/select.js" included in _index_layout.html
+// 'ui.select' uses static_address('js/select.js') included in _index_layout.html
 //module = angular.module('Profireader', ['ui.bootstrap', 'profireaderdirectives', 'ui.tinymce', 'ngSanitize', 'ui.select']);
 
 module = angular.module('Profireader', pr_angular_modules);
@@ -1190,34 +1256,44 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     if (typeof phrase !== 'string') {
         return '';
     }
-    if (!scope.$$translate) {
-        scope.$$translate = {};
-    }
+    // if (!scope.$$translate) {
+    //     scope.$$translate = {};
+    // }
     //console.log(scope.$$translate)
     new Date;
     var t = Date.now() / 1000;
     //TODO OZ by OZ hasOwnProperty
     var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
-    if (scope.$$translate[phrase] === undefined) {
-        scope.$$translate[phrase] = {'lang': phrase, 'time': t};
-        $ok('/tools/save_translate/', {
-            template: CtrlName,
-            phrase: phrase,
-            allow_html: allow_html,
-            url: window.location.href
-        }, function (resp) {
 
-        });
+    if (!scope.$$translate || !scope.$$translate[phrase]) {
+        phrase_dict = {'lang': phrase, 'time': t, allow_html: allow_html}
     }
 
-    if ((t - scope.$$translate[phrase]['time']) > 86400) {
-        scope.$$translate[phrase]['time'] = t;
+    if (scope.$$translate) {
+        if (!scope.$$translate[phrase]) {
+            scope.$$translate[phrase] = phrase_dict;
+            $ok('/tools/save_translate/', {
+                template: CtrlName,
+                phrase: phrase,
+                allow_html: allow_html,
+                url: window.location.href
+            }, function (resp) {
+
+            });
+        }
+        else {
+            phrase_dict = scope.$$translate[phrase];
+        }
+    }
+
+    if ((t - phrase_dict['time']) > 86400) {
+        phrase_dict['time'] = t;
         $ok('/tools/update_last_accessed/', {template: CtrlName, phrase: phrase}, function (resp) {
         });
     }
 
-    if (scope.$$translate[phrase]['allow_html'] !== allow_html) {
-        scope.$$translate[phrase]['allow_html'] = allow_html;
+    if (phrase_dict['allow_html'] !== allow_html) {
+        phrase_dict['allow_html'] = allow_html;
         $ok('/tools/change_allowed_html/', {
             template: CtrlName,
             phrase: phrase,
@@ -1226,14 +1302,16 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
         });
     }
 
-    try {
-        if (!dictionaries.length) {
-            dictionaries = [true];
-        }
-        var ret = scope.$$translate[phrase]['lang'];
-        ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
-            var indexes = g1.split('.');
-            var d = {};
+
+    if (!dictionaries.length) {
+        dictionaries = [true];
+    }
+
+    var ret = phrase_dict['lang'];
+    ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
+        var indexes = g1.split('.');
+        var d = {};
+        try {
             $.each(dictionaries, function (ind, dict) {
                 $.extend(d, dict === true ? scope : dict);
             });
@@ -1247,12 +1325,15 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
                 }
             }
             return d;
-        });
-        return ret;
-    } catch (a) {
-        return phrase
-    }
+        }
+        catch (a) {
+            console.log(g0, g1);
+            return g1
+        }
+    });
+    return ret;
 }
+
 module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $templateCache) {
     //$rootScope.theme = 'bs3'; // bootstrap3 theme. Can be also 'bs2', 'default'
     angular.extend($rootScope, {
@@ -1271,8 +1352,16 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             return $sce.trustAsHtml(pr_dictionary(args.shift(), args, '*', this, $ok));
         },
         _: function () {
+            // debugger;
             var args = [].slice.call(arguments);
             return pr_dictionary(args.shift(), args, '', this, $ok);
+        },
+        moment: function (value, out_format) {
+            return moment.utc(value).local().format(out_format ? out_format : 'dddd, LL (HH:mm)', value)
+        },
+        MAIN_DOMAIN: MAIN_DOMAIN,
+        static_address: function (relative_file_name) {
+            return static_address(relative_file_name);
         },
         highlight: function (text, search) {
             if (!search) {
@@ -1284,6 +1373,30 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
         setGridExtarnals: function (gridApi) {
             var scope = this;
             scope.gridApi = gridApi;
+
+            gridApi.grid.server_action_click = function (id, action_name, row, column_name) {
+                // TODO: YG by OZ: disable all action buttons on click (in row)
+                $ok('', {action_name: action_name, row: row, id: id, column_name: column_name}, function (resp) {
+                        // TODO: YG by OZ: enable disabled actions buttons on click (in row)
+                        // TODO: YG by OZ: handle action
+                        if (resp['grid_action'] == 'delete_row') {
+
+                        }
+                        if (resp['grid_action'] == 'refresh_row') {
+
+                        }
+                        if (resp['grid_action'] == 'refresh_grid') {
+
+                        }
+                        if (resp['grid_action'] == 'refresh_page') {
+
+                        }
+                        window.location.reload();
+                    },
+                    function (resp) {
+                    });
+            }
+
             gridApi.grid['all_grid_data'] = {
                 paginationOptions: {pageNumber: 1, pageSize: 1},
                 filter: {},
@@ -1354,14 +1467,14 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         classes_for_row += '{{ grid.options.columnDefs[' + columnindex + '].classes(row.entity.id, row.entity, col.field) }}';
                     }
 
-                    var attributes_for_cell = ' pr-id="{{ row.entity.id }}" ';
+                    var attributes_for_cell = +col.name + '" pr-id="{{ row.entity.id }}" ';
                     if (col.onclick && col.type !== 'actions' && col.type !== 'editable') {
                         attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\') "';
                     }
 
                     var prefix_img = '';
-                    if (col.img) {
-                        var prefix_img = '<img class="pr-grid-cell-img-prefix" pr-image="row.entity.' + col.img + '"/>';
+                    if (col.img_url) {
+                        var prefix_img = '<img src="' + static_address('images/0.gif') + '" class="pr-grid-cell-img-prefix" style="background-size: contain; background-repeat: no-repeat; background-position: center center; background-color: #fff; background-image: url({{ row.entity.' + col.img_url + ' }})" />';
                     }
                     switch (col.type) {
                         case 'link':
@@ -1373,6 +1486,15 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                                 ' class="m025em label label-danger">{{ tag.text }}</span></div>';
                         case 'show_modal':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-click="' + col.modal + '" ng-bind="COL_FIELD"></a></div>';
+                        // TODO: YG by OZ: 1. change type from 'actions' to 'server_actions' where it CAN be changes. 1a. remove obsolete javascript code in controllers (onclick)
+                        // TODO: YG by OZ: 2. (low priority) handle server response (replace, delete) see server_action_click
+                        // TODO: YG by OZ: 3. (low priority) if now from server come delete: True - that's mean action allowed. delete: 'explanation message' - acvtion dissallowed. how to show some message from server if action is allowed? we need to change format?
+                        case 'server_actions':
+                            return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '">' + prefix_img + '<button ' +
+                                ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
+                                ' ng-repeat="(action_name, enabled) in COL_FIELD" ng-disabled="enabled !== true" ng-style="{width:grid.getLengthOfAssociativeArray(COL_FIELD)>3?\'2.5em\':\'5em\'}"' +
+                                ' ng-click="grid.server_action_click(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')" ' +
+                                ' title="{{ grid.appScope._((enabled === true)?(action_name + \' grid action\'):enabled) }}">{{ grid.appScope._(action_name + \' grid action\') }}</button></div>';
                         case 'actions':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '">' + prefix_img + '<button ' +
                                 ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
@@ -1429,10 +1551,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 gridApi.grid.setGridData()
             };
 
-            gridApi.grid['grid_change_row'] = function(new_row) {
+            gridApi.grid['grid_change_row'] = function (new_row) {
                 $.each(gridApi.grid.options.data, function (index, old_row) {
                     if (old_row['id'] === new_row['id']) {
-                        if(new_row.hasOwnProperty('replace_id')){
+                        if (new_row.hasOwnProperty('replace_id')) {
                             new_row['id'] = new_row['replace_id']
                         }
                         gridApi.grid.options.data[index] = new_row;
@@ -1663,41 +1785,35 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 }
             });
         },
-        loadNextPage: function (url) {
+        loadNextPage: function (url, after_load) {
+            var lnpf = function (onscroll) {
+                var atend = onscroll ?
+                    ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) :
+                    (($(document).height() - $(window).height() === 0));
+                if (atend && !scope.loading && !scope.data.end) {
+                    scope.next_page += 1;
+                    scope.loading = true;
+                    load();
+                }
+            }
             var scope = this;
             scope.next_page = 1;
             $(window).scroll(function () {
-                if ($(window).scrollTop() >= $(document).height() - $(window).height() - 10) {
-
-                    if (scope.loading === false && scope.data.end !== true) {
-
-                        scope.loading = true;
-                        scope.next_page += 1;
-                        if (scope.scroll_data) {
-                            scope.scroll_data.next_page = scope.next_page
-                        }
-                        load()
-                    }
+                if (scope.scroll_data) {
+                    scope.scroll_data.next_page = scope.next_page
                 }
+                lnpf(true);
             });
-            $timeout(function () {
-                if (scope.data.end === false && ($(document).height() - $(window).height() === 0)) {
-                    scope.next_page += 1;
-                    load()
-                }
-            }, 500);
+
+            $timeout(lnpf, 500);
             var load = function () {
                 $ok(url, scope.scroll_data ? scope.scroll_data : {next_page: scope.next_page}, function (resp) {
-                    scope.data = resp;
-                    if (scope.data.end)
-                        scope.next_page = 1
+                    scope.data.end = resp.end;
+                    after_load(resp);
+                    scope.loading = false;
                 }).finally(function () {
                     $timeout(function () {
-                        scope.loading = false;
-                        if ($(document).height() - $(window).height() === 0 && !scope.data.end) {
-                            scope.next_page += 1;
-                            load()
-                        }
+                        lnpf();
                     }, 1000)
                 });
             }
@@ -1709,6 +1825,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
         tinymceImageOptions: {
             inline: false,
             menu: [],
+            width: 750,
             plugins: 'advlist autolink link image charmap print paste table media',
             skin: 'lightgray',
             theme: 'modern',
@@ -1741,13 +1858,13 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             //valid_elements: Config['article_html_valid_elements'],
             //valid_elements: 'a[class],img[class|width|height],p[class],table[class|width|height],th[class|width|height],tr[class],td[class|width|height],span[class],div[class],ul[class],ol[class],li[class]',
             //TODO: OZ by OZ: select css for current theme. also look for another place with same todo
-            content_css: ["//static.profireader.com/static/front/css/bootstrap.css", "//static.profireader.com/static/css/article.css", "//static.profireader.com/static/front/bird/css/article.css"],
+            content_css: [static_address('front/css/bootstrap.css'), static_address('css/article.css'), static_address('front/bird/css/article.css')],
 
 
             //paste_auto_cleanup_on_paste : true,
             //paste_remove_styles: true,
             //paste_remove_styles_if_webkit: true,
-            //paste_strip_class_attributes: "all",
+            //paste_strip_class_attributes: "all'),
 
             //style_formats: [
             //    {title: 'Bold text', inline: 'b'},
@@ -1824,26 +1941,6 @@ $.fn.scrollTo = function () {
     });
 }
 
-function getPopoverContent(content_list, width) {
-    if (content_list.length === 0) {
-        return '';
-    }
-    $('.liked-favorite-band .popover').css({
-        'background-color': 'black', 'color': 'white',
-        'width': width ? width.toString() : '160' + 'px', 'overflow': 'hidden'
-    })
-    var content = '';
-    var limit = width ? width : 160 / 10;
-    for (var i = 0; i < content_list.length; i += 1) {
-        if (content_list[i].length > limit) {
-            content += '<spam class="ellipsis">' + content_list[i].substring(0, limit) + '...' + '</spam><br>';
-        } else {
-            content += '<spam class="ellipsis">' + content_list[i] + '</spam><br>';
-        }
-    }
-    return content
-}
-
 function scrool($el) {
     $($el).scrollTo();
 }
@@ -1890,9 +1987,9 @@ function fileUrl(id, down, if_no_file) {
 
     var server = id.replace(/^[^-]*-[^-]*-4([^-]*)-.*$/, "$1");
     if (down) {
-        return '//file' + server + '.profireader.com/' + id + '?d'
+        return '//file' + server + '.' + MAIN_DOMAIN + '/' + id + '?d'
     } else {
-        return '//file' + server + '.profireader.com/' + id + '/'
+        return '//file' + server + '.' + MAIN_DOMAIN + '/' + id + '/'
     }
 }
 
@@ -2016,9 +2113,10 @@ function buildAllowedTagsAndAttributes() {
     return allowed_tags;
 }
 
-function find_and_build_url_for_endpoint(dict, rules) {
+function find_and_build_url_for_endpoint(dict, rules, host) {
     var found = false;
     var dict1 = {};
+
     $.each(rules, function (ind, rule) {
         var ret = rule;
         var prop = null;
@@ -2041,7 +2139,7 @@ function find_and_build_url_for_endpoint(dict, rules) {
         if (_.size(dict1) > 0) {
             console.warn("Too many parameters passed in dictionary for endpoint rule", dict, rules);
         }
-        return found;
+        return (host ? ('//' + host) : '') + found;
     }
 }
 
@@ -2162,13 +2260,13 @@ var convert_python_format_to_tinymce_format = function (python_format) {
 };
 
 
+// #TODO: OZ by OZ: remove this function. urls should be formed at ss
 var noImageForImageName = function (image_name) {
     if (image_name === 'logo_file_id') {
-        return '//static.profireader.com/static/images/company_no_logo.png';
+        return static_address('images/company_no_logo.png');
     }
     else {
-        return '//static.profireader.com/static/images/no_image.png';
+        return static_address('images/no_image.png');
     }
 }
-
 

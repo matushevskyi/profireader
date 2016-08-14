@@ -17,41 +17,32 @@ from .files import YoutubePlaylist
 from ..constants.SEARCH import RELEVANCE
 from .users import User
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
-from ..utils import fileUrl
+from .. import utils
 import re
-from .files import ImageCroped
+from .files import FileImg, FileImgDescriptor
+from .elastic import PRElasticDocument
 
 
-class Company(Base, PRBase):
+class Company(Base, PRBase, PRElasticDocument):
     __tablename__ = 'company'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     name = Column(TABLE_TYPES['name'], unique=True, nullable=False, default='')
-    # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
 
-
-    logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
-
-    def logo_file_properties(self):
-        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
-        return {
-            'browse': self.id,
-            'upload': True,
-            'none': nologo_url,
-            'crop': True,
-            'image_size': [450, 450],
-            'min_size': [120, 120],
-            'aspect_ratio': [0.25, 4.0],
-            'preset_urls': {},
-            'no_selection_url': nologo_url
-        }
+    logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
+    logo_file_img = relationship(FileImg, uselist=False)
+    logo = FileImgDescriptor(relation_name='logo_file_img',
+                             file_decorator=lambda c, r, f: f.attr(
+                                 name='%s_for_company_logo_%s' % (f.name, c.id),
+                                 parent_id=c.system_folder_file_id,
+                                 root_folder_id=c.system_folder_file_id),
+                             image_size=[480, 480],
+                             min_size=[100, 100],
+                             aspect_ratio=[0.25, 4.],
+                             no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
 
     journalist_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
-    # corporate_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
     system_folder_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
-    #    portal_consist = Column(TABLE_TYPES['boolean'])
-    author_user_id = Column(TABLE_TYPES['id_profireader'],
-                            ForeignKey('user.id'),
-                            nullable=False)
+
     country = Column(TABLE_TYPES['name'], nullable=False, default='')
     region = Column(TABLE_TYPES['name'], nullable=False, default='')
     city = Column(TABLE_TYPES['name'], nullable=False, default='')
@@ -69,7 +60,7 @@ class Company(Base, PRBase):
     lat = Column(TABLE_TYPES['float'], nullable=True, default=49.8418907)
     lon = Column(TABLE_TYPES['float'], nullable=True, default=24.0316261)
 
-    portal_members = relationship('MemberCompanyPortal', uselist=False)
+    portal_members = relationship(MemberCompanyPortal, uselist=True)
 
     own_portal = relationship(Portal,
                               back_populates='own_company', uselist=False,
@@ -79,29 +70,34 @@ class Company(Base, PRBase):
     #                           back_populates='own_company', uselist=False,
     #                           foreign_keys='Portal.company_owner_id')
 
-    user_owner = relationship('User', back_populates='companies')
+    author_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id), nullable=False)
+    user_owner = relationship(User, back_populates='companies')
 
-    search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
-                     'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
-                     'about': {'relevance': lambda field='about': RELEVANCE.about},
-                     'country': {'relevance': lambda field='country': RELEVANCE.country},
-                     'phone': {'relevance': lambda field='phone': RELEVANCE.phone}}
+    # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
+    #                  'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
+    #                  'about': {'relevance': lambda field='about': RELEVANCE.about},
+    #                  'country': {'relevance': lambda field='country': RELEVANCE.country},
+    #                  'phone': {'relevance': lambda field='phone': RELEVANCE.phone}}
 
     # TODO: AA by OZ: we need employees.position (from user_company table) (also search and fix #ERROR employees.position.2#)
     # ERROR employees.position.1#
-    employees = relationship('User',
-                             secondary='user_company',
-                             back_populates='employers',
-                             lazy='dynamic')
+    employments = relationship('UserCompany', back_populates='company')
+
+    def __init__(self, **kwargs):
+        # TODO: OZ by OZ: check default value for all columns
+        if 'lon' not in kwargs:
+            kwargs['lon'] = self.__table__.c.lon.default.arg
+        if 'lat' not in kwargs:
+            kwargs['lat'] = self.__table__.c.lat.default.arg
+        Base.__init__(self, **kwargs)
 
     youtube_playlists = relationship('YoutubePlaylist')
 
-    # todo: add company time creation
-    logo_file_relationship = relationship('File',
-                                          uselist=False,
-                                          backref='logo_owner_company',
-                                          foreign_keys='Company.logo_file_id')
-
+    # # todo: add company time creation
+    # logo_file_relationship = relationship('File',
+    #                                       uselist=False,
+    #                                       backref='logo_owner_company',
+    #                                       foreign_keys='Company.logo_file_id')
 
     def is_active(self):
         if self.status != Company.STATUSES['ACTIVE']:
@@ -110,7 +106,7 @@ class Company(Base, PRBase):
 
     def get_readers_for_portal(self, filters):
         query = g.db.query(User).join(UserPortalReader).join(UserPortalReader.portal).join(Portal.own_company).filter(
-                Company.id == self.id)
+            Company.id == self.id)
         list_filters = []
         if filters:
             for filter in filters:
@@ -126,44 +122,49 @@ class Company(Base, PRBase):
             ret['errors']['region'] = 'Your Region name must be at least 3 characters long.'
         if not re.match(r'[^\s]{3}', str(self.city)):
             ret['errors']['city'] = 'Your City name must be at least 3 characters long.'
+        if not re.match(r'^[a-zA-Z0-9_.+-]{4,}', str(self.postcode)):
+            ret['errors']['postcode'] = 'Your Postcode must be at least 4 digits or characters long.'
+        if not re.match(r'[^\s]{3}', str(self.address)):
+            ret['errors']['address'] = 'Your Address must be at least 3 characters long.'
         if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", str(self.email)):
             ret['errors']['email'] = 'Invalid email address'
         if not re.match('[^\s]{3,}', self.name):
             ret['errors']['name'] = 'Your Company name must be at least 3 characters long.'
         # phone validation
-        # if not re.match('^\+?[0-9]{3}-?[0-9]{6,12}$', self.phone):
-        #     ret['errors']['phone'] = 'pls enter a correct number'
+        if not re.match('^\+?[0-9]{3}-?[0-9]{6,12}$', self.phone):
+            ret['errors']['phone'] = 'pls enter a correct number'
 
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)
 
-        if self.lon is not None and PRBase.inRange(self.lon, 180, 180):
-            ret['errors']['lon'] = 'pls longitude in range [-180,180]'
+        if self.lon is not None or self.lat is not None:
+            if self.lon is None or not utils.putInRange(self.lon, -180, 180, check_only=True):
+                ret['errors']['lon'] = 'pls longitude in range [-180,180]'
+            if self.lat is None or not utils.putInRange(self.lat, -90, 90, check_only=True):
+                ret['errors']['lat'] = 'pls latitude in range [-90,90]'
 
-        if self.lat is not None and PRBase.inRange(self.lat, 90, 90):
-            ret['errors']['lat'] = 'pls latitude in range [-90,90]'
 
-        if (self.lat is None and self.lon is not None) or (self.lat is not None and self.lon is None):
-            ret['errors']['long_lat'] = 'pls enter both lon and lat or none of them'
+        # if (self.lat is None and self.lon is not None) or (self.lat is not None and self.lon is None):
+        #     ret['errors']['lon_lat'] = 'pls enter both lon and lat or none of them'
 
         return ret
 
     @property
     def readers_query(self):
         return g.db.query(User.id,
-                          User.profireader_email,
-                          User.profireader_name,
-                          User.profireader_first_name,
-                          User.profireader_last_name
+                          User.address_email,
+                          User.full_name,
+                          User.first_name,
+                          User.last_name
                           ). \
             join(UserPortalReader). \
             join(Portal). \
             join(self.__class__). \
-            order_by(User.profireader_name). \
+            order_by(User.full_name). \
             filter(self.__class__.id == self.id)
 
-        # get all users in company : company.employees
-        # get all users companies : user.employers
+        # get all users in company : company.user_employees
+        # get all users companies : user.company_employers
 
     # TODO: VK by OZ I think this have to be moved to __init__ and duplication check to validation
     def setup_new_company(self):
@@ -176,21 +177,14 @@ class Company(Base, PRBase):
 
         user_company = UserCompany(status=UserCompany.STATUSES['ACTIVE'], rights={UserCompany.RIGHT_AT_COMPANY._OWNER:
                                                                                       True})
-        user_company.employer = self
-        g.user.employer_assoc.append(user_company)
+        user_company.user = g.user
+        user_company.company = self
+        g.user.employments.append(user_company)
         g.user.companies.append(self)
         self.youtube_playlists.append(YoutubePlaylist(name=self.name, company_owner=self))
         self.save()
 
         return self
-
-    def suspended_employees(self):
-        """ Show all suspended employees from company. Before define method you should have
-        query with one company """
-        suspended_employees = [x.get_client_side_dict(more_fields='md_tm, employee, employee.employers')
-                               for x in self.employee_assoc
-                               if x.status == 'DELETED']
-        return suspended_employees
 
     @staticmethod
     def query_company(company_id):
@@ -202,7 +196,7 @@ class Company(Base, PRBase):
     def search_for_company(user_id, searchtext):
         """Return all companies which are not current user employers yet"""
         query_companies = db(Company).filter(
-                Company.name.like("%" + searchtext + "%")).filter.all()
+            Company.name.like("%" + searchtext + "%")).filter.all()
         ret = []
         for x in query_companies:
             ret.append(x.dict())
@@ -238,29 +232,27 @@ class Company(Base, PRBase):
 
     def get_client_side_dict(self,
                              fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
-                                    'short_description,journalist_folder_file_id,logo_file_id,about,lat,lon,'
+                                    'short_description,journalist_folder_file_id,logo,about,lat,lon,'
                                     'own_portal.id|host',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
+    # def get_logo_client_side_dict(self):
+    #     return self.get_image_cropped_file(self.logo_file_properties(),
+    #                                        db(FileImg, croped_image_id=self.logo_file_id).first())
 
-
-    def get_logo_client_side_dict(self):
-        return self.get_image_cropped_file(self.logo_file_properties(),
-                                             db(ImageCroped, croped_image_id=self.logo_file_id).first())
-
-    def set_logo_client_side_dict(self, client_data):
-        if client_data['selected_by_user']['type'] == 'preset':
-            client_data['selected_by_user'] = {'type': 'none'}
-        self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-                                                          client_data, self.logo_file_id, self.system_folder_file_id)
-        return self
+    # def set_logo_client_side_dict(self, client_data):
+    #     if client_data['selected_by_user']['type'] == 'preset':
+    #         client_data['selected_by_user'] = {'type': 'none'}
+    #     self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
+    #                                                       client_data, self.logo_file_id, self.system_folder_file_id)
+    #     return self
 
     @staticmethod
     def get_allowed_statuses(company_id=None, portal_id=None):
         if company_id:
             sub_query = db(MemberCompanyPortal, company_id=company_id).filter(
-                    MemberCompanyPortal.status != "DELETED").all()
+                MemberCompanyPortal.status != "DELETED").all()
         else:
             sub_query = db(MemberCompanyPortal, portal_id=portal_id)
         return sorted(list({partner.status for partner in sub_query}))
@@ -276,7 +268,7 @@ class Company(Base, PRBase):
         if filters_exсept:
             if 'status' in filters:
                 list_filters.append(
-                        {'type': 'multiselect', 'value': filters['status'], 'field': MemberCompanyPortal.status})
+                    {'type': 'multiselect', 'value': filters['status'], 'field': MemberCompanyPortal.status})
             else:
                 sub_query = sub_query.filter(and_(MemberCompanyPortal.status != v for v in filters_exсept))
                 # if filters:
@@ -294,11 +286,12 @@ class Company(Base, PRBase):
     @staticmethod
     def subquery_company_partners(company_id, filters, filters_exсept=None):
         sub_query = db(MemberCompanyPortal, portal_id=db(Portal, company_owner_id=company_id).subquery().c.id)
-        list_filters = [];list_sorts=[]
+        list_filters = [];
+        list_sorts = []
         if filters_exсept:
             if 'member.status' in filters:
                 list_filters.append(
-                        {'type': 'multiselect', 'value': filters['member.status'], 'field': MemberCompanyPortal.status})
+                    {'type': 'multiselect', 'value': filters['member.status'], 'field': MemberCompanyPortal.status})
             else:
                 sub_query = sub_query.filter(and_(MemberCompanyPortal.status != v for v in filters_exсept))
                 # if filters:
@@ -315,18 +308,20 @@ class Company(Base, PRBase):
         sub_query = Grid.subquery_grid(sub_query, filters=list_filters)
         return sub_query
 
-    @staticmethod
-    def get_members_for_company():
-        dict_members = {}
-        main_companies =[]
-        for user_company in g.user.employer_assoc:
-            main_companies.append(user_company.employer.name)
-            if user_company.employer.own_portal:
-                dict_members[user_company.employer.name] = db(MemberCompanyPortal,
-                    portal_id=user_company.employer.own_portal.id).\
-                    filter(MemberCompanyPortal.company_id != user_company.employer.id and MemberCompanyPortal.status == 'ACTIVE')\
-                    .join(Company).filter(Company.status == 'ACTIVE').all()
-        return dict_members, main_companies
+    @classmethod
+    def __declare_last__(cls):
+        cls.elastic_listeners(cls)
+
+    def elastic_insert(self):
+        pass
+
+    def elastic_update(self):
+        for m in self.portal_members:
+            m.elastic_update()
+
+    def elastic_delete(self):
+        for m in self.portal_members:
+            m.elastic_delete()
 
 
 class UserCompany(Base, PRBase):
@@ -377,8 +372,8 @@ class UserCompany(Base, PRBase):
     #                 default='324235423-423423',
     #                 nullable=False)
 
-    employer = relationship('Company', backref='employee_assoc')
-    employee = relationship('User', backref=backref('employer_assoc', lazy='dynamic'))
+    company = relationship(Company, back_populates='employments')
+    user = relationship('User', back_populates='employments')
 
     def __init__(self, user_id=None, company_id=None, status=STATUSES['APPLICANT'],
                  rights=None):
@@ -459,7 +454,7 @@ class UserCompany(Base, PRBase):
            status=UserCompany.STATUSES['APPLICANT']).update({'status': stat})
 
     def has_rights(self, rightname):
-        if self.employer.user_owner.id == self.user_id:
+        if self.company.user_owner.id == self.user_id:
             return True
 
         # if rightname == 'ARTICLES_EDIT_OTHERS':
@@ -475,9 +470,9 @@ class UserCompany(Base, PRBase):
     def search_for_user_to_join(company_id, searchtext):
         """Return all users in current company which have characters
         in their name like searchtext"""
-        return [user.get_client_side_dict(fields='profireader_name|id') for user in
+        return [user.get_client_side_dict(fields='full_name|id') for user in
                 db(User).filter(~db(UserCompany, user_id=User.id, company_id=company_id).exists()).
-                    filter(User.profireader_name.ilike("%" + searchtext + "%")).all()]
+                    filter(User.full_name.ilike("%" + searchtext + "%")).all()]
 
         # @staticmethod
         # def permissions(needed_rights_iterable, user_object, company_object):
@@ -498,7 +493,7 @@ class UserCompany(Base, PRBase):
         #         if not company:
         #             return abort(400)
         #
-        #     user_company = user.employer_assoc.filter_by(company_id=company.id).first()
+        #     user_company = user.company_employers.filter_by(company_id=company.id).first()
         #
         #     if not user_company:
         #         return False if needed_rights_iterable else True

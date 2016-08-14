@@ -1,0 +1,9 @@
+{% extends 'layout.html' %}
+{% block content %}
+    {% if article_visibility %}
+        {% include 'partials/article_details_actions.html' %}
+        {% include 'partials/article_details.html' %}
+    {% else %}
+        {% include 'cant_read_article.html' %}
+    {% endif %}
+{% endblock content %}

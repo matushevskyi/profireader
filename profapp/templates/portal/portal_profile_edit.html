@@ -1,5 +1,5 @@
 {% extends "index_layout.html" %}
-{% block title %}Profireader - Edit Portal Profile{% endblock title %}
+{% block title %}Profireader - {{ _('Edit Portal Profile') }}{% endblock title %}
 {% block head %}
     {{ super() }}
 {% endblock head %}
@@ -11,7 +11,7 @@
 
     {#    TODO: (AA to AA): sctually we need tag_edit.js here instead html file. #}
     {% include 'portal/tag_edit.html' %}
-    {#    <script src="//static.profireader.com/static/js/tag_edit.js"></script>#}
+    {#    <script src="{{ static_address('js/tag_edit.js') }}"></script>#}
     {% raw %}
     <div ng-cloak ng-init="loadData(null, null, null, loadPortalDivisionTags4)" ng-controller="PortalProfileEditController">
 

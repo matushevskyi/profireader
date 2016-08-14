@@ -2,7 +2,7 @@ from .blueprints_declaration import admin_bp
 from flask import g, request, url_for, render_template, flash, current_app
 from .request_wrapers import ok
 from .pagination import pagination
-from .request_wrapers import tos_required, check_right
+from .request_wrapers import check_right
 from flask.ext.login import login_required
 from ..models.translate import TranslateTemplate
 from ..models.ip import Ips

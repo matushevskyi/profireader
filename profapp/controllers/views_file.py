@@ -15,6 +15,7 @@ from zlib import adler32
 from flask._compat import string_types, text_type
 import urllib.parse
 from ..models.rights import UserIsActive, AllowAll
+from .. import Config
 
 try:
     from werkzeug.wsgi import wrap_file
@@ -132,7 +133,7 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
     """
 
     # sleep(5)
-    
+
     mtime = None
 
     if isinstance(filename_or_fp, string_types):
@@ -226,8 +227,9 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
 
 
 def allowed_referrers(domain):
-    return True if domain == 'https://profireader.com' or domain == 'https://profireader.com' or \
-                   'http://rodynnifirmy.profireader.com' else False
+    # TODO: OZ by OZ: fix it rodynnifirmy hardcoded
+    return True if domain == 'https://' + Config.MAIN_DOMAIN or domain == 'https://' + Config.MAIN_DOMAIN or \
+                   'http://rodynnifirmy.' + Config.MAIN_DOMAIN else False
 
 
 def crop_image(image_id, coordinates, zoom, params):

@@ -18,7 +18,7 @@
 }
 
 body {
-  padding-top: 100px;
+  padding-top: 80px;
 }
 
 .item-company {
@@ -122,6 +122,9 @@ body {
   color: #333;
   padding-right: 15px;
   padding-left: 15px;
+  margin-bottom: 15px;
+  margin-top: 15px;
+  float: left;
 }
 
 .menu-company a:hover {
@@ -130,10 +133,38 @@ body {
   background-color: @color-links-hover;
   transition: @transition;
   padding: 15px;
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+
+.menu-company a.selected {
+  color: #fff;
+  text-decoration: none;
+  background-color: @color-links-hover;
+  transition: @transition;
+  padding: 15px;
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+
+.menu-company img.menu-company-logo {
+  margin: 0px 5px;
+  padding: 0px;
+  float: right;
+}
+
+
+.menu-company.menu-company-portal a {
+  float: right;
+}
+
+.menu-company a.company-about {
+  float: right;
 }
 
 .menu-company-img {
-  height: 60px;
+  height: 3em;
+  padding: 15px 0px;
   margin-top: -20px;
 }
 
@@ -144,32 +175,6 @@ body {
   padding: 15px;
 }
 
-.about-company {
-  a {
-    color: #333;
-  }
-  a:hover {
-    text-decoration: none;
-    color: #333;
-  }
-}
-
-.company-portal {
-  a {
-    color: #525252;
-    float: right;
-    margin-left: 15px;
-    border-bottom: 1px solid #fff;
-    margin-top: 15px;
-    margin-bottom: 15px;
-  }
-  a:hover {
-    color: @color-links;
-    text-decoration: none;
-    border-bottom: 1px solid;
-    transition: @transition;
-  }
-}
 
 .company-logo img {
   margin-right: -15px;
@@ -179,7 +184,6 @@ body {
 /*change language*/
 .dropbtn {
   padding-bottom: 15px;
-  padding-left: 15px;
   border: none;
   cursor: pointer;
 }
@@ -191,11 +195,14 @@ body {
 
 .dropdown-content {
   display: none;
-  margin-left: 20px;
   position: absolute;
+  top: 25px;
+  left: -50px;
+  margin: 6px 0px 0px 0px;
   background-color: @color-bg;
-  min-width: 160px;
+  min-width: 130px;
   box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  text-align: center;
 }
 
 .dropdown-content a {
@@ -274,16 +281,6 @@ body {
 }
 
 /*---Company ID---*/
-
-.about-company {
-  a {
-    color: #333;
-  }
-  a:hover {
-    text-decoration: none;
-    color: #333;
-  }
-}
 
 .company-portal {
   a {
@@ -425,7 +422,7 @@ body {
   input {
     margin-bottom: 10px;
   }
-  .sabmit-form {
+  .submit-form {
     background-color: @color-btn;
     border: 0;
     color: #fff;
@@ -870,6 +867,18 @@ body {
   border-color: @color-red-btn;
 }
 
+.pr-validation-error:focus {
+  border-color: @color-red-btn;
+}
+
+.pr-validation-warning:focus {
+  border-color: #ffff00;
+}
+
+.pr-validation-notice:focus {
+  border-color: @color-red-btn;
+}
+
 .error-input {
   color: @color-red-hover;
 }
@@ -959,7 +968,6 @@ body {
   .line-user-info {
     color: #000;
     border-bottom: 1px solid #ECF0F1;
-    word-wrap: break-word;
   }
   span {
     word-wrap: break-word;
@@ -1087,7 +1095,7 @@ body {
     color: #FF67A0;
   }
   img {
-    background-image: url('//static.profireader.com/static/images/flash-message-danger.png');
+    background-image: url('../images/flash-message-danger.png');
   }
 }
 
@@ -1096,7 +1104,7 @@ body {
     color: #A6F284;
   }
   img {
-    background-image: url('//static.profireader.com/static/images/flash-message-success.png');
+    background-image: url('../images/flash-message-success.png');
   }
 }
 
@@ -1105,7 +1113,7 @@ body {
     color: #f7ff06;
   }
   img {
-    background-image: url('//static.profireader.com/static/images/flash-message-warning.png');
+    background-image: url('../images/flash-message-warning.png');
   }
 }
 
@@ -1114,7 +1122,7 @@ body {
     color: #00d8ff;
   }
   img {
-    background-image: url('//static.profireader.com/static/images/flash-message-info.png');
+    background-image: url('../images/flash-message-info.png');
   }
 }
 
@@ -1231,6 +1239,7 @@ body {
       font-size: 12px;
       color: #909090;
     }
+
     .add-message {
       border-top: 1px solid #ECF0F1;
       textarea {
@@ -1253,10 +1262,11 @@ body {
 }
 
 .mess-bg {
-  background-image: url("/static/images/develop-img.jpeg");
+  background-image: url("../images/develop-img.jpeg");
+  background-size: cover;
   min-height: 100%;
   min-width: 1024px;
-  width: 100%;
+  width: 110%;
   height: auto;
   position: fixed;
   top: 0;
@@ -1276,6 +1286,12 @@ body {
   .create-new-material {
     margin-left: 0;
   }
+
+  .article-edit-input {
+    width: 698px;
+    box-sizing: border-box;
+  }
+
   button.pr-button {
     background-color: @color-btn;
     color: #fff;

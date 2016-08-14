@@ -9,24 +9,27 @@ from ..constants.SEARCH import RELEVANCE
 from sqlalchemy import orm
 from config import Config
 import simplejson
-from .files import File, ImageCroped
+from .files import File, FileImg, FileImgDescriptor
 from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
-from ..utils import fileUrl
+from .. import utils
 from ..models.tag import Tag, TagMembership
 from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
 from functools import reduce
 from sqlalchemy.sql import and_
+from .elastic import PRElasticField, PRElasticDocument
 
 
 class Portal(Base, PRBase):
     __tablename__ = 'portal'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False,
-                primary_key=True)
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     name = Column(TABLE_TYPES['name'])
     host = Column(TABLE_TYPES['short_name'])
     lang = Column(TABLE_TYPES['short_name'])
+
+    status = Column(TABLE_TYPES['status'])
+    aliases = Column(TABLE_TYPES['text'])
 
     url_facebook = Column(TABLE_TYPES['url'])
     url_google = Column(TABLE_TYPES['url'])
@@ -38,7 +41,20 @@ class Portal(Base, PRBase):
     # portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
     portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_layout.id'))
 
-    logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
+    # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
+
+    logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
+    logo_file_img = relationship(FileImg, uselist=False)
+    logo = FileImgDescriptor(relation_name='logo_file_img',
+                             file_decorator=lambda p, r, f: f.attr(
+                                 name='%s_for_portal_logo_%s' % (f.name, p.id),
+                                 parent_id=p.own_company.system_folder_file_id,
+                                 root_folder_id=p.own_company.system_folder_file_id),
+                             image_size=[480, 480],
+                             min_size=[100, 100],
+                             aspect_ratio=[0.25, 4.],
+                             no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
+
     favicon_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
     layout = relationship('PortalLayout')
@@ -64,10 +80,10 @@ class Portal(Base, PRBase):
     # articles = relationship('ArticlePortalDivision',
     #                         back_populates='portal',
     #                         uselist=False)
-    publications = relationship('ArticlePortalDivision',
+    publications = relationship('Publication',
                                 secondary='portal_division',
                                 primaryjoin="Portal.id == PortalDivision.portal_id",
-                                secondaryjoin="PortalDivision.id == ArticlePortalDivision.portal_division_id",
+                                secondaryjoin="PortalDivision.id == Publication.portal_division_id",
                                 back_populates='portal',
                                 uselist=False)
 
@@ -76,8 +92,8 @@ class Portal(Base, PRBase):
                                    # back_populates='portal',
                                    # lazy='dynamic'
                                    )
-    search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
-                     'host': {'relevance': lambda field='host': RELEVANCE.host}}
+    # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
+    #                  'host': {'relevance': lambda field='host': RELEVANCE.host}}
 
     ALLOWED_STATUSES_TO_JOIN = {
         'DELETED': 'DELETED',
@@ -86,14 +102,13 @@ class Portal(Base, PRBase):
 
     def __init__(self, name=None,
                  # portal_plan_id=None,
-                 logo_file_id=None,
                  company_owner=None,
                  favicon_file_id=None,
                  lang='uk',
                  host=None, divisions=[], portal_layout_id=None):
         self.name = name
         self.lang = lang
-        self.logo_file_id = logo_file_id
+
         self.favicon_file_id = favicon_file_id
 
         self.host = host
@@ -106,46 +121,7 @@ class Portal(Base, PRBase):
             MemberCompanyPortal(portal=self, company=company_owner, status=MemberCompanyPortal.STATUSES['ACTIVE'],
                                 plan=db(MemberCompanyPortalPlan).first())]
 
-        # self.own_company.company_portals = db(MemberCompanyPortalPlan).first()
-
-        # db(MemberCompanyPortalPlan).first().portal_companies.add(MemberCompanyPortal(company=self.own_company))
-
-
-
-
-        # self.company_assoc = [MemberCompanyPortal(portal = self,
-        #                                     company = self.own_company,
-        #                                     company_portal_plan_id=db(MemberCompanyPortalPlan).first().id)]
-
-
-        pass
-
-    def logo_file_properties(self):
-        nologo_url = fileUrl(FOLDER_AND_FILE.no_company_logo())
-        return {
-            'browse': self.id,
-            'upload': True,
-            'crop': True,
-            'image_size': [450, 450],
-            'min_size': [120, 100],
-            'aspect_ratio': [0.25, 4.0],
-            'preset_urls': {'glyphicon-remove-circle': nologo_url},
-            'no_selection_url': nologo_url
-        }
-
-    def get_logo_client_side_dict(self):
-        return self.get_image_cropped_file(self.logo_file_properties(),
-                                           db(ImageCroped, croped_image_id=self.logo_file_id).first())
-
-    def set_logo_client_side_dict(self, client_data):
-        if client_data['selected_by_user']['type'] == 'preset':
-            client_data['selected_by_user'] = {'type': 'none'}
-        self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-                                                        client_data, self.logo_file_id,
-                                                        self.own_company.system_folder_file_id)
-        return self
-
-    def setup_created_portal(self, logo_file_id=None):
+    def setup_created_portal(self, client_data):
         # TODO: OZ by OZ: move this to some event maybe
         """This method create portal in db. Before define this method you have to create
         instance of class with parameters: name, host, portal_layout_id, company_owner_id,
@@ -157,20 +133,25 @@ class Portal(Base, PRBase):
                     member_company_portal=division.settings['member_company_portal'],
                     portal_division=division).save()
 
-        if logo_file_id:
-            originalfile = File.get(logo_file_id['logo_file_id'])
-            if originalfile:
-                self.logo_file_id = originalfile.copy_file(
-                    company_id=self.company_owner_id,
-                    parent_id=self.own_company.system_folder_file_id,
-                    article_portal_division_id=None).save().id
+        self.logo = client_data['logo']
+
+        # if logo_file_id:
+        #     originalfile = File.get(logo_file_id)
+        #     if originalfile:
+        #         self.logo_file_id = originalfile.copy_file(
+        #             company_id=self.company_owner_id,
+        #             parent_folder_id=self.own_company.system_folder_file_id,
+        #             publication_id=None).save().id
         return self
 
     # def fallback_default_value(self, key=None, division_name=None):
     #
     #     return default
 
-    def get_value_from_config(self, key=None, division_name=None):
+    # TODO: OZ by OZ fix this
+    def get_value_from_config(self, key=None, division_name=None, default=None):
+        return default
+
         """
         :param key: string, variable which you want to return from config
         optional:
@@ -202,7 +183,6 @@ class Portal(Base, PRBase):
                 ret['errors']['tags'][unique[tag['text']]] = 'Tag names should be unique'
             unique[tag['text']] = tag_id
         return ret
-
 
     def set_tags(self, new_portal_tags, new_division_tags_matrix):
         tags_to_remove = []
@@ -239,17 +219,16 @@ class Portal(Base, PRBase):
 
         return self
 
-
     def validate(self, is_new):
         ret = super().validate(is_new)
         if db(Portal, company_owner_id=self.own_company.id).filter(Portal.id != self.id).count():
             ret['errors']['form'] = 'portal for company already exists'
-        if not re.match('[^\s]{3,}', self.name):
-            ret['errors']['name'] = 'pls enter a bit longer name'
+        if not re.match('[^\s]{2,}', self.name):
+            ret['errors']['name'] = 'Please enter at least 2 symbols'
         if not re.match(
-                '^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9]{1,})$',
+                '^(([a-z]|[a-z][a-z0-9\-]*[a-z0-9])\.)+([a-z]|[a-z][a-z0-9\-]*[a-z0-9]{1,})$',
                 self.host):
-            ret['errors']['host'] = 'pls enter valid host name'
+            ret['errors']['host'] = 'Please enter valid host name(lower case)'
         if not 'host' in ret['errors'] and db(Portal, host=self.host).filter(Portal.id != self.id).count():
             ret['errors']['host'] = 'host already taken by another portal'
 
@@ -259,11 +238,10 @@ class Portal(Base, PRBase):
             try:
                 host = socket.gethostbyname(self.host)
                 host_ip = str(host)
+                if not 'host' in ret['errors'] and 'host' in ret['warnings'] and not host_ip in ['136.243.204.62']:
+                    ret['warnings']['host'] = 'Wrong Ip-address'
             except Exception as e:
                 ret['warnings']['host'] = 'cannot resolve hostname. maybe unregistered'
-
-            if not 'host' in ret['errors'] and 'host' in ret['warnings'] and not host_ip in ['136.243.204.62']:
-                ret['warnings']['host'] = 'Wrong Ip-address'
 
         grouped = {'by_company_member': {}, 'by_division_type': {}}
 
@@ -312,7 +290,7 @@ class Portal(Base, PRBase):
         return ret
 
     def get_client_side_dict(self,
-                             fields='id|name|host|tags, divisions.*, divisions.tags.*, layout.*, logo_file_id, '
+                             fields='id|name|host|tags, divisions.*, divisions.tags.*, layout.*, logo.url, '
                                     'favicon_file_id, '
                                     'company_owner_id, url_facebook',
                              more_fields=None):
@@ -330,6 +308,72 @@ class Portal(Base, PRBase):
                 portals.append(portal.get_client_side_dict())
         return portals
 
+    def subscribe_user(self, user=None):
+        user = user if user else g.user
+
+        if db(UserPortalReader, portal_id=self.id, user_id=user.id).first():
+            return
+
+        free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
+                               ReaderUserPortalPlan.amount).filter_by(name='free').one()
+
+        start_tm = datetime.datetime.utcnow()
+        end_tm = datetime.datetime.fromtimestamp(start_tm.timestamp() + free_plan[1])
+        reader_portal = UserPortalReader(user.id, self.id, status='active', portal_plan_id=free_plan[0],
+                                         start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
+                                         show_divisions_and_comments=[division_show for division_show in
+                                                                      [ReaderDivision(portal_division=division)
+                                                                       for division in self.divisions]])
+        g.db.add(reader_portal)
+        g.db.commit()
+
+        # # TODO: OZ by OZ: remove this endpoint!!! move subscription to model (function Portal.subscribe_user(self, user))
+        # user_dict = g.user.get_client_side_dict()
+        # portal = Portal.get(portal_id)
+        # if not portal:
+        #     raise BadDataProvided
+        # reader_portal = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
+        # if not reader_portal:
+        #     free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
+        #                            ReaderUserPortalPlan.amount).filter_by(name='free').one()
+        #     start_tm = datetime.datetime.utcnow()
+        #     end_tm = datetime.datetime.fromtimestamp(start_tm.timestamp() + free_plan[1])
+        #     reader_portal = UserPortalReader(user_dict['id'], portal_id, status='active', portal_plan_id=free_plan[0],
+        #                                      start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
+        #                                      show_divisions_and_comments=[division_show for division_show in
+        #                                                                   [ReaderDivision(portal_division=division)
+        #                                                                    for division in portal.divisions]])
+        #     g.db.add(reader_portal)
+        #     g.db.commit()
+        #     # TODO: OZ by OZ: remove it
+        #     from flask import flash
+        #     flash('You have successfully subscribed to this portal')
+
+
+class PortalLayout(Base, PRBase):
+    __tablename__ = 'portal_layout'
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    name = Column(TABLE_TYPES['name'], nullable=False)
+    path = Column(TABLE_TYPES['name'], nullable=False)
+
+    def __init__(self, name=None):
+        self.name = name
+
+    def get_client_side_dict(self, fields='id|name',
+                             more_fields=None):
+        return self.to_dict(fields, more_fields)
+
+
+class PortalAdvertismentPlace(Base, PRBase):
+    __tablename__ = 'portal_layout_adv_places'
+
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(PortalLayout.id))
+    name = Column(TABLE_TYPES['short_text'], nullable=False)
+
+    portal_layout = relationship(PortalLayout, uselist=False)
+
+
 class PortalAdvertisment(Base, PRBase):
     __tablename__ = 'portal_adv'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
@@ -338,21 +382,30 @@ class PortalAdvertisment(Base, PRBase):
     html = Column(TABLE_TYPES['text'], nullable=False)
     portal = relationship(Portal, uselist=False)
 
-    def __init__(self, portal_id=None, place=None, html=None):
-        self.portal_id=portal_id
-        self.place=place
-        self.html=html
+    @staticmethod
+    def get_portal_advertisments(portal):
+        exists = {p.name: False for p in
+                  db(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id).all()}
+        banners = db(PortalAdvertisment, portal_id=portal.id).all()
+        ret = []
+        for b in banners:
+            if b.place in exists:
+                exists[b.place] = True
+                ret.append(utils.dict_merge(b.get_client_side_dict(), {'actions': {}}))
+            else:
+                ret.append(utils.dict_merge(b.get_client_side_dict(), {'actions': {'delete': True}}))
 
-    def get_portal_advertisments(self, portal_id=None, filters=None):
-        return db(PortalAdvertisment, portal_id=portal_id).order_by(PortalAdvertisment.place)
+        for b in exists:
+            if exists[b] is False:
+                ret.append({'id': '', 'portal_id': portal.id, 'place': b, 'html': '', 'actions': {'create': True}})
 
+        return ret
 
     def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
         return self.to_dict(fields, more_fields)
 
 
-
-class MemberCompanyPortal(Base, PRBase):
+class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     __tablename__ = 'member_company_portal'
 
     class RIGHT_AT_PORTAL(BinaryRights):
@@ -360,13 +413,14 @@ class MemberCompanyPortal(Base, PRBase):
         PUBLICATION_UNPUBLISH = 2
 
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    cr_tm = Column(TABLE_TYPES['timestamp'])
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
     rights = Column(TABLE_TYPES['binary_rights'](RIGHT_AT_PORTAL),
                     default={RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: True},
                     nullable=False)
 
-    tags = relationship(Tag, secondary = 'tag_membership')
+    tags = relationship(Tag, secondary='tag_membership')
 
     member_company_portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
 
@@ -384,37 +438,94 @@ class MemberCompanyPortal(Base, PRBase):
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
 
+    # elasticsearch begin
+    def elastic_get_fields(self):
+        return {
+            'id': PRElasticField(analyzed=False, setter=lambda: self.id),
+
+            'tags': PRElasticField(setter=lambda: ' '.join([t.text for t in self.tags])),
+            'tag_ids': PRElasticField(analyzed=False, setter=lambda: [t.id for t in self.tags]),
+
+            'status': PRElasticField(setter=lambda: self.status, analyzed=False),
+
+            'company_id': PRElasticField(analyzed=False, setter=lambda: self.company.id),
+            'company_name': PRElasticField(setter=lambda: self.company.name),
+
+            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id),
+            'portal_name': PRElasticField(setter=lambda: self.portal.name),
+
+            'division_id': PRElasticField(analyzed=False, setter=lambda: db(PortalDivision, portal_id=self.portal.id,
+                                                                            portal_division_type_id='catalog').one().id),
+            'division_type': PRElasticField(analyzed=False, setter=lambda: 'catalog'),
+            'division_name': PRElasticField(setter=lambda: self.portal.name),
+
+            'date': PRElasticField(ftype='date', setter=lambda: int(self.cr_tm.timestamp() * 1000)),
+
+            'title': PRElasticField(setter=lambda: self.company.name, boost=10),
+            'subtitle': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=5),
+            'keywords': PRElasticField(setter=lambda: '', boost=5),
+            'short': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description), boost=2),
+
+            'long': PRElasticField(setter=lambda: ''),
+
+            'author': PRElasticField(setter=lambda: ''),
+            'address': PRElasticField(setter=lambda: ''),
+
+            'custom_data': PRElasticField(analyzed=False, setter=lambda: simplejson.dumps({}))
+
+            # 'company_name': PRElasticField(setter=lambda: self.company.name, boost=100),
+            # 'company_about': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=10),
+            # 'company_short_description': PRElasticField(setter=lambda: self.strip_tags(self.company.short_description),
+            #                                             boost=10),
+            # 'company_city': PRElasticField(setter=lambda: self.company.city, boost=2),
+
+        }
+
+    def elastic_get_index(self):
+        return 'front'
+
+    def elastic_get_doctype(self):
+        return 'company'
+
+    def elastic_get_id(self):
+        return self.id
+
+    @classmethod
+    def __declare_last__(cls):
+        cls.elastic_listeners(cls)
+
     def is_active(self):
         if self.status != MemberCompanyPortal.STATUSES['ACTIVE']:
             return False
         return True
 
-    def __init__(self, company_id=None, portal=None, company=None, plan=None, status=None):
-        if company_id and company:
-            raise BadDataProvided
-        if company_id:
-            self.company_id = company_id
-        else:
-            self.company = company
-        self.portal = portal
-        self.plan = plan
-        self.status = status
+    # def __init__(self, company_id=None, portal=None, company=None, plan=None, status=None):
+    #     if company_id and company:
+    #         raise BadDataProvided
+    #     if company_id:
+    #         self.company_id = company_id
+    #     else:
+    #         self.company = company
+    #     self.portal = portal
+    #     self.plan = plan
+    #     self.status = status
 
     @staticmethod
     def apply_company_to_portal(company_id, portal_id):
+        from ..models.company import Company
         """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
         member = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
         if member:
             member.set_client_side_dict(MemberCompanyPortal.STATUSES['APPLICANT'])
             member.save()
         else:
-            g.db.add(MemberCompanyPortal(company_id=company_id,
+            g.db.add(MemberCompanyPortal(company=Company.get(company_id),
                                          portal=db(Portal, id=portal_id).one(),
                                          plan=db(MemberCompanyPortalPlan).first()))
             g.db.flush()
 
     @staticmethod
-    def get(portal_id=None, company_id=None):
+    def get_by_portal_id_company_id(portal_id=None, company_id=None):
         return db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
 
     @staticmethod
@@ -468,19 +579,6 @@ class ReaderUserPortalPlan(Base, PRBase):
         self.amount = amount
 
 
-class PortalLayout(Base, PRBase):
-    __tablename__ = 'portal_layout'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
-    name = Column(TABLE_TYPES['name'], nullable=False)
-    path = Column(TABLE_TYPES['name'], nullable=False)
-
-    def __init__(self, name=None):
-        self.name = name
-
-    def get_client_side_dict(self, fields='id|name',
-                             more_fields=None):
-        return self.to_dict(fields, more_fields)
-
 class MemberCompanyPortalPlan(Base, PRBase):
     __tablename__ = 'member_company_portal_plan'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
@@ -509,6 +607,9 @@ class PortalDivision(Base, PRBase):
     # secondaryjoin = "PortalDivision.id == ArticlePortalDivision.portal_division_id",
 
     settings = None
+
+    TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
+             'catalog': 'catalog'}
 
     def is_active(self):
         return True
@@ -640,7 +741,7 @@ class PortalConfig(Base, PRBase):
 
 
 class UserPortalReader(Base, PRBase):
-    __tablename__ = 'user_portal_reader'
+    __tablename__ = 'reader_portal'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
@@ -652,7 +753,7 @@ class UserPortalReader(Base, PRBase):
     amount = Column(TABLE_TYPES['int'], default=99999)
     portal = relationship('Portal', uselist=False)
     user = relationship('User')
-    show_divisions_and_comments = relationship('ReaderDivision', back_populates='user_portal_reader')
+    show_divisions_and_comments = relationship('ReaderDivision', back_populates='reader_portal')
 
     def __init__(self, user_id=None, portal_id=None, status='active', portal_plan_id=None, start_tm=None,
                  end_tm=None, amount=None, show_divisions_and_comments=None):
@@ -689,7 +790,7 @@ class UserPortalReader(Base, PRBase):
 
         for upr in query:
             yield dict(id=upr.id, portal_id=upr.portal_id, status=upr.status, start_tm=upr.start_tm,
-                       portal_logo=File.get(upr.portal.logo_file_id).url() if upr.portal.logo_file_id else '',
+                       portal_logo=upr.portal.logo['url'],
                        end_tm=upr.end_tm if upr.end_tm > datetime.datetime.utcnow() else 'Expired at ' + upr.end_tm,
                        plan_id=upr.portal_plan_id,
                        plan_name=db(ReaderUserPortalPlan.name, id=upr.portal_plan_id).one()[0],
@@ -717,20 +818,20 @@ class UserPortalReader(Base, PRBase):
 class ReaderDivision(Base, PRBase):
     __tablename__ = 'reader_division'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False, unique=True)
-    user_portal_reader_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user_portal_reader.id'))
+    reader_portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('reader_portal.id'))
     division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
     _show_division_and_comments = Column(TABLE_TYPES['int'])
-    user_portal_reader = relationship('UserPortalReader', back_populates='show_divisions_and_comments')
+    reader_portal = relationship('UserPortalReader', back_populates='show_divisions_and_comments')
     portal_division = relationship('PortalDivision', uselist=False)
     show_division_and_comments_numeric = {name: 2 ** index for index, name in
                                           enumerate(['show_articles', 'show_comments', 'show_favorite_comments',
                                                      'show_liked_comments'])}
     show_division_and_comments_numeric_all = reduce(lambda x, y: x + y, show_division_and_comments_numeric.values())
 
-    def __init__(self, user_portal_reader=None, portal_division=None):
+    def __init__(self, reader_portal=None, portal_division=None):
         super(ReaderDivision, self).__init__()
         self._show_division_and_comments = self.show_division_and_comments_numeric_all
-        self.user_portal_reader = user_portal_reader
+        self.reader_portal = reader_portal
         self.portal_division = portal_division
 
     @property

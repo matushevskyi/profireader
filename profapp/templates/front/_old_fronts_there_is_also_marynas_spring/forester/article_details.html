@@ -1,0 +1,9 @@
+{% extends 'layout.html' %}
+{% block content %}
+    {% if article_visibility %}
+        {% include '/front/bird/partials/article_details_actions.html' %}
+        {% include '/front/forester/partials/article_details.html' %}
+    {% else %}
+        {% include 'cant_read_article.html' %}
+    {% endif %}
+{% endblock content %}

@@ -1,5 +1,5 @@
 {% extends "index_lazy_layout.html" %}
-{% block title %}Profireader{% endblock title %}
+{% block title %}Profireader - {{ _('Companies') }}{% endblock title %}
 {% block head %}
     {{ super() }}
 {% endblock head %}
@@ -8,7 +8,7 @@
 
     <script xmlns="http://www.w3.org/1999/html">
         module.controller('companies_list', ['$scope', '$ok', '$timeout', function ($scope, $ok, $timeout) {
-            angularControllerFunction('UserLoginController', 'set_selected_user_menu')('companies');
+            angularControllerFunction('user_controller', 'set_selected_user_menu')('companies');
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.url_search_for_company = {{ raw_url_for('company.search_for_company_to_join')|safe }};
             $scope.url_join = {{ raw_url_for('company.join_to_company')|safe }};
@@ -71,25 +71,27 @@
                         scrool('#joined_company_' + company_id);
                         highlight('#joined_company_56187294-164b-4001-a603-7614f897601e')
                     }, 500);
-                }).finally(function () {
                     $scope.selectedCompany_sending = false;
                 });
             };
 
-            $scope.loadNextPage('{{ url_for('company.companies_load')|safe }}');
+            $scope.loadNextPage('{{ url_for('company.companies_load')|safe }}', function (resp) {
+                $scope.data.companies = $scope.data.companies ? $scope.data.companies : [];
+                $scope.data.companies = $scope.data.companies.concat(resp['companies']);
+            });
 
-            if ($(document).width()< 764){
+            if ($(document).width() < 764) {
                 $scope.table = false;
             }
 
         }]);
     </script>
     {% raw %}
-
     <div class="container" ng-init="loadData()" ng-controller="companies_list" ng-cloak>
         <div class="row join-company">
             <div class="col-lg-3 create-company pull-right">
-                <button pr-test="CreateNewCompany" class="btn btn-default" type="button" ng-click='createCompany()' ng-disabled="data.actions.create_company !== true" title="{{ data.actions.create_company }}">
+                <button pr-test="CreateNewCompany" class="btn btn-default" type="button" ng-click='createCompany()'
+                        ng-disabled="data.actions.create_company !== true" title="{{ data.actions.create_company }}">
                     <div>{{
                         _('Create new company') }}
                     </div>
@@ -129,7 +131,7 @@
                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-4 photo-search">
                     <a pr-test="CompanySearchResult" href="{{ url_company_profile({company_id: company.id}) }}"
                        class="thumbnail">
-                        <img pr-image="company.logo_file_id" alt="image" style="width: 100%">
+                        <img pr-image-url="{{ company.logo.url }}" alt="image" style="width: 100%">
                     </a>
                 </div>
 
@@ -148,9 +150,10 @@
                 </div>
             </div>
         </div>
-        <div ng-if="data_search.company_list.length>0 && !data_search.end && selectedCompany_name" class="show-more"><h4><a class="link"
-                                                                                                    ng-click="show_more()">{{
-            _('Show more search results') }}</a></h4></div>
+        <div ng-if="data_search.company_list.length>0 && !data_search.end && selectedCompany_name" class="show-more">
+            <h4><a class="link"
+                   ng-click="show_more()">{{
+                _('Show more search results') }}</a></h4></div>
         <div class="row company-list">
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                 <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8">
@@ -162,8 +165,10 @@
                     </h3>
                 </div>
                 <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
-                    <a href="#" ng-click="table = false" ng-style="!table?{color:'red'}:''"><i class="fa fa-list pull-right" aria-hidden="true"></i></a>
-                    <a href="#" ng-click="table = true" ng-style="table?{color:'red'}:''"><i class="fa fa-th-large pull-right" aria-hidden="true"></i></a>
+                    <a href="#" ng-click="table = false" ng-style="!table?{color:'red'}:''"><i
+                            class="fa fa-list pull-right" aria-hidden="true"></i></a>
+                    <a href="#" ng-click="table = true" ng-style="table?{color:'red'}:''"><i
+                            class="fa fa-th-large pull-right" aria-hidden="true"></i></a>
                 </div>
             </div>
 
@@ -171,7 +176,7 @@
                  ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
                 <a href="{{ url_company_profile({company_id: my_employer.id}) }}">
                     <div class="col-lg-1 col-md-2 col-sm-2 col-xs-3">
-                        <img pr-image="my_employer.logo_file_id" alt="image" style="width: 100%;">
+                        <img pr-image-url="{{ my_employer.logo.url }}" alt="image" style="width: 100%;">
                     </div>
                     <div class="col-lg-9 col-md-8 col-sm-8 col-xs-7">
                         <h5 class="ellipsis">{{ _('%(name)s' , my_employer) }}</h5>
@@ -179,23 +184,22 @@
                             my_employer) }}</p>
                     </div>
                 </a>
-                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
-                        <p class="portal" ng-if="!my_employer.own_portal.host">{{_('Portals')}}: {{_('No')}}</p>
-                        <button class="portal btn" ng-if="my_employer.own_portal.host" type="button"
-                                ng-click="goToPortal(my_employer.own_portal.host)">
-                            {{_("Go to portal") }}
-                        </button>
-                    </div>
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
+                    <p class="portal" ng-if="!my_employer.own_portal.host">{{_('Portals')}}: {{_('No')}}</p>
+                    <button class="portal btn" ng-if="my_employer.own_portal.host" type="button"
+                            ng-click="goToPortal(my_employer.own_portal.host)">
+                        {{_("Go to portal") }}
+                    </button>
+                </div>
 
             </div>
-
 
 
             <div ng-if="data.companies && table == true" class="col-lg-4 col-md-4 col-sm-6 col-xs-12"
                  ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
                 <div class="thumbnail company-thumbnail">
                     <a href="{{ url_company_profile({company_id: my_employer.id}) }}">
-                        <img pr-image="my_employer.logo_file_id" alt="image" style="width: 400px; height: 300px;">
+                        <img pr-image-url="{{ my_employer.logo.url }}" alt="image" style="width: 400px; height: 300px;">
                     </a>
                     <div pr-test="SomeCompanyInfo" class="caption some-company-info">
 

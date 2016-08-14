@@ -1,6 +1,6 @@
 {% extends "index_lazy_layout.html" %}
 
-{% block title %}Profireader{% endblock title %}
+{% block title %}Profireader - {{ _('Partners') }}{% endblock title %}
 
 {% block head %}
     {{ super() }}
@@ -62,7 +62,7 @@
                     {
                         name: 'member.company.name',
                         type: 'link',
-                        img: 'member.company.logo_file_id',
+                        img_url: 'member.company.logo.url',
                         href: 'portal_link(row.entity.member.company.own_portal.host)'
                     },
                     {name: 'member.status', filter: {type: 'multi_select', default_selected: true}},

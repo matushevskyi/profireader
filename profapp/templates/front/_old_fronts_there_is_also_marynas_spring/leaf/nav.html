@@ -1,0 +1,21 @@
+
+    <div class="well">
+        <div class="social-block">
+            {% include 'user_profile.html' %}
+            {#        {% include 'social.html' %}#}
+            {% include 'subscribe_to_portal.html' %}
+        </div>
+        <!-- Brand and toggle get grouped for better mobile display -->
+    </div>
+
+    <div>
+        <ul class="nav navbar-nav">
+            {% for division in portal.divisions %}
+                {% if division.portal_division_type_id != 'index' %}
+                    <li {% if division.id == current_division.id %}class="active"{% endif %}>
+                        <a href=" {{ url_for('front.division', division_name=division.name) }}">{{ division.name }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>

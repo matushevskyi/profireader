@@ -48,7 +48,7 @@
                 <h3 class="modal-title">{{ _(action + ' employee') }}</h3>
             </div>
             <div class="modal-body">
-                {{ _('You are going to ' + action + ' employee `%(user.profireader_name)s` at portal
+                {{ _('You are going to ' + action + ' employee `%(user.full_name)s` at portal
                 `%(company.name)s`') }}<br/>
             </div>
 
@@ -118,6 +118,7 @@
             $scope.$$translate = {{ translates('company_employees_controller')|safe }};
             $scope.company = {{ company.get_client_side_dict(fields = 'id,name')|tojson|safe }};
             $scope.url_employee_update = {{ raw_url_for('company.employee_update')|safe }};
+            $scope.get_link_user_profile = {{ raw_url_for('user.profile')|safe }};
             {% raw %}
 
             $scope.loadData = function (data, callbackfunc) {
@@ -128,7 +129,7 @@
                     $scope.loading = false
                 });
             };
-//http://profireader.com/company/560b9f54-1727-4001-bda8-784be5762873/employment_action/5617835c-12a4-4001-b423-b7f13c696686
+
 
             $scope.grid_update_row = function (updated_row) {
                 $scope.gridApi.grid.grid_change_row(updated_row);
@@ -181,31 +182,21 @@
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
                 loadGridData: $scope.loadData,
+
                 columnDefs: [
                     {
-                        name: 'profireader_name', width: '20%', atype: 'link',
-                        href: 'url_employee_update({company_id:grid.appScope.company.id, user_id: row.entity' +
-                        '.user_id})',
+                        name: 'full_name', width: '20%', type: 'link',
+                        href:'get_link_user_profile({user_id : row.entity.user_id})',
                         afilter: {type: 'input'}
                     },
 
                     {
                         name: 'position',
                         onclick: 'change_position',
-                        width: '20%', afilter: {type: 'input'}
-                    },
-                    {
-                        name: 'profireader_email',
-                        onclick: 'change_position',
-                        width: '20%', afilter: {type: 'input'}
-                    },
-                    {
-                        name: 'profireader_phone',
-                        onclick: 'change_position',
-                        width: '20%', afilter: {type: 'input'}
-                    },
-  
-                    {name: 'status', width: '10%', afilter: {type: 'input'}},
+                        width: '10%', afilter: {type: 'input'}
+                    }
+                    ,
+                    {name: 'status', width: '7%', afilter: {type: 'input'}},
                     {
                         name: 'rights',
                         width: '20%',
@@ -216,7 +207,15 @@
                         }
                     },
                     {
-                        name: 'actions', width: '20%', type: 'actions',
+                       name: 'address_email',
+                       width: '10%', afilter: {type: 'input'}
+                    },
+                    {
+                       name: 'address_phone',
+                       width: '10%', afilter: {type: 'input'}
+                    },
+                    {
+                        name: 'actions', width: '26%', type: 'actions',
                         onclick: 'grid_action',
                         afilter: {type: 'input'}, classes: function (id,
                                                                      entity, field) {
@@ -229,7 +228,6 @@
         })
         {% endraw %}
     </script>
-
     <div ng-controller="company_employees_controller">
         {% raw %}
         <h2>{{ _('Employees at company `%(company.name)s`') }}</h2>

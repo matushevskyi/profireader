@@ -1,0 +1,47 @@
+<div class="row" style="border-bottom: 1px solid #000;padding-bottom: 5px;">
+    <div class="item-company col-lg-4 col-md-4 col-sm-4 col-xs-4"><i class="fa fa-building-o"></i> <a
+            href="{{ url_for('front.company_page', member_company_id = article['company']['id'], member_company_name =
+            article['company']['name']) }}">{{ article['company']['name']|safe }}</a>
+    </div>
+
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"><i
+            class="fa fa-calendar"> {{ article['publishing_tm'] }}</i></div>
+
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"><i
+            class="fa fa-paw"> <span>{{ _('Readers') }}</span> {{ article['read_count'] }}</i></div>
+
+
+</div>
+<div class="row" style="color: #3f4c55;margin-top: 10px;margin-bottom: 15px;">
+    <div class="disabled item-comments col-lg-4 col-md-4 col-sm-4 col-xs-4"><i class="fa fa-commenting-o">
+        <span>{{ _('Comments') }}</span>
+        <comments_count>0</comments_count>
+    </i></div>
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"
+         {% if g.user.id %}onclick="switch_something(this, '{{ url_for('front.add_delete_liked', publication_id =
+         article['id']) }}', '.fa-thumbs-o-up', '.fa-thumbs-up', {'liked_count': '.liked_count'});"{% else %}title="
+         {{ _('You need log in to att to bookmark article') }}"{%
+                 endif
+                 %}>
+        <i {% if liked %}style="display: none"{% endif %} class="fa fa-thumbs-o-up {% if g.user.id %}link{% endif %}">
+            <span>{{ _('Like') }}</span>
+            <liked_count class="liked_count">{{ liked_count }}</liked_count>
+        </i>
+        <i {% if not liked %}style="display: none"{% endif %}
+           class="fa fa-thumbs-up {% if g.user.id %}link{% endif %}"> <span>{{ _('Unlike') }}</span>
+            <liked_count>{{ liked_count }}</liked_count>
+        </i>
+    </div>
+
+    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"
+         {% if g.user.id %}onclick="switch_something(this, '{{ url_for('front.add_delete_favorite',
+         publication_id =
+         article['id']) }}',
+                 '.fa-bookmark-o', '.fa-bookmark');"{% else %}title="{{ _('You need log in to att to like article')
+                  }}"{% endif %}>
+        <i {% if favorite %}style="display: none"{% endif %}
+           class="fa fa-bookmark-o {% if g.user.id %}link{% endif %}"> <span>{{ _('Add to bookmark') }}</span></i>
+        <i {% if not favorite %}style="display: none"{% endif %}
+           class="fa fa-bookmark {% if g.user.id %}link{% endif %}"> <span>{{ _('Remove from bookmark') }}</span></i>
+    </div>
+</div>

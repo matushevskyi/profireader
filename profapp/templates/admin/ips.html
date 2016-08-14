@@ -1,6 +1,6 @@
 {% extends "index_lazy_layout.html" %}
 
-{% block title %}Profireader - Ips{% endblock title %}
+{% block title %}Profireader - {{ _('Ips') }}{% endblock title %}
 
 {% block portal_content %}
 
@@ -127,7 +127,7 @@
         <div style="clear: right"></div>
         <input ng-model="new_record.ip" /><a ng-show="load_contr && (datas.grid_data)" class="btn btn-danger"
            style="text-align: center"
-           ng-click="addNewRecord()">Add new form</a>
+           ng-click="addNewRecord()">{{ _('Add new form') }}</a>
         <div>
             <div class="grid" id="grid1" ui-grid-pagination ui-grid-selection ui-grid-edit ui-grid="gridOptions1"></div>
         </div>

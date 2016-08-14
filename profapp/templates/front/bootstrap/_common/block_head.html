@@ -1,0 +1,29 @@
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="shortcut icon"
+      href="{{ fileUrl(portal.favicon_file_id, if_no_file=static_address('favicon.ico')) }}" type="image/x-icon"/>
+
+<script src="https://code.jquery.com/jquery-2.2.4.min.js"
+        integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+
+<script src="{{ static_address('new/moment/moment.min.js') }}"></script>
+{% if g.lang != 'en' -%}
+    <script src="{{ static_address('new/moment/' + g.lang + '.js') }}"></script>
+{%- endif %}
+
+<link href="{{ static_address('front/' + portal.layout.name + '/css/style.css') }}" rel="stylesheet">
+<link href="{{ static_address('css/article.css') }}" rel="stylesheet">
+<link href="{{ static_address('front/' + portal.layout.name + '/css/article.css') }}" rel="stylesheet">
+
+<script src="{{ static_address('front/' + portal.layout.name + '/js/script.js') }}"></script>
+
+
+{{ config_variables()|safe }}

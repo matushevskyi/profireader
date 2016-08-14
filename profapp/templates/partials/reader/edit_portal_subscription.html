@@ -1,3 +1,5 @@
+{# массова підписка на портали, поки що не використовується! #}
+
 {% extends "index_lazy_layout.html" %}
 
 
@@ -5,7 +7,7 @@
     {{ super() }}
     {% include '_ruslan/partials/_header_files_grid.html' %}
 {% endblock head %}
-{% block title %}{{ _('Profireader reader edit') }}{% endblock title %}
+{% block title %} Profireader {{ _('reader edit') }}{% endblock title %}
 
 {% block portal_content %}
     <script>
@@ -13,7 +15,7 @@
             $scope.edit_data = function (data) {
                 console.log(data);
             };
-            $scope.reader_edit_url = {{ raw_url_for('reader.edit_profile_submit')|safe }};
+            $scope.reader_edit_url = {{ raw_url_for('index.edit_profile_submit')|safe }};
             $scope.edit = function () {
                 console.log($scope.data);
                 $http({

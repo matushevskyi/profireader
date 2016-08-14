@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship, backref
 from flask import g
 from .pr_base import PRBase, Base
 from ..controllers.errors import VideoAlreadyExistInPlaylist
-from PIL import Image
+# from PIL import Image
 import json
 from config import Config
 from urllib import request as req
@@ -19,6 +19,25 @@ from .google import GoogleAuthorize, GoogleToken
 import sys
 import os, urllib
 from time import gmtime, strftime, clock
+from .. import utils
+from PIL import Image
+from io import BytesIO
+import base64
+import sys
+from sqlalchemy.ext.associationproxy import association_proxy
+from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+
+
+class FileContent(Base, PRBase):
+    __tablename__ = 'file_content'
+    id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), primary_key=True)
+    content = Column(Binary, nullable=False)
+
+    file = relationship('File', uselist=False, back_populates='file_content', cascade='all')
+
+    def __init__(self, file=None, content=None):
+        self.file = file
+        self.content = content
 
 
 class File(Base, PRBase):
@@ -33,56 +52,30 @@ class File(Base, PRBase):
     # youtube_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
     company_id = Column(TABLE_TYPES['id_profireader'],
-                        ForeignKey('company.id'),
-                        nullable=False)
-    article_portal_division_id = Column(TABLE_TYPES['id_profireader'],
-                                        ForeignKey('article_portal_division.id'))
+                        ForeignKey('company.id'))
+    # publication_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('publication.id'))
     copyright_author_name = Column(TABLE_TYPES['name'],
                                    default='',
                                    nullable=False)
     ac_count = Column(Integer, default=0, nullable=False)
     size = Column(Integer, default=0, nullable=False)
     author_user_id = Column(TABLE_TYPES['id_profireader'],
-                            ForeignKey('user.id'),
-                            nullable=False)
+                            ForeignKey('user.id'))
     cr_tm = Column(TABLE_TYPES['timestamp'], nullable=False)
     md_tm = Column(TABLE_TYPES['timestamp'], nullable=False)
     ac_tm = Column(TABLE_TYPES['timestamp'], nullable=False)
 
     UniqueConstraint('name', 'parent_id', name='unique_name_in_folder')
-    thumbnail_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
-    file_content = relationship('FileContent', uselist=False, foreign_keys='FileContent.id',
+    file_content = relationship(FileContent, uselist=False, foreign_keys='FileContent.id',
                                 cascade="save-update, merge, delete")
 
-    thumbnail = relationship('File', uselist=True, foreign_keys='File.thumbnail_id')
+    youtube_video = relationship('YoutubeVideo', uselist=False, foreign_keys='YoutubeVideo.id',
+                                 cascade="save-update, merge, delete")
 
     owner = relationship('User',
                          backref=backref('files', lazy='dynamic'),
-                         foreign_keys='File.author_user_id',
-                         cascade='save-update,delete')
-
-    def __init__(self, parent_id=None, name=None, mime='text/plain', size=0,
-                 cr_tm=None, md_tm=None, ac_tm=None,
-                 root_folder_id=None,
-                 # youtube_id=None,
-                 company_id=None, copyright_author_name=None, author_user_id=None, image_croped=None,
-                 thumbnail_id=None):
-        super(File, self).__init__()
-        self.parent_id = parent_id
-        self.name = name
-        self.thumbnail_id = thumbnail_id
-        self.mime = mime
-        self.size = size
-        self.cr_tm = cr_tm
-        self.md_tm = md_tm
-        self.root_folder_id = root_folder_id
-        self.ac_tm = ac_tm
-        self.copyright_author_name = copyright_author_name
-        self.author_user_id = author_user_id
-        self.company_id = company_id
-        # self.youtube_id = youtube_id
-        self.image_croped = image_croped
+                         foreign_keys='File.author_user_id')
 
     def __repr__(self):
         return "<File(name='%s', mime=%s', id='%s', parent_id='%s')>" % (
@@ -107,11 +100,10 @@ class File(Base, PRBase):
             return True
         return False
 
-
     @staticmethod
     def is_copy(name):
         ext = File.ext(name)
-        return re.match('\(\d+\)'+ext, name[-(len(ext)+3):])
+        return re.match('\(\d+\)' + ext, name[-(len(ext) + 3):])
 
     @staticmethod
     def is_name(name, mime, parent_id):
@@ -197,19 +189,20 @@ class File(Base, PRBase):
             ret = search_files
         else:
             ret = [{'size': file.size, 'name': file.name, 'id': file.id,
-                        'parent_id': file.parent_id, 'type': File.type(file),
-                        'date': str(file.md_tm),
-                        'url': file.get_thumbnail_url() if file.mime.split('/')[0] == 'image' else None,
-                        'file_url' : file.url(),
-                        'youtube_data': {'id': file.youtube_video.video_id,
-                                         'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
-                        'path_to': File.path(file),
-                        'author_name': file.copyright_author_name,
-                        'description': file.description,
-                        'actions': rights_object.actions(file, file_manager_called_for),
-                        }for file in db(File, parent_id=parent_id)
-                            if rights_object.action_is_allowed(rights_object.ACTIONS['SHOW'])
-                            and file.mime != 'image/thumbnail']
+                    'parent_id': file.parent_id, 'type': File.type(file),
+                    'date': str(file.md_tm),
+                    # TODO: OZ by OZ: thumbnail generation
+                    'thumbnail_url': utils.static_address('images/unknown_file.png'),
+                    'file_url': file.url(),
+                    'youtube_data': {'id': file.youtube_video.video_id,
+                                     'playlist_id': file.youtube_video.playlist_id} if file.mime == 'video/*' else {},
+                    'path_to': File.path(file),
+                    'author_name': file.copyright_author_name,
+                    'description': file.description,
+                    'actions': rights_object.actions(file, file_manager_called_for),
+                    } for file in db(File, parent_id=parent_id)
+                   if rights_object.action_is_allowed(rights_object.ACTIONS['SHOW'])
+                   and file.mime != 'image/thumbnail']
             ret.append({'id': folder.id, 'parent_id': folder.parent_id,
                         'type': 'parent',
                         'date': str(folder.md_tm).split('.')[0],
@@ -220,35 +213,39 @@ class File(Base, PRBase):
                         })
         return ret
 
-    def get_thumbnails(self, size):
-        if self.mime.split('/')[0] == 'image' and self.mime != 'image/thumbnail':
-            str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
-            if not self.get_thumbnail():
-                try:
-                    image_pil = Image.open(BytesIO(self.file_content.content))
-                    resized = File.scale(image_pil, size)
-                    bytes_file = BytesIO()
-                    resized.save(bytes_file, self.mime.split('/')[-1].upper())
-                    thumbnail = File(md_tm=self.md_tm, size=sys.getsizeof(bytes_file.getvalue()),
-                                     name=self.name + '_thumbnail_{str_size}'.format(
-                                             str_size=str_size),
-                                     parent_id=self.parent_id,
-                                     root_folder_id=self.root_folder_id,
-                                     company_id=self.company_id,
-                                     mime=self.mime.split('/')[0] + '/thumbnail').save()
-                    content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
-                    g.db.add_all([thumbnail, content])
-                    g.db.flush()
-                    exist = db(ImageCroped, original_image_id=self.id)
-                    if exist:
-                        exist.delete()
-                    ImageCroped(original_image_id=self.id,
-                            croped_image_id=thumbnail.id,
-                            width=image_pil.width,
-                            height=image_pil.height).save()
-                except Exception as e:
-                    self.delete()
-        return self
+    def createScaledImage(self, width, height):
+        pass
+
+    # def get_thumbnails(self, size):
+    #     if self.mime.split('/')[0] == 'image' and self.mime != 'image/thumbnail':
+    #         str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
+    #         if not self.get_thumbnail():
+    #             try:
+    #                 image_pil = Image.open(BytesIO(self.file_content.content))
+    #                 resized = File.scale(image_pil, size)
+    #                 bytes_file = BytesIO()
+    #                 resized.save(bytes_file, self.mime.split('/')[-1].upper())
+    #                 thumbnail = File(md_tm=self.md_tm, size=sys.getsizeof(bytes_file.getvalue()),
+    #                                  name=self.name + '_thumbnail_{str_size}'.format(
+    #                                      str_size=str_size),
+    #                                  parent_id=self.parent_id,
+    #                                  author_user_id=self.author_user_id,
+    #                                  root_folder_id=self.root_folder_id,
+    #                                  company_id=self.company_id,
+    #                                  mime=self.mime.split('/')[0] + '/thumbnail').save()
+    #                 content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
+    #                 g.db.add_all([thumbnail, content])
+    #                 g.db.flush()
+    #                 exist = db(FileImg, original_image_id=self.id)
+    #                 if exist:
+    #                     exist.delete()
+    #                 FileImg(original_image_id=self.id,
+    #                         croped_image_id=thumbnail.id,
+    #                         width=image_pil.width,
+    #                         height=image_pil.height).save()
+    #             except Exception as e:
+    #                 self.delete()
+    #     return self
 
     @staticmethod
     def scale(image, max_size, method=Image.ANTIALIAS):
@@ -264,16 +261,19 @@ class File(Base, PRBase):
         back.paste(scaled, offset)
         return back
 
-    def get_thumbnail_url(self):
-        thumbnail_id = self.get_thumbnail()
-        if not thumbnail_id:
-            self.get_thumbnails(size=Config.THUMBNAILS_SIZE)
-            thumbnail_id = self.get_thumbnail()
-        return File().url(thumbnail_id) if thumbnail_id else self.url()
+    # def get_thumbnail_url(self):
+    #
+    #     if self.mime.split('/')[0] == 'image'
+    #     thumbnail_id = self.get_thumbnail()
+    #     if not thumbnail_id:
+    #         self.get_thumbnails(size=Config.THUMBNAILS_SIZE)
+    #         thumbnail_id = self.get_thumbnail()
+    #     return File().url(thumbnail_id) if thumbnail_id else self.url()
 
-    def get_thumbnail(self):
-        croped_image_id = g.db.execute(("SELECT croped_image_id FROM image_croped WHERE original_image_id='{}'").format(self.id)).fetchone()
-        return croped_image_id[0] if croped_image_id else None
+    # def get_thumbnail(self):
+    #     croped_image_id = g.db.execute(
+    #         ("SELECT croped_image_id FROM image_croped WHERE original_image_id='{}'").format(self.id)).fetchone()
+    #     return croped_image_id[0] if croped_image_id else None
 
     def type(self):
         if self.mime == 'root' or self.mime == 'directory':
@@ -300,14 +300,15 @@ class File(Base, PRBase):
         ID = id if id else self.id
         server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', ID)
 
-        return '//file' + server + '.profireader.com/' + ID + '/'
+        return '//file' + server + '.'+Config.MAIN_DOMAIN+'/' + ID + '/'
 
     @staticmethod
     def get_all_in_dir_rev(id):
         files_in_parent = [file for file in db(File, parent_id=id) if file.mime != 'image/thumbnail']
         for file in files_in_parent:
             if file.mime == 'directory':
-                [files_in_parent.append(nfile) for nfile in db(File, parent_id=file.id).filter(File.mime != 'image/thumbnail')]
+                [files_in_parent.append(nfile) for nfile in
+                 db(File, parent_id=file.id).filter(File.mime != 'image/thumbnail')]
         files_in_parent = files_in_parent[::-1]
         return files_in_parent
 
@@ -316,14 +317,15 @@ class File(Base, PRBase):
         files_in_parent = [file for file in db(File, parent_id=f_id) if file.mime == 'directory' and file.id != copy_id]
         for file in files_in_parent:
             if file.mime == 'directory':
-                [files_in_parent.append(fil) for fil in db(File, parent_id=file.id, mime='directory') if fil.id != copy_id]
+                [files_in_parent.append(fil) for fil in db(File, parent_id=file.id, mime='directory') if
+                 fil.id != copy_id]
         return files_in_parent
 
     @staticmethod
     def ext(oldname):
         name = oldname[::-1]
         b = name.find('.')
-        c = name[0:b+1]
+        c = name[0:b + 1]
         c = c[::-1]
         return c
 
@@ -331,10 +333,10 @@ class File(Base, PRBase):
     def get_unique_name(name, mime, parent_id):
         if File.is_name(name, mime, parent_id):
             ext = File.ext(name)
-            fromname = name[:-(len(ext)+3)] if File.is_copy(name) else name[:-len(ext)if ext else -1]
+            fromname = name[:-(len(ext) + 3)] if File.is_copy(name) else name[:-len(ext) if ext else -1]
             list = []
             for file in db(File, parent_id=parent_id, mime=mime):
-                clearName = file.name[:-(len(ext)+3)] if File.is_copy(file.name) else file.name[:-len(ext)]
+                clearName = file.name[:-(len(ext) + 3)] if File.is_copy(file.name) else file.name[:-len(ext)]
                 if fromname == clearName:
                     pos = (len(file.name) - 2) - len(ext) if File.is_copy(file.name) else None
                     if pos:
@@ -416,7 +418,7 @@ class File(Base, PRBase):
         for file in files:
             attr['parent_id'] = new_id
             file_content = YoutubeVideo.get(file.id).detach() if file.mime == 'video/*' else FileContent.get(
-                    file.id).detach()
+                file.id).detach()
             file.detach().attr(attr)
             file.save()
             if file.mime == 'video/*':
@@ -445,19 +447,25 @@ class File(Base, PRBase):
             File.save_files(files, dir.id, attr)
 
     @staticmethod
-    def uploadLogo(content, name, type, directory, root=None):
+    def uploadLogo(content, name, type, directory, author=None):
         file = File(parent_id=directory,
-                    root_folder_id=root if root else directory,
+                    root_folder_id=directory,
                     mime=type)
+        if 'User' in author:
+            file.author_user_id = author['User'].id
+        if 'Company' in author:
+            file.company_id = author['Company'].id
         try:
             file.name = File.get_unique_name(urllib.parse.unquote(name).replace(
-                    '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), type, directory)
+                '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_'), type, directory)
             file.size = len(content)
             file_cont = FileContent(file=file, content=content)
             g.db.add_all([file, file_cont])
             g.db.flush()
         except:
+            print("Unexpected error:", sys.exc_info()[0])
             file.delete()
+            raise
         return file
 
     @staticmethod
@@ -575,12 +583,14 @@ class File(Base, PRBase):
             File.update_all(self.id, attr)
         return self.id
 
-    def create_cropped_image(self, bytes_file, area, coordinates, zoom, folder_id):
+    def create_cropped_image(self, bytes_file, folder_id):
         croped = File()
         croped.md_tm = strftime("%Y-%m-%d %H:%M:%S", gmtime())
         croped.size = sys.getsizeof(
-                bytes_file.getvalue())
+            bytes_file.getvalue())
         croped.name = self.name + '_cropped'
+        croped.author_user_id = self.author_user_id
+        croped.company_id = self.company_id
         croped.parent_id = folder_id
         croped.root_folder_id = folder_id
         croped.mime = self.mime
@@ -590,86 +600,486 @@ class File(Base, PRBase):
         return croped
 
     def copy_from_cropped_file(self):
-        image_cropped = db(ImageCroped, croped_image_id=self.id).first()
+        image_cropped = db(FileImg, croped_image_id=self.id).first()
         if not image_cropped:
-            # if article have no record in ImageCroped table we
+            # if article have no record in Illustration table we
             # create one with copied file as `original file for croping`
             new_cropped_from_file = File.get(self.id).copy_file(self.parent_id)
             image_pil = Image.open(BytesIO(new_cropped_from_file.file_content.content))
-            image_cropped = ImageCroped(original_image_id=new_cropped_from_file.id,
-                            croped_image_id=self.id,
-                            x=0, y=0, origin_x=0, origin_y=0,
-                            width=image_pil.width, height=image_pil.height,
-                            croped_width=image_pil.width,
-                            croped_height=image_pil.height,
-                            zoom=None).save()
+            image_cropped = FileImg(original_image_id=new_cropped_from_file.id,
+                                    croped_image_id=self.id,
+                                    x=0, y=0, origin_x=0, origin_y=0,
+                                    width=image_pil.width, height=image_pil.height,
+                                    croped_width=image_pil.width,
+                                    croped_height=image_pil.height,
+                                    zoom=None).save()
 
         copy_from_origininal = File.get(image_cropped.original_image_id).copy_file(self.parent_id)
         copy_crop = File.get(image_cropped.croped_image_id).copy_file(self.parent_id)
-        ImageCroped(original_image_id=copy_from_origininal.id,
-                            croped_image_id=copy_crop.id,
-                            x=image_cropped.x, y=image_cropped.y,
-                            origin_x=image_cropped.origin_x, origin_y=image_cropped.origin_y,
-                            width=image_cropped.width, height=image_cropped.height,
-                            croped_width=image_cropped.croped_width,
-                            croped_height=image_cropped.croped_height,
-                            zoom=image_cropped.zoom).save()
+        FileImg(original_image_id=copy_from_origininal.id,
+                croped_image_id=copy_crop.id,
+                x=image_cropped.x, y=image_cropped.y,
+                origin_x=image_cropped.origin_x, origin_y=image_cropped.origin_y,
+                width=image_cropped.width, height=image_cropped.height,
+                croped_width=image_cropped.croped_width,
+                croped_height=image_cropped.croped_height,
+                zoom=image_cropped.zoom).save()
         return copy_crop
 
-    def crop(self, coordinates, folder_id, params, old_image_cropped=None):
-        bytes_file, area = self.crop_with_coordinates(coordinates, params)
-        if bytes_file:
-            if old_image_cropped:
-                return self.update_croped_image(old_image_cropped, coordinates, bytes_file, area, folder_id).id
-            else:
-                new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
-                ImageCroped(original_image_id=self.id,
-                            croped_image_id=new_cropped_image.id,
-                            x=float(round(area[0], 6)), y=float(round(area[1], 6)),
-                            width=float(area[2]-area[0]), height=float(area[3]-area[1]),
-                            croped_width=float(area[4]),
-                            croped_height=float(area[5]),
-                            origin_x=float(coordinates['origin_x']),
-                            origin_y=float(coordinates['origin_y']),
-                            zoom=coordinates['zoom']).save()
-                return new_cropped_image.id
-        else:
-            return self.id
+    @staticmethod
+    def folder_dict(company, dict):
+        res = {'id': company.journalist_folder_file_id,
+               'name': "%s" % (company.name.replace(
+                   '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),),
+               'icon_url': company.logo['url']}
+        res.update(dict)
+        return res
 
-    def update_croped_image(self, old_image_cropped, coordinates ,bytes_file, area, folder_id):
-        # old_image = old_image_cropped.croped_image_id
-        new_cropped_image = self.create_cropped_image(bytes_file, area, coordinates, coordinates['zoom'], folder_id)
-        old_image_cropped.croped_image_id = new_cropped_image.id
-        old_image_cropped.x = float(round(area[0], 6))
-        old_image_cropped.y = float(round(area[1], 6))
-        old_image_cropped.origin_x = float(coordinates['origin_x'])
-        old_image_cropped.origin_y = float(coordinates['origin_y'])
-        old_image_cropped.width = float(area[2]-area[0])
-        old_image_cropped.height = float(area[3]-area[1])
-        old_image_cropped.croped_width = float(area[4])
-        old_image_cropped.croped_height = float(area[5])
-        old_image_cropped.zoom = coordinates['zoom']
-        # File.get(old_image).delete()
-        return new_cropped_image.save()
+
+class FileImg(Base, PRBase):
+    __tablename__ = 'file_img'
+    id = Column(TABLE_TYPES['id_profireader'], nullable=True, unique=True, primary_key=True)
+
+    provenance_image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(File.id), nullable=False)
+    provenance_image_file = relationship(File, foreign_keys=[provenance_image_file_id])
+    # provenance_width = Column(TABLE_TYPES['int'], nullable=False, default=0)
+    # provenance_height = Column(TABLE_TYPES['int'], nullable=False, default=0)
+
+    proceeded_image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(File.id), nullable=False)
+    proceeded_image_file = relationship(File, foreign_keys=[proceeded_image_file_id])
+
+    origin_left = Column(TABLE_TYPES['float'], nullable=False, default=0)
+    origin_top = Column(TABLE_TYPES['float'], nullable=False, default=0)
+    origin_zoom = Column(TABLE_TYPES['float'], nullable=False, default=1)
+
+    # width = Column(TABLE_TYPES['float'], nullable=False)
+    # height = Column(TABLE_TYPES['float'], nullable=False)
+    # crop_rotate = Column(TABLE_TYPES['int'], nullable=False)
+    crop_left = Column(TABLE_TYPES['float'], nullable=False)
+    crop_top = Column(TABLE_TYPES['float'], nullable=False)
+    crop_width = Column(TABLE_TYPES['float'], nullable=False)
+    crop_height = Column(TABLE_TYPES['float'], nullable=False)
+    aaa = None
+
+    def get_client_side_dict(self,
+                             fields='crop_left,crop_top,crop_width,crop_height,origin_zoom,origin_top,origin_left',
+                             more_fields=None):
+        return self.to_dict(fields, more_fields)
+
+    def get_coordinates(self):
+        ret = self.to_dict('x,y,width,height,rotate,zoom,origin_x,origin_y')
+        return ret
+
+        # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
+
+
+
+class FileImgDescriptor(object):
+    browse = True
+    upload = True
+    crop = True
+    image_size = [600, 600]
+    min_size = [60, 60]
+    aspect_ratio = [0.1, 10]
+    preset_urls = {}
+    proxy = None
+    relation_name = None
+    after_get = None
+    before_set = None
+
+    def __init__(self, relation_name, file_decorator, browse=None, upload=None, crop=None, image_size=None,
+                 min_size=None,
+                 aspect_ratio=None, no_selection_url=None, before_set=None, after_get=None):
+        self.relation_name = relation_name
+        self.file_decorator = file_decorator
+
+        if after_get is not None:
+            self.after_get = after_get
+        if before_set is not None:
+            self.before_set = before_set
+        if browse is not None:
+            self.browse = browse
+        if upload is not None:
+            self.upload = upload
+        if crop is not None:
+            self.crop = crop
+        if image_size is not None:
+            self.image_size = image_size
+        if min_size is not None:
+            self.min_size = min_size
+        if aspect_ratio is not None:
+            self.aspect_ratio = aspect_ratio
+        # if preset_urls is not None:
+        #     self.preset_urls = preset_urls
+        if no_selection_url is not None:
+            self.no_selection_url = no_selection_url
+            # self.file_decorator = file_decorator
+
+    def __get__(self, instance, owner):
+        file_img = getattr(instance, self.relation_name)
+        ret = {
+            'url': utils.fileUrl(file_img.proceeded_image_file_id) if file_img else self.no_selection_url,
+            'selected_by_user': {'type': 'provenance',
+                                 'crop': file_img.get_client_side_dict(),
+                                 'provenance_file_id': file_img.provenance_image_file_id
+                                 } if file_img else {'type': 'none'},
+            'cropper': {
+                'browse': self.browse,
+                'upload': self.upload,
+                'crop': self.crop,
+                'image_size': self.image_size,
+                'min_size': self.min_size,
+                'aspect_ratio': self.aspect_ratio,
+                'no_selection_url': self.no_selection_url
+            }}
+
+        return self.after_get(instance, file_img, ret) if self.after_get else ret
+
+    def get_correct_coordinates(self, coords_by_client, img):
+
+        l, t, w, h = (coords_by_client['crop_left'], coords_by_client['crop_top'],
+                      coords_by_client['crop_width'], coords_by_client['crop_height'])
+
+        # resize image if it is to big
+
+        scale_by = max(img.width / (self.image_size[0] * 10), img.height / (self.image_size[1] * 10), 1)
+        if scale_by > 1:
+            old_center = [l + w / 2., t + h / 2.]
+            w, h = w / scale_by, h / scale_by
+            l, t = old_center[0] - w / 2, old_center[1] - h / 2
+            img = img.resize((round(w), round(h)), Image.ANTIALIAS)
+
+        if self.aspect_ratio and self.aspect_ratio[0] and w / h < self.aspect_ratio[0]:
+            increase_height = (w / self.aspect_ratio[0] - h)
+            t, h = t - increase_height / 2, h + increase_height
+        elif self.aspect_ratio and self.aspect_ratio[1] and w / h > self.aspect_ratio[1]:
+            increase_width = (h * self.aspect_ratio[1] - w)
+            l, w = l - increase_width / 2, w + increase_width
+
+        l, t, w, h = round(l, 2), round(t, 2), round(w, 2), round(h, 2)
+        if l < 0 or t < 0 or h > img.height or w > img.width:
+            raise Exception("cant fit coordinates %s, %s, %s, %s in image with size %s x %s" % (l, t, w, h, img.width, img.height))
+
+        if self.min_size and (w < self.min_size[0] or h < self.min_size[1]):
+            raise Exception("cant fit coordinates in min image %s, %s:  %s" % (w, h, self.min_size))
+
+        return img, l, t, w, h
 
     @staticmethod
-    def get_correct_coordinates(left, top, right, bottom, column_data):
-        area_aspect = (right - left) / (bottom - top)
-        if column_data['aspect_ratio'][0] > column_data['aspect_ratio'][1]:
-            column_data['aspect_ratio'][0], column_data['aspect_ratio'][1] = column_data['aspect_ratio'][1], \
-                                                                  column_data['aspect_ratio'][0]
-        if column_data['aspect_ratio'] and column_data['aspect_ratio'][0] and area_aspect < column_data['aspect_ratio'][0]:
-            bottom -= ((bottom - top) - (right - left) / column_data['aspect_ratio'][0]) / 2
-            top += ((bottom - top) - (right - left) / column_data['aspect_ratio'][0]) / 2
-        elif column_data['aspect_ratio'] and column_data['aspect_ratio'][1] and area_aspect > column_data['aspect_ratio'][1]:
-            right -= ((right - left) - (bottom - top) * column_data['aspect_ratio'][1]) / 2
-            left += ((right - left) - (bottom - top) * column_data['aspect_ratio'][1]) / 2
-        return left, top, right, bottom
+    def create_file_from_pillow_image(pillow_img, name):
+        bytes_file = BytesIO()
+        fmt = (pillow_img.format if pillow_img.format else 'JPEG')
+        pillow_img.save(bytes_file, fmt)
+        file = File(size=sys.getsizeof(bytes_file.getvalue()),
+                    mime='image/' + fmt.lower(),
+                    name=name)
+
+        FileContent(content=bytes_file.getvalue(), file=file)
+        return file
+
+    # def proxy_setter(self, file_img: FileImg, client_data):
+    def __set__(self, instance, client_data):
+        file_img = getattr(instance, self.relation_name)
+
+        client_data = self.before_set(instance, file_img, client_data) if self.before_set else client_data
+
+        sel_by_user = client_data['selected_by_user']
+        sel_by_user_type = sel_by_user['type']
+
+        if sel_by_user_type == 'none' or sel_by_user_type == 'preset':
+            from sqlalchemy import inspect
+            setattr(instance, self.relation_name, None)
+            if file_img and inspect(file_img).persistent:
+                file_img.delete()
+            return False
+
+        if sel_by_user_type == 'provenance':
+            user_img = Image.open(BytesIO(file_img.provenance_image_file.file_content.content))
+        elif sel_by_user_type == 'browse':
+            user_img = Image.open(BytesIO(File.get(sel_by_user['image_file_id']).file_content.content))
+        elif sel_by_user_type == 'upload':
+            user_img = Image.open(
+                BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', sel_by_user['file']['content']))))
+        else:
+            raise Exception('Unknown selected by user image source type `%s`', sel_by_user_type)
+
+        sel_by_user_crop = sel_by_user['crop']
+        
+        provenance_img, l, t, w, h = self.get_correct_coordinates(sel_by_user_crop, user_img)
+
+        if not file_img:
+            setattr(instance, self.relation_name, FileImg())
+            file_img = getattr(instance, self.relation_name)
+
+        file_img.origin_left, file_img.origin_top, file_img.origin_zoom = \
+            sel_by_user_crop['origin_left'], sel_by_user_crop['origin_top'], sel_by_user_crop['origin_zoom']
+
+        if sel_by_user_type == 'provenance' and \
+                        provenance_img == user_img and \
+                        [round(c) for c in [l, t, w, h]] == \
+                        [round(c) for c in
+                         [file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height]]:
+            return True
+
+        file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
+
+        # file_decorator = client_data['file_decorator']
+        file_img.provenance_image_file = self.file_decorator(instance, file_img,
+                                                             self.create_file_from_pillow_image(provenance_img,
+                                                                                                'provenance'))
+
+        cropped_pil_img = provenance_img.crop((round(l), round(t), round(l + w), round(t + h)))
+
+        file_img.proceeded_image_file = self.file_decorator(instance, file_img,
+                                                            self.create_file_from_pillow_image(cropped_pil_img,
+                                                                                               'proceeded'))
+
+        return True
+
+
+#
+# class FileImgProxy_:
+#     # TODO: OZ by OZ: http://stackoverflow.com/questions/38284423/access-parent-object-from-sqlalchemy-association-proxy-creator
+#     # file_decorator = None
+#     browse = True
+#     upload = True
+#     crop = True
+#     image_size = [600, 600]
+#     min_size = [60, 60]
+#     aspect_ratio = [0.1, 10]
+#     # preset_urls = {}
+#     proxy = None
+#
+#     # none = utils.fileUrl(FOLDER_AND_FILE.no_image())
+#     no_selection_url = utils.fileUrl(FOLDER_AND_FILE.no_image())
+#
+#     def __init__(self, browse=None, upload=None, crop=None, image_size=None, min_size=None,
+#                  aspect_ratio=None, preset_urls=None, no_selection_url=None):
+#         # self.file_decorator = file_decorator
+#
+#         if browse is not None:
+#             self.browse = browse
+#         if upload is not None:
+#             self.upload = upload
+#         if crop is not None:
+#             self.crop = crop
+#         if image_size is not None:
+#             self.image_size = image_size
+#         if min_size is not None:
+#             self.min_size = min_size
+#         if aspect_ratio is not None:
+#             self.aspect_ratio = aspect_ratio
+#         if preset_urls is not None:
+#             self.preset_urls = preset_urls
+#         if no_selection_url is not None:
+#             self.no_selection_url = no_selection_url
+#
+#     def proxy_getter(self, file_img: FileImg):
+#
+#         ret = {
+#             'url': utils.fileUrl(file_img.proceeded_image_file_id) if file_img else self.no_selection_url,
+#             'selected_by_user': {'type': 'provenance',
+#                                  'crop': file_img.get_client_side_dict(),
+#                                  'provenance_file_id': file_img.provenance_image_file_id
+#                                  } if file_img else {'type': 'none'},
+#             'cropper': {
+#                 'browse': self.browse,
+#                 'upload': self.upload,
+#                 'crop': self.crop,
+#                 'image_size': self.image_size,
+#                 'min_size': self.min_size,
+#                 'aspect_ratio': self.aspect_ratio,
+#                 'no_selection_url': self.no_selection_url
+#             }}
+#
+#         return ret
+#
+#     def get_correct_coordinates(self, coords_by_client, img):
+#
+#         l, t, w, h = (coords_by_client['crop_left'], coords_by_client['crop_top'],
+#                       coords_by_client['crop_width'], coords_by_client['crop_height'])
+#
+#         # resize image if it is to big
+#
+#         scale_by = max(img.width / (self.image_size[0] * 10), img.height / (self.image_size[1] * 10), 1)
+#         if scale_by > 1:
+#             old_center = [l + w / 2., t + h / 2.]
+#             w, h = w / scale_by, h / scale_by
+#             l, t = old_center[0] - w / 2, old_center[1] - h / 2
+#             img = img.resize((round(w), round(h)), Image.ANTIALIAS)
+#
+#         if self.aspect_ratio and self.aspect_ratio[0] and w / h < self.aspect_ratio[0]:
+#             increase_height = (w / self.aspect_ratio[0] - h)
+#             t, h = t - increase_height / 2, h + increase_height
+#         elif self.aspect_ratio and self.aspect_ratio[1] and w / h > self.aspect_ratio[1]:
+#             increase_width = (h * self.aspect_ratio[1] - w)
+#             l, w = l - increase_width / 2, w + increase_width
+#
+#         if l < 0 or t < 0 or t + h > img.height or l + w > img.width:
+#             raise Exception("cant fit coordinates in image %s, %s, %s, %s" % (l, t, w, h))
+#
+#         if self.min_size and (w < self.min_size[0] or h < self.min_size[1]):
+#             raise Exception("cant fit coordinates in min image %s, %s:  %s" % (w, h, self.min_size))
+#
+#         return img, l, t, w, h
+#
+#     @staticmethod
+#     def create_file_from_pillow_image(pillow_img, name):
+#         bytes_file = BytesIO()
+#         fmt = (pillow_img.format if pillow_img.format else 'JPEG')
+#         pillow_img.save(bytes_file, fmt)
+#         file = File(size=sys.getsizeof(bytes_file.getvalue()),
+#                     mime='image/' + fmt.lower(),
+#                     name=name)
+#
+#         FileContent(content=bytes_file.getvalue(), file=file)
+#         return file
+#
+#     def proxy_setter(self, file_img: FileImg, client_data):
+#         import uuid
+#
+#         sel_by_user = client_data['selected_by_user']
+#         sel_by_user_type = sel_by_user['type']
+#         sel_by_user_crop = sel_by_user['crop']
+#
+#         if sel_by_user_type == 'none' or sel_by_user_type == 'preset':
+#             from sqlalchemy import inspect
+#             if file_img and inspect(file_img).persistent:
+#                 file_img.delete()
+#             return False
+#
+#         if sel_by_user_type == 'provenance':
+#             user_img = Image.open(BytesIO(file_img.provenance_image_file.file_content.content))
+#         elif sel_by_user_type == 'browse':
+#             user_img = Image.open(BytesIO(File.get(sel_by_user['image_file_id']).file_content.content))
+#         elif sel_by_user_type == 'upload':
+#             user_img = Image.open(
+#                 BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', sel_by_user['file']['content']))))
+#         else:
+#             raise Exception('Unknown selected by user image source type `%s`', sel_by_user_type)
+#
+#         provenance_img, l, t, w, h = self.get_correct_coordinates(sel_by_user_crop, user_img)
+#
+#         file_img.origin_left, file_img.origin_top, file_img.origin_zoom = \
+#             sel_by_user_crop['origin_left'], sel_by_user_crop['origin_top'], sel_by_user_crop['origin_zoom']
+#
+#         if sel_by_user_type == 'provenance' and \
+#                         provenance_img == user_img and \
+#                         [round(c) for c in [l, t, w, h]] == \
+#                         [round(c) for c in
+#                          [file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height]]:
+#             return True
+#
+#         file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
+#
+#         file_decorator = client_data['file_decorator']
+#         file_img.provenance_image_file = file_decorator(self.create_file_from_pillow_image(provenance_img,
+#                                                                                                 'provenance')).save()
+#
+#         cropped_pil_img = provenance_img.crop((round(l), round(t), round(l + w), round(t + h)))
+#
+#         file_img.proceeded_image_file = file_decorator(self.create_file_from_pillow_image(cropped_pil_img,
+#                                                                                                'proceeded')).save()
+#
+#         return True
+#
+#     def get_factory(self, *args, **kwargs):
+#         return self.proxy_getter, self.proxy_setter
+#
+#     def creator(self, client_data):
+#         ret = FileImg()
+#         return ret if self.proxy_setter(ret, client_data) else None
+#
+#     def get_proxy(self, target_collection_name):
+#         self.proxy = association_proxy(target_collection_name, 'aaa', creator=self.creator,
+#                                  getset_factory=self.get_factory)
+#         return self.proxy
+
+
+# TODO: OZ by OZ: remove me
+
+
+class CropCoordinates:
+    left = 0
+    top = 0
+    width = 0
+    height = 0
+    rotate = 0
+    origin_x = 0
+    origin_y = 0
+
+    def __init__(self, left=None, top=None, width=None, height=None):
+        if left is not None:
+            self.left = left
+        if width is not None:
+            self.width = width
+        if top is not None:
+            self.top = top
+        if height is not None:
+            self.height = height
+
+
+class FileImgCropProperties:
+    from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+    from sqlalchemy import orm
+
+    field = None
+    relationship = None
+    browse = True
+    upload = True
+    crop = True
+    image_size = [600, 600]
+    min_size = [60, 60]
+    aspect_ratio = [0.1, 10]
+    preset_urls = {}
+    none = utils.fileUrl(FOLDER_AND_FILE.no_image())
+    no_selection_url = utils.fileUrl(FOLDER_AND_FILE.no_image())
+
+    def get_client_side_dict(self):
+        ret = {
+            'upload': self.upload,
+            'browse': self.browse,
+            'none': self.none,
+            'cropper': {'aspect_ratio': self.aspect_ratio,
+                        'min_size': self.min_size,
+                        'preset_urls': self.preset_urls,
+                        'no_selection_url': self.no_selection_url,
+                        'selected_by_user': {'type': 'none'}
+                        } if self.crop else None
+        }
+
+        if self.relationship:
+            ret['selected_by_user'] = {'type': 'provenance'}
+            if ret['cropper']:
+                ret['selected_by_user']['crop_coordinates'] = self.get_crop_coordinates()
+
+        return ret
+
+    def get_crop_coordinates(self):
+        print(self.relationship)
+        if self.relationship:
+            return CropCoordinates(left=self.relationship.crop_left, top=self.relationship.crop_top,
+                                   width=self.relationship.crop_width, height=self.relationship.crop_height)
+        else:
+            return None
+
+    # @staticmethod
+    # def get_correct_coordinates(self, left, top, width, height):
+    #     area_aspect = width / height
+    #
+    #     if self.aspect_ratio and self.aspect_ratio[0] and area_aspect < self.aspect_ratio[0]:
+    #         change_height = (width / self.aspect_ratio[0] - height)
+    #         return CropCoordinates(left, top - change_height / 2, width, height + change_height)
+    #     elif self.aspect_ratio and self.aspect_ratio[1] and area_aspect > self.aspect_ratio[1]:
+    #         change_width = (height * self.aspect_ratio[1] - width)
+    #         return CropCoordinates(left - change_width / 2, top, width + change_width, height)
+    #     else:
+    #         return CropCoordinates(left, top, width, height)
 
     def crop_with_coordinates(self, coordinates, params):
         try:
             image_pil = Image.open(
-                    BytesIO(self.file_content.content))
+                BytesIO(self.file_content.content))
             left = min(max(0, coordinates['x']), image_pil.width)
             top = min(max(0, coordinates['y']), image_pil.height)
             right = max(min(coordinates['x'] + coordinates['width'], image_pil.width), coordinates['x'])
@@ -677,99 +1087,68 @@ class File(Base, PRBase):
 
             left, top, right, bottom = File.get_correct_coordinates(left, top, right, bottom, params)
 
-            wider = (right-left)/(bottom-top) / (params['image_size'][0]/params['image_size'][1])
-            if wider>1:
+            wider = (right - left) / (bottom - top) / (params['image_size'][0] / params['image_size'][1])
+            if wider > 1:
                 newwidth = params['image_size'][0]
-                newheight = params['image_size'][1]/wider
+                newheight = params['image_size'][1] / wider
             else:
                 newheight = params['image_size'][1]
-                newwidth = params['image_size'][0]*wider
+                newwidth = params['image_size'][0] * wider
             cropped = image_pil.crop((int(left), int(top), int(right), int(bottom)))
             cropped = cropped.resize((int(newwidth), int(newheight)))
             bytes_file = BytesIO()
             cropped.save(bytes_file, self.mime.split('/')[-1].upper())
-            return bytes_file, [left, top, right, bottom,newwidth, newheight]
+            return bytes_file, [left, top, right, bottom, newwidth, newheight]
         except ValueError:
             return False
 
+    # def set_image_cropped_file(self, file_img: FileImg, client_data: dict, folder_id):
+    #
+    #     selected_by_user = client_data['selected_by_user']
+    #     selected_by_user_type = selected_by_user['type']
+    #
+    #     if selected_by_user_type == 'none':
+    #         file_img.delete()
+    #
+    #     coordinates = File.get_correct_coordinates(client_data['x'], client_data['y'],
+    #                                                client_data['width'], client_data['height'], self)
+    #
+    #     if selected_by_user_type == 'provenance':
+    #         # user didn't change anything
+    #         if [round(c) for c in coordinates] == [round(c) for c in self.get_crop_coordinates()]:
+    #             return self
+    #         provenance_img = Image.open(BytesIO(self.provenance_image_file.file_content.content))
+    #         original_img = None
+    #     elif selected_by_user_type == 'browse':
+    #         original_img = Image.open(BytesIO(File.get(selected_by_user['image_file_id']).file_content.content))
+    #     elif selected_by_user_type == 'upload':
+    #         original_img = Image.open(
+    #             BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', selected_by_user['file']['content']))))
+    #     else:
+    #         raise Exception('Unknown selected by user image source type `%s`', selected_by_user_type)
+    #
+    #     if original_img:
+    #         # provenance file sholdn't be too large
+    #         provenance_size = self.get_provenance_size(original_img.width, original_img.height, self)
+    #         provenance_img = self.createCropedAndScaledImageInFile(original_img,
+    #                                                                CropCoordinates(width=provenance_size[0],
+    #                                                                                height=provenance_size[1]))
+    #
+    #         self.provenance_image_file = self.createFileFromPillowImage(provenance_img)
+    #
+    #     self.proceeded_image_file = \
+    #         self.createFileFromPillowImage(self.createCropedAndScaledImageInFile(provenance_img, coordinates))
+    #     return self
 
-    @staticmethod
-    def folder_dict(company, dict):
-        res = {'id': company.journalist_folder_file_id,
-               'name': "%s files" % (company.name.replace(
-                   '"', '_').replace('*', '_').replace('/', '_').replace('\\', '_').replace('\'', '_'),),
-               'icon': ''}
-        res.update(dict)
-        return res
-
-
-class FileContent(Base, PRBase):
-    __tablename__ = 'file_content'
-    id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), primary_key=True)
-    content = Column(Binary, nullable=False)
-
-    file = relationship('File', uselist=False, back_populates='file_content')
-
-    def __init__(self, file=None, content=None):
-        self.file = file
-        self.content = content
-
-class ImageCroped(Base, PRBase):
-    __tablename__ = 'image_croped'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, unique=True, primary_key=True)
-    original_image_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
-    croped_image_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=False)
-    x = Column(TABLE_TYPES['float'], nullable=False)
-    y = Column(TABLE_TYPES['float'], nullable=False)
-    origin_x = Column(TABLE_TYPES['float'], nullable=False, default=0)
-    origin_y = Column(TABLE_TYPES['float'], nullable=False, default=0)
-    width = Column(TABLE_TYPES['float'], nullable=False)
-    height = Column(TABLE_TYPES['float'], nullable=False)
-    rotate = Column(TABLE_TYPES['int'], nullable=False)
-    croped_width = Column(TABLE_TYPES['float'], nullable=False)
-    croped_height = Column(TABLE_TYPES['float'], nullable=False)
-    zoom = Column(TABLE_TYPES['int'], nullable=False)
-
-    def __init__(self, original_image_id=None, x=None, y=None, origin_x=0, origin_y=0, width=None, height=None,
-                 rotate=None,
-                 croped_image_id=None, croped_width=None, croped_height=None, zoom=None):
-        super(ImageCroped, self).__init__()
-        self.original_image_id = original_image_id
-        self.croped_image_id = croped_image_id
-        self.x = x
-        self.y = y
-        self.origin_x = origin_x
-        self.origin_y = origin_y
-        self.width = width
-        self.height = height
-        self.rotate = rotate
-        self.croped_width = croped_width
-        self.croped_height = croped_height
-        self.zoom = zoom
-
-    def get_client_side_dict(self, fields='x,y,croped_width,croped_height,rotate,zoom',
-                             more_fields=None):
-        return self.to_dict(fields, more_fields)
-
-    def get_coordinates(self):
-        ret = self.to_dict('x,y,width,height,rotate,zoom,origin_x,origin_y')
-        return ret
-        # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
-
-    def same_coordinates(self, coordinates, column_data):
-        left, top, right, bottom = File.get_correct_coordinates(coordinates['x'], coordinates['y'], (coordinates['x'] + coordinates['width']),
-                                                           (coordinates['y'] + coordinates['height']), column_data)
-        if (round(self.x) == round(left)) and round(self.y) == round(top) \
-                and (int(right-left) == self.croped_width and int(bottom-top)
-                    == self.croped_height):
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def get_coordinates_and_original_img(croped_image_id):
-        coor_img = db(ImageCroped, croped_image_id=croped_image_id).one()
-        return coor_img.original_image_id, coor_img.get_client_side_dict()
+    def __init__(self, field, relationship, **kwargs):
+        print((field, relationship))
+        self.field = field
+        self.relationship = relationship
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+            else:
+                raise ValueError("Unknown attribute `%s` in CropFileProperties" % (k,))
 
 
 class YoutubeApi(GoogleAuthorize):
@@ -806,12 +1185,12 @@ class YoutubeApi(GoogleAuthorize):
         """ make body to create request. category_id default 22, status default 'public'. """
 
         body = dict(snippet=dict(
-                title=self.body_dict.get('title') or '',
-                description=self.body_dict.get('description') or '',
-                tags=self.body_dict.get('tags'),
-                categoryId=self.body_dict.get('category_id') or 22),
-                status=dict(
-                        privacyStatus=self.body_dict.get('status') or 'public'))
+            title=self.body_dict.get('title') or '',
+            description=self.body_dict.get('description') or '',
+            tags=self.body_dict.get('tags'),
+            categoryId=self.body_dict.get('category_id') or 22),
+            status=dict(
+                privacyStatus=self.body_dict.get('status') or 'public'))
         return body
 
     def make_headers_for_start_upload(self, content_length):
@@ -853,7 +1232,7 @@ class YoutubeApi(GoogleAuthorize):
                    'content-type': 'application/octet-stream',
                    'content-length': self.chunk_info.get('chunk_size'),
                    'content-range': 'bytes 0-{0}/{1}'.format(
-                           self.chunk_info.get('chunk_size') - 1, self.chunk_info.get('total_size'))}
+                       self.chunk_info.get('chunk_size') - 1, self.chunk_info.get('total_size'))}
         return headers
 
     def make_headers_for_resumable_upload(self):
@@ -861,7 +1240,7 @@ class YoutubeApi(GoogleAuthorize):
         video = db(YoutubeVideo, id=session['id']).one()
         last_byte = self.chunk_info.get('chunk_size') + video.size - 1
         last_byte = self.chunk_info.get('total_size') - 1 if (self.chunk_info.get(
-                'chunk_size') + video.size - 1) > self.chunk_info.get('total_size') else last_byte
+            'chunk_size') + video.size - 1) > self.chunk_info.get('total_size') else last_byte
         headers = {'authorization': 'Bearer {0}'.format(video.authorization),
                    'content-type': 'application/octet-stream',
                    'content-length': self.chunk_info.get('total_size') - video.size - 1,
@@ -953,7 +1332,7 @@ class YoutubeApi(GoogleAuthorize):
         except response_code as e:
             if e.code == 308:
                 db(YoutubeVideo, id=session['id']).update(
-                        {'size': int(e.headers.get('Range').split('-')[-1]) + 1})
+                    {'size': int(e.headers.get('Range').split('-')[-1]) + 1})
             return 'uploading'
 
 
@@ -975,8 +1354,7 @@ class YoutubeVideo(Base, PRBase):
     playlist = relationship('YoutubePlaylist', uselist=False)
     file = relationship('File',
                         uselist=False,
-                        backref=backref('youtube_video', uselist=False),
-                        cascade='save-update,delete')
+                        back_populates='youtube_video')
 
     def __init__(self, file=None, title='Title', authorization=None, size=None, user_id=None, video_id=None,
                  status='uploading', playlist_id=None, playlist=None):
@@ -1090,7 +1468,7 @@ class YoutubePlaylist(Base, PRBase):
     def get_not_full_company_playlist(company_id):
         """ Return not full company playlist. Pass company id. """
         playlist = db(YoutubePlaylist, company_id=company_id).order_by(
-                desc(YoutubePlaylist.md_tm)).first()
+            desc(YoutubePlaylist.md_tm)).first()
         return playlist
 
     def add_video_to_cloned_playlist_with_new_name(self, video):

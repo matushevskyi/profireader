@@ -19,7 +19,7 @@ from ..models.files import File
 
 
 @tools_bp.route('/save_translate/', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(AllowAll)
 def save_translate(json):
     return TranslateTemplate.getTranslate(request.json['template'], request.json['phrase'], request.json['url'], request.json['allow_html'])
 
@@ -29,14 +29,13 @@ def save_translate(json):
 def update_last_accessed(json):
     return TranslateTemplate.update_last_accessed(json['template'], json['phrase'])
 
-@tools_bp.route('/SSO/<string:local_cookie>/', methods=['GET'])
+@tools_bp.route('/SSO/<string:front_cookie>/', methods=['GET'])
 @check_right(AllowAll)
-def SSO(local_cookie):
-    return render_template('tools/sso.html', local_cookie=local_cookie, profi_cookie=request.cookies.get('beaker.session.id'))
-
+def SSO(front_cookie):
+    return render_template('tools/sso.html', local_cookie=front_cookie, profi_cookie=request.cookies.get('beaker.session.id'))
 
 @tools_bp.route('/change_allowed_html/', methods=['OK'])
-@check_right(UserIsActive)
+@check_right(AllowAll)
 def change_allowed_html(json):
     return TranslateTemplate.change_allowed_html(json['template'], json['phrase'], json['allow_html'])
 
@@ -44,6 +43,12 @@ def change_allowed_html(json):
 @tools_bp.route('/empty/', methods=['GET'])
 def empty():
     return render_template('tools/empty.html')
+
+@tools_bp.route('/pass/<string:password>/', methods=['GET'])
+def getpasshash(password):
+    from werkzeug.security import generate_password_hash
+    return generate_password_hash(password, method='pbkdf2:sha256',
+                           salt_length=32)
 
 
 @tools_bp.route('/filecheck/', methods=['GET'])

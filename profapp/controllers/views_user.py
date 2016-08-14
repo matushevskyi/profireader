@@ -9,6 +9,8 @@ from config import Config
 from ..models.country import Country
 from flask import session
 from ..models.rights import UserIsActive, UserEditProfieRight, AllowAll
+from .. import utils
+
 
 @user_bp.route('/profile/<user_id>')
 @check_right(UserIsActive)
@@ -18,14 +20,6 @@ def profile(user_id):
         abort(404)
     return render_template('general/user_profile.html', user=user, avatar_size=AVATAR_SIZE,
                            actions={'edit_user_profile': UserEditProfieRight(user=user).is_allowed() == True})
-
-
-@user_bp.route('/avatar_update')
-@check_right(UserIsActive)
-def avatar_update(json):
-    image = json.get('update_image')
-    user = json.get('user')
-    return user.avatar_update(image)
 
 
 # TODO (AA to AA): Here admin must have the possibility to change user profile
@@ -43,25 +37,31 @@ def edit_profile_load(json, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
     if action == 'load':
         ret = {'user': g.user.get_client_side_dict(), 'languages': Config.LANGUAGES,
-               'countries': Country.get_countries(), 'change_password': {'password1': '', 'password2': ''}}
-        ret['user']['avatar'] = g.user.get_avatar_client_side_dict()
+               'countries': Country.get_countries()}
+        ret['user']['avatar'] = g.user.avatar
         return ret
     else:
-        json['user']['profireader_name'] = json['user']['profireader_first_name']+' '+json['user']['profireader_last_name']
-        g.user.attr(json['user'])
+        user_data = utils.filter_json(json['user'],
+                                      'first_name, last_name, birth_tm, lang, country_id, location, gender, address_url, address_phone, address_city, address_location, about, password, password_confirmation')
+
+        user_data['country_id'] = user_data['country_id'] if user_data[
+            'country_id'] else '56f52e6b-1273-4001-b15d-d5471ebfc075'
+        user_data['full_name'] = user_data['first_name'] + ' ' + user_data['last_name']
+        user_data['birth_tm'] = user_data['birth_tm'] if user_data['birth_tm'] else None
+        avatar = json['user']['avatar']
+        g.user.attr(user_data)
+        if g.user.password == '':
+            g.user.password = None
         if action == 'validate':
             g.user.detach()
             validate = g.user.validate(False)
-            if json['change_password']['password1'] != json['change_password']['password2']:
-                validate['errors']['password2'] = 'pls enter the same passwords'
             return validate
         else:
-            if json['change_password']['password1']:
-                g.user.password = json['change_password']['password1']
-            g.user.set_avatar_client_side_dict(json['user']['avatar']).save()
-            ret = {'user': g.user.get_client_side_dict()}
-            ret['user']['avatar'] = g.user.get_avatar_client_side_dict()
+            g.user.avatar = avatar
+            g.user.set_password_hash()
+            ret = {'user': g.user.save().get_client_side_dict()}
             return ret
+
 
 @user_bp.route('/change_lang/', methods=['OK'])
 @check_right(AllowAll)

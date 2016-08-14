@@ -1,18 +1,23 @@
 <html>
 <head>
-<script src="//static.profireader.com/static/jquery/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
-{% if profi_cookie != local_cookie %}
-    {%  if profi_cookie %}
-    <script>
-        window.parent.postMessage({'profireader_session_id': '{{ profi_cookie }}'},'*')
-    </script>
-        {% else %}
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+    {% if profi_cookie != local_cookie %}
         <script>
-        $.cookie('beaker.session.id', '{{ local_cookie }}');
+            {% if profi_cookie %}
+                var data = {'profireader_session_id': '{{ profi_cookie }}'};
+                {% if g.user and g.user.id %}
+                    data['user'] = {{ g.user.get_client_side_dict(fields = 'id,full_name,avatar.url')|tojson }};
+                    data['welcome'] = '{{ _('Hello %(full_name)s', {'full_name': g.user.full_name}) }}'
+                {% else %}
+                    data['welcome'] = '{{ _('Welcome to profireader' ) }}'
+                {% endif %}
+                window.parent.postMessage(data, '*');
+            {% else %}
+                $.cookie('beaker.session.id', '{{ local_cookie }}');
+            {% endif %}
         </script>
-        {% endif %}
-{% endif %}
+    {% endif %}
 </head>
-<body></body>
+<body>This iframe is used to consolidate sessions between domains</body>
 </html>
