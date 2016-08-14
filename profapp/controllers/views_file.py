@@ -227,9 +227,8 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
 
 
 def allowed_referrers(domain):
-    # TODO: OZ by OZ: fix it rodynnifirmy hardcoded
-    return True if domain == 'https://' + Config.MAIN_DOMAIN or domain == 'https://' + Config.MAIN_DOMAIN or \
-                   'http://rodynnifirmy.' + Config.MAIN_DOMAIN else False
+    # TODO: OZ by OZ: this function is empty!
+    return True
 
 
 def crop_image(image_id, coordinates, zoom, params):

@@ -197,5 +197,5 @@ def update_jinja_engine(app):
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
     app.jinja_env.globals.update(tbvm=tbvm)
     app.jinja_env.globals.update(
-        _URL_JOIN=lambda: 'https://' +MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + g.portal_id if g.portal_id else None)
+        _URL_JOIN=lambda: '//' +MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + g.portal_id if g.portal_id else None)
     app.jinja_env.filters['nl2br'] = nl2br
