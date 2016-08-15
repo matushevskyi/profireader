@@ -459,7 +459,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             'division_type': PRElasticField(analyzed=False, setter=lambda: 'catalog'),
             'division_name': PRElasticField(setter=lambda: self.portal.name),
 
-            'date': PRElasticField(ftype='date', setter=lambda: int(self.cr_tm.timestamp() * 1000)),
+            'date': PRElasticField(ftype='date',
+                                   setter=lambda: int(self.cr_tm.timestamp() * 1000) if self.cr_tm else 0),
 
             'title': PRElasticField(setter=lambda: self.company.name, boost=10),
             'subtitle': PRElasticField(setter=lambda: self.strip_tags(self.company.about), boost=5),
