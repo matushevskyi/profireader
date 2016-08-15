@@ -196,7 +196,7 @@ class Company(Base, PRBase, PRElasticDocument):
     def search_for_company(user_id, searchtext):
         """Return all companies which are not current user employers yet"""
         query_companies = db(Company).filter(
-            Company.name.like("%" + searchtext + "%")).filter.all()
+            Company.name.ilike("%" + searchtext + "%")).filter.all()
         ret = []
         for x in query_companies:
             ret.append(x.dict())

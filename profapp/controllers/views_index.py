@@ -27,7 +27,7 @@ def portals_list():
 @index_bp.route('portals_list/', methods=['OK'])
 @check_right(AllowAll)
 def portals_list_load(json):
-    filter = (Portal.name.like("%" + json['text'] + "%"))
+    filter = (Portal.name.ilike("%" + json['text'] + "%"))
     if g.user:
         filter = and_(filter, ~Portal.id.in_(
             db(UserPortalReader.portal_id).filter(UserPortalReader.user_id == g.user.id).all()))
