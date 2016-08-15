@@ -290,6 +290,9 @@ body.no-search .center-content {
 .article-company-and-date {
     background-color: lightcyan;
     padding: 0px 5px;
+    position: absolute;
+    bottom: 0px;
+    width: calc(100% - 10px);
 }
 
 .article-company {
@@ -298,6 +301,8 @@ body.no-search .center-content {
 
 .article-details {
     padding: 5px;
+    min-height: 400px;
+    position: relative;
 }
 
 .article-date {
