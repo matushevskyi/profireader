@@ -407,27 +407,26 @@ function menu_db_create {
 
 
 function menu_db_download_minimal {
-    down database.structure database.structure database.structure.`$gitv`_`$datev`.bak db_load_minimal
+    down database.structure db/database.structure db/database.structure.`$gitv`_`$datev`.bak db_load_minimal
     }
 
 function menu_db_load_minimal {
-    runsql_dump 'Enter sql structure filename' database.structure db_save_minimal
+    runsql_dump 'Enter sql structure filename' db/database.structure db_save_minimal
     }
 function menu_db_save_minimal {
     profidb=$(get_profidb)
-    conf_comm "
-su postgres -c 'pg_dump -s $profidb' > database.structure
+    conf_comm "su postgres -c 'pg_dump -s $profidb' > db/database.structure
 tables=\$(su postgres -c \"echo 'SELECT RelName FROM pg_Description JOIN pg_Class ON pg_Description.ObjOID = pg_Class.OID WHERE ObjSubID = 0 AND Description LIKE '\\\"'\\\"%persistent%\\\"'\\\" | psql -t $profidb\" | sed '/^\\s*\$/d' | sed -e 's/^/-t /g' | tr \"\\n\" \" \" )
 su postgres -c \"pg_dump --inserts -a \$tables $profidb\" >> database.structure
 git diff database.structure" sudo 'db_download_full'
     }
 
 function menu_db_download_full {
-    down database_full.sql database_full.sql database_full.sql.`$gitv`_`$datev`.bak db_load_full
+    down database_full.sql db/database_full.sql db/database_full.sql.`$gitv`_`$datev`.bak db_load_full
     }
 
 function menu_db_load_full {
-    runsql_dump 'Enter sql full dump filename' database_full.sql db_reindex_search
+    runsql_dump 'Enter sql full dump filename' db/database_full.sql db_reindex_search
     }
 
 function menu_db_reindex_search {
@@ -455,9 +454,9 @@ su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT table_name     FROM inform
 function menu_db_save_full {
     profidb=$(get_profidb)
     conf_comm "
-mv database_full.sql database_full.sql."`$gitv`"_"`$datev`".bak
-su postgres -c 'pg_dump $profidb' > database_full.sql
-ls -l1sh database_full.*
+mv db/database_full.sql db/database_full.sql."`$gitv`"_"`$datev`".bak
+su postgres -c 'pg_dump $profidb' > db/database_full.sql
+ls -l1sh db/database_full.*
 " sudo 'exit'
     }
 
