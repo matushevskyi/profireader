@@ -10,14 +10,14 @@
         </div>
     </div>
     <h3>
-        <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article['title']|safe }}</a>
+        <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article|highlighted('title') }}</a>
     </h3>
     <h4>{{ article.subtitle|safe }}</h4>
     <div class="short-text-and-illustration pr">
         {% if article['illustration']['selected_by_user']['type'] != 'none' %}
             <img class="article-illustration" {{ prImageUrl(article['illustration']['url']) }}/>{% endif %}
-        <div class="short-text">{{ article.short|safe }}</div>
-        <div class="article-author">{{ article.author|safe }}</div>
+        <div class="short-text">{{ article|highlighted('short') }}</div>
+        <div class="article-author">{{ article|highlighted('author') }}</div>
     </div>
     <div class="article-company-and-date pr">
         <div class="article-company nw">

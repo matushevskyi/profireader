@@ -101,7 +101,7 @@ class PRElasticConnection:
         def get_param(params, param_name):
             par_and_def = {
                 'boost': 1,
-                'number_of_fragments': 0
+                'number_of_fragments': 1
             }
             if isinstance(params, int):
                 params = {'boost': params}
@@ -145,7 +145,7 @@ class PRElasticConnection:
             highlight = {
                 "pre_tags": ['<span class="search_highlighted">'],
                 "post_tags": ["</span>"],
-                'fields': {f: {'number_of_fragments': get_param(pm, 'number_of_fragments')} for f, pm in fields.items()}
+                'fields': {f: {'fragment_size': 200, 'number_of_fragments': get_param(pm, 'number_of_fragments')} for f, pm in fields.items()}
             }
 
         req = {}

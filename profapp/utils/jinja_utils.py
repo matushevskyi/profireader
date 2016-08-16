@@ -168,6 +168,16 @@ def nl2br(value):
     return result
 
 
+@jinja2.contextfunction
+def highlighted(val_dict_or_obj, key):
+    highn = key + '_highlighted'
+    if isinstance(val_dict_or_obj, dict):
+        result = val_dict_or_obj[highn] if highn in val_dict_or_obj else val_dict_or_obj[key]
+    else:
+        result = getattr(val_dict_or_obj, highn) if hasattr(val_dict_or_obj, highn) else getattr(val_dict_or_obj, key)
+    return Markup(result)
+
+
 def raise_helper(msg):
     raise Exception(msg)
 
@@ -175,7 +185,6 @@ def raise_helper(msg):
 def update_jinja_engine(app):
     def tbvm():
         return ' target="_blank" ' if g.user and g.user.id in ['561e3eaf-2188-4001-b542-e607537567b2'] else ''
-
 
     app.jinja_env.globals.update(raw_url_for=raw_url_for)
     app.jinja_env.globals.update(pre=pre)
@@ -197,5 +206,6 @@ def update_jinja_engine(app):
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
     app.jinja_env.globals.update(tbvm=tbvm)
     app.jinja_env.globals.update(
-        _URL_JOIN=lambda: '//' +MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + g.portal_id if g.portal_id else None)
+        _URL_JOIN=lambda: '//' + MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + g.portal_id if g.portal_id else None)
     app.jinja_env.filters['nl2br'] = nl2br
+    app.jinja_env.filters['highlighted'] = highlighted
