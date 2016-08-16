@@ -94,6 +94,8 @@ def elastic_company_to_orm_company(item):
         for k, modef_field in {'title': 'name', 'subtitle': 'about', 'short': 'short_description'}.items():
             if k in item['_highlight']:
                 ret['company'][modef_field + '_highlighted'] = '...'.join(item['_highlight'][k])
+        if 'short' not in item['_highlight'] and 'subtitle' in item['_highlight']:
+            ret['company']['short_description_highlighted'] = '...' + '...'.join(item['_highlight']['subtitle']) + '...'
     return ret
 
 
@@ -185,7 +187,7 @@ def get_search_tags_pages_search(portal, page, tags, search_text):
                 pager={'total': pages, 'current': page,
                        'url_construct': url_page_division,
                        'neighbours': Config.PAGINATION_BUTTONS},
-                search={'text': search_text, 'url': '', 'messages': messages})
+                search={'text': search_text, 'url': url_for('front.search', tags = tags), 'messages': messages})
 
 
 def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company_publisher=None):
