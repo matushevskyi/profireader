@@ -298,7 +298,7 @@ body.no-search .center-content {
 }
 
 .article-details {
-    padding: 5px;
+    padding: 5px 5px 10px 5px;
     min-height: 400px;
     position: relative;
 }

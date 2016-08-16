@@ -28,6 +28,8 @@ class Company(Base, PRBase, PRElasticDocument):
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     name = Column(TABLE_TYPES['name'], unique=True, nullable=False, default='')
 
+    _delme_logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=True)
+
     logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
     logo_file_img = relationship(FileImg, uselist=False)
     logo = FileImgDescriptor(relation_name='logo_file_img',

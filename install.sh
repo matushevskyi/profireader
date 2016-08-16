@@ -144,13 +144,15 @@ function get_profidb {
     }
 
 function runsql {
-    conf_comm "su postgres -c \"echo \\\"$1\\\" | psql\"" sudo "$2"
+    conf_comm "service postgresql restart
+su postgres -c \"echo \\\"$1\\\" | psql\"" sudo "$2"
     }
 
 function runsql_dump {
     profidb=$(get_profidb)
     filenam=$(rr "$1" "$2")
-    conf_comm "su postgres -c 'cat $filenam | psql $profidb'" sudo "$3"
+    conf_comm "service postgresql restart
+su postgres -c 'cat $filenam | psql $profidb'" sudo "$3"
     }
 
 function menu_origin {
