@@ -300,7 +300,7 @@ class File(Base, PRBase):
         ID = id if id else self.id
         server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', ID)
 
-        return '//file' + server + '.'+Config.MAIN_DOMAIN+'/' + ID + '/'
+        return '//file' + server + '.' + Config.MAIN_DOMAIN + '/' + ID + '/'
 
     @staticmethod
     def get_all_in_dir_rev(id):
@@ -673,7 +673,6 @@ class FileImg(Base, PRBase):
         # return {'left': ret['x'], 'top': ret['x'], 'width': ret['width'], 'height': ret['height']}
 
 
-
 class FileImgDescriptor(object):
     browse = True
     upload = True
@@ -758,7 +757,8 @@ class FileImgDescriptor(object):
 
         l, t, w, h = round(l, 2), round(t, 2), round(w, 2), round(h, 2)
         if l < 0 or t < 0 or h > img.height or w > img.width:
-            raise Exception("cant fit coordinates %s, %s, %s, %s in image with size %s x %s" % (l, t, w, h, img.width, img.height))
+            raise Exception(
+                "cant fit coordinates %s, %s, %s, %s in image with size %s x %s" % (l, t, w, h, img.width, img.height))
 
         if self.min_size and (w < self.min_size[0] or h < self.min_size[1]):
             raise Exception("cant fit coordinates in min image %s, %s:  %s" % (w, h, self.min_size))
@@ -803,8 +803,9 @@ class FileImgDescriptor(object):
         else:
             raise Exception('Unknown selected by user image source type `%s`', sel_by_user_type)
 
-        sel_by_user_crop = sel_by_user['crop']
-        
+        sel_by_user_crop = sel_by_user['crop'] if 'crop' in sel_by_user and sel_by_user['crop'] else \
+            {'crop_left': 0, 'crop_top': 0, 'crop_width': user_img.width, 'crop_height': user_img.height}
+
         provenance_img, l, t, w, h = self.get_correct_coordinates(sel_by_user_crop, user_img)
 
         if not file_img:
@@ -812,7 +813,9 @@ class FileImgDescriptor(object):
             file_img = getattr(instance, self.relation_name)
 
         file_img.origin_left, file_img.origin_top, file_img.origin_zoom = \
-            sel_by_user_crop['origin_left'], sel_by_user_crop['origin_top'], sel_by_user_crop['origin_zoom']
+            sel_by_user_crop['origin_left'] if 'origin_left' in sel_by_user_crop else 0, \
+            sel_by_user_crop['origin_top'] if 'origin_top' in sel_by_user_crop else 0, \
+            sel_by_user_crop['origin_zoom'] if 'origin_zoom' in sel_by_user_crop else 1
 
         if sel_by_user_type == 'provenance' and \
                         provenance_img == user_img and \

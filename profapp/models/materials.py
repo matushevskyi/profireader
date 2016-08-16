@@ -29,7 +29,7 @@ class Material(Base, PRBase, PRElasticDocument):
     # portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
 
     # TODO: OZ by OZ: remove me
-    # image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=True)
+    _del_image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=True)
 
     illustration_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
     illustration_file_img = relationship(FileImg, uselist=False)
