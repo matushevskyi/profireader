@@ -80,9 +80,9 @@ def elastic_article_to_orm_article(item):
     if '_highlight' in item:
         for k in ['short', 'title', 'subtitle', 'keywords', 'author']:
             if k in item['_highlight']:
-                ret[k] = '...'.join(item['_highlight'][k])
+                ret[k + '_highlighted'] = '...'.join(item['_highlight'][k])
         if 'short' not in item['_highlight'] and 'long' in item['_highlight']:
-            ret['short'] = '...' + '...'.join(item['_highlight']['long']) + '...'
+            ret['short_highlighted'] = '...' + '...'.join(item['_highlight']['long']) + '...'
     return ret
 
 
@@ -93,7 +93,7 @@ def elastic_company_to_orm_company(item):
     if '_highlight' in item:
         for k, modef_field in {'title': 'name', 'subtitle': 'about', 'short': 'short_description'}.items():
             if k in item['_highlight']:
-                ret['company'][modef_field] = '...'.join(item['_highlight'][k])
+                ret['company'][modef_field + '_highlighted'] = '...'.join(item['_highlight'][k])
     return ret
 
 
@@ -295,6 +295,8 @@ def url_catalog_toggle_tag(portal, tag_text):
 @check_right(AllowAll)
 @get_portal
 def company_page(portal, member_company_id, member_company_name, member_company_page='about'):
+    if member_company_page not in ['about', 'address', 'contacts']:
+        member_company_page = 'about'
     # TODO: OZ by OZ: redirect if company name is wrong. 404 if id is wrong
     member_company, dvsn = \
         get_company_member_and_division(portal, member_company_id, member_company_name)
@@ -307,8 +309,7 @@ def company_page(portal, member_company_id, member_company_name, member_company_
                            member_company=member_company.get_client_side_dict(
                                more_fields='employments,employments.user,employments.user.avatar.url'),
                            company_menu_selected_item=member_company_page,
-                           member_company_page=member_company_page
-                           )
+                           member_company_page=member_company_page)
 
 
 @front_bp.route('/', methods=['GET'])
