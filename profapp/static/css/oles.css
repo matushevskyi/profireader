@@ -102,6 +102,31 @@
     height: 100%;
 }
 
+.w15em {
+    width: 15em;
+}
+
+.dib {
+    display: inline-block;
+}
+
+
+.pa {
+    position: absolute;
+}
+
+.pa {
+    position: relative;
+}
+
+.b0 {
+    bottom: 0px;
+}
+
+.red {
+    color: red;
+}
+
 .notitledialog .ui-dialog-titlebar {
     display: none
 }
@@ -417,6 +442,22 @@ div.pr-row:last-child div.pr-cell {
 
 .m025em {
     margin: 0.25em;
+}
+
+.mr025em {
+    margin-right: 0.25em;
+}
+
+.ml025em {
+    margin-left: 0.25em;
+}
+
+.mt025em {
+    margin-top: 0.25em;
+}
+
+.mb025em {
+    margin-bottom: 0.25em;
 }
 
 

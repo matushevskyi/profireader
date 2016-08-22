@@ -1,153 +1,179 @@
-{% extends "_ruslan/_index_layout.html" %}
+{% extends "index_lazy_layout.html" %}
 
-{% block title %}Profireader{% endblock title %}
-{% block head %}
-    {{ super() }}
-    {% include 'partials/empty_page.html' %}
-{% endblock head %}
-
-{% block portal_base %}
-{% endblock portal_base %}
+{% block title %}{{ _('Messages') }}{% endblock title %}
 
 {% block portal_content %}
-<div class="container-fluid" ng-cloak>
-<div class="mess-bg row">
-    <div class="msg-message-user">
-        <h3>Messenger in develop</h3>
+
+    <style>
+        .messenger-row {
+            min-height: 120px;
+            margin: 10px 0px 5px -15px;
+            background-color: #eee;
+            padding: 5px;
+
+        }
+
+        .messenger-row button {
+            margin-top: 5px;
+        }
+
+        .messenger-row div:first-child {
+            padding-left: 125px
+        }
+
+        .messenger-row img.messenger-avatar {
+            width: 120px;
+            height: 120px;
+            position: absolute;
+            left: 0px;
+            top: 0px;
+        }
+
+        .messenger-row img.common-portal-logo {
+            width: 3em;
+            height: 1em;
+            margin-right: 5px;
+        }
+
+        .messenger-row img.common-employer-logo {
+            width: 3em;
+            height: 1em;
+            margin-right: 5px;
+        }
+
+        .messenger-row .no-common {
+            margin-top: 10px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .messenger-row .ui-select-highlight {
+            color: red;
+        }
+    </style>
+
+
+    <script>
+        module.controller('messenger', ['$scope', '$ok', '$sce', function ($scope, $ok, $sce) {
+
+            {#            angularControllerFunction('MessengerMenuController', 'set_selected_messenger_menu')('messages')#}
+            {#            $scope.company_id = '{{ company.id }}';#}
+            {#            $scope.company = {{ company.get_client_side_dict()|tojson|safe }};#}
+
+            $scope.community_search_url = {{ raw_url_for('messenger.community_search')|safe }};
+
+            $scope.$$translate = {{ translates('messages')|safe }};
+            $scope.selected_messenger_menu = '';
+            $scope.community_search_text = '';
+            $scope.community = [];
+            $scope.community_page = 1;
+
+            $scope.set_selected = function (selected) {
+                if (selected === $scope.selected_messenger_menu) {
+                    return false;
+                }
+                if (selected === 'community' && $scope.selected_messenger_menu !== 'community') {
+                    $scope.community = [];
+                    $scope.search_community();
+                }
+                $scope.selected_messenger_menu = selected;
+            }
+
+            $scope.search_community = function () {
+
+                $ok($scope.community_search_url(), {
+                    text: $scope.community_search_text,
+                    page: 1
+                }, function (resp) {
+                    $scope.community = resp['community'];
+                    $scope.community_page = resp['page'];
+                }, function (resp) {
+
+                })
+            }
+
+
+            {% raw %}
+
+        }]);
+        {% endraw %}
+    </script>
+
+
+    {% raw %}
+    <div ng-controller="messenger" ng-cloak ng-init="set_selected('community')">
+
+        <div class="container">
+            <div class="row menu-company-inside">
+                <div class="col-lg-12 menu-messenger">
+                    <a ng-click="set_selected('messages')" class="link"
+                       ng-class="{'selected': selected_messenger_menu == 'messages'}">{{ _('Messages') }}</a>
+                    <a ng-click="set_selected('community')" class="link"
+                       ng-class="{'selected': selected_messenger_menu == 'community'}">{{ _('Community') }}</a>
+                    <a ng-click="set_selected('contacts')" class="link"
+                       ng-class="{'selected': selected_messenger_menu == 'contacts'}">{{ _('Contacts') }}</a>
+                </div>
+            </div>
+            <div class="row">
+                <div ng-show="selected_messenger_menu == 'messages'">
+                    messages
+                </div>
+                <div ng-show="selected_messenger_menu == 'community'">
+                    <input ng-change="search_community()" ng-model="community_search_text" type="text"/>
+                    <div ng-repeat="usr in community">
+                        <div class="row messenger-row">
+                            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+                                <img class="messenger-avatar" pr-image-position="top"
+                                     pr-image-url="{{ usr.avatar.url }}"/>
+                                <span ng-bind-html="usr.full_name | highlight: community_search_text"></span>
+                                <button class="btn btn-primary w15em"><i class="fa fa-envelope-o"></i>&nbsp;&nbsp;&nbsp;{{
+                                    _('Send message') }}
+                                </button>
+                                <button class="btn btn-success w15em"><i class="fa fa-plus"></i>&nbsp;&nbsp;&nbsp;{{
+                                    _('Add contact') }}
+                                </button>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+                                <i class="fa fa-newspaper-o"></i> {{ _('Common portals subscribed') }}
+                                <div class="no-common" ng-if="! usr.common_portals_subscribed.length"><i
+                                        class="fa fa-minus-circle red">&nbsp;</i>{{ _('No common portal') }}
+                                </div>
+                                <div ng-repeat="portal in usr.common_portals_subscribed"><img
+                                        class="common-portal-logo"
+                                        pr-image-position="left" pr-image-url="{{ portal.logo.url }}"/><a
+                                        class="external_link" href="//{{ portal.host }}" target="_blank">{{
+                                    portal.name }}<i class="fa fa-external-link ml025em"></i></a>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+                                <i class="fa fa-building-o"></i> {{ _('Common company employers') }}
+                                <div class="no-common" ng-if="! usr.common_companies_employers.length"><i
+                                        class="fa fa-minus-circle red">&nbsp;</i>{{ _('No common employers') }}
+                                </div>
+                                <div ng-repeat="company in usr.common_companies_employers"><img
+                                        class="common-employer-logo"
+                                        pr-image-position="left" pr-image-url="{{ company.logo.url }}"/>{{
+                                    company.name }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+
+                        </div>
+                    </div>
+                </div>
+
+                <div ng-show="selected_messenger_menu == 'contacts'">
+                    contacts
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
-</div>
-</div>
-{#    <div class="container" ng-cloak>#}
-{#        <div class="row link-page">#}
-{#            <h5>Messenger</h5>#}
-{#        </div>#}
-{#        <div class="row search-friends">#}
-{#            <div class="col-xs-3 input-group">#}
-{#                <input type="text" class="form-control input-sm" id="exampleInputAmount" placeholder="Search">#}
-{#                <div class="input-group-addon input-sm"><a href="#"><i class="fa fa-search"></i></a></div>#}
-{#            </div>#}
-{#        </div>#}
-{#        <div class="row messenger-block">#}
-{#            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 friends-block">#}
-{#                <a href="#">#}
-{#                    <div class="row friend-contact">#}
-{#                        <div class="col-lg-2">#}
-{#                            <img src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                        </div>#}
-{#                        <div class="col-lg-6 name">#}
-{#                            <span>Name friend</span>#}
-{#                        </div>#}
-{#                        <div class="col-lg-3 date">#}
-{#                            <span>07/03/2016</span>#}
-{#                        </div>#}
-{#                    </div>#}
-{#                </a>#}
-{##}
-{#                <a href="#">#}
-{#                    <div class="row friend-contact">#}
-{#                        <div class="col-lg-2">#}
-{#                            <img src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                        </div>#}
-{#                        <div class="col-lg-6 name">#}
-{#                            <span>Name friend</span>#}
-{#                        </div>#}
-{#                        <div class="col-lg-3 date">#}
-{#                            <span>07/03/2016</span>#}
-{#                        </div>#}
-{#                    </div>#}
-{#                </a>#}
-{#                <a href="#">#}
-{#                    <div class="row friend-contact">#}
-{#                        <div class="col-lg-2">#}
-{#                            <img src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                        </div>#}
-{#                        <div class="col-lg-6 name">#}
-{#                            <span>Name friend</span>#}
-{#                        </div>#}
-{#                        <div class="col-lg-3 date">#}
-{#                            <span>07/03/2016</span>#}
-{#                        </div>#}
-{#                    </div>#}
-{#                </a>#}
-{##}
-{#            </div>#}
-{#            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 message-block">#}
-{##}
-{#                <div class="row">#}
-{#                    <div class="col-lg-2">#}
-{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                    </div>#}
-{#                    <div class="col-lg-7 message-text">#}
-{#                        <span>Name User</span>#}
-{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla </p>#}
-{#                    </div>#}
-{#                    <div class="col-lg-1">#}
-{#                        <span>07/03/2016 22:13</span>#}
-{#                    </div>#}
-{#                </div>#}
-{#                <div class="row">#}
-{#                    <div class="col-lg-2">#}
-{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                    </div>#}
-{#                    <div class="col-lg-7 message-text">#}
-{#                        <span>Name User</span>#}
-{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
-{#                    </div>#}
-{#                    <div class="col-lg-1">#}
-{#                        <span>07/03/2016 22:13</span>#}
-{#                    </div>#}
-{#                </div>#}
-{#                <div class="row">#}
-{#                    <div class="col-lg-2">#}
-{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                    </div>#}
-{#                    <div class="col-lg-7 message-text">#}
-{#                        <span>Name User</span>#}
-{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla#}
-{#                            bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla#}
-{#                            bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
-{#                    </div>#}
-{#                    <div class="col-lg-1">#}
-{#                        <span>07/03/2016 22:13</span>#}
-{#                    </div>#}
-{#                </div>#}
-{#                <div class="row">#}
-{#                    <div class="col-lg-2">#}
-{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                    </div>#}
-{#                    <div class="col-lg-7 message-text">#}
-{#                        <span>Name User</span>#}
-{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
-{#                    </div>#}
-{#                    <div class="col-lg-1">#}
-{#                        <span>07/03/2016 22:13</span>#}
-{#                    </div>#}
-{#                </div>#}
-{#                <div class="row">#}
-{#                    <div class="col-lg-2">#}
-{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                    </div>#}
-{#                    <div class="col-lg-7 message-text">#}
-{#                        <span>Name User</span>#}
-{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
-{#                    </div>#}
-{#                    <div class="col-lg-1">#}
-{#                        <span>07/03/2016 22:13</span>#}
-{#                    </div>#}
-{#                </div>#}
-{#                <form>#}
-{#                    <div class="row add-message">#}
-{#                        <textarea rows="4" placeholder="Write a message..."></textarea>#}
-{#                        <button>Add message</button>#}
-{#                    </div>#}
-{#                </form>#}
-{#            </div>#}
-{#            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3">#}
-{#                <p>SOME TEXT ORE PHOTO</p>#}
-{#                <p>does not matter</p>#}
-{#                <p>some advertising</p>#}
-{#                <p>anti facebook, but such as facebook ))</p>#}
-{#            </div>#}
-{#        </div>#}
-{#    </div>#}
+    {% endraw %}
+
+
 {% endblock portal_content %}

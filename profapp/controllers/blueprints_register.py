@@ -18,7 +18,7 @@ from .blueprints_declaration import *
 
 from . import views_index, views_user, views_filemanager, views_article, \
     views_company, views_portal, errors, views_file, views_admin, views_tools, views_tutorial, \
-    views_messanger
+    views_messenger
 
 
 def register_profi(app):

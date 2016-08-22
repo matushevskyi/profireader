@@ -577,7 +577,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             scope: {},
             link: function (scope, element, attrs) {
                 element.attr('src', static_address('images/0.gif'));
-                element.css({backgroundImage: 'url(' + attrs['prImageUrl'] + ')'});
+                element.css({
+                    backgroundPosition: attrs['prImagePosition'] ? attrs['prImagePosition'] : 'center',
+                    backgroundImage: 'url(' + attrs['prImageUrl'] + ')'
+                });
                 element.addClass('bg-contain');
             }
         };
@@ -592,7 +595,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             element.addClass('bg-contain');
             scope.$watch('prImageUrlWatch', function (newval, oldval) {
                 if (newval)
-                    element.css({backgroundImage: "url('" + newval + "')"});
+                    element.css({
+                        backgroundPosition: attrs['prImagePosition'] ? attrs['prImagePosition'] : 'center',
+                        backgroundImage: "url('" + newval + "')"});
             });
         }
     };
