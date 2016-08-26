@@ -81,6 +81,11 @@ gulp.task('install_datepicker', function () {
         .pipe(gulp.dest(dst + 'angular-ui-slider/'));
 });
 
+gulp.task('install_angular-infinite-scroll', function () {
+    return gulp.src([src + 'ngInfiniteScroll/build/ng-infinite-scroll.min.js'])
+        .pipe(gulp.dest(dst + 'angular-ng-infinite-scroll/'));
+});
+
 gulp.task('install_angular_crop', function () {
     return gulp.src([src + 'angular-crop/ng-crop.*'])
         .pipe(gulp.dest(dst + 'angular-crop/'));
@@ -218,6 +223,7 @@ gulp.task('all', [
     'install_angular_cookies',
     'install_angular_ui_select',
     'install_angular_crop',
+    'install_angular-infinite-scroll',
     'install_angular_crop_from_dev',
     'install_angular-db-filemanager',
     'install_angular-db-filemanager_from_dev',

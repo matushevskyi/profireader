@@ -220,6 +220,26 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             }
         };
     })
+    .directive('schrollBottom', function () {
+        console.log('hahahah');
+        return {
+            scope: {
+                schrollBottom: "="
+            },
+            link: function (scope, element) {
+                scope.$watchCollection('schrollBottom', function (newValue) {
+                    if (newValue) {
+                        setTimeout(function () {
+                            $(element).parent().animate({scrollTop: $(element)[0].scrollHeight},
+                                500,
+                                "easeOutQuint"
+                            );
+                        },0);
+                    }
+                });
+            }
+        }
+    })
     .directive('prCrop', function ($compile, $templateCache, $timeout) {
         return {
             restrict: 'A',
@@ -597,7 +617,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 if (newval)
                     element.css({
                         backgroundPosition: attrs['prImagePosition'] ? attrs['prImagePosition'] : 'center',
-                        backgroundImage: "url('" + newval + "')"});
+                        backgroundImage: "url('" + newval + "')"
+                    });
             });
         }
     };
