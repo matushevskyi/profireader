@@ -220,26 +220,33 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             }
         };
     })
-    .directive('schrollBottom', function () {
-        console.log('hahahah');
-        return {
-            scope: {
-                schrollBottom: "="
-            },
-            link: function (scope, element) {
-                scope.$watchCollection('schrollBottom', function (newValue) {
-                    if (newValue) {
-                        setTimeout(function () {
-                            $(element).parent().animate({scrollTop: $(element)[0].scrollHeight},
-                                500,
-                                "easeOutQuint"
-                            );
-                        },0);
-                    }
-                });
-            }
-        }
-    })
+    // // .directive('schrollBottom', function () {
+    // //     return {
+    // //         scope: {
+    // //             schrollBottom: "=",
+    // //             schrollBottomStickTo: "="
+    // //         },
+    // //         link: function (scope, element) {
+    // //
+    // //             // scope.$watchCollection('schrollBottom', function (newValue) {
+    // //             //
+    // //             //     if (newValue) {
+    // //             //         setTimeout(function () {
+    // //             //             var max_scroll = $(element).outerHeight() - $(element).parent().height();
+    // //             //             console.log(oldscrolltop, max_scroll, $(element).parent().height(), $(element).outerHeight());
+    // //             //             if ($(element).parent()[0].scrollTop > max_scroll - 10 || $(element).parent().height()>$(element).outerHeight()) {
+    // //             //                 $(element).parent().animate({scrollTop: max_scroll}, 500, "easeOutQuint");
+    // //             //             }
+    // //             //             else if ($(element).parent()[0].scrollTop < 10) {
+    // //             //                 $(element).parent().animate({scrollTop: 0}, 500, "easeOutQuint"
+    // //             //                 );
+    // //             //             }
+    // //             //         }, 0);
+    // //             //     }
+    // //             // });
+    // //         }
+    // //     }
+    // })
     .directive('prCrop', function ($compile, $templateCache, $timeout) {
         return {
             restrict: 'A',
@@ -538,7 +545,22 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             }
         };
     }])
+    .directive('ctrlEnter', function () {
+        return {
+            restrict: 'A',
+            link: function (scope, elem, attrs) {
 
+                elem.bind('keydown', function (event) {
+                    var code = event.keyCode || event.which;
+
+                    if (code === 13 && event.ctrlKey) {
+                        event.preventDefault();
+                        scope.$apply(attrs.ctrlEnter);
+                    }
+                });
+            }
+        }
+    })
     .directive('prImage', [function () {
         return {
             restrict: 'A',
@@ -1276,6 +1298,9 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
         };
     }]);
 
+function now() {
+    return Date.now() / 1000;
+}
 
 function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     allow_html = allow_html ? allow_html : '';
@@ -1286,8 +1311,8 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     //     scope.$$translate = {};
     // }
     //console.log(scope.$$translate)
-    new Date;
-    var t = Date.now() / 1000;
+
+    var t = now();
     //TODO OZ by OZ hasOwnProperty
     var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
 
@@ -2295,4 +2320,13 @@ var noImageForImageName = function (image_name) {
         return static_address('images/no_image.png');
     }
 }
+
+window.lastUserActivity = now();
+window.onUserActivity = {};
+$('body').bind('mousedown keydown', function (event) {
+    window.lastUserActivity = now();
+    $.each(window.onUserActivity, function (ind, func) {
+        func();
+    })
+});
 
