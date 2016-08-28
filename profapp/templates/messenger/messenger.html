@@ -114,7 +114,7 @@
         }
 
         .messenger-chat .messenger-chat-contacts li {
-            margin-top: 5px;
+            margin-bottom: 5px;
         {#            border: 1px solid #888;#}
         }
 
@@ -177,6 +177,7 @@
             $scope.contacts = [];
             $scope.contacts_next_page = 1;
             $scope.contacts_loading = false;
+            $scope.contacts_unread_messages_in_unloaded_contacts_count = 1;
 
 
             $scope.set_selected_menu = function (selected) {
@@ -220,7 +221,7 @@
                                     $.each(resp['unread_messages'], function (chat_room_id, unread_messages_count) {
                                         var found = $scope.contacts.find(function (chat_room) {
                                             return chat_room['chat_room_id'] === chat_room_id;
-                                            });
+                                        });
                                         if (found) {
                                             found['unread_messages_count'] = unread_messages_count;
                                         }
@@ -566,21 +567,38 @@
                         <input placeholder="{{ _('Search for contact') }}"
                                class="form-control" type="text"
                                ng-model-options='{ debounce: 500 }'
-                               ng-change="search_contacts(true)" ng-model="contact_search_text"/>
+                               ng-change="search_contacts(true)" ng-model="contacts_search_text"/>
+
+                        <div ng-show="contacts_loading">{{ _('Loading') }}</div>
+                        <div ng-show="!contacts_loading">
+
+                            <div ng-show="contacts_unread_messages_in_unloaded_contacts_count">{{ _('There is %(contacts_unread_messages_in_unloaded_contacts_count)s unread messages in unloaded contacts',
+                                {'contacts_unread_messages_in_unloaded_contacts_count': contacts_unread_messages_in_unloaded_contacts_count}) }}
+                            </div>
+
+                            <ul class="list-group">
+                                <a href="#" ng-click="select_chat_room(chat_room)" ng-repeat="chat_room in contacts">
+                                    <li style="position: relative" class="list-group-item"
+                                        ng-class="{'selected': chat_room === selected_chat_room}">
+                                        <img class="messenger-avatar" pr-image-position="center center"
+                                             pr-image-url="{{ chat_room.users[0].avatar.url }}"/>
+                                        <span ng-bind-html="chat_room.users[0].full_name | highlight: community_search_text"></span>
+                                        <span class="unread_messages_count" ng-if="chat_room.unread_messages_count">{{ chat_room.unread_messages_count }}</span>
+                                    </li>
+
+                                </a>
+                            </ul>
 
 
-                        <ul class="list-group">
-                            <a href="#" ng-click="select_chat_room(chat_room)" ng-repeat="chat_room in contacts">
-                                <li style="position: relative" class="list-group-item"
-                                    ng-class="{'selected': chat_room === selected_chat_room}">
-                                    <img class="messenger-avatar" pr-image-position="center center"
-                                         pr-image-url="{{ chat_room.users[0].avatar.url }}"/>
-                                    <span ng-bind-html="chat_room.users[0].full_name | highlight: community_search_text"></span>
-                                    <span class="unread_messages_count" ng-if="chat_room.unread_messages_count">{{ chat_room.unread_messages_count }}</span>
-                                </li>
-
-                            </a>
-                        </ul>
+                            <div ng-show="!contacts.length && !contacts_search_text">{{ _('You have no contacts') }}
+                            </div>
+                            <div ng-show="!contacts.length && contacts_search_text">{{ _('No contacts match search
+                                criteria') }}
+                            </div>
+                            <button ng-show="contacts_next_page" ng-click="search_contacts()" class="btn btn-default w100">{{ _('Load
+                                more contacts') }}
+                            </button>
+                        </div>
 
                     </div>
                     <div ng-if="!selected_chat_room" class="col-lg-8 col-md-8 col-sm-8 col-xs-8">{{ _('please select

@@ -93,19 +93,20 @@ def community_search(json):
 @messenger_bp.route('/contacts_search/', methods=['OK'])
 @check_right(UserIsActive)
 def contacts_search(json):
+    page_size = 1
     query = g.db.query(Contact.id, User). \
         outerjoin(User,
                   or_(and_(Contact.user1_id == User.id, Contact.user1_id != g.user.id),
                       and_(Contact.user2_id == User.id, Contact.user2_id != g.user.id))). \
-        filter(and_(Contact.status == Contact.STATUSES['ACTIVE_ACTIVE'],
+        filter(and_(User.full_name.ilike("%" + json['text'] + "%"),
+                    Contact.status == Contact.STATUSES['ACTIVE_ACTIVE'],
                     or_(Contact.user1_id == g.user.id, Contact.user2_id == g.user.id))). \
-        limit(51).offset((json['page'] - 1) * 50)
-
-    # from sqlalchemy.dialects import postgresql
+        order_by(expression.desc(Contact.last_message_tm)).\
+        limit(page_size+1).offset((json['page'] - 1) * page_size)
 
     contacts = query.all()
-    next_page = (json['page'] + 1) if len(contacts) > 50 else False
-    contacts = contacts[0:50]
+    next_page = (json['page'] + 1) if len(contacts) > page_size else False
+    contacts = contacts[0:page_size]
 
     unread_messages = unread_messages_count(g.user.id)
 

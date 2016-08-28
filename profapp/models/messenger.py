@@ -27,6 +27,7 @@ class Contact(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
+    last_message_tm = Column(TABLE_TYPES['timestamp'])
 
     user1_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
     user2_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
