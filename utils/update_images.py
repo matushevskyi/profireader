@@ -103,7 +103,7 @@ app = create_app(apptype='profi')
 
 with app.app_context():
     load_database(app.config['SQLALCHEMY_DATABASE_URI'])()
-    update_article_illustrations()
-    update_companies_logo()
+    #update_article_illustrations()
+    #update_companies_logo()
     update_portals_logo()
     # update_users_avatar()

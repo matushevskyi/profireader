@@ -29,7 +29,7 @@ class TranslateTemplate(Base, PRBase):
 
     portal = relationship(Portal, uselist=False)
 
-    exemplary_portal_id = '560b9fee-3d87-4001-87d9-ad0d4582dd02'
+    exemplary_portal_id = '5721ed5f-d35d-4001-ae46-cdfd372b322b'
 
     def __init__(self, id=None, template=None, portal_id=portal_id, url='', name=None, uk=None, en=None, allow_html=''):
         self.id = id
