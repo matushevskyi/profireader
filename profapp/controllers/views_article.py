@@ -189,12 +189,21 @@ def submit_publish(json, article_action):
         if action == 'validate':
             publication.detach()
             return (publication.validate(True if article_action == 'SUBMIT' else False)
-                if (article_action in ['SUBMIT', 'PUBLISH', 'REPUBLISH']) else publication.DEFAULT_VALIDATION_ANSWER())
+                    if (
+            article_action in ['SUBMIT', 'PUBLISH', 'REPUBLISH']) else publication.DEFAULT_VALIDATION_ANSWER())
         else:
             # if article_action == 'SUBMIT':
             #     publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,
             #                                                                          publication)
             publication.save()
+
+            g.sql_connection.execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
+                                     (publication.id, "', '".join([t.id for t in publication.tags])))
+
+            print("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
+                                     (publication.id, "', '".join([t.id for t in publication.tags])))
+
+
             return get_portal_dict_for_material(publication.portal, company, publication=publication,
                                                 submit=article_action == 'SUBMIT')
 

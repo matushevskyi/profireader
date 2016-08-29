@@ -393,6 +393,7 @@ class UserCompany(Base, PRBase):
         return True
 
     @staticmethod
+    # TODO: OZ by OZ: remove this func. use  get_by_user_and_company_ids instead
     def get(user_id=None, company_id=None):
         return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
 
@@ -413,6 +414,10 @@ class UserCompany(Base, PRBase):
 
     def set_client_side_dict(self, json):
         self.attr(g.filter_json(json, 'status|position|rights'))
+
+    @staticmethod
+    def get_by_user_and_company_ids(user_id= None, company_id = None):
+        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).one()
 
     # TODO: VK by OZ: pls teach everybody what is done here
     # # do we provide any rights to user at subscribing? Not yet

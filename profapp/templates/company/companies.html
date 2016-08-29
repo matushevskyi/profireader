@@ -198,18 +198,24 @@
             <div ng-if="data.companies && table == true" class="col-lg-4 col-md-4 col-sm-6 col-xs-12"
                  ng-repeat="my_employer in data.companies" id="joined_company_{{ my_employer.id }}">
                 <div class="thumbnail company-thumbnail">
-                    <a href="{{ url_company_profile({company_id: my_employer.id}) }}">
-                        <img pr-image-url="{{ my_employer.logo.url }}" alt="image" style="width: 400px; height: 300px;">
+                    <a ng-if="my_employer.employment_status=='ACTIVE'"
+                       href="{{ url_company_profile({company_id: my_employer.id}) }}">
+                        <img pr-image-url="{{ my_employer.logo.url }}" alt="image" style="width: 300px; height: 200px;">
                     </a>
+                    <span ng-if="my_employer.employment_status!='ACTIVE'">
+                        <img pr-image-url="{{ my_employer.logo.url }}" alt="image" style="width: 300px; height: 200px;">
+                    </span>
                     <div pr-test="SomeCompanyInfo" class="caption some-company-info">
 
-                        <a pr-test="YourCompanyListTitles"
+                        <a ng-if=""my_employer.employment_status=='ACTIVE'" pr-test="YourCompanyListTitles"
                            href="{{ url_company_profile({company_id: my_employer.id}) }}">
                             <h3 class="ellipsis">{{ _('%(name)s' , my_employer) }}</h3>
                         </a>
-                        <p pr-test="JoinedCompany">{{ _((my_employer.author_user_id==data.user_id? ' Type: OWN
-                            COMPANY':'JOINED COMPANY') ,
-                            my_employer) }}</p>
+                        <span ng-if=""my_employer.employment_status!='ACTIVE'" pr-test="YourCompanyListTitles">
+                            <h3 class="ellipsis">{{ _('%(name)s' , my_employer) }}</h3>
+                        </span>
+                        <p pr-test="JoinedCompany">{{ (my_employer.author_user_id==data.user_id)? _('Type: OWN
+                            COMPANY'):_('JOINED COMPANY with status %(status)s', {'status': my_employer.employment_status })  }}</p>
                         <span ng-if="!my_employer.own_portal.host"><b>{{_('Portals')}}: </b>{{_('No')}}</span>
                         <div ng-if="my_employer.own_portal.host">
                             <button pr-test="GoToPortalButton" class="btn btn-default" type="button"

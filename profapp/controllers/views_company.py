@@ -41,11 +41,11 @@ def companies_load(json):
     comp = [usr_cmp.get_client_side_dict() for usr_cmp in companies]
 
     if len(comp) < per_page:
-        return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],
+        return {'companies': [utils.dict_merge(usr_cmp.get_client_side_dict(), {'employment_status': UserCompany.get_by_user_and_company_ids(user_id=g.user.id, company_id=usr_cmp.id).status}) for usr_cmp in companies],
                 'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()},
                 'user_id': g.user.id, 'end': True}
     
-    return {'companies': comp,
+    return {'companies': [utils.dict_merge(usr_cmp, {'employment_status': UserCompany.get_by_user_and_company_ids(user_id=g.user.id, company_id=usr_cmp['id']).status}) for usr_cmp in comp],
             'next_page': page + 1 if len(comp) == per_page else False,
             'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()},
             'user_id': g.user.id}

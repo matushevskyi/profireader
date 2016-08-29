@@ -9,7 +9,7 @@ from ..models.tag import Tag, TagPortalDivision, TagPublication
 from .pr_base import PRBase, Base, MLStripper, Grid
 from utils.db_utils import db
 from flask import g, session, app, current_app
-from sqlalchemy.sql import or_, and_
+from sqlalchemy.sql import or_, and_, expression
 import re
 from sqlalchemy import event
 from ..constants.SEARCH import RELEVANCE
@@ -20,6 +20,7 @@ from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument
 from config import Config
 import simplejson
+
 
 
 class Material(Base, PRBase, PRElasticDocument):
@@ -197,7 +198,7 @@ class Publication(Base, PRBase, PRElasticDocument):
     read_count = Column(TABLE_TYPES['int'], default=0)
     like_count = Column(TABLE_TYPES['int'], default=0)
 
-    tags = relationship(Tag, secondary='tag_publication', uselist=True)
+    tags = relationship(Tag, secondary='tag_publication', uselist=True, order_by=lambda: expression.desc(TagPublication.position))
 
     status = Column(TABLE_TYPES['status'], default='SUBMITTED')
     STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED'}

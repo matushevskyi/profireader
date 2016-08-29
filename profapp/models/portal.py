@@ -107,8 +107,12 @@ class Portal(Base, PRBase):
                  company_owner=None,
                  favicon_file_id=None,
                  lang='uk',
+                 aliases='',
+                 status='ACTIVE',
                  host=None, divisions=[], portal_layout_id=None):
         self.name = name
+        self.aliases = aliases
+        self.status = status
         self.lang = lang
 
         self.favicon_file_id = favicon_file_id
