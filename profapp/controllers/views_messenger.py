@@ -20,6 +20,8 @@ from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, U
 from sqlalchemy import and_, or_
 from sqlalchemy.sql import expression
 from .. import utils
+from sqlalchemy import update
+import datetime
 
 
 @messenger_bp.route('/', methods=['GET'])
@@ -93,75 +95,79 @@ def community_search(json):
 @messenger_bp.route('/contacts_search/', methods=['OK'])
 @check_right(UserIsActive)
 def contacts_search(json):
-    page_size = 1
+    page_size = 100
     query = g.db.query(Contact.id, User). \
         outerjoin(User,
                   or_(and_(Contact.user1_id == User.id, Contact.user1_id != g.user.id),
                       and_(Contact.user2_id == User.id, Contact.user2_id != g.user.id))). \
         filter(and_(User.full_name.ilike("%" + json['text'] + "%"),
-                    Contact.status == Contact.STATUSES['ACTIVE_ACTIVE'],
+                    Contact.status.in_([Contact.STATUSES['ACTIVE_ACTIVE'], Contact.STATUSES['ACTIVE_BANNED'], Contact.STATUSES['BANNED_ACTIVE']]),
                     or_(Contact.user1_id == g.user.id, Contact.user2_id == g.user.id))). \
-        order_by(expression.desc(Contact.last_message_tm)).\
-        limit(page_size+1).offset((json['page'] - 1) * page_size)
+        order_by(expression.desc(Contact.last_message_tm)). \
+        limit(page_size + 1).offset((json['page'] - 1) * page_size)
 
     contacts = query.all()
     next_page = (json['page'] + 1) if len(contacts) > page_size else False
     contacts = contacts[0:page_size]
 
-    unread_messages = unread_messages_count(g.user.id)
 
     return {
+        'unread_messages': unread_messages_count(g.user.id),
         'contacts': [{'chat_room_id': contact_id,
-                      'unread_messages_count': unread_messages.get(contact_id, 0),
                       'users': [user.get_client_side_dict('id,full_name,avatar.url')]}
                      for (contact_id, user) in contacts],
         'next_page': next_page
     }
 
 
-def get_messages(chat_room_id, count, get_older=False, than_id=None):
-    print(chat_room_id)
-    contact = Contact.get(chat_room_id)
-    messages_filter = (Message.contact_id == chat_room_id)
-    messages_query = g.db().query(Message)
-    if than_id:
-        if get_older:
-            messages = messages_query.filter(and_(messages_filter, Message.id < than_id)).order_by(
-                expression.desc(Message.id)).limit(count + 1).all()
+def get_messages_and_unread_count(chat_room_id, count, get_older=False, than_id=None):
+    ret = {}
+    if chat_room_id:
+        contact = Contact.get(chat_room_id)
+        messages_filter = (Message.contact_id == chat_room_id)
+        messages_query = g.db().query(Message)
+        if than_id:
+            if get_older:
+                messages = messages_query.filter(and_(messages_filter, Message.id < than_id)).order_by(
+                    expression.desc(Message.id)).limit(count + 1).all()
+                there_is_more = ['there_is_older', len(messages) > count]
+                messages = messages[0:count]
+                messages.reverse()
+
+            else:
+                messages = messages_query.filter(and_(messages_filter, Message.id > than_id)).order_by(
+                    expression.asc(Message.id)).limit(count + 1).all()
+                there_is_more = ['there_is_newer', len(messages) > count]
+                messages = messages[0:count]
+
+        else:
+            messages = messages_query.filter(messages_filter).order_by(expression.desc(Message.id)).limit(
+                count + 1).all()
             there_is_more = ['there_is_older', len(messages) > count]
             messages = messages[0:count]
             messages.reverse()
 
-        else:
-            messages = messages_query.filter(and_(messages_filter, Message.id > than_id)).order_by(
-                expression.asc(Message.id)).limit(count + 1).all()
-            there_is_more = ['there_is_newer', len(messages) > count]
-            messages = messages[0:count]
+        def client_message(m: Message):
+            return utils.dict_merge(m.get_client_side_dict(fields='id,content,from_user_id,cr_tm'),
+                                    {'timestamp': m.cr_tm.timestamp()})
 
-    else:
-        messages = messages_query.filter(messages_filter).order_by(expression.desc(Message.id)).limit(count + 1).all()
-        there_is_more = ['there_is_older', len(messages) > count]
-        messages = messages[0:count]
-        messages.reverse()
+        another_user_id = contact.user1_id if g.user.id == contact.user2_id else contact.user2_id
 
-    def client_message(m: Message):
-        return utils.dict_merge(m.get_client_side_dict(fields='id,content,from_user_id,cr_tm'),
-                                {'timestamp': m.cr_tm.timestamp()})
+        g.db.execute(update(Message).where(Message.id.in_([m.id for m in messages])).values(read_tm=datetime.datetime.utcnow()))
 
-    another_user_id = contact.user1_id if g.user.id == contact.user2_id else contact.user2_id
-    return {
-        'chat_room_id': chat_room_id,
-        'users': {
-            g.user.id: User.get(g.user.id).get_client_side_dict(more_fields='avatar'),
-            another_user_id: User.get(another_user_id).get_client_side_dict(more_fields='avatar')
-        },
-        there_is_more[0]: there_is_more[1],
-        'messages': [client_message(m) for m in messages]
-    }
+        ret['chat_room'] = {'chat_room_id': chat_room_id,
+                            'users': {
+                                g.user.id: User.get(g.user.id).get_client_side_dict(more_fields='avatar'),
+                                another_user_id: User.get(another_user_id).get_client_side_dict(more_fields='avatar')
+                            },
+                            there_is_more[0]: there_is_more[1],
+                            'messages': [client_message(m) for m in messages]
+                            }
+    ret['unread_messages'] = unread_messages_count(g.user.id)
+    return ret
 
 
 def unread_messages_count(user_id):
-
     messages_count = g.db().query(Contact.id, func.count(Contact.id)).outerjoin(Message,
                                                                                 and_(Message.contact_id == Contact.id,
                                                                                      Message.read_tm == None,
@@ -169,7 +175,6 @@ def unread_messages_count(user_id):
                                                                                      )). \
         filter(and_(Message.id != None, or_(Contact.user2_id == user_id, Contact.user1_id == user_id))). \
         group_by(Contact.id).all()
-
 
     return {contact_id: contact_count for (contact_id, contact_count) in messages_count}
 
@@ -181,7 +186,7 @@ def send_message(json):
     if contact.user1_id == g.user.id or contact.user2_id == g.user.id:
         message = Message(contact_id=contact.id, content=json['text'], from_user_id=g.user.id)
         message.save()
-        return get_messages(contact.id, 10, get_older=False, than_id=json['last_message_id'])
+        return get_messages_and_unread_count(contact.id, 100, get_older=False, than_id=json['last_message_id'])
     else:
         raise BadDataProvided
 
@@ -189,68 +194,19 @@ def send_message(json):
 @messenger_bp.route('/refresh_chats/', methods=['OK'])
 @check_right(UserIsActive)
 def refresh_chats(json):
-    ret = {}
-    if json['chat_room_id']:
-        ret['chat_room'] = get_messages(json['chat_room_id'], 10, get_older=False, than_id=json['last_message_id'])
-    if json['check_for_unread_messages']:
-        ret['unread_messages'] = unread_messages_count(g.user.id)
-    return ret
+    return get_messages_and_unread_count(json['chat_room_id'], 100, get_older=False, than_id=json['last_message_id'])
 
 
 @messenger_bp.route('/load_chat/', methods=['OK'])
 @check_right(UserIsActive)
 def load_chat(json):
-    return get_messages(json['chat_room_id'], 10, get_older=False, than_id=json['last_message_id'])
+    return get_messages_and_unread_count(json['chat_room_id'], 100, get_older=False, than_id=json['last_message_id'])
 
 
 @messenger_bp.route('/load_older_messages/', methods=['OK'])
 @check_right(UserIsActive)
 def load_older_messages(json):
-    return get_messages(json['chat_room_id'], 10, get_older=True, than_id=json['first_message_id'])
-
-
-def aaa():
-    # chat room == user
-    ret = {}
-
-    message = None
-    if json['chat_room_id'] is not None:
-        chat_with_user_id = json['chat_room_id']
-        if json['text']:
-            user1_id = min([g.user.id, chat_with_user_id])
-            user2_id = max([g.user.id, chat_with_user_id])
-            contact = g.db().query(Contact).filter_by(user1_id=user1_id, user2_id=user2_id).first()
-            message = Message(contact_id=contact.id, content=json['text'], from_user_id=g.user.id)
-            message.save()
-
-        if json['load_last_messages_for_chat_room']:
-            messages_filter = or_(Contact.user1_id == chat_with_user_id, Contact.user2_id == chat_with_user_id)
-            messages_query = g.db().query(Message). \
-                outerjoin(Contact,
-                          or_(Message.from_user_id == Contact.user1_id, Message.from_user_id == Contact.user2_id))
-            messages = messages_query.filter(messages_filter).order_by(expression.desc(Message.id)).limit(101).all()
-            messages.reverse()
-            ret['load_last_messages_for_chat_room'] = group_messages_by_session(chat_with_user_id, messages, 100,
-                                                                                if_more_then='there_is_older')
-
-    ret['check_for_new_messages_also_for_chat_rooms'] = []
-
-    for userchat_room_id_and_last_message_id in json['check_for_new_messages_also_for_chat_rooms']:
-        chat_room_id = userchat_room_id_and_last_message_id['chat_room_id']
-        last_message_id = userchat_room_id_and_last_message_id['last_message_id']
-        messages_filter = or_(Contact.user1_id == chat_room_id, Contact.user2_id == chat_room_id)
-        messages_query = g.db().query(Message). \
-            outerjoin(Contact, or_(Message.from_user_id == Contact.user1_id, Message.from_user_id == Contact.user2_id))
-        if last_message_id is None:
-            messages = messages_query.filter(messages_filter). \
-                order_by(expression.desc(Message.id)).limit(101).all()
-        else:
-            messages = messages_query.filter(and_(Message.id > last_message_id, messages_filter)). \
-                order_by(expression.asc(Message.id)).limit(101).all()
-        ret['check_for_new_messages_also_for_chat_rooms'].append(group_messages_by_session(chat_room_id, messages, 100,
-                                                                                           if_more_then='there_is_newer'))
-
-    return ret
+    return get_messages_and_unread_count(json['chat_room_id'], 100, get_older=True, than_id=json['first_message_id'])
 
 
 @messenger_bp.route('/contact_action/', methods=['OK'])

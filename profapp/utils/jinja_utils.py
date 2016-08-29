@@ -12,6 +12,7 @@ from .. import Config
 from config import secret_data
 from main_domain import MAIN_DOMAIN
 from ..models.config import Config as ModelConfig
+import hashlib
 
 
 def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):

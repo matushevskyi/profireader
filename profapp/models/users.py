@@ -32,6 +32,7 @@ import random
 import time
 from .files import FileImg, FileImgDescriptor
 from flask.ext.login import logout_user, current_user, login_user
+from sqlalchemy import func
 
 
 class User(Base, UserMixin, PRBase):
@@ -380,6 +381,12 @@ class User(Base, UserMixin, PRBase):
         self.last_seen_tm = datetime.datetime.utcnow()
         g.db.add(self)
         g.db.commit()
+
+    def get_unread_message_count(self):
+        ret = g.db().execute("SELECT message_unread_count('%s')" % (self.id,))
+        for (r,) in ret:
+            return r
+
 
     # def get_avatar(self, avatar_via, size=500, small_size=100, url=None):
     #     if avatar_via == 'upload':

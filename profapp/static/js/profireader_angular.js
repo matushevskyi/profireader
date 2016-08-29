@@ -1314,7 +1314,10 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
 
     var t = now();
     //TODO OZ by OZ hasOwnProperty
+    phrase = phrase.replace('\n', ' ').replace(/[\s]+/gi, ' ').trim();
+
     var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
+    var phrase_dict;
 
     if (!scope.$$translate || !scope.$$translate[phrase]) {
         phrase_dict = {'lang': phrase, 'time': t, allow_html: allow_html}
@@ -1368,7 +1371,7 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
             });
 
             for (var i in indexes) {
-                if (typeof d[indexes[i]] !== undefined) {
+                if (typeof d[indexes[i]] !== 'undefined') {
                     d = d[indexes[i]];
                 }
                 else {
@@ -1418,7 +1421,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             if (!search) {
                 return $sce.trustAsHtml(text);
             }
-            return $sce.trustAsHtml(text.replace(new RegExp(search, 'gi'), '<span pr-test="MachedLightedText" class="highlightedText">$&</span>'));
+            return $sce.trustAsHtml(text.replace(new RegExp(search, 'gi'), '<span class="ui-select-highlight">$&</span>'));
         },
 
         setGridExtarnals: function (gridApi) {

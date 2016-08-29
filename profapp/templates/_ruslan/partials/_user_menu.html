@@ -4,6 +4,17 @@
         $scope.user = {{ g.user.get_client_side_dict()| tojson|safe if g.user else 'null'}};
         $scope.languages = {{ g.languages|tojson|safe }};
         $scope.lang = {{ g.lang|tojson|safe }};
+        $scope.unread_message_count = {{ g.user.get_unread_message_count() if g.user else 'null'}};
+
+        $scope.set_unread_message_count = function (count) {
+            if ($scope.unread_message_count != count) {
+                $('#menu-site .unread_messages_count').hide(); // strage bug in chrome. text disappear until mouse click
+                $timeout(function () {
+                    $('#menu-site .unread_messages_count').show();
+                }, 0);
+                $scope.unread_message_count = count;
+            }
+        };
 
 
         $scope.url_list_reader = {{ raw_url_for('index.list_reader')|safe }}
@@ -71,33 +82,37 @@
             </a>
         </div>
 
-        <div class="col-lg-offset-2 col-md-offset-1 col-lg-6 col-md-7 col-sm-8 col-xs-12 menu-site">
+        <div id="menu-site" class="col-lg-offset-2 col-md-offset-1 col-lg-6 col-md-7 col-sm-8 col-xs-12 menu-site">
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul>
-                    <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_list_reader() }}"
-                                        title="{{ _('Стрічкa читача') }}"
-                                        ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
+                    <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %}
+                            href="{{ url_list_reader() }}"
+                            title="{{ _('Стрічкa читача') }}"
+                            ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
                             class="fa fa-newspaper-o"></i><span>{{ _('Стрічкa читача') }}</span></a></li>
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_messenger }}"
-                                                    title="{{ _('Всі повідомлення') }}"
-                                                    ng-class="{'selected': selected_user_menu == 'messages'}"><i
-                            class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span></a></li>
-                    <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_company_companies() }}"
-                                            title="{{ _('Компанії') }}"
-                                            ng-class="{'selected': selected_user_menu == 'companies'}"><i
+                                                                                           title="{{ _('Всі повідомлення') }}"
+                                                                                           class="pr"
+                                                                                           ng-class="{'selected': selected_user_menu == 'messages'}"><i
+                            class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span><div ng-if="unread_message_count" class="pa unread_messages_count">{{ unread_message_count }}</div></a></li>
+                    <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %}
+                            href="{{ url_company_companies() }}"
+                            title="{{ _('Компанії') }}"
+                            ng-class="{'selected': selected_user_menu == 'companies'}"><i
                             class="fa fa-building-o"></i><span>{{ _('Компанії') }}</span></a></li>
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %} href=""
-                                            ng-click="open_filemanager()" title="{{ _('Менеджер файлів') }}"
-                                            ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
+                                                                                           ng-click="open_filemanager()"
+                                                                                           title="{{ _('Менеджер файлів') }}"
+                                                                                           ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
                             class="fa fa-folder-open-o"></i><span>{{ _('Менеджер файлів') }}</span></a></li>
                     <li class="dropdown"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_general_help() }}"
-                                                title="{{ _('Contact us') }}"
-                                                ng-class="{'selected': selected_user_menu == 'contact_us'}"><i
+                                                                              title="{{ _('Contact us') }}"
+                                                                              ng-class="{'selected': selected_user_menu == 'contact_us'}"><i
                             class="fa fa-question-circle"></i><span>{{ _('Contact us') }}</span></a></li>
 
                     <li class="dropdown"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_tutorial() }}"
-                                                title="{{ _('tutorial') }}"
-                                                ng-class="{'selected': selected_user_menu == 'tutorial'}"><i
+                                                                              title="{{ _('tutorial') }}"
+                                                                              ng-class="{'selected': selected_user_menu == 'tutorial'}"><i
                             class="fa fa-file-video-o"></i><span>{{ _('Tutorial') }}</span></a></li>
 
                     <li class="dropdown"><a class="dropbtn" title="{{ _('Language') }}"><i

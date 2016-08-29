@@ -220,6 +220,17 @@ body {
   position: absolute;
   right: 0px;
 }
+.menu-site div.unread_messages_count {
+  font-size: 10px;
+  line-height: 100%;
+  text-align: center;
+  right: -8px;
+  bottom: -6px;
+  padding: 0.2em;
+  border-radius: 2px;
+  background-color: #500;
+  color: white;
+}
 .nav-bg {
   box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
 }
