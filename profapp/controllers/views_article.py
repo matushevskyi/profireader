@@ -197,10 +197,7 @@ def submit_publish(json, article_action):
             #                                                                          publication)
             publication.save()
 
-            g.sql_connection.execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
-                                     (publication.id, "', '".join([t.id for t in publication.tags])))
-
-            print("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
+            g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
                                      (publication.id, "', '".join([t.id for t in publication.tags])))
 
 

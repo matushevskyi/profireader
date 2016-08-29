@@ -6,6 +6,7 @@ from ..models.translate import TranslateTemplate
 from .request_wrapers import check_right
 from ..models.materials import Material, Publication
 from ..models.portal import PortalDivision
+from sqlalchemy.sql import expression
 
 # from ..models.bak_articles import ArticleCompany, ArticlePortalDivision
 from utils.db_utils import db
@@ -63,7 +64,7 @@ def materials(company_id):
 @company_bp.route('/<string:company_id>/materials/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
 def materials_load(json, company_id):
-    subquery = Material.subquery_company_materials(company_id, json.get('filter'), json.get('sort'))
+    subquery = Material.subquery_company_materials(company_id, json.get('filter'), json.get('sort')).order_by(expression.desc(Material.cr_tm))
     materials, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
 
     grid_filters = {
