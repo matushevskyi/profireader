@@ -153,7 +153,7 @@ def get_messages_and_unread_count(chat_room_id, count, get_older=False, than_id=
 
         another_user_id = contact.user1_id if g.user.id == contact.user2_id else contact.user2_id
 
-        g.db.execute(update(Message).where(Message.id.in_([m.id for m in messages])).values(read_tm=datetime.datetime.utcnow()))
+        g.db.execute(update(Message).where(Message.id.in_([m.id for m in messages if m.from_user_id != g.user.id])).values(read_tm=datetime.datetime.utcnow()))
 
         ret['chat_room'] = {'chat_room_id': chat_room_id,
                             'users': {
