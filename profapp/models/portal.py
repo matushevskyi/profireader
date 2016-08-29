@@ -755,7 +755,6 @@ class UserPortalReader(Base, PRBase):
     end_tm = Column(TABLE_TYPES['timestamp'])
     amount = Column(TABLE_TYPES['int'], default=99999)
     portal = relationship('Portal', uselist=False)
-    user = relationship('User')
     show_divisions_and_comments = relationship('ReaderDivision', back_populates='reader_portal')
 
     def __init__(self, user_id=None, portal_id=None, status='active', portal_plan_id=None, start_tm=None,

@@ -1,153 +1,707 @@
-{% extends "_ruslan/_index_layout.html" %}
+{% extends "index_lazy_layout.html" %}
 
-{% block title %}Profireader{% endblock title %}
+{% block title %}{{ _('Messages') }}{% endblock title %}
+
 {% block head %}
     {{ super() }}
-    {% include 'partials/empty_page.html' %}
+    {% include '_ruslan/partials/_header_files_infinite-scroll.html' %}
 {% endblock head %}
 
-{% block portal_base %}
-{% endblock portal_base %}
-
 {% block portal_content %}
-<div class="container-fluid" ng-cloak>
-<div class="mess-bg row">
-    <div class="msg-message-user">
-        <h3>Messenger in develop</h3>
+
+    <script>
+        module.controller('messenger', ['$scope', '$ok', '$sce', '$timeout', function ($scope, $ok, $sce, $timeout) {
+
+            $scope.community_search_url = {{ raw_url_for('messenger.community_search')|safe }};
+            $scope.contacts_search_url = {{ raw_url_for('messenger.contacts_search')|safe }};
+            $scope.contact_action_url = {{ raw_url_for('messenger.contact_action')|safe }};
+
+            $scope.load_chat_url = {{ raw_url_for('messenger.load_chat')|safe }};
+            $scope.load_older_messages_url = {{ raw_url_for('messenger.load_older_messages')|safe }};
+
+            $scope.refresh_chats_url = {{ raw_url_for('messenger.refresh_chats')|safe }};
+            $scope.send_message_url = {{ raw_url_for('messenger.send_message')|safe }};
+
+
+            $scope.$$translate = {{ translates('messenger')|safe }};
+            $scope.selected_messenger_menu = '';
+            $scope.me_user_id = '{{ g.user.id }}';
+
+
+            $scope.message_text = '';
+            $scope.selected_chat_room_id = null;
+            $scope.loaded_chats = {};
+
+            $scope.check_chats_delay = 3000;
+            $scope.checking_chats = false;
+            $scope.schroll_stick_to = 'bottom';
+
+            $scope.community_search_text = '';
+            $scope.community = [];
+            $scope.community_next_page = 1;
+            $scope.community_loading = false;
+
+            $scope.contacts_search_text = '';
+            $scope.contacts = [];
+            $scope.contacts_next_page = 1;
+            $scope.contacts_loading = false;
+            $scope.contacts_unread_messages = 0;
+            $scope.contacts_unread_messages_in_unloaded_contacts_count = 0;
+
+
+            $scope.set_selected_menu = function (selected) {
+                if (selected === $scope.selected_messenger_menu) {
+                    return false;
+                }
+                $scope.selected_messenger_menu = selected;
+
+                if (selected === 'community') {
+                    $scope.search_community(true);
+                }
+
+                if (selected === 'chat') {
+                    $scope.search_contacts(true);
+                }
+
+            };
+
+            $scope.get_chat_interlocutors = function (chat) {
+                if (!chat) {
+                    return '';
+                }
+                var ret = [];
+                $.each(chat.users, function (user_id, user) {
+                    if (user.id !== $scope.me_user_id) {
+                        ret.push(user.full_name);
+                    }
+                })
+                return ret.join(', ');
+            };
+
+            $scope.refresh_chats = function () {
+                $timeout(function () {
+                    if ($scope.checking_chats) {
+                        $scope.refresh_chats();
+                        return;
+                    }
+                    $ok($scope.refresh_chats_url(), {
+                                chat_room_id: $scope.selected_chat_room_id,
+                                last_message_id: $scope.get_last_message_id($scope.selected_chat_room_id),
+                                check_for_unread_messages: true
+                            },
+                            function (resp) {
+                                $scope.update_chat_room(resp);
+                            }).finally(function () {
+                        if (now() - window.lastUserActivity > 300) { // 5 minutes of inactivity
+                            $scope.check_chats_delay = 60000; // check every minute
+                            window.onUserActivity['messenger_check_chat'] = $scope.refresh_chats;
+                        }
+                        else {
+                            $scope.check_chats_delay = 3000; // // user active check in 3 seconds
+                            delete window.onUserActivity['messenger_check_chat'];
+                        }
+                        $scope.refresh_chats();
+                    });
+                }, $scope.check_chats_delay);
+            };
+
+            $scope.load_older_messages = function () {
+
+                if (!$scope.loaded_chats[$scope.selected_chat_room_id] || $scope.loaded_chats[$scope.selected_chat_room_id]['loading_older_messages']) {
+                    return false;
+                }
+                $scope.loaded_chats[$scope.selected_chat_room_id]['loading_older_messages'] = true;
+
+                (function (chatroom_id) {
+                    $ok($scope.load_older_messages_url(), {
+                        chat_room_id: chatroom_id,
+                        first_message_id: $scope.get_last_message_id(chatroom_id, true)
+                    }, function (resp) {
+                        $scope.update_chat_room(resp, true, true);
+                    }).finally(function () {
+                        if ($scope.loaded_chats[chatroom_id]) {
+                            $scope.loaded_chats[chatroom_id]['loading_older_messages'] = false;
+                        }
+                    });
+                })($scope.selected_chat_room_id);
+
+
+            };
+
+            $scope.select_chat_room = function (chat_room) {
+                if (chat_room['chat_room_id'] === $scope.selected_chat_room_id) { // same user selected or chat_room is loaded
+                    return false;
+                }
+                else {
+                    $scope.selected_chat_room_id = chat_room['chat_room_id'];
+                    var load_chat = function () {
+                        if ($scope.loading_chatroom_id) {
+                            return false;
+                        }
+                        $scope.loading_chatroom_id = $scope.selected_chat_room_id;
+                        $ok($scope.load_chat_url(), {
+                            chat_room_id: $scope.loading_chatroom_id,
+                            last_message_id: $scope.get_last_message_id($scope.selected_chat_room_id),
+                            check_for_unread_messages: true
+                        }, function (resp) {
+                            if ($scope.selected_chat_room_id && $scope.selected_chat_room_id === $scope.loading_chatroom_id) {
+                                $scope.update_chat_room(resp, false, true);
+                            }
+                        }).finally(function () {
+                            if ($scope.selected_chat_room_id && $scope.selected_chat_room_id !== $scope.loading_chatroom_id) {
+                                $scope.loading_chatroom_id = null;
+                                load_chat();
+                            }
+                            else {
+                                $scope.loading_chatroom_id = null;
+                            }
+                        });
+                    };
+                    load_chat();
+                }
+            };
+
+            $scope.send_message = function () {
+                if (!$scope.loaded_chats[$scope.selected_chat_room_id] || $scope.loaded_chats[$scope.selected_chat_room_id]['sending_message']) {
+                    return false;
+                }
+                $scope.loaded_chats[$scope.selected_chat_room_id]['sending_message'] = true;
+
+                (function (chatroom_id) {
+                    $ok($scope.send_message_url(), {
+                        chat_room_id: chatroom_id,
+                        last_message_id: $scope.get_last_message_id(chatroom_id),
+                        check_for_unread_messages: true,
+                        text: $scope.message_text
+                    }, function (resp) {
+                        $scope.message_text = '';
+                        $scope.update_chat_room(resp);
+                    }).finally(function () {
+                        if ($scope.loaded_chats[chatroom_id]) {
+                            $scope.loaded_chats[chatroom_id]['sending_message'] = false;
+                        }
+                    });
+                })($scope.selected_chat_room_id);
+            };
+
+
+            $scope.remove_oldest_loaded_chat = function () {
+                //TODO
+                return;
+                var loaded_chats_for_users = Object.keys($scope.loaded_chats);
+                if (loaded_chats_for_users.length > 19) {
+                    var longest_not_viewed = rockets.reduce(function (id_and_last_view_tm, elem) {
+                        return timestamp_and_id[0] > elem['last_view'] ? [elem['user']['id'], elem['last_view']] : id_and_last_view_tm;
+                    }, [null, now()]);
+                    delete $scope.loaded_chats[longest_not_viewed[0]];
+                }
+            };
+
+
+            $scope.update_chat_room = function (resp, stick_to_top, force) {
+                if (resp['chat_room']) {
+                    var chat_room_id = resp['chat_room']['chat_room_id'];
+                    var chat_room = resp['chat_room'];
+
+                    if (!$scope.loaded_chats[chat_room_id]) {
+                        $scope.loaded_chats[chat_room_id] = {
+                            'last_view_tm': now(),
+                            'chat_room_id': chat_room_id,
+                            'messages': []
+                        };
+                        $scope.remove_oldest_loaded_chat();
+                    }
+
+                    $scope.loaded_chats[chat_room_id]['users'] = chat_room['users'];
+                    if ("there_is_older" in chat_room) $scope.loaded_chats[chat_room_id]['there_is_older'] = chat_room['there_is_older'];
+                    if ("there_is_newer" in chat_room) $scope.loaded_chats[chat_room_id]['there_is_newer'] = chat_room['there_is_newer'];
+
+                    $scope.append_messages(chat_room['chat_room_id'], chat_room['messages']);
+                    if ($scope.selected_chat_room_id === chat_room['chat_room_id']) {
+                        $scope.stickToBottom(chat_room['chat_room_id'], chat_room, stick_to_top, force);
+                    }
+                }
+                if (resp['unread_messages']) {
+                    $scope.calculate_unread_messages_not_in_loaded_contacts(resp['unread_messages']);
+                }
+
+
+            };
+
+            $scope.calculate_unread_messages_not_in_loaded_contacts = function (from_server) {
+                $scope.contacts_unread_messages = from_server;
+                $scope.contacts_unread_messages_in_unloaded_contacts_count = 0;
+                var total_unread = 0;
+                $.each($scope.contacts_unread_messages, function (chat_room_id, unread_messages_count) {
+                    var found = $scope.contacts.find(function (resp) {
+                        return resp['chat_room_id'] === chat_room_id;
+                    });
+                    if (found) {
+                        found['unread_messages_count'] = unread_messages_count;
+                    }
+                    else {
+                        $scope.contacts_unread_messages_in_unloaded_contacts_count += unread_messages_count;
+                    }
+                    total_unread+= unread_messages_count;
+                });
+                $.each($scope.contacts, function (cont_id, contact) {
+                    if (!$scope.contacts_unread_messages[contact['chat_room_id']]) {
+                        contact['unread_messages_count'] = 0;
+                    }
+                });
+                angularControllerFunction('user_controller', 'set_unread_message_count')(total_unread);
+            }
+
+            $scope.stickToBottom = function (chatroom_id, fromserver, sticktotop, force) {
+                if (!force && (chatroom_id !== $scope.selected_chat_room_id || !fromserver || !fromserver['messages'] || !fromserver['messages'].length)) {
+                    return false
+                }
+                var $elementold = $('#panel-body-chat ul');
+                var old_max_scroll = $elementold.length ? ($elementold.outerHeight() - $elementold.parent().height()) : 0;
+                $timeout(function () {
+                    var $element = $('#panel-body-chat ul');
+                    var max_scroll = $element.outerHeight() - $element.parent().height();
+
+                    if (sticktotop && (force || $element.parent()[0].scrollTop < 10)) {
+                        $element.parent().animate({scrollTop: 0}, 250, "easeOutQuint");
+                    }
+                    else if (!sticktotop && (force || $element.parent()[0].scrollTop > old_max_scroll - 10)) {
+                        $element.parent().animate({scrollTop: max_scroll}, 250, "easeOutQuint");
+                    }
+                }, 0);
+            };
+
+
+            $scope.get_last_message_id = function (chatroom_id, first) {
+                if (!chatroom_id || !$scope.loaded_chats[chatroom_id] || !$scope.loaded_chats[chatroom_id]['messages'].length) {
+                    return null;
+                }
+                var msgs = $scope.loaded_chats[chatroom_id]['messages'];
+                return msgs[first ? 0 : (msgs.length - 1)]['id']
+            };
+
+            $scope.get_last_message_ids = function () {
+                var ret = {};
+                $.each($scope.loaded_chats, function (chat_room_id) {
+                    ret[chat_room_id] = $scope.get_last_message_id(chat_room_id);
+                });
+                return ret;
+            };
+
+            $scope.add_new_message = function (chat_room_id, message, index, is_new_session) {
+
+                var existing_messages = $scope.loaded_chats[chat_room_id]['messages'];
+
+                var is_first_message_in_session = function (ind) {
+                    return ind === 0 || existing_messages[ind]['timestamp'] - existing_messages[ind - 1]['timestamp'] > 3600;
+                };
+
+                existing_messages.splice(index, 0, message);
+
+                if (is_first_message_in_session(index)) {
+                    existing_messages[index]['session'] = true;
+                }
+                if (index > 0 && existing_messages[index - 1]['session'] && is_first_message_in_session(index)) {
+                    delete existing_messages[index - 1]['session'];
+                }
+                if (index < existing_messages.length - 1 && existing_messages[index + 1]['session'] && is_first_message_in_session(index + 1)) {
+                    delete existing_messages[index + 1]['session'];
+                }
+
+            };
+
+
+            $scope.append_messages = function (chat_room_id, messages) {
+
+                var current_chat = $scope.loaded_chats[chat_room_id];
+                if (!current_chat) return;
+                var existing_messages = $scope.loaded_chats[chat_room_id]['messages'];
+                $.each(messages, function (message_index, message) {
+                    if (!existing_messages.length) {
+                        $scope.add_new_message(chat_room_id, message, 0, true);
+                    }
+                    else if (existing_messages[0]['id'] > message['id']) {
+                        $scope.add_new_message(chat_room_id, message, 0, true);
+                    }
+                    else if (existing_messages[existing_messages.length - 1]['id'] < message['id']) {
+                        $scope.add_new_message(chat_room_id, message, existing_messages.length, true);
+                    }
+                    else {
+                        for (var i = 0; i < existing_messages.length - 1; i++) {
+                            if (existing_messages[i]['id'] < message['id'] && existing_messages[i + 1]['id'] > message['id']) {
+                                $scope.add_new_message(chat_room_id, message, i + 1, true);
+                            }
+                        }
+                    }
+
+                });
+            };
+
+
+            $scope.search_community = function (full_reload) {
+                if ($scope.selected_messenger_menu !== 'community') {
+                    return;
+                }
+                if (full_reload) {
+                    $scope.community = [];
+                    $scope.community_next_page = 1;
+                    $scope.community_loading = false;
+                }
+
+                if ($scope.community_loading !== false) {
+                    return;
+                }
+
+                $scope.community_loading = $scope.community_search_text;
+
+                (function f(searched_text) {
+                    $ok($scope.community_search_url(), {
+                        text: searched_text,
+                        page: $scope.community_next_page
+                    }, function (resp) {
+                        if (searched_text === $scope.community_search_text) {
+                            $scope.community.push.apply($scope.community, resp['community'])
+                            $scope.community_next_page = resp['next_page'];
+                            $scope.community_loading = false;
+                        }
+                    }, function (resp) {
+
+                    });
+                })($scope.community_loading);
+            };
+
+            $scope.search_contacts = function (full_reload) {
+                if (full_reload) {
+                    $scope.contacts = [];
+                    $scope.contacts_next_page = 1;
+                    $scope.contacts_loading = false;
+                }
+
+                if ($scope.contacts_loading !== false) {
+                    return;
+                }
+
+                $scope.contacts_loading = $scope.contacts_search_text;
+
+                (function f(searched_text) {
+                    $ok($scope.contacts_search_url(), {
+                        text: searched_text,
+                        page: $scope.contacts_next_page
+                    }, function (resp) {
+                        if (searched_text === $scope.contacts_search_text) {
+                            $scope.contacts.push.apply($scope.contacts, resp['contacts'])
+                            $scope.contacts_next_page = resp['next_page'];
+                            $scope.contacts_loading = false;
+                            if (resp['unread_messages']) {
+                                $scope.calculate_unread_messages_not_in_loaded_contacts(resp['unread_messages']);
+                            }
+                        }
+                    }, function (resp) {
+
+                    });
+                })($scope.contacts_loading);
+            };
+
+            $scope.contact_action = function (user, action) {
+                if (user.changing_contact) {
+                    return false
+                }
+                user.changing_contact = true;
+                $ok($scope.contact_action_url(), {
+                    user_id: user['id'],
+                    action: action
+                }, function (resp) {
+                    user['contact_status'] = resp['contact_status'];
+                    user.changing_contact = false;
+                }, function (resp) {
+                    user.changing_contact = false;
+                });
+
+            };
+
+            {% raw %}
+
+        }
+        ]);
+        {% endraw %}
+    </script>
+
+
+    {% raw %}
+    <div ng-controller="messenger" ng-cloak ng-init="set_selected_menu('chat'); refresh_chats()">
+
+        <div class="container">
+            <div class="row reader-list-nav menu-company">
+                <div class="col-lg-12">
+                    <ul>
+                        <li><a ng-click="set_selected_menu('chat')" class="link"
+                               ng-class="{'selected': selected_messenger_menu == 'chat'}">{{ _('Messages') }}</a>
+                        </li>
+                        <li><a ng-click="set_selected_menu('community')" class="link"
+                               ng-class="{'selected': selected_messenger_menu == 'community'}">{{ _('Community') }}</a>
+                        </li>
+                        <li ng-show="0"><a ng-click="set_selected_menu('contacts')" class="link"
+                                           ng-class="{'selected': selected_messenger_menu == 'contacts'}">{{
+                            _('Contacts')
+                            }}</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+
+            <div class="row mt1em">
+                <div class="messenger-chat" ng-show="selected_messenger_menu == 'chat'">
+
+
+                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 contacts-window">
+                        <input ng-if="0 " placeholder="{{ _('Search in chat') }}"
+                               class="form-control" type="text"
+                               ng-model-options='{ debounce: 500 }'
+                               ng-change="search_chat(true)" ng-model="chat_search_text"/>
+
+                        <div class="panel">
+
+
+                            <input placeholder="{{ _('Search for contact') }}"
+                                   class="form-control" type="text"
+                                   ng-model-options='{ debounce: 500 }'
+                                   ng-change="search_contacts(true)" ng-model="contacts_search_text"/>
+
+                            <div ng-show="contacts_loading" class="tac"><i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{ _('Loading contacts') }}</i></div>
+
+                            <div ng-show="!contacts_loading" class="contact-list">
+
+                                <div ng-show="contacts_unread_messages_in_unloaded_contacts_count">{{ _('There is
+                                    %(contacts_unread_messages_in_unloaded_contacts_count)s unread messages in
+                                    unloaded
+                                    contacts',
+                                    {'contacts_unread_messages_in_unloaded_contacts_count':
+                                    contacts_unread_messages_in_unloaded_contacts_count}) }}
+                                </div>
+
+                                <ul class="list-group">
+                                    <a href="#" ng-click="select_chat_room(chat_room)"
+                                       ng-repeat="chat_room in contacts">
+                                        <li style="position: relative" class="list-group-item"
+                                            ng-class="{'selected': chat_room['chat_room_id'] === selected_chat_room_id}">
+                                            <img class="messenger-avatar" pr-image-position="center center"
+                                                 pr-image-url="{{ chat_room.users[0].avatar.url }}"/>
+                                            <span ng-bind-html="highlight(chat_room.users[0].full_name, $parent.contacts_search_text)"></span>
+                                                <span class="unread_messages_count pa"
+                                                      ng-if="chat_room.unread_messages_count">{{ chat_room.unread_messages_count }}</span>
+                                        </li>
+
+                                    </a>
+                                </ul>
+
+
+                                <div class="tac disabled" ng-show="!contacts.length && !contacts_search_text">{{ _('You have no
+                                    contacts') }}
+                                </div>
+                                <div class="tac" ng-show="!contacts.length && contacts_search_text">{{ _('No contacts match
+                                    search
+                                    criteria') }}
+                                </div>
+                                <button ng-show="contacts_next_page" ng-click="search_contacts()"
+                                        class="btn btn-default w100">{{ _('Load more contacts') }}
+                                </button>
+                            </div>
+
+
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8 chat-window">
+                        <input ng-if="0 " placeholder="{{ _('Search in chat') }}"
+                               class="form-control" type="text"
+                               ng-model-options='{ debounce: 500 }'
+                               ng-change="search_chat(true)" ng-model="chat_search_text"/>
+
+                        <div class="panel panel-primary">
+                            <div class="panel-heading">
+                                <i class="fa fa-comments"></i> {{ selected_chat_room_id?_('chat with %(names)s',
+                                {'names': get_chat_interlocutors(loaded_chats[selected_chat_room_id])}):_('No chat
+                                selected') }}
+                            </div>
+
+                            <div class="panel-body" id="panel-body-chat">
+
+                                <div ng-if="!selected_chat_room_id" class="chat tac disabled">{{ _('Please select user to chat with')
+                                    }}
+                                </div>
+
+                                <div ng-show="selected_chat_room_id && !loaded_chats[selected_chat_room_id]" class="chat tac">
+                                    <i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{ _('Loading chat') }}</i>
+                                </div>
+
+
+                                <ul class="chat" ng-if="selected_chat_room_id && loaded_chats[selected_chat_room_id]"
+                                    class="chat-session chat"
+                                    schroll-bottom-stick-to="schroll_stick_to"
+                                    schroll-bottom="loaded_chats[selected_chat_room_id]['messages']">
+
+                                    <li class="clearfix tac"
+                                        ng-show="selected_chat_room_id && loaded_chats[selected_chat_room_id]['there_is_older'] && !loaded_chats[selected_chat_room_id]['loading_older_messages']">
+                                        <a href="#" ng-click="load_older_messages()">{{ _('Load older') }}</a>
+                                    </li>
+
+                                    <li class="clearfix tac"
+                                        ng-show="selected_chat_room_id && loaded_chats[selected_chat_room_id]['there_is_older'] && loaded_chats[selected_chat_room_id]['loading_older_messages']">
+                                        <i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{ _('Loading older messages') }}</i>
+                                    </li>
+
+                                    <li class="clearfix"
+                                        ng-show="selected_chat_room_id && !loaded_chats[selected_chat_room_id]['there_is_older'] && loaded_chats[selected_chat_room_id]['messages'].length">
+                                        <div class="tac disabled">{{ _('There is no older messages') }}</div>
+                                    </li>
+
+                                    <li ng-show="selected_chat_room_id && !loaded_chats[selected_chat_room_id]['messages'].length"
+                                        class="clearfix">{{ _('There is no messages in this chat') }}
+                                    </li>
+
+
+                                    <li ng-repeat="message in loaded_chats[selected_chat_room_id]['messages']"
+                                        ng-class="{'right': message['from_user_id'] == me_user_id, 'left': message['from_user_id'] != me_user_id}"
+                                        class="clearfix">
+                                        <div ng-if="message.session" class="tac"><span style="color: red;">{{ _('chat session started %(chat_session_start)s', {chat_session_start: moment(message.cr_tm)}) }}</span>
+                                        </div>
+                                    <span class="chat-img"
+                                          ng-class="{'pull-right': message['from_user_id'] == me_user_id, 'pull-left': message['from_user_id'] != me_user_id}">
+                                        <img class="messenger-avatar" pr-image-position="center center"
+                                             pr-image-url="{{ loaded_chats[selected_chat_room_id]['users'][message['from_user_id']]['avatar']['url'] }}"/>
+                                    </span>
+                                        <div style="color: #f00; font-size: 8px">{{ moment(message.cr_tm) }}
+                                        </div>
+                                        <div class="chat-body clearfix">
+                                            <div class="header">
+                                                <small class=" text-muted"> </small>
+                                                <strong class="primary-font"
+                                                        ng-class="{'pull-right': message['from_user_id'] == me_user_id, 'pull-left': message['from_user_id'] != me_user_id}">{{
+                                                    (message['from_user_id'] ==
+                                                    me_user_id)?_('You'):loaded_chats[selected_chat_room_id]['users'][message['from_user_id']]['full_name']
+                                                    }}</strong>
+                                            </div>
+                                            <p>{{ message.content }}</p>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="panel-footer">
+                                <div class="input-group">
+                                <textarea ng-model="message_text" id="btn-input" type="text"
+                                          ng-disabled="!selected_chat_room_id || !loaded_chats[selected_chat_room_id] || loaded_chats[selected_chat_room_id]['loading']"
+                                          class="form-control input-sm"
+                                          ctrl-enter="send_message()"
+                                          placeholder="Type your message here..."></textarea>
+                        <span class="input-group-btn">
+                            <button ng-disabled="message_text == '' || !selected_chat_room_id || !loaded_chats[selected_chat_room_id] || loaded_chats[selected_chat_room_id]['loading']"
+                                    ng-click="send_message()"
+                                    class="btn btn-warning btn-sm" id="btn-chat">
+                                {{ _('Send message') }}</button>
+                        </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="messenger-search-community"
+                     ng-show="selected_messenger_menu == 'community'"
+                     infinite-scroll="search_community()"
+                     infinite-scroll-disabled="community_loading !== false || !community_next_page"
+                     bak-infinite-scroll-parent="true">
+
+                    <input placeholder="{{ _('Search user with same subscriptions or employment') }}"
+                           class="form-control" type="text"
+                           ng-model-options='{ debounce: 500 }'
+                           ng-change="search_community(true)" ng-model="community_search_text"/>
+
+                    <div ng-repeat="usr in community">
+                        <div class="row search-community-row">
+                            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+                                <img class="messenger-avatar" pr-image-position="center center"
+                                     pr-image-url="{{ usr.avatar.url }}"/>
+                                <div class="nowrap" ng-bind-html="usr.full_name | highlight: community_search_text"></div>
+                                <br/>
+                                <br/>
+                                <button ng-disabled="usr.changing_contact"
+                                        ng-show="!usr.contact_status || usr.contact_status == 'ANY_REVOKED' || usr.contact_status == 'REVOKED_ANY'"
+                                        ng-click="contact_action(usr, 'add')" class="btn btn-success w15em"><i
+                                        class="fa fa-plus"></i>&nbsp;&nbsp;&nbsp;{{
+                                    _('Add contact') }}
+                                </button>
+                                <button ng-disabled="usr.changing_contact"
+                                        ng-show="usr.contact_status == 'ACTIVE_ACTIVE'"
+                                        ng-click="contact_action(usr, 'remove')" class="btn btn-danger w15em"><i
+                                        class="fa fa-minus"></i>&nbsp;&nbsp;&nbsp;{{
+                                    _('Remove from contacts') }}
+                                </button>
+                                <button ng-disabled="usr.changing_contact"
+                                        ng-show="usr.contact_status == 'REQUESTED_UNCONFIRMED'"
+                                        ng-click="contact_action(usr, 'revoke')" class="btn btn-warning w15em"><i
+                                        class="fa fa-minus"></i>&nbsp;&nbsp;&nbsp;{{
+                                    _('Awaiting for confirmation') }}
+                                </button>
+                                <button ng-disabled="usr.changing_contact"
+                                        ng-show="usr.contact_status == 'UNCONFIRMED_REQUESTED'"
+                                        ng-click="contact_action(usr, 'confirm')" class="btn btn-warning w15em"><i
+                                        class="fa fa-plus"></i>&nbsp;&nbsp;&nbsp;{{
+                                    _('Confirm contact') }}
+                                </button>
+                                <button ng-disabled="usr.changing_contact"
+                                        ng-show="usr.contact_status == 'ACTIVE_BANNED'"
+                                        class="btn btn-danger w15em"><i
+                                        class="fa fa-ban"></i>&nbsp;&nbsp;&nbsp;{{
+                                    _('Sorry, you are banned by this user') }}
+                                </button>
+                                <button ng-disabled="usr.changing_contact"
+                                        ng-show="usr.contact_status == 'BANNED_ACTIVE'"
+                                        ng-click="contact_action(usr, 'unban')" class="btn btn-danger w15em"><i
+                                        class="fa fa-ban"></i>&nbsp;&nbsp;&nbsp;{{
+                                    _('Banned. Remove ban for this user') }}
+                                </button>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+                                <i class="fa fa-newspaper-o"></i> {{ _('Common portals subscribed') }}
+                                <div class="no-common" ng-if="! usr.common_portals_subscribed.length"><i
+                                        class="fa fa-minus-circle red">&nbsp;</i>{{ _('No common portal') }}
+                                </div>
+                                <div ng-repeat="portal in usr.common_portals_subscribed"><img
+                                        class="common-portal-logo"
+                                        pr-image-position="left" pr-image-url="{{ portal.logo.url }}"/><a
+                                        class="external_link" href="//{{ portal.host }}" target="_blank">{{
+                                    portal.name }}<i class="fa fa-external-link ml025em"></i></a>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+                                <i class="fa fa-building-o"></i> {{ _('Common company employers') }}
+                                <div class="no-common" ng-if="! usr.common_companies_employers.length"><i
+                                        class="fa fa-minus-circle red">&nbsp;</i>{{ _('No common employers') }}
+                                </div>
+                                <div ng-repeat="company in usr.common_companies_employers"><img
+                                        class="common-employer-logo"
+                                        pr-image-position="left" pr-image-url="{{ company.logo.url }}"/>{{
+                                    company.name }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="w100 btn btn-default mt1em" ng-show="community_next_page"><i
+                            class="fa fa-spinner"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading community page') }}
+                    </button>
+                    <button class="w100 btn btn-default mt1em" ng-show="!community_next_page" disabled="disabled">
+                        {{ _('All community users loaded') }}
+                    </button>
+                    <div ng-show="selected_messenger_menu == 'contacts'">
+                        contacts
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
     </div>
-</div>
-</div>
-{#    <div class="container" ng-cloak>#}
-{#        <div class="row link-page">#}
-{#            <h5>Messenger</h5>#}
-{#        </div>#}
-{#        <div class="row search-friends">#}
-{#            <div class="col-xs-3 input-group">#}
-{#                <input type="text" class="form-control input-sm" id="exampleInputAmount" placeholder="Search">#}
-{#                <div class="input-group-addon input-sm"><a href="#"><i class="fa fa-search"></i></a></div>#}
-{#            </div>#}
-{#        </div>#}
-{#        <div class="row messenger-block">#}
-{#            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 friends-block">#}
-{#                <a href="#">#}
-{#                    <div class="row friend-contact">#}
-{#                        <div class="col-lg-2">#}
-{#                            <img src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                        </div>#}
-{#                        <div class="col-lg-6 name">#}
-{#                            <span>Name friend</span>#}
-{#                        </div>#}
-{#                        <div class="col-lg-3 date">#}
-{#                            <span>07/03/2016</span>#}
-{#                        </div>#}
-{#                    </div>#}
-{#                </a>#}
-{##}
-{#                <a href="#">#}
-{#                    <div class="row friend-contact">#}
-{#                        <div class="col-lg-2">#}
-{#                            <img src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                        </div>#}
-{#                        <div class="col-lg-6 name">#}
-{#                            <span>Name friend</span>#}
-{#                        </div>#}
-{#                        <div class="col-lg-3 date">#}
-{#                            <span>07/03/2016</span>#}
-{#                        </div>#}
-{#                    </div>#}
-{#                </a>#}
-{#                <a href="#">#}
-{#                    <div class="row friend-contact">#}
-{#                        <div class="col-lg-2">#}
-{#                            <img src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                        </div>#}
-{#                        <div class="col-lg-6 name">#}
-{#                            <span>Name friend</span>#}
-{#                        </div>#}
-{#                        <div class="col-lg-3 date">#}
-{#                            <span>07/03/2016</span>#}
-{#                        </div>#}
-{#                    </div>#}
-{#                </a>#}
-{##}
-{#            </div>#}
-{#            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 message-block">#}
-{##}
-{#                <div class="row">#}
-{#                    <div class="col-lg-2">#}
-{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                    </div>#}
-{#                    <div class="col-lg-7 message-text">#}
-{#                        <span>Name User</span>#}
-{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla </p>#}
-{#                    </div>#}
-{#                    <div class="col-lg-1">#}
-{#                        <span>07/03/2016 22:13</span>#}
-{#                    </div>#}
-{#                </div>#}
-{#                <div class="row">#}
-{#                    <div class="col-lg-2">#}
-{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                    </div>#}
-{#                    <div class="col-lg-7 message-text">#}
-{#                        <span>Name User</span>#}
-{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
-{#                    </div>#}
-{#                    <div class="col-lg-1">#}
-{#                        <span>07/03/2016 22:13</span>#}
-{#                    </div>#}
-{#                </div>#}
-{#                <div class="row">#}
-{#                    <div class="col-lg-2">#}
-{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                    </div>#}
-{#                    <div class="col-lg-7 message-text">#}
-{#                        <span>Name User</span>#}
-{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla#}
-{#                            bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla#}
-{#                            bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
-{#                    </div>#}
-{#                    <div class="col-lg-1">#}
-{#                        <span>07/03/2016 22:13</span>#}
-{#                    </div>#}
-{#                </div>#}
-{#                <div class="row">#}
-{#                    <div class="col-lg-2">#}
-{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                    </div>#}
-{#                    <div class="col-lg-7 message-text">#}
-{#                        <span>Name User</span>#}
-{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
-{#                    </div>#}
-{#                    <div class="col-lg-1">#}
-{#                        <span>07/03/2016 22:13</span>#}
-{#                    </div>#}
-{#                </div>#}
-{#                <div class="row">#}
-{#                    <div class="col-lg-2">#}
-{#                        <img class="avatar" src="../../static/images/PZf5Q.png" alt="photo">#}
-{#                    </div>#}
-{#                    <div class="col-lg-7 message-text">#}
-{#                        <span>Name User</span>#}
-{#                        <p>Text bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla bla-bla-bla</p>#}
-{#                    </div>#}
-{#                    <div class="col-lg-1">#}
-{#                        <span>07/03/2016 22:13</span>#}
-{#                    </div>#}
-{#                </div>#}
-{#                <form>#}
-{#                    <div class="row add-message">#}
-{#                        <textarea rows="4" placeholder="Write a message..."></textarea>#}
-{#                        <button>Add message</button>#}
-{#                    </div>#}
-{#                </form>#}
-{#            </div>#}
-{#            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3">#}
-{#                <p>SOME TEXT ORE PHOTO</p>#}
-{#                <p>does not matter</p>#}
-{#                <p>some advertising</p>#}
-{#                <p>anti facebook, but such as facebook ))</p>#}
-{#            </div>#}
-{#        </div>#}
-{#    </div>#}
+    {% endraw %}
 {% endblock portal_content %}

@@ -32,6 +32,7 @@ import random
 import time
 from .files import FileImg, FileImgDescriptor
 from flask.ext.login import logout_user, current_user, login_user
+from sqlalchemy import func
 
 
 class User(Base, UserMixin, PRBase):
@@ -72,6 +73,20 @@ class User(Base, UserMixin, PRBase):
     avatar_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
     avatar_file_img = relationship(FileImg, uselist=False)
 
+    # TODO: OZ by OZ: some condition about active
+    active_portals_subscribed = relationship('Portal',
+                                      viewonly=True,
+                                      primaryjoin='User.id == UserPortalReader.user_id',
+                                      secondary='reader_portal',
+                                      secondaryjoin="and_(UserPortalReader.portal_id == Portal.id, Portal.status == 'ACTIVE', UserPortalReader.status == 'active')")
+
+
+    active_companies_employers = relationship('Company',
+                                       viewonly=True,
+                                       primaryjoin='User.id == UserCompany.user_id',
+                                       secondary='user_company',
+                                       secondaryjoin="and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE', UserCompany.status == 'ACTIVE')")
+
     def set_avatar_preset(self, r, v):
         if v['selected_by_user']['type'] == 'preset':
             self.avatar_selected_preset = v['selected_by_user']['preset_id']
@@ -106,7 +121,6 @@ class User(Base, UserMixin, PRBase):
             self.ping()
             login_user(self)
         return True
-
 
     @staticmethod
     def logout():
@@ -310,7 +324,7 @@ class User(Base, UserMixin, PRBase):
     #     self.yahoo_link = YAHOO_ALL['link']
     #     self.yahoo_phone = YAHOO_ALL['phone']
 
-    def is_active(self, check_only_banned=None, raise_exception_redirect_if_not = False):
+    def is_active(self, check_only_banned=None, raise_exception_redirect_if_not=False):
         if self.banned:
             if raise_exception_redirect_if_not:
                 raise errors.NoRights(redirect_to=url_for('index.banned'))
@@ -367,6 +381,12 @@ class User(Base, UserMixin, PRBase):
         self.last_seen_tm = datetime.datetime.utcnow()
         g.db.add(self)
         g.db.commit()
+
+    def get_unread_message_count(self):
+        ret = g.db().execute("SELECT message_unread_count('%s')" % (self.id,))
+        for (r,) in ret:
+            return r
+
 
     # def get_avatar(self, avatar_via, size=500, small_size=100, url=None):
     #     if avatar_via == 'upload':
@@ -521,7 +541,6 @@ class User(Base, UserMixin, PRBase):
         attr_value = getattr(self, full_attr)
         return attr_value
 
-
     # we use SHA256.
     # https://crackstation.net/hashing-security.htm
     # "the output of SHA256 is 256 bits (32 bytes), so the salt should be at least 32 random bytes."
@@ -543,7 +562,7 @@ class User(Base, UserMixin, PRBase):
                check_password_hash(self.password_hash, password)
 
     def check_password_strength(self):
-        return len(self.password)*10
+        return len(self.password) * 10
 
     def generate_confirmation_token(self, addtourl):
         self.email_conf_token = random.getrandbits(128)
@@ -573,11 +592,10 @@ class User(Base, UserMixin, PRBase):
         SendEmail().send_email(subject='Reset password',
                                html=render_template('auth/email/reset_password.html', user=self,
                                                     reset_password_url=url_for('auth.reset_password',
-                                                                             token=self.pass_reset_token,
-                                                                             _external=True)
+                                                                               token=self.pass_reset_token,
+                                                                               _external=True)
                                                     ),
                                send_to=(self.address_email,))
-
 
         return self
 
@@ -597,7 +615,6 @@ class User(Base, UserMixin, PRBase):
         g.db.add(self)
         g.db.commit()
         return True
-
 
     def generate_email_change_token(self, new_email, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)

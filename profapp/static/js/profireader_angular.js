@@ -220,6 +220,33 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             }
         };
     })
+    // // .directive('schrollBottom', function () {
+    // //     return {
+    // //         scope: {
+    // //             schrollBottom: "=",
+    // //             schrollBottomStickTo: "="
+    // //         },
+    // //         link: function (scope, element) {
+    // //
+    // //             // scope.$watchCollection('schrollBottom', function (newValue) {
+    // //             //
+    // //             //     if (newValue) {
+    // //             //         setTimeout(function () {
+    // //             //             var max_scroll = $(element).outerHeight() - $(element).parent().height();
+    // //             //             console.log(oldscrolltop, max_scroll, $(element).parent().height(), $(element).outerHeight());
+    // //             //             if ($(element).parent()[0].scrollTop > max_scroll - 10 || $(element).parent().height()>$(element).outerHeight()) {
+    // //             //                 $(element).parent().animate({scrollTop: max_scroll}, 500, "easeOutQuint");
+    // //             //             }
+    // //             //             else if ($(element).parent()[0].scrollTop < 10) {
+    // //             //                 $(element).parent().animate({scrollTop: 0}, 500, "easeOutQuint"
+    // //             //                 );
+    // //             //             }
+    // //             //         }, 0);
+    // //             //     }
+    // //             // });
+    // //         }
+    // //     }
+    // })
     .directive('prCrop', function ($compile, $templateCache, $timeout) {
         return {
             restrict: 'A',
@@ -518,7 +545,22 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             }
         };
     }])
+    .directive('ctrlEnter', function () {
+        return {
+            restrict: 'A',
+            link: function (scope, elem, attrs) {
 
+                elem.bind('keydown', function (event) {
+                    var code = event.keyCode || event.which;
+
+                    if (code === 13 && event.ctrlKey) {
+                        event.preventDefault();
+                        scope.$apply(attrs.ctrlEnter);
+                    }
+                });
+            }
+        }
+    })
     .directive('prImage', [function () {
         return {
             restrict: 'A',
@@ -577,7 +619,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             scope: {},
             link: function (scope, element, attrs) {
                 element.attr('src', static_address('images/0.gif'));
-                element.css({backgroundImage: 'url(' + attrs['prImageUrl'] + ')'});
+                element.css({
+                    backgroundPosition: attrs['prImagePosition'] ? attrs['prImagePosition'] : 'center',
+                    backgroundImage: 'url(' + attrs['prImageUrl'] + ')'
+                });
                 element.addClass('bg-contain');
             }
         };
@@ -592,7 +637,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             element.addClass('bg-contain');
             scope.$watch('prImageUrlWatch', function (newval, oldval) {
                 if (newval)
-                    element.css({backgroundImage: "url('" + newval + "')"});
+                    element.css({
+                        backgroundPosition: attrs['prImagePosition'] ? attrs['prImagePosition'] : 'center',
+                        backgroundImage: "url('" + newval + "')"
+                    });
             });
         }
     };
@@ -1250,6 +1298,9 @@ module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '
         };
     }]);
 
+function now() {
+    return Date.now() / 1000;
+}
 
 function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     allow_html = allow_html ? allow_html : '';
@@ -1260,10 +1311,13 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     //     scope.$$translate = {};
     // }
     //console.log(scope.$$translate)
-    new Date;
-    var t = Date.now() / 1000;
+
+    var t = now();
     //TODO OZ by OZ hasOwnProperty
+    phrase = phrase.replace('\n', ' ').replace(/[\s]+/gi, ' ').trim();
+
     var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
+    var phrase_dict;
 
     if (!scope.$$translate || !scope.$$translate[phrase]) {
         phrase_dict = {'lang': phrase, 'time': t, allow_html: allow_html}
@@ -1317,7 +1371,7 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
             });
 
             for (var i in indexes) {
-                if (typeof d[indexes[i]] !== undefined) {
+                if (typeof d[indexes[i]] !== 'undefined') {
                     d = d[indexes[i]];
                 }
                 else {
@@ -1367,7 +1421,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             if (!search) {
                 return $sce.trustAsHtml(text);
             }
-            return $sce.trustAsHtml(text.replace(new RegExp(search, 'gi'), '<span pr-test="MachedLightedText" class="highlightedText">$&</span>'));
+            return $sce.trustAsHtml(text.replace(new RegExp(search, 'gi'), '<span class="ui-select-highlight">$&</span>'));
         },
 
         setGridExtarnals: function (gridApi) {
@@ -2269,4 +2323,13 @@ var noImageForImageName = function (image_name) {
         return static_address('images/no_image.png');
     }
 }
+
+window.lastUserActivity = now();
+window.onUserActivity = {};
+$('body').bind('mousedown keydown', function (event) {
+    window.lastUserActivity = now();
+    $.each(window.onUserActivity, function (ind, func) {
+        func();
+    })
+});
 

@@ -102,6 +102,30 @@
     height: 100%;
 }
 
+.w15em {
+    width: 15em;
+}
+
+.dib {
+    display: inline-block;
+}
+
+.pa {
+    position: absolute;
+}
+
+.pr {
+    position: relative;
+}
+
+.b0 {
+    bottom: 0px;
+}
+
+.red {
+    color: red;
+}
+
 .notitledialog .ui-dialog-titlebar {
     display: none
 }
@@ -154,8 +178,6 @@
 .popover-content {
     width: 250px;
 }
-
-
 
 .fr {
     float: right;
@@ -419,6 +441,21 @@ div.pr-row:last-child div.pr-cell {
     margin: 0.25em;
 }
 
+.mr025em {
+    margin-right: 0.25em;
+}
+
+.ml025em {
+    margin-left: 0.25em;
+}
+
+.mt025em {
+    margin-top: 0.25em;
+}
+
+.mb025em {
+    margin-bottom: 0.25em;
+}
 
 .mr05em {
     margin-right: 0.5em;
@@ -556,7 +593,6 @@ div.pr-row:last-child div.pr-cell {
     padding-bottom: 2em;
 }
 
-
 .bg-contain {
     background-position: center;
     background-size: contain;
@@ -604,13 +640,11 @@ div.pr-row:last-child div.pr-cell {
     text-align: justify;
 }
 
-
 .caret {
     position: absolute;
     right: 0.5em;
     top: 45%;
 }
-
 
 .pal {
     position: absolute;
@@ -631,8 +665,11 @@ div.pr-row:last-child div.pr-cell {
     position: absolute;
     bottom: 0px;
 }
+
 .company-profile-logo-img {
-    width: 400px; height: 300px; position: relative
+    width: 400px;
+    height: 300px;
+    position: relative
 }
 
 .front-user-avatar-img {
@@ -653,11 +690,155 @@ div.pr-row:last-child div.pr-cell {
 }
 
 .noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none;   /* Chrome/Safari/Opera */
-  -khtml-user-select: none;    /* Konqueror */
-  -moz-user-select: none;      /* Firefox */
-  -ms-user-select: none;       /* Internet Explorer/Edge */
-  user-select: none;           /* Non-prefixed version, currently
-                                  not supported by any browser */
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Chrome/Safari/Opera */
+    -khtml-user-select: none; /* Konqueror */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none;
+    /* Non-prefixed version, currently
+                           not supported by any browser */
 }
+
+.search-community-row {
+    min-height: 120px;
+    margin: 10px 0px 5px 0px;
+    background-color: #eee;
+    padding: 5px;
+
+}
+
+.search-community-row button {
+    margin-top: 5px;
+}
+
+.search-community-row div:first-child {
+    padding-left: 125px
+}
+
+.search-community-row img.messenger-avatar {
+    width: 120px;
+    height: 120px;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    border-radius: 50%;
+}
+
+.search-community-row img.common-portal-logo {
+    width: 3em;
+    height: 1em;
+    margin-right: 5px;
+}
+
+.search-community-row img.common-employer-logo {
+    width: 3em;
+    height: 1em;
+    margin-right: 5px;
+}
+
+.search-community-row .no-common {
+    text-align: center;
+    font-style: italic;
+}
+
+.ui-select-highlight {
+    color: red;
+}
+
+.messenger-chat input {
+    margin-bottom: 5px;
+}
+
+.messenger-chat .contacts-window li {
+    padding-left: 50px;
+    padding-top: 12px;
+    height: 50px;
+}
+
+.messenger-chat .contacts-window li img.messenger-avatar {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    border-radius: 50%;
+}
+
+.messenger-chat ul, li {
+    list-style: none;
+    padding-left: 0;
+}
+
+.messenger-chat ul {
+    margin-bottom: 0;
+}
+
+.messenger-chat span.session-name {
+    font-size: 7px;
+    color: #777;
+}
+
+.messenger-chat .panel-body {
+    height: 30em;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+.messenger-chat .chat-body p {
+    white-space: pre-line
+}
+
+.messenger-chat .messenger-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.messenger-chat .contacts-window a:hover {
+    text-decoration: none;
+}
+
+.messenger-chat .contacts-window a {
+    text-decoration: none;
+}
+
+.messenger-chat .contacts-window li {
+    margin-bottom: 5px;
+}
+
+.messenger-chat .contacts-window li.selected {
+    color: white;
+    background-color: #00ceb1;
+}
+
+.messenger-chat .contacts-window .unread_messages_count {
+    position: absolute;
+    line-height: 100%;
+    text-align: center;
+    right: -3px;
+    bottom: -3px;
+    padding: 0.5em;
+    border-radius: 5px;
+    background-color: #500;
+    color: white;
+}
+
+.messenger-chat .chat-window .panel-footer textarea, .messenger-chat .chat-window .panel-footer button {
+    height: 5em;
+}
+
+
+.messenger-chat .contacts-window  {
+    height: calc(30em + 130px);
+}
+
+.messenger-chat .contacts-window .contact-list {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: calc(30em + 75px);
+    padding: 3px;
+}
+
+
+
