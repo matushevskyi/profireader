@@ -4,6 +4,8 @@ from flask import request
 from .request_wrapers import ok
 from sqlalchemy.orm import load_only
 
+
+# TODO: OZ by OZ: use pagination function instad
 def pagination(query, for_id=None, page=1, items_per_page=Config.ITEMS_PER_PAGE, getPageOfId = None):
     """ Pagination for pages. For use this function you have to pass subquery with all filters,
      number of current page. Also you can change page_size(items per page) from config.
@@ -31,11 +33,17 @@ def pagination(query, for_id=None, page=1, items_per_page=Config.ITEMS_PER_PAGE,
     return query, pages, page, count
 
 
-def get_request_page_filter_order_seek(json):
+def load_for_infinite_scroll(query, items=Config.ITEMS_PER_PAGE):
 
-    search = json.get('search')
-    page = json.get('page')
-    filter_by = json.get('filter')
-    order = json.get('order')
-    seek = json.get('seek')
-    return {'filter_by': filter_by, 'search': search, 'page': page, 'order': order, 'seek': seek}
+    result = query.limit(items + 1).all()
+    return result[0:items], len(result) > items
+
+#
+# def get_request_page_filter_order_seek(json):
+#
+#     search = json.get('search')
+#     page = json.get('page')
+#     filter_by = json.get('filter')
+#     order = json.get('order')
+#     seek = json.get('seek')
+#     return {'filter_by': filter_by, 'search': search, 'page': page, 'order': order, 'seek': seek}

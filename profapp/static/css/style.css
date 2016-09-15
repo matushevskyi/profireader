@@ -481,19 +481,25 @@ body {
   margin-top: 10px;
   margin-bottom: 50px;
 }
-.company-list {
+.pr-external-link {
+  margin-left: 0.5em;
+}
+.employment_company-list {
   margin-top: 30px;
 }
-.company-list h3 {
+.employment_company-list button a {
+  color: #fff;
+}
+.employment_company-list h3 {
   color: #383838;
   margin-bottom: 15px;
   margin-left: -15px;
 }
-.company-list h4 {
+.employment_company-list h4 {
   text-align: center;
   color: #C70000;
 }
-.company-list i {
+.employment_company-list i {
   margin-top: 30px;
   margin-left: 15px;
 }

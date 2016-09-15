@@ -274,16 +274,16 @@
     border-color: #119C8D;
 }
 
-.company-list {
+.employment_company-list {
     margin-top: 30px;
 }
 
-.company-list h2 {
+.employment_company-list h2 {
     color: #383838;
     margin-bottom: 15px;
 }
 
-.company-list h4 {
+.employment_company-list h4 {
     text-align: center;
     color: #CA2027;
 }
