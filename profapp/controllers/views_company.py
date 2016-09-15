@@ -6,6 +6,7 @@ from ..models.translate import TranslateTemplate
 from .request_wrapers import check_right
 from ..models.materials import Material, Publication
 from ..models.portal import PortalDivision
+from sqlalchemy.sql import expression
 
 # from ..models.bak_articles import ArticleCompany, ArticlePortalDivision
 from utils.db_utils import db
@@ -41,11 +42,11 @@ def companies_load(json):
     comp = [usr_cmp.get_client_side_dict() for usr_cmp in companies]
 
     if len(comp) < per_page:
-        return {'companies': [usr_cmp.get_client_side_dict() for usr_cmp in companies],
+        return {'companies': [utils.dict_merge(usr_cmp.get_client_side_dict(), {'employment_status': UserCompany.get_by_user_and_company_ids(user_id=g.user.id, company_id=usr_cmp.id).status}) for usr_cmp in companies],
                 'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()},
                 'user_id': g.user.id, 'end': True}
     
-    return {'companies': comp,
+    return {'companies': [utils.dict_merge(usr_cmp, {'employment_status': UserCompany.get_by_user_and_company_ids(user_id=g.user.id, company_id=usr_cmp['id']).status}) for usr_cmp in comp],
             'next_page': page + 1 if len(comp) == per_page else False,
             'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()},
             'user_id': g.user.id}
@@ -63,7 +64,7 @@ def materials(company_id):
 @company_bp.route('/<string:company_id>/materials/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
 def materials_load(json, company_id):
-    subquery = Material.subquery_company_materials(company_id, json.get('filter'), json.get('sort'))
+    subquery = Material.subquery_company_materials(company_id, json.get('filter'), json.get('sort')).order_by(expression.desc(Material.cr_tm))
     materials, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
 
     grid_filters = {

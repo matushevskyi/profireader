@@ -84,7 +84,7 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
             json_portal['host'] = (json_portal['host_profi'] + '.' + Config.MAIN_DOMAIN) \
                 if json_portal['host_profi_or_own'] == 'profi' else json_portal['host_own']
 
-            portal = Portal(company_owner=company, **g.filter_json(json_portal, 'name', 'portal_layout_id', 'host'))
+            portal = Portal(company_owner=company, aliases = '', **g.filter_json(json_portal, 'name', 'portal_layout_id', 'host'))
             divisions = []
             for division_json in json['portal']['divisions']:
                 division = PortalDivision(portal, portal_division_type_id=division_json['portal_division_type_id'],

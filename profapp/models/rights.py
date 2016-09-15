@@ -75,7 +75,7 @@ class BaseRightsInProfireader:
             if isinstance(rights[object], list):
                 for right in rights[object]:
                     if isinstance(right, str):
-                        if objects_for_check[object].has_rights(right) != True:
+                        if objects_for_check[object].has_rights(right) is not True:
                             allow = "{} need right `{}` to perform action `{}`".format(object, right,
                                                                                        action_name)
                     if callable(right):
@@ -86,7 +86,7 @@ class BaseRightsInProfireader:
                 allow = rights[object](objects_for_check)
             else:
                 raise Exception('Wrong data type!')
-            if allow != True:
+            if allow is not True:
                 return allow
         return True
 
