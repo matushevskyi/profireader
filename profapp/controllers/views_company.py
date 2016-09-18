@@ -7,10 +7,11 @@ from .request_wrapers import check_right
 from ..models.materials import Material, Publication
 from ..models.portal import PortalDivision
 from sqlalchemy.sql import expression
+from sqlalchemy import and_, or_
 
 # from ..models.bak_articles import ArticleCompany, ArticlePortalDivision
 from utils.db_utils import db
-from .pagination import pagination
+from .pagination import pagination, load_for_infinite_scroll
 from config import Config
 from .. import utils
 from ..models.pr_base import PRBase, Grid
@@ -34,22 +35,22 @@ def companies():
 @company_bp.route('/', methods=['OK'])
 @check_right(UserIsActive)
 def companies_load(json):
-    page = json.get('next_page') if json.get('next_page') else 1
-    per_page = 6
-    companies, pages, page, count = pagination(
-        query=db(Company).filter(Company.id == db(UserCompany, user_id=g.user.id).subquery().c.company_id),
-        items_per_page=per_page, page=page)
-    comp = [usr_cmp.get_client_side_dict() for usr_cmp in companies]
+    employments_query = db(UserCompany). \
+        outerjoin(Company, and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE')). \
+        filter(and_(UserCompany.user_id == g.user.id, Company.id != None, ~ UserCompany.id.in_(json['loaded']))). \
+        order_by(expression.desc(UserCompany.md_tm))
 
-    if len(comp) < per_page:
-        return {'companies': [utils.dict_merge(usr_cmp.get_client_side_dict(), {'employment_status': UserCompany.get_by_user_and_company_ids(user_id=g.user.id, company_id=usr_cmp.id).status}) for usr_cmp in companies],
-                'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()},
-                'user_id': g.user.id, 'end': True}
-    
-    return {'companies': [utils.dict_merge(usr_cmp, {'employment_status': UserCompany.get_by_user_and_company_ids(user_id=g.user.id, company_id=usr_cmp['id']).status}) for usr_cmp in comp],
-            'next_page': page + 1 if len(comp) == per_page else False,
-            'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()},
-            'user_id': g.user.id}
+    employments, there_is_more = load_for_infinite_scroll(employments_query, 3)
+
+    return {'employments': [e.get_client_side_dict(fields='id,status, company, rights') for e in employments],
+            'there_is_more': there_is_more,
+            'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()}}
+
+@company_bp.route('/join_to_company/', methods=['OK'])
+@check_right(UserIsActive)
+def join_to_company(json):
+    e = UserCompany(user_id=g.user.id, company_id=json['company_id']).save()
+    return {'employment': e.get_client_side_dict(fields='id,status, company, rights')}
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
@@ -64,7 +65,8 @@ def materials(company_id):
 @company_bp.route('/<string:company_id>/materials/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
 def materials_load(json, company_id):
-    subquery = Material.subquery_company_materials(company_id, json.get('filter'), json.get('sort')).order_by(expression.desc(Material.cr_tm))
+    subquery = Material.subquery_company_materials(company_id, json.get('filter'), json.get('sort')).order_by(
+        expression.desc(Material.cr_tm))
     materials, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
 
     grid_filters = {
@@ -82,24 +84,6 @@ def materials_load(json, company_id):
                              (k, v) in grid_filters.items()},
             'total': count
             }
-
-
-# @company_bp.route('/<string:publication_id>/', methods=['OK'])
-# @login_required
-# @ok
-# @check_right(PublishUnpublishInPortal, 'publication_id', PublishUnpublishInPortal.ACTIONS['DELETE'])
-# def delete_atricle_from_portal(json, publication_id):
-#     print('here')
-#     g.sql_connection.execute("DELETE FROM article_portal_division WHERE id='%s';"
-#                              % publication_id)
-#     new_json = json.copy()
-#     for article in json:
-#         if json[article]['id'] == publication_id:
-#             del new_json[article]
-#     return new_json
-
-
-# file_author_user_id_fkey	FOREIGN KEY (author_user_id) REFERENCES "user"(id)
 
 
 @company_bp.route('/update_material_status/<string:company_id>/<string:article_id>', methods=['OK'])
@@ -129,29 +113,13 @@ def employees(company_id):
 def employees_load(json, company_id):
     company = Company.get(company_id)
     employees_list = [utils.dict_merge(employment.user.get_client_side_dict(), employment.get_client_side_dict(),
-                         {'actions': EmployeesRight(company=company, employment=employment).actions()})
+                                       {'actions': EmployeesRight(company=company, employment=employment).actions()})
                       for employment in company.employments]
 
     return {
         'company': company.get_client_side_dict(fields='id,name'),
         'grid_data': employees_list
     }
-
-
-# @company_bp.route('/<string:company_id>/employee_details/<string:user_id>/', methods=['GET'])
-# @tos_required
-# @login_required
-# # @check_rights(simple_permissions([]))
-# def employee_details(company_id, user_id):
-#     employment = UserCompany.get(user_id=user_id, company_id=company_id)
-#     return render_template('company/company_employee_details.html',
-#                            company=Company.get(company_id),
-#                            employer=employment.employer.get_client_side_dict(),
-#                            employee=employment.employee.get_client_side_dict(),
-#                            employment=employment.get_client_side_dict(),
-#                            user_right_in=UserCompany.get(company_id=company_id).has_rights(
-#                                    UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS)
-#                            )
 
 
 @company_bp.route('/<string:company_id>/employee_update/<string:user_id>/', methods=['GET'])
@@ -217,22 +185,6 @@ def employment_change_position(json, company_id, employment_id):
                             {'actions': EmployeesRight(company=company_id, employment=employment).actions()})
 
 
-# @company_bp.route('/update_rights', methods=['POST'])
-# @check_right(UserIsActive)
-# def update_rights():
-#     data = request.form
-#     company_id, user_id, position = (data.get('company_id'), data.get('user_id'), data['position'])
-#     if not db(Company, id=company_id, author_user_id=user_id).count():
-#         UserCompany.update_rights(user_id=data['user_id'],
-#                                   company_id=data['company_id'],
-#                                   new_rights=data.getlist('right'),
-#                                   position=data['position'])
-#     else:
-#         db(UserCompany, company_id=company_id, user_id=user_id).update(dict(position=position))
-#     return redirect(url_for('company.employees',
-#                             company_id=data['company_id']))
-
-
 @company_bp.route('/create/', methods=['GET'])
 @check_right(UserIsActive)
 def update():
@@ -247,7 +199,10 @@ def update():
 @check_right(UserIsActive)
 def profile(company_id=None):
     company = db(Company, id=company_id).first()
-    user_company = UserCompany.get(company_id=company_id)
+    user_company = UserCompany.get_by_user_and_company_ids(company_id=company_id)
+    user_company.md_tm = None
+    user_company.save()
+
     return render_template('company/company_profile.html',
                            user_company_active=user_company is not None,
                            company=company)
@@ -286,40 +241,19 @@ def profile_load_validate_save(json, company_id=None):
 
         return utils.dict_merge(company.save().get_client_side_dict(), actions={'edit': True if company_id else False})
 
-    # @company_bp.route('/confirm_create/', methods=['OK'])
-    # @login_required
-    # # @check_rights(simple_permissions([]))
-    # @ok
-    # def confirm_create(json):
-
-
-    # @company_bp.route('/edit/<string:company_id>/', methods=['OK'])
-    # @login_required
-    # @ok
-    # # @check_rights(simple_permissions([RIGHTS.MANAGE_RIGHTS_COMPANY()]))
-    # def edit_load(json, company_id):
-    #     company = db(Company, id=company_id).one()
-    #     return company.get_client_side_dict()
-
-
-    # @company_bp.route('/confirm_edit/<string:company_id>', methods=['OK'])
-    # @login_required
-    # @ok
-    # # @check_rights(simple_permissions([RIGHTS.MANAGE_RIGHTS_COMPANY()]))
-    # def confirm_edit(json, company_id):
-    #
-    #     return {}
-
-
 
 @company_bp.route('/search_for_company_to_join/', methods=['OK'])
 @check_right(UserIsActive)
 def search_for_company_to_join(json):
-    companies, pages, page, count = pagination(
-        query=Company().search_for_company_to_join(g.user.id, json['search']), page=1,
-        items_per_page=5 * json.get('next_page') if json.get('next_page') else 5)
-    return {'company_list': [company.get_client_side_dict() for company in
-                             companies], 'end': pages == 1}
+    companies, there_is_more = load_for_infinite_scroll(
+        db(Company).filter(~db(UserCompany, user_id=g.user.id, company_id=Company.id).exists()). \
+            filter(and_(
+            Company.status == 'ACTIVE', Company.name.ilike("%" + json['text'] + "%")), ~Company.id.in_(json['loaded'])). \
+            order_by(Company.name), items=3)
+
+    return {'companies': [company.get_client_side_dict() for company in companies],
+            'there_is_more': there_is_more}
+
 
 @company_bp.route('/search_for_user/<string:company_id>', methods=['OK'])
 @check_right(UserIsActive)
@@ -327,16 +261,14 @@ def search_for_user(json, company_id):
     users = UserCompany().search_for_user_to_join(company_id, json['search'])
     return users
 
+
 @company_bp.route('/send_article_to_user/', methods=['OK'])
 @check_right(UserIsActive)
 def send_article_to_user(json):
     return {'user': json['send_to_user']}
 
-@company_bp.route('/join_to_company/<string:company_id>/', methods=['OK'])
-@check_right(UserIsActive)
-def join_to_company(json, company_id):
-    UserCompany(user_id=g.user.id, company_id=json.get('company_id')).save()
-    return {'companies': [employment.company.get_client_side_dict() for employment in current_user.employments]}
+
+
 
 @company_bp.route('/add_subscriber/', methods=['POST'])
 @check_right(UserIsActive)
@@ -347,6 +279,7 @@ def confirm_subscriber():
                                user_id=data['user_id'],
                                bool=data['req'])
     return redirect(url_for('company.profile', company_id=data['company_id']))
+
 
 # TODO: VK by OZ: following 3 functions would have to be joined into one
 # @company_bp.route('/suspend_employee/', methods=['POST'])
@@ -401,6 +334,7 @@ def readers(company_id, page=1):
                            page_buttons=Config.PAGINATION_BUTTONS,
                            search_text=None,
                            )
+
 
 @company_bp.route('/readers/<string:company_id>/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])

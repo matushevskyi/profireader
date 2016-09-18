@@ -47,6 +47,9 @@ def community_search(json):
     for c in g.user.active_companies_employers:
         companies_ids.append(c.id)
 
+    # use load_for_infinite_scroll
+    # TODO: OZ by OZ: use load_for_infinite_scroll
+
     query = g.db.query(User). \
         outerjoin(UserPortalReader,
                   and_(UserPortalReader.user_id == User.id, UserPortalReader.status == 'active',

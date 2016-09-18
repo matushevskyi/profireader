@@ -66,14 +66,6 @@ a.disabled {
    cursor: default;
 }
 
-.highlight {
-    color: #ca2027;
-    -moz-transition: color 0.5s;
-    -webkit-transition: color 0.5s;
-    -o-transition: color 0.5s;
-    transition: color 0.5s;
-
-}
 
 .red-label {
     background: #ca2027;

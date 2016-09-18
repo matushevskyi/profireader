@@ -2003,22 +2003,9 @@ function highlight($el) {
     $($el).addClass('highlight');
     setTimeout(function () {
         $($el).removeClass('highlight');
-    }, 3500);
+    }, 35000);
 };
 
-
-function highLightSubstring(substring, block, element) {
-    var elements = element.split('&');
-    var re = new RegExp(substring, "gi");
-    $("." + block).find(".search-highlight").remove();
-    $.each(elements, function (index) {
-        var el = elements[index];
-        $("." + block).find("#" + el).each(function () {
-            var rex = $(this).html().match(re);
-            $(this).html($(this).html().replace(re, '<span class="search-highlight">' + rex[0] + '</span>'));
-        })
-    })
-}
 
 function angularControllerFunction(controller_attr, function_name) {
     var nothing = function () {
