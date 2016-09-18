@@ -7,89 +7,102 @@
 
 {% block portal_content %}
 
-    <script xmlns="http://www.w3.org/1999/html">
+    <script>
         module.controller('companies_list', ['$scope', '$ok', '$timeout', function ($scope, $ok, $timeout) {
             angularControllerFunction('user_controller', 'set_selected_user_menu')('companies');
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
+            $scope.url_create_company = '{{ url_for('company.update')|safe }}';
+
             $scope.url_search_for_company = {{ raw_url_for('company.search_for_company_to_join')|safe }};
-            $scope.load_employments_url = {{ raw_url_for('company.companies_load')|safe }};
-            $scope.url_join = {{ raw_url_for('company.join_to_company')|safe }};
+            $scope.url_load_employments = {{ raw_url_for('company.companies_load')|safe }};
+            $scope.url_join = '{{ url_for('company.join_to_company')|safe }}';
+
             $scope.me_user_id = '{{ g.user.id }}';
             $scope.$$translate = {{ translates('companies_list')|safe }};
 
             $scope.employments = [];
-
-            $scope.search_text = '';
-            $scope.next_page = 1;
-            $scope.table = true;
-            $scope.selectedCompany_name = '';
-            $scope.selectedCompany = null;
-            $scope.selectedCompany_sending = false;
-
             $scope.employments_there_is_more = true;
             $scope.employments_loading = false;
+            $scope.employments_layout_table = true;
 
-            $scope.createCompany = function () {
-                window.location.href = '{{ url_for('company.update')|safe }}'
+            $scope.companies_join_to = [];
+            $scope.companies_join_to_loading = false;
+            $scope.companies_join_to_search_text = '';
+            $scope.companies_join_to_there_is_more = false;
+            $scope.companies_join_to_joining = false;
+
+
+            $scope.companies_join_to_load = function (full_reload) {
+
+                if (full_reload) {
+                    $scope.companies_join_to = [];
+                    $scope.companies_join_to_loading = false;
+                }
+
+                if ($scope.companies_join_to_loading !== false) {
+                    return;
+                }
+
+                $scope.companies_join_to_loading = $scope.companies_join_to_search_text;
+
+                (function f(searched_text) {
+                    $ok($scope.url_search_for_company(), {
+                        'text': searched_text,
+                        'loaded': $scope.companies_join_to.map(function (company) {
+                            return company.id;
+                        })
+                    }, function (resp) {
+                        if (searched_text === $scope.companies_join_to_search_text) {
+                            $scope.companies_join_to.push.apply($scope.companies_join_to, resp['companies'])
+                            $scope.companies_join_to_there_is_more = resp['there_is_more'];
+                        }
+                        $scope.companies_join_to_loading = false;
+                    }, function (resp) {
+                        $scope.companies_join_to_loading = false;
+                    });
+                })($scope.companies_join_to_loading);
             };
 
 
-            $scope.onSelect = function ($item, $model, $label) {
-                if (!$item || !$item.id) {
-                    $scope.selectedCompany_name = '';
-                    $scope.selectedCompany = null;
-                }
-                else {
-                    $scope.selectedCompany = $item;
-                }
-            };
+            $scope.companies_join_to_join = function (company_id) {
+                $scope.companies_join_to_joining = company_id;
+                $ok($scope.url_join, {company_id: company_id}, function (resp) {
+                    $scope.companies_join_to = [];
+                    $scope.companies_join_to_search_text = '';
+                    $scope.companies_join_to_there_is_more = null;
+                    $scope.employments.unshift(resp['employment']);
 
-            $scope.show_more = function () {
-                if (!$scope.data_search.end) {
-                    $scope.next_page += 1;
-                    $scope.searchForCompanyToJoin($scope.search_text, $scope.next_page)
-                }
-            };
-
-            $scope.searchForCompanyToJoin = function (val, next_page) {
-                $scope.search_text = val;
-                return $ok($scope.url_search_for_company(), {
-                    article_id: $scope.data.id,
-                    search: val,
-                    next_page: next_page ? next_page : 1
-                }, function (resp) {
-                    $scope.data_search = resp ? resp : [];
-                    if ($scope.data_search.end)
-                        $scope.next_page = 1;
                     $timeout(function () {
-                        highLightSubstring(val, 'list_search_company', 'com_n');
-                    }, 0);
-                    return resp.length ? resp : [{id: false, name: 'No results'}];
+                        $('#employment_' + resp['employment']['id'] + ' .class_to_highlight').effect('bounce', {distance: 10}, 1000);
+                        {#                        $('.class_to_highlight',$('#employment_' + resp['employment']['id'])).addClass('highlight');#}
+                    }, 100);
+                    {#                    $timeout(function () {#}
+                    {#                        $('.class_to_highlight',$('#employment_' + resp['employment']['id'])).removeClass('highlight');#}
+                    {#                    }, 2000);#}
+                }).finally(function () {
+                    $scope.companies_join_to_joining = null;
                 });
             };
 
-            $scope.joinToCompany = function (company_id) {
-                $ok($scope.url_join({company_id: company_id}), {company_id: company_id}, function (resp) {
-                    $scope.selectedCompany = null;
-                    $scope.selectedCompany_name = null;
-                    $scope.data_search = [];
-                    $scope.data['companies'] = resp['companies'];
-                    $timeout(function () {
-//  TODO: OZ by OZ: fix id
-                        scrool('#employment_' + company_id);
-                        highlight('#joined_company_56187294-164b-4001-a603-7614f897601e')
-                    }, 500);
-                    $scope.selectedCompany_sending = false;
-                });
+            $scope.setTable = function (val) {
+                $scope.employments_layout_table = val;
+                $timeout(function () {
+                    $scope.$emit('employments:layout_changed');
+                }, 0);
             };
 
-            $scope.load_employments = function () {
+            $scope.employments_load = function () {
                 if ($scope.employments_loading) {
                     return;
                 }
                 $scope.employments_loading = true;
 
-                $ok($scope.load_employments_url(), {}, function (resp) {
+                $ok($scope.url_load_employments(), {
+                    'loaded': $scope.employments.map(function (employment) {
+                        return employment.id;
+                    })
+                }, function (resp) {
+                    $scope.actions = resp['actions'];
                     $scope.employments.push.apply($scope.employments, resp['employments']);
                     $scope.employments_there_is_more = resp['there_is_more'];
                 }).finally(function () {
@@ -97,175 +110,189 @@
                 });
             };
 
-            {#            $scope.loadNextPage($scope.load_employments_url(), function (resp) {#}
-            {#                $scope.data.companies = $scope.data.companies ? $scope.data.companies : [];#}
-            {#                $scope.data.companies = $scope.data.companies.concat(resp['companies']);#}
-            {#            });#}
 
             if ($(document).width() < 764) {
-                $scope.table = false;
+                $scope.employments_layout_table = false;
             }
 
         }]);
     </script>
     {% raw %}
-    <div class="container" ng-init="load_employments()" ng-controller="companies_list" ng-cloak>
+    <div class="container" ng-controller="companies_list" ng-cloak>
         <div class="row join-company">
             <div class="col-lg-3 create-company pull-right">
-                <button pr-test="CreateNewCompany" class="btn btn-default" type="button" ng-click='createCompany()'
-                        ng-disabled="data.actions.create_company !== true" title="{{ data.actions.create_company }}">
-                    <div>{{
-                        _('Create new company') }}
-                    </div>
-                </button>
+                <a ng-href="{{ actions.create_company?url_create_company:'' }}">
+                    <button class="btn btn-default" type="button" title="{{ actions.create_company }}">{{ _('Create new
+                        company') }}
+                    </button>
+                </a>
             </div>
-            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
 
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                 <div class="row">
                     <div class="col-lg-3 col-md-3 col-sm-4 col-xs-12">
-                        <h3>
-                            <div>{{ _('Join to company') }}</div>
-                        </h3>
+                        <h3>{{ _('Join to company') }}</h3>
                     </div>
                     <div class="col-lg-9 col-md-9 col-sm-8 col-xs-12 search-company">
-                        <div class="input-group" style="width: 100%">
-                            <input pr-test="SearchForCompany" type="text" class="form-control"
-                                   placeholder="Search for... "
-                                   uib-typeahead-on-select="onSelect($item, $model, $label)"
-                                   uib-typeahead-template-url="typeaheadTemplate.html"
-                                   ng-model="selectedCompany_name"
-                                   uib-typeahead="company as company.name for company in searchForCompanyToJoin($viewValue)"
-                                   name="company_id" ng-disabled='data.actions.create_company !== true'/>
+                        <div class="input-group w100">
+                            <input type="text" class="form-control"
+                                   placeholder="{{ _('Search for company...') }}"
+                                   ng-model-options='{ debounce: 500 }'
+                                   ng-change="companies_join_to_load(true)"
+                                   ng-model="companies_join_to_search_text"/>
                         </div>
                     </div>
-
-                </div>
-            </div>
-        </div>
-        <div class="row not-found">
-            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" ng-show="company_list.length<1">
-                <h3>{{ _('Oops! Nothing found!') }}</h3>
-            </div>
-        </div>
-
-        <div class="list_search_company" ng-repeat="company in data_search.company_list" ng-if="selectedCompany_name">
-            <div class="row search-result thumbnail">
-                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-4 photo-search">
-                    <a pr-test="CompanySearchResult" href="{{ url_company_profile({company_id: company.id}) }}"
-                       class="thumbnail">
-                        <img pr-image-url="{{ company.logo.url }}" alt="image" style="width: 100%">
-                    </a>
-                </div>
-
-                <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8">
-                    <h4 pr-test="SearchCompanyArticle" id="com_n">{{ company.name }}</h4>
-                    <p ng-bind-html="company.short_description"></p>
-                    <a pr-test="CompanyOwnPortal" ng-if="company.own_portal" href="http://{{ company.own_portal.host }}"
-                       title="http://{{ company.own_portal.host }}">{{ _('PORTAL') }}</a>
-                </div>
-                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-12 join-new-company">
-                    <button pr-test="JoinToCompany" class="btn btn-default" type="button"
-                            ng-click="joinToCompany(company.id)"
-                            ng-class="{'disabled': selectedCompany_sending}"
-                            ng-disabled="selectedCompany_sending">{{ _('Join') }}
-                    </button>
                 </div>
             </div>
         </div>
 
-        <div ng-if="data_search.company_list.length>0 && !data_search.end && selectedCompany_name" class="show-more">
-            <h4><a class="link"
-                   ng-click="show_more()">{{
-                _('Show more search results') }}</a></h4></div>
+
+        <div class="oa col-lg-12 col-md-12 col-sm-12 col-xs-12" ng-if="companies_join_to_search_text"
+             style="max-height: 30em; min-height: 1em;">
+
+            <div infinite-scroll="companies_join_to_load()"
+                 infinite-scroll-parent="true"
+                 infinite-scroll-disabled="companies_join_to_loading !== false || !companies_join_to_there_is_more">
+                <div class="list_search_company m05em" ng-repeat="company in companies_join_to">
+                    <div class="row company-thumbnail">
+                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-4">
+                            <img pr-image-url="{{ company.logo.url }}" style="width: 100%">
+                        </div>
+
+                        <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8">
+                            <h4 ng-bind-html="company.name | highlight: companies_join_to_search_text"></h4>
+                            <p ng-bind-html="company.short_description"></p>
+                        </div>
+
+                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-12 join-new-company">
+                            <button class="btn btn-default mb05em" type="button"
+                                    ng-click="companies_join_to_join(company.id)"
+                                    ng-class="{'disabled': companies_join_to_joining}"
+                                    ng-disabled="companies_join_to_joining">
+                                <i class="fa fa-plus"></i>&nbsp;&nbsp;&nbsp;{{ _('Join') }}
+                            </button>
+                            <a ng-href="{{ company.own_portal.host? ('//' + company.own_portal.host): '' }}"
+                               target="_blank">
+                                <button class="btn btn-success" type="button"
+                                        ng-class="{'disabled': !company.own_portal.host}">
+                                    {{_(company.own_portal.host?"Go to portal":"No portal created") }}<span
+                                        ng-if="company.own_portal.host"
+                                        class="fa fa-external-link pr-external-link"></span>
+                                </button>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+
+            <span class="label label-warning w100 fl tac" ng-show="companies_join_to_loading"><i
+                    class="fa fa-spinner"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading companies') }} </span>
+                <span class="label label-info w100 fl tac"
+                      ng-show="!companies_join_to_loading && companies_join_to.length && !companies_join_to_there_is_more"><i
+                        class="fa fa-check"></i>&nbsp;&nbsp;&nbsp;{{ _('There is no more companies to join') }}</span>
+                <span class="label label-danger w100 fl tac"
+                      ng-show="!companies_join_to_loading && !companies_join_to.length"><i
+                        class="fa fa-ban"></i>&nbsp;&nbsp;&nbsp;{{ _('Oops! Nothing found with this search criteria') }}</span>
+
+            </div>
+        </div>
+
 
         <div class="row employment_company-list">
-            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8">
-                    <h3 ng-if="employments.length > 0">
-                        <div>{{ _('Your company list') }}:</div>
-                    </h3>
-                    <h3 ng-if="employments.length===0 && !employments_loading">
-                        <div>{{ _('You haven\'t got any company yet!Create own or join to!') }}</div>
-                    </h3>
-                </div>
-                <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
-                    <a href="#" ng-click="table = false" ng-style="!table?{color:'red'}:''"><i
-                            class="fa fa-list pull-right" aria-hidden="true"></i></a>
-                    <a href="#" ng-click="table = true" ng-style="table?{color:'red'}:''"><i
-                            class="fa fa-th-large pull-right" aria-hidden="true"></i></a>
-                </div>
+
+
+            <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8" ng-if="employments.length > 0">
+                <h3>{{ _('Your company list') }}:</h3>
             </div>
 
+            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+                <h3>
+                    <a href="#" ng-click="setTable(false)" ng-style="!employments_layout_table?{color:'red'}:''"><i
+                            class="fa fa-list pull-right" aria-hidden="true"></i></a>
+                    <a href="#" ng-click="setTable(true)" ng-style="employments_layout_table?{color:'red'}:''"><i
+                            class="fa fa-th-large pull-right" aria-hidden="true"></i></a>
+                </h3>
+            </div>
+
+
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12"
-                    style="background-color: red"
-                 infinite-scroll="load_employments()"
-                 infinite-scroll-disabled="employments_loading !== false || !employments_there_is_more"
+                 infinite-scroll="employments_load()"
+                 infinite-scroll-listen-for-event="employments:layout_changed"
+                 infinite-scroll-disabled="employments_loading !== false || !employments_there_is_more">
 
-                    >
+                <div ng-if="employments && employments_layout_table==false"
+                     class="col-lg-12 col-md-12 col-sm-12 col-xs-12 list-company"
+                     ng-repeat="employment in employments" id="employment_{{ employment.id }}">
 
-                <div ng-if="employments && table == false" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 list-company"
-                     ng-repeat="employment in employments" id="employment_{{ employments.id }}">
-                    <a href="{{ url_company_profile({company_id: employment.company.id}) }}">
-                        <div class="col-lg-1 col-md-2 col-sm-2 col-xs-3">
-                            <img pr-image-url="{{ employment.company.logo.url }}" alt="image" style="width: 100%;">
-                        </div>
-                        <div class="col-lg-9 col-md-8 col-sm-8 col-xs-7">
-                            <h5 class="ellipsis">{{ _('%(name)s' , employment.company) }}</h5>
-                            <p class="join-own">{{ _(employment.company.author_user_id==me_user_id? 'own':'joined')
-                                }}</p>
-                        </div>
+                    <a ng-href="{{ employment.status=='ACTIVE'?url_company_profile({company_id: employment.company.id}):'' }}"
+                       class=""
+                       ng-class="{'disabled': employment.status!='ACTIVE'}">
+                        <div class="col-lg-1 col-md-2 col-sm-2 col-xs-3"><img pr-image-position="top"
+                                                                              class="class_to_highlight"
+                                                                              pr-image-url="{{ employment.company.logo.url }}"
+                                                                              alt="image" style="width: 100%;"></div>
+                        <span class="col-lg-5 col-md-5 col-sm-5 col-xs-5">{{ employment.company.name }}</span>
                     </a>
+
+                    <div class="col-lg-4 col-md-3 col-sm-3 col-xs-2">{{ (employment.company.author_user_id==me_user_id)?
+                        _('OWN COMPANY'):_('JOINED COMPANY with status ' + employment.status) }}
+                    </div>
+
                     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
-                        <p class="portal" ng-if="!employment.company.own_portal.host">{{_('Portals')}}: {{_('No')}}</p>
-                        <a href="//{{ employment.company.own_portal.host }}" target="_blank">
-                            <button class="portal btn" ng-if="employment.company.own_portal.host" type="button">
-                                {{_("Go to portal") }}<span class="fa fa-external-link pr-external-link"></span>
+                        <a ng-href="{{ employment.company.own_portal.host? ('//' + employment.company.own_portal.host): '' }}"
+                           target="_blank">
+                            <button class="btn btn-success w100" type="button"
+                                    ng-class="{'disabled': !employment.company.own_portal.host}">
+                                {{_(employment.company.own_portal.host?"Go to portal":"No portal created") }}<span
+                                    ng-if="employment.company.own_portal.host"
+                                    class="fa fa-external-link pr-external-link"></span>
                             </button>
                         </a>
                     </div>
-
                 </div>
 
 
-                <div ng-if="employments && table == true" class="col-lg-4 col-md-4 col-sm-6 col-xs-12"
+                <div ng-if="employments && employments_layout_table == true"
+                     class="col-lg-4 col-md-4 col-sm-6 col-xs-12"
                      ng-repeat="employment in employments" id="employment_{{ employment.id }}">
-                    <div class="thumbnail company-thumbnail">
-                        <a ng-if="employment.status=='ACTIVE'"
-                           href="{{ url_company_profile({company_id: employment.company.id}) }}">
-                            <img pr-image-url="{{ employment.company.logo.url }}" alt="image"
-                                 style="width: 300px; height: 200px;">
-                        </a>
-                    <span ng-if="employment.status!='ACTIVE'">
-                        <img pr-image-url="{{ employment.company.logo.url }}" alt="image"
-                             style="width: 300px; height: 200px;">
-                    </span>
-                        <div pr-test="SomeCompanyInfo" class="caption some-company-info">
 
-                            <a ng-if="employment.status=='ACTIVE'" pr-test="YourCompanyListTitles"
-                               href="{{ url_company_profile({company_id: employment.company.id}) }}">
-                                <h3 class="ellipsis">{{ _('%(name)s' , employment.company) }}</h3>
+                    <div class="company-thumbnail mb05em mt05em">
+                        <div class="caption some-company-info class_to_highlight"
+                             ng-class="{'disabled': employment.status!='ACTIVE'}">
+                            <a ng-href="{{ employment.status=='ACTIVE'?url_company_profile({company_id: employment.company.id}):'' }}">
+                                <img pr-image-url="{{ employment.company.logo.url }}"
+                                     style="width: 100%; height: 200px;"/>
+                                <h3 class="ellipsis">{{ employment.company.name }}</h3>
                             </a>
-                        <span ng-if="employment.status!='ACTIVE'" pr-test="YourCompanyListTitles">
-                            <h3 class="ellipsis">{{ _('%(name)s' , employment.company) }}</h3>
-                        </span>
-                            <p pr-test="JoinedCompany">{{ (employment.company.author_user_id==me_user_id)? _('Type: OWN
-                                COMPANY'):_('JOINED COMPANY with status %(status)s', {'status': employment.status })
-                                }}</p>
-                            <span ng-if="!employment.company.own_portal.host"><b>{{_('Portals')}}: </b>{{_('No')}}</span>
-                            <div ng-if="employment.company.own_portal.host">
-                                <a href="//{{ employment.company.own_portal.host }}" target="_blank">
-                                    <button pr-test="GoToPortalButton" class="btn btn-default" type="button">
-                                        {{_("Go to portal") }}<span class="fa fa-external-link pr-external-link"></span>
-                                    </button>
-                                </a>
-                            </div>
 
+
+                            <p>{{ (employment.company.author_user_id==me_user_id)? _('OWN
+                                COMPANY'):_('JOINED COMPANY with status ' + employment.status)
+                                }}</p>
                         </div>
+
+                        <a ng-href="{{ employment.company.own_portal.host? ('//' + employment.company.own_portal.host): '' }}"
+                           target="_blank">
+                            <button class="btn btn-success" type="button"
+                                    ng-class="{'disabled': !employment.company.own_portal.host}">
+                                {{_(employment.company.own_portal.host?"Go to portal":"No portal created") }}<span
+                                    ng-if="employment.company.own_portal.host"
+                                    class="fa fa-external-link pr-external-link"></span>
+                            </button>
+                        </a>
+
                     </div>
                 </div>
 
-
+                <span class="label label-warning w100 fl tac" ng-show="employments_loading"><i
+                        class="fa fa-spinner"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading employments') }} </span>
+                <span class="label label-info w100 fl tac"
+                      ng-show="!employments_loading && employments.length && !employments_there_is_more"><i
+                        class="fa fa-check"></i>&nbsp;&nbsp;&nbsp;{{ _('All employments loaded') }}</span>
+                <span class="label label-danger w100 fl tac" ng-show="!employments_loading && !employments.length"><i
+                        class="fa fa-ban"></i>&nbsp;&nbsp;&nbsp;{{ _('You haven\'t got any company yet! Create own or join to!') }}</span>
             </div>
+
         </div>
     </div>
 

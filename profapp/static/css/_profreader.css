@@ -263,7 +263,6 @@
 
 .join-new-company button, .join-new-company button:hover {
     width: 100%;
-    margin-top: 30px;
     background-color: #18BCAB;
     border-color: #18BCAB;
     border-radius: 0;
@@ -288,22 +287,6 @@
     color: #CA2027;
 }
 
-.company-thumbnail {
-    border-radius: 0;
-}
-
-.company-thumbnail button {
-    padding: 5px;
-    background-color: #18BCAB;
-    border-color: #18BCAB;
-    border-radius: 0;
-    width: 100%;
-}
-
-.company-thumbnail button:focus, .company-thumbnail button:active, .company-thumbnail button:hover {
-    background-color: #119C8D;
-    border-color: #119C8D;
-}
 
 /* ----- LOGINATION & AUTHORITHATION ------------------ */
 
@@ -430,10 +413,6 @@
 /*color: #fff;*/
 /*}*/
 
-.highlight a {
-    color: white !important;
-    background: red;
-}
 
 .search-highlight {
     color: red;

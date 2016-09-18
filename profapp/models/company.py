@@ -145,7 +145,6 @@ class Company(Base, PRBase, PRElasticDocument):
             if self.lat is None or not utils.putInRange(self.lat, -90, 90, check_only=True):
                 ret['errors']['lat'] = 'pls latitude in range [-90,90]'
 
-
         # if (self.lat is None and self.lon is not None) or (self.lat is not None and self.lon is None):
         #     ret['errors']['lon_lat'] = 'pls enter both lon and lat or none of them'
 
@@ -225,12 +224,6 @@ class Company(Base, PRBase, PRElasticDocument):
         #     )
         # db_session.flush()
 
-    @staticmethod
-    def search_for_company_to_join(user_id, searchtext):
-        """Return all companies which are not current user employers yet"""
-        return db(Company).filter(~db(UserCompany, user_id=user_id,
-                                      company_id=Company.id).exists()).filter(Company.name.ilike("%" + searchtext + "%")
-                                                                              )
 
     def get_client_side_dict(self,
                              fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
@@ -416,7 +409,7 @@ class UserCompany(Base, PRBase):
         self.attr(g.filter_json(json, 'status|position|rights'))
 
     @staticmethod
-    def get_by_user_and_company_ids(user_id= None, company_id = None):
+    def get_by_user_and_company_ids(user_id=None, company_id=None):
         return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).one()
 
     # TODO: VK by OZ: pls teach everybody what is done here

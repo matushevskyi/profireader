@@ -1,7 +1,9 @@
 /*Const!*/
 @shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+@shadow-highlight: 0 2px 5px 0 rgba(255, 0, 0, 1), 0 2px 10px 0 rgba(255, 0, 0, 0.5);
 @shadow-hover: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 @transition: all 0.2s ease-out;
+@transition-slow: all 1s linear;
 @color-links: #00BBA1;
 @color-links-hover: #00BBA1*1.1;
 @color-bg: #212121;
@@ -543,7 +545,6 @@ body {
 .join-new-company {
   button {
     width: 100%;
-    margin-top: 30px;
     background-color: @color-links;
     border-color: @color-links;
     border-radius: 3px;
@@ -585,24 +586,19 @@ body {
 
   h3 {
     color: #383838;
-    margin-bottom: 15px;
-    margin-left: -15px;
   }
   h4 {
     text-align: center;
     color: @color-red-btn;
   }
-  i {
-    margin-top: 30px;
-    margin-left: 15px;
-  }
+
 }
 
 .list-company {
   border-bottom: 1px solid #F9F9F9;
   //background-color: #F9F9F9;
   color: #000000;
-  //margin-bottom: 3px;
+  margin-bottom: 3px;
   &:hover {
     transition: @transition;
     //box-shadow: @shadow;
@@ -639,25 +635,31 @@ body {
 
 .company-thumbnail {
   border-radius: 3px;
+  padding: 5px;
   box-shadow: @shadow;
   border: 1px solid #f5f5f5;
+
   &:hover {
     box-shadow: @shadow-hover;
     transition: @transition;
   }
+
+  &.highlight {
+    box-shadow: @shadow-highlight;
+    transition: @transition-slow;
+  }
+
+
+
   button {
     padding: 5px;
-    background-color: @color-links;
-    border-color: @color-links;
     border-radius: 3px;
     width: 100%;
-    margin-bottom: -15px;
-    margin-top: -15px;
   }
-  button:focus, button:active, button:hover {
-    background-color: @color-links-hover;
-    border-color: @color-links-hover;
-  }
+}
+
+.company-thumbnail .disabled a {
+  cursor: not-allowed;
 }
 
 .some-company-info {

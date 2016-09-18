@@ -455,7 +455,6 @@ body {
 }
 .join-new-company button {
   width: 100%;
-  margin-top: 30px;
   background-color: #00BBA1;
   border-color: #00BBA1;
   border-radius: 3px;
@@ -492,20 +491,15 @@ body {
 }
 .employment_company-list h3 {
   color: #383838;
-  margin-bottom: 15px;
-  margin-left: -15px;
 }
 .employment_company-list h4 {
   text-align: center;
   color: #C70000;
 }
-.employment_company-list i {
-  margin-top: 30px;
-  margin-left: 15px;
-}
 .list-company {
   border-bottom: 1px solid #F9F9F9;
   color: #000000;
+  margin-bottom: 3px;
 }
 .list-company:hover {
   transition: all 0.2s ease-out;
@@ -540,6 +534,7 @@ body {
 }
 .company-thumbnail {
   border-radius: 3px;
+  padding: 5px;
   box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
   border: 1px solid #f5f5f5;
 }
@@ -547,20 +542,17 @@ body {
   box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
   transition: all 0.2s ease-out;
 }
+.company-thumbnail.highlight {
+  box-shadow: 0 2px 5px 0 #ff0000, 0 2px 10px 0 rgba(255, 0, 0, 0.5);
+  transition: all 1s linear;
+}
 .company-thumbnail button {
   padding: 5px;
-  background-color: #00BBA1;
-  border-color: #00BBA1;
   border-radius: 3px;
   width: 100%;
-  margin-bottom: -15px;
-  margin-top: -15px;
 }
-.company-thumbnail button:focus,
-.company-thumbnail button:active,
-.company-thumbnail button:hover {
-  background-color: #00ceb1;
-  border-color: #00ceb1;
+.company-thumbnail .disabled a {
+  cursor: not-allowed;
 }
 .some-company-info h3 {
   text-align: center;

@@ -362,10 +362,10 @@
                         if (searched_text === $scope.community_search_text) {
                             $scope.community.push.apply($scope.community, resp['community'])
                             $scope.community_next_page = resp['next_page'];
-                            $scope.community_loading = false;
                         }
+                        $scope.community_loading = false;
                     }, function (resp) {
-
+                        $scope.community_loading = false;
                     });
                 })($scope.community_loading);
             };
@@ -688,15 +688,13 @@
                             </div>
                         </div>
                     </div>
-                    <button class="w100 btn btn-default mt1em" ng-show="community_next_page"><i
+                    <div class="label label-warning w100 tac db mt1em" ng-show="community_next_page"><i
                             class="fa fa-spinner"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading community page') }}
-                    </button>
-                    <button class="w100 btn btn-default mt1em" ng-show="!community_next_page" disabled="disabled">
-                        {{ _('All community users loaded') }}
-                    </button>
-                    <div ng-show="selected_messenger_menu == 'contacts'">
-                        contacts
                     </div>
+                    <div class="label label-info w100 tac db mt1em" ng-show="!community_next_page"><i
+                            class="fa fa-check"></i>&nbsp;&nbsp;&nbsp;{{ _('All community users loaded') }}
+                    </div>
+
                 </div>
 
             </div>

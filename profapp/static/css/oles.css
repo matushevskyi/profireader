@@ -3,6 +3,7 @@
     color: #ccc;
 }
 
+
 .item:hover {
     /*background: rgba(255, 200, 200, 0.3);*/
 }
@@ -90,6 +91,10 @@
     text-overflow: ellipsis;
 }
 
+.oa {
+    overflow: auto;
+}
+
 .w100 {
     width: 100%;
 }
@@ -104,6 +109,22 @@
 
 .w15em {
     width: 15em;
+}
+
+.h100 {
+    height: 100%;
+}
+
+.h10em {
+    height: 10em;
+}
+
+.h50em {
+    height: 50em;
+}
+
+.db {
+    display: block;
 }
 
 .dib {
@@ -124,6 +145,22 @@
 
 .red {
     color: red;
+}
+
+.vab {
+    vertical-align: bottom;
+}
+
+.vat {
+    vertical-align: top;
+}
+
+.vabl {
+    vertical-align: baseline;
+}
+
+.vam {
+    vertical-align: middle;
 }
 
 .notitledialog .ui-dialog-titlebar {
@@ -181,6 +218,10 @@
 
 .fr {
     float: right;
+}
+
+.fl {
+    float: left;
 }
 
 /*TODO: RI by OZ: this class for grid icons (see employees icons) */
@@ -839,6 +880,4 @@ div.pr-row:last-child div.pr-cell {
     height: calc(30em + 75px);
     padding: 3px;
 }
-
-
 
