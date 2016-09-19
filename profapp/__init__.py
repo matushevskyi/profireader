@@ -6,7 +6,7 @@ from flask.ext.bootstrap import Bootstrap
 from flask.ext.login import LoginManager, current_user, AnonymousUserMixin
 from flask.ext.mail import Mail
 
-from profapp.controllers.errors import csrf
+
 from .constants.SOCIAL_NETWORKS import INFO_ITEMS_NONE, SOC_NET_FIELDS
 from .constants.USER_REGISTERED import REGISTERED_WITH
 from .models.users import User

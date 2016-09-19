@@ -1,5 +1,5 @@
 import os
-import secret_data as secret_data
+import scrt.secret_data as secret_data
 from main_domain import MAIN_DOMAIN
 
 
