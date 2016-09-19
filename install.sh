@@ -236,8 +236,8 @@ apt-get install haproxy" sudo haproxy_config
     }
 
 function menu_haproxy_config {
-    conf_comm "cp ./haproxy.cfg /etc/haproxy/
-cp ./profireader_haproxy.key.pem /etc/haproxy/
+    conf_comm "cp ./conf/haproxy.cfg /etc/haproxy/
+cp ./conf/profireader_haproxy.key.pem /etc/haproxy/
 service haproxy restart" sudo letsencrypt
     }
 

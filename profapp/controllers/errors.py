@@ -1,8 +1,3 @@
-from flask import render_template, flash
-from flask_wtf.csrf import CsrfProtect
-from .blueprints_declaration import exception_bp
-
-csrf = CsrfProtect()
 
 
 class Error(Exception):

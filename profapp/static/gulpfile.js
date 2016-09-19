@@ -185,7 +185,7 @@ gulp.task('less', function () {
     }
 
     gulp.watch(dirs).on('change', function (file) {
-        gutil.log(gutil.colors.yellow('JS changed' + ' (' + file.path.replace(/.less$/, '.css,.map') + ' created)'));
+        gutil.log(gutil.colors.yellow('changed' + ' (' + file.path.replace(/.less$/, '.css,.map') + ' created)'));
         gulp.src(file.path)
             .pipe(less({
                 sourceMap: {
