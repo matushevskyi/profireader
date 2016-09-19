@@ -140,7 +140,7 @@ function error_if_exists {
     }
 
 function get_profidb {
-    echo `cat secret_data.py | grep 'DB_NAME\s*=' | sed -e 's/^\s*DB_NAME\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+    echo `cat scrt/secret_data.py | grep 'DB_NAME\s*=' | sed -e 's/^\s*DB_NAME\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
     }
 
 function runsql {
@@ -290,15 +290,15 @@ service apache2 restart" sudo secret_data
     }
 
 function menu_secret_data {
-    down secret_data.txt secret_data.py secret_data.`$gitv`_`$datev`.bak secret_client
+    down secret_data.txt scrt/secret_data.py scrt/secret_data.`$gitv`_`$datev`.bak secret_client
     }
 
 function menu_secret_client {
-    down client_secret.json client_secret.json client_secret.json.`$gitv`_`$datev`.bak download_key_pem
+    down client_secret.json scrt/client_secret.json scrt/client_secret.json.`$gitv`_`$datev`.bak download_key_pem
     }
 
 function menu_download_key_pem {
-    down profireader_haproxy.key.pem profireader_haproxy.key.pem profireader_haproxy.key.pem profireader_haproxy.key.pem.`$gitv`_`$datev`.bak python_3
+    down profireader_haproxy.key.pem scrt/profireader_haproxy.key.pem profireader_haproxy.key.pem scrt/profireader_haproxy.key.pem.`$gitv`_`$datev`.bak python_3
     }
 
 
@@ -353,10 +353,10 @@ function menu_db_user_pass {
     echo "Going to create user/pass from secret data and create such user/pass using postgres user"
     echo "If user exists, only password will be changed"
     
-    profiuser=`cat secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+    profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
     psqluser=$(rr 'Enter postgresql user' $profiuser)
     
-    profipass=`cat secret_data.py | grep 'DB_PASSWORD' | sed -e 's/^\s*DB_PASSWORD\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+    profipass=`cat scrt/secret_data.py | grep 'DB_PASSWORD' | sed -e 's/^\s*DB_PASSWORD\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
     psqlpass=$(rr 'Enter postgresql password' $profipass)
     runsql "CREATE USER $psqluser;
 ALTER USER $psqluser WITH PASSWORD '$psqlpass';" compare_local_makarony
@@ -403,7 +403,7 @@ function menu_db_create {
     profidb=$(get_profidb)
     psqldb=$(rr 'Enter postgresql database name' $profidb)
 
-    profiuser=`cat secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+    profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
     runsql "CREATE DATABASE $psqldb WITH ENCODING 'UTF8' LC_COLLATE='C.UTF-8' LC_CTYPE='C.UTF-8'  OWNER = $profiuser TEMPLATE=template0" db_download_minimal
     }
 
@@ -444,7 +444,7 @@ function menu_db_reassign_ownership {
 
     profidb=$(get_profidb)
 
-    profiuser=`cat secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+    profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
 
     conf_comm "
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT tablename      FROM pg_tables                     WHERE schemaname      = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
