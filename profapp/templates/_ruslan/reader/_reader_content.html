@@ -79,7 +79,7 @@
 
                 </div>
                 <a target="_blank" type="link"
-                   href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">
+                   ng-href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">
                     <img class="list-reader-image" pr-image-url="{{ article.illustration.url }}"
                          alt="img">
                 </a>
@@ -87,7 +87,7 @@
                 <div class="item-short-content">
                     <h3 class="item-title">
                         <a target="_blank"
-                           href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">{{
+                           ng-href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">{{
                             article.title}}</a>
                     </h3>
                     <div>{{ article.short}}</div>

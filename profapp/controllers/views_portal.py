@@ -6,7 +6,7 @@ from ..models.portal import PortalDivisionType
 from ..models.translate import TranslateTemplate
 from utils.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
-    PortalDivisionSettingsCompanySubportal, PortalConfig, PortalAdvertisment
+    PortalDivisionSettingsCompanySubportal, PortalConfig, PortalAdvertisment, PortalAdvertismentPlace
 from .request_wrapers import ok, check_right
 # from ..models.bak_articles import Publication, ArticleCompany, Article
 from ..models.company import UserCompany
@@ -173,12 +173,19 @@ def portal_banners_load(json, company_id):
     portal = Company.get(company_id).own_portal
     if 'action_name' in json:
         if json['action_name'] == 'create':
-            newrow = PortalAdvertisment(portal_id=portal.id, html='', place=json['row']['place']).save()
+            place = db(PortalAdvertismentPlace, portal_layout_id = portal.portal_layout_id, place = json['row']['place']).one()
+            newrow = PortalAdvertisment(portal_id=portal.id, html=place.default_value if place.default_value else '', place=json['row']['place']).save()
             return {'grid_action': 'refresh_row', 'row': newrow.get_client_side_dict()}
 
-        if json['action_name'] == 'delete':
+        elif json['action_name'] == 'delete':
             PortalAdvertisment.get(json['id']).delete()
             return {'grid_action': 'delete_row'}
+        elif json['action_name'] == 'set_default':
+            adv = PortalAdvertisment.get(json['id'])
+            place = db(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id, place=adv.place).one()
+            adv.html = place.default_value
+            adv.save()
+            return {}
     else:
         banners = PortalAdvertisment.get_portal_advertisments(portal)
         return {'page': 1,

@@ -161,6 +161,43 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             return modalInstance;
         }
     }])
+    .controller('confirm_dialog_controller', function ($scope, $uibModalInstance, title, question, buttons) {
+
+        $scope.buttons = buttons;
+        $scope.title = title;
+        $scope.question = question;
+        $scope.ans = function (resp) {
+            if (resp) {
+                $uibModalInstance.close(resp)
+            }
+            else {
+                $uibModalInstance.dismiss(resp)
+            }
+        }
+
+    })
+    .factory('$confirm', ['$uibModal', function ($uibModal) {
+        return function (title, question, buttons) {
+            var modalInstance = $uibModal.open({
+                templateUrl: 'confirm.html',
+                controller: 'confirm_dialog_controller',
+                resolve: {
+                    'buttons': function () {
+                        return buttons ? buttons : [{'answer': true, 'text': 'Yes', 'class_name': 'btn-default'},
+                            {'answer': false, 'text': 'No', 'class_name': 'btn-danger'}];
+                    },
+                    'title': function () {
+                        return title;
+                    },
+                    'question': function () {
+                        return question;
+                    }
+                }
+            });
+            return modalInstance.result;
+        }
+
+    }])
     .factory('$ok', ['$http', function ($http) {
         return function (url, data, ifok, iferror, translate, disableonsubmid) {
             //console.log($scope);
@@ -1428,29 +1465,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             var scope = this;
             scope.gridApi = gridApi;
 
-            gridApi.grid.server_action_click = function (id, action_name, row, column_name) {
-                // TODO: YG by OZ: disable all action buttons on click (in row)
-                $ok('', {action_name: action_name, row: row, id: id, column_name: column_name}, function (resp) {
-                        // TODO: YG by OZ: enable disabled actions buttons on click (in row)
-                        // TODO: YG by OZ: handle action
-                        if (resp['grid_action'] == 'delete_row') {
-
-                        }
-                        if (resp['grid_action'] == 'refresh_row') {
-
-                        }
-                        if (resp['grid_action'] == 'refresh_grid') {
-
-                        }
-                        if (resp['grid_action'] == 'refresh_page') {
-
-                        }
-                        window.location.reload();
-                    },
-                    function (resp) {
-                    });
-            }
-
             gridApi.grid['all_grid_data'] = {
                 paginationOptions: {pageNumber: 1, pageSize: 1},
                 filter: {},
@@ -1522,9 +1536,18 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
 
                     var attributes_for_cell = +col.name + '" pr-id="{{ row.entity.id }}" ';
-                    if (col.onclick && col.type !== 'actions' && col.type !== 'editable') {
-                        attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\') "';
+
+                    var action_button_before_click_b = '';
+                    var action_button_before_click_e = '';
+                    if (col.onclick) {
+                        if (col.type === 'actions') {
+                            col.onclick = 'grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')';
+                        }
+                        else if (col.type !== 'editable') {
+                            attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\')"';
+                        }
                     }
+
 
                     var prefix_img = '';
                     if (col.img_url) {
@@ -1540,20 +1563,11 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                                 ' class="m025em label label-danger">{{ tag.text }}</span></div>';
                         case 'show_modal':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '" title="{{ COL_FIELD }}">' + prefix_img + '<a ng-click="' + col.modal + '" ng-bind="COL_FIELD"></a></div>';
-                        // TODO: YG by OZ: 1. change type from 'actions' to 'server_actions' where it CAN be changes. 1a. remove obsolete javascript code in controllers (onclick)
-                        // TODO: YG by OZ: 2. (low priority) handle server response (replace, delete) see server_action_click
-                        // TODO: YG by OZ: 3. (low priority) if now from server come delete: True - that's mean action allowed. delete: 'explanation message' - acvtion dissallowed. how to show some message from server if action is allowed? we need to change format?
-                        case 'server_actions':
-                            return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '">' + prefix_img + '<button ' +
-                                ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
-                                ' ng-repeat="(action_name, enabled) in COL_FIELD" ng-disabled="enabled !== true" ng-style="{width:grid.getLengthOfAssociativeArray(COL_FIELD)>3?\'2.5em\':\'5em\'}"' +
-                                ' ng-click="grid.server_action_click(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')" ' +
-                                ' title="{{ grid.appScope._((enabled === true)?(action_name + \' grid action\'):enabled) }}">{{ grid.appScope._(action_name + \' grid action\') }}</button></div>';
                         case 'actions':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '">' + prefix_img + '<button ' +
                                 ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
                                 ' ng-repeat="(action_name, enabled) in COL_FIELD" ng-disabled="enabled !== true" ng-style="{width:grid.getLengthOfAssociativeArray(COL_FIELD)>3?\'2.5em\':\'5em\'}"' +
-                                ' ng-click="grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')" ' +
+                                ' ng-click="' + col.onclick + '" ' +
                                 ' title="{{ grid.appScope._((enabled === true)?(action_name + \' grid action\'):enabled) }}">{{ grid.appScope._(action_name + \' grid action\') }}</button></div>';
                         case 'icons':
                             return '<div  ' + attributes_for_cell + '  pr-test="Grid-' + col.name + '" class="' + classes_for_row + '">' + prefix_img + '<i ng-class="{disabled: !icon_enabled}" ' +

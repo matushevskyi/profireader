@@ -2,6 +2,7 @@
 <html lang="{{ g.lang }}">
 <title>{% block title %}{{ _('%(portal_name)s', {'portal_name': portal.name}) }}{% endblock %}</title>
 <head>
+    {{ portal.advs['head_begin']|safe }}
     <meta name="description" content="{% block description %}{% endblock %}">
     {% block og -%}
     <meta property="og:site_name" content="{% block og_name %}{{ portal.name }}{% endblock %}"/>
@@ -11,12 +12,13 @@
     {%- endblock %}
 
     {% block head %}{% include 'block_head.html' %}{% endblock head %}
+    {% if portal.advs['bottom_banner'] -%}
+    {{ portal.advs['head_end']|safe }}
+    {%- endif %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
+{{ portal.advs['body_begin']|safe }}
 {% block body %}{% endblock %}
-
-<!-- Go to www.addthis.com/dashboard to customize your tools -->
-<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-57acef603e90361a"></script>
-
+{{ portal.advs['body_end']|safe }}
 </body>
 </html>
