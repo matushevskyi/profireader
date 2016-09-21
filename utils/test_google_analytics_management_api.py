@@ -91,12 +91,12 @@ def print_results(results):
 
 def main():
     # Define the auth scopes to request.
-    scope = ['https://www.googleapis.com/auth/analytics.readonly']
+    scope = ['https://www.googleapis.com/auth/analytics.readonly', 'https://www.googleapis.com/auth/analytics.edit']
 
     # Use the developer console and replace the values with your
     # service account email and relative location of your key file.
     service_account_email = '892582243019-compute@developer.gserviceaccount.com'
-    key_file_location = 'Profireader analytics-1fe3311c276b.p12'
+    key_file_location = '../scrt/Profireader analytics-1fe3311c276b.p12'
 
     # Authenticate and construct service.
     service = get_service('analytics', 'v3', scope, key_file_location,

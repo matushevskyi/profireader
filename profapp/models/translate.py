@@ -125,7 +125,8 @@ class TranslateTemplate(Base, PRBase):
     def update_last_accessed(template, phrase):
         i = datetime.datetime.now()
         obj = db(TranslateTemplate, template=template, name=phrase).first()
-        obj.attr({'ac_tm': i})
+        if obj:
+            obj.attr({'ac_tm': i})
         return True
 
     @staticmethod

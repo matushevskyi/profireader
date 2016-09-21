@@ -375,7 +375,9 @@ class PortalAdvertismentPlace(Base, PRBase):
 
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(PortalLayout.id))
-    name = Column(TABLE_TYPES['short_text'], nullable=False)
+    place = Column(TABLE_TYPES['short_text'], nullable=False)
+    help = Column(TABLE_TYPES['text'])
+    default_value = Column(TABLE_TYPES['text'])
 
     portal_layout = relationship(PortalLayout, uselist=False)
 
@@ -390,21 +392,22 @@ class PortalAdvertisment(Base, PRBase):
 
     @staticmethod
     def get_portal_advertisments(portal):
-        exists = {p.name: False for p in
+        places = {p.place: p.get_client_side_dict('help,default_value') for p in
                   db(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id).all()}
-        banners = db(PortalAdvertisment, portal_id=portal.id).all()
+        banners = db(PortalAdvertisment, portal_id=portal.id).order_by(PortalAdvertisment.place).all()
         ret = []
         for b in banners:
-            if b.place in exists:
-                exists[b.place] = True
-                ret.append(utils.dict_merge(b.get_client_side_dict(), {'actions': {}}))
+            if b.place in places:
+                ret.append(
+                    utils.dict_merge(b.get_client_side_dict(), places[b.place], {'actions': {'set_default': True}}))
+                places[b.place] = False
             else:
                 ret.append(utils.dict_merge(b.get_client_side_dict(), {'actions': {'delete': True}}))
 
-        for b in exists:
-            if exists[b] is False:
-                ret.append({'id': '', 'portal_id': portal.id, 'place': b, 'html': '', 'actions': {'create': True}})
-
+        for p_name in places:
+            if places[p_name] is not False:
+                ret.append(utils.dict_merge(
+                    {'id': '', 'portal_id': portal.id, 'place': p_name, 'html': '', 'actions': {'create': True}}, places[p_name]))
         return ret
 
     def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):

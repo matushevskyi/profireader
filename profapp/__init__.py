@@ -6,7 +6,6 @@ from flask.ext.bootstrap import Bootstrap
 from flask.ext.login import LoginManager, current_user, AnonymousUserMixin
 from flask.ext.mail import Mail
 
-
 from .constants.SOCIAL_NETWORKS import INFO_ITEMS_NONE, SOC_NET_FIELDS
 from .constants.USER_REGISTERED import REGISTERED_WITH
 from .models.users import User
@@ -84,10 +83,25 @@ def setup_authomatic(app):
 def load_user(apptype):
     g.user = current_user if current_user.is_authenticated() else None
 
-
-    lang = session['language'] if 'language' in session else 'uk'
-    g.lang = g.user.lang if g.user else lang
+    # lang = session['language'] if 'language' in session else 'uk'
     g.languages = Config.LANGUAGES
+
+    # if 'language' in session:
+    #     g.lang = session['language']
+    # elif g.user:
+    #     g.lang = g.user.lang
+    # el
+    # print(request.headers.environ)
+    if 'HTTP_ACCEPT_LANGUAGE' in request.headers.environ:
+        agent_languages = list(map(lambda l: re.compile("\s*;\s*q=").split(l),
+                                   re.compile("\s*,\s*").split(request.headers.environ['HTTP_ACCEPT_LANGUAGE'])))
+        agent_languages.sort(key=lambda x: float(x[1]) if len(x) > 1 else 1, reverse=True)
+        # g.lang = g.user.lang
+
+    g.lang = 'en'
+
+    # = g.user.lang if g.user else lang
+
 
     g.portal = None
     g.portal_id = None
@@ -240,4 +254,3 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.type = apptype
 
     return app
-

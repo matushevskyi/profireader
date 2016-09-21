@@ -93,7 +93,7 @@
         };
 
         $scope.$watch("data['publication']['portal_division_id']", function (newid, oldid) {
-            if($scope.data.publication){
+            if ($scope.data.publication) {
                 $scope.data.publication.tags = (newid ? _.filter($scope.data.publication.tags, function (tag) {
                     return $scope.tag_is_allowed_for_division($scope.get_selected_division(), tag);
                 }) : []);
@@ -224,7 +224,7 @@
         $scope.get_tags = function (search_text) {
             return _.filter($scope.data.portal.tags, function (tag) {
                 var ret = ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
-                        (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
+                (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
                 return ret;
             })
         };
@@ -280,4 +280,18 @@
     </div>
 </script>
 
+<script type="text/ng-template" id="confirm.html">
+    <div class="modal-header">
+        <h3 class="modal-title">{{ title }}</h3>
+    </div>
+    <div class="modal-body">
+        {{ question }}
+    </div>
+
+    <div class="modal-footer">
+        <button ng-repeat="b in buttons" class="btn {{b.class_name}}" ng-click="ans(b.answer)">{{ b.text }}</button>
+    </div>
+</script>
 {% endraw %}
+
+
