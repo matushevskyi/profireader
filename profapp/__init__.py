@@ -86,19 +86,18 @@ def load_user(apptype):
     # lang = session['language'] if 'language' in session else 'uk'
     g.languages = Config.LANGUAGES
 
-    # if 'language' in session:
-    #     g.lang = session['language']
-    # elif g.user:
-    #     g.lang = g.user.lang
-    # el
-    # print(request.headers.environ)
-    if 'HTTP_ACCEPT_LANGUAGE' in request.headers.environ:
+    if 'language' in session:
+        g.lang = session['language']
+    elif g.user:
+        g.lang = g.user.lang
+    elif 'HTTP_ACCEPT_LANGUAGE' in request.headers.environ:
         agent_languages = list(map(lambda l: re.compile("\s*;\s*q=").split(l),
                                    re.compile("\s*,\s*").split(request.headers.environ['HTTP_ACCEPT_LANGUAGE'])))
         agent_languages.sort(key=lambda x: float(x[1]) if len(x) > 1 else 1, reverse=True)
         # g.lang = g.user.lang
 
-    g.lang = 'en'
+    else:
+        g.lang = 'en'
 
     # = g.user.lang if g.user else lang
 
