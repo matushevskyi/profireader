@@ -100,7 +100,8 @@ def load_user(apptype):
     if 'language' in session:
         g.lang = session['language']
 
-
+    if g.lang not in [l['name'] for l in g.languages]:
+        g.lang = 'en'
     # = g.user.lang if g.user else lang
 
 

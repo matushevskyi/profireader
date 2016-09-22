@@ -29,7 +29,7 @@ if __name__ == '__main__':
     # time = datetime.datetime.now()
 
     parser = argparse.ArgumentParser(description='profireader application type')
-    parser.add_argument("whattodo", default='reindex')
+    parser.add_argument("whattodo", default='reindex', help='delete_elastic_indexes, recreate_all_elastic_documents')
     args = parser.parse_args()
 
     app = create_app(apptype='profi')
