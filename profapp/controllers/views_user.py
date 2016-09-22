@@ -69,6 +69,6 @@ def change_language(json):
     if g.user:
         g.user.lang = json.get('language')
         g.user.save()
-    else:
-        session['language'] = json.get('language')
-        g.lang = json.get('language')
+
+    session['language'] = json.get('language')
+    g.lang = json.get('language')
