@@ -90,7 +90,7 @@
                             title="{{ _('Стрічкa читача') }}"
                             ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
                             class="fa fa-newspaper-o"></i><span>{{ _('Стрічкa читача') }}</span></a></li>
-                    <li class="dropdown" ng-if="0 && user"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_messenger }}"
+                    <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_messenger }}"
                                                                                            title="{{ _('Всі повідомлення') }}"
                                                                                            class="pr"
                                                                                            ng-class="{'selected': selected_user_menu == 'messages'}"><i
