@@ -94,11 +94,12 @@ def load_user(apptype):
         agent_languages = list(map(lambda l: re.compile("\s*;\s*q=").split(l),
                                    re.compile("\s*,\s*").split(request.headers.environ['HTTP_ACCEPT_LANGUAGE'])))
         agent_languages.sort(key=lambda x: float(x[1]) if len(x) > 1 else 1, reverse=True)
-        # g.lang = g.user.lang
-
+        g.lang = agent_languages[0][0][0:2]
     else:
         g.lang = 'en'
 
+    if g.lang not in [l['name'] for l in g.languages]:
+        g.lang = 'en'
     # = g.user.lang if g.user else lang
 
 
