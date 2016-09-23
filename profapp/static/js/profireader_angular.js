@@ -582,22 +582,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             }
         };
     }])
-    .directive('ctrlEnter', function () {
-        return {
-            restrict: 'A',
-            link: function (scope, elem, attrs) {
-
-                elem.bind('keydown', function (event) {
-                    var code = event.keyCode || event.which;
-
-                    if (code === 13 && event.ctrlKey) {
-                        event.preventDefault();
-                        scope.$apply(attrs.ctrlEnter);
-                    }
-                });
-            }
-        }
-    })
     .directive('prImage', [function () {
         return {
             restrict: 'A',

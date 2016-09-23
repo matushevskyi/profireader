@@ -182,6 +182,8 @@ def unread_messages_count(user_id):
     return {contact_id: contact_count for (contact_id, contact_count) in messages_count}
 
 
+MESSANGER_MESSGES_PER_LOAD = 100
+
 @messenger_bp.route('/send_message/', methods=['OK'])
 @check_right(UserIsActive)
 def send_message(json):
@@ -189,7 +191,7 @@ def send_message(json):
     if contact.user1_id == g.user.id or contact.user2_id == g.user.id:
         message = Message(contact_id=contact.id, content=json['text'], from_user_id=g.user.id)
         message.save()
-        return get_messages_and_unread_count(contact.id, 100, get_older=False, than_id=json['last_message_id'])
+        return get_messages_and_unread_count(contact.id, MESSANGER_MESSGES_PER_LOAD, get_older=False, than_id=json['last_message_id'])
     else:
         raise BadDataProvided
 
@@ -197,19 +199,19 @@ def send_message(json):
 @messenger_bp.route('/refresh_chats/', methods=['OK'])
 @check_right(UserIsActive)
 def refresh_chats(json):
-    return get_messages_and_unread_count(json['chat_room_id'], 100, get_older=False, than_id=json['last_message_id'])
+    return get_messages_and_unread_count(json['chat_room_id'], MESSANGER_MESSGES_PER_LOAD, get_older=False, than_id=json['last_message_id'])
 
 
 @messenger_bp.route('/load_chat/', methods=['OK'])
 @check_right(UserIsActive)
 def load_chat(json):
-    return get_messages_and_unread_count(json['chat_room_id'], 100, get_older=False, than_id=json['last_message_id'])
+    return get_messages_and_unread_count(json['chat_room_id'], MESSANGER_MESSGES_PER_LOAD, get_older=False, than_id=json['last_message_id'])
 
 
 @messenger_bp.route('/load_older_messages/', methods=['OK'])
 @check_right(UserIsActive)
 def load_older_messages(json):
-    return get_messages_and_unread_count(json['chat_room_id'], 100, get_older=True, than_id=json['first_message_id'])
+    return get_messages_and_unread_count(json['chat_room_id'], MESSANGER_MESSGES_PER_LOAD, get_older=True, than_id=json['first_message_id'])
 
 
 @messenger_bp.route('/contact_action/', methods=['OK'])

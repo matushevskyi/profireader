@@ -822,6 +822,14 @@ div.pr-row:last-child div.pr-cell {
 
 .messenger-chat .panel-body {
     height: 30em;
+    padding: 5px 5px 5px 15px;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+.messenger-chat .panel-scroll-chat {
+    height: 100%;
+    padding-right: 5px;
     overflow-x: hidden;
     overflow-y: scroll;
 }
