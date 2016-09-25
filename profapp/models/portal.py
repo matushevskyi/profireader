@@ -10,7 +10,7 @@ from sqlalchemy import orm
 from config import Config
 import simplejson
 from .files import File, FileImg, FileImgDescriptor
-from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from .. import utils
 from ..models.tag import Tag, TagMembership
 from profapp.controllers.errors import BadDataProvided

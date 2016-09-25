@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, ForeignKey, UniqueConstraint, Enum  # , update
 from sqlalchemy.orm import relationship, backref
-from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from flask.ext.login import current_user
 from sqlalchemy import Column, String, ForeignKey, update, and_
 from sqlalchemy.orm import relationship

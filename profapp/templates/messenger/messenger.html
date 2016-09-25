@@ -12,6 +12,8 @@
     <script>
         module.controller('messenger', ['$scope', '$ok', '$sce', '$timeout', function ($scope, $ok, $sce, $timeout) {
 
+            angularControllerFunction('user_controller', 'set_selected_user_menu')('messages');
+
             $scope.community_search_url = {{ raw_url_for('messenger.community_search')|safe }};
             $scope.contacts_search_url = {{ raw_url_for('messenger.contacts_search')|safe }};
             $scope.contact_action_url = {{ raw_url_for('messenger.contact_action')|safe }};
@@ -207,6 +209,7 @@
                         $scope.loaded_chats[chat_room_id] = {
                             'last_view_tm': now(),
                             'chat_room_id': chat_room_id,
+                            'chat_room_status': chat_room['chat_room_status'],
                             'messages': []
                         };
                         $scope.remove_oldest_loaded_chat();
@@ -652,7 +655,7 @@
                             <div class="panel-footer">
                                 <div class="input-group">
                                 <textarea ng-model="message_text" id="btn-input" type="text"
-                                          ng-disabled="!selected_chat_room_id || !loaded_chats[selected_chat_room_id] || loaded_chats[selected_chat_room_id]['loading']"
+                                          ng-disabled="loaded_chats[selected_chat_room_id]['chat_room_status'] != 'ACTIVE_ACTIVE' || !selected_chat_room_id || !loaded_chats[selected_chat_room_id] || loaded_chats[selected_chat_room_id]['loading']"
                                           class="form-control input-sm"
                                           placeholder="Type your message here..."></textarea>
                         <span class="input-group-btn">
@@ -708,7 +711,7 @@
                                 </button>
                                 <button ng-disabled="usr.changing_contact"
                                         ng-show="usr.contact_status == 'UNCONFIRMED_REQUESTED'"
-                                        ng-click="contact_action(usr, 'confirm')" class="btn btn-warning w15em"><i
+                                        ng-click="contact_action(usr, 'confirm')" class="btn btn-info w15em"><i
                                         class="fa fa-plus"></i>&nbsp;&nbsp;&nbsp;{{
                                     _('Confirm contact') }}
                                 </button>

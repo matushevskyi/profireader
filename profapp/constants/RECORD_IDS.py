@@ -15,3 +15,9 @@ class FOLDER_AND_FILE:
     @staticmethod
     def no_user_avatar():
         return '00000000-0000-4001-3b0f-f75d5f3942fd'
+
+class SYSTEM_USERS:
+
+    @staticmethod
+    def profireader():
+        return '00000000-0000-4001-0000-000000000000'

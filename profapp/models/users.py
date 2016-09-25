@@ -9,9 +9,8 @@ import re
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..constants import REGEXP
 from ..constants.SOCIAL_NETWORKS import SOCIAL_NETWORKS, SOC_NET_NONE
-from ..constants.USER_REGISTERED import REGISTERED_WITH_FLIPPED, \
-    REGISTERED_WITH
-# from ..constants.PROFILE_NECESSARY_FIELDS import PROFILE_NECESSARY_FIELDS
+from ..constants.USER_REGISTERED import REGISTERED_WITH_FLIPPED, REGISTERED_WITH
+from ..constants import RECORD_IDS
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
@@ -22,9 +21,7 @@ import hashlib
 from flask.ext.login import UserMixin
 from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
-# from ..utils import fileUrl
 from .. import utils
-from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
 from flask import url_for, render_template
 from utils.pr_email import SendEmail
 
@@ -114,7 +111,7 @@ class User(Base, UserMixin, PRBase):
                                aspect_ratio=[0.5, 2.],
                                after_get=lambda u, r, v: u.get_avatar_preset(r, v),
                                before_set=lambda u, r, v: u.set_avatar_preset(r, v),
-                               no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_user_avatar()))
+                               no_selection_url=utils.fileUrl(RECORD_IDS.FOLDER_AND_FILE.no_user_avatar()))
 
     def login(self):
         if self.email_confirmed and not self.banned:

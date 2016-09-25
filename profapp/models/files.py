@@ -25,7 +25,7 @@ from io import BytesIO
 import base64
 import sys
 from sqlalchemy.ext.associationproxy import association_proxy
-from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+from ..constants.RECORD_IDS import FOLDER_AND_FILE
 
 
 class FileContent(Base, PRBase):
@@ -1023,7 +1023,7 @@ class CropCoordinates:
 
 
 class FileImgCropProperties:
-    from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+    from ..constants.RECORD_IDS import FOLDER_AND_FILE
     from sqlalchemy import orm
 
     field = None

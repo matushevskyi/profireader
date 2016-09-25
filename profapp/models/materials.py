@@ -16,7 +16,7 @@ from ..constants.SEARCH import RELEVANCE
 from datetime import datetime
 from .files import FileImg, FileImgDescriptor
 from .. import utils
-from ..constants.FILES_FOLDERS import FOLDER_AND_FILE
+from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument
 from config import Config
 import simplejson
