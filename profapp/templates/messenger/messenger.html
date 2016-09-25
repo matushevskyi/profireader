@@ -657,7 +657,7 @@
                                 <textarea ng-model="message_text" id="btn-input" type="text"
                                           ng-disabled="loaded_chats[selected_chat_room_id]['chat_room_status'] != 'ACTIVE_ACTIVE' || !selected_chat_room_id || !loaded_chats[selected_chat_room_id] || loaded_chats[selected_chat_room_id]['loading']"
                                           class="form-control input-sm"
-                                          placeholder="Type your message here..."></textarea>
+                                          placeholder="{{ _(loaded_chats[selected_chat_room_id]['chat_room_status'] == 'ACTIVE_ACTIVE'?'Type your message here...':'You can`t chat with this person') }}"></textarea>
                         <span class="input-group-btn">
                             <button ng-disabled="!message_cant_be_sent()"
                                     ng-click="send_message()"
