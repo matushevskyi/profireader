@@ -17,6 +17,7 @@ from ..utils.redirect_url import redirect_url
 from utils.pr_email import SendEmail
 from ..models.rights import AllowAll
 from ..models.portal import Portal
+from ..models.messenger import Message
 import sys
 import string
 #
@@ -168,6 +169,7 @@ def signup(json_data):
         new_user.set_password_hash()
         new_user.generate_confirmation_token(get_after_logination_params()).save()
         g.db.commit()
+        Message.send_greeting_message(new_user)
         return {}
 
 
@@ -355,6 +357,7 @@ def login_signup_soc_network(soc_network_name):
                 user.avatar_selected_preset = 'gravatar'
                 g.db.add(user)
                 user.save()
+                Message.send_greeting_message(user)
 
             if user:
                 User.logout()

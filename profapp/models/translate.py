@@ -65,11 +65,10 @@ class TranslateTemplate(Base, PRBase):
         return exist
 
     @staticmethod
-    def try_to_guess_lang(translation):
-        # lang = TranslateTemplate.languages[0]
-        # if g.user_dict['lang'] in TranslateTemplate.languages:
-        #     lang = g.user_dict['lang']
-        return getattr(translation, g.lang)
+    def try_to_guess_lang(translation, language=None):
+        from config import Config
+        return getattr(translation,
+                       language if (language and language in [lng['name'] for lng in Config.LANGUAGES]) else g.lang)
 
     @staticmethod
     def try_to_guess_url(url):
@@ -93,14 +92,14 @@ class TranslateTemplate(Base, PRBase):
         return url
 
     @staticmethod
-    def getTranslate(template, phrase, url=None, allow_html=''):
+    def getTranslate(template, phrase, url=None, allow_html='', language=None):
 
         url = TranslateTemplate.try_to_guess_url(url)
 
         (phrase, template) = (phrase[2:], '__GLOBAL') if phrase[:2] == '__' else (phrase, template)
 
         translation = TranslateTemplate.try_to_get_phrase(template, phrase, url,
-                                                          portal_id=g.portal_id,
+                                                          portal_id=getattr(g, "portal_id", None),
                                                           allow_html=allow_html)
 
         if translation:
@@ -117,7 +116,7 @@ class TranslateTemplate(Base, PRBase):
                         translation.attr({'ac_tm': i})
                 else:
                     translation.attr({'ac_tm': i})
-            return TranslateTemplate.try_to_guess_lang(translation)
+            return TranslateTemplate.try_to_guess_lang(translation, language)
         else:
             return phrase
 
@@ -150,11 +149,13 @@ class TranslateTemplate(Base, PRBase):
     @staticmethod
     def subquery_search(filters=None, sorts=None, edit=None):
         sub_query = db(TranslateTemplate)
-        list_filters = []; list_sorts = []
+        list_filters = [];
+        list_sorts = []
         if edit:
             exist = db(TranslateTemplate, template=edit['template'], name=edit['name']).first()
             i = datetime.datetime.now()
-            TranslateTemplate.get(exist.id).attr({edit['col']: edit['newValue'], 'md_tm':i}).save().get_client_side_dict()
+            TranslateTemplate.get(exist.id).attr(
+                {edit['col']: edit['newValue'], 'md_tm': i}).save().get_client_side_dict()
         if 'url' in filters:
             list_filters.append({'type': 'select', 'value': filters['url'], 'field': TranslateTemplate.url})
         if 'template' in filters:
@@ -181,4 +182,3 @@ class TranslateTemplate(Base, PRBase):
     def get_client_side_dict(self, fields='id|name|uk|en|ac_tm|md_tm|cr_tm|template|url|allow_html, portal.id|name',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
-

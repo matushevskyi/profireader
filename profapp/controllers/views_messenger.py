@@ -4,11 +4,10 @@ from .request_wrapers import check_right
 from .errors import BadDataProvided
 from sqlalchemy import func
 
-# # from ..models.bak_articles import ArticleCompany, ArticlePortalDivision
+from ..constants import RECORD_IDS
+
+
 from utils.db_utils import db
-# from .pagination import pagination
-# from config import Config
-# from .. import utils
 from ..models.users import User
 from ..models.company import Company, UserCompany
 from ..models.portal import Portal, UserPortalReader
@@ -27,7 +26,7 @@ import datetime
 @messenger_bp.route('/', methods=['GET'])
 @check_right(UserIsActive)
 def messenger():
-    return render_template('messenger/messenger.html')
+    return render_template('messenger/messenger.html', PROFIREADER_USER_ID = RECORD_IDS.SYSTEM_USERS.profireader())
 
 
 @messenger_bp.route('/', methods=['OK'])
@@ -39,6 +38,7 @@ def messenger_load(json):
 @messenger_bp.route('/community_search/', methods=['OK'])
 @check_right(UserIsActive)
 def community_search(json):
+    PER_PAGE = 20
     portals_ids = []
     for p in g.user.active_portals_subscribed:
         portals_ids.append(p.id)
@@ -61,16 +61,38 @@ def community_search(json):
                        UserCompany.company_id.in_(companies_ids))). \
         outerjoin(Company,
                   and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE')). \
+        outerjoin(Contact,
+                  or_(Contact.user1_id == User.id, Contact.user2_id == User.id)). \
         filter(and_(User.full_name.ilike("%" + json['text'] + "%"),
                     User.id != g.user.id,
                     or_(Portal.id != None, Company.id != None))). \
-        group_by(User.id). \
-        order_by(User.full_name). \
-        limit(11).offset((json['page'] - 1) * 10)
+        group_by(User.id, Contact.status). \
+        order_by(expression.case([
+        (or_(
+            and_(Contact.status == Contact.STATUSES['REQUESTED_UNCONFIRMED'], User.id == g.user.id),
+            and_(Contact.status == Contact.STATUSES['UNCONFIRMED_REQUESTED'], User.id != g.user.id)), '1'),
+        (or_(
+            and_(Contact.status == Contact.STATUSES['REQUESTED_UNCONFIRMED'], User.id != g.user.id),
+            and_(Contact.status == Contact.STATUSES['UNCONFIRMED_REQUESTED'], User.id == g.user.id)), '2'),
+        (or_(
+            and_(Contact.status == Contact.STATUSES['ACTIVE_BANNED'], User.id == g.user.id),
+            and_(Contact.status == Contact.STATUSES['BANNED_ACTIVE'], User.id != g.user.id)), '3'),
+        (or_(
+            and_(Contact.status == Contact.STATUSES['ACTIVE_BANNED'], User.id != g.user.id),
+            and_(Contact.status == Contact.STATUSES['BANNED_ACTIVE'], User.id == g.user.id)), '4'),
+        (or_(
+            and_(Contact.status == Contact.STATUSES['ANY_REVOKED'], User.id == g.user.id),
+            and_(Contact.status == Contact.STATUSES['REVOKED_ANY'], User.id != g.user.id)), 'X'),
+        (or_(
+            and_(Contact.status == Contact.STATUSES['ANY_REVOKED'], User.id != g.user.id),
+            and_(Contact.status == Contact.STATUSES['REVOKED_ANY'], User.id == g.user.id)), 'X'),
+        (Contact.status == Contact.STATUSES['ACTIVE_ACTIVE'], 'Z')
+        ], else_='X'), User.full_name). \
+        limit(PER_PAGE + 1).offset((json['page'] - 1) * PER_PAGE)
 
     users = query.all()
-    next_page = (json['page'] + 1) if len(users) > 10 else False
-    users = users[0:10]
+    next_page = (json['page'] + 1) if len(users) > PER_PAGE else False
+    users = users[0:PER_PAGE]
 
     ret = []
 
@@ -99,12 +121,13 @@ def community_search(json):
 @check_right(UserIsActive)
 def contacts_search(json):
     page_size = 100
-    query = g.db.query(Contact.id, User). \
+    query = g.db.query(Contact.id, Contact.status, User). \
         outerjoin(User,
                   or_(and_(Contact.user1_id == User.id, Contact.user1_id != g.user.id),
                       and_(Contact.user2_id == User.id, Contact.user2_id != g.user.id))). \
         filter(and_(User.full_name.ilike("%" + json['text'] + "%"),
-                    Contact.status.in_([Contact.STATUSES['ACTIVE_ACTIVE'], Contact.STATUSES['ACTIVE_BANNED'], Contact.STATUSES['BANNED_ACTIVE']]),
+                    Contact.status.in_([Contact.STATUSES['ACTIVE_ACTIVE'], Contact.STATUSES['READONLY'], Contact.STATUSES['ACTIVE_BANNED'],
+                                        Contact.STATUSES['BANNED_ACTIVE']]),
                     or_(Contact.user1_id == g.user.id, Contact.user2_id == g.user.id))). \
         order_by(expression.desc(Contact.last_message_tm)). \
         limit(page_size + 1).offset((json['page'] - 1) * page_size)
@@ -113,12 +136,12 @@ def contacts_search(json):
     next_page = (json['page'] + 1) if len(contacts) > page_size else False
     contacts = contacts[0:page_size]
 
-
     return {
         'unread_messages': unread_messages_count(g.user.id),
         'contacts': [{'chat_room_id': contact_id,
+                      'chat_room_status': contact_status,
                       'users': [user.get_client_side_dict('id,full_name,avatar.url')]}
-                     for (contact_id, user) in contacts],
+                     for (contact_id, contact_status, user) in contacts],
         'next_page': next_page
     }
 
@@ -156,9 +179,12 @@ def get_messages_and_unread_count(chat_room_id, count, get_older=False, than_id=
 
         another_user_id = contact.user1_id if g.user.id == contact.user2_id else contact.user2_id
 
-        g.db.execute(update(Message).where(Message.id.in_([m.id for m in messages if m.from_user_id != g.user.id])).values(read_tm=datetime.datetime.utcnow()))
+        g.db.execute(
+            update(Message).where(Message.id.in_([m.id for m in messages if m.from_user_id != g.user.id])).values(
+                read_tm=datetime.datetime.utcnow()))
 
         ret['chat_room'] = {'chat_room_id': chat_room_id,
+                            'chat_room_status': contact.status,
                             'users': {
                                 g.user.id: User.get(g.user.id).get_client_side_dict(more_fields='avatar'),
                                 another_user_id: User.get(another_user_id).get_client_side_dict(more_fields='avatar')
@@ -182,34 +208,41 @@ def unread_messages_count(user_id):
     return {contact_id: contact_count for (contact_id, contact_count) in messages_count}
 
 
+MESSANGER_MESSGES_PER_LOAD = 100
+
+
 @messenger_bp.route('/send_message/', methods=['OK'])
 @check_right(UserIsActive)
 def send_message(json):
     contact = Contact.get(json['chat_room_id'])
     if contact.user1_id == g.user.id or contact.user2_id == g.user.id:
-        message = Message(contact_id=contact.id, content=json['text'], from_user_id=g.user.id)
+        message = Message(contact_id=contact.id, content=json['text'], from_user_id=g.user.id, message_type = Message.MESSAGE_TYPES['MESSAGE'])
         message.save()
-        return get_messages_and_unread_count(contact.id, 100, get_older=False, than_id=json['last_message_id'])
+        return get_messages_and_unread_count(contact.id, MESSANGER_MESSGES_PER_LOAD, get_older=False,
+                                             than_id=json['last_message_id'])
     else:
         raise BadDataProvided
 
 
-@messenger_bp.route('/refresh_chats/', methods=['OK'])
-@check_right(UserIsActive)
-def refresh_chats(json):
-    return get_messages_and_unread_count(json['chat_room_id'], 100, get_older=False, than_id=json['last_message_id'])
+# @messenger_bp.route('/refresh_chats/', methods=['OK'])
+# @check_right(UserIsActive)
+# def refresh_chats(json):
+#     return get_messages_and_unread_count(json['chat_room_id'], MESSANGER_MESSGES_PER_LOAD, get_older=False,
+#                                          than_id=json['last_message_id'])
 
 
 @messenger_bp.route('/load_chat/', methods=['OK'])
 @check_right(UserIsActive)
 def load_chat(json):
-    return get_messages_and_unread_count(json['chat_room_id'], 100, get_older=False, than_id=json['last_message_id'])
+    return get_messages_and_unread_count(json['chat_room_id'], MESSANGER_MESSGES_PER_LOAD, get_older=False,
+                                         than_id=json['last_message_id'])
 
 
 @messenger_bp.route('/load_older_messages/', methods=['OK'])
 @check_right(UserIsActive)
 def load_older_messages(json):
-    return get_messages_and_unread_count(json['chat_room_id'], 100, get_older=True, than_id=json['first_message_id'])
+    return get_messages_and_unread_count(json['chat_room_id'], MESSANGER_MESSGES_PER_LOAD, get_older=True,
+                                         than_id=json['first_message_id'])
 
 
 @messenger_bp.route('/contact_action/', methods=['OK'])

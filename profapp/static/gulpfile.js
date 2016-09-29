@@ -160,6 +160,11 @@ gulp.task('install_slider', function () {
         .pipe(gulp.dest(dst + 'angular-ui-slider/'));
 });
 
+gulp.task('install_socket.io-client', function () {
+    return gulp.src([src + 'socket.io-client/socket.io.js'])
+        .pipe(gulp.dest(dst + 'socket.io.js'));
+});
+
 gulp.task('install_bootstrap', function () {
     return gulp.src([src + 'bootstrap/dist/**/*'])
         .pipe(gulp.dest(dst + 'bootstrap/'));
@@ -226,6 +231,7 @@ gulp.task('all', [
     'install_angular-infinite-scroll',
     'install_angular_crop_from_dev',
     'install_angular-db-filemanager',
+    'install_socket.io-client',
     'install_angular-db-filemanager_from_dev',
     'install_angular_ui_tinymce', 'install_tinymce',
     'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',

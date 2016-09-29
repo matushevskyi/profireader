@@ -34,4 +34,6 @@ python-memcached
 #yappi
 #elasticsearch
 requests
-
+#flask-socketio==2.7.0
+python-socketio==0.7.0
+eventlet==0.19.0

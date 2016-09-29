@@ -11,7 +11,7 @@
                 $('#menu-site .unread_messages_count').hide(); // strage bug in chrome. text disappear until mouse click
                 $timeout(function () {
                     $('#menu-site .unread_messages_count').show();
-                }, 0);
+                }, 10);
                 $scope.unread_message_count = count;
             }
         };
@@ -130,6 +130,9 @@
                             <img class="person-small-cover" pr-image="" pr-no-image="{{ user_avatar_url }}">
                             {{user.full_name}}
                         </a>
+                    </li>
+
+                    <li ng-if="user" role="presentation" class="menu-profile">
                         <a pr_test="LogOut" class="login-profile" href="{{ url_auth_logout() }}">{{ _('Log out') }}</a>
                         <!--<ul class="dropdown-menu">
                             <li ng-show="user.id"><a href="{{ url_user_profile({user_id:user.id}) }}">{{ _('Profile') }}</a></li>
