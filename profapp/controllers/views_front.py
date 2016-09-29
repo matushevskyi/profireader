@@ -18,7 +18,7 @@ from utils.db_utils import db
 
 def get_search_text_and_division(portal, division_name):
     search_text = request.args.get('search') or ''
-    print(division_name)
+    print('division_name', division_name)
 
     dvsn = g.db().query(PortalDivision).filter_by(**utils.dict_merge(
         {'portal_id': portal.id},

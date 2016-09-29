@@ -4,11 +4,10 @@ from .request_wrapers import check_right
 from .errors import BadDataProvided
 from sqlalchemy import func
 
-# # from ..models.bak_articles import ArticleCompany, ArticlePortalDivision
+from ..constants import RECORD_IDS
+
+
 from utils.db_utils import db
-# from .pagination import pagination
-# from config import Config
-# from .. import utils
 from ..models.users import User
 from ..models.company import Company, UserCompany
 from ..models.portal import Portal, UserPortalReader
@@ -27,7 +26,7 @@ import datetime
 @messenger_bp.route('/', methods=['GET'])
 @check_right(UserIsActive)
 def messenger():
-    return render_template('messenger/messenger.html')
+    return render_template('messenger/messenger.html', PROFIREADER_USER_ID = RECORD_IDS.SYSTEM_USERS.profireader())
 
 
 @messenger_bp.route('/', methods=['OK'])
@@ -217,7 +216,7 @@ MESSANGER_MESSGES_PER_LOAD = 100
 def send_message(json):
     contact = Contact.get(json['chat_room_id'])
     if contact.user1_id == g.user.id or contact.user2_id == g.user.id:
-        message = Message(contact_id=contact.id, content=json['text'], from_user_id=g.user.id)
+        message = Message(contact_id=contact.id, content=json['text'], from_user_id=g.user.id, message_type = Message.MESSAGE_TYPES['MESSAGE'])
         message.save()
         return get_messages_and_unread_count(contact.id, MESSANGER_MESSGES_PER_LOAD, get_older=False,
                                              than_id=json['last_message_id'])
@@ -225,11 +224,11 @@ def send_message(json):
         raise BadDataProvided
 
 
-@messenger_bp.route('/refresh_chats/', methods=['OK'])
-@check_right(UserIsActive)
-def refresh_chats(json):
-    return get_messages_and_unread_count(json['chat_room_id'], MESSANGER_MESSGES_PER_LOAD, get_older=False,
-                                         than_id=json['last_message_id'])
+# @messenger_bp.route('/refresh_chats/', methods=['OK'])
+# @check_right(UserIsActive)
+# def refresh_chats(json):
+#     return get_messages_and_unread_count(json['chat_room_id'], MESSANGER_MESSGES_PER_LOAD, get_older=False,
+#                                          than_id=json['last_message_id'])
 
 
 @messenger_bp.route('/load_chat/', methods=['OK'])

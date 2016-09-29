@@ -17,7 +17,6 @@ from utils.pr_email import SendEmail
 import re
 from ..controllers import errors
 
-
 @index_bp.route('portals_list/', methods=['GET'])
 @check_right(AllowAll)
 def portals_list():
@@ -149,47 +148,6 @@ def list_reader_load(json):
     }
 
 
-# @index_bp.route('list_reader')
-# @index_bp.route('list_reader/<int:page>/')
-# @tos_required
-# def list_reader(page=1):
-#     search_text = request.args.get('search_text') or ''
-#     article_fields = 'title|short|image_file_id|subtitle|publishing_tm,company.name|logo_file_id,' \
-#                      'division.name,portal.name|host|logo_file_id'
-#     favorite = request.args.get('favorite') == 'True'
-#     if not favorite:
-#         articles, pages, page = Search().search({'class': Publication,
-#                                                  'filter': and_(Publication.portal_division_id ==
-#                                                                 db(PortalDivision).filter(
-#                                                                     PortalDivision.portal_id ==
-#                                                                     db(UserPortalReader,
-#                                                                        user_id=g.user.id).subquery().
-#                                                                     c.portal_id).subquery().c.id,
-#                                                                 Publication.status ==
-#                                                                 Publication.STATUSES['PUBLISHED']),
-#                                                  'tags': True, 'return_fields': article_fields}, page=page)
-#     else:
-#         articles, pages, page = Search().search({'class': Publication,
-#                                                  'filter': (Publication.id == db(ReaderPublication,
-#                                                                                            user_id=g.user.id,
-#                                                                                            favorite=True).subquery().c.
-#                                                             publication_id),
-#                                                  'tags': True, 'return_fields': article_fields}, page=page,
-#                                                 search_text=search_text)
-#     portals = UserPortalReader.get_portals_for_user() if not articles else None
-#     for article_id, article in articles.items():
-#         articles[article_id]['company']['logo'] = File().get(articles[article_id]['company']['logo_file_id']).url()
-#         articles[article_id]['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url()
-#         del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
-#     return render_template('partials/reader/reader_base.html',
-#                            articles=articles,
-#                            pages=pages,
-#                            current_page=page,
-#                            page_buttons=Config.PAGINATION_BUTTONS,
-#                            portals=portals,
-#                            favorite=favorite
-#                            )
-
 
 @index_bp.route('add_to_favorite/', methods=['OK'])
 @check_right(UserNonBanned)
@@ -205,32 +163,6 @@ def add_delete_like(json):
     return {'liked': ReaderPublication.count_likes(g.user.id, json.get('article')['id']),
             'list_liked_reader': ReaderPublication.get_list_reader_liked(json.get('article')['id'])}
 
-
-# @index_bp.route('subscribe/<string:portal_id>/', methods=['GET'])
-# @check_right(UserNonBanned)
-# def reader_subscribe(portal_id):
-#     # TODO: OZ by OZ: remove this endpoint!!! move subscription to model (function Portal.subscribe_user(self, user))
-#     user_dict = g.user.get_client_side_dict()
-#     portal = Portal.get(portal_id)
-#     if not portal:
-#         raise BadDataProvided
-#     reader_portal = g.db.query(UserPortalReader).filter_by(user_id=user_dict['id'], portal_id=portal_id).count()
-#     if not reader_portal:
-#         free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
-#                                ReaderUserPortalPlan.amount).filter_by(name='free').one()
-#         start_tm = datetime.datetime.utcnow()
-#         end_tm = datetime.datetime.fromtimestamp(start_tm.timestamp() + free_plan[1])
-#         reader_portal = UserPortalReader(user_dict['id'], portal_id, status='active', portal_plan_id=free_plan[0],
-#                                          start_tm=start_tm, end_tm=end_tm, amount=free_plan[2],
-#                                          show_divisions_and_comments=[division_show for division_show in
-#                                                                       [ReaderDivision(portal_division=division)
-#                                                                        for division in portal.divisions]])
-#         g.db.add(reader_portal)
-#         g.db.commit()
-#         # TODO: OZ by OZ: remove it
-#         from flask import flash
-#         flash('You have successfully subscribed to this portal')
-#     return redirect(url_for('index.list_reader'))
 
 
 @index_bp.route('subscribe/', methods=['OK'])
@@ -368,4 +300,6 @@ def reader_add_delete_favorite(json, publication_id):
 def reader_add_delete_liked(json, publication_id):
     publication = Publication.get(publication_id).add_delete_like(json['on'])
     return {'on': True if json['on'] else False, 'liked_count': publication.liked_count()}
+
+
 

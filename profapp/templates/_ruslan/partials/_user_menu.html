@@ -11,7 +11,7 @@
                 $('#menu-site .unread_messages_count').hide(); // strage bug in chrome. text disappear until mouse click
                 $timeout(function () {
                     $('#menu-site .unread_messages_count').show();
-                }, 0);
+                }, 10);
                 $scope.unread_message_count = count;
             }
         };

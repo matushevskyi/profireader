@@ -23,7 +23,8 @@ if __name__ == '__main__':
             proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(),
                                                          user2_id=u.id).one()
 
-            greetings = g.db.query(Message).filter_by(message_type=Message.MESSAGE_TYPES['GREETING'],
+            greetings = g.db.query(Message).filter_by(message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
+                                                      message_subtype='WELCOME',
                                                       contact_id=proficontact.id).all()
 
             if (len(greetings) > 0):

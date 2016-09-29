@@ -6,6 +6,7 @@ from ..models.company import Company, UserCompany
 from ..models.portal import PortalDivision, Portal
 from ..models.users import User
 from ..models.files import File
+from ..models.translate import TranslateTemplate
 from ..models.tag import Tag, TagPortalDivision, TagPublication
 from .pr_base import PRBase, Base, MLStripper, Grid
 from utils.db_utils import db
@@ -74,7 +75,7 @@ class Message(Base, PRBase):
     __tablename__ = 'message'
 
     MESSAGE_TYPES = {'MESSAGE': 'MESSAGE',
-                     'GREETING': 'GREETING'}
+                     'PROFIREADER_NOTIFICATION': 'PROFIREADER_NOTIFICATION'}
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     cr_tm = Column(TABLE_TYPES['timestamp'])
@@ -84,6 +85,7 @@ class Message(Base, PRBase):
     contact_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Contact.id))
     content = Column(TABLE_TYPES['string_1000'])
     message_type = Column(TABLE_TYPES['string_100'])
+    message_subtype = Column(TABLE_TYPES['string_100'])
 
     contact = relationship(Contact)
 
@@ -91,6 +93,8 @@ class Message(Base, PRBase):
     def send_greeting_message(send_to_user):
         proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(), user2_id=send_to_user.id).one()
         greetings = Message(from_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
-                            content='Welcome', message_type=Message.MESSAGE_TYPES['GREETING'])
+                            content=TranslateTemplate.getTranslate('profireader_messages', 'Welcome to profireader', '', True, send_to_user.lang),
+                            message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
+                            message_subtype='WELCOME')
         g.db.add(greetings)
         g.db.commit()
