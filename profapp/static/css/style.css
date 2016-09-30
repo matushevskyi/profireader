@@ -1294,7 +1294,7 @@ body {
   list-style: none;
 }
 .panel-scroll-chat .mar-btm {
-  margin-bottom: 15px;
+  padding-bottom: 15px;
 }
 .panel-scroll-chat .pad-all {
   padding: 15px;
@@ -1383,50 +1383,5 @@ body {
 }
 .panel-scroll-chat .speech-right > .speech .media-heading {
   color: #a07617;
-}
-.panel-scroll-chat .btn-primary,
-.panel-scroll-chat .btn-primary:focus,
-.panel-scroll-chat .btn-hover-primary:hover,
-.panel-scroll-chat .btn-hover-primary:active,
-.panel-scroll-chat .btn-hover-primary.active,
-.panel-scroll-chat .btn.btn-active-primary:active,
-.panel-scroll-chat .btn.btn-active-primary.active,
-.panel-scroll-chat .dropdown.open > .btn.btn-active-primary,
-.panel-scroll-chat .btn-group.open .dropdown-toggle.btn.btn-active-primary {
-  background-color: #579ddb;
-  border-color: #5fa2dd;
-  color: #fff !important;
-}
-.panel-scroll-chat .btn {
-  cursor: pointer;
-  /* background-color: transparent; */
-  color: inherit;
-  padding: 6px 12px;
-  border-radius: 0;
-  border: 1px solid 0;
-  font-size: 11px;
-  line-height: 1.42857;
-  vertical-align: middle;
-  -webkit-transition: all .25s;
-  transition: all .25s;
-}
-.panel-scroll-chat .form-control {
-  font-size: 11px;
-  height: 100%;
-  border-radius: 0;
-  box-shadow: none;
-  border: 1px solid #e9e9e9;
-  transition-duration: .5s;
-}
-.panel-scroll-chat .nano > .nano-pane {
-  background-color: rgba(0, 0, 0, 0.1);
-  position: absolute;
-  width: 5px;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  opacity: 0;
-  -webkit-transition: all .7s;
-  transition: all .7s;
 }
 /*# sourceMappingURL=style.css.map */
