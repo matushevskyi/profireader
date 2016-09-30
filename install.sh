@@ -179,7 +179,7 @@ rm ./elasticsearch-"$elastic_version".deb" sudo deb
 
 function menu_deb {
     conf_comm "apt-get update
-apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached" sudo npm
+apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev" sudo npm
     }
 
 function menu_npm {
