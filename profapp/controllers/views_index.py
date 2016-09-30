@@ -2,7 +2,6 @@ from flask import render_template, request, session, redirect, url_for, g
 from .blueprints_declaration import index_bp
 from ..models.portal import Portal, UserPortalReader
 from ..models.pr_base import Search, PRBase
-from utils.pr_email import email_send
 from utils.db_utils import db
 from .request_wrapers import check_right
 from ..models.rights import AllowAll
@@ -13,9 +12,9 @@ from ..models.materials import Publication, ReaderPublication
 from ..models.portal import PortalDivision, UserPortalReader, Portal, ReaderUserPortalPlan, ReaderDivision
 from sqlalchemy import and_, desc
 from .errors import BadDataProvided
-from utils.pr_email import SendEmail
 import re
 from ..controllers import errors
+from ..utils import email_utils
 
 @index_bp.route('portals_list/', methods=['GET'])
 @check_right(AllowAll)
@@ -47,17 +46,11 @@ def auth_before_subscribe_to_portal(portal_id):
     return redirect(url_for('auth.login_signup_endpoint', login_signup='login'))
 
 
-# YG it`s not used but it will change in future
-@index_bp.route('send_email_create_portal/')
-@check_right(AllowAll)
-def send_email_create_portal():
-    return render_template('general/send_email_create_portal.html')
 
-
-@index_bp.route('send_email', methods=['POST'])
-@check_right(AllowAll)
-def send_email():
-    return email_send(**{name: str(val) for name, val in request.form.items()})
+# @index_bp.route('send_email', methods=['POST'])
+# @check_right(AllowAll)
+# def send_email():
+#     return email_send(**{name: str(val) for name, val in request.form.items()})
 
 
 # @index_bp.route('details_reader/<string:publication_id>')
@@ -282,7 +275,7 @@ def contact_us_load(json_data):
     elif not re.match(REGEXP.EMAIL, json_data.get('email', '')):
         return {'error': 'Please enter correct email'}
     else:
-        SendEmail().send_email(subject='Send help message', send_to=("profireader.service@gmail.com", ''),
+        email_utils.send_email(subject='Send help message', send_to=["profireader.service@gmail.com"],
                                html=('From ' + json_data['email'] + ': ' + json_data['message']))
 
         return {}

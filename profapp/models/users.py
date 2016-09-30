@@ -23,7 +23,7 @@ from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
 from .. import utils
 from flask import url_for, render_template
-from utils.pr_email import SendEmail
+from ..utils import email_utils
 
 import random
 import time
@@ -565,13 +565,13 @@ class User(Base, UserMixin, PRBase):
         self.email_conf_token = random.getrandbits(128)
         self.email_conf_tm = datetime.datetime.now()
 
-        SendEmail().send_email(subject='Confirm Your Account',
+        email_utils.send_email(subject='Confirm Your Account',
                                html=render_template('auth/email/resend_confirmation.html', user=self,
                                                     confirmation_url=url_for('auth.email_confirmation',
                                                                              token=self.email_conf_token,
                                                                              _external=True, **addtourl)
                                                     ),
-                               send_to=(self.address_email,))
+                               send_to=[self.address_email])
 
         return self
 
@@ -586,13 +586,13 @@ class User(Base, UserMixin, PRBase):
         self.pass_reset_token = random.getrandbits(128)
         self.pass_reset_conf_tm = datetime.datetime.now()
 
-        SendEmail().send_email(subject='Reset password',
+        email_utils.send_email(subject='Reset password',
                                html=render_template('auth/email/reset_password.html', user=self,
                                                     reset_password_url=url_for('auth.reset_password',
                                                                                token=self.pass_reset_token,
                                                                                _external=True)
                                                     ),
-                               send_to=(self.address_email,))
+                               send_to=[self.address_email])
 
         return self
 

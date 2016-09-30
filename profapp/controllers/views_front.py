@@ -6,8 +6,8 @@ from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
 from ..models.company import Company
 from ..models.users import User
 from ..utils.session_utils import back_to_url
+from ..utils import email_utils
 from config import Config
-from ..utils.pr_email import SendEmail
 from .request_wrapers import check_right, get_portal
 from ..models.rights import AllowAll
 from ..models.elastic import elasticsearch
@@ -447,8 +447,8 @@ def add_delete_liked(json, publication_id):
 @check_right(AllowAll)
 def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
-    SendEmail().send_email_from_template(
-        send_to_email=send_to.address_email, subject='New message', template='messenger/email_send_message',
+    email_utils.send_email_from_template(
+        send_to_email=[send_to.address_email], subject='New message', template='messenger/email_send_message',
         user_to=send_to, user_from=g.user.get_client_side_dict() if g.user else None,
         in_company=Company.get(member_company_id), message=json['message'])
     return {}
