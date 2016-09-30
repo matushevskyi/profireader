@@ -11,6 +11,7 @@
 #
 # By default this script does nothing.
 
+service postgresql restart
 /var/www/chat.sh &
 
 exit 0
