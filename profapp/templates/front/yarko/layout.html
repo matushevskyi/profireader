@@ -1,7 +1,11 @@
 <!DOCTYPE html>
-<html lang="{{ g.lang }}">
+<html lang="{{ g.lang }}" xmlns="http://www.w3.org/1999/html">
+
 <head>
     {{ portal.advs['head_begin']|safe }}
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ _('%(portal_name)s', {'portal_name': portal.name}) }}{% endblock %}</title>
     <meta name="description" content="{% block description %}{% endblock %}">
     {% block og -%}
