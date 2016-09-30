@@ -242,6 +242,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
         app.before_request(load_portal)
         from profapp.controllers.blueprints_register import register_front as register_blueprints_front
         register_blueprints_front(app)
+        update_jinja_engine(app)
 
     elif apptype == 'static':
         from profapp.controllers.blueprints_register import register_static as register_blueprints_static
