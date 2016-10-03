@@ -6,5 +6,5 @@ from ..models.rights import AllowAll
 
 @tutorial_bp.route('/')
 @check_right(AllowAll)
-def tutorial():
+def index():
     return render_template('/tutorial.html')
