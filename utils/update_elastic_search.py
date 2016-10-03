@@ -1,20 +1,14 @@
 import sys
-
 sys.path.append('..')
 from profapp.models.materials import Publication
 from profapp.models.portal import MemberCompanyPortal
 from profapp.models.elastic import elasticsearch
 
-
 from profapp import create_app, load_database
 import argparse
 
-
-classes = [Publication, MemberCompanyPortal]
-
-
 def recreate_documents():
-    for aclass in classes:
+    for aclass in [Publication, MemberCompanyPortal]:
         aclass.elastic_reindex_all()
 
 
@@ -28,8 +22,9 @@ def delete_indexes():
 if __name__ == '__main__':
     # time = datetime.datetime.now()
 
-    parser = argparse.ArgumentParser(description='profireader application type')
-    parser.add_argument("whattodo", default='reindex', help='delete_elastic_indexes, recreate_all_elastic_documents')
+    parser = argparse.ArgumentParser(description='reindex elastic search documents')
+    parser.add_argument("whattodo", choices=['delete_elastic_indexes', 'recreate_all_elastic_documents'],
+                        required=True)
     args = parser.parse_args()
 
     app = create_app(apptype='profi')
