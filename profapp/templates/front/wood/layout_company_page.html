@@ -1,0 +1,11 @@
+{% extends 'layout.html' %}
+{% block title -%}
+    {{ _('title ' + company_menu_selected_item + ' %(company_name)s - %(portal_name)s', {'company_name': member_company.name, 'portal_name': portal.name}) }}
+{%- endblock %}
+
+
+{% block body %}
+    {% include 'company_menu.html' %}
+    
+    {% block company_content %}{% endblock %}
+{% endblock %}
