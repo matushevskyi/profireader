@@ -12,16 +12,16 @@ import argparse
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='send greetings message')
-    parser.add_argument("user_id", required=False)
+    parser.add_argument("user_id")
     args = parser.parse_args()
 
     app = create_app(apptype='profi')
     with app.app_context():
         load_database(app.config['SQLALCHEMY_DATABASE_URI'])()
         if args.user_id:
-            users = g.db.query(User).filter(User.id != RECORD_IDS.SYSTEM_USERS.profireader()).all()
-        else:
             users = [g.db.query(User).filter(User.id == args.user_id).one()]
+        else:
+            users = g.db.query(User).filter(User.id != RECORD_IDS.SYSTEM_USERS.profireader()).all()
 
         for u in users:
             proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(),

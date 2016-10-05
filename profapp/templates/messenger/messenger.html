@@ -657,8 +657,7 @@
                                             <div class="media-body pad-hor" ng-class="{'speech-right': message['from_user_id'] == me_user_id}">
                                                 <div class="speech">
                                                     <a class="media-heading">{{
-                                                        (message['from_user_id'] ==
-                                                        me_user_id)?_('You'):loaded_chats[selected_chat_room_id]['users'][message['from_user_id']]['full_name']
+                                                        loaded_chats[selected_chat_room_id]['users'][message['to_user_id']]['full_name']
                                                         }}</a>
                                                     <p class="speech-content" ng-if="message['from_user_id'] == profireader_user_id" ng-bind-html="message.content"></p>
                                                     <p class="speech-content" ng-if="message['from_user_id'] != profireader_user_id" ng-bind="message.content"></p>

@@ -10,7 +10,7 @@ from ..models.translate import TranslateTemplate
 from ..models.tag import Tag, TagPortalDivision, TagPublication
 from .pr_base import PRBase, Base, MLStripper, Grid
 from utils.db_utils import db
-from flask import g, session, app, current_app
+from flask import g, session, app, current_app, url_for
 from sqlalchemy.sql import or_, and_
 import re
 from sqlalchemy import event
@@ -74,27 +74,30 @@ class Contact(Base, PRBase):
 class Message(Base, PRBase):
     __tablename__ = 'message'
 
-    MESSAGE_TYPES = {'MESSAGE': 'MESSAGE',
-                     'PROFIREADER_NOTIFICATION': 'PROFIREADER_NOTIFICATION'}
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     cr_tm = Column(TABLE_TYPES['timestamp'])
     read_tm = Column(TABLE_TYPES['timestamp'])
 
-    from_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
+    to_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
     contact_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Contact.id))
     content = Column(TABLE_TYPES['string_1000'])
-    message_type = Column(TABLE_TYPES['string_100'])
-    message_subtype = Column(TABLE_TYPES['string_100'])
 
     contact = relationship(Contact)
 
     @staticmethod
     def send_greeting_message(send_to_user):
-        proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(), user2_id=send_to_user.id).one()
-        greetings = Message(from_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
-                            content=TranslateTemplate.getTranslate('profireader_messages', 'Welcome to profireader', '', True, send_to_user.lang),
+        proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(),
+                                                     user2_id=send_to_user.id).one()
+        greetings = Notification(to_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
+                            content=TranslateTemplate.translate_and_substitute(
+                                'profireader_notifications',
+                                'Welcome to profireader. We hope for fruitful collaboration. You can <a href="%(tutorial_url)s">see</a> short video instruction, and welcome to <a href="%(contact_url)s">contact</a> us',
+                                {'tutorial_url': '/tutorial/',
+                                 'contact_url': '/contact_us/'},
+                                url='',
+                                language=send_to_user.lang),
                             message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
-                            message_subtype='WELCOME')
+                            message_subtype='GREETING')
         g.db.add(greetings)
         g.db.commit()
