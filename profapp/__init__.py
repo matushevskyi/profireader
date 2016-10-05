@@ -334,7 +334,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
         def get_cnt(user_id):
             print('get_cnt', user_id)
             curs.execute("SELECT contact.id, COUNT(contact.id) as cnt FROM contact LEFT JOIN "
-                         "message ON (message.contact_id = contact.id AND message.read_tm IS NULL AND message.from_user_id != '%s')"
+                         "message ON (message.contact_id = contact.id AND message.read_tm IS NULL AND message.to_user_id == '%s')"
                          "WHERE (message.id IS NOT NULL AND (contact.user1_id = '%s' OR contact.user2_id = '%s'))"
                          "GROUP BY contact.id" % (user_id, user_id, user_id))
             ret = {contact_id: cnt for (contact_id, cnt) in curs.fetchall()}

@@ -74,18 +74,14 @@ class Contact(Base, PRBase):
 class Message(Base, PRBase):
     __tablename__ = 'message'
 
-    MESSAGE_TYPES = {'MESSAGE': 'MESSAGE',
-                     'PROFIREADER_NOTIFICATION': 'PROFIREADER_NOTIFICATION'}
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     cr_tm = Column(TABLE_TYPES['timestamp'])
     read_tm = Column(TABLE_TYPES['timestamp'])
 
-    from_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
+    to_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
     contact_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Contact.id))
     content = Column(TABLE_TYPES['string_1000'])
-    message_type = Column(TABLE_TYPES['string_100'])
-    message_subtype = Column(TABLE_TYPES['string_100'])
 
     contact = relationship(Contact)
 
@@ -93,7 +89,7 @@ class Message(Base, PRBase):
     def send_greeting_message(send_to_user):
         proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(),
                                                      user2_id=send_to_user.id).one()
-        greetings = Message(from_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
+        greetings = Notification(to_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
                             content=TranslateTemplate.translate_and_substitute(
                                 'profireader_notifications',
                                 'Welcome to profireader. We hope for fruitful collaboration. You can <a href="%(tutorial_url)s">see</a> short video instruction, and welcome to <a href="%(contact_url)s">contact</a> us',
