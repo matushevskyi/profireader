@@ -42,7 +42,7 @@ a:hover {
 
 /*Header settings*/
 
-@media(max-width: 1170px) {
+@media(max-width: 1220px) {
     .navbar-header {
         float: none;
     }
@@ -373,7 +373,7 @@ a:hover {
 
 .article-details,
 .article-details a {
-    font-size: 14px;
+    font-size: 0.875em;
     color: #757575;
 }
 
@@ -520,9 +520,15 @@ a:hover {
     margin-bottom: 30px;
 }
 
+.logo {
+    width: 300px;
+    height: auto;
+    float: none;
+}
+
 .company {
     margin-top: 15px;
-    font-size: 1em;
+    font-size: 1.125em;
     font-weight: 600;
 }
 
@@ -540,6 +546,58 @@ a:hover {
 
 .nav-pills li a:hover {
     background-color: #E0E0E0;
+}
+
+.contacts-header {
+    margin-left: 15px;
+    margin-bottom: 30px;
+    font-weight: 600;
+    font-size: 1em;
+    color: #009688;
+}
+
+.contact {
+    margin-bottom: 30px;
+}
+
+.contact-userpic {
+    float: left;
+    margin-right: 15px;
+}
+
+.contact-userpic img {
+    width: 60px;
+    height: 60px;
+    overflow: hidden;
+}
+
+.contact-userpic img:hover {
+    opacity: 0.9;
+}
+
+.contact-name {
+    margin-top: 6px;
+    margin-bottom: 6px;
+    font-size: 1em;
+    font-weight: 600;
+    color: #424242;
+    line-height: 1.2;
+}
+
+.contact-name:hover {
+    text-decoration: underline;
+}
+
+.message,
+.address p,
+.address a {
+    font-size: 0.875em;
+    color: #757575;
+}
+
+.message:hover,
+.address a:hover {
+    color: #009688;
 }
 
 /*Article settings*/
