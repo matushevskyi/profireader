@@ -174,8 +174,10 @@ def get_messages_and_unread_count(chat_room_id, count, get_older=False, than_id=
             messages.reverse()
 
         def client_message(m: Message):
-            return utils.dict_merge(m.get_client_side_dict(fields='id,content,from_user_id,cr_tm'),
+            ret = utils.dict_merge(m.get_client_side_dict(fields='id,content,to_user_id,cr_tm'),
                                     {'timestamp': m.cr_tm.timestamp()})
+            ret['from_user_id'] = m.contact.user1_id if m.contact.user2_id == ret['to_user_id'] else m.contact.user2_id
+            return ret
 
         another_user_id = contact.user1_id if g.user.id == contact.user2_id else contact.user2_id
 
@@ -217,8 +219,7 @@ def send_message(json):
     contact = Contact.get(json['chat_room_id'])
     if contact.user1_id == g.user.id or contact.user2_id == g.user.id:
         message = Message(contact_id=contact.id, content=json['text'],
-                          to_user_id=(contact.user2_id if contact.user1_id == g.user.id else contact.user1_id),
-                          message_type=Message.MESSAGE_TYPES['MESSAGE'])
+                          to_user_id=(contact.user2_id if contact.user1_id == g.user.id else contact.user1_id))
         message.save()
         return get_messages_and_unread_count(contact.id, MESSANGER_MESSGES_PER_LOAD, get_older=False,
                                              than_id=json['last_message_id'])
