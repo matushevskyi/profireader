@@ -2,7 +2,8 @@
     <div class="container-fluid">
         <div class="navbar-header">
             <!--Off-canvas toggle button-->
-            <button type="button" class="navbar-toggle pull-left offcanvas-btn" data-toggle="offcanvas" data-target=".navmenu" data-canvas="body">
+            <button type="button" class="navbar-toggle pull-left offcanvas-btn" data-toggle="offcanvas"
+                    data-target=".navmenu" data-canvas="body">
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
@@ -14,7 +15,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="index.html"><img src="assets/img/do-logo.png"></a>
+            <a class="navbar-brand" href="/" style="width: 200px; "><img class="img-responsive" src="{{ portal.logo.url }}"></a>
         </div>
         <!--Collapsive navbar-->
         <nav class="navbar-collapse collapse" id="navbar-collapsible" role="navigation">
@@ -28,22 +29,14 @@
                 <li><a href="company.html"><b>Про нас</b></a></li>
             </ul>
             <!--Profireader button-->
-            <div>
-                <!--If user is not logged in-->
-                <a class="pr-btn" href="#">
-                    <img src="assets/img/pr-btn.svg">
-                </a>
-                <!--If user is logged in-->
-                <a class="userpic hidden" href="#">
-                    <img src="https://scontent-waw1-1.xx.fbcdn.net/v/t1.0-9/14355686_719745264855103_2505355572040005652_n.jpg?oh=794b6dfbb61c81d9cccf8ac7b3087166&oe=5880FB5C" alt="" class="img-circle">
-                </a>
-            </div>
+            {% include 'block_user.html' %}
             <!--Search form-->
             <form class="navbar-form pull-right">
                 <div class="form-group">
                     <div class="input-group">
                         <input class="form-control search-form" type="text" name="search" placeholder="Пошук">
-                        <span class="input-group-addon search-btn"><i class="fa fa-search" aria-hidden="true"></i></span>
+                        <span class="input-group-addon search-btn"><i class="fa fa-search"
+                                                                      aria-hidden="true"></i></span>
                     </div>
                 </div>
             </form>
