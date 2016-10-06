@@ -1,7 +1,8 @@
-{% macro tag(tag, tags) %}
-    <span class="tag {{ 'tag-selected' if tag.text in tags.selected_names else 'tag-not-selected' }}">
-            <a {% if tags.url_toggle_tag %}href="{{ tags.url_toggle_tag(tag.text) }}"{% endif %} class="fa {{ 'fa-minus' if tag.text in tags.selected_names else 'fa-plus' }}"> {{ tag.text }}</a>
-    </span>
+{% macro tag(tag, tags, span_classes = '') %}
+{#    TODO: YM BY OZ: selected/unselected tag class name is tag-selected/tag-not-selected#}
+    <a class="tag {{ 'tag-selected' if tag.text in tags.selected_names else 'tag-not-selected' }}"
+            {% if tags.url_toggle_tag %}href="{{ tags.url_toggle_tag(tag.text) }}"{% endif %}><span class=""><i
+            class="fa fa-tag" aria-hidden="true" style="margin-right: 5px"></i>{{ tag.text }}</span></a>
 {% endmacro %}
 
 
