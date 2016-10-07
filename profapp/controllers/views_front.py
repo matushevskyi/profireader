@@ -14,7 +14,7 @@ from ..models.elastic import elasticsearch
 from collections import OrderedDict
 from .. import utils
 from utils.db_utils import db
-
+from functools import wraps
 
 def get_search_text_and_division(portal, division_name):
     search_text = request.args.get('search') or ''
@@ -389,6 +389,9 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                )
 
 
+
+
+
 @front_bp.route('_a/<string:publication_id>/<string:publication_title>')
 @check_right(AllowAll)
 @get_portal
@@ -405,6 +408,11 @@ def article_details(portal, publication_id, publication_title):
 
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.name)
+
+    def url_search_tag_in_index(tag):
+        return url_for('front.division', tags=tag, division_name='index')
+
+
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
