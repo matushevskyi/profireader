@@ -327,8 +327,8 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
                 del userid2seeds[user_id]
 
         @sio.on('select_chat_room_id')
-        def disconnect(sid, message):
-            print('select_chat_room_id', sid, message)
+        def select_chat_room(sid, message):
+            print('---select_chat_room_id', sid, message)
             sid2userid[sid][1] = message['select_chat_room_id']
             pass
 
@@ -362,24 +362,23 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
                 return
 
             if contact_id in opened_chatrooms_id_for_reader_user:
-                curs.execute("SELECT user1_id, user2_id FROM contact WHERE contact.id = '%s'" % (contact_id,))
-                contact = curs.fetchone()
+                print('read-write')
                 curs.execute("UPDATE message SET read_tm = clock_timestamp() WHERE id = '%s'" % (message['id'],))
-                for sid in userid2seeds[user_id]:
-                    tosend = {'id': message['id'],
-                              'content': message['content'],
-                              'to_user_id': message['to_user_id'],
-                              'from_user_id': contact[0 if contact[1] == message['to_user_id'] else 1],
-                              'cr_tm': message['cr_tm'],
-                              'timestamp': time.mktime(
-                                  datetime.datetime.strptime(message['cr_tm'], "%Y-%m-%dT%H:%M:%S.%f").timetuple()),
-                              }
-                    print('tosend', tosend)
-                    sio.emit(event='new_message', data={'chat_room_id': message['contact_id'], 'message': tosend},
-                             room=sid)
-                notify_unread(user_id)
-            else:
-                notify_unread(user_id)
+
+            curs.execute("SELECT user1_id, user2_id FROM contact WHERE contact.id = '%s'" % (contact_id,))
+            contact = curs.fetchone()
+            for sid in userid2seeds[user_id]:
+                tosend = {'id': message['id'],
+                          'content': message['content'],
+                          'to_user_id': message['to_user_id'],
+                          'from_user_id': contact[0 if contact[1] == message['to_user_id'] else 1],
+                          'cr_tm': message['cr_tm'],
+                          'timestamp': time.mktime(
+                              datetime.datetime.strptime(message['cr_tm'], "%Y-%m-%dT%H:%M:%S.%f").timetuple()),
+                          }
+
+                sio.emit(event='new_message', data={'chat_room_id': message['contact_id'], 'message': tosend,
+                                                    'unread_message_count': get_cnt(user_id)}, room=sid)
 
         def dblisten():
             from eventlet.hubs import trampoline
