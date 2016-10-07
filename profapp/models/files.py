@@ -766,9 +766,8 @@ class FileImgDescriptor(object):
         return img, l, t, w, h
 
     @staticmethod
-    def create_file_from_pillow_image(pillow_img, name):
+    def create_file_from_pillow_image(pillow_img, name, fmt):
         bytes_file = BytesIO()
-        fmt = (pillow_img.format if pillow_img.format else 'JPEG')
         pillow_img.save(bytes_file, fmt)
         file = File(size=sys.getsizeof(bytes_file.getvalue()),
                     mime='image/' + fmt.lower(),
@@ -824,18 +823,20 @@ class FileImgDescriptor(object):
                          [file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height]]:
             return True
 
+        fmt = provenance_img.format
+
         file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
 
         # file_decorator = client_data['file_decorator']
         file_img.provenance_image_file = self.file_decorator(instance, file_img,
                                                              self.create_file_from_pillow_image(provenance_img,
-                                                                                                'provenance'))
+                                                                                                'provenance', fmt))
 
         cropped_pil_img = provenance_img.crop((round(l), round(t), round(l + w), round(t + h)))
 
         file_img.proceeded_image_file = self.file_decorator(instance, file_img,
                                                             self.create_file_from_pillow_image(cropped_pil_img,
-                                                                                               'proceeded'))
+                                                                                               'proceeded', fmt))
 
         return True
 
