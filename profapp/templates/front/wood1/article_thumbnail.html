@@ -18,8 +18,8 @@
             <header class="clearfix">
                 <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">
                     <h2 class="article-thumbnail-header">{{ article|highlighted('title') }}</h2>
-                    <h5>{{ article.subtitle|safe }}</h5>
                 </a>
+                {% if article.subtitle %}<h3 class="article-thumbnail-subtitle">{{ article.subtitle|safe }}</h3>{% endif %}
             </header>
             <div class="article-details clearfix">
                 <!--Company link-->
