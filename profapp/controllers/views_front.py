@@ -304,9 +304,14 @@ def company_page(portal, member_company_id, member_company_name, member_company_
     member_company, dvsn = \
         get_company_member_and_division(portal, member_company_id, member_company_name)
 
+    def url_search_tag_in_index(tag):
+        return url_for('front.division', tags=tag, division_name='')
+
     return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
                            portal=portal_and_settings(portal),
                            division=dvsn.get_client_side_dict(),
+                           tags={'all': portal.get_client_side_dict(fields='tags')['tags'], 'selected_names': [],
+                                 'url_toggle_tag': url_search_tag_in_index},
                            membership=db(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one(),
                            url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
                            member_company=member_company.get_client_side_dict(
@@ -408,10 +413,6 @@ def article_details(portal, publication_id, publication_title):
 
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.name)
-
-    def url_search_tag_in_index(tag):
-        return url_for('front.division', tags=tag, division_name='index')
-
 
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',

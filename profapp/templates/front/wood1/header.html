@@ -36,10 +36,10 @@
             <!--Profireader button-->
             {% include 'block_user.html' %}
             <!--Search form-->
-            <form class="navbar-form pull-right">
+            <form class="navbar-form pull-right" action="{{ search.url if search else url_for('front.search') }}">
                 <div class="form-group">
                     <div class="input-group">
-                        <input class="form-control search-form" type="text" name="search" placeholder="Пошук">
+                        <input class="form-control search-form" type="text" name="search" placeholder="{{ _('Search') }}" value="{{ search.text if search and search.text else ''  }}">
                         <span class="input-group-addon search-btn"><i class="fa fa-search"
                                                                       aria-hidden="true"></i></span>
                     </div>
