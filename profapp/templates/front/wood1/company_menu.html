@@ -1,6 +1,6 @@
 <section class="company-header">
-    <img class="img-responsive center-block logo" src="assets/img/logo.png" alt="Company logo">
-    <h5 class="text-center company">Деревообробник</h5>
+    <img class="img-responsive center-block logo" src="{{ membership['company']['logo']['url'] }}" alt="Company logo">
+    <h5 class="text-center company">{{ membership['company']|highlighted('name') }}</h5>
 </section>
 <nav>
     <ul class="nav nav-pills nav-justified company-menu">
@@ -23,11 +23,7 @@
                 {% endif %}
             {% endfor %}
 
-            <li {% if company_menu_selected_item == 'address' %}class="active"{% endif %}><a
-                    href="{{ url_for('front.company_page',
-                                   member_company_id = member_company['id'] ,
-                                   member_company_name = member_company['name'], member_company_page = 'address') }}">{{ _('Address') }}</a>
-            </li>
+
             <li {% if company_menu_selected_item == 'contacts' %}class="active"{% endif %}><a
                     href="{{ url_for('front.company_page',
                                    member_company_id = member_company['id'] ,

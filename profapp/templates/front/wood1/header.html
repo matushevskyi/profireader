@@ -21,12 +21,17 @@
         <nav class="navbar-collapse collapse" id="navbar-collapsible" role="navigation">
             <!--Navbar menu-->
             <ul class="nav navbar-nav navbar-left">
-                <li><a href="news.html"><b>Новини</b></a></li>
-                <li><a href="articles.html"><b>Статті</b></a></li>
-                <li><a href="events.html"><b>Події</b></a></li>
-                <li><a href="advertisements.html"><b>Оголошення</b></a></li>
-                <li><a href="companies.html"><b>Компанії</b></a></li>
-                <li><a href="company.html"><b>Про нас</b></a></li>
+                {% for division_id, di in portal.divisions.items() %}
+                    {% if di.portal_division_type_id in ['news', 'events', 'catalog'] %}
+                        <li {% if division and di.id == division.id %}class="active"{% endif %}>
+                            <a href=" {{ url_for('front.division', division_name=di.name) }}">{{ di.name }}</a>
+                        </li>
+                    {% elif division and di.portal_division_type_id in ['company_subportal'] %}
+                        <li {% if di.id == division.id %}class="active"{% endif %}>
+                            <a href=" {{ url_for('front.company_page', member_company_id = di['subportal_company'].id, member_company_name = di['subportal_company'].name) }}">{{ di.name }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
             </ul>
             <!--Profireader button-->
             {% include 'block_user.html' %}
