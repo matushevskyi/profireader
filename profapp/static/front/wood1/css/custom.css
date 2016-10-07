@@ -37,7 +37,8 @@ a:hover {
 }
 
 .tag-selected {
-    background-color: red;
+    background-color: #00695C;
+    color: #fff;
 }
 
 .offcanvas-btn {
@@ -339,6 +340,13 @@ a:hover {
     color: #424242;
 }
 
+.article-thumbnail-subtitle {
+    line-height: 1.2;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #424242;
+}
+
 .article-thumbnail-header:hover {
     text-decoration: underline;
 }
@@ -375,9 +383,12 @@ a:hover {
     text-decoration-line: none;
 }
 
-.article-details,
-.article-details a {
+.article-details {
     font-size: 0.875em;
+    color: #757575;
+}
+
+.article-details a {
     color: #757575;
 }
 
