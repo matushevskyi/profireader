@@ -13,7 +13,9 @@
                 <div class="clearfix">
                     <main role="main">
                         {% for article_id, article in articles.items() %}
-                            {% include 'article_thumbnail.html' %}
+                            {% with show_division_name=division.portal_division_type_id == 'index' %}
+                                {% include 'article_thumbnail.html' %}
+                            {% endwith %}
                             {% if loop.index in wide_banners and portal.advs['wide_banner_' + wide_banners[loop.index]] %}
                                 <a href="#">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a>
                                 <hr class="article-thumbnail-divider">
@@ -33,6 +35,9 @@
                     </main>
                 </div>
             </div>
+            <aside class="col-lg-2">
+                {% include 'right_banners.html' %}
+            </aside>
         </div>
     </div>
     {# % include '_common/block_pager.html' % #}

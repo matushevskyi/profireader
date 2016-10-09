@@ -1,47 +1,28 @@
 {% extends 'layout.html' %}
 {% block body %}
+    {% import 'macros.html' as frontmacros %}
     {% include 'tags_menu.html' %}
 
-    {% for member_id, membership in memberships.items() %}
-        <section class="row company-thumbnail">
-            <article>
-                <!--Company logo thumbnail-->
-                <div class="col-xs-12 col-md-4">
-                    <div class="pull-left article-thumbnail-img">
-                        <a href="company.html"><img class="img-responsive img-thumbnail" src="{{ membership['company']['logo']['url'] }}"></a>
-                    </div>
-                </div>
-                <div class="col-xs-12 col-md-8">
-                    <!--Company name-->
-                    <header class="clearfix">
-                        <a href="{{ url_for('front.company_page', member_company_id = membership['company']['id'], member_company_name = membership['company']['name']) }}"><h2>{{ membership['company']|highlighted('name') }}</h2></a>
-                    </header>
-                    <div class="article-details clearfix">
-                        <!--Company location-->
-                        <span class="company-location"><i class="fa fa-map-marker" aria-hidden="true"
-                                                          style="margin-right: 5px"></i>{{ [membership['company']['country'], membership['company']['region'], membership['company']['city']]|join(', ') }}</span>
-                    </div>
-                    <!--Company description-->
-                    <div class="clearfix">
-                        <p class="article-thumbnail-text">
-                            {{ membership['company']|highlighted('short_description') }}
-                        </p>
-                    </div>
-                    <!--Company tags-->
-                    {% for tag in membership['tags'] %}
-                        {{ frontmacros.tag(tag, tags if tags else {'all': [], 'selected_names': [], 'url_toggle_tag': url_catalog_tag}, 'main-tag label') }}
-                    {% endfor %}
-                </div>
-            </article>
-        </section>
-        <hr class="article-thumbnail-divider">
-    {% else %}
-        {% if tags.selected_names or search_text != '' %}
-            <h3 class="tac">{{ _('There are no companies with current search criteria') }}</h3>
-        {% else %}
-            <h3 class="tac">{{ _('There are no active companies joined to this portal') }}</h3>
-        {% endif %}
-    {% endfor %}
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 col-lg-10">
+
+                {% for member_id, membership in memberships.items() %}
+                    {% include 'company_thumbnail.html' %}
+                    <hr class="article-thumbnail-divider">
+                {% else %}
+                    {% if tags.selected_names or search_text != '' %}
+                        <h3 class="tac">{{ _('There are no companies with current search criteria') }}</h3>
+                    {% else %}
+                        <h3 class="tac">{{ _('There are no active companies joined to this portal') }}</h3>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <aside class="col-lg-2">
+                {% include 'right_banners.html' %}
+            </aside>
+        </div>
+    </div>
 
     {# % include '_common/block_pager.html' % #}
 

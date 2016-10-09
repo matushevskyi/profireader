@@ -12,14 +12,15 @@
         </div>
         <div class="col-xs-12 col-md-8">
             <!--Article division link-->
-            <a href="{{ url_for('front.division', division_name=article['division']['name']) }}"><h3
-                    class="div-link">{{ article['division']['name']|safe }}</h3></a>
+            {% if show_division_name %}<a href="{{ url_for('front.division', division_name=article['division']['name']) }}"><h3
+                    class="div-link">{{ article['division']['name']|safe }}</h3></a>{% endif %}
             <!--Article headling-->
             <header class="clearfix">
                 <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">
                     <h2 class="article-thumbnail-header">{{ article|highlighted('title') }}</h2>
                 </a>
-                {% if article.subtitle %}<h3 class="article-thumbnail-subtitle">{{ article.subtitle|safe }}</h3>{% endif %}
+                {% if article.subtitle %}
+                    <h3 class="article-thumbnail-subtitle">{{ article.subtitle|safe }}</h3>{% endif %}
             </header>
             <div class="article-details clearfix">
                 <!--Company link-->
@@ -42,19 +43,16 @@
                                             </span>
             </div>
             <!--Article description-->
-            <div class="clearfix">
+            {% if article['short'] %}<div class="clearfix">
                 <p class="article-thumbnail-text">
                     {{ article|highlighted('short') }}
                 </p>
-            </div>
+            </div>{% endif %}
             <!--Article main tag-->
 
             {% if article.tags|length %}{% set tag = article.tags[0] %}
                 {{ frontmacros.tag(tag, tags, 'main-tag label') }}
             {% endif %}
-
-{#            <a href="#"><span class="main-tag label"><i class="fa fa-tag" aria-hidden="true"#}
-{#                                                        style="margin-right: 5px"></i>Меблі</span></a>#}
         </div>
     </article>
 </section>

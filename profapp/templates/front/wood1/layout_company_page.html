@@ -13,17 +13,16 @@
                     </main>
                 </div>
             </div>
-        </div>
-    </div>
-    <div class="container">
-        <div class="row">
             <div class="col-xs-12 col-lg-10">
                 <div class="clearfix">
                     <main class="center-block" role="main">
-    {% block company_content %}{% endblock %}
-    </main>
+                        {% block company_content %}{% endblock %}
+                    </main>
                 </div>
             </div>
+            <aside class="col-lg-2">
+                {% include 'right_banners.html' %}
+            </aside>
         </div>
     </div>
 {% endblock %}

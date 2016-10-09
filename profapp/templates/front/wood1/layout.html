@@ -38,6 +38,12 @@
         {{ portal.advs['head_end']|safe }}
     {%- endif %}
     {% endblock %}
+{#    TODO: YM by OZ: pls move it to css file#}
+    <style>
+        .search_highlighted {
+            color: red
+        }
+    </style>
 </head>
     <body class="{% block body_class %}{% endblock %}">
     {{ portal.advs['body_begin']|safe }}

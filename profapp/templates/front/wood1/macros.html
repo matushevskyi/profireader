@@ -7,14 +7,11 @@
 {% macro article_date(division_type, article) %}
     {% if division_type == 'events' %}
         {% if article.event_begin_tm and article.event_begin_tm %}
-            <i class="fa fa-calendar"></i>
-            {{ moment(article.event_begin_tm, 'MM.DD.YYYY') }} - {{ moment(article.event_end_tm, 'MM.DD.YYYY') }}
+            {{ moment(article.event_begin_tm, out_format = 'LL') }} - {{ moment(article.event_end_tm, out_format = 'LL') }}
         {% elif article.event_begin_tm %}
-            <i class="fa fa-calendar"></i>
-            {{ moment(article.event_begin_tm) }}
+            {{ moment(article.event_begin_tm, out_format = 'LL') }}
         {% elif article.event_end_tm %}
-            <i class="fa fa-calendar"></i>
-            {{ moment(article.event_end_tm) }}
+            {{ moment(article.event_end_tm, out_format = 'LL') }}
         {% endif %}
     {% elif article.publishing_tm %}
         {{ moment(article.publishing_tm, out_format = 'LL') }}
