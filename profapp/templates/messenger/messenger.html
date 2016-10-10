@@ -102,6 +102,13 @@
                 })($scope.selected_chat_room_id);
             };
 
+
+            $scope.get_unread_messages_id = function (chat_room_id) {
+                $scope.loaded_chats[chat_room_id];
+                console.log($scope.loaded_chats[chat_room_id]);
+                return [];
+            }
+
             $scope.select_chat_room = function (chat_room) {
                 if (chat_room['chat_room_id'] === $scope.selected_chat_room_id) { // same user selected or chat_room is loaded
                     return false;
@@ -121,7 +128,7 @@
                             console.log(resp);
                             if ($scope.selected_chat_room_id && $scope.selected_chat_room_id === $scope.loading_chatroom_id) {
                                 $scope.update_chat_room(resp, false, true, true);
-                                pr_chat_socket.emit('select_chat_room_id', {'select_chat_room_id': $scope.selected_chat_room_id});
+                                pr_chat_socket.emit('select_chat_room_id', {'select_chat_room_id': $scope.selected_chat_room_id);
                                 $scope.textarea_focus();
                             }
                         }).finally(function () {
@@ -429,6 +436,7 @@
                     console.log(resp);
                     $timeout(function () {
                         $scope.append_messages(resp['chat_room_id'], [resp['message']]);
+                        $scope.calculate_unread_messages_not_in_loaded_contacts(resp['unread_message_count']);
                         $scope.stickToBottom(resp['chat_room_id'], {'messages': [resp['message']]}, false, false, false);
                     }, 0);
                 });
@@ -439,11 +447,11 @@
                     }
                 });
 
-                pr_chat_socket.on('set_unread_message_count', function (resp) {
-                    $timeout(function () {
-                        $scope.calculate_unread_messages_not_in_loaded_contacts(resp['unread_message_count']);
-                    }, 0);
-                });
+{#                pr_chat_socket.on('set_unread_message_count', function (resp) {#}
+{#                    $timeout(function () {#}
+{#                        $scope.calculate_unread_messages_not_in_loaded_contacts(resp['unread_message_count']);#}
+{#                    }, 0);#}
+{#                });#}
 
                 var elem = $('#messenger-controller textarea');
 
