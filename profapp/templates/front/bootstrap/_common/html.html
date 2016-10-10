@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="{{ g.lang }}">
-<title>{% block title %}{{ _('%(portal_name)s', {'portal_name': portal.name}) }}{% endblock %}</title>
 <head>
     {{ portal.advs['head_begin']|safe }}
+    <title>{% block title %}{{ _('%(portal_name)s', {'portal_name': portal.name}) }}{% endblock %}</title>
     <meta name="description" content="{% block description %}{% endblock %}">
     {% block og -%}
     <meta property="og:site_name" content="{% block og_name %}{{ portal.name }}{% endblock %}"/>
