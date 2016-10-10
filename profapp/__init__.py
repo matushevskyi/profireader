@@ -330,11 +330,12 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
         def disconnect(sid, message):
             print('select_chat_room_id', sid, message)
             sid2userid[sid][1] = message['select_chat_room_id']
+            pass
 
         def get_cnt(user_id):
             print('get_cnt', user_id)
             curs.execute("SELECT contact.id, COUNT(contact.id) as cnt FROM contact LEFT JOIN "
-                         "message ON (message.contact_id = contact.id AND message.read_tm IS NULL AND message.to_user_id == '%s')"
+                         "message ON (message.contact_id = contact.id AND message.read_tm IS NULL AND message.to_user_id = '%s')"
                          "WHERE (message.id IS NOT NULL AND (contact.user1_id = '%s' OR contact.user2_id = '%s'))"
                          "GROUP BY contact.id" % (user_id, user_id, user_id))
             ret = {contact_id: cnt for (contact_id, cnt) in curs.fetchall()}
@@ -361,15 +362,19 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
                 return
 
             if contact_id in opened_chatrooms_id_for_reader_user:
+                curs.execute("SELECT user1_id, user2_id FROM contact WHERE contact.id = '%s'" % (contact_id,))
+                contact = curs.fetchone()
                 curs.execute("UPDATE message SET read_tm = clock_timestamp() WHERE id = '%s'" % (message['id'],))
                 for sid in userid2seeds[user_id]:
                     tosend = {'id': message['id'],
                               'content': message['content'],
-                              'from_user_id': message['from_user_id'],
+                              'to_user_id': message['to_user_id'],
+                              'from_user_id': contact[0 if contact[1] == message['to_user_id'] else 1],
                               'cr_tm': message['cr_tm'],
-                              'timestamp': time.mktime(datetime.datetime.strptime(message['cr_tm'], "%Y-%m-%dT%H:%M:%S.%f").timetuple()),
+                              'timestamp': time.mktime(
+                                  datetime.datetime.strptime(message['cr_tm'], "%Y-%m-%dT%H:%M:%S.%f").timetuple()),
                               }
-                    print('tosend',tosend)
+                    print('tosend', tosend)
                     sio.emit(event='new_message', data={'chat_room_id': message['contact_id'], 'message': tosend},
                              room=sid)
                 notify_unread(user_id)
