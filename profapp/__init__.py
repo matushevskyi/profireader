@@ -312,7 +312,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
                 curs.execute("LISTEN message_read_user___%s;" % (chanel,))
 
             userid2seeds[user_id].append(sid)
-            sio.enter_room(sid, 'set_unread_message_count-' + user_id)
+            # sio.enter_room(sid, 'set_unread_message_count-' + user_id)
 
         @sio.on('disconnect')
         def disconnect(sid):
@@ -327,8 +327,8 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
                 del userid2seeds[user_id]
 
         @sio.on('select_chat_room_id')
-        def disconnect(sid, message):
-            print('select_chat_room_id', sid, message)
+        def select_chat_room(sid, message):
+            print('---select_chat_room_id', sid, message)
             sid2userid[sid][1] = message['select_chat_room_id']
             pass
 
@@ -342,44 +342,41 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
             print(ret)
             return ret
 
-        def notify_unread(user_id):
-            print('notify_unread', user_id)
-            if user_id in userid2seeds:
-                sio.emit('set_unread_message_count', {'unread_message_count': get_cnt(user_id)},
-                         room='set_unread_message_count-' + user_id)
+        # def notify_unread(user_id):
+        #     print('notify_unread', user_id)
+        #     if user_id in userid2seeds:
+        #         sio.emit('set_unread_message_count', {'unread_message_count': get_cnt(user_id)},
+        #                  room='set_unread_message_count-' + user_id)
 
-        def new_message_to_user(user_id, message):
+        def inform_user(user_id, message):
             import time
             import datetime
             if not user_id in userid2seeds:
                 return False
 
-            contact_id = message['contact_id']
-            opened_chatrooms_id_for_reader_user = [sid2userid[sid1][1] for sid1 in
-                                                   [sid for sid in userid2seeds[user_id]] if sid2userid[sid1][1]]
-
-            if not contact_id:
-                return
-
-            if contact_id in opened_chatrooms_id_for_reader_user:
+            if message:
+                contact_id = message['contact_id']
                 curs.execute("SELECT user1_id, user2_id FROM contact WHERE contact.id = '%s'" % (contact_id,))
                 contact = curs.fetchone()
-                curs.execute("UPDATE message SET read_tm = clock_timestamp() WHERE id = '%s'" % (message['id'],))
-                for sid in userid2seeds[user_id]:
-                    tosend = {'id': message['id'],
-                              'content': message['content'],
-                              'to_user_id': message['to_user_id'],
-                              'from_user_id': contact[0 if contact[1] == message['to_user_id'] else 1],
-                              'cr_tm': message['cr_tm'],
-                              'timestamp': time.mktime(
-                                  datetime.datetime.strptime(message['cr_tm'], "%Y-%m-%dT%H:%M:%S.%f").timetuple()),
-                              }
-                    print('tosend', tosend)
-                    sio.emit(event='new_message', data={'chat_room_id': message['contact_id'], 'message': tosend},
-                             room=sid)
-                notify_unread(user_id)
+                message_tosend = {'id': message['id'],
+                                  'content': message['content'],
+                                  'to_user_id': message['to_user_id'],
+                                  'from_user_id': contact[0 if contact[1] == message['to_user_id'] else 1],
+                                  'cr_tm': message['cr_tm'],
+                                  'timestamp': time.mktime(
+                                      datetime.datetime.strptime(message['cr_tm'], "%Y-%m-%dT%H:%M:%S.%f").timetuple()),
+                                  }
             else:
-                notify_unread(user_id)
+                message_tosend = None
+
+            opened_chatrooms_id_for_reader_user = [sid2userid[sid1][1] for sid1 in
+                                                   [sid for sid in userid2seeds[user_id]] if sid2userid[sid1][1]]
+            if contact_id in opened_chatrooms_id_for_reader_user:
+                curs.execute("UPDATE message SET read_tm = clock_timestamp() WHERE id = '%s'" % (message['id'],))
+
+            for sid in userid2seeds[user_id]:
+                sio.emit(event='new_message', data={'message': message_tosend, 'unread_message_count':
+                    get_cnt(user_id), 'unread_notification_count': 0}, room=sid)
 
         def dblisten():
             from eventlet.hubs import trampoline
@@ -393,10 +390,11 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
                     notify = conn.notifies.pop(0)
                     print("Got NOTIFY:", notify.pid, notify.channel, notify.payload)
                     (messagetype, message_info_id) = tuple(notify.channel.split('___'))
-                    if messagetype == 'new_message_to_user':
-                        new_message_to_user(message_info_id.replace('_', '-'), json.loads(notify.payload))
-                    elif messagetype == 'message_read_user':
-                        notify_unread(message_info_id.replace('_', '-'))
+                    inform_user(message_info_id.replace('_', '-'), json.loads(notify.payload))
+                    # if messagetype == 'new_message_to_user':
+                    #
+                    # elif messagetype == 'message_read_user':
+                    #     notify_unread(message_info_id.replace('_', '-'))
 
         eventlet.spawn(dblisten)
         app = socketio.Middleware(sio, app)
