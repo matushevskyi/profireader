@@ -1,0 +1,35 @@
+{% extends 'layout.html' %}
+{% block title -%}
+    {{ _('search - %(portal_name)s', {'portal_name': portal.name}) }}
+{%- endblock %}
+
+
+{% block body %}
+    {% import 'macros.html' as frontmacros %}
+    {% include 'tags_menu.html' %}
+
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 col-lg-10">
+                {% import 'macros.html' as frontmacros %}
+                {% for message, params in search.messages.items() %}
+                    <h5>{{ __(message, params) }}</h5>
+                {% endfor %}
+
+                {% for search_item in search_results %}
+                    {% if search_item._type == 'article' %}
+                        {% with article=search_item, show_division_name=1 %}
+                            {% include 'article_thumbnail.html' %}{% endwith %}
+                    {% elif search_item._type == 'company' %}
+                        {% with membership=search_item %}{% include 'company_thumbnail.html' %}{% endwith %}
+                    {% endif %}
+                {% else %}
+                    <h3 class="tac">{{ _('There are no items with current search criteria') }}</h3>
+                {% endfor %}
+
+                {% include 'pagination.html' %}
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
