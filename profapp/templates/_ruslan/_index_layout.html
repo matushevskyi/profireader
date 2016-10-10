@@ -109,12 +109,13 @@
 
             var pr_chat_socket = io.connect('//socket.{{ MAIN_DOMAIN }}');
 
-            pr_chat_socket.on('set_unread_message_count', function (resp) {
-                var total = 0;
+            pr_chat_socket.on('new_message', function (resp) {
+                console.log(resp);
+                var total_messages = 0;
                 $.each(resp['unread_message_count'], function (chatroom_id, unread) {
-                    total += unread;
+                    total_messages += unread;
                 });
-                angularControllerFunction('user_controller', 'set_unread_message_count')(total);
+                angularControllerFunction('user_controller', 'set_unread_message_count')(total_messages + resp['unread_notification_count']);
             });
 
             {% for message in get_flashed_messages() %}
