@@ -23,8 +23,7 @@ if __name__ == '__main__':
     # time = datetime.datetime.now()
 
     parser = argparse.ArgumentParser(description='reindex elastic search documents')
-    parser.add_argument("whattodo", choices=['delete_elastic_indexes', 'recreate_all_elastic_documents'],
-                        required=True)
+    parser.add_argument("whattodo", choices=['delete_elastic_indexes', 'recreate_all_elastic_documents'])
     args = parser.parse_args()
 
     app = create_app(apptype='profi')
