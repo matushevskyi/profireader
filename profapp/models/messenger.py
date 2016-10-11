@@ -87,17 +87,26 @@ class Message(Base, PRBase):
 
     @staticmethod
     def send_greeting_message(send_to_user):
-        proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(),
-                                                     user2_id=send_to_user.id).one()
-        greetings = Notification(to_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
-                            content=TranslateTemplate.translate_and_substitute(
-                                'profireader_notifications',
-                                'Welcome to profireader. We hope for fruitful collaboration. You can <a href="%(tutorial_url)s">see</a> short video instruction, and welcome to <a href="%(contact_url)s">contact</a> us',
-                                {'tutorial_url': '/tutorial/',
-                                 'contact_url': '/contact_us/'},
-                                url='',
-                                language=send_to_user.lang),
-                            message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
-                            message_subtype='GREETING')
-        g.db.add(greetings)
-        g.db.commit()
+         pass
+#        proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(), user2_id=send_to_user.id).one()
+#        greetings = Message(from_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
+#                           content=TranslateTemplate.getTranslate('profireader_messages', 'Welcome to profireader', '', True, send_to_user.lang),
+#                            message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
+#                            message_subtype='WELCOME')
+#        g.db.add(greetings)
+#        g.db.commit()
+
+#        proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(),
+#                                                     user2_id=send_to_user.id).one()
+#        greetings = Notification(to_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
+#                            content=TranslateTemplate.translate_and_substitute(
+#                                'profireader_notifications',
+#                                'Welcome to profireader. We hope for fruitful collaboration. You can <a href="%(tutorial_url)s">see</a> short video instruction, and welcome to <a href="%(contact_url)s">contact</a> us',
+#                                {'tutorial_url': '/tutorial/',
+#                                 'contact_url': '/contact_us/'},
+#                                url='',
+#                                language=send_to_user.lang),
+#                            message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
+#                            message_subtype='GREETING')
+#        g.db.add(greetings)
+#        g.db.commit()
