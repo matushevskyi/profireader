@@ -91,10 +91,12 @@ class Message(Base, PRBase):
 
     @staticmethod
     def send_greeting_message(send_to_user):
-        proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(), user2_id=send_to_user.id).one()
-        greetings = Message(from_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
-                            content=TranslateTemplate.getTranslate('profireader_messages', 'Welcome to profireader', '', True, send_to_user.lang),
-                            message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
-                            message_subtype='WELCOME')
-        g.db.add(greetings)
-        g.db.commit()
+         pass
+#        proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(), user2_id=send_to_user.id).one()
+#        greetings = Message(from_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
+#                           content=TranslateTemplate.getTranslate('profireader_messages', 'Welcome to profireader', '', True, send_to_user.lang),
+#                            message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
+#                            message_subtype='WELCOME')
+#        g.db.add(greetings)
+#        g.db.commit()
+
