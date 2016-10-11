@@ -29,7 +29,7 @@
 
         $scope.url_company_companies = {{ raw_url_for('company.companies')|safe }}
                 $scope.url_general_help = {{ raw_url_for('index.contact_us')|safe }}
-                        $scope.url_tutorial = {{ raw_url_for('tutorial.tutorial')|safe }}
+                        $scope.url_tutorial = {{ raw_url_for('tutorial.index')|safe }}
                                 $scope.url_auth_logout = {{ raw_url_for('auth.logout')|safe }}
                                         $scope.url_user_profile = {{ raw_url_for('user.profile')|safe }}
                                                 $scope.user_avatar_url = '{{ current_user.get_avatar()['url'] }}';

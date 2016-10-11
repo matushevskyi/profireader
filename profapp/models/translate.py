@@ -122,6 +122,26 @@ class TranslateTemplate(Base, PRBase):
             return phrase
 
     @staticmethod
+    def translate_and_substitute(template, phrase, dictionary={}, language=None, url=None, allow_html=''):
+        translated = TranslateTemplate.getTranslate(template, phrase[0:200], url, allow_html, language)
+        r = re.compile("%\\(([^)]*)\\)s")
+
+        def getFromDict(context, indexes, default):
+            d = context
+            for i in indexes:
+                if i in d:
+                    d = d[i]
+                else:
+                    return default
+            return d
+
+        def replaceinphrase(match):
+            indexes = match.group(1).split('.')
+            return str(getFromDict(dictionary, indexes, match.group(1)))
+
+        return r.sub(replaceinphrase, translated)
+
+    @staticmethod
     def update_last_accessed(template, phrase):
         i = datetime.datetime.now()
         obj = db(TranslateTemplate, template=template, name=phrase).first()

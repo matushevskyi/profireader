@@ -6,7 +6,6 @@ from sqlalchemy import func
 
 from ..constants import RECORD_IDS
 
-
 from utils.db_utils import db
 from ..models.users import User
 from ..models.company import Company, UserCompany
@@ -26,7 +25,7 @@ import datetime
 @messenger_bp.route('/', methods=['GET'])
 @check_right(UserIsActive)
 def messenger():
-    return render_template('messenger/messenger.html', PROFIREADER_USER_ID = RECORD_IDS.SYSTEM_USERS.profireader())
+    return render_template('messenger/messenger.html', PROFIREADER_USER_ID=RECORD_IDS.SYSTEM_USERS.profireader())
 
 
 @messenger_bp.route('/', methods=['OK'])
@@ -87,7 +86,7 @@ def community_search(json):
             and_(Contact.status == Contact.STATUSES['ANY_REVOKED'], User.id != g.user.id),
             and_(Contact.status == Contact.STATUSES['REVOKED_ANY'], User.id == g.user.id)), 'X'),
         (Contact.status == Contact.STATUSES['ACTIVE_ACTIVE'], 'Z')
-        ], else_='X'), User.full_name). \
+    ], else_='X'), User.full_name). \
         limit(PER_PAGE + 1).offset((json['page'] - 1) * PER_PAGE)
 
     users = query.all()
@@ -126,7 +125,8 @@ def contacts_search(json):
                   or_(and_(Contact.user1_id == User.id, Contact.user1_id != g.user.id),
                       and_(Contact.user2_id == User.id, Contact.user2_id != g.user.id))). \
         filter(and_(User.full_name.ilike("%" + json['text'] + "%"),
-                    Contact.status.in_([Contact.STATUSES['ACTIVE_ACTIVE'], Contact.STATUSES['READONLY'], Contact.STATUSES['ACTIVE_BANNED'],
+                    Contact.status.in_([Contact.STATUSES['ACTIVE_ACTIVE'], Contact.STATUSES['READONLY'],
+                                        Contact.STATUSES['ACTIVE_BANNED'],
                                         Contact.STATUSES['BANNED_ACTIVE']]),
                     or_(Contact.user1_id == g.user.id, Contact.user2_id == g.user.id))). \
         order_by(expression.desc(Contact.last_message_tm)). \
@@ -174,13 +174,15 @@ def get_messages_and_unread_count(chat_room_id, count, get_older=False, than_id=
             messages.reverse()
 
         def client_message(m: Message):
-            return utils.dict_merge(m.get_client_side_dict(fields='id,content,from_user_id,cr_tm'),
+            ret = utils.dict_merge(m.get_client_side_dict(fields='id,content,to_user_id,cr_tm'),
                                     {'timestamp': m.cr_tm.timestamp()})
+            ret['from_user_id'] = m.contact.user1_id if m.contact.user2_id == ret['to_user_id'] else m.contact.user2_id
+            return ret
 
         another_user_id = contact.user1_id if g.user.id == contact.user2_id else contact.user2_id
 
         g.db.execute(
-            update(Message).where(Message.id.in_([m.id for m in messages if m.from_user_id != g.user.id])).values(
+            update(Message).where(Message.id.in_([m.id for m in messages if m.to_user_id == g.user.id])).values(
                 read_tm=datetime.datetime.utcnow()))
 
         ret['chat_room'] = {'chat_room_id': chat_room_id,
@@ -200,7 +202,7 @@ def unread_messages_count(user_id):
     messages_count = g.db().query(Contact.id, func.count(Contact.id)).outerjoin(Message,
                                                                                 and_(Message.contact_id == Contact.id,
                                                                                      Message.read_tm == None,
-                                                                                     Message.from_user_id != user_id
+                                                                                     Message.to_user_id == user_id
                                                                                      )). \
         filter(and_(Message.id != None, or_(Contact.user2_id == user_id, Contact.user1_id == user_id))). \
         group_by(Contact.id).all()
@@ -216,7 +218,8 @@ MESSANGER_MESSGES_PER_LOAD = 100
 def send_message(json):
     contact = Contact.get(json['chat_room_id'])
     if contact.user1_id == g.user.id or contact.user2_id == g.user.id:
-        message = Message(contact_id=contact.id, content=json['text'], from_user_id=g.user.id, message_type = Message.MESSAGE_TYPES['MESSAGE'])
+        message = Message(contact_id=contact.id, content=json['text'],
+                          to_user_id=(contact.user2_id if contact.user1_id == g.user.id else contact.user1_id))
         message.save()
         return get_messages_and_unread_count(contact.id, MESSANGER_MESSGES_PER_LOAD, get_older=False,
                                              than_id=json['last_message_id'])
