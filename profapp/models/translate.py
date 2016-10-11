@@ -49,6 +49,7 @@ class TranslateTemplate(Base, PRBase):
         if portal_id and not exist:
             exist_for_another = db(TranslateTemplate, template=template, name=phrase,
                                    portal_id=TranslateTemplate.exemplary_portal_id).first()
+            # TODO: OZ by OZ: how to select template portal? now we grab phrases from most recent portal, and there can be some unappropriate values
             if not exist_for_another:
                 exist_for_another = db(TranslateTemplate, template=template, name=phrase).filter(
                     TranslateTemplate.portal != None).order_by(expression.desc(TranslateTemplate.cr_tm)).first()
