@@ -110,3 +110,4 @@ class Message(Base, PRBase):
 #                            message_subtype='GREETING')
 #        g.db.add(greetings)
 #        g.db.commit()
+
