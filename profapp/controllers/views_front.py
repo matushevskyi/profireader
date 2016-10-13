@@ -14,6 +14,7 @@ from ..models.elastic import elasticsearch
 from collections import OrderedDict
 from .. import utils
 from utils.db_utils import db
+from flask import Flask, abort
 
 
 def get_search_text_and_division(portal, division_name):
@@ -22,7 +23,10 @@ def get_search_text_and_division(portal, division_name):
 
     dvsn = g.db().query(PortalDivision).filter_by(**utils.dict_merge(
         {'portal_id': portal.id},
-        {'portal_division_type_id': 'index'} if division_name is None else {'name': division_name})).one()
+        {'portal_division_type_id': 'index'} if division_name is None else {'name': division_name})).first()
+    
+    if not dvsn:
+        abort(404)
 
     # TODO: OZ by OZ: 404 if no company
 

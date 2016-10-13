@@ -171,10 +171,10 @@ class Company(Base, PRBase, PRElasticDocument):
     def setup_new_company(self):
         """Add new company to company table and make all necessary relationships,
         if company with this name already exist raise DublicateName"""
-        if db(Company, name=self.name).count():
-            raise errors.DublicateName({
-                'message': 'Company name %(name)s already exist. Please choose another name',
-                'data': self.get_client_side_dict()})
+#        if db(Company, name=self.name).count():
+#            raise errors.DublicateName({
+#                'message': 'Company name %(name)s already exist. Please choose another name',
+#                'data': self.get_client_side_dict()})
 
         user_company = UserCompany(status=UserCompany.STATUSES['ACTIVE'], rights={UserCompany.RIGHT_AT_COMPANY._OWNER:
                                                                                       True})
