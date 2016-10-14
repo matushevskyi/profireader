@@ -28,7 +28,6 @@
             }
 
             $scope.url_front_publication_details_host = function (publication, host) {
-                console.log(host)
                 return publication ? ('//' + host + $scope.url_front_publication_details({publication_id: publication.id, publication_title : publication.material.title})) : '';
             }
 
@@ -70,6 +69,7 @@
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
                 loadGridData: $scope.loadPublications,
+		paginationPageSize: 1000,
                 columnDefs: [
                     {
                         name: 'publication.division.name', type: 'link', target: 'front',
