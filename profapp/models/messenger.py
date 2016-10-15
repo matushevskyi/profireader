@@ -74,12 +74,11 @@ class Contact(Base, PRBase):
 class Message(Base, PRBase):
     __tablename__ = 'message'
 
-
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     cr_tm = Column(TABLE_TYPES['timestamp'])
     read_tm = Column(TABLE_TYPES['timestamp'])
 
-    to_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
+    from_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
     contact_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Contact.id))
     content = Column(TABLE_TYPES['string_1000'])
 
@@ -87,8 +86,9 @@ class Message(Base, PRBase):
 
     @staticmethod
     def send_greeting_message(send_to_user):
-         pass
-#        proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(), user2_id=send_to_user.id).one()
+        pass
+
+# proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(), user2_id=send_to_user.id).one()
 #        greetings = Message(from_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
 #                           content=TranslateTemplate.getTranslate('profireader_messages', 'Welcome to profireader', '', True, send_to_user.lang),
 #                            message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
@@ -110,4 +110,3 @@ class Message(Base, PRBase):
 #                            message_subtype='GREETING')
 #        g.db.add(greetings)
 #        g.db.commit()
-

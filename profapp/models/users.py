@@ -379,8 +379,13 @@ class User(Base, UserMixin, PRBase):
         g.db.add(self)
         g.db.commit()
 
-    def get_unread_message_count(self):
-        ret = g.db().execute("SELECT message_unread_count('%s')" % (self.id,))
+    @staticmethod
+    def get_unread_message_count(user_id, contact_id = None):
+        if contact_id is None:
+            ret = g.db().execute("SELECT message_unread_count('%s', NULL)" % (user_id,))
+        else:
+            ret = g.db().execute("SELECT message_unread_count('%s', '%s')" % (user_id, contact_id))
+
         for (r,) in ret:
             return r
 

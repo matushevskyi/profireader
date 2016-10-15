@@ -103,7 +103,7 @@ class Material(Base, PRBase, PRElasticDocument):
     @staticmethod
     def get_material_grid_data(material):
         from ..models.rights import PublishUnpublishInPortal
-        dict = material.get_client_side_dict(fields='md_tm,title,editor.full_name,id,illustration.url')
+        dict = material.get_client_side_dict(fields='cr_tm,md_tm,title,editor.full_name,id,illustration.url')
         dict.update({'portal.name': None if len(material.publications) == 0 else '', 'level': True})
         dict.update({'actions': None if len(material.publications) == 0 else '', 'level': True})
         list = [utils.dict_merge(

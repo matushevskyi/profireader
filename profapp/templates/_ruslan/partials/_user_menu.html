@@ -4,7 +4,7 @@
         $scope.user = {{ g.user.get_client_side_dict()| tojson|safe if g.user else 'null'}};
         $scope.languages = {{ g.languages|tojson|safe }};
         $scope.lang = {{ g.lang|tojson|safe }};
-        $scope.unread_message_count = {{ g.user.get_unread_message_count() if g.user else 'null'}};
+        $scope.unread_message_count = {{ g.user.get_unread_message_count(g.user.id) if g.user else 'null'}};
 
         $scope.set_unread_message_count = function (count) {
             if ($scope.unread_message_count != count) {
