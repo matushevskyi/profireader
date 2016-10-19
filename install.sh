@@ -179,7 +179,7 @@ rm ./elasticsearch-"$elastic_version".deb" sudo deb
 
 function menu_deb {
     conf_comm "apt-get update
-apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev" sudo npm
+apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev openjdk-8-jre" sudo npm
     }
 
 function menu_npm {
@@ -215,13 +215,10 @@ gulp" nosudo hosts
 
 function menu_hosts {
     conf_comm "sed -i '/\(db\|web\|mail\|memcached\|elastic\).profi/d' /etc/hosts
-sed -i '/profireader.com/d' /etc/hosts
+sed -i '/\\.profi/d' /etc/hosts
 echo '' >> /etc/hosts
-echo '127.0.0.1 db.profi web.profi mail.profi memcached.profi elastic.profi' >> /etc/hosts
-echo '127.0.0.1 file001.profireader.com' >> /etc/hosts
-echo '127.0.0.1 static.profireader.com' >> /etc/hosts
-echo '127.0.0.1 profireader.com rodynni.firmy oles.profireader.com rodynnifirmy.profireader.com derevoobrobka.profireader.com viktor.profireader.com md.profireader.com oleh.profireader.com fsm.profireader.com' >> /etc/hosts
-echo '127.0.0.1 test.profireader.com test1.profireader.com test2.profireader.com test3.profireader.com test4.profireader.com test5.profireader.com test6.profireader.com test7.profireader.com test8.profireader.com test9.profireader.com' >> /etc/hosts
+echo '127.0.0.1 db.profi mail.profi memcached.profi elastic.profi' >> /etc/hosts
+echo '127.0.0.1 web.profi static.web.profi file001.web.profi socket.web.profi portal.web.profi' >> /etc/hosts
 cat /etc/hosts" sudo haproxy_compile
     }
 
@@ -428,16 +425,7 @@ function menu_db_download_full {
     }
 
 function menu_db_load_full {
-    runsql_dump 'Enter sql full dump filename' db/database_full.sql db_reindex_search
-    }
-
-function menu_db_reindex_search {
-    destdir=$(rr 'venv directory' .venv)
-    conf_comm "
-source $destdir/bin/activate
-cd ./utils
-python ./update_search_table.py
-" nosudo 'db_reassign_ownership'
+    runsql_dump 'Enter sql full dump filename' db/database_full.sql menu_db_reassign_ownership 
     }
 
 function menu_db_reassign_ownership {
@@ -450,7 +438,7 @@ function menu_db_reassign_ownership {
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT tablename      FROM pg_tables                     WHERE schemaname      = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT sequence_name  FROM information_schema.sequences  WHERE sequence_schema = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT table_name     FROM information_schema.views      WHERE table_schema    = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
-" sudo 'db_save_full'
+" sudo 'elastic_reindex_all'
     }
 
 function menu_db_save_full {
@@ -460,6 +448,17 @@ mv db/database_full.sql db/database_full.sql."`$gitv`"_"`$datev`".bak
 su postgres -c 'pg_dump $profidb' > db/database_full.sql
 ls -l1sh db/database_full.*
 " sudo 'exit'
+    }
+
+
+function menu_elastic_reindex_all {
+    destdir=$(rr 'venv directory' .venv)
+    conf_comm "
+source $destdir/bin/activate
+cd ./utils
+python ./update_elastic_search.py delete_elastic_indexes
+python ./update_elastic_search.py recreate_all_elastic_documents
+" nosudo 'exit'
     }
 
 
@@ -508,8 +507,8 @@ if [[ "$1" == "" ]]; then
       "db_save_full" "save full database to file" \
       "db_download_full" "get full database from x.m.ntaxa.com" \
       "db_load_full" "load full database from file" \
-      "db_reindex_search" "reindex search table" \
       "db_reassign_ownership" "reassign ownership" \
+      "elastic_reindex_all" "recreate all documents in elasticsearch" \
       "compare_local_makarony" "compare local database and dev version" \
       "compare_local_kupyty" "compare local database and testing version" \
       "compare_local_artek" "compare local database and production version" \
