@@ -144,14 +144,14 @@ function get_profidb {
     }
 
 function runsql {
-    conf_comm "service postgresql restart
+    conf_comm "systemctl restart postgresql.service
 su postgres -c \"echo \\\"$1\\\" | psql\"" sudo "$2"
     }
 
 function runsql_dump {
     profidb=$(get_profidb)
     filenam=$(rr "$1" "$2")
-    conf_comm "service postgresql restart
+    conf_comm "systemctl restart postgresql.service
 su postgres -c 'cat $filenam | psql $profidb'" sudo "$3"
     }
 
@@ -179,7 +179,7 @@ rm ./elasticsearch-"$elastic_version".deb" sudo deb
 
 function menu_deb {
     conf_comm "apt-get update
-apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev openjdk-8-jre" sudo npm
+apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev openjdk-8-jre haproxy" sudo npm
     }
 
 function menu_npm {
@@ -219,23 +219,22 @@ sed -i '/\\.profi/d' /etc/hosts
 echo '' >> /etc/hosts
 echo '127.0.0.1 db.profi mail.profi memcached.profi elastic.profi' >> /etc/hosts
 echo '127.0.0.1 web.profi static.web.profi file001.web.profi socket.web.profi portal.web.profi' >> /etc/hosts
-cat /etc/hosts" sudo haproxy_compile
+cat /etc/hosts" sudo haproxy_config
     }
 
-function menu_haproxy_compile {
-    conf_comm "apt-get purge haproxy
-sed -i '/haproxy-1.5/d' /etc/apt/sources.list
-echo '' >> /etc/apt/sources.list
-echo 'deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
-echo 'deb-src http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
-apt-get update
-apt-get install haproxy" sudo haproxy_config
-    }
+# function menu_haproxy_compile {
+#     conf_comm "apt-get purge haproxy
+# sed -i '/haproxy-1.5/d' /etc/apt/sources.list
+# echo '' >> /etc/apt/sources.list
+# echo 'deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
+# echo 'deb-src http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
+# apt-get update
+# apt-get install haproxy" sudo haproxy_config
+#     }
 
 function menu_haproxy_config {
     conf_comm "cp ./conf/haproxy.cfg /etc/haproxy/
-cp ./conf/profireader_haproxy.key.pem /etc/haproxy/
-service haproxy restart" sudo letsencrypt
+systemctl restart haproxy.service" sudo letsencrypt
     }
 
 function menu_letsencrypt {
@@ -255,7 +254,8 @@ rm /etc/apache2/sites-enabled/000-default.conf
 mkdir /var/log/profi
 a2enmod wsgi
 a2enmod ssl
-service apache2 restart" sudo apache2_profi_vh_ssl
+systemctl restart postgresql.service
+systemctl restart apache2.service" sudo apache2_profi_vh_ssl
     }
 
 function menu_apache2_profi_vh_ssl {
@@ -264,7 +264,7 @@ function menu_apache2_profi_vh_ssl {
     conf_comm "cat ./conf/apache2/main-domain.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/main-domain.conf
 cd `pwd`/utils
 ./get_ssl_for_domain.sh `pwd`/letsencryptrequests $maindomain www.$maindomain static.$maindomain file001.$maindomain 
-service apache2 restart" sudo apache2_fronts_vh_ssl
+systemctl restart apache2.service" sudo apache2_fronts_vh_ssl
     }
 
 
@@ -274,7 +274,7 @@ function menu_apache2_fronts_vh_ssl {
 source $venvdir/bin/activate
 cd utils
 python check_ssl.py
-service apache2 restart" sudo secret_data
+systemctl restart apache2.service" sudo secret_data
     }
 
 function menu_apache2_check_ssls {
@@ -283,7 +283,7 @@ function menu_apache2_check_ssls {
 source $venvdir/bin/activate
 cd utils
 python check_ssl.py
-service apache2 restart" sudo secret_data
+systemctl restart apache2.service" sudo secret_data
     }
 
 function menu_secret_data {
@@ -475,18 +475,19 @@ if [[ "$1" == "" ]]; then
   while :
   do
 #next='exit'
+#"haproxy_compile" "compile and install haproxy" \
+#
     dialog --title "profireader" --nocancel --default-item $next --menu "Choose an option" 22 78 17 \
       "origin" "change git origin and add new remote repo" \
       "postgres_9_4" "install postgres 9.4" \
       "elastic" "install elastic search" \
       "deb" "install deb packages" \
+      "haproxy_config" "copy haproxy config to /etc/haproxy" \
       "npm" "install nodejs, npm, bower and gulp globally" \
       "bower" "download bower components in ./profapp/static/bower_components" \
       "bower_dev" "download bower development components in ./profapp/static/bower_components_dev" \
       "gulp" "install gulp in ./profapp/static" \
       "hosts" "create virtual domain zone in /etc/hosts" \
-      "haproxy_compile" "compile and install haproxy" \
-      "haproxy_config" "copy haproxy config to /etc/haproxy" \
       "letsencrypt" "install letsencrypt" \
       "apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
       "apache2_profi_vh_ssl" "create vh conf file and create/update ssl for main domain (with www., static. and file001. aliases)" \
