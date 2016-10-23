@@ -21,7 +21,7 @@ from .. import utils
 from .elastic import PRElasticField, PRElasticDocument
 from config import Config
 import simplejson
-
+from sqlalchemy.sql import expression
 
 class Contact(Base, PRBase):
     __tablename__ = 'contact'
@@ -65,30 +65,60 @@ class Contact(Base, PRBase):
             self.status = '_'.join(splited)
         return self
 
-    @staticmethod
-    def send_message_behalf_of(user_id, message_text):
+    def get_messages(self, count, get_older=False, than_id=None):
+        messages_filter = (Message.contact_id == self.id)
+        messages_query = g.db().query(Message)
+        if than_id:
+            if get_older:
+                messages = messages_query.filter(and_(messages_filter, Message.id < than_id)).order_by(
+                    expression.desc(Message.id)).limit(count + 1).all()
+                there_is_more = ['there_is_older', len(messages) > count]
+                messages = messages[0:count]
+                messages.reverse()
 
-        pass
+            else:
+                messages = messages_query.filter(and_(messages_filter, Message.id > than_id)).order_by(
+                    expression.asc(Message.id)).limit(count + 1).all()
+                there_is_more = ['there_is_newer', len(messages) > count]
+                messages = messages[0:count]
+
+        else:
+            messages = messages_query.filter(messages_filter).order_by(expression.desc(Message.id)).limit(
+                count + 1).all()
+            there_is_more = ['there_is_older', len(messages) > count]
+            messages = messages[0:count]
+            messages.reverse()
+
+        return {
+            there_is_more[0]: there_is_more[1],
+            'messages': messages
+        }
+
 
 
 class Message(Base, PRBase):
     __tablename__ = 'message'
 
-
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     cr_tm = Column(TABLE_TYPES['timestamp'])
     read_tm = Column(TABLE_TYPES['timestamp'])
 
-    to_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
+    from_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
     contact_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Contact.id))
     content = Column(TABLE_TYPES['string_1000'])
 
     contact = relationship(Contact)
 
+    def client_message(self):
+        return utils.dict_merge(self.get_client_side_dict(fields='id,content,from_user_id'),
+                                {'timestamp': self.cr_tm.timestamp() if self.cr_tm else 0, 'chat_room_id': self.contact_id})
+
+
     @staticmethod
     def send_greeting_message(send_to_user):
-         pass
-#        proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(), user2_id=send_to_user.id).one()
+        pass
+
+# proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(), user2_id=send_to_user.id).one()
 #        greetings = Message(from_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
 #                           content=TranslateTemplate.getTranslate('profireader_messages', 'Welcome to profireader', '', True, send_to_user.lang),
 #                            message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
@@ -110,4 +140,3 @@ class Message(Base, PRBase):
 #                            message_subtype='GREETING')
 #        g.db.add(greetings)
 #        g.db.commit()
-

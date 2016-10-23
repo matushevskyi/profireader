@@ -24,6 +24,7 @@ from ..constants.SEARCH import RELEVANCE
 from .. import utils
 from flask import url_for, render_template
 from ..utils import email_utils
+from utils import db_utils
 
 import random
 import time
@@ -72,17 +73,16 @@ class User(Base, UserMixin, PRBase):
 
     # TODO: OZ by OZ: some condition about active
     active_portals_subscribed = relationship('Portal',
-                                      viewonly=True,
-                                      primaryjoin='User.id == UserPortalReader.user_id',
-                                      secondary='reader_portal',
-                                      secondaryjoin="and_(UserPortalReader.portal_id == Portal.id, Portal.status == 'ACTIVE', UserPortalReader.status == 'active')")
-
+                                             viewonly=True,
+                                             primaryjoin='User.id == UserPortalReader.user_id',
+                                             secondary='reader_portal',
+                                             secondaryjoin="and_(UserPortalReader.portal_id == Portal.id, Portal.status == 'ACTIVE', UserPortalReader.status == 'active')")
 
     active_companies_employers = relationship('Company',
-                                       viewonly=True,
-                                       primaryjoin='User.id == UserCompany.user_id',
-                                       secondary='user_company',
-                                       secondaryjoin="and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE', UserCompany.status == 'ACTIVE')")
+                                              viewonly=True,
+                                              primaryjoin='User.id == UserCompany.user_id',
+                                              secondary='user_company',
+                                              secondaryjoin="and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE', UserCompany.status == 'ACTIVE')")
 
     def set_avatar_preset(self, r, v):
         if v['selected_by_user']['type'] == 'preset':
@@ -379,11 +379,10 @@ class User(Base, UserMixin, PRBase):
         g.db.add(self)
         g.db.commit()
 
-    def get_unread_message_count(self):
-        ret = g.db().execute("SELECT message_unread_count('%s')" % (self.id,))
-        for (r,) in ret:
-            return r
-
+    @staticmethod
+    def get_unread_message_count(user_id, contact_id=None):
+        return db_utils.execute_function("message_unread_count('%s', %s)" % (
+            user_id, 'NULL' if contact_id is None else ("'" + contact_id + "'")))
 
     # def get_avatar(self, avatar_via, size=500, small_size=100, url=None):
     #     if avatar_via == 'upload':

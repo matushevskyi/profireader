@@ -250,157 +250,143 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     elif apptype == 'file':
         from profapp.controllers.blueprints_register import register_file as register_blueprints_file
         register_blueprints_file(app)
-    elif apptype == 'socket':
+    # elif apptype == 'socket':
 
-        # from flask_socketio import SocketIO, emit
-        # socketio = SocketIO(app)
+        # import psycopg2
+        # import psycopg2.extensions
+        # import socketio, eventlet
         #
-        # @socketio.on('connect')
-        # def connect_handler():
-        #     print(current_user)
-        #     if current_user.is_authenticated:
-        #         emit('my response',
-        #              {'message': '{0} has joined'.format(current_user.name)},
-        #              broadcast=True)
+        # conn = psycopg2.connect(dbname=Config.database, user=Config.username, password=Config.password,
+        #                         host=Config.host)
+        # conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        # conn.autocommit = True
+        # curs = conn.cursor()
+        #
+        # sio = socketio.Server(cookie='prsio')
+        #
+        # def get_sids_in_room(room_name, namespace='/'):
+        #
+        #     return [sid for sid in sio.manager.get_participants(namespace, room_name)] \
+        #         if namespace in sio.manager.rooms and room_name in sio.manager.rooms[namespace] else []
+        #
+        #
+        # def check_user_id(environ):
+        #     session_id = environ.get('HTTP_COOKIE', None)
+        #     if not session_id:
+        #         return False
+        #     session_id = re.sub(r'^(.*;\s*)?beaker\.session\.id=([0-9a-f]*).*$', r'\2', session_id)
+        #     import memcache
+        #     mc = memcache.Client(['memcached.profi:11211'], debug=0)
+        #     session = mc.get(session_id + '_session')
+        #     return session.get('user_id', False) if session else False
+        #
+        # @sio.on('connect')
+        # def connect(sid, environ):
+        #     user_id = check_user_id(environ)
+        #     print('connect', user_id)
+        #     if not user_id:
+        #         return False
+        #
+        #     if not len(get_sids_in_room('user-' + user_id)):
+        #         chanel = user_id.replace('-', '_')
+        #         print("Waiting for notifications on channel new_message_to_user___" + chanel)
+        #         curs.execute("LISTEN new_message_to_user___%s;" % (chanel,))
+        #         curs.execute("LISTEN message_unread_count___%s;" % (chanel,))
+        #
+        #     sio.enter_room(sid, 'user-' + user_id)
+        #     curs.execute("SELECT message_unread_count('%s', NULL)" % (user_id,))
+        #     tosend = {'total': int(float(curs.fetchone()[0]))}
+        #     sio.emit('set_unread_message_count', tosend, sid)
+        #
+        # @sio.on('disconnect')
+        # def disconnect(sid):
+        #     print('disconnect',sio.manager.get_rooms(sid, '/'))
+        #     for chat_room_name in sio.manager.get_rooms(sid, '/'):
+        #         sid_for_this_user = len(get_sids_in_room(chat_room_name))
+        #         print('disconnect', sid_for_this_user)
+        #         sio.leave_room(sid, chat_room_name)
+        #         if chat_room_name[0:5] == 'user-' and sid_for_this_user == 1:
+        #             chanel = chat_room_name[5:].replace('-', '_')
+        #             print("DON`T Waiting for notifications on channel new_message_to_user___" + chanel)
+        #             curs.execute("UNLISTEN new_message_to_user___%s;" % (chanel,))
+        #             curs.execute("UNLISTEN message_unread_count___%s;" % (chanel,))
+        #
+        #
+        # @sio.on('select_chat_room_id')
+        # def select_chat_room(sid, message):
+        #     print('chat room selected', message['select_chat_room_id'])
+        #     for room_name in sio.manager.get_rooms(sid, '/'):
+        #         if room_name[0:10] == 'chat-room-':
+        #             sio.leave_room(sid, room_name)
+        #     if message['select_chat_room_id']:
+        #         sio.enter_room(sid, 'chat-room-' + message['select_chat_room_id'])
+        #
+        # def notify_unread(user_id, contact_id):
+        #     print('notify_unread', user_id, contact_id)
+        #     if len(get_sids_in_room('user-' + user_id)):
+        #         curs.execute("SELECT message_unread_count('%s', NULL)" % (user_id,))
+        #         tosend = {'total': int(float(curs.fetchone()[0]))}
+        #         if contact_id:
+        #             curs.execute("SELECT message_unread_count('%s', '%s')" % (user_id, contact_id))
+        #             tosend[contact_id] = int(float(curs.fetchone()[0]))
+        #         sio.emit('set_unread_message_count', tosend, 'user-' + user_id)
+        #
+        # def new_message(to_user_id, message):
+        #     import time
+        #     import datetime
+        #     import random
+        #     # if random.randint(0,10) > 5:
+        #     #     raise AssertionError('hello')
+        #
+        #
+        #
+        #     contact_id = message['contact_id']
+        #     message_tosend = {'id': message['id'],
+        #                       'content': message['content'],
+        #                       'from_user_id': message['from_user_id'],
+        #                       'cr_tm': message['cr_tm'],
+        #                       'timestamp': time.mktime(
+        #                           datetime.datetime.strptime(message['cr_tm'], "%Y-%m-%dT%H:%M:%S.%f").timetuple()),
+        #                       }
+        #
+        #     no_adresee_listen = True
+        #     for sid_in_chat_room in get_sids_in_room('chat-room-' + contact_id):
+        #         for room_name in sio.manager.get_rooms(sid_in_chat_room, '/'):
+        #             if room_name == 'user-' + to_user_id:
+        #                 no_adresee_listen = False
+        #                 sio.emit(event='new_message', data={'message': message_tosend, 'chat_room_id': contact_id},
+        #                          room=sid_in_chat_room)
+        #
+        #     if no_adresee_listen:
+        #         curs.execute("SELECT message_notify_unread('%s', '%s');" % (to_user_id, contact_id))
         #     else:
-        #         return False  # not allowed here
+        #         curs.execute("SELECT message_set_read('%s', '%s', ARRAY ['%s']);" %
+        #                      (to_user_id, contact_id, "', '".join([message['id']])))
         #
-        # socketio.run(app)
+        # def dblisten():
+        #     from eventlet.hubs import trampoline
+        #     """
+        #     Open a db connection and add notifications to *q*.
+        #     """
+        #     while True:
+        #         trampoline(conn, read=True)
+        #         conn.poll()
+        #         while conn.notifies:
+        #             notify = conn.notifies.pop(0)
+        #             print("Got NOTIFY:", notify.pid, notify.channel, notify.payload)
+        #             (messagetype, message_info_id) = tuple(notify.channel.split('___'))
+        #
+        #             if messagetype == 'new_message_to_user':
+        #                 new_message(message_info_id.replace('_', '-'), json.loads(notify.payload))
+        #             elif messagetype == 'message_unread_count':
+        #                 notify_unread(message_info_id.replace('_', '-'), notify.payload)
+        #
+        # thread = eventlet.spawn(dblisten)
+        #
+        # app = socketio.Middleware(sio, app)
+        # eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
 
-
-        # from sqlalchemy import create_engine
-        from config import database_uri
-        import select
-        from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-        import psycopg2
-        import psycopg2.extensions
-        import socketio, eventlet
-
-        conn = psycopg2.connect(dbname=Config.database, user=Config.username, password=Config.password,
-                                host=Config.host)
-        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-        conn.autocommit = True
-        curs = conn.cursor()
-
-        sio = socketio.Server(cookie='prsio')
-
-        sid2userid = {}
-        userid2seeds = {}
-
-        def check_user_id(environ):
-            session_id = environ.get('HTTP_COOKIE', None)
-            if not session_id:
-                return False
-            session_id = re.sub(r'^(.*;\s*)?beaker\.session\.id=([0-9a-f]*).*$', r'\2', session_id)
-            import memcache
-            mc = memcache.Client(['memcached.profi:11211'], debug=0)
-            session = mc.get(session_id + '_session')
-            return session.get('user_id', False) if session else False
-
-        @sio.on('connect')
-        def connect(sid, environ):
-            user_id = check_user_id(environ)
-            if not user_id:
-                return False
-            sid2userid[sid] = [user_id, None]
-
-            if not user_id in userid2seeds:
-                userid2seeds[user_id] = []
-                chanel = user_id.replace('-', '_')
-                print("Waiting for notifications on channel new_message_to_user___" + chanel)
-                curs.execute("LISTEN new_message_to_user___%s;" % (chanel,))
-                curs.execute("LISTEN message_read_user___%s;" % (chanel,))
-
-            userid2seeds[user_id].append(sid)
-            # sio.enter_room(sid, 'set_unread_message_count-' + user_id)
-
-        @sio.on('disconnect')
-        def disconnect(sid):
-            (user_id, selected_chat_room_id) = tuple(sid2userid[sid])
-            del sid2userid[sid]
-            userid2seeds[user_id].remove(sid)
-            if not len(userid2seeds[user_id]):
-                chanel = user_id.replace('-', '_')
-                print("DON`T Waiting for notifications on channel new_message_to_user___" + chanel)
-                curs.execute("UNLISTEN new_message_to_user___%s;" % (chanel,))
-                curs.execute("UNLISTEN message_read_user___%s;" % (chanel,))
-                del userid2seeds[user_id]
-
-        @sio.on('select_chat_room_id')
-        def select_chat_room(sid, message):
-            print('---select_chat_room_id', sid, message)
-            sid2userid[sid][1] = message['select_chat_room_id']
-            pass
-
-        def get_cnt(user_id):
-            print('get_cnt', user_id)
-            curs.execute("SELECT contact.id, COUNT(contact.id) as cnt FROM contact LEFT JOIN "
-                         "message ON (message.contact_id = contact.id AND message.read_tm IS NULL AND message.to_user_id = '%s')"
-                         "WHERE (message.id IS NOT NULL AND (contact.user1_id = '%s' OR contact.user2_id = '%s'))"
-                         "GROUP BY contact.id" % (user_id, user_id, user_id))
-            ret = {contact_id: cnt for (contact_id, cnt) in curs.fetchall()}
-            print(ret)
-            return ret
-
-        # def notify_unread(user_id):
-        #     print('notify_unread', user_id)
-        #     if user_id in userid2seeds:
-        #         sio.emit('set_unread_message_count', {'unread_message_count': get_cnt(user_id)},
-        #                  room='set_unread_message_count-' + user_id)
-
-        def inform_user(user_id, message):
-            import time
-            import datetime
-            if not user_id in userid2seeds:
-                return False
-
-            if message:
-                contact_id = message['contact_id']
-                curs.execute("SELECT user1_id, user2_id FROM contact WHERE contact.id = '%s'" % (contact_id,))
-                contact = curs.fetchone()
-                message_tosend = {'id': message['id'],
-                                  'content': message['content'],
-                                  'to_user_id': message['to_user_id'],
-                                  'from_user_id': contact[0 if contact[1] == message['to_user_id'] else 1],
-                                  'cr_tm': message['cr_tm'],
-                                  'timestamp': time.mktime(
-                                      datetime.datetime.strptime(message['cr_tm'], "%Y-%m-%dT%H:%M:%S.%f").timetuple()),
-                                  }
-            else:
-                message_tosend = None
-
-            opened_chatrooms_id_for_reader_user = [sid2userid[sid1][1] for sid1 in
-                                                   [sid for sid in userid2seeds[user_id]] if sid2userid[sid1][1]]
-            if contact_id in opened_chatrooms_id_for_reader_user:
-                curs.execute("UPDATE message SET read_tm = clock_timestamp() WHERE id = '%s'" % (message['id'],))
-
-            for sid in userid2seeds[user_id]:
-                sio.emit(event='new_message', data={'message': message_tosend, 'unread_message_count':
-                    get_cnt(user_id), 'unread_notification_count': 0}, room=sid)
-
-        def dblisten():
-            from eventlet.hubs import trampoline
-            """
-            Open a db connection and add notifications to *q*.
-            """
-            while True:
-                trampoline(conn, read=True)
-                conn.poll()
-                while conn.notifies:
-                    notify = conn.notifies.pop(0)
-                    print("Got NOTIFY:", notify.pid, notify.channel, notify.payload)
-                    (messagetype, message_info_id) = tuple(notify.channel.split('___'))
-                    inform_user(message_info_id.replace('_', '-'), json.loads(notify.payload))
-                    # if messagetype == 'new_message_to_user':
-                    #
-                    # elif messagetype == 'message_read_user':
-                    #     notify_unread(message_info_id.replace('_', '-'))
-
-        eventlet.spawn(dblisten)
-        app = socketio.Middleware(sio, app)
-        eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
-
-        pass
+        # pass
     else:
         from profapp.controllers.blueprints_register import register_profi as register_blueprints_profi
         register_blueprints_profi(app)
