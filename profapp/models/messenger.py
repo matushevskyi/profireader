@@ -65,9 +65,7 @@ class Contact(Base, PRBase):
             self.status = '_'.join(splited)
         return self
 
-    def get_messages(self, user_id, count, get_older=False, than_id=None):
-
-        contact = Contact.get(self.id)
+    def get_messages(self, count, get_older=False, than_id=None):
         messages_filter = (Message.contact_id == self.id)
         messages_query = g.db().query(Message)
         if than_id:
@@ -91,24 +89,11 @@ class Contact(Base, PRBase):
             messages = messages[0:count]
             messages.reverse()
 
-
-        ret = {
-            # 'chat_room_id': self.id,
-            # 'chat_room_status': contact.status,
-            # 'users': {
-            #     user_id: User.get(user_id).get_client_side_dict(more_fields='avatar'),
-            #     another_user_id: User.get(another_user_id).get_client_side_dict(more_fields='avatar')
-            # },
+        return {
             there_is_more[0]: there_is_more[1],
             'messages': messages
         }
-        # ret['unread_messages'] = unread_messages_count(g.user.id)
-        return ret
 
-    @staticmethod
-    def send_message_behalf_of(user_id, message_text):
-
-        pass
 
 
 class Message(Base, PRBase):
