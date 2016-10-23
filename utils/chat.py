@@ -87,7 +87,9 @@ def connect(sid, environ):
 def select_chat_room(sid, select_chat_room_id):
     with controlled_execution():
         print('chat room selected', select_chat_room_id)
+        old_chat_room = connected_sid_user_id_chatroom_id[sid][1]
         connected_sid_user_id_chatroom_id[sid][1] = select_chat_room_id
+        remove_delete(connected_chatroom_id_sids, old_chat_room, sid)
         append_create(connected_chatroom_id_sids, select_chat_room_id, sid)
 
 
@@ -112,10 +114,11 @@ def send_message(sid, message_text):
         message = Message.get(message.id)
 
         another_user_to_notify_unread = contact.user1_id if contact.user2_id == user_id else contact.user2_id
+        another_user_to_notify_unread_listen_chatroom = False
         if chatroom_id in connected_chatroom_id_sids:
             for sid_for_this_chat_room in connected_chatroom_id_sids[chatroom_id]:
-                if connected_sid_user_id_chatroom_id[sid_for_this_chat_room][0] == another_user_to_notify_unread:
-                    another_user_to_notify_unread = None
+                if sid_for_this_chat_room in connected_sid_user_id_chatroom_id and connected_sid_user_id_chatroom_id[sid_for_this_chat_room][0] == another_user_to_notify_unread:
+                    another_user_to_notify_unread_listen_chatroom = True
                     print("SELECT message_set_read('%s', ARRAY ['%s']);" % (contact.id, message.id))
                     g.db().execute("SELECT message_set_read('%s', ARRAY ['%s']);" % (contact.id, message.id))
                     break
@@ -125,7 +128,7 @@ def send_message(sid, message_text):
         for sid_for_this_chat_room in connected_chatroom_id_sids[chatroom_id]:
             sio.emit('new_message', message_tosend, sid_for_this_chat_room)
 
-        if another_user_to_notify_unread:
+        if not another_user_to_notify_unread_listen_chatroom:
             notify_unread(another_user_to_notify_unread, [chatroom_id])
 
         return {'ok': True, 'message_id': message.id}
@@ -133,11 +136,13 @@ def send_message(sid, message_text):
 @sio.on('load_messages')
 def load_messages(sid, message):
     with controlled_execution():
+        import time
+        # time.sleep(2)  # delays for 5 seconds
         print('load_messages', message)
         [user_id, __chatroom_id] = connected_sid_user_id_chatroom_id[sid]
         contact = Contact.get(message['chat_room_id'])
         older = message.get('older', False)
-        ret = contact.get_messages(50, older, message.get('first_message_id' if older else 'last_message_id', None))
+        ret = contact.get_messages(100, older, message.get('first_message_id' if older else 'last_message_id', None))
 
         read_ids = [m.id for m in ret['messages'] if m.from_user_id != user_id and not m.read_tm]
         if len(read_ids):
