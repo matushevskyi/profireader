@@ -21,7 +21,7 @@ from .. import utils
 from .elastic import PRElasticField, PRElasticDocument
 from config import Config
 import simplejson
-
+from sqlalchemy.sql import expression
 
 class Contact(Base, PRBase):
     __tablename__ = 'contact'
@@ -65,6 +65,46 @@ class Contact(Base, PRBase):
             self.status = '_'.join(splited)
         return self
 
+    def get_messages(self, user_id, count, get_older=False, than_id=None):
+
+        contact = Contact.get(self.id)
+        messages_filter = (Message.contact_id == self.id)
+        messages_query = g.db().query(Message)
+        if than_id:
+            if get_older:
+                messages = messages_query.filter(and_(messages_filter, Message.id < than_id)).order_by(
+                    expression.desc(Message.id)).limit(count + 1).all()
+                there_is_more = ['there_is_older', len(messages) > count]
+                messages = messages[0:count]
+                messages.reverse()
+
+            else:
+                messages = messages_query.filter(and_(messages_filter, Message.id > than_id)).order_by(
+                    expression.asc(Message.id)).limit(count + 1).all()
+                there_is_more = ['there_is_newer', len(messages) > count]
+                messages = messages[0:count]
+
+        else:
+            messages = messages_query.filter(messages_filter).order_by(expression.desc(Message.id)).limit(
+                count + 1).all()
+            there_is_more = ['there_is_older', len(messages) > count]
+            messages = messages[0:count]
+            messages.reverse()
+
+
+        ret = {
+            # 'chat_room_id': self.id,
+            # 'chat_room_status': contact.status,
+            # 'users': {
+            #     user_id: User.get(user_id).get_client_side_dict(more_fields='avatar'),
+            #     another_user_id: User.get(another_user_id).get_client_side_dict(more_fields='avatar')
+            # },
+            there_is_more[0]: there_is_more[1],
+            'messages': messages
+        }
+        # ret['unread_messages'] = unread_messages_count(g.user.id)
+        return ret
+
     @staticmethod
     def send_message_behalf_of(user_id, message_text):
 
@@ -83,6 +123,11 @@ class Message(Base, PRBase):
     content = Column(TABLE_TYPES['string_1000'])
 
     contact = relationship(Contact)
+
+    def client_message(self):
+        return utils.dict_merge(self.get_client_side_dict(fields='id,content,from_user_id'),
+                                {'timestamp': self.cr_tm.timestamp() if self.cr_tm else 0, 'chat_room_id': self.contact_id})
+
 
     @staticmethod
     def send_greeting_message(send_to_user):
