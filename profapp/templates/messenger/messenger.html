@@ -21,7 +21,7 @@
 
             $scope.$$translate = {{ translates('messenger')|safe }};
             $scope.selected_messenger_menu = '';
-            $scope.me_user_id = '{{ g.user.id }}';
+            $scope.me_user = {{ g.user.get_client_side_dict(fields = 'id,avatar,full_name')|tojson }};
 
 
             $scope.selected_chat_room = null;
@@ -57,56 +57,66 @@
 
             };
 
-            $scope.get_chat_interlocutors = function (chat) {
-
-                if (!chat) {
-                    return '';
-                }
-                var ret = [];
-                $.each(chat.users, function (user_id, user) {
-                    if (user.id !== $scope.me_user_id) {
-                        ret.push(user['full_name']);
-                    }
-                });
-                return ret.join(', ');
+            $scope.get_chat_interlocutors = function (chat, message) {
+                return (message && message['from_user_id'] === $scope.me_user['id']) ? $scope.me_user : chat['users'][0];
             };
 
-            $scope.stickToBottom = function (chatroom_id, fromserver, force, sticktotop, instant) {
 
-                {#                chatroom_id !== $scope.selected_chat_room['chat_room_id']#}
+            $scope.onscroll = function () {
 
+            };
 
-                if (!force && (!fromserver || !fromserver['messages'] || !fromserver['messages'].length)) {
-                    return false
-                }
-
-                var $elementold = $('#panel-scroll-chat ul');
-                var old_max_scroll = $elementold.length ? ($elementold.outerHeight() - $elementold.parent().height()) : 0;
-
+            $scope.restore_old_scroll_position = function () {
+                $('#panel-scroll-chat ul').css({'visibility': 'hidden'});
                 $timeout(function () {
-                    var $element = $('#panel-scroll-chat ul');
-                    $element.parent().finish();
-                    var max_scroll = $element.outerHeight() - $element.parent().height();
-
-                    if (sticktotop && (force || $element.parent()[0].scrollTop < 10)) {
-                        if (instant) {
-                            $element.parent().scrollTop(0);
-                        }
-                        else {
-                            $element.parent().animate({scrollTop: 0}, 500);
-                        }
-                    }
-                    else if (!sticktotop && (force || $element.parent()[0].scrollTop > old_max_scroll - 10)) {
-                        if (instant) {
-                            $element.parent().scrollTop(max_scroll);
-                        }
-                        else {
-                            $element.parent().animate({scrollTop: max_scroll}, 500);
-                        }
-
+                    $('#panel-scroll-chat ul').css({'visibility': ''});
+                    if ($scope.selected_chat_room && $scope.selected_chat_room['scroll_position'] > 0) {
+                        $('#panel-scroll-chat').scrollTop($scope.selected_chat_room['scroll_position']);
                     }
                 }, 0);
             };
+
+
+            $scope.stickToBottom = function (chatroom_id, fromserver, force, sticktotop, instant) {
+
+
+                $('#panel-scroll-chat').finish();
+                $scope.onscroll = function () {
+                    if ($scope.selected_chat_room) {
+                        $scope.selected_chat_room['scroll_position'] = $('#panel-scroll-chat')[0].scrollTop;
+                    }
+                };
+
+                if ((!fromserver || !fromserver['messages'] || !fromserver['messages'].length)) {
+                    return false
+                }
+
+                var $elementold = $('#panel-scroll-chat');
+                var old_max_scroll = $elementold.length ? ($('ul', $elementold).outerHeight() - $elementold.height()) : 0;
+
+                $timeout(function () {
+                    var $element = $('#panel-scroll-chat');
+                    var max_scroll = $('ul', $element).outerHeight() - $element.height();
+
+                    if (sticktotop && ($element[0].scrollTop < 10)) {
+                        if (instant) {
+                            $element.scrollTop(0);
+                        }
+                        else {
+                            $element.animate({scrollTop: 0}, 250);
+                        }
+                    }
+                    else if (!sticktotop && ($element[0].scrollTop > old_max_scroll - 10)) {
+                        if (instant) {
+                            $element.scrollTop(max_scroll);
+                        }
+                        else {
+                            $element.animate({scrollTop: max_scroll}, 250);
+                        }
+                    }
+                }, 0);
+            };
+
 
             $scope.update_chat_room = function (chat_room_id, chat_room, force, stick_to_top, instant) {
                 if ("there_is_older" in chat_room) $scope.loaded_chats[chat_room_id]['there_is_older'] = chat_room['there_is_older'];
@@ -124,26 +134,24 @@
 
                 if (!$scope.selected_chat_room) return false;
 
-                var chatroom_id = $scope.selected_chat_room['chat_room_id'];
-                var loaded_chat = $scope.loaded_chats[chatroom_id];
-                if (!loaded_chat) return false;
 
                 var loadvar = older ? 'loading_older_messages' : 'loading_newer_messages';
-                if (loaded_chat[loadvar]) return false;
+                if ($scope.selected_chat_room[loadvar]) return false;
 
 
-                loaded_chat[loadvar] = true;
-                var data = {'chat_room_id': chatroom_id, 'older': older ? true : false};
+                $scope.selected_chat_room[loadvar] = true;
+                var data = {'chat_room_id': $scope.selected_chat_room['chat_room_id'], 'older': older ? true : false};
 
                 data[older ? 'first_message_id' : 'last_message_id'] =
-                        $scope.get_last_message_id(chatroom_id, older ? true : false);
+                        $scope.get_last_message_id($scope.selected_chat_room['chat_room_id'], older ? true : false);
 
                 pr_chat_socket.emit('load_messages', data, function (resp) {
                     $timeout(function () {
-                        $scope.update_chat_room(chatroom_id, resp, true, older ? true : false, instant);
+                        $scope.update_chat_room($scope.selected_chat_room['chat_room_id'], resp, true,
+                                older ? true : false, instant);
                     }, 0);
-                    if (loaded_chat) {
-                        loaded_chat[loadvar] = false;
+                    if ($scope.selected_chat_room) {
+                        $scope.selected_chat_room[loadvar] = false;
                     }
                 });
 
@@ -157,19 +165,22 @@
                     return false;
                 }
                 else {
-                    $scope.selected_chat_room = chat_room;
+
                     if (chat_room) {
                         if (!$scope.loaded_chats[chat_room['chat_room_id']]) {
                             $scope.loaded_chats[chat_room['chat_room_id']] = {
                                 'last_view_tm': now(),
                                 'my_message': '',
                                 'users': chat_room['users'],
+                                'scroll_position': -1,
                                 'chat_room_id': chat_room['chat_room_id'],
                                 'chat_room_status': chat_room['chat_room_status'],
                                 'messages': []
                             };
                             $scope.remove_oldest_loaded_chat();
                         }
+                        $scope.selected_chat_room = $scope.loaded_chats[chat_room['chat_room_id']];
+                        $scope.restore_old_scroll_position();
                         $scope.load_messages(false, true);
                     }
                     pr_chat_socket.emit('select_chat_room_id', chat_room ? chat_room['chat_room_id'] : null);
@@ -186,12 +197,11 @@
                 if ($scope.message_cant_be_sent()) {
                     return false;
                 }
-                var chatroom_id = $scope.selected_chat_room['chat_room_id'];
-                $scope.loaded_chats[chatroom_id]['sending_message'] = true;
-                pr_chat_socket.emit('send_message', $scope.loaded_chats[chatroom_id]['my_message']);
+                $scope.selected_chat_room['sending_message'] = true;
+                pr_chat_socket.emit('send_message', $scope.selected_chat_room['my_message']);
                 $timeout(function () {
-                    $scope.loaded_chats[chatroom_id]['my_message'] = '';
-                    $scope.loaded_chats[chatroom_id]['sending_message'] = false;
+                    $scope.selected_chat_room['my_message'] = '';
+                    $scope.selected_chat_room['sending_message'] = false;
                 }, 0);
             };
 
@@ -379,21 +389,21 @@
             };
 
             $scope.message_cant_be_sent = function () {
-                if (!$scope.selected_chat_room || !$scope.loaded_chats[$scope.selected_chat_room['chat_room_id']]) return 'please select chat to send message';
-                if ($scope.loaded_chats[$scope.selected_chat_room['chat_room_id']]['loading']) return 'pls wait until chat is loading';
-                if ($scope.loaded_chats[$scope.selected_chat_room['chat_room_id']]['sending_message']) return 'prev message sending is in progress';
-                if ($scope.loaded_chats[$scope.selected_chat_room['chat_room_id']]['my_message'].trim() == '') return 'please type something';
-                if ($scope.loaded_chats[$scope.selected_chat_room['chat_room_id']]['my_message'].length > 500) return 'message must be shorter than 500 symbols';
+                if (!$scope.selected_chat_room) return 'please select chat to send message';
+                if ($scope.selected_chat_room['loading']) return 'pls wait until chat is loading';
+                if ($scope.selected_chat_room['sending_message']) return 'prev message sending is in progress';
+                if ($scope.selected_chat_room['my_message'].trim() == '') return 'please type something';
+                if ($scope.selected_chat_room['my_message'].length > 500) return 'message must be shorter than 500 symbols';
                 return false
             };
 
             $scope.init_messenger = function () {
+
                 $scope.set_selected_menu('chat');
 
                 pr_chat_socket.removeAllListeners("set_unread_message_count");
 
                 pr_chat_socket.on('set_unread_message_count', function (resp) {
-                    console.log('set_unread_message_count', resp)
                     angularControllerFunction('user_controller', 'set_unread_message_count')(resp['total']);
                     $scope.total_unread_message_count = resp['total'];
                     $scope.set_unread_message_count(resp);
@@ -415,13 +425,15 @@
                     }
                 });
 
+                $('#panel-scroll-chat').on('scroll', function () {
+                    $scope.onscroll()
+                });
 
                 var elem = $('#messenger-controller textarea');
 
+
                 elem.bind('keydown', function (event) {
                     var code = event.keyCode || event.which;
-
-
                     if (code == 13) {
                         if (event.ctrlKey) {
                             var elhtml = elem[0];
@@ -544,7 +556,7 @@
                         <div class="panel panel-primary">
                             <div class="panel-heading">
                                 <i class="fa fa-comments"></i> {{ selected_chat_room?_('chat with %(names)s',
-                                {'names': get_chat_interlocutors(selected_chat_room)}):_('No chat
+                                {'names': get_chat_interlocutors(selected_chat_room)['full_name']}):_('No chat
                                 selected') }}
                             </div>
 
@@ -556,74 +568,76 @@
                                         user to chat with')}}
                                     </div>
 
-                                    <div ng-show="selected_chat_room && !loaded_chats[selected_chat_room['chat_room_id']]"
-                                         class="chat-session tac">
-                                        <i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{ _('Loading chat') }}</i>
-                                    </div>
 
-
-                                    <ul ng-if="selected_chat_room && loaded_chats[selected_chat_room['chat_room_id']]"
+                                    <ul ng-if="selected_chat_room"
                                         class="chat-session media-block " id="panel-body-chat-messages"
                                         schroll-bottom-stick-to="'bottom'"
-                                        schroll-bottom="loaded_chats[selected_chat_room['chat_room_id']]['messages']">
+                                        schroll-bottom="selected_chat_room['messages']">
 
                                         <li class="clearfix tac"
-                                            ng-show="loaded_chats[selected_chat_room['chat_room_id']]['there_is_older'] && !loaded_chats[selected_chat_room['chat_room_id']]['loading_older_messages']">
+                                            ng-show="selected_chat_room['there_is_older'] && !selected_chat_room['loading_older_messages']">
                                             <a class="noselect" href="#" ng-click="load_messages(true)">{{ _('Load
                                                 older') }}</a>
                                         </li>
 
                                         <li class="clearfix tac"
-                                            ng-show="loaded_chats[selected_chat_room['chat_room_id']]['there_is_older'] && loaded_chats[selected_chat_room['chat_room_id']]['loading_older_messages']">
+                                            ng-show="selected_chat_room['there_is_older'] && selected_chat_room['loading_older_messages']">
                                             <i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{ _('Loading older messages')
                                                 }}</i>
                                         </li>
 
                                         <li class="clearfix"
-                                            ng-show="!loaded_chats[selected_chat_room['chat_room_id']]['there_is_older'] && loaded_chats[selected_chat_room['chat_room_id']]['messages'].length">
+                                            ng-show="!selected_chat_room['there_is_older'] && selected_chat_room['messages'].length">
                                             <div class="tac disabled">{{ _('There is no older messages') }}</div>
                                         </li>
 
-                                        <li ng-show="!loaded_chats[selected_chat_room['chat_room_id']]['messages'].length"
+                                        <li ng-show="!selected_chat_room['messages'].length && !selected_chat_room['loading_older_messages'] && !selected_chat_room['loading_newer_messages']"
                                             class="clearfix">{{ _('There is no messages in this chat') }}
                                         </li>
 
 
-                                        <li ng-repeat="message in loaded_chats[selected_chat_room['chat_room_id']]['messages']"
-                                            ng-class="{'right': message['from_user_id'] == me_user_id, 'left': message['from_user_id'] != me_user_id}"
+                                        <li ng-repeat="message in selected_chat_room['messages']"
+                                            ng-class="{'right': message['from_user_id'] == me_user['id'], 'left': message['from_user_id'] != me_user['id']}"
                                             class="mar-btm">
-                                            <div ng-if="message.session" class="tac red">{{ _('chat session started
+                                            <div ng-if="message.session" class="tac red">{{ ::_('chat session started
                                                 %(chat_session_start)s', {chat_session_start: moment(message.cr_tm)}) }}
                                             </div>
                                             <div class="chat-img"
-                                                 ng-class="{'media-right': message['from_user_id'] == me_user_id, 'media-left': message['from_user_id'] != me_user_id}">
+                                                 ng-class="{'media-right': message['from_user_id'] == me_user['id'], 'media-left': message['from_user_id'] != me_user['id']}">
                                                 <img class="messenger-avatar" pr-image-position="center center"
-                                                     pr-image-url="{{ loaded_chats[selected_chat_room['chat_room_id']]['users'][message['from_user_id']]['avatar']['url'] }}"/>
+                                                     pr-image-url="{{ ::get_chat_interlocutors(selected_chat_room, message)['avatar']['url'] }}"/>
                                             </div>
 
                                             <div class="media-body pad-hor"
-                                                 ng-class="{'speech-right': message['from_user_id'] == me_user_id}">
+                                                 ng-class="{'speech-right': message['from_user_id'] == me_user['id']}">
                                                 <div class="speech">
-                                                    <a class="media-heading">{{
-                                                        loaded_chats[selected_chat_room['chat_room_id']]['users'][message['from_user_id']]['full_name']
-                                                        }}</a>
+                                                    <span class="media-heading">{{
+                                                        ::get_chat_interlocutors(selected_chat_room,
+                                                        message)['full_name']
+                                                        }}</span>
                                                     <p class="speech-content">{{ ::message.content }}</p>
                                                     <p class="speech-time"><i class="fa fa-clock-o fa-fw"></i> {{
-                                                        moment(message.cr_tm) }}</p>
+                                                        ::moment(message.cr_tm) }}</p>
                                                 </div>
 
                                             </div>
                                         </li>
 
                                         <li class="clearfix tac"
-                                            ng-show="loaded_chats[selected_chat_room['chat_room_id']]['there_is_newer'] && !loaded_chats[selected_chat_room['chat_room_id']]['loading_newer_messages']">
+                                            ng-show="selected_chat_room['there_is_newer'] && !selected_chat_room['loading_newer_messages']">
                                             <a class="noselect" href="#" ng-click="load_messages(false)">{{ _('Load
                                                 newer messages')
                                                 }}</a>
                                         </li>
 
                                         <li class="clearfix tac"
-                                            ng-show="loaded_chats[selected_chat_room['chat_room_id']]['there_is_newer'] && loaded_chats[selected_chat_room['chat_room_id']]['loading_newer_messages']">
+                                            ng-show="selected_chat_room['there_is_newer'] && selected_chat_room['loading_newer_messages']">
+                                            <i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{ _('Loading newer messages...')
+                                                }}</i>
+                                        </li>
+
+                                        <li class="clearfix tac"
+                                            ng-show="!selected_chat_room['messages'].length && selected_chat_room['loading_newer_messages']">
                                             <i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{ _('Loading messages...')
                                                 }}</i>
                                         </li>
@@ -634,11 +648,12 @@
                             </div>
                             <div class="panel-footer">
                                 <div class="input-group">
-                                <textarea ng-model="loaded_chats[selected_chat_room['chat_room_id']]['my_message']" id="btn-input"
+                                <textarea ng-model="selected_chat_room['my_message']"
+                                          id="btn-input"
                                           type="text"
-                                          ng-disabled="loaded_chats[selected_chat_room['chat_room_id']]['chat_room_status'] != 'ACTIVE_ACTIVE' || !selected_chat_room || !loaded_chats[selected_chat_room['chat_room_id']] || loaded_chats[selected_chat_room['chat_room_id']]['loading']"
+                                          ng-disabled="selected_chat_room['chat_room_status'] != 'ACTIVE_ACTIVE' || !selected_chat_room || !selected_chat_room || selected_chat_room['loading']"
                                           class="form-control input-sm"
-                                          placeholder="{{ _(loaded_chats[selected_chat_room['chat_room_id']]['chat_room_status'] == 'ACTIVE_ACTIVE'?'Type your message here...':'You can`t chat with this person') }}"></textarea>
+                                          placeholder="{{ _(selected_chat_room['chat_room_status'] == 'ACTIVE_ACTIVE'?'Type your message here...':'You can`t chat with this person') }}"></textarea>
                                     <span class="input-group-btn">
                             <button ng-disabled="message_cant_be_sent()"
                                     title="{{ message_cant_be_sent()?_(message_cant_be_sent()):'' }}"
