@@ -2,7 +2,7 @@ import sys
 
 sys.path.append('..')
 from profapp.models.users import User
-from profapp.models.messenger import Contact, Message
+from profapp.models.messenger import Contact, Message, Notification
 from profapp.constants import RECORD_IDS
 from flask import g
 
@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
             if args.user_id:
                 print('sending greetings')
-                Message.send_greeting_message(u)
+                Notification.send_greeting_message(u)
             else:
                 greetings = g.db.query(Message).filter_by(message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
                                                       message_subtype='WELCOME',
@@ -39,4 +39,4 @@ if __name__ == '__main__':
                     print('greeting exist. skipped')
                 else:
                     print('greeting don`t exist')
-                    Message.send_greeting_message(u)
+                    Notification.send_greeting_message(u)

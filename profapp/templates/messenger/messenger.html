@@ -473,9 +473,8 @@
                         <li><a ng-click="set_selected_menu('community')" class="link"
                                ng-class="{'selected': selected_messenger_menu == 'community'}">{{ _('Community') }}</a>
                         </li>
-                        <li ng-show="0"><a ng-click="set_selected_menu('contacts')" class="link"
-                                           ng-class="{'selected': selected_messenger_menu == 'contacts'}">{{
-                            _('Contacts')
+                        <li><a ng-click="set_selected_menu('notifications')" class="link"
+                               ng-class="{'selected': selected_messenger_menu == 'notifications'}">{{ _('Notifications')
                             }}</a>
                         </li>
                     </ul>
@@ -501,8 +500,9 @@
                                    ng-model-options='{ debounce: 500 }'
                                    ng-change="search_contacts(true)" ng-model="contacts_search_text"/>
 
-                            <div ng-show="contacts_loading" class="tac"><i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{
-                                _('Loading contacts') }}</i></div>
+                            <div ng-show="contacts_loading" class="tac"><i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{
+                                _('Loading contacts') }}
+                            </div>
 
                             <div ng-show="!contacts_loading" class="contact-list">
 
@@ -570,9 +570,7 @@
 
 
                                     <ul ng-if="selected_chat_room"
-                                        class="chat-session media-block " id="panel-body-chat-messages"
-                                        schroll-bottom-stick-to="'bottom'"
-                                        schroll-bottom="selected_chat_room['messages']">
+                                        class="chat-session media-block " id="panel-body-chat-messages">
 
                                         <li class="clearfix tac"
                                             ng-show="selected_chat_room['there_is_older'] && !selected_chat_room['loading_older_messages']">
@@ -582,8 +580,9 @@
 
                                         <li class="clearfix tac"
                                             ng-show="selected_chat_room['there_is_older'] && selected_chat_room['loading_older_messages']">
-                                            <i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{ _('Loading older messages')
-                                                }}</i>
+                                            <i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading older
+                                            messages')
+                                            }}
                                         </li>
 
                                         <li class="clearfix"
@@ -632,14 +631,16 @@
 
                                         <li class="clearfix tac"
                                             ng-show="selected_chat_room['there_is_newer'] && selected_chat_room['loading_newer_messages']">
-                                            <i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{ _('Loading newer messages...')
-                                                }}</i>
+                                            <i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading newer
+                                                messages...')
+                                                }}
                                         </li>
 
                                         <li class="clearfix tac"
                                             ng-show="!selected_chat_room['messages'].length && selected_chat_room['loading_newer_messages']">
-                                            <i class="fa fa-spinner">&nbsp;&nbsp;&nbsp;{{ _('Loading messages...')
-                                                }}</i>
+                                            <i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading
+                                                messages...')
+                                                }}
                                         </li>
 
 
@@ -667,9 +668,7 @@
                     </div>
                 </div>
 
-
-                <div class="messenger-search-community"
-                     ng-show="selected_messenger_menu == 'community'"
+                <div class="messenger-search-community" ng-show="selected_messenger_menu == 'community'"
                      infinite-scroll="search_community()"
                      infinite-scroll-disabled="community_loading !== false || !community_next_page"
                      bak-infinite-scroll-parent="true">
@@ -751,12 +750,111 @@
                         </div>
                     </div>
                     <div class="label label-warning w100 tac db mt1em" ng-show="community_next_page"><i
-                            class="fa fa-spinner"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading community page') }}
+                            class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading community page') }}
                     </div>
                     <div class="label label-info w100 tac db mt1em" ng-show="!community_next_page"><i
                             class="fa fa-check"></i>&nbsp;&nbsp;&nbsp;{{ _('All community users loaded') }}
                     </div>
 
+                </div>
+
+                <div class="messenger-notification" ng-show="selected_messenger_menu == 'notifications'">
+
+
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 chat-window">
+                        <input ng-if="0 " placeholder="{{ _('Search in chat') }}"
+                               class="form-control" type="text"
+                               ng-model-options='{ debounce: 500 }'
+                               ng-change="search_chat(true)" ng-model="chat_search_text"/>
+
+                        <div class="panel panel-primary">
+                            <div class="panel-heading">
+                                <i class="fa fa-bullhorn"></i> {{ _('profireader system notifications') }}
+                            </div>
+
+                            <div class="panel-body" id="panel-body-chat">
+
+                                <div class="panel-scroll-chat" id="panel-scroll-chat">
+
+                                    <ul class="chat-session media-block " id="panel-body-chat-messages">
+
+                                        <li class="clearfix tac"
+                                            ng-show="selected_chat_room['there_is_older'] && !selected_chat_room['loading_older_messages']">
+                                            <a class="noselect" href="#" ng-click="load_messages(true)">{{ _('Load
+                                                older') }}</a>
+                                        </li>
+
+                                        <li class="clearfix tac"
+                                            ng-show="selected_chat_room['there_is_older'] && selected_chat_room['loading_older_messages']">
+                                            <i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading older
+                                                messages')
+                                                }}
+                                        </li>
+
+                                        <li class="clearfix"
+                                            ng-show="!selected_chat_room['there_is_older'] && selected_chat_room['messages'].length">
+                                            <div class="tac disabled">{{ _('There is no older messages') }}</div>
+                                        </li>
+
+                                        <li ng-show="!selected_chat_room['messages'].length && !selected_chat_room['loading_older_messages'] && !selected_chat_room['loading_newer_messages']"
+                                            class="clearfix">{{ _('There is no messages in this chat') }}
+                                        </li>
+
+
+                                        <li ng-repeat="message in selected_chat_room['messages']"
+                                            ng-class="{'right': message['from_user_id'] == me_user['id'], 'left': message['from_user_id'] != me_user['id']}"
+                                            class="mar-btm">
+                                            <div ng-if="message.session" class="tac red">{{ ::_('chat session started
+                                                %(chat_session_start)s', {chat_session_start: moment(message.cr_tm)}) }}
+                                            </div>
+                                            <div class="chat-img"
+                                                 ng-class="{'media-right': message['from_user_id'] == me_user['id'], 'media-left': message['from_user_id'] != me_user['id']}">
+                                                <img class="messenger-avatar" pr-image-position="center center"
+                                                     pr-image-url="{{ ::get_chat_interlocutors(selected_chat_room, message)['avatar']['url'] }}"/>
+                                            </div>
+
+                                            <div class="media-body pad-hor"
+                                                 ng-class="{'speech-right': message['from_user_id'] == me_user['id']}">
+                                                <div class="speech">
+                                                    <span class="media-heading">{{
+                                                        ::get_chat_interlocutors(selected_chat_room,
+                                                        message)['full_name']
+                                                        }}</span>
+                                                    <p class="speech-content">{{ ::message.content }}</p>
+                                                    <p class="speech-time"><i class="fa fa-clock-o fa-fw"></i> {{
+                                                        ::moment(message.cr_tm) }}</p>
+                                                </div>
+
+                                            </div>
+                                        </li>
+
+                                        <li class="clearfix tac"
+                                            ng-show="selected_chat_room['there_is_newer'] && !selected_chat_room['loading_newer_messages']">
+                                            <a class="noselect" href="#" ng-click="load_messages(false)">{{ _('Load
+                                                newer messages')
+                                                }}</a>
+                                        </li>
+
+                                        <li class="clearfix tac"
+                                            ng-show="selected_chat_room['there_is_newer'] && selected_chat_room['loading_newer_messages']">
+                                            <i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading newer
+                                                messages...')
+                                                }}
+                                        </li>
+
+                                        <li class="clearfix tac"
+                                            ng-show="!selected_chat_room['messages'].length && selected_chat_room['loading_newer_messages']">
+                                            <i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _('Loading
+                                                messages...')
+                                                }}
+                                        </li>
+
+
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>

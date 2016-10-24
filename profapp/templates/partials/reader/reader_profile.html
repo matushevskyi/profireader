@@ -90,7 +90,7 @@ module.controller('grid_reader', function ($scope, $uibModal, $ok, $sce, uiGridC
    <div ng-controller="grid_reader">
         <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
-              <i class="fa fa-spin fa-spinner"></i><div>{{ _('Data Loading...') }}</div>
+              <i class="fa fa-spinner fa-spin"></i><div>{{ _('Data Loading...') }}</div>
             </div>
         </div>
         <div><button class="btn btn-default go-portal" ng-click="portal_lists()">{{ _('Subscribe to another portal') }}</button></div>

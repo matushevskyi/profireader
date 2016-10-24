@@ -114,29 +114,21 @@ class Message(Base, PRBase):
                                 {'timestamp': self.cr_tm.timestamp() if self.cr_tm else 0, 'chat_room_id': self.contact_id})
 
 
+
+
+class Notification(Base, PRBase):
+    __tablename__ = 'notification'
+
+    id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
+    cr_tm = Column(TABLE_TYPES['timestamp'])
+    read_tm = Column(TABLE_TYPES['timestamp'])
+
+    to_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
+    content = Column(TABLE_TYPES['string_1000'])
+    notification_type = Column(TABLE_TYPES['string_100'])
+
+    NOTIFICATION_TYPES = {'GREETING': 'GREETING', 'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY'}
+
     @staticmethod
     def send_greeting_message(send_to_user):
         pass
-
-# proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(), user2_id=send_to_user.id).one()
-#        greetings = Message(from_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
-#                           content=TranslateTemplate.getTranslate('profireader_messages', 'Welcome to profireader', '', True, send_to_user.lang),
-#                            message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
-#                            message_subtype='WELCOME')
-#        g.db.add(greetings)
-#        g.db.commit()
-
-#        proficontact = g.db.query(Contact).filter_by(user1_id=RECORD_IDS.SYSTEM_USERS.profireader(),
-#                                                     user2_id=send_to_user.id).one()
-#        greetings = Notification(to_user_id=RECORD_IDS.SYSTEM_USERS.profireader(), contact_id=proficontact.id,
-#                            content=TranslateTemplate.translate_and_substitute(
-#                                'profireader_notifications',
-#                                'Welcome to profireader. We hope for fruitful collaboration. You can <a href="%(tutorial_url)s">see</a> short video instruction, and welcome to <a href="%(contact_url)s">contact</a> us',
-#                                {'tutorial_url': '/tutorial/',
-#                                 'contact_url': '/contact_us/'},
-#                                url='',
-#                                language=send_to_user.lang),
-#                            message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],
-#                            message_subtype='GREETING')
-#        g.db.add(greetings)
-#        g.db.commit()
