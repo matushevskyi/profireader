@@ -85,7 +85,7 @@ def community_search(json):
         (or_(
             and_(Contact.status == Contact.STATUSES['ANY_REVOKED'], User.id != g.user.id),
             and_(Contact.status == Contact.STATUSES['REVOKED_ANY'], User.id == g.user.id)), 'X'),
-        (Contact.status == Contact.STATUSES['ACTIVE_ACTIVE'], 'Z')
+        (Contact.status == Contact.STATUSES['ACTIVE_ACTIVE'], '5')
     ], else_='X'), User.full_name). \
         limit(PER_PAGE + 1).offset((json['page'] - 1) * PER_PAGE)
 
@@ -96,10 +96,10 @@ def community_search(json):
     ret = []
 
     for u in users:
-        user_dict = u.get_client_side_dict(more_fields='avatar')
-        user_dict['common_portals_subscribed'] = [p.get_client_side_dict() for p in u.active_portals_subscribed if
+        user_dict = u.get_client_side_dict(fields='id,full_name,avatar.url')
+        user_dict['common_portals_subscribed'] = [p.get_client_side_dict(fields='id,logo.url,host,name') for p in u.active_portals_subscribed if
                                                   p.id in portals_ids]
-        user_dict['common_companies_employers'] = [c.get_client_side_dict() for c in u.active_companies_employers if
+        user_dict['common_companies_employers'] = [c.get_client_side_dict(fields='id,logo.url,name') for c in u.active_companies_employers if
                                                    c.id in companies_ids]
         contact = g.db().query(Contact).filter_by(user1_id=min([u.id, g.user.id])).filter_by(
             user2_id=max([u.id, g.user.id])) \

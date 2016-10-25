@@ -32,22 +32,22 @@ def req(name, allowed=None, default=None, exception=True):
         return None
 
 
-def db_session_func(db_config):
+def db_session_func(db_config, autocommit=False, autoflush=False, echo = False):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import scoped_session, sessionmaker
 
-    engine = create_engine(db_config, echo=False)
+    engine = create_engine(db_config, echo = echo)
     g.sql_connection = engine.connect()
 
-    db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+    db_session = scoped_session(sessionmaker(autocommit = autocommit, autoflush = autoflush, bind=engine))
     # from sqlalchemy.orm import Session
     # strong_reference_session(Session())
     return db_session
 
 
 def load_database(db_config):
-    def load_db():
-        db_session = db_session_func(db_config)
+    def load_db(autocommit=False, autoflush=False, echo = False):
+        db_session = db_session_func(db_config, autocommit, autoflush, echo)
         g.db = db_session
         g.req = req
         g.filter_json = utils.filter_json

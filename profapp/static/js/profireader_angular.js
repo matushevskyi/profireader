@@ -637,7 +637,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
     .directive('prImageUrl', [function () {
         return {
             restrict: 'A',
-            scope: {},
+            scope: false,
             link: function (scope, element, attrs) {
                 element.attr('src', static_address('images/0.gif'));
                 element.css({

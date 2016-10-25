@@ -28,7 +28,7 @@ app = create_app(apptype='profi')
 ctx = app.app_context()
 
 with controlled_execution():
-    load_database(app.config['SQLALCHEMY_DATABASE_URI'])()
+    load_database(app.config['SQLALCHEMY_DATABASE_URI'])(echo = True)
 
 sio = socketio.Server(cookie='prsio')
 
@@ -142,7 +142,7 @@ def load_messages(sid, message):
         [user_id, __chatroom_id] = connected_sid_user_id_chatroom_id[sid]
         contact = Contact.get(message['chat_room_id'])
         older = message.get('older', False)
-        ret = contact.get_messages(100, older, message.get('first_message_id' if older else 'last_message_id', None))
+        ret = contact.get_messages(50, older, message.get('first_message_id' if older else 'last_message_id', None))
 
         read_ids = [m.id for m in ret['messages'] if m.from_user_id != user_id and not m.read_tm]
         if len(read_ids):
@@ -152,7 +152,6 @@ def load_messages(sid, message):
         ret['messages'] = [m.client_message() for m in ret['messages']]
 
         return ret
-
 
 app = socketio.Middleware(sio, app)
 eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
