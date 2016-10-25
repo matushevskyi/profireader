@@ -23,6 +23,7 @@ from config import Config
 import simplejson
 from sqlalchemy.sql import expression
 
+
 class Contact(Base, PRBase):
     __tablename__ = 'contact'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
@@ -71,19 +72,19 @@ class Contact(Base, PRBase):
         if than_id:
             if get_older:
                 messages = messages_query.filter(and_(messages_filter, Message.id < than_id)).order_by(
-                    expression.desc(Message.id)).limit(count + 1).all()
+                    expression.desc(Message.cr_tm)).limit(count + 1).all()
                 there_is_more = ['there_is_older', len(messages) > count]
                 messages = messages[0:count]
                 messages.reverse()
 
             else:
                 messages = messages_query.filter(and_(messages_filter, Message.id > than_id)).order_by(
-                    expression.asc(Message.id)).limit(count + 1).all()
+                    expression.asc(Message.cr_tm)).limit(count + 1).all()
                 there_is_more = ['there_is_newer', len(messages) > count]
                 messages = messages[0:count]
 
         else:
-            messages = messages_query.filter(messages_filter).order_by(expression.desc(Message.id)).limit(
+            messages = messages_query.filter(messages_filter).order_by(expression.desc(Message.cr_tm)).limit(
                 count + 1).all()
             there_is_more = ['there_is_older', len(messages) > count]
             messages = messages[0:count]
@@ -93,7 +94,6 @@ class Contact(Base, PRBase):
             there_is_more[0]: there_is_more[1],
             'messages': messages
         }
-
 
 
 class Message(Base, PRBase):
@@ -110,10 +110,10 @@ class Message(Base, PRBase):
     contact = relationship(Contact)
 
     def client_message(self):
-        return utils.dict_merge(self.get_client_side_dict(fields='id,content,from_user_id'),
-                                {'timestamp': self.cr_tm.timestamp() if self.cr_tm else 0, 'chat_room_id': self.contact_id})
-
-
+        ret = utils.dict_merge(self.get_client_side_dict(fields='id,content,from_user_id'),
+                               {'cr_tm': self.cr_tm.strftime("%a, %d %b %Y %H:%M:%S GMT"),
+                                'chat_room_id': self.contact_id})
+        return ret
 
 
 class Notification(Base, PRBase):
