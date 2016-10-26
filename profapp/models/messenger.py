@@ -75,7 +75,7 @@ class Contact(Base, PRBase):
                     expression.desc(Message.cr_tm)).limit(count + 1).all()
                 there_is_more = ['there_is_older', len(messages) > count]
                 messages = messages[0:count]
-                messages.reverse()
+                # messages.reverse()
 
             else:
                 messages = messages_query.filter(and_(messages_filter, Message.id > than_id)).order_by(
@@ -88,7 +88,7 @@ class Contact(Base, PRBase):
                 count + 1).all()
             there_is_more = ['there_is_older', len(messages) > count]
             messages = messages[0:count]
-            messages.reverse()
+            # messages.reverse()
 
         return {
             there_is_more[0]: there_is_more[1],
