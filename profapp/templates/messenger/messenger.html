@@ -89,7 +89,7 @@
             };
 
 
-            $scope.stickToBottom = function (chatroom_id, fromserver, force, sticktotop, instant) {
+            $scope.stickToBottomChatRoom = function (chatroom_id, fromserver, force, sticktotop, instant) {
 
                 $('#panel-scroll-chat').finish();
                 $scope.onscroll = function () {
@@ -200,8 +200,17 @@
                 if (chat_room['messages'] && chat_room['messages'].length) {
                     $scope.append_messages(chat_room_id, chat_room['messages'], older);
                     if ($scope.selected_chat_room['chat_room_id'] === chat_room_id) {
-                        $scope.stickToBottom(chat_room_id, chat_room, force, older ? true : false, instant);
+                        $scope.stickToBottomChatRoom(chat_room_id, chat_room, force, older ? true : false, instant);
                     }
+                }
+            };
+
+            $scope.update_notifications = function (notifications,force, older, instant) {
+
+
+                if ($scope.notifications['notifications'] && notifications.length) {
+                    $scope.append_notifications(notifications, older);
+                    $scope.stickToBottomChatRoomNotifications(chat_room_id, chat_room, force, older ? true : false, instant);
                 }
             };
 
@@ -247,9 +256,9 @@
                         $scope.get_last_message_id('notifications', older ? true : false);
 
                 pr_chat_socket.emit('load_notifications', data, function (resp) {
+                    console.log('!!',resp);
                     $scope.notifications[loadvar] = false;
-                    $scope.update_chat_room('notifications', resp, true,
-                            older, instant);
+                    $scope.update_notifications(resp, true, older, instant);
                     $scope.$digest();
                 });
 
@@ -447,19 +456,15 @@
 
                 $scope.set_selected_menu('chat');
 
-                pr_chat_socket.removeAllListeners("message_notification");
+                pr_chat_socket.removeAllListeners("general_notification");
 
-                {#                pr_chat_socket.on('set_unread_message_count', function (resp) {#}
-                {##}
-                {#                });#}
-
-                pr_chat_socket.on('message_notification', function (resp) {
+                pr_chat_socket.on('general_notification', function (resp) {
                     var new_message = resp['new_message'];
                     var unread = resp['unread'];
                     var message_unread = true;
                     if (new_message && $scope.selected_chat_room && $scope.selected_chat_room['chat_room_id'] === new_message['chat_room_id'] && !$scope.selected_chat_room['there_is_newer']) {
                         $scope.append_messages(new_message['chat_room_id'], [new_message]);
-                        $scope.stickToBottom(new_message['chat_room_id'], {'messages': [new_message]}, false, false, false);
+                        $scope.stickToBottomChatRoom(new_message['chat_room_id'], {'messages': [new_message]}, false, false, false);
                         if (new_message['from_user_id'] !== $scope.me_user['id']) {
                             pr_chat_socket.emit('read_message', new_message['id']);
                             message_unread = false;
@@ -484,7 +489,6 @@
                 });
 
                 var elem = $('#messenger-controller textarea');
-
 
                 elem.bind('keydown', function (event) {
                     var code = event.keyCode || event.which;

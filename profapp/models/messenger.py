@@ -137,7 +137,8 @@ class Notification(Base, PRBase):
 
     NOTIFICATION_TYPES = {'GREETING': 'GREETING', 'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY'}
 
-    def get_notifications(self, count, get_older=False, than_id=None):
+    @staticmethod
+    def get_notifications(count, get_older=False, than_id=None):
         notification_query = g.db().query(Notification)
         if than_id:
             if get_older:
@@ -159,6 +160,7 @@ class Notification(Base, PRBase):
             notifications = notifications[0:count]
             # notifications.reverse()
 
+        print(notifications)
         return {
             there_is_more[0]: there_is_more[1],
             'notifications': notifications

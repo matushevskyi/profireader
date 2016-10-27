@@ -109,7 +109,7 @@
 
             var pr_chat_socket = io.connect('//socket.{{ MAIN_DOMAIN }}');
 
-            pr_chat_socket.on('message_notification', function (resp) {
+            pr_chat_socket.on('general_notification', function (resp) {
                 if (resp['unread']) {
                     angularControllerFunction('user_controller', 'set_unread_message_count')(resp['unread']['total']);
                 }

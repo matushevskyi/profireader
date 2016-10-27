@@ -103,14 +103,14 @@ def send_message(sid, event_data):
         message_tosend = message.client_message()
 
         for sid_for_author in connected_user_id_sids[user_id]:
-            sio.emit('message_notification', {
+            sio.emit('general_notification', {
                 'new_message':  message_tosend
             }, sid_for_author)
 
         another_user_to_notify_unread = contact.user1_id if contact.user2_id == user_id else contact.user2_id
         unread = get_unread(another_user_to_notify_unread, [contact.id])
         for sid_for_receiver in connected_user_id_sids[another_user_to_notify_unread]:
-            sio.emit('message_notification', {
+            sio.emit('general_notification', {
                 'new_message':  message_tosend,
                 'unread': unread
             }, sid_for_receiver)
@@ -129,7 +129,7 @@ def read_messages(sid, message_id):
             g.db().execute("SELECT message_set_read('%s', ARRAY ['%s']);" % (message.contact_id, message.id))
             unread = get_unread(another_user_to_notify_unread, [contact.id])
             for sid_for_receiver in connected_user_id_sids[another_user_to_notify_unread]:
-                sio.emit('message_notification', {
+                sio.emit('general_notification', {
                     'unread': unread
                 }, sid_for_receiver)
 
@@ -150,7 +150,7 @@ def load_messages(sid, event_data):
             g.db().execute("SELECT message_set_read('%s', ARRAY ['%s']);" % (contact.id, "', '".join(read_ids)))
             unread = get_unread(user_id, [contact.id])
             for sid_for_receiver in connected_user_id_sids[user_id]:
-                sio.emit('message_notification', {
+                sio.emit('general_notification', {
                     'unread': unread
                 }, sid_for_receiver)
 
@@ -160,24 +160,23 @@ def load_messages(sid, event_data):
 @sio.on('load_notifications')
 def load_notifications(sid, event_data):
     with controlled_execution():
-        import time
-        # time.sleep(2)  # delays for 5 seconds
         print('load_notifications', event_data)
         user_id = connected_sid_user_id[sid]
 
         older = event_data.get('older', False)
         ret = Notification.get_notifications(50, older, event_data.get('first_notification_id' if older else 'last_notification_id', None))
+        print(ret)
 
         read_ids = [n.id for n in ret['notifications'] if n.read_tm]
         if len(read_ids):
             g.db().execute("SELECT notification_set_read(ARRAY ['%s']);" % ("', '".join(read_ids)))
-            unread = get_unread(user_id, [contact.id])
+            unread = get_unread(user_id)
             for sid_for_receiver in connected_user_id_sids[user_id]:
-                sio.emit('message_notification', {
+                sio.emit('general_notification', {
                     'unread': unread
                 }, sid_for_receiver)
 
-        ret['messages'] = [m.client_message() for m in ret['messages']]
+        ret['notifications'] = [n.client_message() for n in ret['notifications']]
         return ret
 
 app = socketio.Middleware(sio, app)
