@@ -137,6 +137,33 @@ class Notification(Base, PRBase):
 
     NOTIFICATION_TYPES = {'GREETING': 'GREETING', 'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY'}
 
+    def get_notifications(self, count, get_older=False, than_id=None):
+        notification_query = g.db().query(Notification)
+        if than_id:
+            if get_older:
+                notifications = notification_query.filter(Notification.id < than_id).order_by(
+                    expression.desc(Notification.cr_tm)).limit(count + 1).all()
+                there_is_more = ['there_is_older', len(notifications) > count]
+                notifications = notifications[0:count]
+                # notifications.reverse()
+            else:
+                notifications = notification_query.filter(Notification.id > than_id).order_by(
+                    expression.asc(Notification.cr_tm)).limit(count + 1).all()
+                there_is_more = ['there_is_newer', len(notifications) > count]
+                notifications = notifications[0:count]
+
+        else:
+            notifications = notification_query.order_by(expression.desc(Notification.cr_tm)).limit(
+                count + 1).all()
+            there_is_more = ['there_is_older', len(notifications) > count]
+            notifications = notifications[0:count]
+            # notifications.reverse()
+
+        return {
+            there_is_more[0]: there_is_more[1],
+            'notifications': notifications
+        }
+
     @staticmethod
     def send_greeting_message(send_to_user):
         n = Notification(to_user_id=send_to_user.id, notification_type=Notification.NOTIFICATION_TYPES['GREETING'],

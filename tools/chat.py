@@ -3,11 +3,10 @@ import psycopg2.extensions
 from profapp import create_app, load_database
 import socketio, eventlet
 import re, time, datetime
-from profapp.models.messenger import Contact, Message
+from profapp.models.messenger import Contact, Message, Notification
 from profapp.controllers.errors import BadDataProvided
 from flask import g
 from tools import db_utils
-
 
 connected_sid_user_id = {}
 connected_user_id_sids = {}
@@ -62,8 +61,10 @@ def check_user_id(environ):
     return session.get('user_id', False) if session else False
 
 def get_unread(user_id, chatroom_ids = []):
-    to_send = {'total': int(
-        float(db_utils.execute_function("message_unread_count('%s', NULL)" % (user_id,))))}
+    to_send = {
+        'total': int(float(db_utils.execute_function("message_unread_count('%s', NULL)" % (user_id,)))),
+        'notifications': int(float(db_utils.execute_function("notification_unread_count('%s')" % (user_id,))))
+    }
     for chatroom_id in chatroom_ids:
         to_send[chatroom_id] = int(float(
             db_utils.execute_function("message_unread_count('%s', '%s')" % (user_id, chatroom_id))))
@@ -90,13 +91,13 @@ def disconnect(sid):
 
 
 @sio.on('send_message')
-def send_message(sid, data):
+def send_message(sid, event_data):
     with controlled_execution():
         user_id = connected_sid_user_id[sid]
         print('send_message', user_id)
-        contact = Contact.get(data['chatroom_id'])
+        contact = Contact.get(event_data['chatroom_id'])
 
-        message = Message(contact_id=contact.id, content=data['content'], from_user_id=user_id)
+        message = Message(contact_id=contact.id, content=event_data['content'], from_user_id=user_id)
         message.save()
         message = Message.get(message.id)
         message_tosend = message.client_message()
@@ -134,19 +135,42 @@ def read_messages(sid, message_id):
 
 
 @sio.on('load_messages')
-def load_messages(sid, message):
+def load_messages(sid, event_data):
     with controlled_execution():
         import time
         # time.sleep(2)  # delays for 5 seconds
-        print('load_messages', message)
+        print('load_messages', event_data)
         user_id = connected_sid_user_id[sid]
-        contact = Contact.get(message['chat_room_id'])
-        older = message.get('older', False)
-        ret = contact.get_messages(50, older, message.get('first_message_id' if older else 'last_message_id', None))
+        contact = Contact.get(event_data['chat_room_id'])
+        older = event_data.get('older', False)
+        ret = contact.get_messages(50, older, event_data.get('first_message_id' if older else 'last_message_id', None))
 
         read_ids = [m.id for m in ret['messages'] if m.from_user_id != user_id and not m.read_tm]
         if len(read_ids):
             g.db().execute("SELECT message_set_read('%s', ARRAY ['%s']);" % (contact.id, "', '".join(read_ids)))
+            unread = get_unread(user_id, [contact.id])
+            for sid_for_receiver in connected_user_id_sids[user_id]:
+                sio.emit('message_notification', {
+                    'unread': unread
+                }, sid_for_receiver)
+
+        ret['messages'] = [m.client_message() for m in ret['messages']]
+        return ret
+
+@sio.on('load_notifications')
+def load_notifications(sid, event_data):
+    with controlled_execution():
+        import time
+        # time.sleep(2)  # delays for 5 seconds
+        print('load_notifications', event_data)
+        user_id = connected_sid_user_id[sid]
+
+        older = event_data.get('older', False)
+        ret = Notification.get_notifications(50, older, event_data.get('first_notification_id' if older else 'last_notification_id', None))
+
+        read_ids = [n.id for n in ret['notifications'] if n.read_tm]
+        if len(read_ids):
+            g.db().execute("SELECT notification_set_read(ARRAY ['%s']);" % ("', '".join(read_ids)))
             unread = get_unread(user_id, [contact.id])
             for sid_for_receiver in connected_user_id_sids[user_id]:
                 sio.emit('message_notification', {

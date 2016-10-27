@@ -247,12 +247,10 @@
                         $scope.get_last_message_id('notifications', older ? true : false);
 
                 pr_chat_socket.emit('load_notifications', data, function (resp) {
-                    if ($scope.notifications) {
-                        $scope.notifications[loadvar] = false;
-                        $scope.update_chat_room('notifications', resp, true,
-                                older, instant);
-                        $scope.$digest();
-                    }
+                    $scope.notifications[loadvar] = false;
+                    $scope.update_chat_room('notifications', resp, true,
+                            older, instant);
+                    $scope.$digest();
                 });
 
             };
@@ -524,11 +522,13 @@
                 <div class="col-lg-12">
                     <ul>
                         <li><a ng-click="set_selected_menu('chat')" class="link"
-                               ng-class="{'selected': selected_messenger_menu == 'chat'}"><div>{{ ::_('Messages') }}
+                               ng-class="{'selected': selected_messenger_menu == 'chat'}">
+                            <div>{{ ::_('Messages') }}
 
-                        <span class="unread_messages_count pa"
-                                  ng-if="total_unread_message_count">{{ total_unread_message_count }}</span>
-                        </div></a>
+                                <span class="unread_messages_count pa"
+                                      ng-if="total_unread_message_count">{{ total_unread_message_count }}</span>
+                            </div>
+                        </a>
 
                         </li>
                         <li><a ng-click="set_selected_menu('community')" class="link"
@@ -536,10 +536,12 @@
                             }}</a>
                         </li>
                         <li><a ng-click="set_selected_menu('notifications')" class="link"
-                               ng-class="{'selected': selected_messenger_menu == 'notifications'}"><div>{{
-                            ::_('Notifications')
-                            }}<span class="unread_messages_count pa"
-                                    ang-if="total_unread_notification_count">{{ total_unread_notification_count }}</span></div>
+                               ng-class="{'selected': selected_messenger_menu == 'notifications'}">
+                            <div>{{
+                                ::_('Notifications')
+                                }}<span class="unread_messages_count pa"
+                                        ang-if="total_unread_notification_count">{{ total_unread_notification_count }}</span>
+                            </div>
                         </a>
                         </li>
                     </ul>
