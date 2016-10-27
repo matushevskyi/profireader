@@ -1,5 +1,5 @@
 from flask import Blueprint, g
-from utils.db_utils import db
+from tools.db_utils import db
 from functools import wraps
 
 

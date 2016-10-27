@@ -13,7 +13,7 @@ from ..models.rights import AllowAll
 from ..models.elastic import elasticsearch
 from collections import OrderedDict
 from .. import utils
-from utils.db_utils import db
+from tools.db_utils import db
 from functools import wraps
 
 def all_tags(portal):

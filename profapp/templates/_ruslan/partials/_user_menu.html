@@ -5,6 +5,7 @@
         $scope.languages = {{ g.languages|tojson|safe }};
         $scope.lang = {{ g.lang|tojson|safe }};
         $scope.unread_message_count = {{ g.user.get_unread_message_count(g.user.id) if g.user else 'null'}};
+        $scope.unread_notification_count = {{ g.user.get_unread_notification_count(g.user.id) if g.user else 'null'}};
 
         $scope.set_unread_message_count = function (count) {
             if ($scope.unread_message_count != count) {
@@ -15,7 +16,6 @@
                 $scope.unread_message_count = count;
             }
         };
-
 
         $scope.url_list_reader = {{ raw_url_for('index.list_reader')|safe }}
                 $scope.url_general = function () {
@@ -94,7 +94,8 @@
                                                                                            title="{{ _('Всі повідомлення') }}"
                                                                                            class="pr"
                                                                                            ng-class="{'selected': selected_user_menu == 'messages'}"><i
-                            class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span><div ng-if="unread_message_count" class="pa unread_messages_count">{{ unread_message_count }}</div></a></li>
+                            class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span><div
+                            ng-if="unread_message_count || unread_notification_count" class="pa unread_messages_count">{{ unread_message_count + unread_notification_count }}</div></a></li>
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %}
                             href="{{ url_company_companies() }}"
                             title="{{ _('Компанії') }}"

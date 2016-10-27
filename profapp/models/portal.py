@@ -2,7 +2,7 @@ from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
 from flask import g
-from utils.db_utils import db
+from tools.db_utils import db
 from .pr_base import PRBase, Base
 import re
 from ..constants.SEARCH import RELEVANCE

@@ -5,7 +5,7 @@ from ..constants.SOCIAL_NETWORKS import DB_FIELDS, SOC_NET_FIELDS, \
 from flask.ext.login import current_user, login_required
 from urllib.parse import quote
 from ..models.users import User
-from utils.db_utils import db
+from tools.db_utils import db
 import re
 from .request_wrapers import check_right
 from authomatic.adapters import WerkzeugAdapter

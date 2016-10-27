@@ -11,7 +11,7 @@ from ..models.company import Company, UserCompany
 from ..models.tag import Tag, TagPublication
 from ..models.materials import Material, Publication
 
-from utils.db_utils import db
+from tools.db_utils import db
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import expression, and_
 from sqlalchemy import text

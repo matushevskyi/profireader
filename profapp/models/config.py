@@ -1,7 +1,7 @@
 from sqlalchemy import Column
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from .pr_base import PRBase, Base
-from utils.db_utils import db
+from tools.db_utils import db
 
 class Config(Base, PRBase):
     __tablename__ = 'config'

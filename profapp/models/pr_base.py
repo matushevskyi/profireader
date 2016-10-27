@@ -10,7 +10,7 @@ from flask import g
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import event
 from ..controllers import errors
-from utils.db_utils import db
+from tools.db_utils import db
 from html.parser import HTMLParser
 from ..constants.SEARCH import RELEVANCE
 from config import Config
@@ -403,7 +403,7 @@ class PRBase:
     def __init__(self):
         self.query = g.db.query_property()
 
-    # TODO: YG by OZ: move this (to next comment) static methods to utils (just like `putInRange` moved)
+    # TODO: YG by OZ: move this (to next comment) static methods to tools (just like `putInRange` moved)
 
     @classmethod
     def get_page(cls, select_from=None, order_by=None, filter=None, page=1, per_page=10):
@@ -456,7 +456,7 @@ class PRBase:
     def del_attr_by_keys(dict, keys):
         return {key: dict[key] for key in dict if key not in keys}
 
-    # TODO: YG by OZ: move this static methods to utils
+    # TODO: YG by OZ: move this static methods to tools
 
 
     def position_unique_filter(self):
@@ -507,23 +507,6 @@ class PRBase:
 
         return self
 
-    def get_image_cropped_file(self, parameters={}, croped_image_file_id=None):
-        ret = {
-            'upload': parameters.get('upload'),
-            'browse': parameters.get('browse'),
-            'none': parameters.get('none'),
-            'cropper': {'aspect_ratio': parameters.get('aspect_ratio')} if parameters.get('crop') else False,
-            'min_size': parameters.get('min_size'),
-            'preset_urls': parameters.get('preset_urls'),
-            'no_selection_url': parameters.get('no_selection_url'),
-            'selected_by_user': {'type': 'none'}
-        }
-        if croped_image_file_id:
-            ret['selected_by_user'] = {'type': 'browse', 'image_file_id': croped_image_file_id.original_image_id}
-            if ret['cropper']:
-                ret['selected_by_user']['crop_coordinates'] = croped_image_file_id.get_coordinates()
-
-        return ret
 
     @staticmethod
     def DEFAULT_VALIDATION_ANSWER():

@@ -6,7 +6,7 @@ from sqlalchemy import func
 
 from ..constants import RECORD_IDS
 
-from utils.db_utils import db
+from tools.db_utils import db
 from ..models.users import User
 from ..models.company import Company, UserCompany
 from ..models.portal import Portal, UserPortalReader

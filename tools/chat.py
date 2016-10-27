@@ -6,7 +6,7 @@ import re, time, datetime
 from profapp.models.messenger import Contact, Message
 from profapp.controllers.errors import BadDataProvided
 from flask import g
-from utils import db_utils
+from tools import db_utils
 
 
 connected_sid_user_id = {}

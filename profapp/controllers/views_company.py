@@ -10,7 +10,7 @@ from sqlalchemy.sql import expression
 from sqlalchemy import and_, or_
 
 # from ..models.bak_articles import ArticleCompany, ArticlePortalDivision
-from utils.db_utils import db
+from tools.db_utils import db
 from .pagination import pagination, load_for_infinite_scroll
 from config import Config
 from .. import utils

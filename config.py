@@ -47,26 +47,26 @@ class Config(object):
     # operations using the other.
     THREADS_PER_PAGE = 2
 
-# Ratio for image_editor, can be :
-# 1.7777777777777777, 1.3333333333333333, 0.6666666666666666, 1
+    # Ratio for image_editor, can be :
+    # 1.7777777777777777, 1.3333333333333333, 0.6666666666666666, 1
     THUMBNAILS_SIZE = (100, 100)
     IMAGE_EDITOR_RATIO = 1.3333333333333333
-    HEIGHT_IMAGE = 300   # px
+    HEIGHT_IMAGE = 300  # px
     ALLOWED_IMAGE_FORMATS = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG',
                              'JPEG2000', 'MSP', 'PCX', 'PNG', 'PPM',
                              'SPIDER', 'TIFF', 'WebP', 'XBM',
                              'XV Thumbnails']
 
-# Pagination
+    # Pagination
     ITEMS_PER_PAGE = 10
     PAGINATION_BUTTONS = 2
 
-# GOOGLE API
+    # GOOGLE API
     GOOGLE_API_SECRET_KEY = secret_data.GOOGLE_API_SECRET_KEY
     GOOGLE_API_SECRET_JSON = secret_data.GOOGLE_API_SECRET_JSON
     GOOGLE_API_KEY_SIMPLE = secret_data.GOOGLE_API_KEY_SIMPLE
     YOUTUBE_API = dict(SCOPE="https://www.googleapis.com/auth/youtube",
-                       UPLOAD=dict(REDIRECT_URI= '//' + MAIN_DOMAIN + "/filemanager/uploader/",
+                       UPLOAD=dict(REDIRECT_URI='//' + MAIN_DOMAIN + "/filemanager/uploader/",
                                    SEND_URI="https://www.googleapis.com/upload/youtube/v3/"
                                             "videos?%s"),
                        CREATE_PLAYLIST=dict(SEND_URI="https://www.googleapis.com/youtube/v3/"
@@ -77,7 +77,7 @@ class Config(object):
     YOUTUBE_API_SERVICE_NAME = "youtube"
     YOUTUBE_API_VERSION = "v3"
 
-# Base rights will added when user is confirmed in company
+    # Base rights will added when user is confirmed in company
     BASE_RIGHT_IN_COMPANY = ['upload_files', 'submit_publications']
     # Define the application directory
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -107,14 +107,12 @@ class Config(object):
     # PRESERVE_CONTEXT_ON_EXCEPTION = False
 
     BABEL_DEFAULT_LOCALE = 'uk'
-    LANGUAGES = [{'name':'uk', 'display':'Ukrainian'},
-                 {'name':'en', 'display':'English'}]
-
+    LANGUAGES = [{'name': 'uk', 'display': 'Ukrainian'},
+                 {'name': 'en', 'display': 'English'}]
 
 
 class ProductionDevelopmentConfig(Config):
-
-    #Define database connection parameters
+    # Define database connection parameters
 
     host = os.getenv('PRODUCTION_SERVER_DB_HOST', Config.host)
     username = os.getenv('PRODUCTION_SERVER_DB_USERNAME', Config.username)
@@ -139,17 +137,20 @@ class ProductionDevelopmentConfig(Config):
     SITE_TITLE = os.getenv('PRODUCTION_SERVER_SITE_TITLE', Config.SITE_TITLE)
 
     # Facebook settings
-#    CONSUMER_KEY_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_KEY',
-#                                Config.CONSUMER_KEY_FB)
-#    CONSUMER_SECRET_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_SECRET',
-#                                   Config.CONSUMER_SECRET_FB)
+    #    CONSUMER_KEY_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_KEY',
+    #                                Config.CONSUMER_KEY_FB)
+    #    CONSUMER_SECRET_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_SECRET',
+    #                                   Config.CONSUMER_SECRET_FB)
 
 
     if 'PRODUCTION_SERVER_DB_HOST' not in os.environ.keys():
-
         # Statement for enabling the development environment
         DEBUG = True
 
+
+class CommandLineConfig(ProductionDevelopmentConfig):
+
+    SERVER_NAME = MAIN_DOMAIN
 
 class FrontConfig(Config):
     # SERVER_NAME = 'companyportal.d.ntaxa.com'
@@ -158,7 +159,7 @@ class FrontConfig(Config):
     password = os.getenv('PRODUCTION_SERVER_DB_PASSWORD', Config.password)
     db_name = os.getenv('PRODUCTION_SERVER_DB_NAME', Config.database)
 
-    #SERVER_NAME = os.getenv('PRODUCTION_SERVER_NAME', Config.SERVER_NAME)
+    # SERVER_NAME = os.getenv('PRODUCTION_SERVER_NAME', Config.SERVER_NAME)
 
     # Define production database
     SQLALCHEMY_DATABASE_URI = \
@@ -174,13 +175,12 @@ class FrontConfig(Config):
     SITE_TITLE = os.getenv('PRODUCTION_SERVER_SITE_TITLE', Config.SITE_TITLE)
 
     # Facebook settings
-#    CONSUMER_KEY_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_KEY',
-#                                Config.CONSUMER_KEY_FB)
-#    CONSUMER_SECRET_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_SECRET',
-#                                   Config.CONSUMER_SECRET_FB)
+    #    CONSUMER_KEY_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_KEY',
+    #                                Config.CONSUMER_KEY_FB)
+    #    CONSUMER_SECRET_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_SECRET',
+    #                                   Config.CONSUMER_SECRET_FB)
 
     if 'PRODUCTION_SERVER_DB_HOST' not in os.environ.keys():
-
         # Statement for enabling the development environment
         DEBUG = True
 

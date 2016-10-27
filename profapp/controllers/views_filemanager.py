@@ -9,7 +9,7 @@ from flask import jsonify, json
 import json as jsonmodule
 from flask.ext.login import login_required
 from flask import session, redirect, request, url_for
-from utils.db_utils import db
+from tools.db_utils import db
 from ..models.company import Company, UserCompany, MemberCompanyPortal
 import urllib.parse
 from ..models.rights import FilemanagerRights, UserIsActive

@@ -28,6 +28,9 @@
             $scope.loaded_chats = {};
 
 
+            $scope.notifications = null;
+
+
             $scope.community_search_text = '';
             $scope.community = [];
             $scope.community_next_page = 1;
@@ -37,7 +40,10 @@
             $scope.contacts = [];
             $scope.contacts_next_page = 1;
             $scope.contacts_loading = false;
+
             $scope.total_unread_message_count = {{ g.user.get_unread_message_count(g.user.id) }};
+            $scope.total_unread_notification_count = {{ g.user.get_unread_notification_count(g.user.id) }};
+
             $scope.contacts_unread_messages_in_unloaded_contacts_count = 0;
 
 
@@ -53,6 +59,12 @@
 
                 if (selected === 'chat') {
                     $scope.search_contacts(true);
+                }
+
+                if (selected === 'notifications') {
+                    if (!$scope.notifications) {
+                        $scope.load_notifications(false, true);
+                    }
                 }
 
             };
@@ -121,9 +133,9 @@
                 var existing_messages = $scope.loaded_chats[chat_room_id]['messages'];
                 var max_messages = 200;
 
-{#                var is_first_message_in_session = function (ind) {#}
-{#                    return ind === 0 || existing_messages[ind]['timestamp'] - existing_messages[ind - 1]['timestamp'] > 60;#}
-{#                };#}
+                {#                var is_first_message_in_session = function (ind) {#}
+                {#                    return ind === 0 || existing_messages[ind]['timestamp'] - existing_messages[ind - 1]['timestamp'] > 60;#}
+                {#                };#}
 
                 message['cr_tm'] = $scope.moment(message['cr_tm']);
 
@@ -140,18 +152,8 @@
                     existing_messages.splice(index, 0, message);
                 }
 
-{#                if (is_first_message_in_session(index)) {#}
-{#                    existing_messages[index]['session'] = true;#}
-{#                }#}
-{#                if (index > 0 && existing_messages[index - 1]['session'] && is_first_message_in_session(index)) {#}
-{#                    existing_messages[index - 1]['session'] = false;#}
-{#                }#}
-{#                if (index < len - 1 && existing_messages[index + 1]['session'] && is_first_message_in_session(index + 1)) {#}
-{#                    existing_messages[index + 1]['session'] = false;#}
-{#                }#}
-
                 if (len + 1 > max_messages) {
-                    if (index < len/2) {
+                    if (index < len / 2) {
                         existing_messages.pop();
                         $scope.loaded_chats[chat_room_id]['there_is_newer'] = true;
                     }
@@ -169,22 +171,6 @@
                 if (!current_chat) return;
 
                 var existing_messages = $scope.loaded_chats[chat_room_id]['messages'];
-
-
-{#                var to_remove = existing_messages.length + messages.length - max_messages;#}
-{#                if (to_remove>0) {#}
-{#                    if (older) {#}
-{#                        console.log('remove newer', existing_messages.length - to_remove, to_remove);#}
-{#                        existing_messages.splice(existing_messages.length - to_remove, to_remove);#}
-{#                        current_chat['there_is_newer'] = true;#}
-{#                    }#}
-{#                    else {#}
-{#                        console.log('remove older', 0, to_remove);#}
-{#                        existing_messages.splice(0, to_remove);#}
-{#                        current_chat['there_is_older'] = true;#}
-{#                    }#}
-{#                }#}
-
 
                 $.each(messages, function (message_index, message) {
                     if (!existing_messages.length) {
@@ -208,7 +194,6 @@
 
 
             $scope.update_chat_room = function (chat_room_id, chat_room, force, older, instant) {
-{#                console.log(chat_room_id, chat_room, force, older, instant);#}
                 if ("there_is_older" in chat_room) $scope.loaded_chats[chat_room_id]['there_is_older'] = chat_room['there_is_older'];
                 if ("there_is_newer" in chat_room) $scope.loaded_chats[chat_room_id]['there_is_newer'] = chat_room['there_is_newer'];
 
@@ -248,6 +233,30 @@
 
             };
 
+            $scope.load_notifications = function (older, instant) {
+                if (!$scope.notifications) {
+                    $scope.notifications = {};
+                }
+                var loadvar = older ? 'loading_older_notifications' : 'loading_newer_notifications';
+                if ($scope.notifications[loadvar]) return false;
+
+                $scope.notifications[loadvar] = true;
+                var data = {'older': older ? true : false};
+
+                data[older ? 'first_message_id' : 'last_message_id'] =
+                        $scope.get_last_message_id('notifications', older ? true : false);
+
+                pr_chat_socket.emit('load_notifications', data, function (resp) {
+                    if ($scope.notifications) {
+                        $scope.notifications[loadvar] = false;
+                        $scope.update_chat_room('notifications', resp, true,
+                                older, instant);
+                        $scope.$digest();
+                    }
+                });
+
+            };
+
 
             $scope.select_chat_room = function (chat_room) {
 
@@ -273,7 +282,6 @@
                         $scope.restore_old_scroll_position();
                         $scope.load_messages(false, true);
                     }
-{#                    pr_chat_socket.emit('select_chat_room_id', chat_room ? chat_room['chat_room_id'] : null);#}
                 }
             };
 
@@ -516,16 +524,23 @@
                 <div class="col-lg-12">
                     <ul>
                         <li><a ng-click="set_selected_menu('chat')" class="link"
-                               ng-class="{'selected': selected_messenger_menu == 'chat'}">{{ ::_('Messages') }}</a>
+                               ng-class="{'selected': selected_messenger_menu == 'chat'}"><div>{{ ::_('Messages') }}
+
+                        <span class="unread_messages_count pa"
+                                  ng-if="total_unread_message_count">{{ total_unread_message_count }}</span>
+                        </div></a>
+
                         </li>
                         <li><a ng-click="set_selected_menu('community')" class="link"
                                ng-class="{'selected': selected_messenger_menu == 'community'}">{{ ::_('Community')
                             }}</a>
                         </li>
                         <li><a ng-click="set_selected_menu('notifications')" class="link"
-                               ng-class="{'selected': selected_messenger_menu == 'notifications'}">{{
+                               ng-class="{'selected': selected_messenger_menu == 'notifications'}"><div>{{
                             ::_('Notifications')
-                            }}</a>
+                            }}<span class="unread_messages_count pa"
+                                    ang-if="total_unread_notification_count">{{ total_unread_notification_count }}</span></div>
+                        </a>
                         </li>
                     </ul>
                 </div>

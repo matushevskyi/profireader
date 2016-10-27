@@ -9,7 +9,7 @@ from ..models.files import File
 from ..models.translate import TranslateTemplate
 from ..models.tag import Tag, TagPortalDivision, TagPublication
 from .pr_base import PRBase, Base, MLStripper, Grid
-from utils.db_utils import db
+from tools.db_utils import db
 from flask import g, session, app, current_app, url_for
 from sqlalchemy.sql import or_, and_
 import re
@@ -107,6 +107,8 @@ class Message(Base, PRBase):
     contact_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Contact.id))
     content = Column(TABLE_TYPES['string_1000'])
 
+    informed_by_email_about_unread = Column(TABLE_TYPES['timestamp'])
+
     contact = relationship(Contact)
 
     def client_message(self):
@@ -125,10 +127,30 @@ class Notification(Base, PRBase):
 
     to_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
     content = Column(TABLE_TYPES['string_1000'])
+    content_stripped = Column(TABLE_TYPES['string_1000'])
     notification_type = Column(TABLE_TYPES['string_100'])
+    notification_data = Column(TABLE_TYPES['json'])
+
+    informed_by_email_about_unread = Column(TABLE_TYPES['timestamp'])
+
+    to_user = relationship(User)
 
     NOTIFICATION_TYPES = {'GREETING': 'GREETING', 'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY'}
 
     @staticmethod
     def send_greeting_message(send_to_user):
+        n = Notification(to_user_id=send_to_user.id, notification_type=Notification.NOTIFICATION_TYPES['GREETING'],
+                         notification_data={'user_id': send_to_user.id},
+                         content=TranslateTemplate.translate_and_substitute(template='_NOTIFICATIONS',
+                                                                            url='', language=send_to_user.lang, allow_html='*',
+                                                                            phrase="Welcome to profireader. You can change your profile %(url_profile)s",
+                                                                            dictionary={
+                                                                                'url_profile': url_for('user.profile',
+                                                                                                       user_id=send_to_user.id)}))
+        n.save()
+        return n
         pass
+
+@event.listens_for(Notification.content, "set")
+def set(target, value, oldvalue, initiator):
+    target.content_stripped = MLStripper().strip_tags(value)

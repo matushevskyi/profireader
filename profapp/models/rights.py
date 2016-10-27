@@ -1,7 +1,7 @@
 from functools import reduce
 import inspect
 from flask import g
-from utils.db_utils import db
+from tools.db_utils import db
 from ..models.company import Company, UserCompany, MemberCompanyPortal
 from ..models.portal import Portal, PortalDivision
 # from ..models.bak_articles import ArticlePortalDivision, ArticleCompany

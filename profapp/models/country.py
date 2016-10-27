@@ -1,7 +1,7 @@
 from ..models.pr_base import Base, PRBase
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Column
-from utils.db_utils import db
+from tools.db_utils import db
 
 class Country(Base, PRBase):
     __tablename__ = 'country'
