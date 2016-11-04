@@ -132,6 +132,10 @@ body {
   margin-right: 2px;
   margin-left: 0px;
   text-decoration: none;
+  cursor: pointer;
+}
+.menu-company a * {
+  cursor: pointer;
 }
 .menu-company a.pull-right {
   margin-left: 2px;
