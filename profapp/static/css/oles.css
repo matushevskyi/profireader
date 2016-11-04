@@ -861,17 +861,6 @@ div.pr-row:last-child div.pr-cell {
     background-color: #00ceb1;
 }
 
-.messenger-chat .contacts-window .unread_messages_count {
-    position: absolute;
-    line-height: 100%;
-    text-align: center;
-    right: -3px;
-    bottom: -3px;
-    padding: 0.5em;
-    border-radius: 5px;
-    background-color: #500;
-    color: white;
-}
 
 .messenger-chat .chat-window .panel-footer textarea, .messenger-chat .chat-window .panel-footer button {
     height: 5em;

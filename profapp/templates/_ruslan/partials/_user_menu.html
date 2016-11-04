@@ -7,13 +7,16 @@
         $scope.unread_message_count = {{ g.user.get_unread_message_count(g.user.id) if g.user else 'null'}};
         $scope.unread_notification_count = {{ g.user.get_unread_notification_count(g.user.id) if g.user else 'null'}};
 
-        $scope.set_unread_message_count = function (count) {
-            if ($scope.unread_message_count != count) {
-                $('#menu-site .unread_messages_count').hide(); // strage bug in chrome. text disappear until mouse click
-                $timeout(function () {
-                    $('#menu-site .unread_messages_count').show();
-                }, 10);
-                $scope.unread_message_count = count;
+        $scope.set_unread_messages_and_notifications_count = function (messages_count, notifications_count) {
+            if ($scope.unread_message_count != messages_count || $scope.unread_notification_count != notifications_count) {
+{#                $('#menu-site .unread_messages_and_notifications_count').hide(); // strage bug in chrome. text disappear until mouse click#}
+                $scope.unread_message_count = messages_count;
+                $scope.unread_notification_count = notifications_count;
+                $scope.$digest();
+{#                $timeout(function () {#}
+{#                    $('#menu-site .unread_messages_and_notifications_count').show();#}
+{#                }, 10);#}
+
             }
         };
 
@@ -66,7 +69,7 @@
 
 </script>
 {% raw %}
-<nav ng-controller="user_controller" class="navbar navbar-fixed-top nav-bg">
+<nav ng-controller="user_controller" id="user_controller-controller" class="navbar navbar-fixed-top nav-bg">
     <div class="container" ng-cloak>
         <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
 
@@ -95,7 +98,7 @@
                                                                                            class="pr"
                                                                                            ng-class="{'selected': selected_user_menu == 'messages'}"><i
                             class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span><div
-                            ng-if="unread_message_count || unread_notification_count" class="pa unread_messages_count">{{ unread_message_count + unread_notification_count }}</div></a></li>
+                            ng-if="unread_message_count || unread_notification_count" class="pa unread_messages_and_notifications_count">{{ unread_message_count + unread_notification_count }}</div></a></li>
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %}
                             href="{{ url_company_companies() }}"
                             title="{{ _('Компанії') }}"

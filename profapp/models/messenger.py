@@ -92,7 +92,7 @@ class Contact(Base, PRBase):
 
         return {
             there_is_more[0]: there_is_more[1],
-            'messages': messages
+            'items': messages
         }
 
 
@@ -160,11 +160,16 @@ class Notification(Base, PRBase):
             notifications = notifications[0:count]
             # notifications.reverse()
 
-        print(notifications)
+
         return {
             there_is_more[0]: there_is_more[1],
-            'notifications': notifications
+            'items': notifications
         }
+
+    def client_message(self):
+        ret = utils.dict_merge(self.get_client_side_dict(fields='id,content,to_user_id'),
+                               {'cr_tm': self.cr_tm.strftime("%a, %d %b %Y %H:%M:%S GMT")})
+        return ret
 
     @staticmethod
     def send_greeting_message(send_to_user):
