@@ -13,6 +13,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='send greetings message')
     parser.add_argument("user_id")
+    parser.add_argument("some_text")
     args = parser.parse_args()
 
     app = create_app(apptype='profi', config='config.CommandLineConfig')
@@ -28,7 +29,7 @@ if __name__ == '__main__':
 
             if args.user_id:
                 print('sending greetings')
-                Notification.send_greeting_message(u)
+                Notification.send_greeting_message(u, args.some_text)
             else:
                 pass
                 # greetings = g.db.query(Message).filter_by(message_type=Message.MESSAGE_TYPES['PROFIREADER_NOTIFICATION'],

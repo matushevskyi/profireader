@@ -172,12 +172,12 @@ class Notification(Base, PRBase):
         return ret
 
     @staticmethod
-    def send_greeting_message(send_to_user):
+    def send_greeting_message(send_to_user, some_text = ''):
         n = Notification(to_user_id=send_to_user.id, notification_type=Notification.NOTIFICATION_TYPES['GREETING'],
                          notification_data={'user_id': send_to_user.id},
                          content=TranslateTemplate.translate_and_substitute(template='_NOTIFICATIONS',
                                                                             url='', language=send_to_user.lang, allow_html='*',
-                                                                            phrase="Welcome to profireader. You can change your profile %(url_profile)s",
+                                                                            phrase="Welcome to profireader. You can change your profile %(url_profile)s" + some_text,
                                                                             dictionary={
                                                                                 'url_profile': url_for('user.profile',
                                                                                                        user_id=send_to_user.id)}))

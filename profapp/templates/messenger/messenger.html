@@ -128,100 +128,62 @@
                 }, 0);
             };
 
-            {#TODO: merge with add_new_message#}
-            $scope.add_new_notification = function (notification, index, is_new_session) {
 
-                console.log(notification)
+            $scope.add_new_item = function (chat_room, item, index, is_new_session) {
 
-                var existing_notifications = $scope.notifications['items'];
-                var max_messages = 200;
-
-                notification['cr_tm'] = $scope.moment(notification['cr_tm']);
-
-                var len = existing_notifications.length;
-
-
-                if (index == 0) {
-                    existing_notifications.unshift(notification);
-                }
-                else if (index > len - 1) {
-                    existing_notifications.push(notification);
-                }
-                else {
-                    existing_notifications.splice(index, 0, notification);
-                }
-
-                if (len + 1 > max_messages) {
-                    if (index < len / 2) {
-                        existing_notifications.pop();
-                        $scope.notifications['there_is_newer'] = true;
-                    }
-                    else {
-                        existing_notifications.shift();
-                        $scope.notifications['there_is_older'] = true;
-                    }
-                }
-
-            };
-
-            $scope.add_new_message = function (chat_room_id, message, index, is_new_session) {
-
-                var existing_messages = $scope.loaded_chats[chat_room_id]['items'];
-                var max_messages = 200;
-
-                {#                var is_first_message_in_session = function (ind) {#}
+               {#                var is_first_message_in_session = function (ind) {#}
                 {#                    return ind === 0 || existing_messages[ind]['timestamp'] - existing_messages[ind - 1]['timestamp'] > 60;#}
                 {#                };#}
 
-                message['cr_tm'] = $scope.moment(message['cr_tm']);
+                item['cr_tm'] = $scope.moment(item['cr_tm']);
 
-                var len = existing_messages.length;
+                var len = chat_room['items'].length;
 
 
                 if (index == 0) {
-                    existing_messages.unshift(message);
+                    chat_room['items'].unshift(item);
                 }
                 else if (index > len - 1) {
-                    existing_messages.push(message);
+                    chat_room['items'].push(item);
                 }
                 else {
-                    existing_messages.splice(index, 0, message);
+                    chat_room['items'].splice(index, 0, item);
                 }
 
-                if (len + 1 > max_messages) {
+                if (len + 1 > 200) {
                     if (index < len / 2) {
-                        existing_messages.pop();
-                        $scope.loaded_chats[chat_room_id]['there_is_newer'] = true;
+                        chat_room['items'].pop();
+                        chat_room['there_is_newer'] = true;
                     }
                     else {
-                        existing_messages.shift();
-                        $scope.loaded_chats[chat_room_id]['there_is_older'] = true;
+                        chat_room['items'].shift();
+                        chat_room['there_is_older'] = true;
                     }
                 }
 
 
             };
 
-            $scope.append_messages = function (chat_room_id, messages, older) {
-                var current_chat = $scope.loaded_chats[chat_room_id];
-                if (!current_chat) return;
+            $scope.append_items = function (chat_room, items) {
 
-                var existing_messages = $scope.loaded_chats[chat_room_id]['items'];
+                if (!chat_room) return;
 
-                $.each(messages, function (message_index, message) {
-                    if (!existing_messages.length) {
-                        $scope.add_new_message(chat_room_id, message, 0);
+                var existing_items= chat_room['items'];
+
+                $.each(items, function (message_index, item) {
+                    if (!existing_items.length) {
+                        $scope.add_new_item(chat_room, item, 0);
                     }
-                    else if (existing_messages[0]['id'] > message['id']) {
-                        $scope.add_new_message(chat_room_id, message, 0);
+                    else if (existing_items[0]['id'] > item['id']) {
+                        $scope.add_new_item(chat_room, item, 0);
                     }
-                    else if (existing_messages[existing_messages.length - 1]['id'] < message['id']) {
-                        $scope.add_new_message(chat_room_id, message, existing_messages.length);
+                    else if (existing_items[existing_items.length - 1]['id'] < item['id']) {
+                        $scope.add_new_item(chat_room, item, existing_items.length);
                     }
                     else {
-                        for (var i = 0; i < existing_messages.length - 1; i++) {
-                            if (existing_messages[i]['id'] < message['id'] && existing_messages[i + 1]['id'] > message['id']) {
-                                $scope.add_new_message(chat_room_id, message, i + 1);
+                        for (var i = 0; i < existing_items.length - 1; i++) {
+                            if (existing_items[i]['id'] < item['id'] && existing_items[i + 1]['id'] > item['id']) {
+                                $scope.add_new_item(chat_room, item, i + 1);
                             }
                         }
                     }
@@ -229,51 +191,21 @@
             };
 
 
-            $scope.update_chat_room = function (chat_room_id, chat_room, force, older, instant) {
-                if ("there_is_older" in chat_room) $scope.loaded_chats[chat_room_id]['there_is_older'] = chat_room['there_is_older'];
-                if ("there_is_newer" in chat_room) $scope.loaded_chats[chat_room_id]['there_is_newer'] = chat_room['there_is_newer'];
 
-                if (chat_room['items'] && chat_room['items'].length) {
-                    $scope.append_messages(chat_room_id, chat_room['items'], older);
-                    if ($scope.selected_chat_room['chat_room_id'] === chat_room_id) {
-                        $scope.stickToBottomChatRoom(chat_room_id, chat_room, force, older ? true : false, instant);
-                    }
+            $scope.update_chat_room = function (existing, from_server, force, older, instant) {
+                console.log(existing, from_server);
+                if (!existing) {
+                    return;
+                }
+                if ("there_is_older" in from_server) existing['there_is_older'] = from_server['there_is_older'];
+                if ("there_is_newer" in from_server) existing['there_is_newer'] = from_server['there_is_newer'];
+
+                if (from_server['items'] && from_server['items'].length) {
+                    $scope.append_items(existing, from_server['items'], older);
                 }
             };
 
 
-            $scope.append_notifications = function (notifications, older) {
-
-                var existing_notifications = $scope.notifications['items'];
-
-                $.each(notifications, function (notification_index, notification) {
-                    if (!existing_notifications.length) {
-                        $scope.add_new_notification(notification, 0);
-                    }
-                    else if (existing_notifications[0]['id'] > notification['id']) {
-                        $scope.add_new_notification(notification, 0);
-                    }
-                    else if (existing_notifications[existing_notifications.length - 1]['id'] < notification['id']) {
-                        $scope.add_new_notification(notification, existing_notifications.length);
-                    }
-                    else {
-                        for (var i = 0; i < existing_notifications.length - 1; i++) {
-                            if (existing_notifications[i]['id'] < notification['id'] && existing_notifications[i + 1]['id'] > notification['id']) {
-                                $scope.add_new_notification(notification, i + 1);
-                            }
-                        }
-                    }
-                });
-            };
-
-            $scope.update_notifications = function (notifications, force, older, instant) {
-                console.log('update_notifications', notifications)
-
-                if ($scope.notifications['items']) {
-                    $scope.append_notifications(notifications['items'], older);
-                    $scope.stickToBottomChatRoom('notifications', force, older ? true : false, instant);
-                }
-            };
 
             $scope.load_notifications = function (older, instant) {
                 if (!$scope.notifications) {
@@ -287,13 +219,16 @@
                 $scope.notifications[loadvar] = true;
                 var data = {'older': older ? true : false};
 
-                data[older ? 'first_message_id' : 'last_message_id'] =
-                        $scope.get_last_message_id('notifications', older ? true : false);
+                data[older ? 'first_id' : 'last_id'] =
+                        $scope.get_last_id($scope.notifications, older ? true : false);
+
+                console.log(data);
 
                 pr_chat_socket.emit('load_notifications', data, function (resp) {
                     console.log('!!', resp);
                     $scope.notifications[loadvar] = false;
-                    $scope.update_notifications(resp, true, older, instant);
+                    $scope.update_chat_room($scope.notifications, resp, true, older, instant);
+{#                    $scope.update_notifications(resp, true, older, instant);#}
                     $scope.$digest();
                 });
 
@@ -312,15 +247,17 @@
                 $scope.selected_chat_room[loadvar] = true;
                 var data = {'chat_room_id': loaded_messages_chatr_room_id, 'older': older ? true : false};
 
-                data[older ? 'first_message_id' : 'last_message_id'] =
-                        $scope.get_last_message_id(loaded_messages_chatr_room_id, older ? true : false);
+                data[older ? 'first_id' : 'last_id'] =
+                        $scope.get_last_id($scope.selected_chat_room, older ? true : false);
 
 
                 pr_chat_socket.emit('load_messages', data, function (resp) {
                     if ($scope.loaded_chats[loaded_messages_chatr_room_id]) {
                         $scope.loaded_chats[loaded_messages_chatr_room_id][loadvar] = false;
-                        $scope.update_chat_room(loaded_messages_chatr_room_id, resp, true,
-                                older, instant);
+                        $scope.update_chat_room($scope.selected_chat_room, resp, true, older, instant);
+                        if ($scope.selected_chat_room['chat_room_id'] === loaded_messages_chatr_room_id) {
+                            $scope.stickToBottomChatRoom(loaded_messages_chatr_room_id, resp, true, older ? true : false, instant);
+                        }
                         $scope.$digest();
                     }
                 });
@@ -404,21 +341,21 @@
             };
 
 
-            $scope.get_last_message_id = function (chatroom_id, first) {
-                if (!chatroom_id || !$scope.loaded_chats[chatroom_id] || !$scope.loaded_chats[chatroom_id]['items'].length) {
+            $scope.get_last_id = function (chatroom, first) {
+                if (!chatroom || !chatroom['items'].length) {
                     return null;
                 }
-                var msgs = $scope.loaded_chats[chatroom_id]['items'];
+                var msgs = chatroom['items'];
                 return msgs[first ? 0 : (msgs.length - 1)]['id']
             };
 
-            $scope.get_last_message_ids = function () {
-                var ret = {};
-                $.each($scope.loaded_chats, function (chat_room_id) {
-                    ret[chat_room_id] = $scope.get_last_message_id(chat_room_id);
-                });
-                return ret;
-            };
+{#            $scope.get_last_message_ids = function () {#}
+{#                var ret = {};#}
+{#                $.each($scope.loaded_chats, function (chat_room_id, chat_room) {#}
+{#                    ret[chat_room_id] = $scope.get_last_id(chat_room);#}
+{#                });#}
+{#                return ret;#}
+{#            };#}
 
             $scope.search_community = function (full_reload) {
                 if ($scope.selected_messenger_menu !== 'community') {
@@ -526,7 +463,7 @@
                     var unread = resp['unread'];
                     var message_unread = true;
                     if (new_message && $scope.selected_chat_room && $scope.selected_chat_room['chat_room_id'] === new_message['chat_room_id'] && !$scope.selected_chat_room['there_is_newer']) {
-                        $scope.append_messages(new_message['chat_room_id'], [new_message]);
+                        $scope.append_items($scope.selected_chat_room, [new_message]);
                         $scope.stickToBottomChatRoom(new_message['chat_room_id'], {'items': [new_message]}, false, false, false);
                         if (new_message['from_user_id'] !== $scope.me_user['id']) {
                             pr_chat_socket.emit('read_message', new_message['id']);
@@ -600,7 +537,7 @@
                     <a ng-click="set_selected_menu('community')"
                        ng-class="{'selected': selected_messenger_menu == 'community'}">{{ ::_('Community')
                         }}</a>
-                    <a ng-click="set_selected_menu('notifications')" 
+                    <a ng-click="set_selected_menu('notifications')"
                        ng-class="{'selected': selected_messenger_menu == 'notifications'}">
                         <span class="pr">
                         <span class="unread-items-count"
@@ -619,7 +556,7 @@
                 <div class="messenger-chat" ng-show="selected_messenger_menu == 'chat'">
 
 
-                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 contacts-window">
+                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 contacts-window pl0">
                         <input ng-if="0 " placeholder="{{ ::_('Search in chat') }}"
                                class="form-control" type="text"
                                ng-model-options='{ debounce: 500 }'
@@ -681,7 +618,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8 chat-window">
+                    <div class="col-lg-8 col-md-8 col-sm-8 col-xs-8 chat-window pr0">
                         <input ng-if="0 " placeholder="{{ ::_('Search in chat') }}"
                                class="form-control" type="text"
                                ng-model-options='{ debounce: 500 }'
@@ -888,7 +825,7 @@
                 <div class="messenger-notification" ng-show="selected_messenger_menu == 'notifications'">
 
 
-                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 chat-window">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 chat-window pl0 pr0">
                         <input ng-if="0" placeholder="{{ ::_('Search in chat') }}"
                                class="form-control" type="text"
                                ng-model-options='{ debounce: 500 }'
