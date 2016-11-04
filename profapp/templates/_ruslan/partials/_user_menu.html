@@ -128,7 +128,7 @@
                     </li>
 
                     <li ng-if="user" role="presentation" class="menu-profile">
-                        <a pr_test="UserProfile" href="{{ url_user_profile({user_id:user.id}) }}" role="button"
+                        <a href="{{ url_user_profile({user_id:user.id}) }}" role="button"
                            aria-haspopup="true"
                            aria-expanded="false">
                             <img class="person-small-cover" pr-image="" pr-no-image="{{ user_avatar_url }}">
@@ -137,7 +137,7 @@
                     </li>
 
                     <li ng-if="user" role="presentation" class="menu-profile">
-                        <a pr_test="LogOut" class="login-profile" href="{{ url_auth_logout() }}">{{ _('Log out') }}</a>
+                        <a class="login-profile" href="{{ url_auth_logout() }}">{{ _('Log out') }}</a>
                         <!--<ul class="dropdown-menu">
                             <li ng-show="user.id"><a href="{{ url_user_profile({user_id:user.id}) }}">{{ _('Profile') }}</a></li>
                             <li ng-show="user.id" ><a href="{{ url_auth_logout() }}" >{{_('Log Out') }}</a></li>
@@ -147,7 +147,7 @@
                     </li>
 
                     <li ng-if="!user" role="presentation" class="menu-profile">
-                        <a pr_test="LogIn" class="login-profile" href="{{ login_url }}">{{ _('Login') }}</a>
+                        <a class="login-profile" href="{{ login_url }}">{{ _('Login') }}</a>
                     </li>
                 </ul>
             </div>
