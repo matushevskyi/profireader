@@ -144,7 +144,7 @@ def load_messages(sid, event_data):
         user_id = connected_sid_user_id[sid]
         contact = Contact.get(event_data['chat_room_id'])
         older = event_data.get('older', False)
-        ret = contact.get_messages(5, older, event_data.get('first_id' if older else 'last_id', None))
+        ret = contact.get_messages(50, older, event_data.get('first_id' if older else 'last_id', None))
 
         read_ids = [m.id for m in ret['items'] if m.from_user_id != user_id and not m.read_tm]
         if len(read_ids):
@@ -165,7 +165,7 @@ def load_notifications(sid, event_data):
         user_id = connected_sid_user_id[sid]
 
         older = event_data.get('older', False)
-        ret = Notification.get_notifications(2, older, event_data.get('first_id' if older else 'last_id', None))
+        ret = Notification.get_notifications(50, older, event_data.get('first_id' if older else 'last_id', None))
         print(ret)
 
         read_ids = [n.id for n in ret['items'] if not n.read_tm]

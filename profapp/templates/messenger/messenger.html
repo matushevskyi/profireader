@@ -131,7 +131,7 @@
 
             $scope.add_new_item = function (chat_room, item, index, is_new_session) {
 
-               {#                var is_first_message_in_session = function (ind) {#}
+                {#                var is_first_message_in_session = function (ind) {#}
                 {#                    return ind === 0 || existing_messages[ind]['timestamp'] - existing_messages[ind - 1]['timestamp'] > 60;#}
                 {#                };#}
 
@@ -168,7 +168,7 @@
 
                 if (!chat_room) return;
 
-                var existing_items= chat_room['items'];
+                var existing_items = chat_room['items'];
 
                 $.each(items, function (message_index, item) {
                     if (!existing_items.length) {
@@ -191,7 +191,6 @@
             };
 
 
-
             $scope.update_chat_room = function (existing, from_server, force, older, instant) {
                 console.log(existing, from_server);
                 if (!existing) {
@@ -204,7 +203,6 @@
                     $scope.append_items(existing, from_server['items'], older);
                 }
             };
-
 
 
             $scope.load_notifications = function (older, instant) {
@@ -228,7 +226,7 @@
                     console.log('!!', resp);
                     $scope.notifications[loadvar] = false;
                     $scope.update_chat_room($scope.notifications, resp, true, older, instant);
-{#                    $scope.update_notifications(resp, true, older, instant);#}
+                    {#                    $scope.update_notifications(resp, true, older, instant);#}
                     $scope.$digest();
                 });
 
@@ -349,13 +347,13 @@
                 return msgs[first ? 0 : (msgs.length - 1)]['id']
             };
 
-{#            $scope.get_last_message_ids = function () {#}
-{#                var ret = {};#}
-{#                $.each($scope.loaded_chats, function (chat_room_id, chat_room) {#}
-{#                    ret[chat_room_id] = $scope.get_last_id(chat_room);#}
-{#                });#}
-{#                return ret;#}
-{#            };#}
+            {#            $scope.get_last_message_ids = function () {#}
+            {#                var ret = {};#}
+            {#                $.each($scope.loaded_chats, function (chat_room_id, chat_room) {#}
+            {#                    ret[chat_room_id] = $scope.get_last_id(chat_room);#}
+            {#                });#}
+            {#                return ret;#}
+            {#            };#}
 
             $scope.search_community = function (full_reload) {
                 if ($scope.selected_messenger_menu !== 'community') {
@@ -527,36 +525,28 @@
                 <div class="col-lg-12 menu-company">
                     <a ng-click="set_selected_menu('chat')"
                        ng-class="{'selected': selected_messenger_menu == 'chat'}">
-                        <span class="pr">
-                            <span class="unread-items-count"
-                                  ng-if="total_unread_message_count">{{ total_unread_message_count }}</span>
-                            {{ ::_('Messages') }}
-                        </span>
-                    </a>
+                        <span class="pr"><span class="unread-items-count"
+                                               ng-if="total_unread_message_count">{{ total_unread_message_count }}</span>
+                            {{ ::_('Messages') }}</span></a>
 
                     <a ng-click="set_selected_menu('community')"
                        ng-class="{'selected': selected_messenger_menu == 'community'}">{{ ::_('Community')
                         }}</a>
                     <a ng-click="set_selected_menu('notifications')"
                        ng-class="{'selected': selected_messenger_menu == 'notifications'}">
-                        <span class="pr">
-                        <span class="unread-items-count"
-                              ng-if="total_unread_notification_count">{{ total_unread_notification_count }}</span>
-                            {{ ::_('Notifications') }}
-                            </span>
-
-                    </a>
-
+                        <span class="pr"><span class="unread-items-count"
+                                               ng-if="total_unread_notification_count">{{ total_unread_notification_count }}</span>
+                            {{ ::_('Notifications') }}</span></a>
 
                 </div>
             </div>
 
 
             <div class="row">
+
                 <div class="messenger-chat" ng-show="selected_messenger_menu == 'chat'">
 
-
-                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 contacts-window pl0">
+                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 contacts-window pl0 pr0">
                         <input ng-if="0 " placeholder="{{ ::_('Search in chat') }}"
                                class="form-control" type="text"
                                ng-model-options='{ debounce: 500 }'
@@ -585,9 +575,9 @@
                                 </div>
 
                                 <ul class="list-group">
-                                    <a href="#" ng-click="select_chat_room(chat_room)"
-                                       ng-repeat="chat_room in contacts">
-                                        <li style="position: relative" class="list-group-item"
+                                        <li style="position: relative" class="list-group-item button"
+                                            ng-click="select_chat_room(chat_room)"
+                                            ng-repeat="chat_room in contacts"
                                             ng-class="{'selected': chat_room['chat_room_id'] === selected_chat_room['chat_room_id']}">
                                             <img class="messenger-avatar" pr-image-position="center center"
                                                  pr-image-url="{{ chat_room.users[0].avatar.url }}"/>
@@ -595,8 +585,6 @@
                                             <span class="unread-items-count pa"
                                                   ng-if="chat_room.unread_messages_count">{{ chat_room.unread_messages_count }}</span>
                                         </li>
-
-                                    </a>
                                 </ul>
 
 
@@ -870,7 +858,7 @@
                                             <!-- TODO: get profireader logo -->
                                             <div class="chat-img media-left">
                                                 <img class="messenger-avatar" pr-image-position="center center"
-                                                     pr-image-url=""/>
+                                                     pr-image-url="{% endraw %}{{ static_address('images/profireader-logo.svg') }}{% raw %}"/>
                                             </div>
 
                                             <div class="media-body pad-hor">

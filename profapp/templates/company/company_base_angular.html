@@ -28,7 +28,7 @@
     <div ng-if="user.id && company.id && user_active" ng-cloak>
         <div class="container menu-company">
             <div class="row">
-                <div class="col-lg-12 col-md-6 col-sm-4 col-xs-4">
+                <div class="col-lg-12 col-md-6 col-sm-4 col-xs-4 pl0 pr0">
                     <a ng-class="{'selected': selected_company_menu == 'materials'}"
                        href="{{ url_company_materials({company_id: company.id}) }}">{{ _('Materials') }}</a>
                     <a ng-class="{'selected': selected_company_menu == 'portals_partners'}" id="companies_partners"
@@ -45,7 +45,7 @@
             </div>
 
             <div class="row">
-                <div ng-if="company.own_portal" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 menu-company no-shadow">
+                <div ng-if="company.own_portal" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 pl0 pr0">
                     <a class="pull-right" ng-if="company.author_user_id == user.id" ng-class="{'selected': selected_company_menu == 'portal_banners'}"
                        href="{{ url_portal_banners({company_id: company.id}) }}">{{ _('Banners') }}</a>
                     <a class="pull-right" ng-if="company.author_user_id == user.id" ng-class="{'selected': selected_company_menu == 'portal_tags'}"
