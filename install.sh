@@ -262,7 +262,7 @@ function menu_apache2_profi_vh_ssl {
     wwwdir=$(rr 'Enter http dir' $PWD)
     maindomain=$(rr 'Enter main domain' `get_main_domain`)
     conf_comm "cat ./conf/apache2/main-domain.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/main-domain.conf
-cd `pwd`/utils
+cd `pwd`/tools
 ./get_ssl_for_domain.sh `pwd`/letsencryptrequests $maindomain www.$maindomain static.$maindomain file001.$maindomain 
 systemctl restart apache2.service" sudo apache2_fronts_vh_ssl
     }
@@ -272,7 +272,7 @@ function menu_apache2_fronts_vh_ssl {
     venvdir=$(rr 'venv directory' .venv)
     conf_comm "cd `pwd`
 source $venvdir/bin/activate
-cd utils
+cd tools
 python check_ssl.py
 systemctl restart apache2.service" sudo secret_data
     }
@@ -281,7 +281,7 @@ function menu_apache2_check_ssls {
     venvdir=$(rr 'venv directory' .venv)
     conf_comm "cd `pwd`
 source $venvdir/bin/activate
-cd utils
+cd tools
 python check_ssl.py
 systemctl restart apache2.service" sudo secret_data
     }
@@ -455,7 +455,7 @@ function menu_elastic_reindex_all {
     destdir=$(rr 'venv directory' .venv)
     conf_comm "
 source $destdir/bin/activate
-cd ./utils
+cd ./tools
 python ./update_elastic_search.py delete_elastic_indexes
 python ./update_elastic_search.py recreate_all_elastic_documents
 " nosudo 'exit'

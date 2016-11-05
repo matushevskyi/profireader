@@ -3,11 +3,10 @@ import psycopg2.extensions
 from profapp import create_app, load_database
 import socketio, eventlet
 import re, time, datetime
-from profapp.models.messenger import Contact, Message
+from profapp.models.messenger import Contact, Message, Notification
 from profapp.controllers.errors import BadDataProvided
 from flask import g
-from utils import db_utils
-
+from tools import db_utils
 
 connected_sid_user_id = {}
 connected_user_id_sids = {}
@@ -27,9 +26,10 @@ app = create_app(apptype='profi')
 ctx = app.app_context()
 
 with controlled_execution():
-    load_database(app.config['SQLALCHEMY_DATABASE_URI'])(echo = True)
+    load_database(app.config['SQLALCHEMY_DATABASE_URI'])(echo=True)
 
 sio = socketio.Server(cookie='prsio')
+
 
 def append_create(dict, index, value):
     if not index:
@@ -61,9 +61,12 @@ def check_user_id(environ):
     session = mc.get(session_id + '_session')
     return session.get('user_id', False) if session else False
 
-def get_unread(user_id, chatroom_ids = []):
-    to_send = {'total': int(
-        float(db_utils.execute_function("message_unread_count('%s', NULL)" % (user_id,))))}
+
+def get_unread(user_id, chatroom_ids=[]):
+    to_send = {
+        'messages': int(float(db_utils.execute_function("message_unread_count('%s', NULL)" % (user_id,)))),
+        'notifications': int(float(db_utils.execute_function("notification_unread_count('%s')" % (user_id,))))
+    }
     for chatroom_id in chatroom_ids:
         to_send[chatroom_id] = int(float(
             db_utils.execute_function("message_unread_count('%s', '%s')" % (user_id, chatroom_id))))
@@ -80,6 +83,7 @@ def connect(sid, environ):
     connected_sid_user_id[sid] = user_id
     append_create(connected_user_id_sids, user_id, sid)
 
+
 @sio.on('disconnect')
 def disconnect(sid):
     user_id = connected_sid_user_id[sid]
@@ -90,35 +94,64 @@ def disconnect(sid):
 
 
 @sio.on('send_message')
-def send_message(sid, data):
+def send_message(sid, event_data):
     with controlled_execution():
         user_id = connected_sid_user_id[sid]
         print('send_message', user_id)
-        contact = Contact.get(data['chatroom_id'])
+        contact = Contact.get(event_data['chatroom_id'])
 
-        message = Message(contact_id=contact.id, content=data['content'], from_user_id=user_id)
+        message = Message(contact_id=contact.id, content=event_data['content'], from_user_id=user_id)
         message.save()
         message = Message.get(message.id)
         message_tosend = message.client_message()
 
         for sid_for_author in connected_user_id_sids[user_id]:
-            sio.emit('message_notification', {
-                'new_message':  message_tosend
+            sio.emit('general_notification', {
+                'new_message': message_tosend
             }, sid_for_author)
 
         another_user_to_notify_unread = contact.user1_id if contact.user2_id == user_id else contact.user2_id
         unread = get_unread(another_user_to_notify_unread, [contact.id])
         for sid_for_receiver in connected_user_id_sids[another_user_to_notify_unread]:
-            sio.emit('message_notification', {
-                'new_message':  message_tosend,
+            sio.emit('general_notification', {
+                'new_message': message_tosend,
                 'unread': unread
             }, sid_for_receiver)
 
         return {'ok': True, 'message_id': message.id}
 
 
+@sio.on('send_notification')
+def send_message(sid, notification_data):
+    pass
+    # TODO: OZ by OZ
+    # with controlled_execution():
+    #     user_id = connected_sid_user_id[sid]
+    #     print('send_notification', user_id)
+    #
+    #     message = Message(contact_id=contact.id, content=event_data['content'], from_user_id=user_id)
+    #     message.save()
+    #     message = Message.get(message.id)
+    #     message_tosend = message.client_message()
+    #
+    #     for sid_for_author in connected_user_id_sids[user_id]:
+    #         sio.emit('general_notification', {
+    #             'new_message':  message_tosend
+    #         }, sid_for_author)
+    #
+    #     another_user_to_notify_unread = contact.user1_id if contact.user2_id == user_id else contact.user2_id
+    #     unread = get_unread(another_user_to_notify_unread, [contact.id])
+    #     for sid_for_receiver in connected_user_id_sids[another_user_to_notify_unread]:
+    #         sio.emit('general_notification', {
+    #             'new_message':  message_tosend,
+    #             'unread': unread
+    #         }, sid_for_receiver)
+    #
+    #     return {'ok': True, 'message_id': message.id}
+
+
 @sio.on('read_message')
-def read_messages(sid, message_id):
+def read_message(sid, message_id):
     with controlled_execution():
         message = Message.get(message_id)
         contact = Contact.get(message.contact_id)
@@ -128,33 +161,69 @@ def read_messages(sid, message_id):
             g.db().execute("SELECT message_set_read('%s', ARRAY ['%s']);" % (message.contact_id, message.id))
             unread = get_unread(another_user_to_notify_unread, [contact.id])
             for sid_for_receiver in connected_user_id_sids[another_user_to_notify_unread]:
-                sio.emit('message_notification', {
+                sio.emit('general_notification', {
                     'unread': unread
                 }, sid_for_receiver)
 
 
+@sio.on('read_notification')
+def read_notification(sid, notification_id):
+    with controlled_execution():
+        notification = Notification.get(notification_id)
+        if notification.read_tm is None:
+            print("SELECT notification_set_read(ARRAY ['%s']);" % (notification.id,))
+            g.db().execute("SELECT notification_set_read(ARRAY ['%s']);" % (notification.id,))
+            unread = get_unread(notification.to_user_id)
+            for sid_for_receiver in connected_user_id_sids[notification.to_user_id]:
+                sio.emit('general_notification', {'unread': unread}, sid_for_receiver)
+
+
 @sio.on('load_messages')
-def load_messages(sid, message):
+def load_messages(sid, event_data):
     with controlled_execution():
         import time
         # time.sleep(2)  # delays for 5 seconds
-        print('load_messages', message)
+        print('load_messages', event_data)
         user_id = connected_sid_user_id[sid]
-        contact = Contact.get(message['chat_room_id'])
-        older = message.get('older', False)
-        ret = contact.get_messages(50, older, message.get('first_message_id' if older else 'last_message_id', None))
+        contact = Contact.get(event_data['chat_room_id'])
+        older = event_data.get('older', False)
+        ret = contact.get_messages(50, older, event_data.get('first_id' if older else 'last_id', None))
 
-        read_ids = [m.id for m in ret['messages'] if m.from_user_id != user_id and not m.read_tm]
+        read_ids = [m.id for m in ret['items'] if m.from_user_id != user_id and not m.read_tm]
         if len(read_ids):
             g.db().execute("SELECT message_set_read('%s', ARRAY ['%s']);" % (contact.id, "', '".join(read_ids)))
             unread = get_unread(user_id, [contact.id])
             for sid_for_receiver in connected_user_id_sids[user_id]:
-                sio.emit('message_notification', {
+                sio.emit('general_notification', {
                     'unread': unread
                 }, sid_for_receiver)
 
-        ret['messages'] = [m.client_message() for m in ret['messages']]
+        ret['items'] = [m.client_message() for m in ret['items']]
         return ret
+
+
+@sio.on('load_notifications')
+def load_notifications(sid, event_data):
+    with controlled_execution():
+        print('load_notifications', event_data)
+        user_id = connected_sid_user_id[sid]
+
+        older = event_data.get('older', False)
+        ret = Notification.get_notifications(50, older, event_data.get('first_id' if older else 'last_id', None))
+        print(ret)
+
+        read_ids = [n.id for n in ret['items'] if not n.read_tm]
+        if len(read_ids):
+            g.db().execute("SELECT notification_set_read(ARRAY ['%s']);" % ("', '".join(read_ids)))
+            unread = get_unread(user_id)
+            for sid_for_receiver in connected_user_id_sids[user_id]:
+                sio.emit('general_notification', {
+                    'unread': unread
+                }, sid_for_receiver)
+
+        ret['items'] = [n.client_message() for n in ret['items']]
+        return ret
+
 
 app = socketio.Middleware(sio, app)
 eventlet.wsgi.server(eventlet.listen(('', 5000)), app)

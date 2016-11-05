@@ -427,6 +427,10 @@
     text-decoration: underline;
 }
 
+.button {
+    cursor: pointer;
+}
+
 .form-control.pr-datetimepicker, .form-control.pr-datepicker {
     background-position: 4px center;
     padding-left: 24px;
@@ -787,105 +791,5 @@ div.pr-row:last-child div.pr-cell {
     color: red;
 }
 
-.messenger-chat input {
-    margin-bottom: 5px;
-}
 
-.messenger-chat .contacts-window li {
-    padding-left: 50px;
-    padding-top: 12px;
-    height: 50px;
-}
-
-.messenger-chat .contacts-window li img.messenger-avatar {
-    width: 40px;
-    height: 40px;
-    position: absolute;
-    left: 5px;
-    top: 5px;
-    border-radius: 50%;
-}
-
-.messenger-chat ul, li {
-    list-style: none;
-    padding-left: 0;
-}
-
-.messenger-chat ul {
-    margin-bottom: 0;
-}
-
-.messenger-chat span.session-name {
-    font-size: 7px;
-    color: #777;
-}
-
-.messenger-chat .panel-body {
-    height: 30em;
-    padding: 5px 5px 5px 15px;
-    overflow-x: hidden;
-    overflow-y: hidden;
-}
-
-.messenger-chat .panel-scroll-chat {
-    height: 100%;
-    padding-right: 5px;
-    overflow-x: hidden;
-    overflow-y: scroll;
-}
-
-.messenger-chat .chat-body p {
-    white-space: pre-line
-}
-
-.messenger-chat .messenger-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-}
-
-.messenger-chat .contacts-window a:hover {
-    text-decoration: none;
-}
-
-.messenger-chat .contacts-window a {
-    text-decoration: none;
-}
-
-.messenger-chat .contacts-window li {
-    margin-bottom: 5px;
-}
-
-.messenger-chat .contacts-window li.selected {
-    color: white;
-    background-color: #00ceb1;
-}
-
-.messenger-chat .contacts-window .unread_messages_count {
-    position: absolute;
-    line-height: 100%;
-    text-align: center;
-    right: -3px;
-    bottom: -3px;
-    padding: 0.5em;
-    border-radius: 5px;
-    background-color: #500;
-    color: white;
-}
-
-.messenger-chat .chat-window .panel-footer textarea, .messenger-chat .chat-window .panel-footer button {
-    height: 5em;
-}
-
-
-.messenger-chat .contacts-window  {
-    height: calc(30em + 130px);
-}
-
-.messenger-chat .contacts-window .contact-list {
-    overflow-x: hidden;
-    overflow-y: auto;
-    height: calc(30em + 75px);
-    padding: 3px;
-}
 

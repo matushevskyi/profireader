@@ -7,7 +7,7 @@ from urllib import request as req
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Column
 from .pr_base import Base, PRBase
-from utils.db_utils import db
+from tools.db_utils import db
 from ..controllers.errors import TooManyCredentialsInDb
 
 

@@ -4,7 +4,7 @@ from ..models.company import Company
 from flask.ext.login import login_required
 from ..models.portal import PortalDivisionType
 from ..models.translate import TranslateTemplate
-from utils.db_utils import db
+from tools.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
     PortalDivisionSettingsCompanySubportal, PortalConfig, PortalAdvertisment, PortalAdvertismentPlace
 from .request_wrapers import ok, check_right

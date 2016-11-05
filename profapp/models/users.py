@@ -14,7 +14,7 @@ from ..constants import RECORD_IDS
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from utils.db_utils import db
+from tools.db_utils import db
 from sqlalchemy import String
 from . import country
 import hashlib
@@ -24,7 +24,7 @@ from ..constants.SEARCH import RELEVANCE
 from .. import utils
 from flask import url_for, render_template
 from ..utils import email_utils
-from utils import db_utils
+from tools import db_utils
 
 import random
 import time
@@ -131,10 +131,6 @@ class User(Base, UserMixin, PRBase):
     pass_reset_token = Column(TABLE_TYPES['token'])
     pass_reset_conf_tm = Column(TABLE_TYPES['timestamp'])
 
-    registered_via = Column(TABLE_TYPES['string_30'], nullable=False, default='email')
-    # employers = relationship('Company', secondary='user_company',
-    #                          backref=backref("employees", lazy='dynamic'))  # Correct
-
     employments = relationship('UserCompany', back_populates='user')
 
     companies = relationship('Company', back_populates='user_owner')
@@ -143,183 +139,20 @@ class User(Base, UserMixin, PRBase):
     password_confirmation = None
     password_hash = Column(TABLE_TYPES['string_128'], nullable=False)
 
-    # FB_NET_FIELD_NAMES = ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
-    # SOCIAL_NETWORKS = ['profireader', 'google', 'facebook', 'linkedin', 'twitter', 'microsoft', 'yahoo']
     country_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('country.id'), nullable=True)
     country = relationship('Country')
 
-    # GOOGLE
+    registered_via = Column(TABLE_TYPES['string_30'], nullable=False, default='email')
+
     google_id = Column(TABLE_TYPES['id_soc_net'])
-    # google_email = Column(TABLE_TYPES['email'], unique=True, index=True)
-    # google_first_name = Column(TABLE_TYPES['name'])
-    # google_last_name = Column(TABLE_TYPES['name'])
-    # google_name = Column(TABLE_TYPES['name'])
-    # google_gender = Column(TABLE_TYPES['gender'])
-    # google_link = Column(TABLE_TYPES['link'])
-    # google_phone = Column(TABLE_TYPES['phone'])
-
-    # FACEBOOK
     facebook_id = Column(TABLE_TYPES['id_soc_net'])
-    # facebook_email = Column(TABLE_TYPES['email'], unique=True, index=True)
-    # facebook_first_name = Column(TABLE_TYPES['name'])
-    # facebook_last_name = Column(TABLE_TYPES['name'])
-    # facebook_name = Column(TABLE_TYPES['name'])
-    # facebook_gender = Column(TABLE_TYPES['gender'])
-    # facebook_link = Column(TABLE_TYPES['link'])
-    # facebook_phone = Column(TABLE_TYPES['phone'])
-
-    # LINKEDIN
     linkedin_id = Column(TABLE_TYPES['id_soc_net'])
-    # linkedin_email = Column(TABLE_TYPES['email'], unique=True, index=True)
-    # linkedin_first_name = Column(TABLE_TYPES['name'])
-    # linkedin_last_name = Column(TABLE_TYPES['name'])
-    # linkedin_name = Column(TABLE_TYPES['name'])
-    # linkedin_gender = Column(TABLE_TYPES['gender'])
-    # linkedin_link = Column(TABLE_TYPES['link'])
-    # linkedin_phone = Column(TABLE_TYPES['phone'])
-
-    # TWITTER
     twitter_id = Column(TABLE_TYPES['id_soc_net'])
-    # twitter_email = Column(TABLE_TYPES['email'], unique=True, index=True)
-    # twitter_first_name = Column(TABLE_TYPES['name'])
-    # twitter_last_name = Column(TABLE_TYPES['name'])
-    # twitter_name = Column(TABLE_TYPES['name'])
-    # twitter_gender = Column(TABLE_TYPES['gender'])
-    # twitter_link = Column(TABLE_TYPES['link'])
-    # twitter_phone = Column(TABLE_TYPES['phone'])
-
-    # MICROSOFT
     microsoft_id = Column(TABLE_TYPES['id_soc_net'])
-    # microsoft_email = Column(TABLE_TYPES['email'], unique=True, index=True)
-    # microsoft_first_name = Column(TABLE_TYPES['name'])
-    # microsoft_last_name = Column(TABLE_TYPES['name'])
-    # microsoft_name = Column(TABLE_TYPES['name'])
-    # microsoft_gender = Column(TABLE_TYPES['gender'])
-    # microsoft_link = Column(TABLE_TYPES['link'])
-    # microsoft_phone = Column(TABLE_TYPES['phone'])
-
-
-    # YAHOO
     yahoo_id = Column(TABLE_TYPES['id_soc_net'])
 
-    # yahoo_email = Column(TABLE_TYPES['email'], unique=True, index=True)
-    # yahoo_first_name = Column(TABLE_TYPES['name'])
-    # yahoo_last_name = Column(TABLE_TYPES['name'])
-    # yahoo_name = Column(TABLE_TYPES['name'])
-    # yahoo_gender = Column(TABLE_TYPES['gender'])
-    # yahoo_link = Column(TABLE_TYPES['link'])
-    # yahoo_phone = Column(TABLE_TYPES['phone'])
     tos = Column(TABLE_TYPES['boolean'], default=False)
 
-    # search_fields = {'full_name': {'relevance': lambda field='full_name': RELEVANCE.full_name},
-    #                  'about_me': {'relevance': lambda field='about_me': RELEVANCE.about_me},
-    #                  'address_email': {'relevance': lambda field='address_email': RELEVANCE.address_email}}
-
-    # get all users in company : company.employees
-    # get all users companies : user.employers
-
-    # def __init__(self,
-    #              # user_rights_in_profireader_def=[],
-    #              # user_rights_in_profireader_undef=[],
-    #              PROFIREADER_ALL=SOC_NET_NONE['profireader'],
-    #              GOOGLE_ALL=SOC_NET_NONE['google'],
-    #              FACEBOOK_ALL=SOC_NET_NONE['facebook'],
-    #              LINKEDIN_ALL=SOC_NET_NONE['linkedin'],
-    #              TWITTER_ALL=SOC_NET_NONE['twitter'],
-    #              MICROSOFT_ALL=SOC_NET_NONE['microsoft'],
-    #              YAHOO_ALL=SOC_NET_NONE['yahoo'],
-    #
-    #              location=None,
-    #              about_me=None,
-    #              password=None,
-    #              confirmed=False,
-    #              banned=False,
-    #              lang=None,
-    #
-    #              email_conf_key=None,
-    #              email_conf_tm=None,
-    #              pass_reset_key=None,
-    #              pass_reset_conf_tm=None,
-    #              tos=None
-    #              ):
-    #
-    #     self.address_email = PROFIREADER_ALL['email']
-    #     self.first_name = PROFIREADER_ALL['first_name']
-    #     self.last_name = PROFIREADER_ALL['last_name']
-    #     self.full_name = PROFIREADER_ALL['name']
-    #     self.gender = PROFIREADER_ALL['gender']
-    #     self.address_url = PROFIREADER_ALL['link']
-    #     self.address_phone = PROFIREADER_ALL['phone']
-    #     self.tos = tos
-    #     self.about_me = about_me
-    #     self.location = location
-    #     self.password = password
-    #
-    #     self.email_confirmed = confirmed
-    #     self.banned = banned
-    #     self.birth_tm = None
-    #     self.registered_tm = datetime.datetime.utcnow()  # here problems are possible
-    #     self.lang = lang
-    #     self.email_conf_key = email_conf_key
-    #     self.email_conf_tm = email_conf_tm
-    #     self.pass_reset_key = pass_reset_key
-    #     self.pass_reset_conf_tm = pass_reset_conf_tm
-    #
-    #     # FB_NET_FIELD_NAMES = ['id', 'email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
-    #
-    #     self.google_id = GOOGLE_ALL['id']
-    #     self.google_email = GOOGLE_ALL['email']
-    #     self.google_first_name = GOOGLE_ALL['first_name']
-    #     self.google_last_name = GOOGLE_ALL['last_name']
-    #     self.google_name = GOOGLE_ALL['name']
-    #     self.google_gender = GOOGLE_ALL['gender']
-    #     self.google_link = GOOGLE_ALL['link']
-    #     self.google_phone = GOOGLE_ALL['phone']
-    #
-    #     self.facebook_id = FACEBOOK_ALL['id']
-    #     self.facebook_email = FACEBOOK_ALL['email']
-    #     self.facebook_first_name = FACEBOOK_ALL['first_name']
-    #     self.facebook_last_name = FACEBOOK_ALL['last_name']
-    #     self.facebook_name = FACEBOOK_ALL['name']
-    #     self.facebook_gender = FACEBOOK_ALL['gender']
-    #     self.facebook_link = FACEBOOK_ALL['link']
-    #     self.facebook_phone = FACEBOOK_ALL['phone']
-    #
-    #     self.linkedin_id = LINKEDIN_ALL['id']
-    #     self.linkedin_email = LINKEDIN_ALL['email']
-    #     self.linkedin_first_name = LINKEDIN_ALL['first_name']
-    #     self.linkedin_last_name = LINKEDIN_ALL['last_name']
-    #     self.linkedin_name = LINKEDIN_ALL['name']
-    #     self.linkedin_gender = LINKEDIN_ALL['gender']
-    #     self.linkedin_link = LINKEDIN_ALL['link']
-    #     self.linkedin_phone = LINKEDIN_ALL['phone']
-    #
-    #     self.twitter_id = TWITTER_ALL['id']
-    #     self.twitter_email = TWITTER_ALL['email']
-    #     self.twitter_first_name = TWITTER_ALL['first_name']
-    #     self.twitter_last_name = TWITTER_ALL['last_name']
-    #     self.twitter_name = TWITTER_ALL['name']
-    #     self.twitter_gender = TWITTER_ALL['gender']
-    #     self.twitter_link = TWITTER_ALL['link']
-    #     self.twitter_phone = TWITTER_ALL['phone']
-    #
-    #     self.microsoft_id = MICROSOFT_ALL['id']
-    #     self.microsoft_email = MICROSOFT_ALL['email']
-    #     self.microsoft_first_name = MICROSOFT_ALL['first_name']
-    #     self.microsoft_last_name = MICROSOFT_ALL['last_name']
-    #     self.microsoft_name = MICROSOFT_ALL['name']
-    #     self.microsoft_gender = MICROSOFT_ALL['gender']
-    #     self.microsoft_link = MICROSOFT_ALL['link']
-    #     self.microsoft_phone = MICROSOFT_ALL['phone']
-    #
-    #     self.yahoo_id = YAHOO_ALL['id']
-    #     self.yahoo_email = YAHOO_ALL['email']
-    #     self.yahoo_first_name = YAHOO_ALL['first_name']
-    #     self.yahoo_last_name = YAHOO_ALL['last_name']
-    #     self.yahoo_name = YAHOO_ALL['name']
-    #     self.yahoo_gender = YAHOO_ALL['gender']
-    #     self.yahoo_link = YAHOO_ALL['link']
-    #     self.yahoo_phone = YAHOO_ALL['phone']
 
     def is_active(self, check_only_banned=None, raise_exception_redirect_if_not=False):
         if self.banned:
@@ -384,68 +217,9 @@ class User(Base, UserMixin, PRBase):
         return db_utils.execute_function("message_unread_count('%s', %s)" % (
             user_id, 'NULL' if contact_id is None else ("'" + contact_id + "'")))
 
-    # def get_avatar(self, avatar_via, size=500, small_size=100, url=None):
-    #     if avatar_via == 'upload':
-    #         return self
-    #     avatar_urls = dict(facebook=lambda s: 'http://graph.facebook.com/{facebook_id}/picture?width={size}&'
-    #                                           'height={size}&redirect=0'.format(facebook_id=self.facebook_id, size=s),
-    #                        google=lambda s: 'https://www.googleapis.com/plus/v1/people/{google_id}?'
-    #                                         'fields=image&key={key}'.format(google_id=self.google_id,
-    #                                                                         size=s, key=Config.GOOGLE_API_KEY_SIMPLE),
-    #                        linkedin=lambda s, u=url: u if u else self.gravatar(size=s),
-    #                        # vkontakte=lambda s, u=url: u if u else self.gravatar(size=s),
-    #                        gravatar=lambda s: self.gravatar(size=s),
-    #                        microsoft=lambda _: 'https://apis.live.net/v5.0/{microsoft_id}/picture'.format(
-    #                            microsoft_id=self.microsoft_id))
-    #     url = avatar_urls[avatar_via](size)
-    #     url_small = avatar_urls[avatar_via](small_size)
-    #     if avatar_via == 'facebook':
-    #         avatar = json.load(req.urlopen(url=url))
-    #         avatar_small = json.load(req.urlopen(url=url_small))
-    #         if avatar['data'].get('is_silhouette'):
-    #             self.profireader_avatar_url = self.gravatar(size=size)
-    #             self.profireader_small_avatar_url = self.gravatar(size=small_size)
-    #         else:
-    #             self.profireader_avatar_url = avatar['data'].get('url')
-    #             self.profireader_small_avatar_url = avatar_small['data'].get('url')
-    #     elif avatar_via == 'google':
-    #         avatar = json.load(req.urlopen(url=url))
-    #         avatar_small = json.load(req.urlopen(url=url_small))
-    #         if avatar['image'].get('isDefault'):
-    #             self.profireader_avatar_url = self.gravatar(size=size)
-    #             self.profireader_small_avatar_url = self.gravatar(size=small_size)
-    #         else:
-    #             self.profireader_avatar_url = avatar['image'].get('url')
-    #             self.profireader_small_avatar_url = avatar_small['image'].get('url')
-    #     elif avatar_via == 'linkedin':
-    #         self.profireader_avatar_url = url
-    #         self.profireader_small_avatar_url = url
-    #     # elif avatar_via == 'vkontakte':
-    #     #     avatar = json.load(urllib.urlopen("https://api.vk.com/method/users.get?v=5.8&fields="
-    #     #                                 "photo_{size}&access_token={access_token}".
-    #     #                                 format(size=str(size),
-    #     #                                      access_token=access_token)))['response'][0].get(# Here needs right token from VK
-    #     #                                         'photo_{size}'.format(size=size))
-    #     #     avatar_small = json.load(urllib.urlopen("https://api.vk.com/method/users.get?v=5.8&fields="
-    #     #                                       "photo_{size}&access_token={access_token}".
-    #     #                                       format(size=str(small_size),
-    #     #                                              access_token=access_token)))['response'][0].get(# Here needs right token from VK
-    #     #                                              'photo_{size}'.format(size=small_size))
-    #     #     self.profireader_avatar_url = url
-    #     #     self.profireader_small_avatar_url = url
-    #     elif avatar_via == 'microsoft':
-    #         avatar = req.urlopen(url=url)
-    #         if 'Default' not in avatar.url:
-    #             self.profireader_avatar_url = avatar.url
-    #             self.profireader_small_avatar_url = avatar.url
-    #         else:
-    #             self.profireader_avatar_url = self.gravatar(size=size)
-    #             self.profireader_small_avatar_url = self.gravatar(size=small_size)
-    #     elif avatar_via == 'gravatar':
-    #         self.profireader_avatar_url = url
-    #         self.profireader_small_avatar_url = url_small
-    #
-    #     return self
+    @staticmethod
+    def get_unread_notification_count(user_id):
+        return db_utils.execute_function("notification_unread_count('%s')" % (user_id,))
 
     def gravatar(self, size=100, default='identicon', rating='g'):
         if request.is_secure:
@@ -458,100 +232,27 @@ class User(Base, UserMixin, PRBase):
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
             url=url, hash=hash, size=size, default=default, rating=rating)
 
-    # def set_avatar_client_side_dict(self, client_data):
-    #     if client_data['selected_by_user']['type'] == 'preset':
-    #         client_data['selected_by_user']['type'] = 'none'
-    #         if client_data['selected_by_user']['class'] == 'glyphicon-share':
-    #             self.profireader_avatar_url = self.gravatar(size=500)
-    #             self.profireader_small_avatar_url = self.gravatar(size=100)
-    #         else:
-    #             raise ValueError("passed unknow preset class `{}`".format(client_data['selected_by_user']['class']))
+    # def logged_in_via(self):
+    #     via = None
+    #     if self.address_email:
+    #         via = REGISTERED_WITH_FLIPPED['profireader']
+    #     else:
+    #         short_soc_net = SOCIAL_NETWORKS[1:]
+    #         for soc_net in short_soc_net:
+    #             x = soc_net + '_id'
+    #             if getattr(self, x):
+    #                 via = REGISTERED_WITH_FLIPPED[soc_net]
+    #                 break
+    #     return via
     #
     #
-    #     self.avatar_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-    #                                                       client_data, self.avatar_file_id, self.system_folder_file_id)
-    #     if self.avatar_file_id:
-    #         self.profireader_avatar_url = fileUrl(self.avatar_file_id)
-    #         self.profireader_small_avatar_url = fileUrl(File.get(self.avatar_file_id).get_thumbnails((133,100)).id)
-    #
-    #     return self
-    #
-    # def get_avatar_client_side_dict(self):
-    #     ret = self.get_image_cropped_file(self.logo_file_properties(),
-    #                                       db(FileImg, croped_image_id=self.avatar_file_id).first())
-    #
-    #     if self.profireader_avatar_url == self.gravatar(size=500):
-    #         ret['selected_by_user'] = {'type': 'preset', 'class': 'glyphicon-share'}
-    #     return ret
-
-    # def profile_completed(self):
-    #     completeness = True
-    #     # for field in PROFILE_NECESSARY_FIELDS:
-    #     #     if not getattr(self, field):
-    #     #         completeness = False
-    #     #         break
-    #     # self.completeness = completeness
-    #     # g.db.add(self)
-    #     # g.db.commit()
-    #     return completeness
-
-    def logged_in_via(self):
-        via = None
-        if self.address_email:
-            via = REGISTERED_WITH_FLIPPED['profireader']
-        else:
-            short_soc_net = SOCIAL_NETWORKS[1:]
-            for soc_net in short_soc_net:
-                x = soc_net + '_id'
-                if getattr(self, x):
-                    via = REGISTERED_WITH_FLIPPED[soc_net]
-                    break
-        return via
-
-    @property
-    def phone_number(self):
-        via = self.logged_in_via()
-        phone = getattr(self, REGISTERED_WITH[via] + '_phone')
-        return phone
-
-    @property
-    def show_email(self):
-        via = self.logged_in_via()
-        email = getattr(self, REGISTERED_WITH[via] + '_email')
-        return email
-
-    @property
-    def user_name(self):
-        via = self.logged_in_via()
-        name = getattr(self, REGISTERED_WITH[via] + '_name')
-        return name
-
-    # attr below is one of the
-    # ['email', 'first_name', 'last_name', 'name', 'gender', 'link', 'phone']
-    # @property
-    def attribute_getter(self, logged_via, attr):
-        if logged_via == 'profireader' and attr == 'id':
-            full_attr = 'id'
-        else:
-            full_attr = logged_via + '_' + attr
-        attr_value = getattr(self, full_attr)
-        return attr_value
-
-    # we use SHA256.
-    # https://crackstation.net/hashing-security.htm
-    # "the output of SHA256 is 256 bits (32 bytes), so the salt should be at least 32 random bytes."
-    #
-    # another (simplier) approach can be user here.
-    # see: http://sqlalchemy-utils.readthedocs.org/en/latest/data_types.html#module-sqlalchemy_utils.types.password
-    # https://pythonhosted.org/passlib/lib/passlib.context-tutorial.html#full-integration-example
-    # @password.setter
-    # def password(self, password):
-    #     self.password_hash = None
-    #     if password:
-    #         self.password_hash = \
-    #             generate_password_hash(password,
-    #                                    method='pbkdf2:sha256',
-    #                                    salt_length=32)  # salt_length=8
+    # def attribute_getter(self, logged_via, attr):
+    #     if logged_via == 'profireader' and attr == 'id':
+    #         full_attr = 'id'
+    #     else:
+    #         full_attr = logged_via + '_' + attr
+    #     attr_value = getattr(self, full_attr)
+    #     return attr_value
 
     def verify_password(self, password):
         return self.password_hash and \
@@ -595,14 +296,6 @@ class User(Base, UserMixin, PRBase):
 
         return self
 
-    # def generate_reset_token(self):
-    #     self.email_conf_token = random.getrandbits(128)
-    #     if self.pass_reset_conf_tm.timestamp() > int(time.time()) - current_app.config.get(
-    #             'PASSWORD_CONFIRMATION_TOKEN_TTL', 3600 * 24):
-    #         self.email_confirmed = True
-    #         return self.email_confirmed
-    #     return self
-
     def reset_password(self):
         self.pass_reset_token = None
         self.set_password_hash()
@@ -633,12 +326,6 @@ class User(Base, UserMixin, PRBase):
         self.address_email = new_email
         return True
 
-    # def can(self, permissions):
-    #     return self.role is not None and \
-    #         (self.role.permissions & permissions) == permissions
-
-    # def is_administrator(self):
-    #    return self.can(Permission.ADMINISTER)
 
     def get_client_side_dict(self,
                              fields='id|full_name'

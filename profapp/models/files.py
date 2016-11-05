@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, Binary, UniqueConstraint
 import re
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from utils.db_utils import db
+from tools.db_utils import db
 from sqlalchemy.orm import relationship, backref
 from flask import g
 from .pr_base import PRBase, Base
@@ -854,8 +854,8 @@ class FileImgDescriptor(object):
 #     # preset_urls = {}
 #     proxy = None
 #
-#     # none = utils.fileUrl(FOLDER_AND_FILE.no_image())
-#     no_selection_url = utils.fileUrl(FOLDER_AND_FILE.no_image())
+#     # none = tools.fileUrl(FOLDER_AND_FILE.no_image())
+#     no_selection_url = tools.fileUrl(FOLDER_AND_FILE.no_image())
 #
 #     def __init__(self, browse=None, upload=None, crop=None, image_size=None, min_size=None,
 #                  aspect_ratio=None, preset_urls=None, no_selection_url=None):
@@ -881,7 +881,7 @@ class FileImgDescriptor(object):
 #     def proxy_getter(self, file_img: FileImg):
 #
 #         ret = {
-#             'url': utils.fileUrl(file_img.proceeded_image_file_id) if file_img else self.no_selection_url,
+#             'url': tools.fileUrl(file_img.proceeded_image_file_id) if file_img else self.no_selection_url,
 #             'selected_by_user': {'type': 'provenance',
 #                                  'crop': file_img.get_client_side_dict(),
 #                                  'provenance_file_id': file_img.provenance_image_file_id

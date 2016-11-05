@@ -2,7 +2,7 @@ from .blueprints_declaration import user_bp
 from flask import url_for, render_template, abort, request, flash, redirect, \
     request, g
 from ..models.users import User
-from utils.db_utils import db
+from tools.db_utils import db
 from ..constants.UNCATEGORIZED import AVATAR_SIZE
 from ..controllers.request_wrapers import check_right
 from config import Config

@@ -1,7 +1,7 @@
 import json
 import math
 from .. import utils
-from utils.db_utils import db
+from tools.db_utils import db
 import requests
 import inspect
 from sqlalchemy import event
@@ -525,7 +525,7 @@ class PRElasticField:
 
         # def search_elastic(type, body):
         #     es = Elasticsearch(hosts='elastic.profi')
-        #     return ([utils.dict_merge(r['_source'], {'id': r['_id']}) for r in es.search(index='profireader',
+        #     return ([tools.dict_merge(r['_source'], {'id': r['_id']}) for r in es.search(index='profireader',
         #                                                                                   doc_type=type,
         #                                                                                   body=body)['hits']['hits']], 10, 1)
 

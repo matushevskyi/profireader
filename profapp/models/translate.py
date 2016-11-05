@@ -1,7 +1,7 @@
 from .pr_base import PRBase, Base, Grid
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Column, ForeignKey, text
-from utils.db_utils import db
+from tools.db_utils import db
 import datetime
 import re
 from flask import g, request, current_app

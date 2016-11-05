@@ -7,7 +7,7 @@ from ..models.users import User
 from ..models.files import File
 from ..models.tag import Tag, TagPortalDivision, TagPublication
 from .pr_base import PRBase, Base, MLStripper, Grid
-from utils.db_utils import db
+from tools.db_utils import db
 from flask import g, session, app, current_app
 from sqlalchemy.sql import or_, and_, expression
 import re
@@ -391,7 +391,7 @@ class Publication(Base, PRBase, PRElasticDocument):
     #         article['list_liked_reader'] = ReaderPublication.get_list_reader_liked(article_id)
     #         article['company']['logo'] = Company.get(articles[article_id]['company']['id']).logo.url
     #         article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-    #             articles[article_id]['portal']['logo_file_id'] else utils.fileUrl(FOLDER_AND_FILE.no_company_logo())
+    #             articles[article_id]['portal']['logo_file_id'] else tools.fileUrl(FOLDER_AND_FILE.no_company_logo())
     #         # del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
     #         list_articles.append(article)
     #     return list_articles

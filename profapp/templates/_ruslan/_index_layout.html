@@ -22,12 +22,13 @@
           rel='stylesheet' type='text/css'>
     <link href="{{ static_address('css/font-awesome.min.css') }}" rel="stylesheet">
     {% if g.debug %}
-        <link href="{{ static_address('css/bootstrap.css') }}" rel="stylesheet">
+        <link href="{{ static_address('new/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     {% else %}
         <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
     {% endif %}
     <link href="{{ static_address('css/_profreader.css') }}" rel="stylesheet">
     <link href="{{ static_address('css/style.css') }}" rel="stylesheet">
+{#    <link href="{{ static_address('css/chat.css') }}" rel="stylesheet">#}
     <link href="{{ static_address('css/icons.css') }}" rel="stylesheet">
     <link href="{{ static_address('css/oles.css') }}" rel="stylesheet">
     {#    <link rel="stylesheet" type="text/css" href="/static/new/jquery-datetimepicker/jquery.datetimepicker.css">#}
@@ -109,7 +110,7 @@
 
             var pr_chat_socket = io.connect('//socket.{{ MAIN_DOMAIN }}');
 
-            pr_chat_socket.on('message_notification', function (resp) {
+            pr_chat_socket.on('general_notification', function (resp) {
                 if (resp['unread']) {
                     angularControllerFunction('user_controller', 'set_unread_message_count')(resp['unread']['total']);
                 }

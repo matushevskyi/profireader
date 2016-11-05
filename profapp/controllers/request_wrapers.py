@@ -3,7 +3,7 @@ from flask import jsonify, request, g, abort, redirect, url_for, flash
 from functools import reduce
 from ..controllers import errors
 import time
-from utils.db_utils import db
+from tools.db_utils import db
 from ..controllers import errors
 
 def ok(func):

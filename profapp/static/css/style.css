@@ -10,7 +10,7 @@
   display: none !important;
 }
 body {
-  padding-top: 80px;
+  padding-top: 75px;
 }
 .item-company {
   color: #00BBA1;
@@ -98,47 +98,18 @@ body {
   font-weight: 200;
   margin-top: 50px;
 }
-.menu-company a {
-  color: #333;
-  padding-right: 15px;
-  padding-left: 15px;
-  margin-bottom: 15px;
-  margin-top: 15px;
-  float: left;
+.menu-company {
+  padding-left: 0px;
+  padding-right: 0px;
+  margin-bottom: 5px;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
 }
-.menu-company a:hover {
-  color: #fff;
-  text-decoration: none;
-  background-color: #00ceb1;
-  transition: all 0.2s ease-out;
-  padding: 15px;
-  margin-bottom: 0px;
-  margin-top: 0px;
+.menu-company .row {
+  margin-left: 0px;
+  margin-right: 0px;
 }
-.menu-company a.selected {
-  color: #fff;
-  text-decoration: none;
-  background-color: #00ceb1;
-  transition: all 0.2s ease-out;
-  padding: 15px;
-  margin-bottom: 0px;
-  margin-top: 0px;
-}
-.menu-company img.menu-company-logo {
-  margin: 0px 5px;
-  padding: 0px;
-  float: right;
-}
-.menu-company.menu-company-portal a {
-  float: right;
-}
-.menu-company a.company-about {
-  float: right;
-}
-.menu-company-img {
-  height: 3em;
-  padding: 15px 0px;
-  margin-top: -20px;
+.menu-company.no-shadow {
+  box-shadow: none;
 }
 .menu-company .selected {
   color: #fff;
@@ -146,8 +117,43 @@ body {
   background-color: #00ceb1;
   padding: 15px;
 }
-.company-logo img {
-  margin-right: -15px;
+.menu-company img.menu-company-logo {
+  height: 41px;
+  margin-right: 5px;
+}
+.menu-company a {
+  display: inline;
+  color: #333;
+  float: left;
+  padding-right: 8px;
+  padding-left: 8px;
+  margin-bottom: 10px;
+  margin-top: 10px;
+  margin-right: 2px;
+  margin-left: 2px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.menu-company a * {
+  cursor: pointer;
+}
+.menu-company a:hover {
+  color: #fff;
+  text-decoration: none;
+  background-color: #00ceb1;
+  transition: all 0.2s ease-out;
+  padding: 8px;
+  margin-bottom: 2px;
+  margin-top: 2px;
+}
+.menu-company a.selected {
+  color: #fff;
+  text-decoration: none;
+  background-color: #00ceb1;
+  transition: all 0.2s ease-out;
+  padding: 8px;
+  margin-bottom: 2px;
+  margin-top: 2px;
 }
 /* ---Global menu--- */
 /*change language*/
@@ -206,6 +212,22 @@ body {
 .info-padding {
   padding-right: 0px !IMPORTANT;
 }
+#messenger-controller .unread-items-count {
+  font-size: 10px;
+  line-height: 100%;
+  text-align: center;
+  right: 2px;
+  bottom: 2px;
+  padding: 0.2em;
+  border-radius: 2px;
+  background-color: #500;
+  color: white;
+  position: absolute;
+}
+#messenger-controller .menu-company .unread-items-count {
+  right: -8px;
+  bottom: -8px;
+}
 .menu-site span {
   display: none;
 }
@@ -220,7 +242,7 @@ body {
   position: absolute;
   right: 0px;
 }
-.menu-site div.unread_messages_count {
+.menu-site div.unread_messages_and_notifications_count {
   font-size: 10px;
   line-height: 100%;
   text-align: center;
@@ -236,31 +258,6 @@ body {
 }
 .hamburger-menu span {
   background-color: #fff;
-}
-.menu-company-inside {
-  border-bottom: 1px solid #101010;
-}
-/*---Company ID---*/
-.company-portal a {
-  color: #525252;
-  float: right;
-  margin-left: 15px;
-  border-bottom: 1px solid #fff;
-}
-.company-portal a:hover {
-  color: #00BBA1;
-  text-decoration: none;
-  border-bottom: 1px solid;
-  transition: all 0.2s ease-out;
-}
-.company-portal .selected a {
-  color: #00BBA1;
-  text-decoration: none;
-  border-bottom: 1px solid;
-  transition: all 0.2s ease-out;
-}
-.company-logo img {
-  margin-right: -15px;
 }
 /* ---AUTH User---*/
 .reset-pass button {
@@ -474,12 +471,6 @@ body {
   text-align: center;
   color: #7B7B7B;
 }
-.list-form {
-  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
-  border: 1px solid #f5f5f5;
-  margin-top: 10px;
-  margin-bottom: 50px;
-}
 .pr-external-link {
   margin-left: 0.5em;
 }
@@ -541,10 +532,6 @@ body {
 .company-thumbnail:hover {
   box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
   transition: all 0.2s ease-out;
-}
-.company-thumbnail.highlight {
-  box-shadow: 0 2px 5px 0 #ff0000, 0 2px 10px 0 rgba(255, 0, 0, 0.5);
-  transition: all 1s linear;
 }
 .company-thumbnail button {
   padding: 5px;
@@ -629,20 +616,6 @@ body {
   color: #555;
 }
 /* ---Reader-list--- */
-.reader-list-nav {
-  border-bottom: 1px solid #212121;
-  padding-bottom: 8px;
-}
-.reader-list-nav a {
-  display: inline !important;
-}
-.reader-list-nav li {
-  display: inline;
-}
-.reader-list-nav ul {
-  list-style: none;
-  padding-left: 0;
-}
 .list-reader-image {
   width: 100%;
   height: 0;
@@ -1032,61 +1005,61 @@ body {
   padding: 5px 35px;
 }
 /* --- MESSENGER --- */
-.search-friends {
+.delme-search-friends {
   margin-bottom: 10px;
   margin-top: 15px;
 }
-.messenger-block {
+.delme-messenger-block {
   border: 1px solid #DCE4EC;
   margin-bottom: 100px;
   box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
 }
-.messenger-block .friends-block .friend-contact {
+.delme-messenger-block .friends-block .friend-contact {
   padding-right: 15px;
   padding-top: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid #DCE4EC;
 }
-.messenger-block .friends-block .friend-contact img {
+.delme-messenger-block .friends-block .friend-contact img {
   width: 40px;
 }
-.messenger-block .friends-block .friend-contact .name {
+.delme-messenger-block .friends-block .friend-contact .name {
   color: #000;
 }
-.messenger-block .friends-block .friend-contact .date {
+.delme-messenger-block .friends-block .friend-contact .date {
   color: #909090;
 }
-.messenger-block .message-block {
+.delme-messenger-block .message-block {
   border-left: 1px solid #DCE4EC;
   border-right: 1px solid #DCE4EC;
   padding-top: 15px;
 }
-.messenger-block .message-block .avatar {
+.delme-messenger-block .message-block .avatar {
   width: 45px;
   margin: 6px 0px 0px 20px;
 }
-.messenger-block .message-block .message-text span {
+.delme-messenger-block .message-block .message-text span {
   color: #C70000;
   font-size: 14px;
 }
-.messenger-block .message-block .message-text p {
+.delme-messenger-block .message-block .message-text p {
   font-size: 12px;
   color: #000;
 }
-.messenger-block .message-block span {
+.delme-messenger-block .message-block span {
   font-size: 12px;
   color: #909090;
 }
-.messenger-block .message-block .add-message {
+.delme-messenger-block .message-block .add-message {
   border-top: 1px solid #ECF0F1;
 }
-.messenger-block .message-block .add-message textarea {
+.delme-messenger-block .message-block .add-message textarea {
   width: 94%;
   margin-left: 3%;
   margin-top: 3%;
   border-color: #DCE4EC;
 }
-.messenger-block .message-block .add-message button {
+.delme-messenger-block .message-block .add-message button {
   float: right;
   margin-right: 3%;
   background-color: #00c853;
@@ -1095,7 +1068,7 @@ body {
   color: #fff;
   padding: 5px 15px;
 }
-.mess-bg {
+.delme-mess-bg {
   background-image: url("../images/develop-img.jpeg");
   background-size: cover;
   min-height: 100%;
@@ -1106,7 +1079,7 @@ body {
   top: 0;
   left: 0;
 }
-.mess-bg .msg-message-user h3 {
+.delme-mess-bg .msg-message-user h3 {
   text-align: center;
   margin-top: 300px;
   background-color: rgba(255, 0, 0, 0.47);
@@ -1162,11 +1135,6 @@ body {
   }
   .company-logo img {
     margin-right: 0;
-  }
-  .company-portal {
-    margin-top: 5px;
-    text-align: center;
-    margin-bottom: 15px;
   }
   .edit-company button {
     text-align: center;
@@ -1248,9 +1216,6 @@ body {
   .edit-block {
     margin-top: 70px;
   }
-  .company-portal a {
-    float: none;
-  }
   .block-resp {
     margin-right: 15px;
     margin-left: 15px;
@@ -1290,33 +1255,69 @@ body {
     margin-top: 20%;
   }
 }
-.panel-scroll-chat ul {
+#user_controller-controller {
+  background-color: #212121;
+  padding-bottom: 10px;
+}
+#user_controller-controller li {
   list-style: none;
+  display: inline;
+  color: #18bc9c;
+  padding-right: 15px;
 }
-.panel-scroll-chat .mar-btm {
-  padding-bottom: 15px;
+#user_controller-controller ul {
+  margin-top: 20px;
 }
-.panel-scroll-chat .pad-all {
+#messenger-controller .messenger-avatar {
+  width: 40px;
+  height: 40px;
+  left: 5px;
+  top: 5px;
+  border-radius: 50%;
+}
+#messenger-controller ul,
+#messenger-controller li {
+  list-style: none;
+  padding: 0px;
+  margin: 0px;
+}
+#messenger-controller .chat-window .panel-footer textarea,
+#messenger-controller .chat-window .panel-footer button {
+  height: 5em;
+}
+#messenger-controller .chat-window .panel-body {
+  height: 30em;
+  padding: 5px 5px 5px 15px;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+#messenger-controller .chat-window .panel-scroll-chat {
+  height: 100%;
+  padding-right: 5px;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+#messenger-controller .chat-window .panel-scroll-chat .mar-btm {
+  padding-bottom: 5px;
+  padding-top: 5px;
+}
+#messenger-controller .chat-window .panel-scroll-chat .pad-all {
   padding: 15px;
 }
-.panel-scroll-chat .media-block .media-left {
+#messenger-controller .chat-window .panel-scroll-chat .media-block .media-left {
   display: block;
   float: left;
 }
-.panel-scroll-chat .img-sm {
+#messenger-controller .chat-window .panel-scroll-chat .img-sm {
   width: 46px;
   height: 46px;
 }
-.panel-scroll-chat .media-block .media-body {
+#messenger-controller .chat-window .panel-scroll-chat .media-block .media-body {
   display: block;
   overflow: hidden;
   width: auto;
 }
-.panel-scroll-chat .pad-hor {
-  padding-left: 15px;
-  padding-right: 15px;
-}
-.panel-scroll-chat .speech {
+#messenger-controller .chat-window .panel-scroll-chat .speech {
   position: relative;
   background: #b7dcfe;
   color: #317787;
@@ -1325,11 +1326,11 @@ body {
   padding: 12px 20px;
   max-width: 100%;
 }
-.panel-scroll-chat p.speech-content {
+#messenger-controller .chat-window .panel-scroll-chat p.speech-content {
   width: 100%;
   overflow-x: auto;
 }
-.panel-scroll-chat .speech:before {
+#messenger-controller .chat-window .panel-scroll-chat .speech:before {
   content: "";
   display: block;
   position: absolute;
@@ -1342,7 +1343,7 @@ body {
   border-right: 7px solid #b7dcfe;
   margin: 15px 0 0 -6px;
 }
-.panel-scroll-chat .speech-right > .speech:before {
+#messenger-controller .chat-window .panel-scroll-chat .speech-right > .speech:before {
   left: auto;
   right: 0;
   border-top: 7px solid transparent;
@@ -1351,7 +1352,7 @@ body {
   border-right: 0;
   margin: 15px -6px 0 0;
 }
-.panel-scroll-chat .speech .media-heading {
+#messenger-controller .chat-window .panel-scroll-chat .speech .media-heading {
   font-size: 1.2em;
   color: #317787;
   display: block;
@@ -1360,28 +1361,53 @@ body {
   padding-bottom: 5px;
   font-weight: 300;
 }
-.panel-scroll-chat .speech-time {
-  margin-top: 20px;
+#messenger-controller .chat-window .panel-scroll-chat .speech-time {
+  margin-top: 5px;
   margin-bottom: 0;
   font-size: .8em;
   font-weight: 300;
 }
-.panel-scroll-chat .media-block .media-right {
+#messenger-controller .chat-window .panel-scroll-chat .media-block .media-right {
   float: right;
 }
-.panel-scroll-chat .speech-right {
+#messenger-controller .chat-window .panel-scroll-chat .speech-right {
   text-align: right;
 }
-.panel-scroll-chat .pad-hor {
-  padding-left: 15px;
-  padding-right: 15px;
+#messenger-controller .chat-window .panel-scroll-chat .pad-hor {
+  padding-left: 5px;
+  padding-right: 5px;
 }
-.panel-scroll-chat .speech-right > .speech {
+#messenger-controller .chat-window .panel-scroll-chat .speech-right > .speech {
   background: #ffda87;
   color: #a07617;
   text-align: right;
 }
-.panel-scroll-chat .speech-right > .speech .media-heading {
+#messenger-controller .chat-window .panel-scroll-chat .speech-right > .speech .media-heading {
   color: #a07617;
+}
+#messenger-controller .chat-window .panel-scroll-chat span.session-name {
+  font-size: 7px;
+  color: #777;
+}
+#messenger-controller .messenger-chat .contacts-window {
+  height: 545px;
+}
+#messenger-controller .messenger-chat .contacts-window .contact-list {
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: 506px;
+  margin-top: 3px;
+  padding: 0px;
+}
+#messenger-controller .messenger-chat .contacts-window li {
+  margin-bottom: 5px;
+  padding: 5px;
+}
+#messenger-controller .messenger-chat .contacts-window li.selected {
+  color: white;
+  background-color: #00ceb1;
+}
+#messenger-controller .messenger-notification .panel-body {
+  height: 36em;
 }
 /*# sourceMappingURL=style.css.map */

@@ -6,7 +6,7 @@ from .request_wrapers import check_right
 from flask.ext.login import login_required
 from ..models.translate import TranslateTemplate
 from ..models.ip import Ips
-from utils.db_utils import db
+from tools.db_utils import db
 from sqlalchemy.sql import expression
 import datetime
 from ..models.config import Config
@@ -21,7 +21,7 @@ from .request_wrapers import check_right
 from flask.ext.login import login_required
 from ..models.translate import TranslateTemplate
 from ..models.ip import Ips
-from utils.db_utils import db
+from tools.db_utils import db
 from sqlalchemy.sql import expression
 import datetime
 from ..models.config import Config
