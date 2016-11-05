@@ -120,7 +120,7 @@ def send_message(sid, event_data):
 
 
 @sio.on('read_message')
-def read_messages(sid, message_id):
+def read_message(sid, message_id):
     with controlled_execution():
         message = Message.get(message_id)
         contact = Contact.get(message.contact_id)
@@ -133,6 +133,18 @@ def read_messages(sid, message_id):
                 sio.emit('general_notification', {
                     'unread': unread
                 }, sid_for_receiver)
+
+
+@sio.on('read_notification')
+def read_notification(sid, notification_id):
+    with controlled_execution():
+        notification = Notification.get(notification_id)
+        if notification.read_tm is None:
+            print("SELECT notification_set_read(ARRAY ['%s']);" % (notification.id, ))
+            g.db().execute("SELECT notification_set_read(ARRAY ['%s']);" % (notification.id, ))
+            unread = get_unread(notification.to_user_id)
+            for sid_for_receiver in connected_user_id_sids[notification.to_user_id]:
+                sio.emit('general_notification', {'unread': unread}, sid_for_receiver)
 
 
 @sio.on('load_messages')

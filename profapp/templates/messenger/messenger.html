@@ -53,18 +53,20 @@
                 }
                 $scope.selected_messenger_menu = selected;
 
+
                 if (selected === 'community') {
                     $scope.search_community(true);
                 }
 
                 if (selected === 'chat') {
                     $scope.search_contacts(true);
+                    var selected_chat = $scope.selected_chat_room;
+                    $scope.selected_chat_room = null;
+                    $scope.select_chat_room(selected_chat);
                 }
 
                 if (selected === 'notifications') {
-                    if (!$scope.notifications) {
-                        $scope.load_notifications(false, true);
-                    }
+                    $scope.load_notifications(false, true);
                 }
 
             };
@@ -88,7 +90,7 @@
                 }, 0);
             };
 
-
+            {#TODO: OZ by OZ: should work for notifications also#}
             $scope.stickToBottomChatRoom = function (chatroom_id, fromserver, force, sticktotop, instant) {
 
                 $('#panel-scroll-chat').finish();
@@ -299,11 +301,9 @@
                     'chatroom_id': $scope.selected_chat_room['chat_room_id'],
                     'content': $scope.selected_chat_room['my_message']
                 });
-                {#                $timeout(function () {#}
                 $scope.selected_chat_room['my_message'] = '';
                 $scope.selected_chat_room['sending_message'] = false;
                 $('#messenger-controller #btn-input').focus();
-                {#                }, 0);#}
             };
 
 
@@ -347,13 +347,6 @@
                 return msgs[first ? 0 : (msgs.length - 1)]['id']
             };
 
-            {#            $scope.get_last_message_ids = function () {#}
-            {#                var ret = {};#}
-            {#                $.each($scope.loaded_chats, function (chat_room_id, chat_room) {#}
-            {#                    ret[chat_room_id] = $scope.get_last_id(chat_room);#}
-            {#                });#}
-            {#                return ret;#}
-            {#            };#}
 
             $scope.search_community = function (full_reload) {
                 if ($scope.selected_messenger_menu !== 'community') {
@@ -412,7 +405,6 @@
                             if (!$scope.selected_chat_room || !$scope.contacts.find(function (resp) {
                                         return resp['chat_room_id'] === $scope.selected_chat_room['chat_room_id'];
                                     })) {
-                                pr_chat_socket.emit('select_chat_room_id', null);
                                 $scope.selected_chat_room = null;
                             }
 
@@ -457,18 +449,29 @@
                 pr_chat_socket.removeAllListeners("general_notification");
 
                 pr_chat_socket.on('general_notification', function (resp) {
+                    console.log('general_notification', resp);
                     var new_message = resp['new_message'];
+                    var new_notification = resp['new_notification'];
                     var unread = resp['unread'];
-                    var message_unread = true;
-                    if (new_message && $scope.selected_chat_room && $scope.selected_chat_room['chat_room_id'] === new_message['chat_room_id'] && !$scope.selected_chat_room['there_is_newer']) {
+                    var read_this_message = false;
+                    var read_this_notification = false;
+                    if (new_message && $scope.selected_messenger_menu == 'chat' && $scope.selected_chat_room && $scope.selected_chat_room['chat_room_id'] === new_message['chat_room_id'] && !$scope.selected_chat_room['there_is_newer']) {
                         $scope.append_items($scope.selected_chat_room, [new_message]);
                         $scope.stickToBottomChatRoom(new_message['chat_room_id'], {'items': [new_message]}, false, false, false);
                         if (new_message['from_user_id'] !== $scope.me_user['id']) {
                             pr_chat_socket.emit('read_message', new_message['id']);
-                            message_unread = false;
+                            read_this_message = true;
                         }
                     }
-                    if (unread && message_unread) {
+
+                    if (new_notification && $scope.selected_messenger_menu == 'notification' && !$scope.notifications['there_is_newer']) {
+                        $scope.append_items($scope.notifications, [new_notification]);
+                        $scope.stickToBottomChatRoom(new_notification['id'], {'items': [new_notification]}, false, false, false);
+                        pr_chat_socket.emit('read_notification', new_notification['id']);
+                        read_this_notification = true;
+                    }
+
+                    if (unread && !read_this_message && !read_this_notification) {
                         $scope.total_unread_message_count = unread['messages'];
                         $scope.total_unread_notification_count = unread['notifications'];
                         angularControllerFunction('user_controller', 'set_unread_messages_and_notifications_count')(unread['messages'], unread['notifications']);
@@ -477,11 +480,6 @@
                     $scope.$digest();
                 });
 
-                pr_chat_socket.on('connect', function () {
-                    if ($scope.selected_chat_room) {
-                        pr_chat_socket.emit('select_chat_room_id', $scope.selected_chat_room['chat_room_id']);
-                    }
-                });
 
                 $('#panel-scroll-chat').on('scroll', function () {
                     $scope.onscroll()
@@ -575,16 +573,16 @@
                                 </div>
 
                                 <ul class="list-group">
-                                        <li style="position: relative" class="list-group-item button"
-                                            ng-click="select_chat_room(chat_room)"
-                                            ng-repeat="chat_room in contacts"
-                                            ng-class="{'selected': chat_room['chat_room_id'] === selected_chat_room['chat_room_id']}">
-                                            <img class="messenger-avatar" pr-image-position="center center"
-                                                 pr-image-url="{{ chat_room.users[0].avatar.url }}"/>
-                                            <span ng-bind-html="highlight(chat_room.users[0].full_name, $parent.contacts_search_text)"></span>
-                                            <span class="unread-items-count pa"
-                                                  ng-if="chat_room.unread_messages_count">{{ chat_room.unread_messages_count }}</span>
-                                        </li>
+                                    <li style="position: relative" class="list-group-item button"
+                                        ng-click="select_chat_room(chat_room)"
+                                        ng-repeat="chat_room in contacts"
+                                        ng-class="{'selected': chat_room['chat_room_id'] === selected_chat_room['chat_room_id']}">
+                                        <img class="messenger-avatar" pr-image-position="center center"
+                                             pr-image-url="{{ chat_room.users[0].avatar.url }}"/>
+                                        <span ng-bind-html="highlight(chat_room.users[0].full_name, $parent.contacts_search_text)"></span>
+                                        <span class="unread-items-count pa"
+                                              ng-if="chat_room.unread_messages_count">{{ chat_room.unread_messages_count }}</span>
+                                    </li>
                                 </ul>
 
 
@@ -858,7 +856,9 @@
                                             <!-- TODO: get profireader logo -->
                                             <div class="chat-img media-left">
                                                 <img class="messenger-avatar" pr-image-position="center center"
-                                                     pr-image-url="{% endraw %}{{ static_address('images/profireader-logo.svg') }}{% raw %}"/>
+                                                     pr-image-url="
+
+                                                             {% endraw %}{{ static_address('images/profireader-logo.svg') }}{% raw %}"/>
                                             </div>
 
                                             <div class="media-body pad-hor">
