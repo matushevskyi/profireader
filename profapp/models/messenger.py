@@ -173,17 +173,19 @@ class Notification(Base, PRBase):
 
     @staticmethod
     def send_greeting_message(send_to_user, some_text = ''):
-        n = Notification(to_user_id=send_to_user.id, notification_type=Notification.NOTIFICATION_TYPES['GREETING'],
-                         notification_data={'user_id': send_to_user.id},
-                         content=TranslateTemplate.translate_and_substitute(template='_NOTIFICATIONS',
-                                                                            url='', language=send_to_user.lang, allow_html='*',
-                                                                            phrase="Welcome to profireader. You can change your profile %(url_profile)s" + some_text,
-                                                                            dictionary={
-                                                                                'url_profile': url_for('user.profile',
-                                                                                                       user_id=send_to_user.id)}))
-        n.save()
-        return n
-        pass
+        from socketIO_client import SocketIO
+        from config import MAIN_DOMAIN
+
+        def on_notification_response(*args):
+            print('on_bbb_response', args)
+
+        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+            socketIO.emit('send_notification', {'to_user_id': send_to_user.id,
+                                                'notification_type': Notification.NOTIFICATION_TYPES['GREETING']
+                                                }, on_notification_response)
+            socketIO.wait_for_callbacks(seconds=1)
+
+
 
 @event.listens_for(Notification.content, "set")
 def set(target, value, oldvalue, initiator):
