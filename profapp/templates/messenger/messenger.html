@@ -10,7 +10,7 @@
 {% block portal_content %}
 
     <script>
-        module.controller('messenger', ['$scope', '$ok', function ($scope, $ok) {
+        module.controller('messenger', ['$scope', '$ok', '$timeout', function ($scope, $ok, $timeout) {
 
             angularControllerFunction('user_controller', 'set_selected_user_menu')('messages');
 
@@ -77,18 +77,19 @@
             };
 
 
-            $scope.set_on_scroll = function () {
-                $('.messenger-chat .panel-scroll-chat').on('scroll', function (event) {
-                    if ($scope.selected_chat_room) {
-                        $scope.selected_chat_room['scroll_position'] = event.target.scrollTop;
+            $scope.set_on_scroll = function (notifications) {
+
+                var $el = $('.panel-scroll-chat', $(notifications ? '.messenger-notification' : '.messenger-chat'));
+                $el.on('scroll mousedown wheel DOMMouseScroll mousewheel keyup', function (event) {
+                    var chat_room = notifications?$scope.notifications:$scope.selected_chat_room;
+                    if ( event.which > 0 || event.type == "mousedown" || event.type == "mousewheel") {
+                        $scope.finishAnimation(notifications);
+                    };
+                    if (chat_room) {
+                        chat_room['scroll_position'] = event.target.scrollTop;
                     }
                 });
 
-                $('.messenger-notification .panel-scroll-chat').on('scroll', function (event) {
-                    if ($scope.notifications) {
-                        $scope.notifications['scroll_position'] = event.target.scrollTop;
-                    }
-                });
             };
 
             $scope.restore_old_scroll_position = function (notifications) {
@@ -103,48 +104,55 @@
                 }, 0);
             };
 
-            $scope.stickToBottomChatRoom = function (sticktotop, instant, notifications) {
-
+            $scope.finishAnimation = function (notifications) {
                 var $el = $('.panel-scroll-chat', $(notifications ? '.messenger-notification' : '.messenger-chat'));
                 $el.finish();
+            };
 
-                {#                var $elementold = $('#panel-scroll-chat');#}
+            $scope.stickToBottomChatRoom = function (sticktotop, instant, notifications, after_a) {
+                var $el = $('.panel-scroll-chat', $(notifications ? '.messenger-notification' : '.messenger-chat'));
+
                 var old_max_scroll = $el.length ? ($('ul', $el).outerHeight() - $el.height()) : 0;
+                var after_animation = after_a?after_a:function () {};
+
+{#                var $elms = $('li.mar-btm',$el);#}
+{#                console.log($($elms[0]).attr('id'),'->', $($elms[$elms.length - 1]).attr('id'));#}
 
                 setTimeout(function () {
                     var $element = $('.panel-scroll-chat', $(notifications ? '.messenger-notification' : '.messenger-chat'));
+{#                    var $elms = $('li.mar-btm',$element);#}
                     var max_scroll = $('ul', $element).outerHeight() - $element.height();
 
                     if (sticktotop && ($element[0].scrollTop < 10)) {
                         if (instant) {
                             $element.scrollTop(0);
+                            after_animation();
                         }
                         else {
-                            $element.animate({scrollTop: 0}, 250);
+                            $element.animate({scrollTop: 0}, 250, 'swing', after_animation);
                         }
                     }
                     else if (!sticktotop && ($element[0].scrollTop > old_max_scroll - 10)) {
                         if (instant) {
                             $element.scrollTop(max_scroll);
+                            after_animation();
                         }
                         else {
-                            $element.animate({scrollTop: max_scroll}, 250);
+                            $element.animate({scrollTop: max_scroll}, 250, 'swing', after_animation);
                         }
+                    }
+                    else {
+                        after_animation();
                     }
                 }, 0);
             };
 
 
-            $scope.add_new_item = function (chat_room, item, index, is_new_session) {
-
-                {#                var is_first_message_in_session = function (ind) {#}
-                {#                    return ind === 0 || existing_messages[ind]['timestamp'] - existing_messages[ind - 1]['timestamp'] > 60;#}
-                {#                };#}
+            $scope.add_new_item = function (chat_room, item, index) {
 
                 item['cr_tm'] = $scope.moment(item['cr_tm']);
 
                 var len = chat_room['items'].length;
-
 
                 if (index == 0) {
                     chat_room['items'].unshift(item);
@@ -156,18 +164,35 @@
                     chat_room['items'].splice(index, 0, item);
                 }
 
-                if (len + 1 > 200) {
-                    if (index < len / 2) {
-                        chat_room['items'].pop();
+{#                if (len + 1 > 50) {#}
+{#                    if (index < len / 2) {#}
+{#                        chat_room['items'].pop();#}
+{#                        chat_room['there_is_newer'] = true;#}
+{#                    }#}
+{#                    else {#}
+{#                        chat_room['items'].shift();#}
+{#                        chat_room['there_is_older'] = true;#}
+{#                    }#}
+{#                }#}
+
+
+            };
+
+            $scope.remove_elements_if_to_many = function (chat_room, from_bottom) {
+                var max_len = 200;
+                var len = chat_room['items'].length;
+                if (len > max_len) {
+                    if (from_bottom) {
+                        chat_room['items'].splice(max_len, len - max_len);
                         chat_room['there_is_newer'] = true;
                     }
                     else {
-                        chat_room['items'].shift();
+                        chat_room['items'].splice(0, len - max_len);
                         chat_room['there_is_older'] = true;
                     }
+                    return true;
                 }
-
-
+                return false;
             };
 
             $scope.append_items = function (chat_room, items) {
@@ -197,7 +222,7 @@
             };
 
 
-            $scope.update_chat_room = function (existing, from_server, force, older, instant) {
+            $scope.update_chat_room = function (existing, from_server, force, older) {
                 if (!existing) {
                     return;
                 }
@@ -227,10 +252,14 @@
 
                 pr_chat_socket.emit('load_notifications', data, function (resp) {
                     $scope.notifications[loadvar] = false;
+                    $scope.finishAnimation(true);
                     $scope.update_chat_room($scope.notifications, resp, true, older, instant);
-                    $scope.stickToBottomChatRoom(older ? true : false, instant, true);
-
+                    $scope.stickToBottomChatRoom(older ? true : false, instant, true, function () {
+                                $scope.remove_elements_if_to_many($scope.notifications, older ? true : false);
+{#                                $scope.$digest();#}
+                            });
                     $scope.$digest();
+
                 });
 
             };
@@ -256,7 +285,11 @@
                         $scope.update_chat_room($scope.selected_chat_room, resp, true, older, instant);
                         if ($scope.selected_chat_room && $scope.selected_chat_room['chat_room_id'] === ldd_ch_r_id &&
                                 resp && resp['items'] && resp['items'].length) {
-                            $scope.stickToBottomChatRoom(older ? true : false, instant, false);
+                            $scope.finishAnimation(true);
+                            $scope.stickToBottomChatRoom(older ? true : false, instant, false, function () {
+                                $scope.remove_elements_if_to_many($scope.selected_chat_room, older ? true : false);
+{#                                $scope.$digest();#}
+                            });
                         }
                         $scope.$digest();
                     }
@@ -456,13 +489,16 @@
                 pr_chat_socket.on('general_notification', function (resp) {
                     var new_message = resp['new_message'];
                     var new_notification = resp['new_notification'];
-                    console.log('new_notification', new_notification, unread);
                     var unread = resp['unread'];
                     var read_this_message = false;
                     var read_this_notification = false;
                     if (new_message && $scope.selected_chat_room && $scope.selected_chat_room['chat_room_id'] === new_message['chat_room_id'] && !$scope.selected_chat_room['there_is_newer']) {
+                        $scope.finishAnimation();
                         $scope.append_items($scope.selected_chat_room, [new_message]);
-                        $scope.stickToBottomChatRoom(false, false, false);
+                        $scope.stickToBottomChatRoom(false, false, false, function () {
+                                $scope.remove_elements_if_to_many($scope.selected_chat_room, false);
+{#                                $scope.$digest();#}
+                            });
 
                         if (new_message['from_user_id'] !== $scope.me_user['id']) {
                             pr_chat_socket.emit('read_message', new_message['id']);
@@ -470,9 +506,13 @@
                         }
                     }
 
-                    if (new_notification && $scope.selected_messenger_menu == 'notification' && !$scope.notifications['there_is_newer']) {
+                    if (new_notification && $scope.selected_messenger_menu == 'notifications' && !$scope.notifications['there_is_newer']) {
+                        $scope.finishAnimation(true);
                         $scope.append_items($scope.notifications, [new_notification]);
-                        $scope.stickToBottomChatRoom(false, false, true);
+                        $scope.stickToBottomChatRoom(false, false, true, function () {
+                            $scope.remove_elements_if_to_many($scope.notifications, false);
+{#                            $scope.$digest();#}
+                        });
                         pr_chat_socket.emit('read_notification', new_notification['id']);
                         read_this_notification = true;
                     }
@@ -487,10 +527,11 @@
                 });
 
 
+
+                $scope.set_on_scroll(true);
+                $scope.set_on_scroll(false);
+
                 var elem = $('#messenger-controller textarea');
-
-                $scope.set_on_scroll();
-
                 elem.bind('keydown', function (event) {
                     var code = event.keyCode || event.which;
                     if (code == 13) {
@@ -635,7 +676,7 @@
 
                                         <li class="clearfix tac"
                                             ng-show="selected_chat_room['there_is_older'] && !selected_chat_room['loading_older_messages']">
-                                            <a class="noselect" href="#" ng-click="load_messages(true)">{{ ::_('Load
+                                            <a class="noselect" href="#" ng-click="load_messages(true, true)">{{ ::_('Load
                                                 older') }}</a>
                                         </li>
 
@@ -680,7 +721,7 @@
 
                                         <li class="clearfix tac"
                                             ng-show="selected_chat_room['there_is_newer'] && !selected_chat_room['loading_newer_messages']">
-                                            <a class="noselect" href="#" ng-click="load_messages(false)">{{ ::_('Load
+                                            <a class="noselect" href="#" ng-click="load_messages(false, true)">{{ ::_('Load
                                                 newer messages')
                                                 }}</a>
                                         </li>
@@ -833,7 +874,7 @@
                                     <ul class="chat-session media-block " id="panel-body-chat-notifications">
                                         <li class="clearfix tac"
                                             ng-show="notifications['there_is_older'] && !notifications['loading_older_notifications']">
-                                            <a class="noselect" href="#" ng-click="load_notifications(true)">{{
+                                            <a class="noselect" href="#" ng-click="load_notifications(true, true)">{{
                                                 ::_('Load
                                                 older') }}</a>
                                         </li>
@@ -856,21 +897,18 @@
 
 
                                         <li ng-repeat="notification in notifications['items'] track by notification.id"
+                                            id="{{ notification.id }}"
                                             class="mar-btm left">
-                                            <!-- TODO: get profireader logo -->
                                             <div class="chat-img media-left">
                                                 <img class="messenger-avatar" pr-image-position="center center"
                                                      pr-image-url="
-
-
-
-
-                                                             {% endraw %}{{ static_address('images/profireader-logo.svg') }}{% raw %}"/>
+                                                             {%- endraw %}{{ static_address('images/profireader-logo.svg') }}{% raw -%}"/>
                                             </div>
 
                                             <div class="media-body pad-hor">
                                                 <div class="speech">
-                                                    <span class="media-heading">NOTOFICATION TYPE</span>
+
+                                                    <span class="media-heading">{{ ::_('notification type %(id)s', notification) }}</span>
                                                     <p class="speech-content" ng-bind-html="::notification.content"></p>
                                                     <p class="speech-time"><i class="fa fa-clock-o fa-fw"></i> {{
                                                         ::notification.cr_tm }}</p>
@@ -881,7 +919,7 @@
 
                                         <li class="clearfix tac"
                                             ng-show="notifications['there_is_newer'] && !notifications['loading_newer_notifications']">
-                                            <a class="noselect" href="#" ng-click="load_notifications(false)">{{
+                                            <a class="noselect" href="#" ng-click="load_notifications(false, true)">{{
                                                 ::_('Load
                                                 newer notifications')
                                                 }}</a>

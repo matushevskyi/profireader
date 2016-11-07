@@ -135,7 +135,7 @@ class Notification(Base, PRBase):
 
     to_user = relationship(User)
 
-    NOTIFICATION_TYPES = {'GREETING': 'GREETING', 'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY'}
+    NOTIFICATION_TYPES = {'GREETING': 'GREETING', 'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY', 'MATERIAL_PUBLICATION_STATUS_CHANGED': 'MATERIAL_PUBLICATION_STATUS_CHANGED'}
 
     @staticmethod
     def get_notifications(count, get_older=False, than_id=None):
@@ -167,12 +167,26 @@ class Notification(Base, PRBase):
         }
 
     def client_message(self):
-        ret = utils.dict_merge(self.get_client_side_dict(fields='id,content,to_user_id'),
+        ret = utils.dict_merge(self.get_client_side_dict(fields='id,content,notification_type,to_user_id'),
                                {'cr_tm': self.cr_tm.strftime("%a, %d %b %Y %H:%M:%S GMT")})
         return ret
 
     @staticmethod
     def send_greeting_message(send_to_user, some_text = ''):
+        from socketIO_client import SocketIO
+        from config import MAIN_DOMAIN
+
+        def on_notification_response(*args):
+            print('on_bbb_response', args)
+
+        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+            socketIO.emit('send_notification', {'to_user_id': send_to_user.id,
+                                                'notification_type': Notification.NOTIFICATION_TYPES['GREETING']
+                                                }, on_notification_response)
+            socketIO.wait_for_callbacks(seconds=1)
+
+    @staticmethod
+    def send_greeting_message(send_to_user, some_text=''):
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
 
