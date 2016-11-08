@@ -61,7 +61,7 @@ def community_search(json):
         outerjoin(Company,
                   and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE')). \
         outerjoin(Contact,
-                  or_(Contact.user1_id == User.id, Contact.user2_id == User.id)). \
+                  or_(and_(Contact.user1_id == User.id, Contact.user2_id == g.user.id), and_(Contact.user2_id == User.id, Contact.user1_id == g.user.id))).\
         filter(and_(User.full_name.ilike("%" + json['text'] + "%"),
                     User.id != g.user.id,
                     or_(Portal.id != None, Company.id != None))). \
@@ -86,8 +86,11 @@ def community_search(json):
             and_(Contact.status == Contact.STATUSES['ANY_REVOKED'], User.id != g.user.id),
             and_(Contact.status == Contact.STATUSES['REVOKED_ANY'], User.id == g.user.id)), 'X'),
         (Contact.status == Contact.STATUSES['ACTIVE_ACTIVE'], '5')
-    ], else_='X'), User.full_name). \
+    ], else_='X'), User.full_name, User.id). \
         limit(PER_PAGE + 1).offset((json['page'] - 1) * PER_PAGE)
+
+    # from sqlalchemy.dialects import postgresql
+    # print(str(query.statement.compile(compile_kwargs={"literal_binds": True}, dialect=postgresql.dialect())))
 
     users = query.all()
     next_page = (json['page'] + 1) if len(users) > PER_PAGE else False

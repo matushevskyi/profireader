@@ -774,7 +774,7 @@
                            ng-model-options='{ debounce: 500 }'
                            ng-change="search_community(true)" ng-model="community_search_text"/>
 
-                    <div ng-repeat="usr in ::community track by usr.id">
+                    <div ng-repeat="usr in community track by usr.id">
                         <div class="row search-community-row">
                             <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
                                 <img class="messenger-avatar" pr-image-position="center center"
