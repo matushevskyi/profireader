@@ -135,11 +135,15 @@ class Notification(Base, PRBase):
 
     to_user = relationship(User)
 
-    NOTIFICATION_TYPES = {'GREETING': 'GREETING', 'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY', 'MATERIAL_PUBLICATION_STATUS_CHANGED': 'MATERIAL_PUBLICATION_STATUS_CHANGED'}
+    NOTIFICATION_TYPES = {
+        'GREETING': 'GREETING', 'CUSTOM': 'CUSTOM',
+        'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY',
+        'MATERIAL_PUBLICATION_STATUS_CHANGED': 'MATERIAL_PUBLICATION_STATUS_CHANGED'
+    }
 
     @staticmethod
-    def get_notifications(count, get_older=False, than_id=None):
-        notification_query = g.db().query(Notification)
+    def get_notifications(count, to_user_id, get_older=False, than_id=None):
+        notification_query = g.db().query(Notification).filter(Notification.to_user_id == to_user_id)
         if than_id:
             if get_older:
                 notifications = notification_query.filter(Notification.id < than_id).order_by(
@@ -160,7 +164,6 @@ class Notification(Base, PRBase):
             notifications = notifications[0:count]
             # notifications.reverse()
 
-
         return {
             there_is_more[0]: there_is_more[1],
             'items': notifications
@@ -172,21 +175,42 @@ class Notification(Base, PRBase):
         return ret
 
     @staticmethod
-    def send_greeting_message(send_to_user, some_text = ''):
+    def notification_delivered(*args, **kwargs):
+        print('notification_delivered', args, kwargs)
+
+    @staticmethod
+    def notification_send(notification_data):
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
 
-        def on_notification_response(*args):
-            print('on_bbb_response', args)
-
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
-            socketIO.emit('send_notification', {'to_user_id': send_to_user.id,
-                                                'notification_type': Notification.NOTIFICATION_TYPES['GREETING']
-                                                }, on_notification_response)
+            socketIO.emit('send_notification', notification_data, Notification.notification_delivered)
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
-    def send_greeting_message(send_to_user, some_text=''):
+    def send_greeting(send_to_user):
+        Notification.notification_send({'to_user_id': send_to_user.id,
+                                        'content': TranslateTemplate.translate_and_substitute(
+                                            template='_NOTIFICATIONS',
+                                            url='',
+                                            language=send_to_user.lang,
+                                            allow_html='*',
+                                            phrase="Welcome to profireader. You can change your profile %(url_profile)s",
+                                            dictionary={
+                                                'url_profile': url_for(
+                                                    'user.profile',
+                                                    user_id=send_to_user.id)}),
+                                        'notification_type': Notification.NOTIFICATION_TYPES['GREETING']
+                                        })
+
+    @staticmethod
+    def send_custom(send_to_user, text):
+        Notification.notification_send({'to_user_id': send_to_user.id,
+                                        'notification_type': Notification.NOTIFICATION_TYPES['CUSTOM']
+                                        })
+
+    @staticmethod
+    def send_custom_message(send_to_user):
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
 
@@ -196,9 +220,8 @@ class Notification(Base, PRBase):
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
             socketIO.emit('send_notification', {'to_user_id': send_to_user.id,
                                                 'notification_type': Notification.NOTIFICATION_TYPES['GREETING']
-                                                }, on_notification_response)
+                                                }, Notification.notification_delivered)
             socketIO.wait_for_callbacks(seconds=1)
-
 
 
 @event.listens_for(Notification.content, "set")

@@ -130,51 +130,19 @@ def send_notification(sid, notification_data):
         from profapp.models.users import User
         usr = User.get(notification_data['to_user_id'])
         n = Notification(to_user_id=usr.id, notification_type=notification_data['notification_type'],
-                         notification_data={'user_id': notification_data['to_user_id']},
-                         content=TranslateTemplate.translate_and_substitute(template='_NOTIFICATIONS',
-                                                                            url='', language=usr.lang,
-                                                                            allow_html='*',
-                                                                            phrase="Welcome to profireader. You can change your profile %(url_profile)s",
-                                                                            dictionary={
-                                                                                'url_profile': url_for('user.profile',
-                                                                                                       user_id=usr.id)}))
+                         notification_data=notification_data, content=notification_data['content'])
 
         n.save()
         notification = Notification.get(n.id)
         notification_tosend = notification.client_message()
         unread = get_unread(usr.id, [])
+        if usr.id in connected_user_id_sids:
+            for sid_for_recipient in connected_user_id_sids[usr.id]:
+                sio.emit('general_notification', {
+                    'new_notification': notification_tosend,
+                    'unread': unread
+                }, sid_for_recipient)
 
-        for sid_for_recipient in connected_user_id_sids[usr.id]:
-            sio.emit('general_notification', {
-                'new_notification': notification_tosend,
-                'unread': unread
-            }, sid_for_recipient)
-
-        pass
-        # TODO: OZ by OZ
-        # with controlled_execution():
-        #     user_id = connected_sid_user_id[sid]
-        #     print('send_notification', user_id)
-        #
-        #     message = Message(contact_id=contact.id, content=event_data['content'], from_user_id=user_id)
-        #     message.save()
-        #     message = Message.get(message.id)
-        #     message_tosend = message.client_message()
-        #
-        #     for sid_for_author in connected_user_id_sids[user_id]:
-        #         sio.emit('general_notification', {
-        #             'new_message':  message_tosend
-        #         }, sid_for_author)
-        #
-        #     another_user_to_notify_unread = contact.user1_id if contact.user2_id == user_id else contact.user2_id
-        #     unread = get_unread(another_user_to_notify_unread, [contact.id])
-        #     for sid_for_receiver in connected_user_id_sids[another_user_to_notify_unread]:
-        #         sio.emit('general_notification', {
-        #             'new_message':  message_tosend,
-        #             'unread': unread
-        #         }, sid_for_receiver)
-        #
-        #     return {'ok': True, 'message_id': message.id}
 
 
 @sio.on('read_message')
@@ -236,7 +204,7 @@ def load_notifications(sid, event_data):
         user_id = connected_sid_user_id[sid]
 
         older = event_data.get('older', False)
-        ret = Notification.get_notifications(50, older, event_data.get('first_id' if older else 'last_id', None))
+        ret = Notification.get_notifications(50, user_id, older, event_data.get('first_id' if older else 'last_id', None))
         print(ret)
 
         read_ids = [n.id for n in ret['items'] if not n.read_tm]

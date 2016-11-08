@@ -897,7 +897,6 @@
 
 
                                         <li ng-repeat="notification in notifications['items'] track by notification.id"
-                                            id="{{ notification.id }}"
                                             class="mar-btm left">
                                             <div class="chat-img media-left">
                                                 <img class="messenger-avatar" pr-image-position="center center"
@@ -908,7 +907,7 @@
                                             <div class="media-body pad-hor">
                                                 <div class="speech">
 
-                                                    <span class="media-heading">{{ ::_('notification type %(id)s', notification) }}</span>
+                                                    <span class="media-heading">{{ ::_('notification type ' + notification.notification_type) }}</span>
                                                     <p class="speech-content" ng-bind-html="::notification.content"></p>
                                                     <p class="speech-time"><i class="fa fa-clock-o fa-fw"></i> {{
                                                         ::notification.cr_tm }}</p>
