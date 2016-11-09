@@ -21,6 +21,7 @@ from .. import utils
 from .elastic import PRElasticField, PRElasticDocument
 from config import Config
 import simplejson
+from ..controllers.errors import BadDataProvided
 from sqlalchemy.sql import expression
 
 
@@ -45,6 +46,14 @@ class Contact(Base, PRBase):
                 'REVOKED_ANY': 'REVOKED_ANY',
                 'READONLY': 'READONLY'
                 }
+
+    def get_another_user_id(self, user_id):
+        if user_id == self.user1_id:
+            return self.user2_id
+        elif user_id == self.user2_id:
+            return self.user1_id
+        else:
+            raise BadDataProvided("User with id=`%s` is not presented in contact with id=`%s`" % (user_id, self.id))
 
     def get_client_side_dict(self, fields='id,user1_id,user2_id,status', more_fields=None):
         return self.to_dict(fields, more_fields)
@@ -96,6 +105,7 @@ class Contact(Base, PRBase):
         }
 
 
+
 class Message(Base, PRBase):
     __tablename__ = 'message'
 
@@ -135,11 +145,15 @@ class Notification(Base, PRBase):
 
     to_user = relationship(User)
 
-    NOTIFICATION_TYPES = {'GREETING': 'GREETING', 'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY'}
+    NOTIFICATION_TYPES = {
+        'GREETING': 'GREETING', 'CUSTOM': 'CUSTOM',
+        'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY',
+        'MATERIAL_PUBLICATION_STATUS_CHANGED': 'MATERIAL_PUBLICATION_STATUS_CHANGED'
+    }
 
     @staticmethod
-    def get_notifications(count, get_older=False, than_id=None):
-        notification_query = g.db().query(Notification)
+    def get_notifications(count, to_user_id, get_older=False, than_id=None):
+        notification_query = g.db().query(Notification).filter(Notification.to_user_id == to_user_id)
         if than_id:
             if get_older:
                 notifications = notification_query.filter(Notification.id < than_id).order_by(
@@ -160,31 +174,98 @@ class Notification(Base, PRBase):
             notifications = notifications[0:count]
             # notifications.reverse()
 
-
         return {
             there_is_more[0]: there_is_more[1],
             'items': notifications
         }
 
     def client_message(self):
-        ret = utils.dict_merge(self.get_client_side_dict(fields='id,content,to_user_id'),
+        ret = utils.dict_merge(self.get_client_side_dict(fields='id,content,notification_type,to_user_id'),
                                {'cr_tm': self.cr_tm.strftime("%a, %d %b %Y %H:%M:%S GMT")})
         return ret
 
     @staticmethod
-    def send_greeting_message(send_to_user, some_text = ''):
-        n = Notification(to_user_id=send_to_user.id, notification_type=Notification.NOTIFICATION_TYPES['GREETING'],
-                         notification_data={'user_id': send_to_user.id},
-                         content=TranslateTemplate.translate_and_substitute(template='_NOTIFICATIONS',
-                                                                            url='', language=send_to_user.lang, allow_html='*',
-                                                                            phrase="Welcome to profireader. You can change your profile %(url_profile)s" + some_text,
-                                                                            dictionary={
-                                                                                'url_profile': url_for('user.profile',
-                                                                                                       user_id=send_to_user.id)}))
-        n.save()
-        return n
-        pass
+    def notification_delivered(*args, **kwargs):
+        print('notification_delivered', args, kwargs)
+
+    @staticmethod
+    def notification_send(notification_data):
+        from socketIO_client import SocketIO
+        from config import MAIN_DOMAIN
+
+        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+            socketIO.emit('send_notification', notification_data, Notification.notification_delivered)
+            socketIO.wait_for_callbacks(seconds=1)
+
+    @staticmethod
+    def contact_request_send(to_user_id, from_user_id, status):
+        from socketIO_client import SocketIO
+        from config import MAIN_DOMAIN
+
+
+        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+            socketIO.emit('send_contact_requested', {'to_user_id': to_user_id, 'from_user_id': from_user_id,
+                                                     'status': status},
+                          Notification.notification_delivered)
+            socketIO.wait_for_callbacks(seconds=1)
+
+
+    @staticmethod
+    def send_greeting(to_user):
+        Notification.notification_send({'to_user_id': to_user.id,
+                                        'content': TranslateTemplate.translate_and_substitute(
+                                            template='_NOTIFICATIONS',
+                                            url='',
+                                            language=to_user.lang,
+                                            allow_html='*',
+                                            phrase="Welcome to profireader. You can change your profile %(url_profile)s",
+                                            dictionary={
+                                                'to_user': to_user.get_client_side_dict(fields='full_name'),
+                                                'url_profile': url_for(
+                                                    'user.profile',
+                                                    user_id=to_user.id)}),
+                                        'notification_type': Notification.NOTIFICATION_TYPES['GREETING']
+                                        })
+
+    @staticmethod
+    def send_custom(to_user, text):
+        Notification.notification_send({'to_user_id': to_user.id,
+                                        'notification_type': Notification.NOTIFICATION_TYPES['CUSTOM']
+                                        })
+
+
+    @staticmethod
+    def send_friend_request_activity(to_user, from_user, new_status, old_status):
+        if new_status == old_status:
+            return
+
+        phrase = None
+
+        if new_status == Contact.STATUSES['ACTIVE_ACTIVE'] and old_status == Contact.STATUSES['REQUESTED_UNCONFIRMED']:
+            phrase = "User %(from_user.full_name)s accepted your friendship request :)"
+        elif new_status == Contact.STATUSES['ANY_REVOKED'] and old_status == Contact.STATUSES['ACTIVE_ACTIVE']:
+            phrase = "User %(from_user.full_name)s revoked your friendship :("
+
+        if phrase:
+            Notification.notification_send({'to_user_id': to_user.id,
+                                            'content': TranslateTemplate.translate_and_substitute(
+                                                template='_NOTIFICATIONS',
+                                                url='',
+                                                language=to_user.lang,
+                                                allow_html='*',
+                                                phrase=phrase,
+                                                dictionary={
+                                                    'to_user': to_user.get_client_side_dict(fields='full_name'),
+                                                    'from_user': from_user.get_client_side_dict(fields='full_name'),
+                                                }),
+                                            'notification_type': Notification.NOTIFICATION_TYPES[
+                                                'FRIEND_REQUEST_ACTIVITY']
+                                            })
+
+
+        Notification.contact_request_send(to_user.id, from_user.id, new_status)
+
 
 @event.listens_for(Notification.content, "set")
-def set(target, value, oldvalue, initiator):
+def set_notification_content(target, value, oldvalue, initiator):
     target.content_stripped = MLStripper().strip_tags(value)

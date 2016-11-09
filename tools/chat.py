@@ -22,7 +22,8 @@ class controlled_execution:
         ctx.pop()
 
 
-app = create_app(apptype='profi')
+app = create_app(apptype='profi', config='config.CommandLineConfig')
+
 ctx = app.app_context()
 
 with controlled_execution():
@@ -65,10 +66,14 @@ def check_user_id(environ):
 def get_unread(user_id, chatroom_ids=[]):
     to_send = {
         'messages': int(float(db_utils.execute_function("message_unread_count('%s', NULL)" % (user_id,)))),
+        'messages_per_chat_room': {},
+        'contacts': int(float(db_utils.execute_function("contact_request_count('%s')" % (user_id,)))),
         'notifications': int(float(db_utils.execute_function("notification_unread_count('%s')" % (user_id,))))
+
     }
+
     for chatroom_id in chatroom_ids:
-        to_send[chatroom_id] = int(float(
+        to_send['messages_per_chat_room'][chatroom_id] = int(float(
             db_utils.execute_function("message_unread_count('%s', '%s')" % (user_id, chatroom_id))))
     return to_send
 
@@ -121,33 +126,37 @@ def send_message(sid, event_data):
         return {'ok': True, 'message_id': message.id}
 
 
+@sio.on('send_contact_requested')
+def send_contact_requested(sid, mes_data):
+    with controlled_execution():
+        from profapp.models.users import User
+        usr = User.get(mes_data['to_user_id'])
+        data_to_send = {
+            'request_status_changed': mes_data,
+            'unread': get_unread(usr.id, [])
+        }
+        if usr.id in connected_user_id_sids:
+            for sid_for_recipient in connected_user_id_sids[usr.id]:
+                sio.emit('general_notification', data_to_send, sid_for_recipient)
+
 @sio.on('send_notification')
-def send_message(sid, notification_data):
-    pass
-    # TODO: OZ by OZ
-    # with controlled_execution():
-    #     user_id = connected_sid_user_id[sid]
-    #     print('send_notification', user_id)
-    #
-    #     message = Message(contact_id=contact.id, content=event_data['content'], from_user_id=user_id)
-    #     message.save()
-    #     message = Message.get(message.id)
-    #     message_tosend = message.client_message()
-    #
-    #     for sid_for_author in connected_user_id_sids[user_id]:
-    #         sio.emit('general_notification', {
-    #             'new_message':  message_tosend
-    #         }, sid_for_author)
-    #
-    #     another_user_to_notify_unread = contact.user1_id if contact.user2_id == user_id else contact.user2_id
-    #     unread = get_unread(another_user_to_notify_unread, [contact.id])
-    #     for sid_for_receiver in connected_user_id_sids[another_user_to_notify_unread]:
-    #         sio.emit('general_notification', {
-    #             'new_message':  message_tosend,
-    #             'unread': unread
-    #         }, sid_for_receiver)
-    #
-    #     return {'ok': True, 'message_id': message.id}
+def send_notification(sid, notification_data):
+    with controlled_execution():
+        from profapp.models.users import User
+        usr = User.get(notification_data['to_user_id'])
+        n = Notification(to_user_id=usr.id, notification_type=notification_data['notification_type'],
+                         notification_data=notification_data, content=notification_data['content'])
+
+        n.save()
+        notification = Notification.get(n.id)
+        data_to_send = {
+            'new_notification': notification.client_message(),
+            'unread': get_unread(usr.id, [])}
+
+        if usr.id in connected_user_id_sids:
+            for sid_for_recipient in connected_user_id_sids[usr.id]:
+                sio.emit('general_notification', data_to_send, sid_for_recipient)
+
 
 
 @sio.on('read_message')
@@ -209,7 +218,7 @@ def load_notifications(sid, event_data):
         user_id = connected_sid_user_id[sid]
 
         older = event_data.get('older', False)
-        ret = Notification.get_notifications(50, older, event_data.get('first_id' if older else 'last_id', None))
+        ret = Notification.get_notifications(50, user_id, older, event_data.get('first_id' if older else 'last_id', None))
         print(ret)
 
         read_ids = [n.id for n in ret['items'] if not n.read_tm]

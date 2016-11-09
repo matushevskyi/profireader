@@ -221,6 +221,10 @@ class User(Base, UserMixin, PRBase):
     def get_unread_notification_count(user_id):
         return db_utils.execute_function("notification_unread_count('%s')" % (user_id,))
 
+    @staticmethod
+    def get_contact_request_count(user_id):
+        return db_utils.execute_function("contact_request_count('%s')" % (user_id,))
+
     def gravatar(self, size=100, default='identicon', rating='g'):
         if request.is_secure:
             url = '//secure.gravatar.com/avatar'

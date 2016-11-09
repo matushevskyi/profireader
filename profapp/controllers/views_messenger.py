@@ -10,7 +10,7 @@ from tools.db_utils import db
 from ..models.users import User
 from ..models.company import Company, UserCompany
 from ..models.portal import Portal, UserPortalReader
-from ..models.messenger import Contact, Message
+from ..models.messenger import Contact, Message, Notification
 
 from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, UserIsEmployee, EmployeeAllowRight, \
     CanCreateCompanyRight, UserIsActive, BaseRightsEmployeeInCompany
@@ -61,7 +61,8 @@ def community_search(json):
         outerjoin(Company,
                   and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE')). \
         outerjoin(Contact,
-                  or_(Contact.user1_id == User.id, Contact.user2_id == User.id)). \
+                  or_(and_(Contact.user1_id == User.id, Contact.user2_id == g.user.id),
+                      and_(Contact.user2_id == User.id, Contact.user1_id == g.user.id))). \
         filter(and_(User.full_name.ilike("%" + json['text'] + "%"),
                     User.id != g.user.id,
                     or_(Portal.id != None, Company.id != None))). \
@@ -86,7 +87,7 @@ def community_search(json):
             and_(Contact.status == Contact.STATUSES['ANY_REVOKED'], User.id != g.user.id),
             and_(Contact.status == Contact.STATUSES['REVOKED_ANY'], User.id == g.user.id)), 'X'),
         (Contact.status == Contact.STATUSES['ACTIVE_ACTIVE'], '5')
-    ], else_='X'), User.full_name). \
+    ], else_='X'), User.full_name, User.id). \
         limit(PER_PAGE + 1).offset((json['page'] - 1) * PER_PAGE)
 
     users = query.all()
@@ -96,10 +97,12 @@ def community_search(json):
     ret = []
 
     for u in users:
-        user_dict = u.get_client_side_dict(fields='id,full_name,avatar.url')
-        user_dict['common_portals_subscribed'] = [p.get_client_side_dict(fields='id,logo.url,host,name') for p in u.active_portals_subscribed if
+        user_dict = u.get_client_side_dict(fields='id,full_name,avatar.url,address_email')
+        user_dict['common_portals_subscribed'] = [p.get_client_side_dict(fields='id,logo.url,host,name') for p in
+                                                  u.active_portals_subscribed if
                                                   p.id in portals_ids]
-        user_dict['common_companies_employers'] = [c.get_client_side_dict(fields='id,logo.url,name') for c in u.active_companies_employers if
+        user_dict['common_companies_employers'] = [c.get_client_side_dict(fields='id,logo.url,name') for c in
+                                                   u.active_companies_employers if
                                                    c.id in companies_ids]
         contact = g.db().query(Contact).filter_by(user1_id=min([u.id, g.user.id])).filter_by(
             user2_id=max([u.id, g.user.id])) \
@@ -147,41 +150,6 @@ def contacts_search(json):
     }
 
 
-
-# def unread_messages_count(user_id):
-#     messages_count = g.db().query(Contact.id, func.count(Contact.id)).outerjoin(Message,
-#                                                                                 and_(Message.contact_id == Contact.id,
-#                                                                                      Message.read_tm == None,
-#                                                                                      Message.from_user_id != user_id
-#                                                                                      )). \
-#         filter(and_(Message.id != None, or_(Contact.user2_id == user_id, Contact.user1_id == user_id))). \
-#         group_by(Contact.id).all()
-#
-#     return {contact_id: contact_count for (contact_id, contact_count) in messages_count}
-
-
-# @messenger_bp.route('/send_message/', methods=['OK'])
-# @check_right(UserIsActive)
-# def send_message(json):
-#     contact = Contact.get(json['chat_room_id'])
-#     if contact.user1_id == g.user.id or contact.user2_id == g.user.id:
-#         message = Message(contact_id=contact.id, content=json['text'], from_user_id=g.user.id)
-#         message.save()
-#         return get_messages_and_unread_count(contact.id, MESSANGER_MESSGES_PER_LOAD, get_older=False,
-#                                              than_id=json['last_message_id'])
-#     else:
-#         raise BadDataProvided
-
-
-
-# @messenger_bp.route('/load_messages/', methods=['OK'])
-# @check_right(UserIsActive)
-# def load_messages(json):
-#     newer = json.get('newer', False)
-#     return get_messages_and_unread_count(json['chat_room_id'], MESSANGER_MESSGES_PER_LOAD, get_older=False if newer else True,
-#                                          than_id=json.get('last_message_id' if newer else 'first_message_id', None))
-
-
 @messenger_bp.route('/contact_action/', methods=['OK'])
 @check_right(UserIsActive)
 def contact_action(json):
@@ -189,31 +157,42 @@ def contact_action(json):
 
     user1_id = min([g.user.id, json['user_id']])
     user2_id = max([g.user.id, json['user_id']])
+    another_user = User.get(json['user_id'])
     contact = g.db().query(Contact).filter_by(user1_id=user1_id, user2_id=user2_id).first()
 
     if contact:
-        status_for_action_user = contact.get_status_for_user(g.user.id)
-        if action == 'add' and status_for_action_user in [contact.STATUSES['ANY_REVOKED'],
-                                                          contact.STATUSES['REVOKED_ANY']]:
+        old_status_for_g_user = contact.get_status_for_user(g.user.id)
+        old_status_for_another_user = contact.get_status_for_user(json['user_id'])
+
+        if action == 'add' and old_status_for_g_user in [contact.STATUSES['ANY_REVOKED'],
+                                                         contact.STATUSES['REVOKED_ANY']]:
             contact.set_status_for_user(g.user.id, contact.STATUSES['REQUESTED_UNCONFIRMED'])
-        elif action == 'remove' and status_for_action_user == contact.STATUSES['ACTIVE_ACTIVE']:
+        elif action == 'remove' and old_status_for_g_user == contact.STATUSES['ACTIVE_ACTIVE']:
             contact.set_status_for_user(g.user.id, contact.STATUSES['REVOKED_ANY'])
-        elif action == 'revoke' and status_for_action_user == contact.STATUSES['REQUESTED_UNCONFIRMED']:
+        elif action == 'revoke' and old_status_for_g_user == contact.STATUSES['REQUESTED_UNCONFIRMED']:
             contact.set_status_for_user(g.user.id, contact.STATUSES['REVOKED_ANY'])
-        elif action == 'confirm' and status_for_action_user == contact.STATUSES['UNCONFIRMED_REQUESTED']:
+        elif action == 'confirm' and old_status_for_g_user == contact.STATUSES['UNCONFIRMED_REQUESTED']:
             contact.set_status_for_user(g.user.id, contact.STATUSES['ACTIVE_ACTIVE'])
-        elif action == 'unban' and status_for_action_user == contact.STATUSES['BANNED_ACTIVE']:
+        elif action == 'unban' and old_status_for_g_user == contact.STATUSES['BANNED_ACTIVE']:
             contact.set_status_for_user(g.user.id, contact.STATUSES['ACTIVE_ACTIVE'])
         else:
             raise BadDataProvided(
-                "Wrong action `%s` for status `%s=>%s`" % (action, contact.status, status_for_action_user))
+                "Wrong action `%s` for status `%s=>%s`" % (action, contact.status, old_status_for_g_user))
     else:
+        old_status_for_g_user = None
+        old_status_for_another_user = None
         if action == 'add':
             contact = Contact(user1_id=user1_id, user2_id=user2_id)
-            contact.set_status_for_user(g.user.id, 'REQUESTED_UNCONFIRMED')
+            contact.set_status_for_user(g.user.id, contact.STATUSES['REQUESTED_UNCONFIRMED'])
         else:
             raise BadDataProvided("Wrong action `add` for no contact")
 
     contact.save()
+    g.db.commit()
+    new_status_for_g_user = contact.get_status_for_user(g.user.id)
+    new_status_for_another_user = contact.get_status_for_user(json['user_id'])
+    Notification.send_friend_request_activity(g.user, another_user, new_status_for_g_user, old_status_for_g_user)
+    Notification.send_friend_request_activity(another_user, g.user, new_status_for_another_user, old_status_for_another_user)
+
 
     return {'contact_status': contact.get_status_for_user(g.user.id)}

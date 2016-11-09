@@ -6,16 +6,18 @@
         $scope.lang = {{ g.lang|tojson|safe }};
         $scope.unread_message_count = {{ g.user.get_unread_message_count(g.user.id) if g.user else 'null'}};
         $scope.unread_notification_count = {{ g.user.get_unread_notification_count(g.user.id) if g.user else 'null'}};
+        $scope.contact_request_count = {{ g.user.get_contact_request_count(g.user.id) if g.user else 'null' }};
 
-        $scope.set_unread_messages_and_notifications_count = function (messages_count, notifications_count) {
-            if ($scope.unread_message_count != messages_count || $scope.unread_notification_count != notifications_count) {
-{#                $('#menu-site .unread_messages_and_notifications_count').hide(); // strage bug in chrome. text disappear until mouse click#}
+        $scope.set_unread_messages_and_notifications_count = function (messages_count, notifications_count, contact_request_count) {
+            if ($scope.unread_message_count != messages_count || $scope.unread_notification_count != notifications_count || $scope.contact_request_count != contact_request_count) {
+                {#                $('#menu-site .unread_messages_and_notifications_count').hide(); // strage bug in chrome. text disappear until mouse click#}
                 $scope.unread_message_count = messages_count;
                 $scope.unread_notification_count = notifications_count;
+                $scope.contact_request_count = contact_request_count;
                 $scope.$digest();
-{#                $timeout(function () {#}
-{#                    $('#menu-site .unread_messages_and_notifications_count').show();#}
-{#                }, 10);#}
+                {#                $timeout(function () {#}
+                {#                    $('#menu-site .unread_messages_and_notifications_count').show();#}
+                {#                }, 10);#}
 
             }
         };
@@ -53,7 +55,6 @@
         };
 
         $scope.changeLanguage = function (lang) {
-            console.log(lang)
             $ok('{{ url_for('user.change_language') }}', {'language': lang}, function (resp) {
                 location.reload();
             });
@@ -98,7 +99,9 @@
                                                                                            class="pr"
                                                                                            ng-class="{'selected': selected_user_menu == 'messages'}"><i
                             class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span><div
-                            ng-if="unread_message_count || unread_notification_count" class="pa unread_messages_and_notifications_count">{{ unread_message_count + unread_notification_count }}</div></a></li>
+                                ng-if="unread_message_count || unread_notification_count || contact_request_count"
+                                class="pa unread_messages_and_notifications_count">{{ unread_message_count +
+                            unread_notification_count + contact_request_count}}</div></a></li>
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %}
                             href="{{ url_company_companies() }}"
                             title="{{ _('Компанії') }}"
