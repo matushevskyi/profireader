@@ -151,6 +151,7 @@ class ProductionDevelopmentConfig(Config):
 class CommandLineConfig(ProductionDevelopmentConfig):
 
     SERVER_NAME = MAIN_DOMAIN
+    SESSION_TYPE = 'filesystem'
 
 class FrontConfig(Config):
     # SERVER_NAME = 'companyportal.d.ntaxa.com'
