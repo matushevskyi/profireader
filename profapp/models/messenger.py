@@ -117,7 +117,7 @@ class Message(Base, PRBase):
     contact_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Contact.id))
     content = Column(TABLE_TYPES['string_1000'])
 
-    informed_by_email_about_unread = Column(TABLE_TYPES['timestamp'])
+    # informed_by_email_about_unread = Column(TABLE_TYPES['timestamp'])
 
     contact = relationship(Contact)
 
@@ -141,7 +141,7 @@ class Notification(Base, PRBase):
     notification_type = Column(TABLE_TYPES['string_100'])
     notification_data = Column(TABLE_TYPES['json'])
 
-    informed_by_email_about_unread = Column(TABLE_TYPES['timestamp'])
+    # informed_by_email_about_unread = Column(TABLE_TYPES['timestamp'])
 
     to_user = relationship(User)
 

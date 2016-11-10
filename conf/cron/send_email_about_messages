@@ -1,0 +1,1 @@
+30 04 * * * root cd /var/www/tools && ./run_with_env.sh send_email_about_messages.py --user_id=57fbe206-3da9-4001-890d-71c4352f070d

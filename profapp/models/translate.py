@@ -76,19 +76,22 @@ class TranslateTemplate(Base, PRBase):
 
         url_adapter = g.get_url_adapter()
 
-        if url is None:
-            url_adapter = g.get_url_adapter()
-            rules = url_adapter.map._rules_by_endpoint.get(request.endpoint, ())
-            url = '' if len(rules) < 1 else rules[0].rule
-        else:
-            try:
+        try:
+            # TODO: OZ by OZ: this try is because i don't understand how to check application/request context stack'
+            if url is None:
+                url_adapter = g.get_url_adapter()
+                rules = url_adapter.map._rules_by_endpoint.get(request.endpoint, ())
+                url = '' if len(rules) < 1 else rules[0].rule
+            else:
+
                 from werkzeug.urls import url_parse
 
                 parsed_url = url_parse(url)
                 rules = url_adapter.match(parsed_url.path, method='GET', return_rule=True)
                 url = rules[0].rule
-            except Exception:
-                url = ''
+
+        except Exception:
+            url = ''
 
         return url
 
@@ -129,10 +132,10 @@ class TranslateTemplate(Base, PRBase):
         def getFromDict(context, indexes, default):
             d = context
             for i in indexes:
-                if i in d:
-                    d = d[i]
+                if isinstance(d, dict):
+                    d = d[i] if i in d else default
                 else:
-                    return default
+                    d = getattr(d, i, default)
             return d
 
         def replaceinphrase(match):

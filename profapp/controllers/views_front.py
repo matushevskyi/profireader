@@ -16,12 +16,14 @@ from .. import utils
 from tools.db_utils import db
 from functools import wraps
 
+
 def all_tags(portal):
     def url_search_tag_in_index(tag):
         return url_for('front.division', tags=tag, division_name='')
 
     return {'all': portal.get_client_side_dict(fields='tags')['tags'], 'selected_names': [],
-     'url_toggle_tag': url_search_tag_in_index}
+            'url_toggle_tag': url_search_tag_in_index}
+
 
 def get_search_text_and_division(portal, division_name):
     search_text = request.args.get('search') or ''
@@ -195,7 +197,7 @@ def get_search_tags_pages_search(portal, page, tags, search_text):
                 pager={'total': pages, 'current': page,
                        'url_construct': url_page_division,
                        'neighbours': Config.PAGINATION_BUTTONS},
-                search={'text': search_text, 'url': url_for('front.search', tags = tags), 'messages': messages})
+                search={'text': search_text, 'url': url_for('front.search', tags=tags), 'messages': messages})
 
 
 def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company_publisher=None):
@@ -397,9 +399,6 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                )
 
 
-
-
-
 @front_bp.route('_a/<string:publication_id>/<string:publication_title>')
 @check_right(AllowAll)
 @get_portal
@@ -416,7 +415,6 @@ def article_details(portal, publication_id, publication_title):
 
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.name)
-
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
@@ -461,6 +459,7 @@ def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
     email_utils.send_email_from_template(
         send_to_email=[send_to.address_email], subject='New message', template='messenger/email_send_message',
-        user_to=send_to, user_from=g.user.get_client_side_dict() if g.user else None,
-        in_company=Company.get(member_company_id), message=json['message'])
+        dictionary={'user_to': send_to, 'user_from': g.user.get_client_side_dict() if g.user else None,
+                    'in_company': Company.get(member_company_id),
+                    'message': json['message']})
     return {}

@@ -27,6 +27,7 @@ app = create_app(apptype='profi', config='config.CommandLineConfig')
 ctx = app.app_context()
 
 with controlled_execution():
+    print('connecting to database')
     load_database(app.config['SQLALCHEMY_DATABASE_URI'])(echo=True)
 
 sio = socketio.Server(cookie='prsio')

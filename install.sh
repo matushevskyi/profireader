@@ -219,8 +219,19 @@ sed -i '/\\.profi/d' /etc/hosts
 echo '' >> /etc/hosts
 echo '127.0.0.1 db.profi mail.profi memcached.profi elastic.profi' >> /etc/hosts
 echo '127.0.0.1 web.profi static.web.profi file001.web.profi socket.web.profi portal.web.profi' >> /etc/hosts
-cat /etc/hosts" sudo haproxy_config
+cat /etc/hosts" sudo cron_files
     }
+
+function menu_cron_files {
+    conf_comm "mkdir /var/log/profi
+rm /etc/cron.d/profi_*
+for file in `ls conf/cron/`
+do
+  cat conf/cron/\$file | sed 's#/var/www/#$PWD/#g' > /etc/cron.d/profi_\$file
+done
+systemctl restart cron.service" sudo haproxy_config
+    }
+
 
 # function menu_haproxy_compile {
 #     conf_comm "apt-get purge haproxy
@@ -482,6 +493,7 @@ if [[ "$1" == "" ]]; then
       "postgres_9_4" "install postgres 9.4" \
       "elastic" "install elastic search" \
       "deb" "install deb packages" \
+      "cron_files" "update cron files" \
       "haproxy_config" "copy haproxy config to /etc/haproxy" \
       "npm" "install nodejs, npm, bower and gulp globally" \
       "bower" "download bower components in ./profapp/static/bower_components" \
