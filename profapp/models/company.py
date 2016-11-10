@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, ForeignKey, UniqueConstraint, Enum  # , u
 from sqlalchemy.orm import relationship, backref
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from flask.ext.login import current_user
-from sqlalchemy import Column, String, ForeignKey, update, and_
+from sqlalchemy import Column, String, ForeignKey, update, and_, text
 from sqlalchemy.orm import relationship
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from flask import g
@@ -74,12 +74,6 @@ class Company(Base, PRBase, PRElasticDocument):
 
     author_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id), nullable=False)
     user_owner = relationship(User, back_populates='companies')
-
-    # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
-    #                  'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
-    #                  'about': {'relevance': lambda field='about': RELEVANCE.about},
-    #                  'country': {'relevance': lambda field='country': RELEVANCE.country},
-    #                  'phone': {'relevance': lambda field='phone': RELEVANCE.phone}}
 
     # TODO: AA by OZ: we need employees.position (from user_company table) (also search and fix #ERROR employees.position.2#)
     # ERROR employees.position.1#
@@ -203,27 +197,13 @@ class Company(Base, PRBase, PRElasticDocument):
             ret.append(x.dict())
 
         return ret
-        # return PRBase.searchResult(query_companies)
 
-        # @staticmethod
-        # def update_comp(company_id, data):
-        #     """Edit company. Pass to data parameters which will be edited"""
-        #     company = db(Company, id=company_id)
-        #     upd = {x: y for x, y in zip(data.keys(), data.values())}
-        #     company.update(upd)
+    def get_user_with_rights(self, *args):
+        usrc = db(UserCompany).filter(
+            text("(company_id = '%s') AND (0 <> (rights & %s))" % (
+            self.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in args})))).all()
 
-        # if passed_file:
-        #     file = File(company_id=company_id,
-        #                 parent_id=company.one().system_folder_file_id,
-        #                 author_user_id=g.user_dict['id'],
-        #                 name=passed_file.filename,
-        #                 mime=passed_file.content_type)
-        #     company.update(
-        #         {'logo_file_id': file.upload(
-        #             content=passed_file.stream.read(-1)).id}
-        #     )
-        # db_session.flush()
-
+        return db(User).filter(User.id.in_([e.user_id for e in usrc])).all()
 
     def get_client_side_dict(self,
                              fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
@@ -401,33 +381,6 @@ class UserCompany(Base, PRBase):
     def get_by_user_and_company_ids(user_id=None, company_id=None):
         return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).one()
 
-    # TODO: VK by OZ: pls teach everybody what is done here
-    # # do we provide any rights to user at subscribing? Not yet
-    # def subscribe_to_company(self):
-    #     """Add user to company with non-active status. After that Employer can accept request,
-    #     and add necessary rights, or reject this user. Method need instance of class with
-    #     parameters : user_id, company_id, status"""
-    #     if db(UserCompany, user_id=self.user_id,
-    #           company_id=self.company_id).count():
-    #         raise errors.AlreadyJoined({
-    #             'message': 'user already joined to company %(name)s',
-    #             'data': self.get_client_side_dict()})
-    #     self.employee = User.user_query(self.user_id)
-    #     self.employer = db(Company, id=self.company_id).one()
-    #     return self
-
-    # @staticmethod
-    # def change_status_employee(company_id, user_id, status=STATUSES['SUSPENDED']):
-    #     """This method make status employee in this company suspended"""
-    #     db(UserCompany, company_id=company_id, user_id=user_id). \
-    #         update({'status': status})
-    #     if status == UserCompany.STATUSES['FIRED']:
-    #         UserCompany.update_rights(user_id=user_id,
-    #                                   company_id=company_id,
-    #                                   new_rights=()
-    #                                   )
-    #         # db_session.flush()
-
     @staticmethod
     def apply_request(company_id, user_id, bool):
         """Method which define when employer apply or reject request from some user to
@@ -446,8 +399,6 @@ class UserCompany(Base, PRBase):
         if self.company.user_owner.id == self.user_id:
             return True
 
-        # if rightname == 'ARTICLES_EDIT_OTHERS':
-        #     if self.editor
         if rightname == '_OWNER':
             return rightname
         if rightname == '_ANY':
@@ -462,38 +413,3 @@ class UserCompany(Base, PRBase):
         return [user.get_client_side_dict(fields='full_name|id') for user in
                 db(User).filter(~db(UserCompany, user_id=User.id, company_id=company_id).exists()).
                     filter(User.full_name.ilike("%" + searchtext + "%")).all()]
-
-        # @staticmethod
-        # def permissions(needed_rights_iterable, user_object, company_object):
-        #
-        #     needed_rights_int = Right.transform_rights_into_integer(needed_rights_iterable)
-        #     # TODO: implement Anonymous User handling
-        #     if not (user_object and company_object):
-        #         raise errors.ImproperRightsDecoratorUse
-        #
-        #     user = user_object
-        #     company = company_object
-        #     if type(user_object) is str:
-        #         user = g.db.query(User).filter_by(id=user_object).first()
-        #         if not user:
-        #             return abort(400)
-        #     if type(company_object) is str:
-        #         company = g.db.query(Company).filter_by(id=company_object).first()
-        #         if not company:
-        #             return abort(400)
-        #
-        #     user_company = user.company_employers.filter_by(company_id=company.id).first()
-        #
-        #     if not user_company:
-        #         return False if needed_rights_iterable else True
-        #
-        #     if user_company.banned:  # or user_company.status != STATUS.ACTIVE():
-        #         return False
-        #
-        #     if user_company:
-        #         available_rights = user_company.rights_int
-        #     else:
-        #         return False
-        #         # available_rights = 0
-        #
-        #     return True if available_rights & needed_rights_int == needed_rights_int else False

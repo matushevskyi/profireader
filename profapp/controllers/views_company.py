@@ -3,6 +3,7 @@ from flask.ext.login import current_user
 from flask import render_template, request, url_for, g, redirect, abort
 from ..models.company import Company, UserCompany
 from ..models.translate import TranslateTemplate
+from ..models.messenger import Notification
 from .request_wrapers import check_right
 from ..models.materials import Material, Publication
 from ..models.portal import PortalDivision
@@ -49,7 +50,11 @@ def companies_load(json):
 @company_bp.route('/join_to_company/', methods=['OK'])
 @check_right(UserIsActive)
 def join_to_company(json):
+
     e = UserCompany(user_id=g.user.id, company_id=json['company_id']).save()
+    users = e.company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
+    for u in users:
+        Notification.send_employment_activity(e.company, u, g.user, e.status, None)
     return {'employment': e.get_client_side_dict(fields='id,status, company, rights')}
 
 

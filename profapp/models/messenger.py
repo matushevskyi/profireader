@@ -105,7 +105,6 @@ class Contact(Base, PRBase):
         }
 
 
-
 class Message(Base, PRBase):
     __tablename__ = 'message'
 
@@ -148,6 +147,7 @@ class Notification(Base, PRBase):
     NOTIFICATION_TYPES = {
         'GREETING': 'GREETING', 'CUSTOM': 'CUSTOM',
         'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY',
+        'COMPANY_EMPLOYERS_ACTIVITY': 'COMPANY_EMPLOYERS_ACTIVITY',
         'MATERIAL_PUBLICATION_STATUS_CHANGED': 'MATERIAL_PUBLICATION_STATUS_CHANGED'
     }
 
@@ -202,13 +202,11 @@ class Notification(Base, PRBase):
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
 
-
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
             socketIO.emit('send_contact_requested', {'to_user_id': to_user_id, 'from_user_id': from_user_id,
                                                      'status': status},
                           Notification.notification_delivered)
             socketIO.wait_for_callbacks(seconds=1)
-
 
     @staticmethod
     def send_greeting(to_user):
@@ -218,12 +216,10 @@ class Notification(Base, PRBase):
                                             url='',
                                             language=to_user.lang,
                                             allow_html='*',
-                                            phrase="Welcome to profireader. You can change your profile %(url_profile)s",
+                                            phrase="Welcome to profireader. You can change your profile %(url_user_profile)s",
                                             dictionary={
                                                 'to_user': to_user.get_client_side_dict(fields='full_name'),
-                                                'url_profile': url_for(
-                                                    'user.profile',
-                                                    user_id=to_user.id)}),
+                                                'url_user_profile': url_for('user.profile', user_id=to_user.id)}),
                                         'notification_type': Notification.NOTIFICATION_TYPES['GREETING']
                                         })
 
@@ -232,7 +228,6 @@ class Notification(Base, PRBase):
         Notification.notification_send({'to_user_id': to_user.id,
                                         'notification_type': Notification.NOTIFICATION_TYPES['CUSTOM']
                                         })
-
 
     @staticmethod
     def send_friend_request_activity(to_user, from_user, new_status, old_status):
@@ -262,8 +257,32 @@ class Notification(Base, PRBase):
                                                 'FRIEND_REQUEST_ACTIVITY']
                                             })
 
-
         Notification.contact_request_send(to_user.id, from_user.id, new_status)
+
+    @staticmethod
+    def send_employment_activity(company, to_user, from_user, new_status, old_status):
+        if new_status == old_status:
+            return
+
+        phrase = None
+
+        if new_status == UserCompany.STATUSES['APPLICANT']:
+            phrase = "User <a href=\"%(url_user_profile)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
+
+        if phrase:
+            Notification.notification_send({'to_user_id': to_user.id,
+                                            'content': TranslateTemplate.translate_and_substitute(
+                                                template='_NOTIFICATIONS', url='', language=to_user.lang,
+                                                allow_html='*', phrase=phrase, dictionary={
+                                                    'company': company,
+                                                    'url_user_profile': url_for('user.profile', user_id=from_user.id),
+                                                    'url_company_employees': url_for('company.employees',
+                                                                                     company_id=company.id),
+                                                    'to_user': to_user.get_client_side_dict(fields='full_name'),
+                                                    'from_user': from_user.get_client_side_dict(fields='full_name'),
+                                                }),
+                                            'notification_type': Notification.NOTIFICATION_TYPES[
+                                                'COMPANY_EMPLOYERS_ACTIVITY']})
 
 
 @event.listens_for(Notification.content, "set")
