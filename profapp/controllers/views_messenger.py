@@ -157,12 +157,10 @@ def contact_action(json):
 
     user1_id = min([g.user.id, json['user_id']])
     user2_id = max([g.user.id, json['user_id']])
-    another_user = User.get(json['user_id'])
     contact = g.db().query(Contact).filter_by(user1_id=user1_id, user2_id=user2_id).first()
 
     if contact:
         old_status_for_g_user = contact.get_status_for_user(g.user.id)
-        old_status_for_another_user = contact.get_status_for_user(json['user_id'])
 
         if action == 'add' and old_status_for_g_user in [contact.STATUSES['ANY_REVOKED'],
                                                          contact.STATUSES['REVOKED_ANY']]:
@@ -179,8 +177,6 @@ def contact_action(json):
             raise BadDataProvided(
                 "Wrong action `%s` for status `%s=>%s`" % (action, contact.status, old_status_for_g_user))
     else:
-        old_status_for_g_user = None
-        old_status_for_another_user = None
         if action == 'add':
             contact = Contact(user1_id=user1_id, user2_id=user2_id)
             contact.set_status_for_user(g.user.id, contact.STATUSES['REQUESTED_UNCONFIRMED'])
@@ -188,11 +184,6 @@ def contact_action(json):
             raise BadDataProvided("Wrong action `add` for no contact")
 
     contact.save()
-    g.db.commit()
-    new_status_for_g_user = contact.get_status_for_user(g.user.id)
-    new_status_for_another_user = contact.get_status_for_user(json['user_id'])
-    Notification.send_friend_request_activity(g.user, another_user, new_status_for_g_user, old_status_for_g_user)
-    Notification.send_friend_request_activity(another_user, g.user, new_status_for_another_user, old_status_for_another_user)
-
+    # g.db.commit()
 
     return {'contact_status': contact.get_status_for_user(g.user.id)}

@@ -2,7 +2,7 @@ import sys
 
 sys.path.append('..')
 from profapp.models.users import User
-from profapp.models.messenger import Contact, Message, Notification
+from profapp.models.messenger import Socket, Notification
 from flask import g
 from sqlalchemy import and_, or_
 
@@ -18,17 +18,14 @@ if __name__ == '__main__':
     app = create_app(apptype='profi', config='config.CommandLineConfig')
     with app.app_context():
 
-        load_database(app.config['SQLALCHEMY_DATABASE_URI'])(echo = True)
+        load_database(app.config['SQLALCHEMY_DATABASE_URI'])(echo=True)
         if args.user_id:
             users = [g.db.query(User).filter(User.id == args.user_id).one()]
         else:
             users = g.db.query(User).outerjoin(Notification,
-                                          and_(Notification.to_user_id == User.id,
-                                               Notification.notification_type == Notification.NOTIFICATION_TYPES[
-                                                   'GREETING'])) \
+                                               and_(Notification.to_user_id == User.id,
+                                                    Notification.notification_type == Notification.NOTIFICATION_TYPES[
+                                                        'GREETING'])) \
                 .filter(Notification.id == None).all()
 
-
-        for u in users:
-            Notification.send_greeting(u)
-
+        Socket.send_greeting(users)

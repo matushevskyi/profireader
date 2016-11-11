@@ -127,7 +127,7 @@ def send_message(sid, event_data):
         return {'ok': True, 'message_id': message.id}
 
 
-@sio.on('send_contact_requested')
+@sio.on('request_status_changed')
 def send_contact_requested(sid, mes_data):
     with controlled_execution():
         from profapp.models.users import User

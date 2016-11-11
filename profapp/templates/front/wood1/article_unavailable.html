@@ -1,4 +1,4 @@
 {{ article_unavaible['message'] }}
 {% if article_unavaible['url'] %}
-    {{ __('Please click here: %(url)s to proceed', {'url': article_unavaible['url']}) }}
+    {{ __('Please <a href="%(url)s">click here</a> to proceed', {'url': article_unavaible['url']}) }}
 {% endif %}

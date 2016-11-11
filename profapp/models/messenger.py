@@ -1,9 +1,6 @@
 from sqlalchemy import Column, ForeignKey, text
 from sqlalchemy.orm import relationship, aliased, backref
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..constants import RECORD_IDS
-from ..models.company import Company, UserCompany
-from ..models.portal import PortalDivision, Portal
 from ..models.users import User
 from ..models.files import File
 from ..models.translate import TranslateTemplate
@@ -23,6 +20,61 @@ from config import Config
 import simplejson
 from ..controllers.errors import BadDataProvided
 from sqlalchemy.sql import expression
+from profapp import on_value_changed
+
+
+class Socket:
+    @staticmethod
+    def notification_delivered(*args, **kwargs):
+        print('notification_delivered', args, kwargs)
+
+    @staticmethod
+    def request_status_changed(to_user_id, from_user_id, status):
+        from socketIO_client import SocketIO
+        from config import MAIN_DOMAIN
+
+        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+            socketIO.emit('request_status_changed',
+                          {'to_user_id': to_user_id, 'from_user_id': from_user_id, 'status': status},
+                          Socket.notification_delivered)
+            socketIO.wait_for_callbacks(seconds=1)
+
+    @staticmethod
+    def notification(notification_data):
+        from socketIO_client import SocketIO
+        from config import MAIN_DOMAIN
+
+        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+            socketIO.emit('send_notification', notification_data, Socket.notification_delivered)
+            socketIO.wait_for_callbacks(seconds=1)
+
+    @staticmethod
+    def prepare_notifications(to_users, notification_type, phrase, dict_main={}):
+        datas = [{'to_user_id': u.id,
+                  'content': TranslateTemplate.translate_and_substitute(
+                      template='_NOTIFICATIONS', url='', language=u.lang, allow_html='*', phrase=phrase,
+                      dictionary=utils.dict_merge(dict_main,
+                                                  {'to_user': u.get_client_side_dict(fields='full_name'),
+                                                   'url_to_user_profile': url_for('user.profile', user_id=u.id)})),
+                  'notification_type': notification_type
+                  } for u in to_users] if phrase else []
+
+        def ret():
+            for d in datas:
+                Socket.notification(d)
+
+        return ret
+
+    @staticmethod
+    def send_greeting(to_users):
+        return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['GREETING'],
+                                     "Welcome to profireader. You can change <a href=\"%(url_to_user_profile)s\">your profile </a>")()
+
+    @staticmethod
+    def send_custom(to_user, text):
+        Socket.notification({'to_user_id': to_user.id,
+                             'notification_type': Notification.NOTIFICATION_TYPES['CUSTOM']
+                             })
 
 
 class Contact(Base, PRBase):
@@ -58,13 +110,16 @@ class Contact(Base, PRBase):
     def get_client_side_dict(self, fields='id,user1_id,user2_id,status', more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    def get_status_for_user(self, user_id):
+    def get_status_for_user(self, user_id, for_status=None):
+        st = for_status if for_status else self.status
         if user_id == self.user1_id:
-            return self.status
+            return st
+        elif user_id == self.user2_id:
+            spliced = st.split('_')
+            spliced.reverse()
+            return '_'.join(spliced)
         else:
-            splited = self.status.split('_')
-            splited.reverse()
-            return '_'.join(splited)
+            raise BadDataProvided("User with id=`%s` is not presented in contact with id=`%s`" % (user_id, self.id))
 
     def set_status_for_user(self, user_id, status):
         if user_id == self.user1_id:
@@ -105,6 +160,38 @@ class Contact(Base, PRBase):
         }
 
 
+@on_value_changed(Contact.status)
+def state_changed(target, new_value, old_value, action):
+    # send contact request messages via socketIO (to both users)
+    def ret():
+        Socket.request_status_changed(target.user1_id, target.user2_id,
+                                      target.get_status_for_user(target.user1_id, new_value))
+        Socket.request_status_changed(target.user2_id, target.user1_id,
+                                      target.get_status_for_user(target.user2_id, new_value))
+
+    return ret
+
+
+@on_value_changed(Contact.status)
+def state_changed(target, new_value, old_value, action):
+    # send notifications
+    to_user = User.get(target.get_another_user_id(g.user.id))
+
+    new_status = target.get_status_for_user(to_user.id, new_value) if new_value else None
+    old_status = target.get_status_for_user(to_user.id, old_value) if old_value else None
+
+    if new_status == Contact.STATUSES['ACTIVE_ACTIVE'] and old_status == Contact.STATUSES['REQUESTED_UNCONFIRMED']:
+        phrase = "User %(from_user.full_name)s accepted your friendship request :)"
+    elif new_status == Contact.STATUSES['ANY_REVOKED'] and old_status == Contact.STATUSES['ACTIVE_ACTIVE']:
+        phrase = "User %(from_user.full_name)s revoked your friendship :("
+    else:
+        phrase = None
+
+    return Socket.prepare_notifications([to_user], Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'],
+                                        phrase, {'to_user': to_user.get_client_side_dict(fields='full_name'),
+                                                 'from_user': g.user.get_client_side_dict(fields='full_name')})
+
+
 class Message(Base, PRBase):
     __tablename__ = 'message'
 
@@ -115,8 +202,6 @@ class Message(Base, PRBase):
     from_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
     contact_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Contact.id))
     content = Column(TABLE_TYPES['string_1000'])
-
-    # informed_by_email_about_unread = Column(TABLE_TYPES['timestamp'])
 
     contact = relationship(Contact)
 
@@ -183,148 +268,6 @@ class Notification(Base, PRBase):
         ret = utils.dict_merge(self.get_client_side_dict(fields='id,content,notification_type,to_user_id'),
                                {'cr_tm': self.cr_tm.strftime("%a, %d %b %Y %H:%M:%S GMT")})
         return ret
-
-    @staticmethod
-    def notification_delivered(*args, **kwargs):
-        print('notification_delivered', args, kwargs)
-
-    @staticmethod
-    def notification_send(notification_data):
-        from socketIO_client import SocketIO
-        from config import MAIN_DOMAIN
-
-        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
-            socketIO.emit('send_notification', notification_data, Notification.notification_delivered)
-            socketIO.wait_for_callbacks(seconds=1)
-
-    @staticmethod
-    def contact_request_send(to_user_id, from_user_id, status):
-        from socketIO_client import SocketIO
-        from config import MAIN_DOMAIN
-
-        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
-            socketIO.emit('send_contact_requested', {'to_user_id': to_user_id, 'from_user_id': from_user_id,
-                                                     'status': status},
-                          Notification.notification_delivered)
-            socketIO.wait_for_callbacks(seconds=1)
-
-    @staticmethod
-    def send_greeting(to_user):
-        Notification.notification_send({'to_user_id': to_user.id,
-                                        'content': TranslateTemplate.translate_and_substitute(
-                                            template='_NOTIFICATIONS',
-                                            url='',
-                                            language=to_user.lang,
-                                            allow_html='*',
-                                            phrase="Welcome to profireader. You can change your profile %(url_user_profile)s",
-                                            dictionary={
-                                                'to_user': to_user.get_client_side_dict(fields='full_name'),
-                                                'url_user_profile': url_for('user.profile', user_id=to_user.id)}),
-                                        'notification_type': Notification.NOTIFICATION_TYPES['GREETING']
-                                        })
-
-    @staticmethod
-    def send_custom(to_user, text):
-        Notification.notification_send({'to_user_id': to_user.id,
-                                        'notification_type': Notification.NOTIFICATION_TYPES['CUSTOM']
-                                        })
-
-    @staticmethod
-    def send_friend_request_activity(to_user, from_user, new_status, old_status):
-        if new_status == old_status:
-            return
-
-        phrase = None
-
-        if new_status == Contact.STATUSES['ACTIVE_ACTIVE'] and old_status == Contact.STATUSES['REQUESTED_UNCONFIRMED']:
-            phrase = "User %(from_user.full_name)s accepted your friendship request :)"
-        elif new_status == Contact.STATUSES['ANY_REVOKED'] and old_status == Contact.STATUSES['ACTIVE_ACTIVE']:
-            phrase = "User %(from_user.full_name)s revoked your friendship :("
-
-        if phrase:
-            Notification.notification_send({'to_user_id': to_user.id,
-                                            'content': TranslateTemplate.translate_and_substitute(
-                                                template='_NOTIFICATIONS',
-                                                url='',
-                                                language=to_user.lang,
-                                                allow_html='*',
-                                                phrase=phrase,
-                                                dictionary={
-                                                    'to_user': to_user.get_client_side_dict(fields='full_name'),
-                                                    'from_user': from_user.get_client_side_dict(fields='full_name'),
-                                                }),
-                                            'notification_type': Notification.NOTIFICATION_TYPES[
-                                                'FRIEND_REQUEST_ACTIVITY']
-                                            })
-
-        Notification.contact_request_send(to_user.id, from_user.id, new_status)
-
-    @staticmethod
-    def send_employment_activity(company, to_user, from_user, activity_type):
-        phrase = None
-
-        def nothing():
-            pass
-
-        dict_main = {
-            'company': company,
-            'url_company_profile': url_for('company.profile', company_id=company.id),
-            'to_user': to_user.get_client_side_dict(fields='full_name'),
-            'from_user': from_user.get_client_side_dict(fields='full_name')
-        }
-
-        if activity_type == 'want_to_join':
-            phrase = "User <a href=\"%(url_user_profile)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
-            dict_main['url_user_profile'] = url_for('user.profile', user_id=from_user.id)
-            dict_main['url_company_employees'] = url_for('company.employees', company_id=company.id)
-
-        if activity_type == UserCompany.STATUSES['ACTIVE']:
-            phrase = "Your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> is accepted"
-
-        if activity_type == UserCompany.STATUSES['REJECTED']:
-            phrase = "Sorry, but your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> was rejected"
-
-        if activity_type == UserCompany.STATUSES['FIRED']:
-            phrase = "Sorry, your was fired from company <a href=\"%(url_company_profile)s\">%(company.name)s</a>"
-
-        if phrase:
-            dicta = {'to_user_id': to_user.id, 'content': TranslateTemplate.translate_and_substitute(
-                template='_NOTIFICATIONS', url='', language=to_user.lang, allow_html='*', phrase=phrase,
-                dictionary=dict_main),
-                     'notification_type': Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY']}
-            return lambda: Notification.notification_send(dicta)
-        else:
-            return nothing
-
-    @staticmethod
-    def send_publication_activity(portal, to_user, from_user, activity_type):
-        from ..models.materials import Material, Publication
-
-
-        phrase = None
-
-        def nothing():
-            pass
-
-        dict_main = {
-            'portal': portal,
-            'to_user': to_user.get_client_side_dict(fields='full_name'),
-            'from_user': from_user.get_client_side_dict(fields='full_name'),
-            'url_from_user_profile': url_for('user.profile', user_id=from_user.id)
-        }
-
-        if activity_type == Publication.STATUSES['SUBMITTED']:
-            phrase = "User <a href=\"(url_from_user_profile)s\">%(from_user.full_name)s</a> just submited material to <a href=\"%(url_portal_publications)s\">publish</a> to portal <a href=\"%(portal.host)s\">%(portal.host)s</a>"
-            dict_main['url_portal_publications'] = url_for('portal.publications', company_id=portal.own_company.id)
-
-        if phrase:
-            dicta = {'to_user_id': to_user.id, 'content': TranslateTemplate.translate_and_substitute(
-                template='_NOTIFICATIONS', url='', language=to_user.lang, allow_html='*', phrase=phrase,
-                dictionary=dict_main),
-                     'notification_type': Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY']}
-            return lambda: Notification.notification_send(dicta)
-        else:
-            return nothing
 
 
 @event.listens_for(Notification.content, "set")

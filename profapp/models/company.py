@@ -10,7 +10,7 @@ from flask import g
 from config import Config
 from tools.db_utils import db
 from sqlalchemy import CheckConstraint
-from flask import abort
+from flask import abort, url_for
 from .pr_base import PRBase, Base, Search, Grid
 from ..controllers import errors
 from functools import wraps
@@ -22,10 +22,13 @@ from .. import utils
 import re
 from .files import FileImg, FileImgDescriptor
 from .elastic import PRElasticDocument
+from profapp import on_value_changed
+from ..models.messenger import Notification, Socket
 
 
 class Company(Base, PRBase, PRElasticDocument):
     __tablename__ = 'company'
+
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     name = Column(TABLE_TYPES['name'], unique=True, nullable=False, default='')
 
@@ -416,25 +419,29 @@ class UserCompany(Base, PRBase):
                     filter(User.full_name.ilike("%" + searchtext + "%")).all()]
 
 
+@on_value_changed(UserCompany.status)
+def state_changed(target, new_value, old_value, action):
+    company = Company.get(target.company_id)
 
+    dict_main = {
+        'company': company,
+        'url_company_profile': url_for('company.profile', company_id=company.id),
+        'from_user': g.user.get_client_side_dict(fields='full_name')
+    }
 
-@event.listens_for(UserCompany.status, "set")
-def change_user_company_status(target, new_status, old_status, initiator):
-    if new_status != old_status:
-        from ..models.messenger import Notification
-        company = Company.get(target.company_id)
-        functions = []
+    to_users = [User.get(target.user_id)]
+    if new_value == UserCompany.STATUSES['APPLICANT']:
+        phrase = "User <a href=\"%(url_from_user_profile)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
+        dict_main['url_from_user_profile'] = url_for('user.profile', user_id=g.user.id)
+        dict_main['url_company_employees'] = url_for('company.employees', company_id=company.id)
+        to_users = company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
+    elif new_value == UserCompany.STATUSES['ACTIVE']:
+        phrase = "Your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> is accepted"
+    elif new_value == UserCompany.STATUSES['REJECTED']:
+        phrase = "Sorry, but your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> was rejected"
+    elif new_value == UserCompany.STATUSES['FIRED']:
+        phrase = "Sorry, your was fired from company <a href=\"%(url_company_profile)s\">%(company.name)s</a>"
+    else:
+        phrase = None
 
-        if new_status == UserCompany.STATUSES['APPLICANT']:
-            users = company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
-            functions = [Notification.send_employment_activity(company, u, g.user, 'want_to_join') for u in users]
-
-        if new_status in [UserCompany.STATUSES['ACTIVE'], UserCompany.STATUSES['REJECTED'],
-                          UserCompany.STATUSES['FIRED']]:
-            u = User.get(target.user_id)
-            functions = [Notification.send_employment_activity(company, u, g.user, new_status)]
-
-        for f in functions:
-            g.after_commit_models.append(f)
-
-
+    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'], phrase, dict_main)
