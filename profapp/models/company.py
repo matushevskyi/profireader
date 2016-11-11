@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, ForeignKey, UniqueConstraint, Enum  # , update
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy import event
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from flask.ext.login import current_user
 from sqlalchemy import Column, String, ForeignKey, update, and_, text
@@ -201,7 +202,7 @@ class Company(Base, PRBase, PRElasticDocument):
     def get_user_with_rights(self, *args):
         usrc = db(UserCompany).filter(
             text("(company_id = '%s') AND (0 <> (rights & %s))" % (
-            self.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in args})))).all()
+                self.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in args})))).all()
 
         return db(User).filter(User.id.in_([e.user_id for e in usrc])).all()
 
@@ -413,3 +414,27 @@ class UserCompany(Base, PRBase):
         return [user.get_client_side_dict(fields='full_name|id') for user in
                 db(User).filter(~db(UserCompany, user_id=User.id, company_id=company_id).exists()).
                     filter(User.full_name.ilike("%" + searchtext + "%")).all()]
+
+
+
+
+@event.listens_for(UserCompany.status, "set")
+def change_user_company_status(target, new_status, old_status, initiator):
+    if new_status != old_status:
+        from ..models.messenger import Notification
+        company = Company.get(target.company_id)
+        functions = []
+
+        if new_status == UserCompany.STATUSES['APPLICANT']:
+            users = company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
+            functions = [Notification.send_employment_activity(company, u, g.user, 'want_to_join') for u in users]
+
+        if new_status in [UserCompany.STATUSES['ACTIVE'], UserCompany.STATUSES['REJECTED'],
+                          UserCompany.STATUSES['FIRED']]:
+            u = User.get(target.user_id)
+            functions = [Notification.send_employment_activity(company, u, g.user, new_status)]
+
+        for f in functions:
+            g.after_commit_models.append(f)
+
+

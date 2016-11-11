@@ -47,15 +47,12 @@ def companies_load(json):
             'there_is_more': there_is_more,
             'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()}}
 
+
 @company_bp.route('/join_to_company/', methods=['OK'])
 @check_right(UserIsActive)
 def join_to_company(json):
-
-    e = UserCompany(user_id=g.user.id, company_id=json['company_id']).save()
-    users = e.company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
-    for u in users:
-        Notification.send_employment_activity(e.company, u, g.user, e.status, None)
-    return {'employment': e.get_client_side_dict(fields='id,status, company, rights')}
+    return {'employment': UserCompany(user_id=g.user.id, company_id=json['company_id']).save().get_client_side_dict(
+        fields='id,status, company, rights')}
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
@@ -271,8 +268,6 @@ def search_for_user(json, company_id):
 @check_right(UserIsActive)
 def send_article_to_user(json):
     return {'user': json['send_to_user']}
-
-
 
 
 @company_bp.route('/add_subscriber/', methods=['POST'])

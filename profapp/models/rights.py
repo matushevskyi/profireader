@@ -10,23 +10,9 @@ from ..models.users import User
 from .pr_base import PRBase
 import re
 import werkzeug
-
-# COMPANY_OWNER = ['edit', 'publish', 'unpublish', 'upload_files', 'delete_files', 'add_employee',
-#                 'suspend_employee', 'submit_publications', 'manage_rights_company', 'manage_portal',
-#                 'article_priority', 'manage_readers', 'manage_companies_members', 'manage_comments',
-#                 'subscribe_to_portals']
+from sqlalchemy import text
 
 
-# ROLE = {
-#     OWNER: 'owner',
-#     ADMIN: 'admin',
-#     EDITOR: 'editor',
-#     STAFF: 'staff',
-#     CONTRIBUTOR: 'contributor',
-#     USER: 'user',
-#     GUEST: 'guest',
-#     READER: 'reader'
-# }
 class BaseRightsInProfireader:
     ACTIONS = {
         'CREATE_COMPANY': 'CREATE_COMPANY',
@@ -213,6 +199,25 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
 
     def actions(self):
         return BaseRightsInProfireader.base_actions(self, object=self.publication)
+
+
+    def user_that_have_rights(self, rights):
+        company = self.company if self.company else self.division.portal.own_company \
+            if self.division else self.publication.company if self.publication else None
+        membership_portal_id = self.division.portal.id if self.division else ''
+        usrc = db(UserCompany).filter(text("(company_id = '%s') AND (0 <> (rights & %s))" % (
+                    company.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in rights['employment']})))).all()
+
+        usrc = {u.id: u for u in usrc}
+
+        usrm = db(MemberCompanyPortal).filter(text("(company_id = '%s') AND (id = '%s') AND (0 <> (rights & %s))" % (
+            membership_portal_id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in rights['membership']})))).all()
+
+        usrm = {u.id: u for u in usrm}
+
+        users = {u.id: u for u_id,u in usrm.items() if u_id in usrc}
+
+        return db(User).filter(User.id.in_([u.user_id for u in users])).all()
 
     def action_is_allowed(self, action_name):
         company = self.company if self.company else self.division.portal.own_company \

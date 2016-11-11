@@ -22,7 +22,6 @@ from config import Config
 import simplejson
 
 
-
 class Material(Base, PRBase, PRElasticDocument):
     __tablename__ = 'material'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
@@ -198,9 +197,10 @@ class Publication(Base, PRBase, PRElasticDocument):
     read_count = Column(TABLE_TYPES['int'], default=0)
     like_count = Column(TABLE_TYPES['int'], default=0)
 
-    tags = relationship(Tag, secondary='tag_publication', uselist=True, order_by=lambda: expression.desc(TagPublication.position))
+    tags = relationship(Tag, secondary='tag_publication', uselist=True,
+                        order_by=lambda: expression.desc(TagPublication.position))
 
-    status = Column(TABLE_TYPES['status'], default='SUBMITTED')
+    status = Column(TABLE_TYPES['status'])
     STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED'}
 
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
@@ -379,28 +379,6 @@ class Publication(Base, PRBase, PRElasticDocument):
     def update_article_portal(publication_id, **kwargs):
         db(Publication, id=publication_id).update(kwargs)
 
-    # # TODO: SS by OZ: contition `if datetime(*localtime[:6]) > article['publishing_tm']:` should be checked by sql (passed
-    # # to search function)
-    # @staticmethod
-    # def get_list_reader_articles(articles):
-    #     list_articles = []
-    #     for article_id, article in articles.items():
-    #         article['tags'] = [tag.get_client_side_dict() for tag in article['tags']]
-    #         article['is_favorite'] = ReaderPublication.article_is_favorite(g.user.id, article_id)
-    #         article['liked'] = ReaderPublication.count_likes(g.user.id, article_id)
-    #         article['list_liked_reader'] = ReaderPublication.get_list_reader_liked(article_id)
-    #         article['company']['logo'] = Company.get(articles[article_id]['company']['id']).logo.url
-    #         article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-    #             articles[article_id]['portal']['logo_file_id'] else tools.fileUrl(FOLDER_AND_FILE.no_company_logo())
-    #         # del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
-    #         list_articles.append(article)
-    #     return list_articles
-
-    # def clone_for_company(self, company_id):
-    #     return self.detach().attr({'company_id': company_id,
-    #                                'status': ARTICLE_STATUS_IN_COMPANY.
-    #                               submitted})
-
     @staticmethod
     def subquery_portal_articles(portal_id, filters, sorts):
         sub_query = db(Publication)
@@ -530,3 +508,28 @@ class Publication(Base, PRBase, PRElasticDocument):
             'liked': self.is_liked(),
             'liked_count': self.liked_count()
         }
+
+
+@event.listens_for(Publication.status, "set")
+def change_publication_status(target, new_status, old_status, initiator):
+    print('+sd++dff+ds+fds+ds')
+    if new_status != old_status:
+        from ..models.rights import PublishUnpublishInPortal
+        from ..models.messenger import Notification
+        portal_division = target.division if target.division else PortalDivision.get(target.portal_division_id)
+        portal = portal_division.portal
+        material = Material.get(target.material_id)
+        functions = []
+
+        if new_status == Publication.STATUSES['SUBMITTED']:
+            users = PublishUnpublishInPortal(target, portal_division, material.company).get_user_with_rights(
+                PublishUnpublishInPortal.publish_rights)
+            functions = [Notification.send_publication_activity(portal, u, g.user, new_status) for u in users]
+
+        # if new_status in [UserCompany.STATUSES['ACTIVE'], UserCompany.STATUSES['REJECTED'],
+        #                   UserCompany.STATUSES['FIRED']]:
+        #     u = User.get(target.user_id)
+        #     functions = [Notification.send_employment_activity(company, u, g.user, new_status)]
+
+        for f in functions:
+            g.after_commit_models.append(f)

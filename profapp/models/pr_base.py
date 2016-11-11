@@ -21,9 +21,8 @@ import datetime
 import time
 import operator
 from collections import OrderedDict
-import base64
-# from PIL import Image
-from io import BytesIO
+from sqlalchemy import event
+
 
 from .. import utils
 from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy

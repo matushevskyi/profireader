@@ -148,7 +148,7 @@ class Notification(Base, PRBase):
         'GREETING': 'GREETING', 'CUSTOM': 'CUSTOM',
         'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY',
         'COMPANY_EMPLOYERS_ACTIVITY': 'COMPANY_EMPLOYERS_ACTIVITY',
-        'MATERIAL_PUBLICATION_STATUS_CHANGED': 'MATERIAL_PUBLICATION_STATUS_CHANGED'
+        'PUBLICATION_ACTIVITY': 'PUBLICATION_ACTIVITY'
     }
 
     @staticmethod
@@ -260,29 +260,71 @@ class Notification(Base, PRBase):
         Notification.contact_request_send(to_user.id, from_user.id, new_status)
 
     @staticmethod
-    def send_employment_activity(company, to_user, from_user, new_status, old_status):
-        if new_status == old_status:
-            return
+    def send_employment_activity(company, to_user, from_user, activity_type):
+        phrase = None
+
+        def nothing():
+            pass
+
+        dict_main = {
+            'company': company,
+            'url_company_profile': url_for('company.profile', company_id=company.id),
+            'to_user': to_user.get_client_side_dict(fields='full_name'),
+            'from_user': from_user.get_client_side_dict(fields='full_name')
+        }
+
+        if activity_type == 'want_to_join':
+            phrase = "User <a href=\"%(url_user_profile)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
+            dict_main['url_user_profile'] = url_for('user.profile', user_id=from_user.id)
+            dict_main['url_company_employees'] = url_for('company.employees', company_id=company.id)
+
+        if activity_type == UserCompany.STATUSES['ACTIVE']:
+            phrase = "Your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> is accepted"
+
+        if activity_type == UserCompany.STATUSES['REJECTED']:
+            phrase = "Sorry, but your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> was rejected"
+
+        if activity_type == UserCompany.STATUSES['FIRED']:
+            phrase = "Sorry, your was fired from company <a href=\"%(url_company_profile)s\">%(company.name)s</a>"
+
+        if phrase:
+            dicta = {'to_user_id': to_user.id, 'content': TranslateTemplate.translate_and_substitute(
+                template='_NOTIFICATIONS', url='', language=to_user.lang, allow_html='*', phrase=phrase,
+                dictionary=dict_main),
+                     'notification_type': Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY']}
+            return lambda: Notification.notification_send(dicta)
+        else:
+            return nothing
+
+    @staticmethod
+    def send_publication_activity(portal, to_user, from_user, activity_type):
+        from ..models.materials import Material, Publication
+
 
         phrase = None
 
-        if new_status == UserCompany.STATUSES['APPLICANT']:
-            phrase = "User <a href=\"%(url_user_profile)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
+        def nothing():
+            pass
+
+        dict_main = {
+            'portal': portal,
+            'to_user': to_user.get_client_side_dict(fields='full_name'),
+            'from_user': from_user.get_client_side_dict(fields='full_name'),
+            'url_from_user_profile': url_for('user.profile', user_id=from_user.id)
+        }
+
+        if activity_type == Publication.STATUSES['SUBMITTED']:
+            phrase = "User <a href=\"(url_from_user_profile)s\">%(from_user.full_name)s</a> just submited material to <a href=\"%(url_portal_publications)s\">publish</a> to portal <a href=\"%(portal.host)s\">%(portal.host)s</a>"
+            dict_main['url_portal_publications'] = url_for('portal.publications', company_id=portal.own_company.id)
 
         if phrase:
-            Notification.notification_send({'to_user_id': to_user.id,
-                                            'content': TranslateTemplate.translate_and_substitute(
-                                                template='_NOTIFICATIONS', url='', language=to_user.lang,
-                                                allow_html='*', phrase=phrase, dictionary={
-                                                    'company': company,
-                                                    'url_user_profile': url_for('user.profile', user_id=from_user.id),
-                                                    'url_company_employees': url_for('company.employees',
-                                                                                     company_id=company.id),
-                                                    'to_user': to_user.get_client_side_dict(fields='full_name'),
-                                                    'from_user': from_user.get_client_side_dict(fields='full_name'),
-                                                }),
-                                            'notification_type': Notification.NOTIFICATION_TYPES[
-                                                'COMPANY_EMPLOYERS_ACTIVITY']})
+            dicta = {'to_user_id': to_user.id, 'content': TranslateTemplate.translate_and_substitute(
+                template='_NOTIFICATIONS', url='', language=to_user.lang, allow_html='*', phrase=phrase,
+                dictionary=dict_main),
+                     'notification_type': Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY']}
+            return lambda: Notification.notification_send(dicta)
+        else:
+            return nothing
 
 
 @event.listens_for(Notification.content, "set")

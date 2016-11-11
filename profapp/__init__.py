@@ -47,12 +47,20 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo = False):
 
 def load_database(db_config):
     def load_db(autocommit=False, autoflush=False, echo = False):
+        from sqlalchemy import event
         db_session = db_session_func(db_config, autocommit, autoflush, echo)
         g.db = db_session
         g.req = req
         g.filter_json = utils.filter_json
         g.get_url_adapter = get_url_adapter
         g.fileUrl = utils.fileUrl
+        g.after_commit_models = []
+
+        @event.listens_for(g.db, 'after_commit')
+        def after_commit(s):
+        # TODO: OZ by OZ: change SQLAchemy => Flask-SQLAchemy, and use http://flask-sqlalchemy.pocoo.org/dev/signals/#models_committed
+            for f in g.after_commit_models:
+                f()
 
     return load_db
 
@@ -186,6 +194,8 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))
     app.before_request(lambda: load_user(apptype))
     app.before_request(setup_authomatic(app))
+
+    
 
     def add_map_headers_to_less_files(response):
         response.headers.add('Access-Control-Allow-Origin', '*')
