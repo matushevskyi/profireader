@@ -56,7 +56,7 @@ class TranslateTemplate(Base, PRBase):
                             ", :".join(TranslateTemplate.languages)),
                            params=utils.dict_merge(a_filter, {'allow_html': allow_html, 'url': url},
                                                    {l: phrase for l in TranslateTemplate.languages}, values))
-            return db(TranslateTemplate, ).first()
+            return db(TranslateTemplate, **a_filter).first()
 
         exist = db(TranslateTemplate, **a_filter).first()
 
@@ -135,7 +135,7 @@ class TranslateTemplate(Base, PRBase):
 
     @staticmethod
     def translate_and_substitute(template, phrase, dictionary={}, language=None, url=None, allow_html=''):
-        translated = TranslateTemplate.getTranslate(template, phrase[0:200], url, allow_html, language)
+        translated = TranslateTemplate.getTranslate(template, phrase, url, allow_html, language)
         r = re.compile("%\\(([^)]*)\\)s")
 
         def getFromDict(context, indexes, default):

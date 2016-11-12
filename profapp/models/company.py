@@ -24,6 +24,7 @@ from .files import FileImg, FileImgDescriptor
 from .elastic import PRElasticDocument
 from profapp import on_value_changed
 from ..models.messenger import Notification, Socket
+from profapp.utils import jinja_utils
 
 
 class Company(Base, PRBase, PRElasticDocument):
@@ -420,21 +421,19 @@ class UserCompany(Base, PRBase):
 
 
 @on_value_changed(UserCompany.status)
-def state_changed(target, new_value, old_value, action):
+def user_company_status_changed(target, new_value, old_value, action):
 
     company = Company.get(target.company_id)
 
     dict_main = {
         'company': company,
-        'url_company_profile': url_for('company.profile', company_id=company.id),
-        'from_user': g.user.get_client_side_dict(fields='full_name')
+        'url_company_profile': url_for('company.profile', company_id=company.id)
     }
 
     to_users = [User.get(target.user_id)]
     if new_value == UserCompany.STATUSES['APPLICANT']:
-        phrase = "User <a href=\"%(url_from_user_profile)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
-        dict_main['url_from_user_profile'] = url_for('user.profile', user_id=g.user.id)
-        dict_main['url_company_employees'] = url_for('company.employees', company_id=company.id)
+        phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
+        dict_main['url_company_employees'] = jinja_utils.grid_url(target.id, 'company.employees', company_id=company.id)
         to_users = company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
     elif new_value == UserCompany.STATUSES['ACTIVE'] and g.user.id != target.user_id:
         phrase = "Your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> is accepted"

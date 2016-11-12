@@ -113,8 +113,8 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
     return db_session
 
 
-def load_database(db_config):
-    def load_db(autocommit=False, autoflush=False, echo=False):
+def load_database(db_config, echo=False):
+    def load_db(autocommit=False, autoflush=False, echo=echo):
         from sqlalchemy import event
         db_session = db_session_func(db_config, autocommit, autoflush, echo)
         g.db = db_session

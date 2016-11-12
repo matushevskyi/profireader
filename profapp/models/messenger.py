@@ -49,15 +49,18 @@ class Socket:
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
-    def prepare_notifications(to_users, notification_type, phrase, dict_main={}):
+    def prepare_notifications(to_users, notification_type, phrase, dict_main={}, except_to_user=[]):
+        from_user_dict = {'from_user': g.user.get_client_side_dict(fields='full_name'),
+                          'url_profile_from_user': url_for('user.profile', user_id=g.user.id)} if g.user else {}
+
         datas = [{'to_user_id': u.id,
                   'content': TranslateTemplate.translate_and_substitute(
                       template='_NOTIFICATIONS', url='', language=u.lang, allow_html='*', phrase=phrase,
-                      dictionary=utils.dict_merge(dict_main,
+                      dictionary=utils.dict_merge(dict_main, from_user_dict,
                                                   {'to_user': u.get_client_side_dict(fields='full_name'),
-                                                   'url_to_user_profile': url_for('user.profile', user_id=u.id)})),
+                                                   'url_profile_to_user': url_for('user.profile', user_id=u.id)})),
                   'notification_type': notification_type
-                  } for u in to_users] if phrase else []
+                  } for u in to_users if u not in except_to_user] if phrase else []
 
         def ret():
             for d in datas:
@@ -68,7 +71,7 @@ class Socket:
     @staticmethod
     def send_greeting(to_users):
         return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['GREETING'],
-                                     "Welcome to profireader. You can change <a href=\"%(url_to_user_profile)s\">your profile </a>")()
+                                            "Welcome to profireader. You can change <a href=\"%(url_profile_to_user)s\">your profile </a>")()
 
     @staticmethod
     def send_custom(to_user, text):
@@ -161,7 +164,7 @@ class Contact(Base, PRBase):
 
 
 @on_value_changed(Contact.status)
-def state_changed(target, new_value, old_value, action):
+def contact_status_changed(target, new_value, old_value, action):
     # send contact request messages via socketIO (to both users)
     def ret():
         Socket.request_status_changed(target.user1_id, target.user2_id,
@@ -173,7 +176,7 @@ def state_changed(target, new_value, old_value, action):
 
 
 @on_value_changed(Contact.status)
-def state_changed(target, new_value, old_value, action):
+def contact_status_changed_2(target, new_value, old_value, action):
     # send notifications
     to_user = User.get(target.get_another_user_id(g.user.id))
 
@@ -187,9 +190,7 @@ def state_changed(target, new_value, old_value, action):
     else:
         phrase = None
 
-    return Socket.prepare_notifications([to_user], Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'],
-                                        phrase, {'to_user': to_user.get_client_side_dict(fields='full_name'),
-                                                 'from_user': g.user.get_client_side_dict(fields='full_name')})
+    return Socket.prepare_notifications([to_user], Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'], phrase)
 
 
 class Message(Base, PRBase):

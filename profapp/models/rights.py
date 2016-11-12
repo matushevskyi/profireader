@@ -1,7 +1,7 @@
 from functools import reduce
 import inspect
 from flask import g
-from tools.db_utils import db
+from tools import db_utils
 from ..models.company import Company, UserCompany, MemberCompanyPortal
 from ..models.portal import Portal, PortalDivision
 # from ..models.bak_articles import ArticlePortalDivision, ArticleCompany
@@ -10,7 +10,7 @@ from ..models.users import User
 from .pr_base import PRBase
 import re
 import werkzeug
-from sqlalchemy import text
+from sqlalchemy import text, and_
 
 
 class BaseRightsInProfireader:
@@ -200,24 +200,23 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
     def actions(self):
         return BaseRightsInProfireader.base_actions(self, object=self.publication)
 
+    def get_user_with_rights(self, rights):
 
-    def user_that_have_rights(self, rights):
-        company = self.company if self.company else self.division.portal.own_company \
-            if self.division else self.publication.company if self.publication else None
-        membership_portal_id = self.division.portal.id if self.division else ''
-        usrc = db(UserCompany).filter(text("(company_id = '%s') AND (0 <> (rights & %s))" % (
-                    company.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in rights['employment']})))).all()
+        companies_with_rights = {c.id: c for c in g.db.query(Company).outerjoin(MemberCompanyPortal, and_(
+            text("(0 <> (rights & %s))" % (
+                MemberCompanyPortal.RIGHT_AT_PORTAL._tobin({r: True for r in rights['membership']}),)),
+            MemberCompanyPortal.portal_id == self.division.portal.id,
+            Company.id == MemberCompanyPortal.company_id)). \
+            filter(MemberCompanyPortal.id != None).all()}
 
-        usrc = {u.id: u for u in usrc}
+        return [u for (u,c) in g.db.query(User, Company).outerjoin(UserCompany, and_(
+            text("(0 <> (rights & %s))" % (
+                UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in rights['employment']}),)),
+            UserCompany.company_id == self.company.id,
+            UserCompany.user_id == User.id)).outerjoin(Company, Company.id == UserCompany.company_id). \
+            filter(UserCompany.id != None).all() if c.id in companies_with_rights]
 
-        usrm = db(MemberCompanyPortal).filter(text("(company_id = '%s') AND (id = '%s') AND (0 <> (rights & %s))" % (
-            membership_portal_id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in rights['membership']})))).all()
 
-        usrm = {u.id: u for u in usrm}
-
-        users = {u.id: u for u_id,u in usrm.items() if u_id in usrc}
-
-        return db(User).filter(User.id.in_([u.user_id for u in users])).all()
 
     def action_is_allowed(self, action_name):
         company = self.company if self.company else self.division.portal.own_company \
@@ -229,7 +228,8 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
         if not employee:
             return "Sorry!You are not employee in this company!"
 
-        membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=membership_portal_id, company_id=company.id)
+        membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=membership_portal_id,
+                                                                     company_id=company.id)
         if not membership:
             raise Exception('Bad data!')
         company_object = self.division.portal.own_company
@@ -252,7 +252,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
     @staticmethod
     def get_portals_where_company_is_member(company):
         """This method return all portals-partners current company"""
-        return [memcomport.portal for memcomport in db(MemberCompanyPortal, company_id=company.id).all()]
+        return [memcomport.portal for memcomport in db_utils.db(MemberCompanyPortal, company_id=company.id).all()]
 
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
@@ -305,10 +305,12 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
                                 'employee': self.employee, 'material': self.material, 'user': g.user}
         if self.portal:
             check_objects_rights.update(
-                {'membership': MemberCompanyPortal.get_by_portal_id_company_id(portal_id=self.portal.id, company_id=self.material.company.id)})
-            check_objects_status.update({'membership': MemberCompanyPortal.get_by_portal_id_company_id(portal_id=self.portal.id,
+                {'membership': MemberCompanyPortal.get_by_portal_id_company_id(portal_id=self.portal.id,
+                                                                               company_id=self.material.company.id)})
+            check_objects_status.update(
+                {'membership': MemberCompanyPortal.get_by_portal_id_company_id(portal_id=self.portal.id,
                                                                                company_id=self.material.company.id),
-                                         'company where you want submit material': self.portal.own_company})
+                 'company where you want submit material': self.portal.own_company})
 
         return BaseRightsInProfireader._is_action_allowed(self.material, action_name,
                                                           check_objects_status, check_objects_rights,
@@ -470,7 +472,7 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
             value = Company.get(value)
         if key == 'employment_id':
             key = 'employment'
-            value = db(UserCompany, id=value).first()
+            value = db_utils.db(UserCompany, id=value).first()
         return key, value
 
     STATUSES = UserCompany.STATUSES
@@ -675,22 +677,22 @@ class UserIsActive(BaseRightsInProfireader):
             value = User.get(value)
         return key, value
 
-    def is_allowed(self, check_only_banned=None, raise_exception_redirect_if_not = False):
+    def is_allowed(self, check_only_banned=None, raise_exception_redirect_if_not=False):
         if not self.user:
             raise werkzeug.exceptions.Unauthorized(description=None, response=None)
-        return self.user.is_active(check_only_banned, raise_exception_redirect_if_not= raise_exception_redirect_if_not)
+        return self.user.is_active(check_only_banned, raise_exception_redirect_if_not=raise_exception_redirect_if_not)
 
 
 class UserNonBanned(UserIsActive):
     def __init__(self, user=None):
         super(UserNonBanned, self).__init__(user=user)
 
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         return UserIsActive.is_allowed(self, check_only_banned=True)
 
 
 class AllowAll(BaseRightsInProfireader):
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         return True
 
 
@@ -708,7 +710,7 @@ class UserEditProfieRight(BaseRightsInProfireader):
             value = User.get(value)
         return key, value
 
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         if self.user == g.user:
             return self._is_action_allowed(self.user, self.ACTIONS['EDIT_USER_PROFILE'], {'user': self.user},
                                            actions=self.ACTIONS)
@@ -729,7 +731,7 @@ class UserIsEmployee(BaseRightsEmployeeInCompany):
         super(UserIsEmployee, self).__init__(company=company)
         self.material = material if isinstance(material, Material) else Material.get(material) if material else None
 
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         self.company = self.company if self.company else self.material.company
         employee = UserCompany.get(company_id=self.company.id)
         if not employee:
@@ -738,7 +740,7 @@ class UserIsEmployee(BaseRightsEmployeeInCompany):
 
 
 class EditCompanyRight(BaseRightsEmployeeInCompany):
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         return self.action_is_allowed(self.ACTIONS['EDIT_COMPANY'])
 
 
@@ -747,14 +749,14 @@ class EditPortalRight(BaseRightsEmployeeInCompany):
         super(EditPortalRight, self).__init__(company=company)
         self.portal = portal
 
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         if self.company == None and self.portal:
             self.company = self.portal.own_company
         return self.action_is_allowed(self.ACTIONS['EDIT_PORTAL'])
 
 
 class RequireMembereeAtPortalsRight(BaseRightsEmployeeInCompany):
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         return self.action_is_allowed(self.ACTIONS['COMPANY_REQUIRE_MEMBEREE_AT_PORTALS'])
 
 
@@ -763,7 +765,7 @@ class PortalManageMembersCompaniesRight(BaseRightsEmployeeInCompany):
         super(PortalManageMembersCompaniesRight, self).__init__(company=company)
         self.member_id = member_id
 
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         if self.company.id == self.member_id:
             return False
         return self.action_is_allowed(self.ACTIONS['PORTAL_MANAGE_MEMBERS_COMPANIES'])
@@ -774,7 +776,7 @@ class EmployeeAllowRight(EmployeesRight):
         super(EmployeeAllowRight, self).__init__(company=company)
         self.user = user
 
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         self.employment = UserCompany.get(user_id=self.user.id, company_id=self.company.id)
         return self.action_is_allowed(self.ACTIONS['ALLOW'])
 
@@ -786,7 +788,7 @@ class CanMaterialBePublished(PublishUnpublishInPortal):
 
 
 class EditMaterialRight(EditOrSubmitMaterialInPortal):
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         return self.action_is_allowed(self.ACTIONS['EDIT'])
 
 
@@ -794,7 +796,7 @@ class EditPublicationRight(PublishUnpublishInPortal):
     def __init__(self, publication=None, company=None):
         super(EditPublicationRight, self).__init__(publication=publication, company=company)
 
-    def is_allowed(self, raise_exception_redirect_if_not = False):
+    def is_allowed(self, raise_exception_redirect_if_not=False):
         self.division = self.publication.division
         return self.actions()[self.ACTIONS['EDIT']]
 
@@ -900,7 +902,7 @@ class RightAtomic(dict):
     REMOVE_PUBLICATION = ('remove_publication', 0x10000, 'Remove any publication from owned portal', 15)
     MANAGE_COMMENTS = ('manage_comments', 0x2000, 'Manages comments', 16)
     MANAGE_COMPANIES_MEMBERS = (
-    'manage_companies_members', 0x01000, 'Accept or refuse company membership on portal', 17)
+        'manage_companies_members', 0x01000, 'Accept or refuse company membership on portal', 17)
 
     # read this:
     # http://stackoverflow.com/questions/9058305/getting-attributes-of-a-class

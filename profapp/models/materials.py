@@ -8,7 +8,7 @@ from ..models.files import File
 from ..models.tag import Tag, TagPortalDivision, TagPublication
 from .pr_base import PRBase, Base, MLStripper, Grid
 from tools.db_utils import db
-from flask import g, session, app, current_app
+from flask import g, session, app, current_app, url_for
 from sqlalchemy.sql import or_, and_, expression
 import re
 from sqlalchemy import event
@@ -20,6 +20,8 @@ from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument
 from config import Config
 import simplejson
+from profapp import on_value_changed
+from profapp.utils import jinja_utils
 
 
 class Material(Base, PRBase, PRElasticDocument):
@@ -510,27 +512,48 @@ class Publication(Base, PRBase, PRElasticDocument):
         }
 
 
-@event.listens_for(Publication.status, "set")
-def change_publication_status(target, new_status, old_status, initiator):
-    print('+sd++dff+ds+fds+ds')
-    if new_status != old_status:
-        from ..models.rights import PublishUnpublishInPortal
-        from ..models.messenger import Notification
-        portal_division = target.division if target.division else PortalDivision.get(target.portal_division_id)
-        portal = portal_division.portal
-        material = Material.get(target.material_id)
-        functions = []
+@on_value_changed(Publication.status)
+def publication_status_changed(target, new_value, old_value, action):
+    from ..models.rights import PublishUnpublishInPortal
+    from ..models.messenger import Notification, Socket
 
-        if new_status == Publication.STATUSES['SUBMITTED']:
-            users = PublishUnpublishInPortal(target, portal_division, material.company).get_user_with_rights(
-                PublishUnpublishInPortal.publish_rights)
-            functions = [Notification.send_publication_activity(portal, u, g.user, new_status) for u in users]
+    portal_division = target.division if target.division else PortalDivision.get(target.portal_division_id)
+    portal = portal_division.portal
+    material = Material.get(target.material_id)
 
-        # if new_status in [UserCompany.STATUSES['ACTIVE'], UserCompany.STATUSES['REJECTED'],
-        #                   UserCompany.STATUSES['FIRED']]:
-        #     u = User.get(target.user_id)
-        #     functions = [Notification.send_employment_activity(company, u, g.user, new_status)]
+    dict_main = {
+        'portal_division': portal_division,
+        'portal': portal,
+        'publication': target,
+        'material': material,
+        'url_publication': '//' + portal.host + url_for('front.article_details', publication_id=target.id, publication_title=material.title),
+        'url_portal_publications': jinja_utils.grid_url(target.id, 'portal.publications',
+                                                        company_id=portal.company_owner_id)
+    }
 
-        for f in functions:
-            g.after_commit_models.append(f)
+    phrase = new_value
+    if new_value == Publication.STATUSES['SUBMITTED'] and not old_value:
+        r = PublishUnpublishInPortal.publish_rights
+    elif new_value == Publication.STATUSES['PUBLISHED']:
+        r = PublishUnpublishInPortal.unpublish_rights
+    elif old_value == Publication.STATUSES['PUBLISHED']:
+        r = PublishUnpublishInPortal.unpublish_rights
+        phrase = Publication.STATUSES['UNPUBLISHED']
+    else:
+        phrase = None
+
+    if phrase:
+        rights_phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just <a href=\"%(url_portal_publications)s\">" + \
+                 phrase + \
+                 "</a> a material named `%(material.title)s` at portal <a class=\"external_link\" target=\"blank_\" href=\"%(url_publication)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link ng-scope\"></span></a>"
+        to_users = PublishUnpublishInPortal(target, portal_division, material.company).get_user_with_rights(r)
+        if material.editor not in to_users:
+            to_users.append(material.editor)
+    else:
+        to_users = []
+
+
+    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], rights_phrase,
+                                        dict_main, except_to_user=[g.user])
+
 

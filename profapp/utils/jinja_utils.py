@@ -1,4 +1,4 @@
-from flask import Flask, g, request, current_app, session
+from flask import Flask, g, request, current_app, session, url_for
 import jinja2
 from jinja2 import Markup, escape
 import datetime
@@ -14,6 +14,9 @@ from main_domain import MAIN_DOMAIN
 from ..models.config import Config as ModelConfig
 import hashlib
 
+
+def grid_url(id, endpoint, **kwargs):
+    return url_for(endpoint, **kwargs) + '#guuid=' + id
 
 def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):
     return TranslateTemplate.translate_and_substitute(context.name, phrase,
