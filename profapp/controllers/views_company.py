@@ -3,6 +3,7 @@ from flask.ext.login import current_user
 from flask import render_template, request, url_for, g, redirect, abort
 from ..models.company import Company, UserCompany
 from ..models.translate import TranslateTemplate
+from ..models.messenger import Notification
 from .request_wrapers import check_right
 from ..models.materials import Material, Publication
 from ..models.portal import PortalDivision
@@ -46,11 +47,12 @@ def companies_load(json):
             'there_is_more': there_is_more,
             'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()}}
 
+
 @company_bp.route('/join_to_company/', methods=['OK'])
 @check_right(UserIsActive)
 def join_to_company(json):
-    e = UserCompany(user_id=g.user.id, company_id=json['company_id']).save()
-    return {'employment': e.get_client_side_dict(fields='id,status, company, rights')}
+    return {'employment': UserCompany(user_id=g.user.id, company_id=json['company_id']).save().get_client_side_dict(
+        fields='id,status, company, rights')}
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
@@ -266,8 +268,6 @@ def search_for_user(json, company_id):
 @check_right(UserIsActive)
 def send_article_to_user(json):
     return {'user': json['send_to_user']}
-
-
 
 
 @company_bp.route('/add_subscriber/', methods=['POST'])

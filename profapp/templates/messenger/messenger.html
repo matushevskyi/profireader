@@ -490,7 +490,6 @@
                 pr_chat_socket.removeAllListeners('general_notification');
 
                 pr_chat_socket.on('general_notification', function (resp) {
-                    console.log('general_notification', resp);
                     var new_message = resp['new_message'];
                     var new_notification = resp['new_notification'];
                     var request_status_changed = resp['request_status_changed'];
@@ -523,7 +522,6 @@
                     }
 
                     if (request_status_changed) {
-                        console.log(request_status_changed);
                         $.each($scope.community, function(ind, user) {
                             if (user.id == request_status_changed['from_user_id']) {
                                 $scope.community[ind]['contact_status'] = request_status_changed['status'];

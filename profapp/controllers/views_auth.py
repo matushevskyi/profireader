@@ -16,7 +16,7 @@ from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
 from ..utils.redirect_url import redirect_url
 from ..models.rights import AllowAll
 from ..models.portal import Portal
-from ..models.messenger import Message, Notification
+from ..models.messenger import Socket
 import sys
 import string
 #
@@ -78,9 +78,12 @@ def signup(json_data):
         return new_user.validate(True)
     else:
         new_user.set_password_hash()
-        new_user.generate_confirmation_token(get_after_logination_params()).save()
+        new_user.save()
         g.db.commit()
-        Notification.send_notification_greeting(new_user)
+        new_user.generate_confirmation_token(get_after_logination_params()).save()
+        Socket.send_greeting([new_user])
+        g.db.commit()
+
         return {}
 
 
@@ -202,7 +205,7 @@ def login_signup_soc_network(soc_network_name):
                 user.avatar_selected_preset = 'gravatar'
                 g.db.add(user)
                 user.save()
-                Notification.send_notification_greeting(user)
+                Socket.send_greeting([user])
 
             if user:
                 User.logout()

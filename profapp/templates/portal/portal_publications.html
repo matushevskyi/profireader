@@ -28,7 +28,6 @@
             }
 
             $scope.url_front_publication_details_host = function (publication, host) {
-                console.log(host)
                 return publication ? ('//' + host + $scope.url_front_publication_details({publication_id: publication.id, publication_title : publication.material.title})) : '';
             }
 

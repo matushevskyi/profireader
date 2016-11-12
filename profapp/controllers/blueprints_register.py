@@ -34,7 +34,7 @@ def register_profi(app):
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(tools_bp, url_prefix='/tools')
     app.register_blueprint(admin_bp, url_prefix='/admin')
-    app.register_blueprint(user_bp, url_prefix='/users')
+    app.register_blueprint(user_bp, url_prefix='/user')
     app.register_blueprint(filemanager_bp, url_prefix='/filemanager')
     app.register_blueprint(article_bp, url_prefix='/articles')
     app.register_blueprint(image_editor_bp, url_prefix='/image_editor')
@@ -52,7 +52,7 @@ def register_profi(app):
 def register_front(app):
     from . import views_front
     app.register_blueprint(front_bp, url_prefix='/')
-    app.register_blueprint(user_bp, url_prefix='/users')
+    app.register_blueprint(user_bp, url_prefix='/user')
     # app.register_blueprint(reader_bp, url_prefix='/')
 
 def register_static(app):

@@ -11,3 +11,6 @@ def execute_function(sql):
 
     for (r,) in ret:
         return r
+
+def compile(q):
+    print(q.statement.compile(compile_kwargs={"literal_binds": True}))

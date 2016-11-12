@@ -8,7 +8,7 @@ from ..models.files import File
 from ..models.tag import Tag, TagPortalDivision, TagPublication
 from .pr_base import PRBase, Base, MLStripper, Grid
 from tools.db_utils import db
-from flask import g, session, app, current_app
+from flask import g, session, app, current_app, url_for
 from sqlalchemy.sql import or_, and_, expression
 import re
 from sqlalchemy import event
@@ -20,7 +20,8 @@ from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from .elastic import PRElasticField, PRElasticDocument
 from config import Config
 import simplejson
-
+from profapp import on_value_changed
+from profapp.utils import jinja_utils
 
 
 class Material(Base, PRBase, PRElasticDocument):
@@ -198,9 +199,10 @@ class Publication(Base, PRBase, PRElasticDocument):
     read_count = Column(TABLE_TYPES['int'], default=0)
     like_count = Column(TABLE_TYPES['int'], default=0)
 
-    tags = relationship(Tag, secondary='tag_publication', uselist=True, order_by=lambda: expression.desc(TagPublication.position))
+    tags = relationship(Tag, secondary='tag_publication', uselist=True,
+                        order_by=lambda: expression.desc(TagPublication.position))
 
-    status = Column(TABLE_TYPES['status'], default='SUBMITTED')
+    status = Column(TABLE_TYPES['status'])
     STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED'}
 
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
@@ -379,28 +381,6 @@ class Publication(Base, PRBase, PRElasticDocument):
     def update_article_portal(publication_id, **kwargs):
         db(Publication, id=publication_id).update(kwargs)
 
-    # # TODO: SS by OZ: contition `if datetime(*localtime[:6]) > article['publishing_tm']:` should be checked by sql (passed
-    # # to search function)
-    # @staticmethod
-    # def get_list_reader_articles(articles):
-    #     list_articles = []
-    #     for article_id, article in articles.items():
-    #         article['tags'] = [tag.get_client_side_dict() for tag in article['tags']]
-    #         article['is_favorite'] = ReaderPublication.article_is_favorite(g.user.id, article_id)
-    #         article['liked'] = ReaderPublication.count_likes(g.user.id, article_id)
-    #         article['list_liked_reader'] = ReaderPublication.get_list_reader_liked(article_id)
-    #         article['company']['logo'] = Company.get(articles[article_id]['company']['id']).logo.url
-    #         article['portal']['logo'] = File().get(articles[article_id]['portal']['logo_file_id']).url() if \
-    #             articles[article_id]['portal']['logo_file_id'] else tools.fileUrl(FOLDER_AND_FILE.no_company_logo())
-    #         # del articles[article_id]['company']['logo_file_id'], articles[article_id]['portal']['logo_file_id']
-    #         list_articles.append(article)
-    #     return list_articles
-
-    # def clone_for_company(self, company_id):
-    #     return self.detach().attr({'company_id': company_id,
-    #                                'status': ARTICLE_STATUS_IN_COMPANY.
-    #                               submitted})
-
     @staticmethod
     def subquery_portal_articles(portal_id, filters, sorts):
         sub_query = db(Publication)
@@ -530,3 +510,50 @@ class Publication(Base, PRBase, PRElasticDocument):
             'liked': self.is_liked(),
             'liked_count': self.liked_count()
         }
+
+
+@on_value_changed(Publication.status)
+def publication_status_changed(target, new_value, old_value, action):
+    from ..models.rights import PublishUnpublishInPortal
+    from ..models.messenger import Notification, Socket
+
+    portal_division = target.division if target.division else PortalDivision.get(target.portal_division_id)
+    portal = portal_division.portal
+    material = Material.get(target.material_id)
+
+    dict_main = {
+        'portal_division': portal_division,
+        'portal': portal,
+        'publication': target,
+        'material': material,
+        'url_publication': '//' + portal.host + url_for('front.article_details', publication_id=target.id, publication_title=material.title),
+        'url_portal_publications': jinja_utils.grid_url(target.id, 'portal.publications',
+                                                        company_id=portal.company_owner_id)
+    }
+
+    phrase = new_value
+    if new_value == Publication.STATUSES['SUBMITTED'] and not old_value:
+        r = PublishUnpublishInPortal.publish_rights
+    elif new_value == Publication.STATUSES['PUBLISHED']:
+        r = PublishUnpublishInPortal.unpublish_rights
+    elif old_value == Publication.STATUSES['PUBLISHED']:
+        r = PublishUnpublishInPortal.unpublish_rights
+        phrase = Publication.STATUSES['UNPUBLISHED']
+    else:
+        phrase = None
+
+    if phrase:
+        rights_phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just <a href=\"%(url_portal_publications)s\">" + \
+                 phrase + \
+                 "</a> a material named `%(material.title)s` at portal <a class=\"external_link\" target=\"blank_\" href=\"%(url_publication)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link ng-scope\"></span></a>"
+        to_users = PublishUnpublishInPortal(target, portal_division, material.company).get_user_with_rights(r)
+        if material.editor not in to_users:
+            to_users.append(material.editor)
+    else:
+        to_users = []
+
+
+    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], rights_phrase,
+                                        dict_main, except_to_user=[g.user])
+
+

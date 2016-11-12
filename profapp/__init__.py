@@ -18,6 +18,8 @@ from flask.sessions import SessionInterface
 from beaker.middleware import SessionMiddleware
 from .utils.jinja_utils import update_jinja_engine, get_url_adapter
 import json
+from functools import wraps
+from sqlalchemy import event
 
 
 def req(name, allowed=None, default=None, exception=True):
@@ -32,27 +34,107 @@ def req(name, allowed=None, default=None, exception=True):
         return None
 
 
-def db_session_func(db_config, autocommit=False, autoflush=False, echo = False):
+registry = {}
+
+
+def on_value_changed(an_attribute):
+    def wrapped(func):
+        if an_attribute.class_ not in registry:
+            registry[an_attribute.class_] = {}
+        if an_attribute not in registry[an_attribute.class_]:
+            registry[an_attribute.class_][an_attribute] = []
+        registry[an_attribute.class_][an_attribute].append(func)
+
+        @wraps(func)
+        def decorated(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return decorated
+
+    return wrapped
+
+
+def on_after_flush(session, flush_context):
+    def get_old_value(attribute_state):
+        history = attribute_state.history
+        return history.deleted[0] if history.deleted else None
+
+    def trigger_attribute_change_events(object_, action):
+        from sqlalchemy import inspect
+        from sqlalchemy.orm import object_mapper, ColumnProperty
+
+        if object_mapper(object_).class_ not in registry:
+            return False
+
+        for mapper_property in object_mapper(object_).iterate_properties:
+            if isinstance(mapper_property, ColumnProperty) and \
+                            mapper_property.class_attribute in registry[object_mapper(object_).class_]:
+
+                an_index = (object_mapper(object_).class_, mapper_property.class_attribute)
+
+                key = mapper_property.key
+                attribute_state = inspect(object_).attrs.get(key)
+                new_value = attribute_state.value
+                old_value = get_old_value(attribute_state)
+                if action == 'insert':
+                    old_value = None
+                if action == 'delete':
+                    new_value = None
+                if action == 'update':
+                    if not attribute_state.history.has_changes():
+                        new_value = ''
+                        old_value = ''
+
+                g.functions_to_call_after_commit[an_index] = []
+                if new_value != old_value:
+                    for f in registry[object_mapper(object_).class_][mapper_property.class_attribute]:
+                        add = f(object_, new_value, old_value, action)
+                        if add:
+                            g.functions_to_call_after_commit[an_index].append(add)
+
+    for o in session.new:
+        trigger_attribute_change_events(o, 'insert')
+    for o in session.dirty:
+        trigger_attribute_change_events(o, 'update')
+    for o in session.deleted:
+        trigger_attribute_change_events(o, 'deleted')
+
+
+def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import scoped_session, sessionmaker
 
-    engine = create_engine(db_config, echo = echo)
+    engine = create_engine(db_config, echo=echo)
     g.sql_connection = engine.connect()
 
-    db_session = scoped_session(sessionmaker(autocommit = autocommit, autoflush = autoflush, bind=engine))
+    db_session = scoped_session(sessionmaker(autocommit=autocommit, autoflush=autoflush, bind=engine))
     # from sqlalchemy.orm import Session
     # strong_reference_session(Session())
     return db_session
 
 
-def load_database(db_config):
-    def load_db(autocommit=False, autoflush=False, echo = False):
+def load_database(db_config, echo=False):
+    def load_db(autocommit=False, autoflush=False, echo=echo):
+        from sqlalchemy import event
         db_session = db_session_func(db_config, autocommit, autoflush, echo)
         g.db = db_session
         g.req = req
         g.filter_json = utils.filter_json
         g.get_url_adapter = get_url_adapter
         g.fileUrl = utils.fileUrl
+        g.after_commit_models = []
+        g.functions_to_call_after_commit = {}
+
+        event.listen(db_session, 'after_flush', on_after_flush)
+
+        @event.listens_for(g.db, 'after_commit')
+        def after_commit(s):
+            # TODO: OZ by OZ: change SQLAchemy => Flask-SQLAchemy, and use http://flask-sqlalchemy.pocoo.org/dev/signals/#models_committed
+            for ind, functions in g.functions_to_call_after_commit.items():
+                for f in functions:
+                    if f:
+                        f()
+            g.functions_to_call_after_commit = {}
 
     return load_db
 

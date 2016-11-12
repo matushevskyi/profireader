@@ -12,7 +12,7 @@ from ..models.rights import UserIsActive, UserEditProfieRight, AllowAll
 from .. import utils
 
 
-@user_bp.route('/profile/<user_id>')
+@user_bp.route('/<user_id>/profile/')
 @check_right(UserIsActive)
 def profile(user_id):
     user = g.db.query(User).filter(User.id == user_id).first()
@@ -23,7 +23,7 @@ def profile(user_id):
 
 
 # TODO (AA to AA): Here admin must have the possibility to change user profile
-@user_bp.route('/edit-profile/<user_id>/', methods=['GET'])
+@user_bp.route('/<user_id>/edit-profile/', methods=['GET'])
 @check_right(UserEditProfieRight, ['user_id'])
 def edit_profile(user_id):
     user_query = db(User, id=user_id)
@@ -31,7 +31,7 @@ def edit_profile(user_id):
     return render_template('general/user_edit_profile.html', user=user)
 
 
-@user_bp.route('/edit-profile/<user_id>/', methods=['OK'])
+@user_bp.route('/<user_id>/edit-profile/', methods=['OK'])
 @check_right(UserEditProfieRight, ['user_id'])
 def edit_profile_load(json, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
