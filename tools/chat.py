@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 import psycopg2
 import psycopg2.extensions
 from profapp import create_app, load_database
