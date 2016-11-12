@@ -44,7 +44,21 @@ class TranslateTemplate(Base, PRBase):
     @staticmethod
     def try_to_get_phrase(template, phrase, url, portal_id=None, allow_html=''):
 
-        exist = db(TranslateTemplate, template=template, name=phrase, portal_id=portal_id).first()
+        a_filter = dict(template=template, name=phrase, portal_id=portal_id)
+
+        # TODO: OZ by OZ: this functions exists because we sometemes inmsert recort in flashing process (see on_value_changed decorator)
+        # and we can`t use ORM
+        def insert_record(**values):
+            from profapp import utils
+            g.db().execute(('INSERT INTO "%s" (template,   name,    portal_id, allow_html,   url,  %s) '
+                            'VALUES           (:template, :name, :portal_id, :allow_html, :url,  :%s)') %
+                           (TranslateTemplate.__tablename__, ', '.join(TranslateTemplate.languages),
+                            ", :".join(TranslateTemplate.languages)),
+                           params=utils.dict_merge(a_filter, {'allow_html': allow_html, 'url': url},
+                                                   {l: phrase for l in TranslateTemplate.languages}, values))
+            return db(TranslateTemplate, ).first()
+
+        exist = db(TranslateTemplate, **a_filter).first()
 
         if portal_id and not exist:
             exist_for_another = db(TranslateTemplate, template=template, name=phrase,
@@ -52,17 +66,12 @@ class TranslateTemplate(Base, PRBase):
             # TODO: OZ by OZ: how to select template portal? now we grab phrases from most recent portal, and there can be some unappropriate values
             if not exist_for_another:
                 exist_for_another = db(TranslateTemplate, template=template, name=phrase).filter(
-                    TranslateTemplate.portal != None).order_by(expression.desc(TranslateTemplate.cr_tm)).first()
+                    TranslateTemplate.portal != None).order_by(expression.asc(TranslateTemplate.cr_tm)).first()
             if exist_for_another:
-                exist = TranslateTemplate(template=template, name=phrase, portal_id=portal_id,
-                                          url=url,
-                                          **{l: getattr(exist_for_another, l) for l in
-                                             TranslateTemplate.languages}).save()
-                return exist
-
+                return insert_record(**{l: getattr(exist_for_another, l) for l in TranslateTemplate.languages})
         if not exist:
-            exist = TranslateTemplate(template=template, name=phrase, portal_id=portal_id, allow_html=allow_html,
-                                      url=url, **{l: phrase for l in TranslateTemplate.languages}).save()
+            return insert_record()
+
         return exist
 
     @staticmethod

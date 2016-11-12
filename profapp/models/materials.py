@@ -533,3 +533,4 @@ def change_publication_status(target, new_status, old_status, initiator):
 
         for f in functions:
             g.after_commit_models.append(f)
+

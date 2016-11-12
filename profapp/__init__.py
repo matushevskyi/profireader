@@ -85,12 +85,12 @@ def on_after_flush(session, flush_context):
                         new_value = ''
                         old_value = ''
 
-                if new_value == old_value:
-                    g.functions_to_call_after_commit[an_index] = []
-                else:
-                    g.functions_to_call_after_commit[an_index] = [f(object_, new_value, old_value, action)
-                                          for f in
-                                          registry[object_mapper(object_).class_][mapper_property.class_attribute]]
+                g.functions_to_call_after_commit[an_index] = []
+                if new_value != old_value:
+                    for f in registry[object_mapper(object_).class_][mapper_property.class_attribute]:
+                        add = f(object_, new_value, old_value, action)
+                        if add:
+                            g.functions_to_call_after_commit[an_index].append(add)
 
     for o in session.new:
         trigger_attribute_change_events(o, 'insert')

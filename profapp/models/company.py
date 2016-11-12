@@ -421,6 +421,7 @@ class UserCompany(Base, PRBase):
 
 @on_value_changed(UserCompany.status)
 def state_changed(target, new_value, old_value, action):
+
     company = Company.get(target.company_id)
 
     dict_main = {
@@ -435,11 +436,11 @@ def state_changed(target, new_value, old_value, action):
         dict_main['url_from_user_profile'] = url_for('user.profile', user_id=g.user.id)
         dict_main['url_company_employees'] = url_for('company.employees', company_id=company.id)
         to_users = company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
-    elif new_value == UserCompany.STATUSES['ACTIVE']:
+    elif new_value == UserCompany.STATUSES['ACTIVE'] and g.user.id != target.user_id:
         phrase = "Your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> is accepted"
-    elif new_value == UserCompany.STATUSES['REJECTED']:
+    elif new_value == UserCompany.STATUSES['REJECTED'] and g.user.id != target.user_id:
         phrase = "Sorry, but your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> was rejected"
-    elif new_value == UserCompany.STATUSES['FIRED']:
+    elif new_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
         phrase = "Sorry, your was fired from company <a href=\"%(url_company_profile)s\">%(company.name)s</a>"
     else:
         phrase = None
