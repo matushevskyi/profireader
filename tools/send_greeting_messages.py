@@ -29,3 +29,4 @@ if __name__ == '__main__':
                 .filter(Notification.id == None).all()
 
         Socket.send_greeting(users)
+        g.db.commit()

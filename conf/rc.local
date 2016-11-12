@@ -12,6 +12,6 @@
 # By default this script does nothing.
 
 service postgresql restart
-/var/www/chat.sh &
+cd /var/www/tools && ./run_with_env.sh chat.py &
 
 exit 0

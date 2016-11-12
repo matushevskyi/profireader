@@ -51,7 +51,7 @@ class Socket:
     @staticmethod
     def prepare_notifications(to_users, notification_type, phrase, dict_main={}, except_to_user=[]):
         from_user_dict = {'from_user': g.user.get_client_side_dict(fields='full_name'),
-                          'url_profile_from_user': url_for('user.profile', user_id=g.user.id)} if g.user else {}
+                          'url_profile_from_user': url_for('user.profile', user_id=g.user.id)} if getattr(g,'user',None) else {}
 
         datas = [{'to_user_id': u.id,
                   'content': TranslateTemplate.translate_and_substitute(
