@@ -360,15 +360,10 @@ class UserCompany(Base, PRBase):
         return True
 
     @staticmethod
-    # TODO: OZ by OZ: remove this func. use  get_by_user_and_company_ids instead
-    def get(user_id=None, company_id=None):
-        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
-
-    @staticmethod
     # TODO: OZ by OZ: rework this as in action-style
     def get_statuses_avaible(company_id):
         available_statuses = {s: True for s in UserCompany.STATUSES}
-        user_rights = UserCompany.get(user_id=current_user.id, company_id=company_id).rights
+        user_rights = UserCompany.get_by_user_and_company_ids(user_id=current_user.id, company_id=company_id).rights
         if user_rights['EMPLOYEE_ENLIST_OR_FIRE'] == False:
             available_statuses['ACTIVE'] = False
         if user_rights['EMPLOYEE_ENLIST_OR_FIRE'] == False:

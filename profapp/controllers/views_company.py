@@ -129,7 +129,7 @@ def employees_load(json, company_id):
 def employee_update(company_id, user_id):
     return render_template('company/company_employee_update.html',
                            company=Company.get(company_id),
-                           employment=UserCompany.get(user_id=user_id, company_id=company_id))
+                           employment=UserCompany.get_by_user_and_company_ids(user_id=user_id, company_id=company_id))
     # employer=employment.employer.get_client_side_dict(),
     # employee=employment.employee.get_client_side_dict())
 
@@ -138,7 +138,7 @@ def employee_update(company_id, user_id):
 @check_right(EmployeeAllowRight, ['company_id', 'user_id'])
 def employee_update_load(json, company_id, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
-    employment = UserCompany.get(user_id=user_id, company_id=company_id)
+    employment = UserCompany.get_by_user_and_company_ids(user_id=user_id, company_id=company_id)
 
     if action == 'load':
         return {'employment': employment.get_client_side_dict(),
@@ -221,7 +221,7 @@ def profile_load_validate_save(json, company_id=None):
     if action == 'load':
         company_dict = company.get_client_side_dict()
         # company_dict['logo'] = company.get_logo_client_side_dict()
-        user_company = UserCompany.get(company_id=company_id)
+        user_company = UserCompany.get_by_user_and_company_ids(company_id=company_id)
         if user_company:
             company_dict['actions'] = {'edit_company_profile': EditCompanyRight(company=company).is_allowed(),
                                        'edit_portal_profile': EditPortalRight(company=company_id).is_allowed()}

@@ -224,7 +224,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
         membership_portal_id = self.division.portal.id if self.division else ''
         if not company:
             raise Exception('Bad data!')
-        employee = UserCompany.get(company_id=company.id)
+        employee = UserCompany.get_by_user_and_company_ids(company_id=company.id)
         if not employee:
             return "Sorry!You are not employee in this company!"
 
@@ -293,7 +293,7 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
     def action_is_allowed(self, action_name):
         if not self.material:
             raise Exception('Bad data!')
-        self.employee = UserCompany.get(company_id=self.material.company.id)
+        self.employee = UserCompany.get_by_user_and_company_ids(company_id=self.material.company.id)
         if not self.employee:
             return "Sorry!You are not employee in this company!"
         check_objects_status = {'company owner material': self.material.company,
@@ -356,7 +356,7 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
     def action_is_allowed(self, action):
         if not self.company:
             raise Exception('Bad data')
-        employee = UserCompany.get(company_id=self.company.id)
+        employee = UserCompany.get_by_user_and_company_ids(company_id=self.company.id)
         if not employee:
             return "Sorry!You are not employee in this company!"
         get_objects_for_check = {'employee': employee,
@@ -370,7 +370,7 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
 class FilemanagerRights(BaseRightsEmployeeInCompany):
     def __init__(self, company=None):
         super(FilemanagerRights, self).__init__(company=company)
-        self.employee = UserCompany.get(company_id=self.company.id)
+        self.employee = UserCompany.get_by_user_and_company_ids(company_id=self.company.id)
 
     ACTIONS = {
         'DOWNLOAD': 'download',
@@ -461,7 +461,7 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
     def __init__(self, company=None, employment=None):
         super(EmployeesRight, self).__init__(company=company)
         self.employment = employment if isinstance(employment, UserCompany) else \
-            UserCompany.get(user_id=employment, company_id=self.company.id) if employment and company else None
+            UserCompany.get_by_user_and_company_ids(user_id=employment, company_id=self.company.id) if employment and company else None
 
     def get_allowed_attributes(self, key, value):
         if key == 'user_id':
@@ -514,7 +514,7 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
             raise Exception('Bad data!')
         if not self.employment:
             raise Exception('Bad data!')
-        employee = UserCompany.get(company_id=self.company.id)
+        employee = UserCompany.get_by_user_and_company_ids(company_id=self.company.id)
         if not employee:
             return "Sorry!You are not employee in this company!"
         get_objects_for_check = {'employee': employee,
@@ -616,7 +616,7 @@ class MembersRights(MembersOrMembershipBase):
     }
 
     def actions(self):
-        return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id),
+        return BaseRightsInProfireader.base_actions(self, UserCompany.get_by_user_and_company_ids(company_id=self.company.id),
                                                     object=self.member_company)
 
     def action_is_allowed(self, action_name, employee):
@@ -655,7 +655,7 @@ class MembershipRights(MembersOrMembershipBase):
     }
 
     def actions(self):
-        return BaseRightsInProfireader.base_actions(self, UserCompany.get(company_id=self.company.id),
+        return BaseRightsInProfireader.base_actions(self, UserCompany.get_by_user_and_company_ids(company_id=self.company.id),
                                                     object=self.member_company)
 
     def action_is_allowed(self, action_name, employee):
@@ -733,7 +733,7 @@ class UserIsEmployee(BaseRightsEmployeeInCompany):
 
     def is_allowed(self, raise_exception_redirect_if_not=False):
         self.company = self.company if self.company else self.material.company
-        employee = UserCompany.get(company_id=self.company.id)
+        employee = UserCompany.get_by_user_and_company_ids(company_id=self.company.id)
         if not employee:
             return "Sorry!You are not employee in this company!"
         return True
@@ -777,7 +777,7 @@ class EmployeeAllowRight(EmployeesRight):
         self.user = user
 
     def is_allowed(self, raise_exception_redirect_if_not=False):
-        self.employment = UserCompany.get(user_id=self.user.id, company_id=self.company.id)
+        self.employment = UserCompany.get_by_user_and_company_ids(user_id=self.user.id, company_id=self.company.id)
         return self.action_is_allowed(self.ACTIONS['ALLOW'])
 
 
