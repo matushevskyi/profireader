@@ -19,7 +19,7 @@
 <h3>{{ _('Log in using Profireader') }}</h3>
 
     <form class="login-form-profirider" id="login-form-profirider" action="{{ url_for('auth.login') }}" method="post">
-        <input class="form-control" type="email" placeholder="email" required name="email" ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/">
+        <input class="form-control" type="email" placeholder="email" required name="email" oles_ng-pattern="/[0-9a-z_]+@[0-9a-z_]+\.[a-z]{2,5}/">
         <div ng-show="formLogin.email.$error.pattern" class="error-input">{{ _('The email not validate!') }}</div>
         <input class="form-control" type="password" placeholder="password" required name="password">
         <input class="submit-form" type="submit">

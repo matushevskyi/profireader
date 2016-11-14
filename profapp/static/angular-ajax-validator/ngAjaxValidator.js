@@ -400,8 +400,8 @@
 
                 element.attr('uib-popover', "{{ " + model_name + ".errors." + field_name + " || " + model_name + ".warnings." + field_name + "" +
                     " || " + model_name + ".notices." + field_name + " }}");
-                element.attr('popover-is-open', model_name + ".errors['" + field_name + "'] !== undefined");
-                element.attr('popover-trigger', 'none');
+                element.attr('aa-popover-is-open', model_name + ".errors['" + field_name + "'] !== undefined");
+                element.attr('popover-trigger', 'mouseenter focus');
                 element.attr('popover-placement', 'auto bottom-right');
 
 
