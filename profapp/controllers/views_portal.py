@@ -207,7 +207,7 @@ def save_portal_banner(json, company_id):
 @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def portals_partners_change_status(json, company_id, portal_id):
     partner = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
-    employee = UserCompany.get(company_id=company_id)
+    employee = UserCompany.get_by_user_and_company_ids(company_id=company_id)
     if MembershipRights(company=json.get('partner_id'), member_company=partner).action_is_allowed(json.get('action'),
                                                                                                   employee) == True:
         partner.set_client_side_dict(
@@ -268,7 +268,7 @@ def company_update_load(json, company_id, member_id):
 @check_right(PortalManageMembersCompaniesRight, ['company_id'])
 def company_partners_change_status(json, company_id, portal_id):
     partner = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
-    employee = UserCompany.get(company_id=company_id)
+    employee = UserCompany.get_by_user_and_company_ids(company_id=company_id)
     if MembersRights(company=json.get('partner_id'), member_company=partner).action_is_allowed(json.get('action'),
                                                                                                employee) == True:
         partner.set_client_side_dict(
@@ -286,7 +286,7 @@ def company_partners_change_status(json, company_id, portal_id):
 @check_right(UserIsEmployee, ['company_id'])
 def companies_partners(company_id):
     return render_template('company/companies_partners.html', company=Company.get(company_id),
-                           rights_user_in=UserCompany.get(company_id=company_id).has_rights(
+                           rights_user_in=UserCompany.get_by_user_and_company_ids(company_id=company_id).has_rights(
                                UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES))
 
 
@@ -360,7 +360,7 @@ def publications_load(json, company_id):
     # }
     return {'company': company.get_client_side_dict(),
             'portal': portal.get_client_side_dict(),
-            'rights_user_in_company': UserCompany.get(company_id=company_id).rights,
+            'rights_user_in_company': UserCompany.get_by_user_and_company_ids(company_id=company_id).rights,
             'grid_data': list(map(get_publication_dict, publications)),
             'total': len(publications)}
 
