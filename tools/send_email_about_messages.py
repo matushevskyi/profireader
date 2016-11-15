@@ -45,15 +45,18 @@ if __name__ == '__main__':
             print("%s users found" % (len(users),))
             for u in users:
                 print('sending email to', u.id, u.full_name, u.address_email)
-                g.lang = u.lang
-                email_utils.send_email_from_template(
-                    fromname='Profireader notifications',
-                    send_to_email=[u.address_email], subject='Unread communication exists',
-                    template='messenger/email_unread_communication_exists.html',
-                    dictionary={'user': u, 'url_messenger': url_for('messenger.messenger')})
-                u.last_informed_about_unread_communication_tm = datetime.datetime.utcnow()
-                u.save()
-                g.db.commit()
+                try:
+                    g.lang = u.lang
+                    email_utils.send_email_from_template(
+                        fromname='Profireader notifications',
+                        send_to_email=[u.address_email], subject='Unread communication exists',
+                        template='messenger/email_unread_communication_exists.html',
+                        dictionary={'user': u, 'url_messenger': url_for('messenger.messenger')})
+                    u.last_informed_about_unread_communication_tm = datetime.datetime.utcnow()
+                    u.save()
+                    g.db.commit()
+                except Exception as e:
+                    print(e)
         else:
             print("no users found")
 
