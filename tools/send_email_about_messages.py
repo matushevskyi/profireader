@@ -37,7 +37,6 @@ if __name__ == '__main__':
             print(q.statement.compile(compile_kwargs={"literal_binds": True}))
 
         if args.user_id:
-            compile(g.db.query(User).filter(and_(User.id == args.user_id), send))
             users = g.db.query(User).filter(and_(User.id == args.user_id), send).all()
         else:
             users = g.db.query(User).filter(send).all()
