@@ -26,10 +26,10 @@ from config import Config
 #     self.username = username
 #     self.password = password
 
-def send_email(FromName = None, subject='', html='', text=None, send_to=[Config.MAIL_GMAIL]):
+def send_email(FromName=None, subject='', html='', text=None, send_to=[Config.MAIL_GMAIL]):
     msg = MIMEText(html, 'html')
     msg['Subject'] = subject
-    msg['From'] = "%s <%s>" % (FromName,Config.MAIL_USERNAME) if FromName else Config.MAIL_USERNAME
+    msg['From'] = "%s <%s>" % (FromName, Config.MAIL_USERNAME) if FromName else Config.MAIL_USERNAME
     msg['To'] = ','.join(send_to)
     server = smtplib.SMTP(Config.MAIL_SERVER)
     server.starttls()
@@ -38,8 +38,8 @@ def send_email(FromName = None, subject='', html='', text=None, send_to=[Config.
     server.quit()
 
 
-def send_email_from_template(send_to_email, subject='', template=None, dictionary={},
-                             fromname = None,
+def send_email_from_template(send_to_email, subject=None, template=None, dictionary={},
+                             fromname=None,
                              language=None):
     from flask import current_app, render_template, g
     from profapp.models.translate import TranslateTemplate
@@ -51,8 +51,11 @@ def send_email_from_template(send_to_email, subject='', template=None, dictionar
     app = current_app._get_current_object()
     html = render_template(template, **dictionary)
 
-    subj = TranslateTemplate.translate_and_substitute(
-        template=template, language=language, dictionary=dictionary,
-        phrase=app.config['PROFIREADER_MAIL_SUBJECT_PREFIX'] + ' ' + subject)
+    subj = TranslateTemplate.translate_and_substitute(template=template, language=language, dictionary=dictionary,
+                                                      phrase=subject) if subject else ''
 
-    return send_email(subject=subj, html=html, text=MLStripper().strip_tags(html), send_to=send_to_email)
+    fromname = TranslateTemplate.translate_and_substitute(template=template, language=language, dictionary=dictionary,
+                                                          phrase=fromname) if fromname else None
+
+    return send_email(subject=subj, html=html, text=MLStripper().strip_tags(html), send_to=send_to_email,
+                      FromName=fromname)
