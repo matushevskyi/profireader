@@ -460,6 +460,7 @@ def add_delete_liked(json, publication_id):
 def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
     company = Company.get(member_company_id)
+    import html
 
     if g.user and g.user.id:
         phrase = 'User <a href="%(url_profile_from_user)s">%(from_user.full_name)s</a> sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
@@ -470,6 +471,6 @@ def send_message(json, member_company_id):
                                  phrase + '<hr/>%(message)s',
                                  {'company': company,
                                   'url_company_profile': url_for('company.profile', company_id=company.id),
-                                  'message': json['message']})()
+                                  'message': html.escape(json['message'])})()
 
     return {}

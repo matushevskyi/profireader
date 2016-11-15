@@ -2,7 +2,7 @@
 {% set url_join = _URL_JOIN() %}
 
 <a style="{% if not g.user %}display: none; {% endif %}" aria-haspopup="true" id="profireader_user_link"
-   href="{% if g.user %}{{ p_main_domain }}/users/profile/{{ g.user.id }}{% else %}{{ url_join }}{% endif %}"><img
+   href="{% if g.user %}{{ p_main_domain }}/user/{{ g.user.id }}/profile/{% else %}{{ url_join }}{% endif %}"><img
         {{ prImageUrl(g.user.avatar.url if g.user else static_address('images/0.gif'), position = 'top') }}
         class="user-avatar"/></a>
 
@@ -24,7 +24,7 @@
         if (messageevent.data && messageevent.data.user {% if g.user and g.user.id %}
                     && messageevent.data.user.id !== '{{ g.user.id }}'{% endif %}) {
             _USER = messageevent.data.user;
-            $('#profireader_user_link').attr('href', '{{ p_main_domain }}/users/profile/' + messageevent.data.user.id);
+            $('#profireader_user_link').attr('href', '{{ p_main_domain }}/user/' + messageevent.data.user.id + '/profile/');
             $('#profireader_user_link span').html(messageevent.data.welcome);
             $('#profireader_user_link img').css('background-image', 'url(' + messageevent.data.user.avatar.url + ')');
             $('#profireader_user_link').show();
