@@ -24,8 +24,6 @@ if __name__ == '__main__':
     with app.app_context():
         first_email_in = 3600
         next_emails_in = 24 * 3600
-        first_email_in = 60*2
-        next_emails_in = 60*3
 
         load_database(app.config['SQLALCHEMY_DATABASE_URI'])()
         have_unread = 'message_unread_count("user".id, NULL)>0 OR notification_unread_count("user".id)>0 OR contact_request_count("user".id)>0'
