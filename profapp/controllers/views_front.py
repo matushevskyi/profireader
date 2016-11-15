@@ -5,6 +5,7 @@ from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal, PortalConfig, UserPortalReader
 from ..models.company import Company
 from ..models.users import User
+from ..models.messenger import Socket, Notification
 from ..utils.session_utils import back_to_url
 from ..utils import email_utils
 from config import Config
@@ -15,6 +16,7 @@ from collections import OrderedDict
 from .. import utils
 from tools.db_utils import db
 from functools import wraps
+from ..models.pr_base import MLStripper
 
 
 def all_tags(portal):
@@ -457,9 +459,18 @@ def add_delete_liked(json, publication_id):
 @check_right(AllowAll)
 def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
-    email_utils.send_email_from_template(
-        send_to_email=[send_to.address_email], subject='New message', template='messenger/email_send_message',
-        dictionary={'user_to': send_to, 'user_from': g.user.get_client_side_dict() if g.user else None,
-              'in_company': Company.get(member_company_id),
-              'message': json['message']})
+    company = Company.get(member_company_id)
+    import html
+
+    if g.user and g.user.id:
+        phrase = 'User <a href="%(url_profile_from_user)s">%(from_user.full_name)s</a> sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
+    else:
+        phrase = 'Anonymous sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
+
+    Socket.prepare_notifications([send_to], Notification.NOTIFICATION_TYPES['CUSTOM'],
+                                 phrase + '<hr/>%(message)s',
+                                 {'company': company,
+                                  'url_company_profile': url_for('company.profile', company_id=company.id),
+                                  'message': html.escape(json['message'])})()
+
     return {}
