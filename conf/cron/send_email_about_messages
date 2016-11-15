@@ -1,1 +1,1 @@
-30 04 * * * root cd /var/www/tools && ./run_with_env.sh send_email_about_messages.py --user_id=57fbe206-3da9-4001-890d-71c4352f070d
+*/1 * * * * root cd /var/www/tools && profilog='/var/log/profi/send_email_about_messages' && ./run_with_env_only_single_copy.sh send_email_about_messages.py --user_id=5609c874-bef7-4001-8930-0c30b0f598c2 2>>$profilog.error 1>>$profilog.log
