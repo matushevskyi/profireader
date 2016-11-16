@@ -38,6 +38,12 @@
 
 
     angular.module('ajaxFormModule', ['ui.bootstrap'])
+        .config(['$uibTooltipProvider', function ($uibTooltipProvider) {
+            console.log($uibTooltipProvider.setTriggers({'af_tooltip_show': 'af_tooltip_hide'}));
+            $uibTooltipProvider.options({
+                placement: 'bottom'
+            })
+        }])
         .factory('$af', ['$ok', function ($ok) {
 
             var modelsForValidation = [];
@@ -400,9 +406,54 @@
 
                 element.attr('uib-popover', "{{ " + model_name + ".errors." + field_name + " || " + model_name + ".warnings." + field_name + "" +
                     " || " + model_name + ".notices." + field_name + " }}");
-                element.attr('aa-popover-is-open', model_name + ".errors['" + field_name + "'] !== undefined");
-                element.attr('popover-trigger', 'mouseenter focus');
-                element.attr('popover-placement', 'auto bottom-right');
+                // element.attr('aa-popover-is-open', model_name + ".errors['" + field_name + "'] !== undefined");
+                element.attr('popover-trigger', 'af_tooltip_show');
+                // tooltip-trigger="show"
+
+
+                if (element.attr('popover-placement') === undefined) {
+                    element.attr('popover-placement', 'auto bottom-right');
+                }
+
+                var getAfElement = function (e) {
+                    return e && e.length ? (typeof e.attr('af') === 'string' ? e : getAfElement(e.parent())) : null;
+                }
+
+                element.on('mouseover', function () {
+                    element[0].dispatchEvent(new Event('af_tooltip_show'));
+                });
+                element.on('mouseleave', function () {
+                    if (!element[0].af_focused) {
+                        element[0].dispatchEvent(new Event('af_tooltip_hide'));
+                    }
+                });
+                element.on('blur', function () {
+                    element[0].af_focused = false;
+                    element[0].dispatchEvent(new Event('af_tooltip_hide'));
+                });
+                element.on('focus', function () {
+                    var all_validations = getAfElement(element).find('[popover-trigger]');
+                    element[0].af_focused = true;
+                    for (var i = 0; i < all_validations.lemgth; i++) {
+                        if (all_validations[i] !== element[0]) {
+                            all_validations[i].dispatchEvent(new Event('af_tooltip_hide'));
+                            all_validations[i].af_focused = false;
+                        }
+                    }
+                    element[0].dispatchEvent(new Event('af_tooltip_show'));
+                });
+
+                // element.on('mouseover',function(){
+                //     element[0].dispatchEvent(new Event('af_tooltip_show'));
+                // });
+                // element.on('click',function(){
+                //     element[0].dispatchEvent(new Event('af_tooltip_show'));
+                // });
+                // element.on('mouseleave',function(){
+                //   if( scope.$$childHead.isOpen === true ){
+                //     element[0].dispatchEvent(new Event('hide'));
+                //   }
+                // });
 
 
                 element.attr('ng-class', "{'pr-validation-error': " + model_name + ".errors." + field_name + ", 'pr-validation-warning':" +
