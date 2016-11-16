@@ -39,10 +39,7 @@
 
     angular.module('ajaxFormModule', ['ui.bootstrap'])
         .config(['$uibTooltipProvider', function ($uibTooltipProvider) {
-            console.log($uibTooltipProvider.setTriggers({'af_tooltip_show': 'af_tooltip_hide'}));
-            $uibTooltipProvider.options({
-                placement: 'bottom'
-            })
+            $uibTooltipProvider.setTriggers({'af_tooltip_show': 'af_tooltip_hide'});
         }])
         .factory('$af', ['$ok', function ($ok) {
 
