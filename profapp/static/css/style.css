@@ -91,6 +91,10 @@ body {
 .border-radius {
   border-radius: 3px;
 }
+.border-none {
+  border: none;
+  box-shadow: none;
+}
 /* ---footer--- */
 .footer-layout {
   background-color: #212121;
@@ -548,12 +552,6 @@ body {
   color: #00BBA1;
   text-decoration: none;
 }
-.company .edit-company button {
-  width: 115px;
-  padding: 5px 15px;
-  margin-left: 25px;
-  margin-right: -15px;
-}
 .company h3 {
   color: #C70000;
 }
@@ -874,12 +872,6 @@ body {
 }
 .portal-division-block .delete-division i {
   margin-top: 12px;
-}
-.form-portal-edit label {
-  margin-right: 10px;
-}
-.form-portal-edit input {
-  margin-right: 10px;
 }
 .name-form {
   margin-top: 12px;
@@ -1409,5 +1401,34 @@ body {
 }
 #messenger-controller .messenger-notification .panel-body {
   height: 36em;
+}
+.narrow-wide {
+  display: table;
+  width: 100%;
+}
+.narrow-wide > div {
+  width: 100%;
+  display: table-row;
+}
+.narrow-wide > div > * {
+  display: table-cell;
+  margin: 2px;
+}
+.narrow-wide > div > *:first-child {
+  padding-right: 5px;
+  white-space: nowrap;
+  width: 10%;
+  max-width: 50%;
+  text-align: right;
+}
+.controller-portal-edit .form-control {
+  width: 20em;
+  max-width: 20em;
+}
+.controller-portal-edit select.form-control {
+  width: 15em;
+}
+.controller-portal-edit button.form-control {
+  width: 10em;
 }
 /*# sourceMappingURL=style.css.map */

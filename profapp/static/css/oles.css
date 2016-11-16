@@ -127,6 +127,10 @@
     display: block;
 }
 
+.di {
+    display: inline;
+}
+
 .dib {
     display: inline-block;
 }
@@ -659,13 +663,33 @@ div.pr-row:last-child div.pr-cell {
     height: 1.5em;
 }
 
+.w1em {
+    width: 1em !important;
+    overflow: hidden;
+}
+
+.w2em {
+    width: 2em !important;
+    overflow: hidden;
+}
+
+.w5em {
+    width: 5em !important;
+    overflow: hidden;
+}
+
 .w10em {
-    width: 10em;
+    width: 10em !important;
+    overflow: hidden;
+}
+
+.w15em {
+    width: 15em !important;
     overflow: hidden;
 }
 
 .w20em {
-    width: 20em;
+    width: 20em !important;
     overflow: hidden;
 }
 
@@ -790,6 +814,5 @@ div.pr-row:last-child div.pr-cell {
 .ui-select-highlight {
     color: red;
 }
-
 
 
