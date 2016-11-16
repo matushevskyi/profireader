@@ -379,7 +379,7 @@ class UserCompany(Base, PRBase):
 
     @staticmethod
     def get_by_user_and_company_ids(user_id=None, company_id=None):
-        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).one()
+        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
 
     @staticmethod
     def apply_request(company_id, user_id, bool):

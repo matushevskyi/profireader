@@ -36,13 +36,13 @@
 
     <div ng-controller="portal_create" ng-cloak>
         <form name="formPortal">
-            <div class="container" af
-                 af-after-save="afterSave"
-                 af-watch="data.portal"
-                 ng-model="data">
+            <div class="container" af af-after-save="afterSave" af-watch="data.portal" ng-model="data">
+                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <h5 class="link-page">{{ ::_('Creating new portal') }}</h5>
+                </div>
                 <div class="row company">
-                    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 link-page">
-                        <h5>{{ _('Launch portal') }}</h5>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <h5>{{ ::_('Creating new portal') }}</h5>
                     </div>
                     <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12 create-new-company">
 
@@ -67,31 +67,29 @@
                             <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10 edit-data">
                                 <input type="text" class="form-control border-radius" id="basic-url"
                                        aria-describedby="basic-addon3" pr-validation-answer="data_validation:name"
-                                       ng-model="data.portal.name" name="portal_name" ng-pattern="/[\wа-яёі']{4}/">
+                                       ng-model="data.portal.name" name="portal_name" oles_ng-pattern="/[\wа-яёі']{4}/">
                                 <div ng-show="formPortal.portal_name.$error.pattern" class="error-input"><span>{{ _('The
                                         portal name should be longer!') }}</span></div>
                             </div>
                             <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 name-form"><span>Host:</span></div>
                             <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10 edit-data form-portal-edit">
                                 <label><input ng-value="'profi'" ng-model="data.portal.host_profi_or_own" type="radio"/>{{
-                                    _
-                                    ('Profireader subdomain') }}</label>
+                                    _('Profireader subdomain') }}</label>
                                 https://<input ng-disabled="data.portal.host_profi_or_own !== 'profi'"
-                                                                          type="text" class=" border-radius"
-                                                                          aria-describedby="basic-addon3"
-                                                                          pr-validation-answer="data_validation:host"
-                                                                          ng-model="data.portal.host_profi"/>.{{
+                                               type="text" class=" border-radius"
+                                               aria-describedby="basic-addon3"
+                                               popover-placement="right"
+                                               pr-validation-answer="data_validation:host"
+                                               ng-model="data.portal.host_profi"/>.{{
                                 MAIN_DOMAIN }}<br/>
 
-                                <label><input ng-value="'own'" ng-model="data.portal.host_profi_or_own" type="radio"/>{{
-                                    _
-                                    ('Own
-                                    subdomain')
-                                    }}</label> https://<input ng-disabled="data.portal.host_profi_or_own !== 'own'"
-                                                              type="text" class=" border-radius" id=""
-                                                              aria-describedby="basic-addon3"
-                                                              pr-validation-answer="data_validation:host"
-                                                              ng-model="data.portal.host_own"/>
+                                <label><input ng-value="'own'" ng-model="data.portal.host_profi_or_own" type="radio"/>
+                                    {{ _('Own subdomain') }}</label> https://<input
+                                    ng-disabled="data.portal.host_profi_or_own !== 'own'"
+                                    type="text" class=" border-radius" id=""
+                                    aria-describedby="basic-addon3"
+                                    pr-validation-answer="data_validation:host"
+                                    ng-model="data.portal.host_own"/>
                             </div>
                             <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 name-form"><span>{{ _('Layout') }}:</span>
                             </div>
