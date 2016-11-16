@@ -111,8 +111,8 @@ body {
 }
 
 .border-none {
-  border: none;
-  box-shadow: none;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* ---footer--- */
@@ -841,28 +841,19 @@ body {
 }
 
 /*--- VALIDATION ---*/
-.pr-validation-error {
+.pr-validation-error,  .pr-validation-error:focus{
   border-color: @color-red-btn;
+  box-shadow: 0 2px 5px 0 rgba(255, 0, 0, 0.5), 0 2px 10px 0 rgba(255, 0, 0, 0.12);
 }
 
-.pr-validation-warning {
+.pr-validation-warning, .pr-validation-warning:focus {
   border-color: #ffff00;
+  box-shadow: 0 2px 5px 0 rgba(150, 150, 0, 0.5), 0 2px 10px 0 rgba(150, 150, 0, 0.12);
 }
 
-.pr-validation-notice {
+.pr-validation-notice, .pr-validation-notice:focus {
   border-color: @color-red-btn;
-}
-
-.pr-validation-error:focus {
-  border-color: @color-red-btn;
-}
-
-.pr-validation-warning:focus {
-  border-color: #ffff00;
-}
-
-.pr-validation-notice:focus {
-  border-color: @color-red-btn;
+  box-shadow: 0 2px 5px 0 rgba(0, 255, 0, 0.5), 0 2px 10px 0 rgba(0, 255, 0, 0.12);
 }
 
 .error-input {
@@ -1485,7 +1476,7 @@ body {
 
     & > * {
       display: table-cell;
-      margin: 2px;
+      margin: 0.25em;
     }
 
     & > *:first-child {

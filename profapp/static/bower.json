@@ -19,6 +19,7 @@
     "angular-ui-select": "~0.17.0",
     "socket.io-client": "^1.4.8",
     "angular-db-filemanager": "git@github.com:kakabomba/angular-server-driven-filemanager.git#master",
-    "angular-crop": "git@github.com:kakabomba/ng-crop.git#master"
+    "angular-crop": "git@github.com:kakabomba/ng-crop.git#master",
+    "angular-ui-sortable": "~0.14.3"
   }
 }

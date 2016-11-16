@@ -289,9 +289,9 @@ class Portal(Base, PRBase):
             if div.portal_division_type_id == 'company_subportal':
                 if div.settings['member_company_portal'].company_id in grouped['by_company_member'] and grouped[
                     'by_company_member'][div.settings['member_company_portal'].company_id] > 1:
-                    if not 'remove_division' in ret['warnings']:
-                        ret['warnings']['remove_division'] = {}
-                    ret['warnings']['remove_division'][inddiv] = 'you have more that one subportal for this company'
+                    if not 'company_subportal' in ret['warnings']:
+                        ret['warnings']['company_subportal'] = {}
+                    ret['warnings']['company_subportal'][inddiv] = 'you have more that one subportal for this company'
 
         return ret
 
