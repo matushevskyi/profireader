@@ -2,7 +2,7 @@ from .blueprints_declaration import front_bp
 from flask import render_template, request, url_for, redirect, g
 from ..models.materials import Publication, ReaderPublication, Material
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
-    PortalDivisionSettingsCompanySubportal, PortalConfig, UserPortalReader
+    PortalDivisionSettingsCompanySubportal, UserPortalReader
 from ..models.company import Company
 from ..models.users import User
 from ..utils.session_utils import back_to_url
@@ -142,8 +142,7 @@ def get_urls_change_tag_page(url_tags, search_text, selected_tag_names):
 
 
 def get_search_tags_pages_search(portal, page, tags, search_text):
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name='', default=10)
+    items_per_page = 10
 
     def url_tags(tag_names):
         url_args = {}
@@ -201,8 +200,7 @@ def get_search_tags_pages_search(portal, page, tags, search_text):
 
 
 def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company_publisher=None):
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=10)
+    items_per_page = 10
 
     def url_tags(tag_names):
         url_args = {'division_name': dvsn.name}
@@ -244,8 +242,7 @@ def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company
 
 
 def get_articles_tags_pages_search(portal, dvsn, page, tags, search_text, company_publisher=None):
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=10)
+    items_per_page = 10
 
     pdt = dvsn.portal_division_type_id
 

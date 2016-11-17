@@ -13,26 +13,51 @@
     {% endblock company_base %}
 
     <script>
-        module.controller('portal_create', ['$scope', '$uibModal', function ($scope, $uibModal) {
-            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('home');
+        module.controller('portal_edit', ['$scope', '$uibModal', function ($scope, $uibModal) {
+            $scope.$$translate = {{ translates('portal_edit')|safe }};
+
+            $scope.portal_id = {{ ("'" + portal_id + "'" if portal_id else 'null')|safe }};
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')($scope.portal_id ? 'portal_profile' : 'home');
+
 
             $scope.url_after_save = {{ raw_url_for('company.profile')|safe }};
 
             $scope.afterSave = function (resp) {
-                window.location.href = $scope.url_after_save({company_id: resp.company_owner_id})
+                if (!$scope.portal_id) {
+                    window.location.href = $scope.url_after_save({company_id: resp.company_owner_id})
+                }
             };
-            $scope.$$translate = {{ translates('portal_create')|safe }};
+
+            $scope.amidLoad = function (resp) {
+                if (!$scope.portal_id) {
+                    resp['portal']['divisions'] =
+                            _.map(['index', 'news', 'events', 'catalog'], function (t) {
+                                return {'name': $scope._('new portal division ' + t), 'portal_division_type_id': t};
+                            });
+                    resp['portal']['divisions'].push({
+                        'name': $scope._('new portal division about us'), 'portal_division_type_id': 'company_subportal',
+                        'settings': {'company_id': resp['portal']['company_owner_id']}
+                    });
+                }
+                return resp;
+            };
 
             $scope.addDivision = function () {
-                $scope.data.portal.divisions.push({
-                    name: '',
-                    portal_division_type_id: 'news'
-                });
-                return false;
+                $scope.data.portal.divisions.push({'id': randomHash(), portal_division_type_id: 'news'});
             };
 
             $scope.removeDivision = function (index) {
-                $scope.data.portal.divisions.splice(index, 1);
+                if ($scope.data.portal.divisions[index]['remove_this_existing_division']) {
+                    $scope.data.portal.divisions[index]['remove_this_existing_division'] = false;
+                    return;
+                }
+                if ($scope.data.portal.divisions[index]['cr_tm']) {
+                    $scope.data.portal.divisions[index]['remove_this_existing_division'] = true;
+                } else {
+                    $scope.data.portal.divisions.splice(index, 1);
+
+                }
+
             };
 
             $scope.sortableOptions = {
@@ -60,12 +85,12 @@
     </script>
     {% raw %}
 
-    <div class="controller-portal-edit" ng-controller="portal_create" ng-cloak>
+    <div class="controller-portal-edit" ng-controller="portal_edit" ng-cloak>
         <form name="formPortal">
-            <div class="container" af af-after-save="afterSave" af-watch="data.portal" ng-model="data">
+            <div class="container" af af-after-save="afterSave" af-amid-load="amidLoad" af-watch="data.portal" ng-model="data">
                 <div class="row">
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                        <h2>{{ ::_('Creating portal') }}</h2>
+                        <h2>{{ ::_(portal_id?'Updating portal':'Creating portal') }}</h2>
                         <hr/>
                     </div>
                 </div>
@@ -81,9 +106,8 @@
                         <div class="narrow-wide">
                             <div>
                                 <label>{{ ::_('Name') }}</label>
-
-                                <input type="text" class="form-control border-radius" id="basic-url"
-                                       aria-describedby="basic-addon3" pr-validation-answer="data_validation:name"
+                                <input type="text" class="form-control border-radius"
+                                       pr-validation-answer="data_validation:name"
                                        ng-model="data.portal.name" name="portal_name">
 
                             </div>
@@ -101,11 +125,11 @@
                                 <label><input ng-value="'own'" ng-model="data.portal.host_profi_or_own"
                                               type="radio"/>&nbsp;{{ ::_('Own domain') }}</label><input
                                     ng-style="data.portal.host_profi_or_own !== 'own'?{'border-color':'gray'}:{}"
-                                       ng-disabled="data.portal.host_profi_or_own !== 'own'"
-                                       pr-validation-disable="data.portal.host_profi_or_own !== 'own'"
-                                       class="form-control border-radius"
-                                       pr-validation-answer="data_validation:host"
-                                       ng-model="data.portal.host_own"/>
+                                    ng-disabled="data.portal.host_profi_or_own !== 'own'"
+                                    pr-validation-disable="data.portal.host_profi_or_own !== 'own'"
+                                    class="form-control border-radius"
+                                    pr-validation-answer="data_validation:host"
+                                    ng-model="data.portal.host_own"/>
                             </div>
                             <div>
                                 <label>{{ ::_('Host') }}</label>
@@ -117,13 +141,40 @@
 
                             </div>
                             <div>
-
                                 <label>{{ ::_('Portal layout') }}</label>
-
                                 <select class="form-control w20em" ng-model="data.portal.portal_layout_id"
                                         ng-options="layout.id as layout.name for layout in data.layouts"></select>
 
                             </div>
+                            <div>
+                                <label>{{ ::_('Portal language') }}</label>
+                                <select class="form-control w20em" ng-model="data.portal.lang"
+                                        ng-options="option.name as option.display for option in data.languages"
+                                ></select>
+
+                            </div>
+                            <div class="disabled">
+                                <label>{{ ::_('Favicon') }}</label>
+                                <div class="form-control border-none oh nowrap"><label><input disabled
+                                                                                              ng-value="'profi'"
+                                                                                              ng-model="data.portal.favicon_from"
+                                                                                              type="radio"> {{
+                                    ::_('Profi fav') }}</label>&nbsp;&nbsp;
+                                    <label><input disabled ng-value="'logo'" ng-model="data.portal.favicon_from"
+                                                  type="radio"> {{ ::_('Logo fav') }}</label>&nbsp;&nbsp;
+                                    <label><input disabled ng-value="'uploaded'" ng-model="data.portal.favicon_from"
+                                                  type="radio"> {{ ::_('Upload fav') }}</label></div>
+                            </div>
+
+                            <div ng-repeat="socnet in ['facebook', 'google', 'tweeter', 'linkedin']">
+                                <label>{{ ::_('Url ' + socnet) }}</label>
+                                <input type="text" class="form-control border-radius"
+                                       apr-validation-answer="data_validation:name"
+                                       ng-model="data.portal['url_' + socnet]">
+
+                            </div>
+
+
                         </div>
                     </div>
                 </div>
@@ -188,8 +239,11 @@
                             </div>
                         </div>
                         <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
-                            <button ng-click="removeDivision($index)" class="pull-right btn btn-warning form-control"><i
-                                    class="fa fa-minus"></i> {{ ::_('remove division') }}
+                            <button ng-click="removeDivision($index)"
+                                    class="pull-right btn btn-warning form-control"><i
+                                    ng-class="{'fa-minus': !division['remove_this_existing_division'],'fa-undo': division['remove_this_existing_division']}"
+                                    class="fa"></i>
+                                {{ _(division['remove_this_existing_division']?'undo remove':'remove division') }}
                             </button>
                         </div>
 
@@ -201,7 +255,7 @@
 
                         <button class="btn btn-primary pull-right border-radius w20em" type="button"
                                 ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">{{
-                            ::_('Save new portal') }}
+                            ::_(portal_id?'Save preferences':'Create portal') }}
                         </button>
                     </div>
                 </div>

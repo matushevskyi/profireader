@@ -46,6 +46,8 @@
 
             <div class="row">
                 <div ng-if="company.own_portal" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 pl0 pr0">
+                    <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_profile'}"
+                       href="#">{{ _('Portal profile') }}</a>
                     <a class="pull-right" ng-if="company.author_user_id == user.id" ng-class="{'selected': selected_company_menu == 'portal_banners'}"
                        href="{{ url_portal_banners({company_id: company.id}) }}">{{ _('Banners') }}</a>
                     <a class="pull-right" ng-if="company.author_user_id == user.id" ng-class="{'selected': selected_company_menu == 'portal_tags'}"
@@ -64,8 +66,7 @@
                     <a class="pull-right" ng-if="0" ng-class="{'selected': selected_company_menu == 'statistics'}"
                        id="statistics"
                        href="#">{{ _('Statistics') }}</a>
-                    <a class="pull-right" ng-if="0" ng-class="{'selected': selected_company_menu == 'portal_profile'}" id="portal_profile"
-                       href="#">{{ _('Portal profile') }}</a>
+
                 </div>
             </div>
 

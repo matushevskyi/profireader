@@ -25,7 +25,7 @@ class Portal(Base, PRBase):
     __tablename__ = 'portal'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     name = Column(TABLE_TYPES['name'])
-    host = Column(TABLE_TYPES['short_name'])
+    host = Column(TABLE_TYPES['short_name'], default='')
     lang = Column(TABLE_TYPES['short_name'])
 
     status = Column(TABLE_TYPES['status'])
@@ -69,7 +69,7 @@ class Portal(Base, PRBase):
                              # backref='portal',
                              order_by='asc(PortalDivision.position)',
                              primaryjoin='Portal.id==PortalDivision.portal_id')
-    config = relationship('PortalConfig', back_populates='portal', uselist=False)
+    # config = relationship('PortalConfig', back_populates='portal', uselist=False)
 
     divisions_lazy_dynamic = relationship('PortalDivision',
                                           order_by='desc(PortalDivision.position)',
@@ -102,30 +102,10 @@ class Portal(Base, PRBase):
         'REJECTED': 'REJECTED'
     }
 
-    def __init__(self, name=None,
-                 # portal_plan_id=None,
-                 company_owner=None,
-                 favicon_file_id=None,
-                 lang='uk',
-                 aliases='',
-                 status='ACTIVE',
-                 host=None, divisions=[], portal_layout_id=None):
-        self.name = name
-        self.aliases = aliases
-        self.status = status
-        self.lang = lang
-
-        self.favicon_file_id = favicon_file_id
-
-        self.host = host
-        self.divisions = divisions
-        self.portal_layout_id = portal_layout_id if portal_layout_id else db(PortalLayout).first().id
-
-        self.own_company = company_owner
-
-        self.company_members = [
-            MemberCompanyPortal(portal=self, company=company_owner, status=MemberCompanyPortal.STATUSES['ACTIVE'],
-                                plan=db(MemberCompanyPortalPlan).first())]
+    def __init__(self, **kwargs):
+        super(Portal, self).__init__(**kwargs)
+        if not self.portal_layout_id:
+            self.portal_layout_id = db(PortalLayout).first().id
 
     def setup_created_portal(self, client_data):
         # TODO: OZ by OZ: move this to some event maybe
@@ -154,25 +134,25 @@ class Portal(Base, PRBase):
     #
     #     return default
 
-    # TODO: OZ by OZ fix this
-    def get_value_from_config(self, key=None, division_name=None, default=None):
-        return default
-
-        """
-        :param key: string, variable which you want to return from config
-        optional:
-            :param division_name: string, if provided return value from config for division this.
-        :return: variable which you want to return from config
-        """
-        conf = getattr(self.config, key, None)
-        if not conf:
-            return Config.ITEMS_PER_PAGE
-        values = simplejson.loads(conf)
-        if division_name:
-            ret = values.get(division_name)
-        else:
-            ret = values
-        return ret
+    # # TODO: OZ by OZ fix this
+    # def get_value_from_config(self, key=None, division_name=None, default=None):
+    #     return default
+    #
+    #     """
+    #     :param key: string, variable which you want to return from config
+    #     optional:
+    #         :param division_name: string, if provided return value from config for division this.
+    #     :return: variable which you want to return from config
+    #     """
+    #     conf = getattr(self.config, key, None)
+    #     if not conf:
+    #         return Config.ITEMS_PER_PAGE
+    #     values = simplejson.loads(conf)
+    #     if division_name:
+    #         ret = values.get(division_name)
+    #     else:
+    #         ret = values
+    #     return ret
 
     def validate_tags(self, new_portal_tags):
         ret = PRBase.DEFAULT_VALIDATION_ANSWER()
@@ -407,7 +387,8 @@ class PortalAdvertisment(Base, PRBase):
         for p_name in places:
             if places[p_name] is not False:
                 ret.append(utils.dict_merge(
-                    {'id': '', 'portal_id': portal.id, 'place': p_name, 'html': '', 'actions': {'create': True}}, places[p_name]))
+                    {'id': '', 'portal_id': portal.id, 'place': p_name, 'html': '', 'actions': {'create': True}},
+                    places[p_name]))
         return ret
 
     def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
@@ -624,17 +605,6 @@ class PortalDivision(Base, PRBase):
     def is_active(self):
         return True
 
-    def __init__(self, portal=portal,
-                 portal_division_type_id=portal_division_type_id,
-                 name='',
-                 settings=None,
-                 position=0):
-        self.position = position
-        self.portal = portal
-        self.portal_division_type_id = portal_division_type_id
-        self.name = name
-        self.settings = settings
-
         # @staticmethod
         # def after_attach(session, target):
         #     #     pass
@@ -709,45 +679,45 @@ class PortalDivisionType(Base, PRBase):
         return db(PortalDivisionType).all()
 
 
-class PortalConfig(Base, PRBase):
-    __tablename__ = 'portal_config'
-    id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'), primary_key=True)
-    division_page_size = Column(TABLE_TYPES['credentials'])
-    portal = relationship(Portal, back_populates='config', uselist=False)
-
-    def __init__(self, page_size_for_divisions=None, portal=None):
-        """
-        optional:
-            :parameter - page_size_for_divisions = dictionary with key = division name
-                                                             and value = page size per this division
-                       , default = all divisions have page size from global config. It will converts
-                         to json.
-        """
-        super(PortalConfig, self).__init__()
-        self.portal = portal
-        self.page_size_for_divisions = page_size_for_divisions
-        self.set_division_page_size()
-
-    PAGE_SIZE_PER_DIVISION = 'division_page_size'
-
-    def set_division_page_size(self, page_size_for_divisions=None):
-        page_size_for_divisions = page_size_for_divisions or self.page_size_for_divisions
-        config = db(PortalConfig, id=self.id).first()
-        dps = dict()
-        if config and page_size_for_divisions:
-            dps = simplejson.loads(getattr(config, PortalConfig.PAGE_SIZE_PER_DIVISION))
-            dps.update(page_size_for_divisions)
-        elif page_size_for_divisions:
-            for division in self.portal.divisions:
-                if page_size_for_divisions.get(division.name):
-                    dps[division.name] = page_size_for_divisions.get(division.name)
-                else:
-                    dps[division.name] = Config.ITEMS_PER_PAGE
-        else:
-            for division in self.portal.divisions:
-                dps[division.name] = Config.ITEMS_PER_PAGE
-        dps = simplejson.dumps(dps)
-        self.division_page_size = dps
+# class PortalConfig(Base, PRBase):
+#     __tablename__ = 'portal_config'
+#     id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'), primary_key=True)
+#     division_page_size = Column(TABLE_TYPES['credentials'])
+#     portal = relationship(Portal, back_populates='config', uselist=False)
+#
+#     def __init__(self, page_size_for_divisions=None, portal=None):
+#         """
+#         optional:
+#             :parameter - page_size_for_divisions = dictionary with key = division name
+#                                                              and value = page size per this division
+#                        , default = all divisions have page size from global config. It will converts
+#                          to json.
+#         """
+#         super(PortalConfig, self).__init__()
+#         self.portal = portal
+#         self.page_size_for_divisions = page_size_for_divisions
+#         self.set_division_page_size()
+#
+#     PAGE_SIZE_PER_DIVISION = 'division_page_size'
+#
+#     def set_division_page_size(self, page_size_for_divisions=None):
+#         page_size_for_divisions = page_size_for_divisions or self.page_size_for_divisions
+#         config = db(PortalConfig, id=self.id).first()
+#         dps = dict()
+#         if config and page_size_for_divisions:
+#             dps = simplejson.loads(getattr(config, PortalConfig.PAGE_SIZE_PER_DIVISION))
+#             dps.update(page_size_for_divisions)
+#         elif page_size_for_divisions:
+#             for division in self.portal.divisions:
+#                 if page_size_for_divisions.get(division.name):
+#                     dps[division.name] = page_size_for_divisions.get(division.name)
+#                 else:
+#                     dps[division.name] = Config.ITEMS_PER_PAGE
+#         else:
+#             for division in self.portal.divisions:
+#                 dps[division.name] = Config.ITEMS_PER_PAGE
+#         dps = simplejson.dumps(dps)
+#         self.division_page_size = dps
 
 
 class UserPortalReader(Base, PRBase):

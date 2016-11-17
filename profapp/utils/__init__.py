@@ -1,12 +1,13 @@
 import re
 
+
 def fileUrl(id, down=False, if_no_file=None):
     from config import Config
     if not id:
         return if_no_file if if_no_file else ''
 
     server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', id)
-    return '//file' + server + '.'+Config.MAIN_DOMAIN+'/' + id + '/' + ('?d' if down else '')
+    return '//file' + server + '.' + Config.MAIN_DOMAIN + '/' + id + '/' + ('?d' if down else '')
 
 
 def fileID(url):
@@ -140,7 +141,19 @@ def filter_json(json, *args, NoneTo='', ExceptionOnNotPresent=False, prefix=''):
 
     return ret
 
+
 def static_address(relative_file_name):
     from config import Config
     return '//static.' + Config.MAIN_DOMAIN + '/static/' + relative_file_name
 
+
+def find_by_id(list, id):
+    return next(d for d in list if (d['id'] if isinstance(d, dict) else d.id) == id)
+
+
+def get_client_side_list(list, **kwargs):
+    return [x.get_client_side_dict(**kwargs) for x in list]
+
+
+def get_client_side_dict(list, **kwargs):
+    return {x.id: x.get_client_side_dict(**kwargs) for x in list}

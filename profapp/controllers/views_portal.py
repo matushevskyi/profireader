@@ -2,11 +2,12 @@ from .blueprints_declaration import portal_bp
 from flask import render_template, g, flash
 from ..models.company import Company
 from flask.ext.login import login_required
+from profapp.controllers.errors import BadDataProvided
 from ..models.portal import PortalDivisionType
 from ..models.translate import TranslateTemplate
 from tools.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
-    PortalDivisionSettingsCompanySubportal, PortalConfig, PortalAdvertisment, PortalAdvertismentPlace
+    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace
 from .request_wrapers import ok, check_right
 # from ..models.bak_articles import Publication, ArticleCompany, Article
 from ..models.company import UserCompany
@@ -28,7 +29,7 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipR
 @portal_bp.route('/<string:portal_id>/update/company/<string:company_id>/', methods=['GET'])
 @check_right(EditPortalRight, ['company_id'])
 def profile(company_id, portal_id=None):
-    return render_template('portal/portal_create.html', company=Company.get(company_id))
+    return render_template('portal/portal_edit.html', company=Company.get(company_id), portal_id=portal_id)
 
 
 @portal_bp.route('/create/company/<string:company_id>/', methods=['OK'])
@@ -36,84 +37,94 @@ def profile(company_id, portal_id=None):
 @check_right(EditPortalRight, ['company_id'])
 def profile_load(json, company_id, portal_id=None):
     action = g.req('action', allowed=['load', 'save', 'validate'])
-    layouts = [x.get_client_side_dict() for x in db(PortalLayout).all()]
-    types = {x.id: x.get_client_side_dict() for x in PortalDivisionType.get_division_types()}
+    layouts = db(PortalLayout).all()
+    division_types = PortalDivisionType.get_division_types()
     company = Company.get(company_id)
-    portal = Portal() if portal_id is None else Portal.get(portal_id)
+    portal = Portal.get(portal_id) if portal_id else Portal(host='', lang=g.user.lang, company_owner_id=company.id,
+                                                            company_members=[company])
+
     if action == 'load':
+
         ret = {'company': company.get_client_side_dict(),
-               'layouts': layouts, 'division_types': types}
-        if portal_id:
-            ret['portal_company_members'] = [cm.company.get_client_side_dict() for cm in portal.company_members]
-            ret['portal'] = portal.get_client_side_dict(more_fields='logo,portal_layout_id,divisions')
-            # TODO: OZ by OZ: replaxe it when settings will work properly
-            for di in ret['portal']['divisions']:
-                if di['portal_division_type_id'] == 'company_subportal':
-                    di['settings'] = {'company_id': next(x for x in portal.divisions if x.id == di['id']).settings.member_company_portal.company.id}
+               'languages': Config.LANGUAGES,
+               'portal': portal.get_client_side_dict(more_fields='logo,portal_layout_id,divisions,lang,host'),
+               'portal_company_members': utils.get_client_side_list(portal.company_members),
+               'layouts': utils.get_client_side_list(layouts),
+               'division_types': utils.get_client_side_dict(division_types)}
 
-            ret['portal']['host_profi_or_own'] = 'profi' if '' else 'own'
-            if ret['portal']['host'][len(ret['portal']['host']) - len(Config.MAIN_DOMAIN) - 1:] == '.' + Config.MAIN_DOMAIN:
-                ret['portal']['host_profi_or_own'] = 'profi'
-                ret['portal']['host_profi'] = ret['portal']['host'][0:len(ret['portal']['host']) - len(Config.MAIN_DOMAIN) - 1]
-                ret['portal']['host_own'] = ''
-            else:
-                ret['portal']['host_profi_or_own'] = 'own'
-                ret['portal']['host_own'] = ret['portal']['host']
-                ret['portal']['host_profi'] = ''
+        # TODO: OZ by OZ: replace it when settings will work properly
+        for di in ret['portal']['divisions']:
+            if di['portal_division_type_id'] == 'company_subportal':
+                di['settings'] = {'company_id': utils.find_by_id(portal.divisions,
+                                                                 di['id']).settings.member_company_portal.company.id}
 
-
-            # ret['host_profi_or_own'] = 'profi' if re.match(r'^profireader\.', ret['portal']['hostname']) else 'own'
+        if ret['portal']['host'][
+           len(ret['portal']['host']) - len(Config.MAIN_DOMAIN) - 1:] == '.' + Config.MAIN_DOMAIN:
+            ret['portal']['host_profi_or_own'] = 'profi'
+            ret['portal']['host_profi'] = ret['portal']['host'][
+                                          0:len(ret['portal']['host']) - len(Config.MAIN_DOMAIN) - 1]
+            ret['portal']['host_own'] = ''
         else:
-            ret['portal_company_members'] = [company.get_client_side_dict()]
-            ret['portal'] = {'company_owner_id': company_id, 'name': '', 'host': '',
-                             'logo': portal.logo,
-                             'host_profi_or_own': 'profi',
-                             'host_own': '',
-                             'host_profi': '',
-                             'portal_layout_id': layouts[0]['id'],
-                             'divisions': [
-                                 {'name': 'index page', 'portal_division_type_id': 'index',
-                                  'page_size': ''},
-                                 {'name': 'news', 'portal_division_type_id': 'news', 'page_size': ''},
-                                 {'name': 'events', 'portal_division_type_id': 'events',
-                                  'page_size': ''},
-                                 {'name': 'catalog', 'portal_division_type_id': 'catalog',
-                                  'page_size': ''},
-                                 {'name': 'our subportal',
-                                  'portal_division_type_id': 'company_subportal',
-                                  'page_size': '',
-                                  'settings': {'company_id': ret['portal_company_members'][0]['id']}}]}
+            ret['portal']['host_profi_or_own'] = 'own'
+            ret['portal']['host_own'] = ret['portal']['host']
+            ret['portal']['host_profi'] = ''
+
+
+
+        # else:
+        #     ret['portal_company_members'] = [company.get_client_side_dict()]
+        #     ret['portal'] = {'company_owner_id': company_id, 'name': '', 'host': '',
+        #                      'logo': portal.logo,
+        #                      'lang': g.user.lang,
+        #                      'host_profi_or_own': 'profi',
+        #                      'host_own': '',
+        #                      'host_profi': '',
+        #                      'favicon_from': 'profi',
+        #                      'portal_layout_id': layouts[0]['id'],
+        #                      'divisions': [
+        #                          {'name': 'index page', 'portal_division_type_id': 'index'},
+        #                          {'name': 'news', 'portal_division_type_id': 'news'},
+        #                          {'name': 'events', 'portal_division_type_id': 'events'},
+        #                          {'name': 'catalog', 'portal_division_type_id': 'catalog'},
+        #                          {'name': 'our subportal', 'portal_division_type_id': 'company_subportal',
+        #                           'settings': {'company_id': ret['portal_company_members'][0]['id']}}]}
         return ret
     else:
-        json_portal = json['portal']
-        if portal_id:
-            return PRBase.DEFAULT_VALIDATION_ANSWER()
-        else:
-            page_size_for_config = dict()
-            for a in json_portal['divisions']:
-                page_size_for_config[a.get('name')] = a.get('page_size') \
-                    if type(a.get('page_size')) is int and a.get('page_size') != 0 \
-                    else Config.ITEMS_PER_PAGE
+        jp = json['portal']
+        portal.host = (jp['host_profi'] + '.' + Config.MAIN_DOMAIN) if jp['host_profi_or_own'] == 'profi' \
+            else jp['host_own']
 
-            json_portal['host'] = (json_portal['host_profi'] + '.' + Config.MAIN_DOMAIN) \
-                if json_portal['host_profi_or_own'] == 'profi' else json_portal['host_own']
+        if set(portal.divisions) - set(utils.find_by_id(portal.divisions, d['id']) for d in jp['divisions']) != set():
+            raise BadDataProvided('Information for some existing portal division is not provided by client')
 
-            portal = Portal(company_owner=company, aliases = '', **g.filter_json(json_portal, 'name', 'portal_layout_id', 'host'))
-            divisions = []
-            for division_json in json['portal']['divisions']:
-                division = PortalDivision(portal, portal_division_type_id=division_json['portal_division_type_id'],
-                                          position=len(json['portal']['divisions']) - len(divisions),
-                                          name=division_json['name'])
-                if division_json['portal_division_type_id'] == 'company_subportal':
-                    division.settings = {'member_company_portal': portal.company_members[0]}
-                divisions.append(division)
-            # self, portal=portal, portal_division_type=portal_division_type, name='', settings={}
-            portal.divisions = divisions
-            PortalConfig(portal=portal, page_size_for_divisions=page_size_for_config)
+        division_position = 0
+        for division_json in jp['divisions']:
+            ndi = utils.find_by_id(portal.divisions, division_json['id']) or PortalDivision(portal)
+            if division_json['remove_this_existing_division']:
+                portal.divisions.remove(ndi)
+            else:
+                ndi.portal_division_type = utils.find_by_id(division_types, jp['portal_division_type_id'])
+                ndi.name = division_json['name']
+                ndi.position = division_position
+                if ndi.portal_division_type == 'company_subportal':
+                    ndi.settings = {'member_company_portal': portal.company_members[0]}
+            division_position += 1
+
+        # else:
+        #     divisions = []
+        #     for division_json in json['portal']['divisions']:
+        #         division = PortalDivision(portal, portal_division_type_id=division_json['portal_division_type_id'],
+        #                                   position=len(json['portal']['divisions']) - len(divisions),
+        #                                   name=division_json['name'])
+        #         if division_json['portal_division_type_id'] == 'company_subportal':
+        #             division.settings = 1
+        #         divisions.append(division)
+        #
+        #     portal.divisions = divisions
+
         if action == 'save':
-            portal.setup_created_portal(json_portal).save()
-            portal_dict = portal.save().get_client_side_dict()
-            return portal_dict
+            portal.setup_created_portal(jp).save()
+            return portal.get_client_side_dict()
         else:
             return portal.validate(False if portal_id else True)
 
@@ -187,8 +198,10 @@ def portal_banners_load(json, company_id):
     portal = Company.get(company_id).own_portal
     if 'action_name' in json:
         if json['action_name'] == 'create':
-            place = db(PortalAdvertismentPlace, portal_layout_id = portal.portal_layout_id, place = json['row']['place']).one()
-            newrow = PortalAdvertisment(portal_id=portal.id, html=place.default_value if place.default_value else '', place=json['row']['place']).save()
+            place = db(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id,
+                       place=json['row']['place']).one()
+            newrow = PortalAdvertisment(portal_id=portal.id, html=place.default_value if place.default_value else '',
+                                        place=json['row']['place']).save()
             return {'grid_action': 'refresh_row', 'row': newrow.get_client_side_dict()}
 
         elif json['action_name'] == 'delete':
