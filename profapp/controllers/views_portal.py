@@ -24,19 +24,17 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipR
     PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive
 
 
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/portal/<string:portal_id>/',
-                 methods=['GET'])
+@portal_bp.route('/create/company/<string:company_id>/', methods=['GET'])
+@portal_bp.route('/<string:portal_id>/update/company/<string:company_id>/', methods=['GET'])
 @check_right(EditPortalRight, ['company_id'])
-def profile(create_or_update, company_id, portal_id=None):
+def profile(company_id, portal_id=None):
     return render_template('portal/portal_create.html', company=Company.get(company_id))
 
 
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['OK'])
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/portal/<string:portal_id>/',
-                 methods=['OK'])
+@portal_bp.route('/create/company/<string:company_id>/', methods=['OK'])
+@portal_bp.route('/<string:portal_id>/update/company/<string:company_id>/', methods=['OK'])
 @check_right(EditPortalRight, ['company_id'])
-def profile_load(json, create_or_update, company_id, portal_id=None):
+def profile_load(json, company_id, portal_id=None):
     action = g.req('action', allowed=['load', 'save', 'validate'])
     layouts = [x.get_client_side_dict() for x in db(PortalLayout).all()]
     types = {x.id: x.get_client_side_dict() for x in PortalDivisionType.get_division_types()}
@@ -45,10 +43,26 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
     if action == 'load':
         ret = {'company': company.get_client_side_dict(),
                'layouts': layouts, 'division_types': types}
-        if create_or_update == 'update':
-            ret['portal'] = {}
-            ret['portal_company_members'] = company.portal_members
-            ret['host_profi_or_own'] = 'profi' if re.match(r'^profireader\.', ret['portal']['hostname']) else 'own'
+        if portal_id:
+            ret['portal_company_members'] = [cm.company.get_client_side_dict() for cm in portal.company_members]
+            ret['portal'] = portal.get_client_side_dict(more_fields='logo,portal_layout_id,divisions')
+            # TODO: OZ by OZ: replaxe it when settings will work properly
+            for di in ret['portal']['divisions']:
+                if di['portal_division_type_id'] == 'company_subportal':
+                    di['settings'] = {'company_id': next(x for x in portal.divisions if x.id == di['id']).settings.member_company_portal.company.id}
+
+            ret['portal']['host_profi_or_own'] = 'profi' if '' else 'own'
+            if ret['portal']['host'][len(ret['portal']['host']) - len(Config.MAIN_DOMAIN) - 1:] == '.' + Config.MAIN_DOMAIN:
+                ret['portal']['host_profi_or_own'] = 'profi'
+                ret['portal']['host_profi'] = ret['portal']['host'][0:len(ret['portal']['host']) - len(Config.MAIN_DOMAIN) - 1]
+                ret['portal']['host_own'] = ''
+            else:
+                ret['portal']['host_profi_or_own'] = 'own'
+                ret['portal']['host_own'] = ret['portal']['host']
+                ret['portal']['host_profi'] = ''
+
+
+            # ret['host_profi_or_own'] = 'profi' if re.match(r'^profireader\.', ret['portal']['hostname']) else 'own'
         else:
             ret['portal_company_members'] = [company.get_client_side_dict()]
             ret['portal'] = {'company_owner_id': company_id, 'name': '', 'host': '',
@@ -72,15 +86,15 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
         return ret
     else:
         json_portal = json['portal']
-        if create_or_update == 'update':
-            pass
-        elif create_or_update == 'create':
+        if portal_id:
+            return PRBase.DEFAULT_VALIDATION_ANSWER()
+        else:
             page_size_for_config = dict()
             for a in json_portal['divisions']:
                 page_size_for_config[a.get('name')] = a.get('page_size') \
                     if type(a.get('page_size')) is int and a.get('page_size') != 0 \
                     else Config.ITEMS_PER_PAGE
-            # print(json)
+
             json_portal['host'] = (json_portal['host_profi'] + '.' + Config.MAIN_DOMAIN) \
                 if json_portal['host_profi_or_own'] == 'profi' else json_portal['host_own']
 
@@ -101,7 +115,7 @@ def profile_load(json, create_or_update, company_id, portal_id=None):
             portal_dict = portal.save().get_client_side_dict()
             return portal_dict
         else:
-            return portal.validate(create_or_update == 'create')
+            return portal.validate(False if portal_id else True)
 
 
 @portal_bp.route('/apply_company/<string:company_id>', methods=['OK'])
@@ -117,7 +131,7 @@ def apply_company(json, company_id):
 @portal_bp.route('/profile_edit/<string:portal_id>/', methods=['GET'])
 @check_right(EditPortalRight, ['portal_id'])
 def profile_edit(portal_id):
-    return render_template('portal/portal_profile_edit.html', company=Portal.get(portal_id).own_company)
+    return render_template('portal/del_portal_profile_edit.html', company=Portal.get(portal_id).own_company)
 
 
 @portal_bp.route('/profile_edit/<string:portal_id>/', methods=['OK'])

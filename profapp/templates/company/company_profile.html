@@ -29,19 +29,10 @@
                 window.location.href = 'http://' + host;
             };
 
-            $scope.portal_create = function (company_id) {
+            $scope.portal_edit = function (company_id, portal_id) {
                 window.location.href =
-                        $scope.url_portal_profile({'create_or_update': 'create', 'company_id': company_id});
+                        $scope.url_portal_profile({'company_id': company_id, 'portal_id': portal_id});
             };
-{#            YG--- fix creating new portal if portal of company already exist #}
-{#            $scope.portal_update = function (company_id, portal_id) {#}
-{#                window.location.href =#}
-{#                        $scope.url_portal_profile({#}
-{#                            'create_or_update': 'update', 'company_id': company_id,#}
-{#                            'portal_id': portal_id#}
-{#                        });#}
-{#            };#}
-
 
             $scope.edit = function () {
                 $scope.editing = $scope.can_edit_company;
@@ -57,23 +48,12 @@
             };
 
             $scope.afterLoad = function (resp, deff) {
-                $scope.can_edit_company = resp['actions']?resp['actions']['edit_company_profile'] === true:false;
-                $scope.can_edit_portal = resp['actions']?resp['actions']['edit_portal_profile'] === true:false;
+                $scope.can_edit_company = resp['actions'] ? resp['actions']['edit_company_profile'] === true : false;
+                $scope.can_edit_portal = resp['actions'] ? resp['actions']['edit_portal_profile'] === true : false;
                 $scope.editing = resp.id ? false : true;
                 deff(resp);
-//                $scope.logo_file_url = fileUrl(resp['logo_file_id']);
             };
-            //company value
-            {#            $scope.company_name = {{data.get_client_side_dict().name | tojson | safe}};#}
-            {#            $scope.company_country = {{data.get_client_side_dict().country | tojson | safe}};#}
-            {#            $scope.company_city = {{data.get_client_side_dict().city | tojson | safe}};#}
-            {#            $scope.company_postcode = {{ data.get_client_side_dict().postcode | tojson | safe }};#}
-            {#            $scope.company_address = {{ data.get_client_side_dict().address | tojson | safe }};#}
-            {#            $scope.company_phone = {{ data.get_client_side_dict().phone | tojson | safe  }};#}
-            {#            $scope.company_phone2 = {{ data.get_client_side_dict().phone2 | tojson | safe  }};#}
-            {#            $scope.company_email = {{ data.get_client_side_dict().email | tojson | safe  }};#}
-            {#            $scope.company_lat = {{ data.get_client_side_dict().lat | tojson | safe }};#}
-            {#            $scope.company_lon = {{ data.get_client_side_dict().lon | tojson | safe }};#}
+
         });
     </script>
     {% raw %}
@@ -86,17 +66,17 @@
             <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 edit-company">
                 <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                     <button ng-if="!data.id" class="btn btn-default save-profile pull-right border-radius"
-                                type="button" ng-click="$af.save(data)"
-                                ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
+                            type="button" ng-click="$af.save(data)"
+                            ng-disabled="!$af.isActionAllowed(data, 'save') ">{{ _('Create company') }}
                     </button>
                     <div ng-if="data.id">
                         <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                ng-if="data.own_portal && can_edit_portal" ng-click="portal_update(data.id, data.own_portal.id)">
-                            {{_('Portal profile') }}
+                                ng-if="!data.own_portal && can_edit_portal" ng-click="portal_edit(data.id)">{{
+                            ::_('Launch portal')}}
                         </button>
                         <button class="btn btn-default go-portal pull-right border-radius" type="button"
-                                ng-if="!data.own_portal && can_edit_portal" ng-click="portal_create(data.id)">{{
-                            _('Launch portal')}}
+                                ng-if="data.own_portal && can_edit_portal" ng-click="portal_edit(data.id, data.own_portal.id)">{{
+                            ::_('Update portal')}}
                         </button>
                         <button ng-if="editing" class="btn btn-default save-profile pull-right border-radius"
                                 type="button" ng-click="$af.save(data)"
@@ -114,7 +94,7 @@
                              pr-image-url-watch="data.logo.url" alt="image"/>
 
                         <div ng-if="editing">
-                        <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
+                            <div style="width: 400px; height: 300px; position: relative" pr-crop="data.logo"></div>
                         </div>
                     </div>
 

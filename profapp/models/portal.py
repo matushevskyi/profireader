@@ -67,7 +67,7 @@ class Portal(Base, PRBase):
 
     divisions = relationship('PortalDivision',
                              # backref='portal',
-                             order_by='desc(PortalDivision.position)',
+                             order_by='asc(PortalDivision.position)',
                              primaryjoin='Portal.id==PortalDivision.portal_id')
     config = relationship('PortalConfig', back_populates='portal', uselist=False)
 

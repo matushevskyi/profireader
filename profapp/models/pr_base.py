@@ -23,7 +23,6 @@ import operator
 from collections import OrderedDict
 from sqlalchemy import event
 
-
 from .. import utils
 from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
 
@@ -506,7 +505,6 @@ class PRBase:
 
         return self
 
-
     @staticmethod
     def DEFAULT_VALIDATION_ANSWER():
         return {'errors': {}, 'warnings': {}, 'notices': {}}
@@ -573,6 +571,8 @@ class PRBase:
             # TODO: OZ by OZ:**kwargs should accept lambdafunction for fields formattings
 
     def to_dict(self, *args, prefix=''):
+        # TODO: OZ by OZ: this function is wrong. we need walk through requested fields and return appropriate attribute.
+        # Now we walk through attribute (yes?)
         ret = {}
         __debug = True
 

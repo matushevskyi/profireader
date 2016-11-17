@@ -99,16 +99,13 @@
                             </div>
                             <div>
                                 <label><input ng-value="'own'" ng-model="data.portal.host_profi_or_own"
-                                              type="radio"/>&nbsp;{{ ::_('Own domain') }}</label>
-
-                                <input
-                                        ng-style="data.portal.host_profi_or_own !== 'own'?{'border-color':'gray'}:{}"
-                                        ng-disabled="data.portal.host_profi_or_own !== 'own'"
-                                        pr-validation-disable="data.portal.host_profi_or_own !== 'own'"
-                                        class="form-control border-radius"
-                                        pr-validation-answer="data_validation:host"
-                                        ng-model="data.portal.host_own"/>
-
+                                              type="radio"/>&nbsp;{{ ::_('Own domain') }}</label><input
+                                    ng-style="data.portal.host_profi_or_own !== 'own'?{'border-color':'gray'}:{}"
+                                       ng-disabled="data.portal.host_profi_or_own !== 'own'"
+                                       pr-validation-disable="data.portal.host_profi_or_own !== 'own'"
+                                       class="form-control border-radius"
+                                       pr-validation-answer="data_validation:host"
+                                       ng-model="data.portal.host_own"/>
                             </div>
                             <div>
                                 <label>{{ ::_('Host') }}</label>
@@ -121,7 +118,7 @@
                             </div>
                             <div>
 
-                                <label>{{ _('Portal layout') }}</label>
+                                <label>{{ ::_('Portal layout') }}</label>
 
                                 <select class="form-control w20em" ng-model="data.portal.portal_layout_id"
                                         ng-options="layout.id as layout.name for layout in data.layouts"></select>
@@ -134,24 +131,6 @@
                     <hr/>
                     <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10"><h4>{{ _('Portal divisions') }}</h4></div>
                 </div>
-                {% endraw %}
-                {#                <div class="row dn">#}
-                {#                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4"><input class="form-control " type="text"#}
-                {#                                                                            placeholder=""#}
-                {#                                                                            disabled="disabled"#}
-                {#                                                                            value="{{ data.portal.name }}">#}
-                {#                    </div>#}
-                {#                    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6"><select#}
-                {#                            class="form-control" disabled="disabled">#}
-                {#                        <option>{{ ::_('index division')}}</option>#}
-                {#                    </select>#}
-                {#                    </div>#}
-                {#                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">#}
-                {#                        <button class="pull-right btn btn-warning disabled">{{ ::_('remove division') }}</button>#}
-                {#                    </div>#}
-                {#                </div>#}
-                {% raw %}
-
                 <div class="row">
                     <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 p025em">
                         <label class="form-control border-none pull-right">{{ ::_('Division name') }}</label>
@@ -203,9 +182,8 @@
                                     popover-trigger="none"
                                     pr-validation-answer="data_validation:company_subportal[division_index]"
                                     class="form-control" ng-if="division.portal_division_type_id == 'company_subportal'"
-                                    ng-init="division.settings.company_id = data.portal_company_members[0].id"
-                                    ng-model="division.settings.company_id" ng-options="member.id as member.name for member
-                            in data.portal_company_members">
+                                    ng-model="division.settings.company_id"
+                                    ng-options="member.id as member.name for member in data.portal_company_members">
                             </select>
                             </div>
                         </div>
@@ -234,98 +212,6 @@
 
     </div>
     {% endraw %}
-
-
-
-
-    {#    <div ng-controller="portal_create">#}
-    {#        <h2>{{_('Cteate portal')}}</h2>#}
-    {##}
-    {#        <div ng-click="chooseImage()"#}
-    {#             style="float: left; width: 190px; height: 100px; border: 1px solid #aaa;#}
-    {#                     background-position: center;#}
-    {#                     background-repeat: no-repeat;#}
-    {#                     background-color: white;#}
-    {#                     background-size: contain; background-image:url({{ logo_file_url }});">#}
-    {#            {{ _('Select portal logo') }}#}
-    {#        </div>#}
-    {##}
-    {#        <div style="width: 800px; margin-left: 200px;">#}
-    {#            <div class="item">#}
-    {#                <span class="input_label">{{_('Portal name')}}:</span><input type="text"#}
-    {#                                                                             placeholder="{{_('Portal name')}}"#}
-    {#                                                                             ng-model-options="{updateOn : 'change keypress'}"#}
-    {#                                                                             ng-model="data.portal.name">#}
-    {#                <span af-validation-answer="data_validation:name"></span>#}
-    {#            </div>#}
-    {#            <div class="item">#}
-    {#                        <span class="input_label">{{_('Portal host')}}: <span#}
-    {#                                style="color: black">http://</span></span><input type="text"#}
-    {#                                                                                 placeholder="{{_('Host name')}}"#}
-    {#                                                                                 ng-model="data.portal.host">#}
-    {#                <span af-validation-answer="data_validation:host"></span>#}
-    {#            </div>#}
-    {#            <div class="item">#}
-    {#                <span class="input_label">{{_('Portal layout')}}:</span><select#}
-    {#                    ng-model="data.portal.portal_layout_id"#}
-    {#                    ng-options="layout.id as layout.name for layout in data.layouts"></select>#}
-    {#            </div>#}
-    {#        </div>#}
-    {##}
-    {##}
-    {#        <h4>{{_('Portal divisions')}}</h4>#}
-    {##}
-    {#    <div class="item">#}
-    {#        <input type="text" placeholder="" disabled="disabled"#}
-    {#               value="{{ data.portal.name }}">#}
-    {#        <select style="width: 150px" disabled="disabled">#}
-    {#            <option>{{ _('index') }}</option>#}
-    {#        </select>#}
-    {##}
-    {#    </div>#}
-    {#    <div class="item" ng-if="division.portal_division_type_id != 'index'"#}
-    {#         ng-repeat="(division_index, division) in data.portal.divisions">#}
-    {#        <input type="text" placeholder="Division name" ng-model="division.name">#}
-    {#        <select style="width: 150px" ng-model="division.portal_division_type_id">#}
-    {#            <option ng-selected="division_type.id == division.portal_division_type_id"#}
-    {#                    ng-if="division_type.id != 'index'"#}
-    {#                    ng-repeat="(division_type_id, division_type) in data.division_types"#}
-    {#                    value="{{ division_type_id }}">{{ division_type.id }}#}
-    {#            </option>#}
-    {#        </select>#}
-    {#        <input type="number" placeholder="Articles per page" ng-model="division.page_size">#}
-    {#        <select ng-if="division.portal_division_type_id == 'company_subportal'"#}
-    {#                ng-model="division.settings.company_id">#}
-    {#            <option ng-selected="portal_member_company.id == division.settings.company_id"#}
-    {#                    ng-repeat="(portal_member_company_id, portal_member_company) in data.portal_company_members"#}
-    {#                    value="{{ portal_member_company_id }}">{{ portal_member_company.name }}#}
-    {#            </option>#}
-    {#        </select>#}
-    {#        <span af-validation-answer="data_validation:divisions[division_index]"></span>#}
-    {#                    <span class="link error" style="float: right"#}
-    {#                          ng-click="removeDivision($index)">X</span>#}
-    {#    </div>#}
-    {#    <div class="item">#}
-    {#        <input type="text" style="visibility: hidden"/>#}
-    {#        <button type="button" ng-click="addDivision()">{{ _('add division') }}</button>#}
-    {#        <span af-validation-answer="data_validation:add_division"></span>#}
-    {#    </div>#}
-    {##}
-    {##}
-    {#    <div class="item text-align-right">#}
-    {#        <span af-validation-answer="data_validation:form"></span>#}
-    {#        <input#}
-    {#                type="submit"#}
-    {#                ng-disabled="!$af.isActionAllowed(data, 'save')"#}
-    {#                ng-click="$af.save(data)"#}
-    {#                value="{{ data.id ? _('save') : _('create') }}"/>#}
-    {##}
-    {##}
-    {#    </div>#}
-    {##}
-    {#    </div>#}
-    {#    </div>#}
-
 
 
 {% endblock portal_content %}
