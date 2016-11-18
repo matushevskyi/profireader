@@ -532,6 +532,10 @@ class PRBase:
             setattr(self, k, kwargs[k])
         return self
 
+    def attr_filter(self, dictionary, *filters):
+        self.attr(utils.filter_json(dictionary, *filters))
+
+
     def detach(self):
         if self in g.db:
             g.db.expunge(self)
@@ -540,9 +544,9 @@ class PRBase:
         self.id = None
         return self
 
-    def expunge(self):
-        g.db.expunge(self)
-        return self
+    # def expunge(self):
+    #     g.db.expunge(self)
+    #     return self
 
     def get_client_side_dict(self, fields='id',
                              more_fields=None):
@@ -673,7 +677,7 @@ class PRBase:
         for relname, nextlevelargs in req_relationships.items():
             if hasattr(self, relname):
                 del_req_columns_in_attrs.append(relname)
-                add = g.filter_json(getattr(self, relname), *nextlevelargs) if nextlevelargs else getattr(
+                add = utils.filter_json(getattr(self, relname), *nextlevelargs) if nextlevelargs else getattr(
                     self, relname)
                 ret[relname] = utils.dict_merge_recursive(ret[relname] if relname in ret else {}, add)
 

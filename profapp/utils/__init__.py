@@ -60,7 +60,6 @@ def putInRange(what, fromr, tor, check_only=False):
     else:
         return fromr if (what <= fromr) else (tor if what >= tor else what)
 
-
 def filter_json(json, *args, NoneTo='', ExceptionOnNotPresent=False, prefix=''):
     ret = {}
     req_columns = {}
@@ -148,7 +147,7 @@ def static_address(relative_file_name):
 
 
 def find_by_id(list, id):
-    return next(d for d in list if (d['id'] if isinstance(d, dict) else d.id) == id)
+    return next((d for d in list if (d['id'] if isinstance(d, dict) else d.id) == id), None)
 
 
 def get_client_side_list(list, **kwargs):

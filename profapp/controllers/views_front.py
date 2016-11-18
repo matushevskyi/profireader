@@ -44,7 +44,7 @@ def portal_and_settings(portal):
     newd = OrderedDict()
     subportals_by_companies_id = OrderedDict()
     for di in ret['divisions']:
-        if di['portal_division_type_id'] == 'company_subportal':
+        if di['portal_division_type_id'] == PortalDivision.TYPES['company_subportal']:
             pdset = g.db().query(PortalDivisionSettingsCompanySubportal). \
                 filter_by(portal_division_id=di['id']).first()
             com_port = g.db().query(MemberCompanyPortal).get(pdset.member_company_portal_id)

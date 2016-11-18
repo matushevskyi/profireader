@@ -13,6 +13,14 @@
     {% endblock company_base %}
 
     <script>
+        module.controller('PortalDivisionController', function ($scope) {
+            $scope.$watch('division.portal_division_type_id', function (newv, oldv) {
+                if (newv !== oldv && newv == 'company_subportal' && (!$scope.division.settings || !$scope.division.company_id)) {
+                    $scope.division.settings = {'company_id': $scope.$parent.$parent['data']['portal']['company_owner_id']};
+                }
+            });
+        });
+
         module.controller('portal_edit', ['$scope', '$uibModal', function ($scope, $uibModal) {
             $scope.$$translate = {{ translates('portal_edit')|safe }};
 
@@ -31,19 +39,21 @@
             $scope.amidLoad = function (resp) {
                 if (!$scope.portal_id) {
                     resp['portal']['divisions'] =
-                            _.map(['index', 'news', 'events', 'catalog'], function (t) {
-                                return {'name': $scope._('new portal division ' + t), 'portal_division_type_id': t};
+                            _.map(['index', 'news', 'events', 'catalog', 'company_subportal'], function (t) {
+                                return {
+                                    'id': randomHash(), 'portal_division_type_id': t,
+                                    'name': $scope._('new portal division ' + t)
+                                };
                             });
-                    resp['portal']['divisions'].push({
-                        'name': $scope._('new portal division about us'), 'portal_division_type_id': 'company_subportal',
-                        'settings': {'company_id': resp['portal']['company_owner_id']}
-                    });
+
+                    resp['portal']['divisions'][resp['portal']['divisions'].length - 1]['settings'] =
+                    {'company_id': resp['portal']['company_owner_id']};
                 }
                 return resp;
             };
 
             $scope.addDivision = function () {
-                $scope.data.portal.divisions.push({'id': randomHash(), portal_division_type_id: 'news'});
+                $scope.data.portal.divisions.push({'id': randomHash(), portal_division_type_id: 'news', name: ''});
             };
 
             $scope.removeDivision = function (index) {
@@ -87,7 +97,8 @@
 
     <div class="controller-portal-edit" ng-controller="portal_edit" ng-cloak>
         <form name="formPortal">
-            <div class="container" af af-after-save="afterSave" af-amid-load="amidLoad" af-watch="data.portal" ng-model="data">
+            <div class="container" af af-after-save="afterSave" af-amid-load="amidLoad" af-watch="data.portal"
+                 ng-model="data">
                 <div class="row">
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                         <h2>{{ ::_(portal_id?'Updating portal':'Creating portal') }}</h2>
@@ -201,41 +212,47 @@
                 </div>
                 <div ui-sortable="sortableOptions" ng-model="data.portal.divisions">
                     <div class="row"
-
+                         ng-controller="PortalDivisionController"
                          ng-repeat="(division_index, division) in data.portal.divisions">
-                        <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 p025em tar">
+                        <div ng-class="{'disabled': division['remove_this_existing_division']}">
+                            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 p025em tar">
                         <span style="cursor: row-resize"
                               class="fa fa-arrows-v form-control w2em border-none di"></span>
-                            <input class="form-control w20em di"
-                                   pr-validation-answer="data_validation:divisions[division_index]"
-                                   placeholder="{{ _('Division name placeholder') }}"
-                                   ng-model="division.name">
-                        </div>
-                        <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
-                            <div class="dib border-none pull-right"
-                                 pr-validation-answer="data_validation:remove_division[division_index]">
-                                <select
-                                        popover-trigger="none"
-                                        pr-validation-answer="data_validation:remove_division[division_index]"
-                                        class="form-control" ng-model="division.portal_division_type_id">
-                                    <option ng-selected="division_type.id == division.portal_division_type_id"
-                                            ng-repeat="(division_type_id, division_type) in data.division_types"
-                                            value="{{ division_type_id }}">{{ ::_('option division type
-                                        %(division_type)s',
-                                        {'division_type': division_type.id}) }}
-                                    </option>
-                                </select>
+                                <input class="form-control w20em di"
+                                       ng-disabled="division['remove_this_existing_division']"
+                                       pr-validation-answer="data_validation:divisions[division_index]"
+                                       placeholder="{{ _('Division name placeholder') }}"
+                                       ng-model="division.name">
                             </div>
-                        </div>
-                        <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
-                            <div class="dib border-none"
-                                 pr-validation-answer="data_validation:company_subportal[division_index]"><select
-                                    popover-trigger="none"
-                                    pr-validation-answer="data_validation:company_subportal[division_index]"
-                                    class="form-control" ng-if="division.portal_division_type_id == 'company_subportal'"
-                                    ng-model="division.settings.company_id"
-                                    ng-options="member.id as member.name for member in data.portal_company_members">
-                            </select>
+
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
+                                <div class="dib border-none pull-right"
+                                     pr-validation-answer="data_validation:remove_division[division_index]">
+                                    <select ng-disabled="division['remove_this_existing_division']"
+                                            popover-trigger="none"
+                                            pr-validation-answer="data_validation:remove_division[division_index]"
+                                            class="form-control" ng-model="division.portal_division_type_id">
+                                        <option ng-selected="division_type.id == division.portal_division_type_id"
+                                                ng-repeat="(division_type_id, division_type) in data.division_types"
+                                                value="{{ division_type_id }}">{{ ::_('option division type
+                                            %(division_type)s',
+                                            {'division_type': division_type.id}) }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
+                                <div class="dib border-none"
+                                     pr-validation-answer="data_validation:company_subportal[division_index]"><select
+                                        ng-disabled="division['remove_this_existing_division']"
+                                        popover-trigger="none"
+                                        pr-validation-answer="data_validation:company_subportal[division_index]"
+                                        class="form-control"
+                                        ng-if="division.portal_division_type_id == 'company_subportal'"
+                                        ng-model="division.settings.company_id"
+                                        ng-options="member.id as member.name for member in data.portal_company_members">
+                                </select>
+                                </div>
                             </div>
                         </div>
                         <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
@@ -246,6 +263,7 @@
                                 {{ _(division['remove_this_existing_division']?'undo remove':'remove division') }}
                             </button>
                         </div>
+
 
                     </div>
                 </div>

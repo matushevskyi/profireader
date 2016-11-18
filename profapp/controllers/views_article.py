@@ -50,7 +50,7 @@ def load_form_create(json_data, company_id=None, material_id=None):
     if action == 'load':
         return {'material': material.get_client_side_dict(more_fields='long|company|illustration')}
     else:
-        parameters = g.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
+        parameters = utils.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
         material.attr(parameters['material'])
         if action == 'validate':
             material.detach()

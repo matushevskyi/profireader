@@ -13,7 +13,7 @@ from flask import redirect, make_response
 from flask.ext.login import login_user
 from ..constants.SOCIAL_NETWORKS import SOC_NET_NONE
 from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
-from ..utils.redirect_url import redirect_url
+from .. import utils
 from ..models.rights import AllowAll
 from ..models.portal import Portal
 from ..models.messenger import Socket
@@ -69,7 +69,7 @@ def login_signup_endpoint():
 def signup(json_data):
     action = g.req('action', allowed=['validate', 'save'])
 
-    params = g.filter_json(json_data, 'first_name,last_name,email,password,password_confirmation')
+    params = utils.filter_json(json_data, 'first_name,last_name,email,password,password_confirmation')
     params['address_email'] = params['email']
     del params['email']
     new_user = User(**params)

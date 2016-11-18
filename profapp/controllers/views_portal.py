@@ -7,7 +7,7 @@ from ..models.portal import PortalDivisionType
 from ..models.translate import TranslateTemplate
 from tools.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
-    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace
+    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace, MemberCompanyPortalPlan
 from .request_wrapers import ok, check_right
 # from ..models.bak_articles import Publication, ArticleCompany, Article
 from ..models.company import UserCompany
@@ -40,23 +40,22 @@ def profile_load(json, company_id, portal_id=None):
     layouts = db(PortalLayout).all()
     division_types = PortalDivisionType.get_division_types()
     company = Company.get(company_id)
-    portal = Portal.get(portal_id) if portal_id else Portal(host='', lang=g.user.lang, company_owner_id=company.id,
-                                                            company_members=[company])
+    portal = Portal.get(portal_id) if portal_id else Portal(host='', lang=g.user.lang,
+                                                            own_company=company,
+                                                            company_owner_id=company.id,
+                                                            company_memberships=[MemberCompanyPortal(company=company,
+                                                                                                     plan=db(
+                                                                                                         MemberCompanyPortalPlan).first())])
 
     if action == 'load':
 
         ret = {'company': company.get_client_side_dict(),
                'languages': Config.LANGUAGES,
                'portal': portal.get_client_side_dict(more_fields='logo,portal_layout_id,divisions,lang,host'),
-               'portal_company_members': utils.get_client_side_list(portal.company_members),
+               'portal_company_members': utils.get_client_side_list([m.company for m in portal.company_memberships],
+                                                                    fields='id,name'),
                'layouts': utils.get_client_side_list(layouts),
                'division_types': utils.get_client_side_dict(division_types)}
-
-        # TODO: OZ by OZ: replace it when settings will work properly
-        for di in ret['portal']['divisions']:
-            if di['portal_division_type_id'] == 'company_subportal':
-                di['settings'] = {'company_id': utils.find_by_id(portal.divisions,
-                                                                 di['id']).settings.member_company_portal.company.id}
 
         if ret['portal']['host'][
            len(ret['portal']['host']) - len(Config.MAIN_DOMAIN) - 1:] == '.' + Config.MAIN_DOMAIN:
@@ -69,64 +68,56 @@ def profile_load(json, company_id, portal_id=None):
             ret['portal']['host_own'] = ret['portal']['host']
             ret['portal']['host_profi'] = ''
 
-
-
-        # else:
-        #     ret['portal_company_members'] = [company.get_client_side_dict()]
-        #     ret['portal'] = {'company_owner_id': company_id, 'name': '', 'host': '',
-        #                      'logo': portal.logo,
-        #                      'lang': g.user.lang,
-        #                      'host_profi_or_own': 'profi',
-        #                      'host_own': '',
-        #                      'host_profi': '',
-        #                      'favicon_from': 'profi',
-        #                      'portal_layout_id': layouts[0]['id'],
-        #                      'divisions': [
-        #                          {'name': 'index page', 'portal_division_type_id': 'index'},
-        #                          {'name': 'news', 'portal_division_type_id': 'news'},
-        #                          {'name': 'events', 'portal_division_type_id': 'events'},
-        #                          {'name': 'catalog', 'portal_division_type_id': 'catalog'},
-        #                          {'name': 'our subportal', 'portal_division_type_id': 'company_subportal',
-        #                           'settings': {'company_id': ret['portal_company_members'][0]['id']}}]}
         return ret
     else:
         jp = json['portal']
-        portal.host = (jp['host_profi'] + '.' + Config.MAIN_DOMAIN) if jp['host_profi_or_own'] == 'profi' \
-            else jp['host_own']
+
+        jp['host'] = (jp['host_profi'] + '.' + Config.MAIN_DOMAIN) if jp['host_profi_or_own'] == 'profi' else jp[
+            'host_own']
+
+        portal.attr_filter(jp, 'name', 'lang', 'portal_layout_id', 'host',
+                           *map(lambda x: 'url_' + x, ['facebook', 'google', 'tweeter', 'linkedin']))
 
         if set(portal.divisions) - set(utils.find_by_id(portal.divisions, d['id']) for d in jp['divisions']) != set():
             raise BadDataProvided('Information for some existing portal division is not provided by client')
 
         division_position = 0
-        for division_json in jp['divisions']:
-            ndi = utils.find_by_id(portal.divisions, division_json['id']) or PortalDivision(portal)
-            if division_json['remove_this_existing_division']:
+        for jd in jp['divisions']:
+            ndi = utils.find_by_id(portal.divisions, jd['id']) or PortalDivision(portal=portal)
+            if jd.get('remove_this_existing_division', None):
                 portal.divisions.remove(ndi)
             else:
-                ndi.portal_division_type = utils.find_by_id(division_types, jp['portal_division_type_id'])
-                ndi.name = division_json['name']
                 ndi.position = division_position
-                if ndi.portal_division_type == 'company_subportal':
-                    ndi.settings = {'member_company_portal': portal.company_members[0]}
-            division_position += 1
+                ndi.name = jd['name']
+                ndi.portal_division_type = utils.find_by_id(division_types, jd['portal_division_type_id'])
+                ndi.settings = jd.get('settings', {})
+                if ndi not in portal.divisions:
+                    portal.divisions.append(ndi)
+                division_position += 1
 
-        # else:
-        #     divisions = []
-        #     for division_json in json['portal']['divisions']:
-        #         division = PortalDivision(portal, portal_division_type_id=division_json['portal_division_type_id'],
-        #                                   position=len(json['portal']['divisions']) - len(divisions),
-        #                                   name=division_json['name'])
-        #         if division_json['portal_division_type_id'] == 'company_subportal':
-        #             division.settings = 1
-        #         divisions.append(division)
-        #
-        #     portal.divisions = divisions
+                # else:
+                #     divisions = []
+                #     for division_json in json['portal']['divisions']:
+                #         division = PortalDivision(portal, portal_division_type_id=division_json['portal_division_type_id'],
+                #                                   position=len(json['portal']['divisions']) - len(divisions),
+                #                                   name=division_json['name'])
+                #         if division_json['portal_division_type_id'] == PortalDivision.TYPES['company_subportal']:
+                #             division.settings = 1
+                #         divisions.append(division)
+                #
+                #     portal.divisions = divisions
 
-        if action == 'save':
-            portal.setup_created_portal(jp).save()
-            return portal.get_client_side_dict()
+        if action == 'validate':
+            ret = portal.validate(False if portal_id else True)
+            portal.detach()
+            [d.detach() for d in portal.divisions]
+            [m.detach() for m in portal.company_memberships]
+            return ret
         else:
-            return portal.validate(False if portal_id else True)
+            # portal.setup_created_portal(jp).save()
+            portal.logo = jp['logo']
+            return portal.get_client_side_dict()
+
 
 
 @portal_bp.route('/apply_company/<string:company_id>', methods=['OK'])

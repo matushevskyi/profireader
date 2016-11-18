@@ -49,27 +49,27 @@ def update_article_illustrations():
             print(e)
     pass
 
-def update_companies_logo():
-    without_logos = db_session_select.query(Company).filter(
-        and_(Company.logo_file_img_id == None, Company._delme_logo_file_id!= None)).all()
-    for m in without_logos:
-        print(m.name)
-        try:
-            pass
-            db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
-            mm = db_session.query(Company).filter_by(id=m.id).one()
-            mm.logo = {
-                'selected_by_user': {
-                    'crop': None,
-                    'type': 'browse',
-                    'image_file_id': m._delme_logo_file_id
-                }
-            }
-            db_session.flush()
-            db_session.commit()
-        except Exception as e:
-            print(e)
-    pass
+# def update_companies_logo():
+#     without_logos = db_session_select.query(Company).filter(
+#         and_(Company.logo_file_img_id == None, Company._delme_logo_file_id!= None)).all()
+#     for m in without_logos:
+#         print(m.name)
+#         try:
+#             pass
+#             db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+#             mm = db_session.query(Company).filter_by(id=m.id).one()
+#             mm.logo = {
+#                 'selected_by_user': {
+#                     'crop': None,
+#                     'type': 'browse',
+#                     'image_file_id': m._delme_logo_file_id
+#                 }
+#             }
+#             db_session.flush()
+#             db_session.commit()
+#         except Exception as e:
+#             print(e)
+#     pass
 
 def update_portals_logo():
     without_logos = db_session_select.query(Portal).filter(
