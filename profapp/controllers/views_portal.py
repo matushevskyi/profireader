@@ -72,21 +72,39 @@ def profile_load(json, company_id, portal_id=None):
             raise BadDataProvided('Information for some existing portal division is not provided by client')
 
         division_position = 0
+        unpublish_warning = {}
+        old_division_types = {}
+        deleted_divisions = []
         for jd in jp['divisions']:
             ndi = utils.find_by_id(portal.divisions, jd['id']) or PortalDivision(portal=portal, id=jd['id'])
             if jd.get('remove_this_existing_division', None):
+                deleted_divisions.append(ndi)
+                if len(ndi.publications):
+                    utils.dict_deep_replace('this division have %s published articles. they will be unpublished' % (len(ndi.publications),), unpublish_warning, ndi.id, 'actions')
                 portal.divisions.remove(ndi)
             else:
                 ndi.portal = portal
                 ndi.position = division_position
                 ndi.name = jd['name']
+                if ndi in portal.divisions:
+                    if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
+                        old_division_types[ndi.id] = ndi.portal_division_type.id
+                        utils.dict_deep_replace('this division have %s published articles. they will be unpublished becouse of division type changed' % (
+                        len(ndi.publications),), unpublish_warning, ndi.id, 'type')
+                else:
+                    portal.divisions.append(ndi)
+
                 ndi.portal_division_type = utils.find_by_id(division_types, jd['portal_division_type_id'])
                 ndi.settings = jd.get('settings', {})
-                if ndi not in portal.divisions:
-                    portal.divisions.append(ndi)
+
+
                 division_position += 1
         if action == 'validate':
             ret = portal.validate(False if portal_id else True)
+            if len(unpublish_warning.keys()):
+                if 'divisions' not in ret['warnings']:
+                    ret['warnings']['divisions'] = {}
+                ret['warnings']['divisions'] = utils.dict_merge_recursive(ret['warnings']['divisions'], unpublish_warning)
             g.db.expunge_all()
             return ret
         else:
@@ -94,6 +112,12 @@ def profile_load(json, company_id, portal_id=None):
                 if not nd.cr_tm:
                     nd.id = None
             portal.logo = jp['logo']
+            for del_div in deleted_divisions:
+                del_div.notice_about_deleted_publications('division deleted')
+
+            for div in portal.divisions:
+                div.notice_about_deleted_publications('division type changed')
+
             portal.save()
             g.db.commit()
             return client_side()

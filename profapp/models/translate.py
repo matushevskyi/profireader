@@ -182,7 +182,7 @@ class TranslateTemplate(Base, PRBase):
     @staticmethod
     def subquery_search(filters=None, sorts=None, edit=None):
         sub_query = db(TranslateTemplate)
-        list_filters = [];
+        list_filters = []
         list_sorts = []
         if edit:
             exist = db(TranslateTemplate, template=edit['template'], name=edit['name']).first()

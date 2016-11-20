@@ -231,7 +231,7 @@
 
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
                                 <div class="dib border-none pull-right"
-                                     pr-validation-answer="data_validation:remove_division[division_index]">
+                                     pr-validation-answer="data_validation:divisions[division.id].type">
                                     <select ng-disabled="division['remove_this_existing_division']"
                                             popover-trigger="none"
                                             pr-validation-answer="data_validation:divisions[division.id].type"
@@ -247,7 +247,7 @@
                             </div>
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
                                 <div class="dib border-none"
-                                     pr-validation-answer="data_validation:company_subportal[division_index]">
+                                     pr-validation-answer="data_validation:divisions[division.id].settings">
                                     <select
                                             ng-disabled="division['remove_this_existing_division']"
                                             popover-trigger="none"

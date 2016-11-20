@@ -615,8 +615,35 @@ class PortalDivision(Base, PRBase):
 
     tags = relationship(Tag, secondary='tag_portal_division', uselist=True)
 
+    publications = relationship('Publication',
+                                back_populates='portal_division')
+
     TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
              'catalog': 'catalog'}
+
+    def notice_about_deleted_publications(self, because_of):
+        from ..models.messenger import Socket, Notification
+        from ..models.rights import PublishUnpublishInPortal
+        dict_main = {
+            'portal_division': self,
+            'portal': self.portal
+        }
+
+        for p in self.publications:
+            dict_pub = utils.dict_merge(dict_main, {
+                'publication': p,
+                'material': p.material
+            })
+
+            phrase = "Because of " + because_of + " user <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just complitelly deleted a " \
+                                                         "material named `%(material.title)s` from portal <a class=\"external_link\" target=\"blank_\" href=\"//%(portal.host)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
+
+            to_users = PublishUnpublishInPortal(p, self, self.portal.own_company).get_user_with_rights(PublishUnpublishInPortal.publish_rights)
+            if p.material.editor not in to_users:
+                to_users.append(p.material.editor)
+
+            Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrase, dict_pub)()
+
 
     def is_active(self):
         return True
@@ -624,17 +651,6 @@ class PortalDivision(Base, PRBase):
     def get_client_side_dict(self, fields='id|name|portal_division_type_id|tags|settings',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
-
-        # @staticmethod
-        # def add_new_division(portal_id, name, division_type):
-        #     """Add new division to current portal"""
-        #     return PortalDivision(portal_id=portal_id,
-        #                           name=name,
-        #                           portal_division_type_id=division_type)
-
-
-# @event.listens_for(g.db, 'after_attach')
-# event.listen(PortalDivision, 'after_attach', PortalDivision.after_attach)
 
 
 class PortalDivisionSettingsCompanySubportal(Base, PRBase):
