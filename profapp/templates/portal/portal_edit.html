@@ -33,7 +33,7 @@
 
             $scope.afterSave = function (resp) {
                 if (!$scope.portal_id) {
-                    window.location.href = $scope.url_after_save({company_id: resp.company_owner_id})
+                    window.location.href = $scope.url_after_save({company_id: resp['portal']['own_company']['id']})
                 }
                 else {
                     $scope.data = $scope.amidLoad(resp);

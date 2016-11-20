@@ -478,6 +478,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def __declare_last__(cls):
         cls.elastic_listeners(cls)
 
+    def elastic_insert(self):
+        pass
+
     def is_active(self):
         if self.status != MemberCompanyPortal.STATUSES['ACTIVE']:
             return False
