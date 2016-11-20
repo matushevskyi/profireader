@@ -14,9 +14,10 @@
 
     <script>
         module.controller('PortalDivisionController', function ($scope) {
+
             $scope.$watch('division.portal_division_type_id', function (newv, oldv) {
                 if (newv !== oldv && newv == 'company_subportal' && (!$scope.division.settings || !$scope.division.company_id)) {
-                    $scope.division.settings = {'company_id': $scope.$parent.$parent['data']['portal']['company_owner_id']};
+                    $scope.division.settings = {'company_id': $scope.data.portal.company_memberships[0]['company']['id']}
                 }
             });
         });
@@ -34,6 +35,9 @@
                 if (!$scope.portal_id) {
                     window.location.href = $scope.url_after_save({company_id: resp.company_owner_id})
                 }
+                else {
+                    $scope.data = $scope.amidLoad(resp);
+                }
             };
 
             $scope.amidLoad = function (resp) {
@@ -47,7 +51,7 @@
                             });
 
                     resp['portal']['divisions'][resp['portal']['divisions'].length - 1]['settings'] =
-                    {'company_id': resp['portal']['company_owner_id']};
+                    {'company_id': resp['portal']['own_company']['id']};
                 }
                 return resp;
             };
@@ -154,13 +158,13 @@
                             <div>
                                 <label>{{ ::_('Portal layout') }}</label>
                                 <select class="form-control w20em" ng-model="data.portal.portal_layout_id"
-                                        ng-options="layout.id as layout.name for layout in data.layouts"></select>
+                                        ng-options="layout.id as layout.name for layout in data.select.layouts"></select>
 
                             </div>
                             <div>
                                 <label>{{ ::_('Portal language') }}</label>
                                 <select class="form-control w20em" ng-model="data.portal.lang"
-                                        ng-options="option.name as option.display for option in data.languages"
+                                        ng-options="option.name as option.display for option in data.select.languages"
                                 ></select>
 
                             </div>
@@ -220,7 +224,7 @@
                               class="fa fa-arrows-v form-control w2em border-none di"></span>
                                 <input class="form-control w20em di"
                                        ng-disabled="division['remove_this_existing_division']"
-                                       pr-validation-answer="data_validation:divisions[division_index]"
+                                       pr-validation-answer="data_validation:divisions[division.id].name"
                                        placeholder="{{ _('Division name placeholder') }}"
                                        ng-model="division.name">
                             </div>
@@ -230,10 +234,10 @@
                                      pr-validation-answer="data_validation:remove_division[division_index]">
                                     <select ng-disabled="division['remove_this_existing_division']"
                                             popover-trigger="none"
-                                            pr-validation-answer="data_validation:remove_division[division_index]"
+                                            pr-validation-answer="data_validation:divisions[division.id].type"
                                             class="form-control" ng-model="division.portal_division_type_id">
                                         <option ng-selected="division_type.id == division.portal_division_type_id"
-                                                ng-repeat="(division_type_id, division_type) in data.division_types"
+                                                ng-repeat="(division_type_id, division_type) in data.select.division_types"
                                                 value="{{ division_type_id }}">{{ ::_('option division type
                                             %(division_type)s',
                                             {'division_type': division_type.id}) }}
@@ -243,20 +247,22 @@
                             </div>
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
                                 <div class="dib border-none"
-                                     pr-validation-answer="data_validation:company_subportal[division_index]"><select
-                                        ng-disabled="division['remove_this_existing_division']"
-                                        popover-trigger="none"
-                                        pr-validation-answer="data_validation:company_subportal[division_index]"
-                                        class="form-control"
-                                        ng-if="division.portal_division_type_id == 'company_subportal'"
-                                        ng-model="division.settings.company_id"
-                                        ng-options="member.id as member.name for member in data.portal_company_members">
-                                </select>
+                                     pr-validation-answer="data_validation:company_subportal[division_index]">
+                                    <select
+                                            ng-disabled="division['remove_this_existing_division']"
+                                            popover-trigger="none"
+                                            pr-validation-answer="data_validation:divisions[division.id].settings"
+                                            class="form-control"
+                                            ng-if="division.portal_division_type_id == 'company_subportal'"
+                                            ng-model="division.settings.company_id"
+                                            ng-options="membership.company.id as membership.company.name for membership in data.portal.company_memberships">
+                                    </select>
                                 </div>
                             </div>
                         </div>
                         <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                             <button ng-click="removeDivision($index)"
+                                    pr-validation-answer="data_validation:divisions[division.id].actions"
                                     class="pull-right btn btn-warning form-control"><i
                                     ng-class="{'fa-minus': !division['remove_this_existing_division'],'fa-undo': division['remove_this_existing_division']}"
                                     class="fa"></i>

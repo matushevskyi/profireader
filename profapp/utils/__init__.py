@@ -60,6 +60,7 @@ def putInRange(what, fromr, tor, check_only=False):
     else:
         return fromr if (what <= fromr) else (tor if what >= tor else what)
 
+
 def filter_json(json, *args, NoneTo='', ExceptionOnNotPresent=False, prefix=''):
     ret = {}
     req_columns = {}
@@ -149,6 +150,29 @@ def static_address(relative_file_name):
 def find_by_id(list, id):
     return next((d for d in list if (d['id'] if isinstance(d, dict) else d.id) == id), None)
 
+
+def dict_deep_replace(what_to_append, dictionary, *args, if_not_exists = False):
+    indexes = list(args)
+    lastindex = indexes.pop()
+    for a in indexes:
+        if not a in dictionary:
+            dictionary[a] = {}
+        dictionary = dictionary[a]
+    if not if_not_exists or lastindex not in dictionary:
+        dictionary[lastindex] = what_to_append
+
+
+def dict_deep_inc(dictionary, *args, inc_by=1):
+    indexes = list(args)
+    lastindex = indexes.pop()
+    for a in indexes:
+        if not a in dictionary:
+            dictionary[a] = {}
+        dictionary = dictionary[a]
+    if lastindex in dictionary:
+        dictionary[lastindex] += inc_by
+    else:
+        dictionary[lastindex] = inc_by
 
 def get_client_side_list(list, **kwargs):
     return [x.get_client_side_dict(**kwargs) for x in list]

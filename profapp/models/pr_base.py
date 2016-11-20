@@ -509,8 +509,14 @@ class PRBase:
     def DEFAULT_VALIDATION_ANSWER():
         return {'errors': {}, 'warnings': {}, 'notices': {}}
 
-    def validate(self, is_new=False):
-        return self.DEFAULT_VALIDATION_ANSWER()
+    def validate(self, is_new=False, regexps = {}):
+        ret = self.DEFAULT_VALIDATION_ANSWER()
+
+        for (atr, regexp) in regexps.items():
+            if not re.match(regexp, getattr(self, atr)):
+                ret['errors'][atr] = "%s should match regexp %s" % (atr, regexp)
+        return ret
+
 
     def delete(self):
         g.db.delete(self)

@@ -46,29 +46,19 @@ def profile_load(json, company_id, portal_id=None):
                                                             company_memberships=[MemberCompanyPortal(company=company,
                                                                                                      plan=db(
                                                                                                          MemberCompanyPortalPlan).first())])
+    client_side = lambda: {
+            'select': {
+                'languages': Config.LANGUAGES,
+                'layouts': utils.get_client_side_list(layouts),
+                'division_types': utils.get_client_side_dict(division_types)
+            },
+            'portal': portal.get_client_side_dict(
+                fields='name,host,logo,url_facebook,url_google,url_tweeter,url_linkedin,portal_layout_id,divisions,divisions.cr_tm,lang,host,own_company,company_memberships.company',
+                get_own_or_profi_host=True)
+        }
 
     if action == 'load':
-
-        ret = {'company': company.get_client_side_dict(),
-               'languages': Config.LANGUAGES,
-               'portal': portal.get_client_side_dict(more_fields='logo,portal_layout_id,divisions,lang,host'),
-               'portal_company_members': utils.get_client_side_list([m.company for m in portal.company_memberships],
-                                                                    fields='id,name'),
-               'layouts': utils.get_client_side_list(layouts),
-               'division_types': utils.get_client_side_dict(division_types)}
-
-        if ret['portal']['host'][
-           len(ret['portal']['host']) - len(Config.MAIN_DOMAIN) - 1:] == '.' + Config.MAIN_DOMAIN:
-            ret['portal']['host_profi_or_own'] = 'profi'
-            ret['portal']['host_profi'] = ret['portal']['host'][
-                                          0:len(ret['portal']['host']) - len(Config.MAIN_DOMAIN) - 1]
-            ret['portal']['host_own'] = ''
-        else:
-            ret['portal']['host_profi_or_own'] = 'own'
-            ret['portal']['host_own'] = ret['portal']['host']
-            ret['portal']['host_profi'] = ''
-
-        return ret
+        return client_side()
     else:
         jp = json['portal']
 
@@ -83,10 +73,11 @@ def profile_load(json, company_id, portal_id=None):
 
         division_position = 0
         for jd in jp['divisions']:
-            ndi = utils.find_by_id(portal.divisions, jd['id']) or PortalDivision(portal=portal)
+            ndi = utils.find_by_id(portal.divisions, jd['id']) or PortalDivision(portal=portal, id=jd['id'])
             if jd.get('remove_this_existing_division', None):
                 portal.divisions.remove(ndi)
             else:
+                ndi.portal = portal
                 ndi.position = division_position
                 ndi.name = jd['name']
                 ndi.portal_division_type = utils.find_by_id(division_types, jd['portal_division_type_id'])
@@ -94,30 +85,18 @@ def profile_load(json, company_id, portal_id=None):
                 if ndi not in portal.divisions:
                     portal.divisions.append(ndi)
                 division_position += 1
-
-                # else:
-                #     divisions = []
-                #     for division_json in json['portal']['divisions']:
-                #         division = PortalDivision(portal, portal_division_type_id=division_json['portal_division_type_id'],
-                #                                   position=len(json['portal']['divisions']) - len(divisions),
-                #                                   name=division_json['name'])
-                #         if division_json['portal_division_type_id'] == PortalDivision.TYPES['company_subportal']:
-                #             division.settings = 1
-                #         divisions.append(division)
-                #
-                #     portal.divisions = divisions
-
         if action == 'validate':
             ret = portal.validate(False if portal_id else True)
-            portal.detach()
-            [d.detach() for d in portal.divisions]
-            [m.detach() for m in portal.company_memberships]
+            g.db.expunge_all()
             return ret
         else:
-            # portal.setup_created_portal(jp).save()
+            for nd in portal.divisions:
+                if not nd.cr_tm:
+                    nd.id = None
             portal.logo = jp['logo']
-            return portal.get_client_side_dict()
-
+            portal.save()
+            g.db.commit()
+            return client_side()
 
 
 @portal_bp.route('/apply_company/<string:company_id>', methods=['OK'])
@@ -128,21 +107,6 @@ def apply_company(json, company_id):
     return {'portals_partners': [portal.get_client_side_dict(fields='name, company_owner_id,id')
                                  for portal in PublishUnpublishInPortal.get_portals_where_company_is_member(
             Company.get(company_id))], 'company_id': company_id}
-
-
-@portal_bp.route('/profile_edit/<string:portal_id>/', methods=['GET'])
-@check_right(EditPortalRight, ['portal_id'])
-def profile_edit(portal_id):
-    return render_template('portal/del_portal_profile_edit.html', company=Portal.get(portal_id).own_company)
-
-
-@portal_bp.route('/profile_edit/<string:portal_id>/', methods=['OK'])
-@check_right(EditPortalRight, ['portal_id'])
-def profile_edit_load(json, portal_id):
-    portal = db(Portal, id=portal_id).one()
-
-    return {'portal': portal.get_client_side_dict('id, name, divisions, own_company, portal_bound_tags_select.*'),
-            'tag': []}
 
 
 @portal_bp.route('/portals_partners/<string:company_id>/', methods=['GET'])
