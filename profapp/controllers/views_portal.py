@@ -15,6 +15,7 @@ from ..models.materials import Publication, Material
 from ..models.tag import Tag, TagPortalDivision
 from profapp.models.rights import RIGHTS
 from ..controllers import errors
+from sqlalchemy.sql import expression
 from ..models.pr_base import PRBase, Grid
 import copy
 from .. import utils
@@ -48,21 +49,21 @@ def profile_load(json, create_or_update, company_id):
         portal = g.db.query(Portal).filter_by(company_owner_id=company.id).first()
     else:
         portal = Portal(host='', lang=g.user.lang,
-                    own_company=company,
-                    company_owner_id=company.id,
-                    company_memberships=[MemberCompanyPortal(company=company,
-                    plan=db(MemberCompanyPortalPlan).first())])
+                        own_company=company,
+                        company_owner_id=company.id,
+                        company_memberships=[MemberCompanyPortal(company=company,
+                                                                 plan=db(MemberCompanyPortalPlan).first())])
 
     client_side = lambda: {
-            'select': {
-                'languages': Config.LANGUAGES,
-                'layouts': utils.get_client_side_list(layouts),
-                'division_types': utils.get_client_side_dict(division_types)
-            },
-            'portal': portal.get_client_side_dict(
-                fields='name,host,logo,url_facebook,url_google,url_tweeter,url_linkedin,portal_layout_id,divisions,divisions.cr_tm,lang,host,own_company,company_memberships.company',
-                get_own_or_profi_host=True)
-        }
+        'select': {
+            'languages': Config.LANGUAGES,
+            'layouts': utils.get_client_side_list(layouts),
+            'division_types': utils.get_client_side_dict(division_types)
+        },
+        'portal': portal.get_client_side_dict(
+            fields='name,host,logo,url_facebook,url_google,url_tweeter,url_linkedin,portal_layout_id,divisions,divisions.cr_tm,lang,host,own_company,company_memberships.company',
+            get_own_or_profi_host=True)
+    }
 
     if action == 'load':
         return client_side()
@@ -87,7 +88,9 @@ def profile_load(json, create_or_update, company_id):
             if jd.get('remove_this_existing_division', None):
                 deleted_divisions.append(ndi)
                 if len(ndi.publications):
-                    utils.dict_deep_replace('this division have %s published articles. they will be unpublished' % (len(ndi.publications),), unpublish_warning, ndi.id, 'actions')
+                    utils.dict_deep_replace(
+                        'this division have %s published articles. they will be unpublished' % (len(ndi.publications),),
+                        unpublish_warning, ndi.id, 'actions')
                 portal.divisions.remove(ndi)
             else:
                 ndi.portal = portal
@@ -96,22 +99,23 @@ def profile_load(json, create_or_update, company_id):
                 if ndi in portal.divisions:
                     if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
                         old_division_types[ndi.id] = ndi.portal_division_type.id
-                        utils.dict_deep_replace('this division have %s published articles. they will be unpublished becouse of division type changed' % (
-                        len(ndi.publications),), unpublish_warning, ndi.id, 'type')
+                        utils.dict_deep_replace(
+                            'this division have %s published articles. they will be unpublished becouse of division type changed' % (
+                                len(ndi.publications),), unpublish_warning, ndi.id, 'type')
                 else:
                     portal.divisions.append(ndi)
 
                 ndi.portal_division_type = utils.find_by_id(division_types, jd['portal_division_type_id'])
                 ndi.settings = jd.get('settings', {})
 
-
                 division_position += 1
         if action == 'validate':
-            ret = portal.validate(create_or_update  == 'create')
+            ret = portal.validate(create_or_update == 'create')
             if len(unpublish_warning.keys()):
                 if 'divisions' not in ret['warnings']:
                     ret['warnings']['divisions'] = {}
-                ret['warnings']['divisions'] = utils.dict_merge_recursive(ret['warnings']['divisions'], unpublish_warning)
+                ret['warnings']['divisions'] = utils.dict_merge_recursive(ret['warnings']['divisions'],
+                                                                          unpublish_warning)
             g.db.expunge_all()
             return ret
         else:
@@ -415,3 +419,32 @@ def tags_load(json, company_id):
             return get_client_model(portal)
         else:
             return validated
+
+
+@portal_bp.route('/<string:company_id>/translations/', methods=['GET'])
+@check_right(UserIsActive)
+def translations(company_id):
+    company = Company.get(company_id)
+    portal = company.own_portal
+    return render_template('portal/translations.html', portal = portal)
+
+
+@portal_bp.route('/<string:company_id>/translations/', methods=['OK'])
+@check_right(UserIsActive)
+def translations_load(json, company_id):
+
+    company = Company.get(company_id)
+    portal = company.own_portal
+    subquery = TranslateTemplate.subquery_search({'portal.name': portal.name}, json.get('sort'), json.get('editItem'))
+
+    translations, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
+
+    # grid_filters = {
+    #     'template': [{'value': portal[0], 'label': portal[0]} for portal in
+    #                  db(TranslateTemplate.template).group_by(TranslateTemplate.template) \
+    #                      .order_by(expression.asc(expression.func.lower(TranslateTemplate.template))).all()],
+    #     'url': [{'value': portal[0], 'label': portal[0]} for portal in
+    #             db(TranslateTemplate.url).group_by(TranslateTemplate.url) \
+    #                 .order_by(expression.asc(expression.func.lower(TranslateTemplate.url))).all()]
+    # }
+    return {'grid_data': [translation.get_client_side_dict() for translation in translations], 'total': count}
