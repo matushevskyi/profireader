@@ -15,6 +15,7 @@ from collections import OrderedDict
 from .. import utils
 from tools.db_utils import db
 from functools import wraps
+from sqlalchemy.sql import expression
 
 
 def all_tags(portal):
@@ -29,13 +30,15 @@ def get_search_text_and_division(portal, division_name):
     search_text = request.args.get('search') or ''
     print('division_name', division_name)
 
-    dvsn = g.db().query(PortalDivision).filter_by(**utils.dict_merge(
-        {'portal_id': portal.id},
-        {'portal_division_type_id': 'index'} if division_name is None else {'name': division_name})).one()
+    dvsn = g.db().query(PortalDivision).filter_by(portal_id =  portal.id)
+
+    if division_name is not None:
+        dvsn = dvsn.filter_by(name = division_name)
+
 
     # TODO: OZ by OZ: 404 if no company
 
-    return search_text, dvsn
+    return search_text, dvsn.order_by(expression.asc(PortalDivision.position)).first()
 
 
 def portal_and_settings(portal):
@@ -365,7 +368,23 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                    portal=portal_and_settings(portal),
                                    **membership_data
                                    )
+        elif dvsn.portal_division_type_id == 'company_subportal':
+            member_company_page = 'about'
 
+            member_company, dvsn = \
+                get_company_member_and_division(portal, dvsn.settings['company_id'], member_company_name)
+
+            return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
+                               portal=portal_and_settings(portal),
+                               division=dvsn.get_client_side_dict(),
+                               tags=all_tags(portal),
+                               membership=db(MemberCompanyPortal, company_id=member_company.id,
+                                             portal_id=portal.id).one(),
+                               url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
+                               member_company=member_company.get_client_side_dict(
+                                   more_fields='employments,employments.user,employments.user.avatar.url'),
+                               company_menu_selected_item=member_company_page,
+                               member_company_page=member_company_page)
         else:
             return 'unknown division.portal_division_type_id = %s' % (dvsn.portal_division_type_id,)
 

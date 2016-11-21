@@ -30,7 +30,9 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipR
 def profile(create_or_update, company_id):
     company = Company.get(company_id)
     if create_or_update == 'update':
-        portal = g.db.query(Portal).filter_by(company_id=company.id).first()
+        portal = g.db.query(Portal).filter_by(company_owner_id=company.id).first()
+    else:
+        portal = None
 
     return render_template('portal/portal_edit.html', company=company, portal_id=portal.id if portal else None)
 
@@ -43,7 +45,7 @@ def profile_load(json, create_or_update, company_id):
     division_types = PortalDivisionType.get_division_types()
     company = Company.get(company_id)
     if create_or_update == 'update':
-        portal = g.db.query(Portal).filter_by(company_id=company.id).first()
+        portal = g.db.query(Portal).filter_by(company_owner_id=company.id).first()
     else:
         portal = Portal(host='', lang=g.user.lang,
                     own_company=company,
@@ -105,7 +107,7 @@ def profile_load(json, create_or_update, company_id):
 
                 division_position += 1
         if action == 'validate':
-            ret = portal.validate(False if portal_id else True)
+            ret = portal.validate(create_or_update  == 'create')
             if len(unpublish_warning.keys()):
                 if 'divisions' not in ret['warnings']:
                     ret['warnings']['divisions'] = {}

@@ -208,7 +208,7 @@ class Publication(Base, PRBase, PRElasticDocument):
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
     VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
 
-    portal_division = relationship('PortalDivision', cascade="save-update, delete", back_populates='publications')
+    division = relationship('PortalDivision', cascade="save-update, delete", back_populates='publications')
 
     portal = relationship('Portal',
                           secondary='portal_division',

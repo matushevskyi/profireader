@@ -262,16 +262,17 @@ class Portal(Base, PRBase):
                                     'company_owner_id, url_facebook',
                              more_fields=None, get_own_or_profi_host = False):
         ret = self.to_dict(fields, more_fields)
-        if ret['host'][
-           len(ret['host']) - len(Config.MAIN_DOMAIN) - 1:] == '.' + Config.MAIN_DOMAIN:
-            ret['host_profi_or_own'] = 'profi'
-            ret['host_profi'] = ret['host'][
-                                          0:len(ret['host']) - len(Config.MAIN_DOMAIN) - 1]
-            ret['host_own'] = ''
-        else:
-            ret['host_profi_or_own'] = 'own'
-            ret['host_own'] = ret['host']
-            ret['host_profi'] = ''
+        if get_own_or_profi_host:
+            if ret['host'][
+               len(ret['host']) - len(Config.MAIN_DOMAIN) - 1:] == '.' + Config.MAIN_DOMAIN:
+                ret['host_profi_or_own'] = 'profi'
+                ret['host_profi'] = ret['host'][
+                                              0:len(ret['host']) - len(Config.MAIN_DOMAIN) - 1]
+                ret['host_own'] = ''
+            else:
+                ret['host_profi_or_own'] = 'own'
+                ret['host_own'] = ret['host']
+                ret['host_profi'] = ''
         return ret
 
 
@@ -615,8 +616,7 @@ class PortalDivision(Base, PRBase):
 
     tags = relationship(Tag, secondary='tag_portal_division', uselist=True)
 
-    publications = relationship('Publication',
-                                back_populates='portal_division')
+    publications = relationship('Publication', back_populates='division')
 
     TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
              'catalog': 'catalog'}
