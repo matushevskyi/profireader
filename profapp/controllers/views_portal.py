@@ -25,27 +25,32 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipR
     PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive
 
 
-@portal_bp.route('/create/company/<string:company_id>/', methods=['GET'])
-@portal_bp.route('/<string:portal_id>/update/company/<string:company_id>/', methods=['GET'])
+@portal_bp.route('/portal/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
 @check_right(EditPortalRight, ['company_id'])
-def profile(company_id, portal_id=None):
-    return render_template('portal/portal_edit.html', company=Company.get(company_id), portal_id=portal_id)
+def profile(create_or_update, company_id):
+    company = Company.get(company_id)
+    if create_or_update == 'update':
+        portal = g.db.query(Portal).filter_by(company_id=company.id).first()
+
+    return render_template('portal/portal_edit.html', company=company, portal_id=portal.id if portal else None)
 
 
-@portal_bp.route('/create/company/<string:company_id>/', methods=['OK'])
-@portal_bp.route('/<string:portal_id>/update/company/<string:company_id>/', methods=['OK'])
+@portal_bp.route('/portal/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['OK'])
 @check_right(EditPortalRight, ['company_id'])
-def profile_load(json, company_id, portal_id=None):
+def profile_load(json, create_or_update, company_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
     layouts = db(PortalLayout).all()
     division_types = PortalDivisionType.get_division_types()
     company = Company.get(company_id)
-    portal = Portal.get(portal_id) if portal_id else Portal(host='', lang=g.user.lang,
-                                                            own_company=company,
-                                                            company_owner_id=company.id,
-                                                            company_memberships=[MemberCompanyPortal(company=company,
-                                                                                                     plan=db(
-                                                                                                         MemberCompanyPortalPlan).first())])
+    if create_or_update == 'update':
+        portal = g.db.query(Portal).filter_by(company_id=company.id).first()
+    else:
+        portal = Portal(host='', lang=g.user.lang,
+                    own_company=company,
+                    company_owner_id=company.id,
+                    company_memberships=[MemberCompanyPortal(company=company,
+                    plan=db(MemberCompanyPortalPlan).first())])
+
     client_side = lambda: {
             'select': {
                 'languages': Config.LANGUAGES,

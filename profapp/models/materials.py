@@ -351,7 +351,7 @@ class Publication(Base, PRBase, PRElasticDocument):
         return visibilities.keys(), employer
 
     def article_visibility_details(self):
-        # TODO: OZ by OZ: remove hardcoded urls!
+        # TODO: OZ by OZ: remove hardcded urls!
         actions = {Publication.VISIBILITIES['OPEN']: lambda: True,
                    Publication.VISIBILITIES['REGISTERED']:
                        lambda: True if getattr(g.user, 'id', False) else
@@ -545,7 +545,7 @@ def publication_status_changed(target, new_value, old_value, action):
     if phrase:
         rights_phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just <a href=\"%(url_portal_publications)s\">" + \
                  phrase + \
-                 "</a> a material named `%(material.title)s` at portal <a class=\"external_link\" target=\"blank_\" href=\"%(url_publication)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
+                 "</a> a material named `%(material.title)s` at portal <a class=\"external_link\" target=\"blank_\" href=\"%(url_publication)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link ng-scope\"></span></a>"
         to_users = PublishUnpublishInPortal(target, portal_division, material.company).get_user_with_rights(r)
         if material.editor not in to_users:
             to_users.append(material.editor)

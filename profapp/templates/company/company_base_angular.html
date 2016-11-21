@@ -10,6 +10,9 @@
         $scope.url_portal_companies_partners = {{ raw_url_for('portal.companies_partners')|safe }};
         $scope.url_company_employees = {{ raw_url_for('company.employees')|safe }};
         $scope.url_portal_publications = {{ raw_url_for('portal.publications')|safe }};
+
+        $scope.url_portal_portal = {{ raw_url_for('portal.profile')|safe }};
+
         $scope.url_portal_tags = {{ raw_url_for('portal.tags')|safe }};
         $scope.url_portal_banners = {{ raw_url_for('portal.portal_banners')|safe }};
         $scope.url_company_readers = {{ raw_url_for('company.readers')|safe }};
@@ -47,7 +50,7 @@
             <div class="row">
                 <div ng-if="company.own_portal" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 pl0 pr0">
                     <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_profile'}"
-                       href="#">{{ _('Portal profile') }}</a>
+                       href="{{ url_portal_portal({company_id: company.id, portal_id}) }}">{{ _('Portal profile') }}</a>
                     <a class="pull-right" ng-if="company.author_user_id == user.id" ng-class="{'selected': selected_company_menu == 'portal_banners'}"
                        href="{{ url_portal_banners({company_id: company.id}) }}">{{ _('Banners') }}</a>
                     <a class="pull-right" ng-if="company.author_user_id == user.id" ng-class="{'selected': selected_company_menu == 'portal_tags'}"
