@@ -441,4 +441,4 @@ def user_company_status_changed(target, new_value, old_value, action):
         phrase = None
 
     # possible notification - 4
-    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'], phrase, dict_main)
+    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'], phrase, dict_main)
