@@ -552,7 +552,7 @@ def publication_status_changed(target, new_value, old_value, action):
     else:
         to_users = []
 
-
+    # possible notification - 2
     return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], rights_phrase,
                                         dict_main, except_to_user=[g.user])
 

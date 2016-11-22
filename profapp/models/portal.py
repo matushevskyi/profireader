@@ -634,7 +634,6 @@ class PortalDivision(Base, PRBase):
                 'publication': p,
                 'material': p.material
             })
-
             phrase = "Because of " + because_of + " user <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just complitelly deleted a " \
                                                          "material named `%(material.title)s` from portal <a class=\"external_link\" target=\"blank_\" href=\"//%(portal.host)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
 
@@ -642,6 +641,7 @@ class PortalDivision(Base, PRBase):
             if p.material.editor not in to_users:
                 to_users.append(p.material.editor)
 
+            # possible notification - 2
             Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrase, dict_pub)()
 
 
