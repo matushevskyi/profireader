@@ -70,14 +70,10 @@ class Socket:
 
     @staticmethod
     def send_greeting(to_users):
+        # possible notification - 1
         return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['GREETING'],
                                             "Welcome to profireader. You can change <a href=\"%(url_profile_to_user)s\">your profile </a>")()
 
-    @staticmethod
-    def send_custom(to_user, text):
-        Socket.notification({'to_user_id': to_user.id,
-                             'notification_type': Notification.NOTIFICATION_TYPES['CUSTOM']
-                             })
 
 
 class Contact(Base, PRBase):
@@ -190,6 +186,7 @@ def contact_status_changed_2(target, new_value, old_value, action):
     else:
         phrase = None
 
+    # possible notification - 2
     return Socket.prepare_notifications([to_user], Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'], phrase)
 
 

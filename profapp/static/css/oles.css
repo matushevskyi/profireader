@@ -115,6 +115,18 @@
     height: 100%;
 }
 
+.h1em {
+    height: 1em;
+}
+
+.h05em {
+    height: 0.5em;
+}
+
+.h025em {
+    height: 0.25em;
+}
+
 .h10em {
     height: 10em;
 }
@@ -125,6 +137,10 @@
 
 .db {
     display: block;
+}
+
+.di {
+    display: inline;
 }
 
 .dib {
@@ -602,10 +618,6 @@ div.pr-row:last-child div.pr-cell {
     padding: 0.5em;
 }
 
-.p025em {
-    padding: 0.25em;
-}
-
 .pr1em {
     padding-right: 1em;
 }
@@ -659,13 +671,33 @@ div.pr-row:last-child div.pr-cell {
     height: 1.5em;
 }
 
+.w1em {
+    width: 1em !important;
+    overflow: hidden;
+}
+
+.w2em {
+    width: 2em !important;
+    overflow: hidden;
+}
+
+.w5em {
+    width: 5em !important;
+    overflow: hidden;
+}
+
 .w10em {
-    width: 10em;
+    width: 10em !important;
+    overflow: hidden;
+}
+
+.w15em {
+    width: 15em !important;
     overflow: hidden;
 }
 
 .w20em {
-    width: 20em;
+    width: 20em !important;
     overflow: hidden;
 }
 
@@ -790,6 +822,5 @@ div.pr-row:last-child div.pr-cell {
 .ui-select-highlight {
     color: red;
 }
-
 
 

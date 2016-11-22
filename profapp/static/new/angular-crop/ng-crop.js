@@ -1013,13 +1013,13 @@
 
             var mm = function (e) {
                 if ($scope.ngCropDisabled || $scope.loading) {
-                    return false;
+                    return true;
                 }
                 if (!$scope.mouse_clicked) {
                     var canvas_point = $scope.mouseRelativeToCanvas(event);
                     // canvas_point = [canvas_point[0] + $scope.state.x , canvas_point[1] + $scope.state.y];
                     // console.log('mouse position', canvas_point, $scope.logic.canvas2imgPoint(canvas_point, $scope.state));
-                    return false;
+                    return true;
                 }
                 var act = $scope.mouse_clicked;
                 var current = act[3];

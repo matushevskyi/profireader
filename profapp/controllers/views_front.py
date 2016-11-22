@@ -2,7 +2,7 @@ from .blueprints_declaration import front_bp
 from flask import render_template, request, url_for, redirect, g
 from ..models.materials import Publication, ReaderPublication, Material
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
-    PortalDivisionSettingsCompanySubportal, PortalConfig, UserPortalReader
+    PortalDivisionSettingsCompanySubportal, UserPortalReader
 from ..models.company import Company
 from ..models.users import User
 from ..models.messenger import Socket, Notification
@@ -16,6 +16,7 @@ from collections import OrderedDict
 from .. import utils
 from tools.db_utils import db
 from functools import wraps
+from sqlalchemy.sql import expression
 from ..models.pr_base import MLStripper
 
 
@@ -31,13 +32,15 @@ def get_search_text_and_division(portal, division_name):
     search_text = request.args.get('search') or ''
     print('division_name', division_name)
 
-    dvsn = g.db().query(PortalDivision).filter_by(**utils.dict_merge(
-        {'portal_id': portal.id},
-        {'portal_division_type_id': 'index'} if division_name is None else {'name': division_name})).one()
+    dvsn = g.db().query(PortalDivision).filter_by(portal_id =  portal.id)
+
+    if division_name is not None:
+        dvsn = dvsn.filter_by(name = division_name)
+
 
     # TODO: OZ by OZ: 404 if no company
 
-    return search_text, dvsn
+    return search_text, dvsn.order_by(expression.asc(PortalDivision.position)).first()
 
 
 def portal_and_settings(portal):
@@ -46,7 +49,7 @@ def portal_and_settings(portal):
     newd = OrderedDict()
     subportals_by_companies_id = OrderedDict()
     for di in ret['divisions']:
-        if di['portal_division_type_id'] == 'company_subportal':
+        if di['portal_division_type_id'] == PortalDivision.TYPES['company_subportal']:
             pdset = g.db().query(PortalDivisionSettingsCompanySubportal). \
                 filter_by(portal_division_id=di['id']).first()
             com_port = g.db().query(MemberCompanyPortal).get(pdset.member_company_portal_id)
@@ -144,8 +147,7 @@ def get_urls_change_tag_page(url_tags, search_text, selected_tag_names):
 
 
 def get_search_tags_pages_search(portal, page, tags, search_text):
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name='', default=10)
+    items_per_page = 10
 
     def url_tags(tag_names):
         url_args = {}
@@ -203,8 +205,7 @@ def get_search_tags_pages_search(portal, page, tags, search_text):
 
 
 def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company_publisher=None):
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=10)
+    items_per_page = 10
 
     def url_tags(tag_names):
         url_args = {'division_name': dvsn.name}
@@ -246,8 +247,7 @@ def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company
 
 
 def get_articles_tags_pages_search(portal, dvsn, page, tags, search_text, company_publisher=None):
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=10)
+    items_per_page = 10
 
     pdt = dvsn.portal_division_type_id
 
@@ -370,7 +370,23 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                    portal=portal_and_settings(portal),
                                    **membership_data
                                    )
+        elif dvsn.portal_division_type_id == 'company_subportal':
+            member_company_page = 'about'
 
+            member_company, dvsn = \
+                get_company_member_and_division(portal, dvsn.settings['company_id'], member_company_name)
+
+            return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
+                               portal=portal_and_settings(portal),
+                               division=dvsn.get_client_side_dict(),
+                               tags=all_tags(portal),
+                               membership=db(MemberCompanyPortal, company_id=member_company.id,
+                                             portal_id=portal.id).one(),
+                               url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
+                               member_company=member_company.get_client_side_dict(
+                                   more_fields='employments,employments.user,employments.user.avatar.url'),
+                               company_menu_selected_item=member_company_page,
+                               member_company_page=member_company_page)
         else:
             return 'unknown division.portal_division_type_id = %s' % (dvsn.portal_division_type_id,)
 

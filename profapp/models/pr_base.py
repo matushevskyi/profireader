@@ -23,7 +23,6 @@ import operator
 from collections import OrderedDict
 from sqlalchemy import event
 
-
 from .. import utils
 from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
 
@@ -506,13 +505,18 @@ class PRBase:
 
         return self
 
-
     @staticmethod
     def DEFAULT_VALIDATION_ANSWER():
         return {'errors': {}, 'warnings': {}, 'notices': {}}
 
-    def validate(self, is_new=False):
-        return self.DEFAULT_VALIDATION_ANSWER()
+    def validate(self, is_new=False, regexps = {}):
+        ret = self.DEFAULT_VALIDATION_ANSWER()
+
+        for (atr, regexp) in regexps.items():
+            if not re.match(regexp, getattr(self, atr)):
+                ret['errors'][atr] = "%s should match regexp %s" % (atr, regexp)
+        return ret
+
 
     def delete(self):
         g.db.delete(self)
@@ -534,6 +538,10 @@ class PRBase:
             setattr(self, k, kwargs[k])
         return self
 
+    def attr_filter(self, dictionary, *filters):
+        self.attr(utils.filter_json(dictionary, *filters))
+
+
     def detach(self):
         if self in g.db:
             g.db.expunge(self)
@@ -542,9 +550,9 @@ class PRBase:
         self.id = None
         return self
 
-    def expunge(self):
-        g.db.expunge(self)
-        return self
+    # def expunge(self):
+    #     g.db.expunge(self)
+    #     return self
 
     def get_client_side_dict(self, fields='id',
                              more_fields=None):
@@ -573,6 +581,8 @@ class PRBase:
             # TODO: OZ by OZ:**kwargs should accept lambdafunction for fields formattings
 
     def to_dict(self, *args, prefix=''):
+        # TODO: OZ by OZ: this function is wrong. we need walk through requested fields and return appropriate attribute.
+        # Now we walk through attribute (yes?)
         ret = {}
         __debug = True
 
@@ -673,7 +683,7 @@ class PRBase:
         for relname, nextlevelargs in req_relationships.items():
             if hasattr(self, relname):
                 del_req_columns_in_attrs.append(relname)
-                add = g.filter_json(getattr(self, relname), *nextlevelargs) if nextlevelargs else getattr(
+                add = utils.filter_json(getattr(self, relname), *nextlevelargs) if nextlevelargs else getattr(
                     self, relname)
                 ret[relname] = utils.dict_merge_recursive(ret[relname] if relname in ret else {}, add)
 

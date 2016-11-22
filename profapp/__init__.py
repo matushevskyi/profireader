@@ -119,7 +119,6 @@ def load_database(db_config, echo=False):
         db_session = db_session_func(db_config, autocommit, autoflush, echo)
         g.db = db_session
         g.req = req
-        g.filter_json = utils.filter_json
         g.get_url_adapter = get_url_adapter
         g.fileUrl = utils.fileUrl
         g.after_commit_models = []

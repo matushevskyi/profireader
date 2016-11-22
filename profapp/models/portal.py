@@ -25,11 +25,11 @@ class Portal(Base, PRBase):
     __tablename__ = 'portal'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     name = Column(TABLE_TYPES['name'])
-    host = Column(TABLE_TYPES['short_name'])
+    host = Column(TABLE_TYPES['short_name'], default='')
     lang = Column(TABLE_TYPES['short_name'])
 
-    status = Column(TABLE_TYPES['status'])
-    aliases = Column(TABLE_TYPES['text'])
+    status = Column(TABLE_TYPES['status'], default='ACTIVE')
+    aliases = Column(TABLE_TYPES['text'], default='')
 
     url_facebook = Column(TABLE_TYPES['url'])
     url_google = Column(TABLE_TYPES['url'])
@@ -37,7 +37,6 @@ class Portal(Base, PRBase):
     url_linkedin = Column(TABLE_TYPES['url'])
     # url_vkontakte = Column(TABLE_TYPES['url'])
 
-    _delme_logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=True)
 
     company_owner_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), unique=True)
     # portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
@@ -67,14 +66,10 @@ class Portal(Base, PRBase):
 
     divisions = relationship('PortalDivision',
                              # backref='portal',
-                             order_by='desc(PortalDivision.position)',
+                             cascade="all, merge, delete-orphan",
+                             order_by='asc(PortalDivision.position)',
                              primaryjoin='Portal.id==PortalDivision.portal_id')
-    config = relationship('PortalConfig', back_populates='portal', uselist=False)
 
-    divisions_lazy_dynamic = relationship('PortalDivision',
-                                          order_by='desc(PortalDivision.position)',
-                                          primaryjoin='Portal.id==PortalDivision.portal_id',
-                                          lazy='dynamic')
 
     own_company = relationship('Company',
                                # back_populates='own_portal',
@@ -89,11 +84,11 @@ class Portal(Base, PRBase):
                                 back_populates='portal',
                                 uselist=False)
 
-    company_members = relationship('MemberCompanyPortal',
-                                   # secondary='member_company_portal'
-                                   # back_populates='portal',
-                                   # lazy='dynamic'
-                                   )
+    company_memberships = relationship('MemberCompanyPortal',
+                                       # secondary='member_company_portal'
+                                       # back_populates='portal',
+                                       # lazy='dynamic'
+                                       )
     # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
     #                  'host': {'relevance': lambda field='host': RELEVANCE.host}}
 
@@ -102,30 +97,10 @@ class Portal(Base, PRBase):
         'REJECTED': 'REJECTED'
     }
 
-    def __init__(self, name=None,
-                 # portal_plan_id=None,
-                 company_owner=None,
-                 favicon_file_id=None,
-                 lang='uk',
-                 aliases='',
-                 status='ACTIVE',
-                 host=None, divisions=[], portal_layout_id=None):
-        self.name = name
-        self.aliases = aliases
-        self.status = status
-        self.lang = lang
-
-        self.favicon_file_id = favicon_file_id
-
-        self.host = host
-        self.divisions = divisions
-        self.portal_layout_id = portal_layout_id if portal_layout_id else db(PortalLayout).first().id
-
-        self.own_company = company_owner
-
-        self.company_members = [
-            MemberCompanyPortal(portal=self, company=company_owner, status=MemberCompanyPortal.STATUSES['ACTIVE'],
-                                plan=db(MemberCompanyPortalPlan).first())]
+    def __init__(self, **kwargs):
+        super(Portal, self).__init__(**kwargs)
+        if not self.portal_layout_id:
+            self.portal_layout_id = db(PortalLayout).first().id
 
     def setup_created_portal(self, client_data):
         # TODO: OZ by OZ: move this to some event maybe
@@ -133,11 +108,11 @@ class Portal(Base, PRBase):
         instance of class with parameters: name, host, portal_layout_id, company_owner_id,
         divisions. Return portal)"""
 
-        for division in self.divisions:
-            if division.portal_division_type_id == 'company_subportal':
-                PortalDivisionSettingsCompanySubportal(
-                    member_company_portal=division.settings['member_company_portal'],
-                    portal_division=division).save()
+        # for division in self.divisions:
+        #     if division.portal_division_type_id == PortalDivision.TYPES['company_subportal']:
+        #         PortalDivisionSettingsCompanySubportal(
+        #             member_company_portal=division.settings['member_company_portal'],
+        #             portal_division=division).save()
 
         self.logo = client_data['logo']
 
@@ -154,25 +129,25 @@ class Portal(Base, PRBase):
     #
     #     return default
 
-    # TODO: OZ by OZ fix this
-    def get_value_from_config(self, key=None, division_name=None, default=None):
-        return default
-
-        """
-        :param key: string, variable which you want to return from config
-        optional:
-            :param division_name: string, if provided return value from config for division this.
-        :return: variable which you want to return from config
-        """
-        conf = getattr(self.config, key, None)
-        if not conf:
-            return Config.ITEMS_PER_PAGE
-        values = simplejson.loads(conf)
-        if division_name:
-            ret = values.get(division_name)
-        else:
-            ret = values
-        return ret
+    # # TODO: OZ by OZ fix this
+    # def get_value_from_config(self, key=None, division_name=None, default=None):
+    #     return default
+    #
+    #     """
+    #     :param key: string, variable which you want to return from config
+    #     optional:
+    #         :param division_name: string, if provided return value from config for division this.
+    #     :return: variable which you want to return from config
+    #     """
+    #     conf = getattr(self.config, key, None)
+    #     if not conf:
+    #         return Config.ITEMS_PER_PAGE
+    #     values = simplejson.loads(conf)
+    #     if division_name:
+    #         ret = values.get(division_name)
+    #     else:
+    #         ret = values
+    #     return ret
 
     def validate_tags(self, new_portal_tags):
         ret = PRBase.DEFAULT_VALIDATION_ANSWER()
@@ -226,72 +201,58 @@ class Portal(Base, PRBase):
         return self
 
     def validate(self, is_new):
-        ret = super().validate(is_new)
+        ret = super().validate(is_new, regexps={
+            'name': '[^\s]{2,}',
+            'host': '^(([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])\.)+([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9]{1,})$'})
+        errors = ret['errors']
+        warnings = ret['warnings']
+
         if db(Portal, company_owner_id=self.own_company.id).filter(Portal.id != self.id).count():
-            ret['errors']['form'] = 'portal for company already exists'
-        if not re.match('[^\s]{2,}', self.name):
-            ret['errors']['name'] = 'Please enter at least 2 symbols'
-        if not re.match(
-                '^(([a-z]|[a-z][a-z0-9\-]*[a-z0-9])\.)+([a-z]|[a-z][a-z0-9\-]*[a-z0-9]{1,})$',
-                self.host):
-            ret['errors']['host'] = 'Please enter valid host name(lower case)'
-        if not 'host' in ret['errors'] and db(Portal, host=self.host).filter(Portal.id != self.id).count():
-            ret['errors']['host'] = 'host already taken by another portal'
+            errors['form'] = 'portal for company already exists'
 
-        if not 'host' in ret['errors']:
-            import socket
+        if db(Portal, host=self.host).filter(Portal.id != self.id).count():
+            errors['host'] = 'host already taken by another portal'
 
-            try:
-                host = socket.gethostbyname(self.host)
-                host_ip = str(host)
-                if not 'host' in ret['errors'] and 'host' in ret['warnings'] and not host_ip in ['136.243.204.62']:
-                    ret['warnings']['host'] = 'Wrong Ip-address'
-            except Exception as e:
-                ret['warnings']['host'] = 'cannot resolve hostname. maybe unregistered'
+        import socket
+        try:
+            host = socket.gethostbyname(self.host)
+            host_ip = str(host)
+            if not 'host' in errors and 'host' in warnings and not host_ip in Config.OUR_IPS:
+                warnings['host'] = 'Wrong Ip-address'
+        except Exception as e:
+            warnings['host'] = 'cannot resolve hostname. maybe unregistered'
 
-        grouped = {'by_company_member': {}, 'by_division_type': {}}
+        grouped_by_division_type = {}
+        grouped_by_company_member = {}
 
         for inddiv, div in enumerate(self.divisions):
             if not re.match('[^\s]{3,}', div.name):
-                if not 'divisions' in ret['errors']:
-                    ret['errors']['divisions'] = {}
-                ret['errors']['divisions'][inddiv] = 'pls enter valid name'
+                utils.dict_deep_replace('pls enter valid name', errors, 'divisions', div.id, 'name')
 
             # number of division of some type
-            if div.portal_division_type_id in grouped['by_division_type']:
-                grouped['by_division_type'][div.portal_division_type_id] += 1
-            else:
-                grouped['by_division_type'][div.portal_division_type_id] = 1
+            utils.dict_deep_inc(grouped_by_division_type, div.portal_division_type.id)
 
-            if div.portal_division_type_id == 'company_subportal':
-                member_company_id = div.settings['member_company_portal'].company_id
-                if member_company_id in grouped['by_company_member']:
-                    grouped['by_company_member'][member_company_id] += 1
-                else:
-                    grouped['by_company_member'][member_company_id] = 1
+            if div.portal_division_type.id == PortalDivision.TYPES['company_subportal']:
+                utils.dict_deep_inc(grouped_by_company_member, div.settings['company_id'])
 
-        for check_division in db(PortalDivisionType).all():
-            if check_division.id not in grouped['by_division_type']:
-                grouped['by_division_type'][check_division.id] = 0
-            if check_division.min > grouped['by_division_type'][check_division.id]:
-                ret['errors']['add_division'] = 'you need at least %s `%s`' % (check_division.min, check_division.id)
-                if grouped['by_division_type'][check_division.id] == 0:
-                    ret['errors']['add_division'] = 'add at least one `%s`' % (check_division.id,)
-            if check_division.max < grouped['by_division_type'][check_division.id]:
+        for check_division_type in db(PortalDivisionType).all():
+            utils.dict_deep_replace(0, grouped_by_division_type, check_division_type.id, if_not_exists=True)
+
+            if check_division_type.min > grouped_by_division_type[check_division_type.id]:
+                errors['add_division'] = 'you need at least %s `%s`' % (check_division_type.min, check_division_type.id)
+
+            if check_division_type.max < grouped_by_division_type[check_division_type.id]:
                 for inddiv, div in enumerate(self.divisions):
-                    if div.portal_division_type_id == check_division.id:
-                        if not 'remove_division' in ret['errors']:
-                            ret['errors']['remove_division'] = {}
-                        ret['errors']['remove_division'][inddiv] = 'you can have only %s `%s`' % (check_division.max,
-                                                                                                  check_division.id)
+                    if div.portal_division_type.id == check_division_type.id:
+                        utils.dict_deep_replace(
+                            'you can have only %s `%s`' % (check_division_type.max, check_division_type.id),
+                            errors, 'divisions', div.id, 'type')
 
         for inddiv, div in enumerate(self.divisions):
-            if div.portal_division_type_id == 'company_subportal':
-                if div.settings['member_company_portal'].company_id in grouped['by_company_member'] and grouped[
-                    'by_company_member'][div.settings['member_company_portal'].company_id] > 1:
-                    if not 'remove_division' in ret['warnings']:
-                        ret['warnings']['remove_division'] = {}
-                    ret['warnings']['remove_division'][inddiv] = 'you have more that one subportal for this company'
+            if div.portal_division_type.id == PortalDivision.TYPES['company_subportal']:
+                if grouped_by_company_member.get(div.settings['company_id'], 0) > 1:
+                    utils.dict_deep_replace('you have more that one subportal for this company',
+                                            warnings, 'divisions', div.id, 'settings')
 
         return ret
 
@@ -299,8 +260,21 @@ class Portal(Base, PRBase):
                              fields='id|name|host|tags, divisions.*, divisions.tags.*, layout.*, logo.url, '
                                     'favicon_file_id, '
                                     'company_owner_id, url_facebook',
-                             more_fields=None):
-        return self.to_dict(fields, more_fields)
+                             more_fields=None, get_own_or_profi_host = False):
+        ret = self.to_dict(fields, more_fields)
+        if get_own_or_profi_host:
+            if ret['host'][
+               len(ret['host']) - len(Config.MAIN_DOMAIN) - 1:] == '.' + Config.MAIN_DOMAIN:
+                ret['host_profi_or_own'] = 'profi'
+                ret['host_profi'] = ret['host'][
+                                              0:len(ret['host']) - len(Config.MAIN_DOMAIN) - 1]
+                ret['host_own'] = ''
+            else:
+                ret['host_profi_or_own'] = 'own'
+                ret['host_own'] = ret['host']
+                ret['host_profi'] = ''
+        return ret
+
 
     @staticmethod
     def search_for_portal_to_join(company_id, searchtext):
@@ -407,7 +381,8 @@ class PortalAdvertisment(Base, PRBase):
         for p_name in places:
             if places[p_name] is not False:
                 ret.append(utils.dict_merge(
-                    {'id': '', 'portal_id': portal.id, 'place': p_name, 'html': '', 'actions': {'create': True}}, places[p_name]))
+                    {'id': '', 'portal_id': portal.id, 'place': p_name, 'html': '', 'actions': {'create': True}},
+                    places[p_name]))
         return ret
 
     def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
@@ -504,6 +479,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def __declare_last__(cls):
         cls.elastic_listeners(cls)
 
+    def elastic_insert(self):
+        pass
+
     def is_active(self):
         if self.status != MemberCompanyPortal.STATUSES['ACTIVE']:
             return False
@@ -595,6 +573,31 @@ class MemberCompanyPortalPlan(Base, PRBase):
     name = Column(TABLE_TYPES['short_name'], default='')
 
 
+class PortalDivisionSettingsDescriptor(object):
+    def __init__(self):
+        pass
+
+    def __get__(self, instance, owner):
+        return {
+            'id': instance.portal_division_settings_company_subportal.id,
+            'company_id': instance.portal_division_settings_company_subportal.member_company_portal.company_id
+        } if instance.portal_division_type.id == PortalDivision.TYPES['company_subportal'] else {}
+
+    # def proxy_setter(self, file_img: FileImg, client_data):
+    def __set__(self, instance, data):
+        if instance.portal_division_type.id == PortalDivision.TYPES['company_subportal']:
+            membership = next(cm for cm in instance.portal.company_memberships if cm.company.id == data['company_id'])
+            if not instance.portal_division_settings_company_subportal:
+                instance.portal_division_settings_company_subportal = \
+                    PortalDivisionSettingsCompanySubportal(portal_division=instance, member_company_portal=membership)
+            instance.portal_division_settings_company_subportal.member_company_portal.company_id = membership.company.id
+
+        # self.id = client_data.get('id', None)
+        # self.company_id = client_data.get('company_id', None)
+        # self.member_company_portal_id = client_data.get('member_company_portal_id', None)
+        return True
+
+
 class PortalDivision(Base, PRBase):
     __tablename__ = 'portal_division'
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
@@ -608,73 +611,46 @@ class PortalDivision(Base, PRBase):
     portal = relationship(Portal, uselist=False)
     portal_division_type = relationship('PortalDivisionType', uselist=False)
 
-    tags = relationship(Tag, secondary='tag_portal_division', uselist=True
-                        # ,foreign_keys=[TagPortalDivision.tag_portal_id]
-                        )
+    portal_division_settings_company_subportal = relationship('PortalDivisionSettingsCompanySubportal', uselist=False, cascade="all, merge, delete-orphan")
+    settings = PortalDivisionSettingsDescriptor()
 
-    # secondary = 'portal_division',
-    # primaryjoin = "Portal.id == PortalDivision.portal_id",
-    # secondaryjoin = "PortalDivision.id == ArticlePortalDivision.portal_division_id",
+    tags = relationship(Tag, secondary='tag_portal_division', uselist=True)
 
-    settings = None
+    publications = relationship('Publication', back_populates='division')
 
     TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
              'catalog': 'catalog'}
 
+    def notice_about_deleted_publications(self, because_of):
+        from ..models.messenger import Socket, Notification
+        from ..models.rights import PublishUnpublishInPortal
+        dict_main = {
+            'portal_division': self,
+            'portal': self.portal
+        }
+
+        for p in self.publications:
+            dict_pub = utils.dict_merge(dict_main, {
+                'publication': p,
+                'material': p.material
+            })
+            phrase = "Because of " + because_of + " user <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just complitelly deleted a " \
+                                                         "material named `%(material.title)s` from portal <a class=\"external_link\" target=\"blank_\" href=\"//%(portal.host)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
+
+            to_users = PublishUnpublishInPortal(p, self, self.portal.own_company).get_user_with_rights(PublishUnpublishInPortal.publish_rights)
+            if p.material.editor not in to_users:
+                to_users.append(p.material.editor)
+
+            # possible notification - 2
+            Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrase, dict_pub)()
+
+
     def is_active(self):
         return True
 
-    def __init__(self, portal=portal,
-                 portal_division_type_id=portal_division_type_id,
-                 name='',
-                 settings=None,
-                 position=0):
-        self.position = position
-        self.portal = portal
-        self.portal_division_type_id = portal_division_type_id
-        self.name = name
-        self.settings = settings
-
-        # @staticmethod
-        # def after_attach(session, target):
-        #     #     pass
-        #     if target.portal_division_type_id == 'company_subportal':
-        #         # member_company_portal = db(MemberCompanyPortal, company_id = target.settings['company_id'], portal_id = target.portal_id).one()
-        #         addsettings = PortalDivisionSettingsCompanySubportal(
-        #             member_company_portal=target.settings.member_company_portal, portal_division=target)
-        #         g.db.add(addsettings)
-        #         # target.settings = db(PortalDivisionSettingsCompanySubportal).filter_by(
-        #         #     portal_division_id=self.id).one()
-
-    # TODO: VK by OZ: do we need this func? i have cemented it becouse IDE shows error here
-    # def search_filter(self):
-    #     from .articles import ArticlePortalDivision
-    #
-    #     return and_(ArticlePortalDivision.portal_division_id.in_(
-    #             db(PortalDivision.id, portal_id=portal.id)),
-    #             ArticlePortalDivision.status ==
-    #             ArticlePortalDivision.STATUSES['PUBLISHED'])
-
-    @orm.reconstructor
-    def init_on_load(self):
-        if self.portal_division_type_id == 'company_subportal':
-            self.settings = db(PortalDivisionSettingsCompanySubportal).filter_by(
-                portal_division_id=self.id).one()
-
-    def get_client_side_dict(self, fields='id|name|portal_division_type_id|tags',
+    def get_client_side_dict(self, fields='id|name|portal_division_type_id|tags|settings',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
-
-        # @staticmethod
-        # def add_new_division(portal_id, name, division_type):
-        #     """Add new division to current portal"""
-        #     return PortalDivision(portal_id=portal_id,
-        #                           name=name,
-        #                           portal_division_type_id=division_type)
-
-
-# @event.listens_for(g.db, 'after_attach')
-# event.listen(PortalDivision, 'after_attach', PortalDivision.after_attach)
 
 
 class PortalDivisionSettingsCompanySubportal(Base, PRBase):
@@ -689,12 +665,7 @@ class PortalDivisionSettingsCompanySubportal(Base, PRBase):
 
     member_company_portal = relationship(MemberCompanyPortal)
 
-    portal_division = relationship(PortalDivision)
-
-    def __init__(self, member_company_portal=member_company_portal, portal_division=portal_division):
-        super(PortalDivisionSettingsCompanySubportal, self).__init__()
-        self.portal_division = portal_division
-        self.member_company_portal = member_company_portal
+    portal_division = relationship(PortalDivision, cascade="all, merge, delete")
 
 
 class PortalDivisionType(Base, PRBase):
@@ -707,47 +678,6 @@ class PortalDivisionType(Base, PRBase):
     def get_division_types():
         """Return all divisions on profireader"""
         return db(PortalDivisionType).all()
-
-
-class PortalConfig(Base, PRBase):
-    __tablename__ = 'portal_config'
-    id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'), primary_key=True)
-    division_page_size = Column(TABLE_TYPES['credentials'])
-    portal = relationship(Portal, back_populates='config', uselist=False)
-
-    def __init__(self, page_size_for_divisions=None, portal=None):
-        """
-        optional:
-            :parameter - page_size_for_divisions = dictionary with key = division name
-                                                             and value = page size per this division
-                       , default = all divisions have page size from global config. It will converts
-                         to json.
-        """
-        super(PortalConfig, self).__init__()
-        self.portal = portal
-        self.page_size_for_divisions = page_size_for_divisions
-        self.set_division_page_size()
-
-    PAGE_SIZE_PER_DIVISION = 'division_page_size'
-
-    def set_division_page_size(self, page_size_for_divisions=None):
-        page_size_for_divisions = page_size_for_divisions or self.page_size_for_divisions
-        config = db(PortalConfig, id=self.id).first()
-        dps = dict()
-        if config and page_size_for_divisions:
-            dps = simplejson.loads(getattr(config, PortalConfig.PAGE_SIZE_PER_DIVISION))
-            dps.update(page_size_for_divisions)
-        elif page_size_for_divisions:
-            for division in self.portal.divisions:
-                if page_size_for_divisions.get(division.name):
-                    dps[division.name] = page_size_for_divisions.get(division.name)
-                else:
-                    dps[division.name] = Config.ITEMS_PER_PAGE
-        else:
-            for division in self.portal.divisions:
-                dps[division.name] = Config.ITEMS_PER_PAGE
-        dps = simplejson.dumps(dps)
-        self.division_page_size = dps
 
 
 class UserPortalReader(Base, PRBase):

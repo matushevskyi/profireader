@@ -426,6 +426,7 @@ def user_company_status_changed(target, new_value, old_value, action):
     }
 
     to_users = [User.get(target.user_id)]
+
     if new_value == UserCompany.STATUSES['APPLICANT']:
         phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
         dict_main['url_company_employees'] = jinja_utils.grid_url(target.id, 'company.employees', company_id=company.id)
@@ -439,4 +440,5 @@ def user_company_status_changed(target, new_value, old_value, action):
     else:
         phrase = None
 
+    # possible notification - 4
     return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'], phrase, dict_main)

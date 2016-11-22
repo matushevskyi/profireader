@@ -384,32 +384,21 @@
             terminal: true,
             priority: 1000,
             link: function link(scope, element, attrs) {
-                //var model_name = '';
-                //var field_name = '';
-                //console.log(attrs);
-                //if (attrs['prValidationAnswer'] === '') {
-                //    //data.user.profireader_name
-                //    //data_validation.user:profireader_name
-                //    var model_field  = attrs['ngModel'].split('.');
-                //    field_name = model_field.pop();
-                //    model_name = model_field.shift() + '_validation';
-                //    model_name = model_name + '.' + model_field.join('.');
-                //}
-                //else {
                 var model_fields = attrs['prValidationAnswer'].split(':');
                 var model_name = model_fields[0];
                 var field_name = model_fields[1];
-                //}
+
 
                 element.attr('uib-popover', "{{ " + model_name + ".errors." + field_name + " || " + model_name + ".warnings." + field_name + "" +
                     " || " + model_name + ".notices." + field_name + " }}");
-                // element.attr('aa-popover-is-open', model_name + ".errors['" + field_name + "'] !== undefined");
-                element.attr('popover-trigger', 'af_tooltip_show');
-                // tooltip-trigger="show"
+
+                if (element.attr('popover-trigger') === undefined) {
+                    element.attr('popover-trigger', 'af_tooltip_show');
+                }
 
 
                 if (element.attr('popover-placement') === undefined) {
-                    element.attr('popover-placement', 'auto bottom-right');
+                    element.attr('popover-placement', 'right');
                 }
 
                 var getAfElement = function (e) {
@@ -440,21 +429,15 @@
                     element[0].dispatchEvent(new Event('af_tooltip_show'));
                 });
 
-                // element.on('mouseover',function(){
-                //     element[0].dispatchEvent(new Event('af_tooltip_show'));
-                // });
-                // element.on('click',function(){
-                //     element[0].dispatchEvent(new Event('af_tooltip_show'));
-                // });
-                // element.on('mouseleave',function(){
-                //   if( scope.$$childHead.isOpen === true ){
-                //     element[0].dispatchEvent(new Event('hide'));
-                //   }
-                // });
+
+                var disabl = ''
+                if (element.attr('pr-validation-disable')) {
+                    disabl = '!('+element.attr('pr-validation-disable')+') && '
+                }
 
 
-                element.attr('ng-class', "{'pr-validation-error': " + model_name + ".errors." + field_name + ", 'pr-validation-warning':" +
-                    " " + model_name + ".warnings." + field_name + ", 'pr-validation-notice': " + model_name + ".notices." + field_name + "}");
+                element.attr('ng-class', "{'pr-validation-error': " + disabl + model_name + ".errors." + field_name + ", 'pr-validation-warning':" +
+                    " " + disabl + model_name + ".warnings." + field_name + ", 'pr-validation-notice': " + disabl + model_name + ".notices." + field_name + "}");
                 element.removeAttr("pr-validation-answer"); //remove the attribute to avoid indefinite loop
                 element.removeAttr("data-pr-validation-answer"); //also remove the same attribute with data- prefix in case users specify data-common-things in the html
                 $compile(element)(scope);

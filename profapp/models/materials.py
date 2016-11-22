@@ -208,7 +208,7 @@ class Publication(Base, PRBase, PRElasticDocument):
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
     VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
 
-    division = relationship('PortalDivision', cascade="save-update, delete")
+    division = relationship('PortalDivision', cascade="save-update, delete", back_populates='publications')
 
     portal = relationship('Portal',
                           secondary='portal_division',
@@ -351,7 +351,7 @@ class Publication(Base, PRBase, PRElasticDocument):
         return visibilities.keys(), employer
 
     def article_visibility_details(self):
-        # TODO: OZ by OZ: remove hardcided urls!
+        # TODO: OZ by OZ: remove hardcded urls!
         actions = {Publication.VISIBILITIES['OPEN']: lambda: True,
                    Publication.VISIBILITIES['REGISTERED']:
                        lambda: True if getattr(g.user, 'id', False) else
@@ -552,7 +552,7 @@ def publication_status_changed(target, new_value, old_value, action):
     else:
         to_users = []
 
-
+    # possible notification - 2
     return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], rights_phrase,
                                         dict_main, except_to_user=[g.user])
 

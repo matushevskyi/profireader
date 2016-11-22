@@ -23,6 +23,8 @@ class Config(object):
     SITE_TITLE = 'Profireader'
     MAIN_DOMAIN = MAIN_DOMAIN
 
+    OUR_IPS = ['136.243.204.62']
+
     # Statement for enabling the development environment
     DEBUG = False
     TESTING = False
