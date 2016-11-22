@@ -61,6 +61,7 @@ class User(Base, UserMixin, PRBase):
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
     last_seen_tm = Column(TABLE_TYPES['timestamp'], default=datetime.datetime.utcnow)
+    last_informed_about_unread_communication_tm = Column(TABLE_TYPES['timestamp'], default=datetime.datetime.utcnow)
 
     # profireader_avatar_url = Column(TABLE_TYPES['url'], nullable=False,
     #                                 default='//static.profireader.com/static/no_avatar.png')

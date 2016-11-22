@@ -224,6 +224,7 @@ cat /etc/hosts" sudo cron_files
 
 function menu_cron_files {
     conf_comm "mkdir /var/log/profi
+mkdir /run/profi
 rm /etc/cron.d/profi_*
 for file in `ls conf/cron/`
 do
