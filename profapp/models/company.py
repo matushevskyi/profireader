@@ -431,10 +431,10 @@ def user_company_status_changed(target, new_value, old_value, action):
         phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
         dict_main['url_company_employees'] = jinja_utils.grid_url(target.id, 'company.employees', company_id=company.id)
         to_users = company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
-    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value == UserCompany.STATUSES['APPLICANT'] and g.user.id != target.user_id:
+    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
         phrase = "Your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> is accepted"
     elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
-        phrase = "Your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> is accepted"
+        phrase = "You are now enlisted to <a href=\"%(url_company_profile)s\">%(company.name)s</a> company"
     elif new_value == UserCompany.STATUSES['REJECTED'] and g.user.id != target.user_id:
         phrase = "Sorry, but your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> was rejected"
     elif new_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
@@ -442,5 +442,5 @@ def user_company_status_changed(target, new_value, old_value, action):
     else:
         phrase = None
 
-    # possible notification - 4
+    # possible notification - 5
     return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'], phrase, dict_main)
