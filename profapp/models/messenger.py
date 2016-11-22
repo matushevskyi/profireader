@@ -180,9 +180,9 @@ def contact_status_changed_2(target, new_value, old_value, action):
     old_status = target.get_status_for_user(to_user.id, old_value) if old_value else None
 
     if new_status == Contact.STATUSES['ACTIVE_ACTIVE'] and old_status == Contact.STATUSES['REQUESTED_UNCONFIRMED']:
-        phrase = "User %(from_user.full_name)s accepted your friendship request :)"
+        phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> accepted your friendship request :)"
     elif new_status == Contact.STATUSES['ANY_REVOKED'] and old_status == Contact.STATUSES['ACTIVE_ACTIVE']:
-        phrase = "User %(from_user.full_name)s revoked your friendship :("
+        phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> revoked your friendship :("
     else:
         phrase = None
 
