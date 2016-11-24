@@ -1016,7 +1016,7 @@
                     return true;
                 }
                 if (!$scope.mouse_clicked) {
-                    var canvas_point = $scope.mouseRelativeToCanvas(event);
+                    var canvas_point = $scope.mouseRelativeToCanvas(e);
                     // canvas_point = [canvas_point[0] + $scope.state.x , canvas_point[1] + $scope.state.y];
                     // console.log('mouse position', canvas_point, $scope.logic.canvas2imgPoint(canvas_point, $scope.state));
                     return true;

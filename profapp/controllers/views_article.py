@@ -92,10 +92,10 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
         ret['id'] = portal.id if submit else publication_in_portal.id
         ret['publication'] = publication_in_portal.get_client_side_dict(
             'id,status,visibility,portal_division_id,publishing_tm')
-        ret['publication']['division'] = ret['divisions'][ret['publication']['portal_division_id']]
+        ret['publication']['portal_division'] = ret['divisions'][ret['publication']['portal_division_id']]
         ret['publication']['counts'] = '0/0/0/0'
         ret['actions'] = PublishUnpublishInPortal(publication=publication_in_portal,
-                                                  division=publication_in_portal.division, company=company).actions()
+                                                  division=publication_in_portal.portal_division, company=company).actions()
 
     else:
         ret['id'] = portal.id
@@ -167,7 +167,7 @@ def submit_publish(json, article_action):
     else:
 
         # publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
-        publication.division = PortalDivision.get(json['publication']['portal_division_id'], returnNoneIfNotExists=True)
+        publication.portal_division = PortalDivision.get(json['publication']['portal_division_id'], returnNoneIfNotExists=True)
         # publication.division = PortalDivision.get(json['publication']['portal_division_id'])
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
         publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))
@@ -202,7 +202,7 @@ def submit_publish(json, article_action):
             g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
                            (publication.id, "', '".join([t.id for t in publication.tags])))
 
-            return get_portal_dict_for_material(publication.portal, company, publication=publication,
+            return get_portal_dict_for_material(publication.portal_division.portal, company, publication=publication,
                                                 submit=article_action == 'SUBMIT')
 
 # @article_bp.route('/list_reader')

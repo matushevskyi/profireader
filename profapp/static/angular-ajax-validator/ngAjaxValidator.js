@@ -432,7 +432,7 @@
 
                 var disabl = ''
                 if (element.attr('pr-validation-disable')) {
-                    disabl = '!('+element.attr('pr-validation-disable')+') && '
+                    disabl = '!(' + element.attr('pr-validation-disable') + ') && '
                 }
 
 
