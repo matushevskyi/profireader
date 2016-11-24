@@ -841,7 +841,7 @@ body {
 }
 
 /*--- VALIDATION ---*/
-.pr-validation-error,  .pr-validation-error:focus{
+.pr-validation-error, .pr-validation-error:focus {
   border-color: @color-red-btn;
   box-shadow: 0 2px 5px 0 rgba(255, 0, 0, 0.75), 0 2px 10px 0 rgba(255, 0, 0, 0.12);
 }
@@ -1502,4 +1502,31 @@ body {
   button.form-control {
     width: 10em;
   }
+}
+
+.dimmed {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  opacity: 0.4;
+  z-index: 1001;
+  width: 100%;
+  height: 100%;
+
+}
+
+.dimmed-message {
+  position: absolute;
+  top: 30%;
+  left: 0px;
+  width: 100%;
+  height: auto;
+  text-align: center;
+  font-size: 24px;
+  color: black;
+  opacity: 1;
+  z-index: 1002;
 }

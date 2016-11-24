@@ -103,14 +103,10 @@
                         img_url: 'portal.logo.url'
                     }
                     , {
-                        name: 'publication.division.name', type: 'link', target: 'front',
-                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.portal.host)'
-                    }
-
-                    , {
-                        name: 'publication.material.title', type: 'link', target: 'front',
-                        href: 'url_front_publication_details_host(row.entity.material.id, row.entity.portal.host)'
+                        name: 'publication.portal_division.name', type: 'link', target: 'front',
+                        href: 'url_front_publication_division_host(row.entity.publication.portal_division.name, row.entity.portal.host)'
                     },
+
                     {
                         name: 'publication.status', afilter: {type: 'multi_select'}, width: '100'
                     },

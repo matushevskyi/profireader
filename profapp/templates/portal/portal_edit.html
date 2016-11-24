@@ -19,6 +19,9 @@
                 if (newv !== oldv && newv == 'company_subportal' && (!$scope.division.settings || !$scope.division.company_id)) {
                     $scope.division.settings = {'company_id': $scope.data.portal.company_memberships[0]['company']['id']}
                 }
+                if ((newv === 'news' || newv === 'events') && !$scope.division['publication_count']) {
+                    $scope.division['publication_count'] = 0;
+                }
             });
         });
 
@@ -40,6 +43,7 @@
                 }
             };
 
+
             $scope.amidLoad = function (resp) {
                 if (!$scope.portal_id) {
                     resp['portal']['divisions'] =
@@ -50,6 +54,8 @@
                                 };
                             });
 
+                    resp['portal']['divisions'][1]['publication_count'] = 0;
+                    resp['portal']['divisions'][2]['publication_count'] = 0;
                     resp['portal']['divisions'][resp['portal']['divisions'].length - 1]['settings'] =
                     {'company_id': resp['portal']['own_company']['id']};
                 }
@@ -57,7 +63,12 @@
             };
 
             $scope.addDivision = function () {
-                $scope.data.portal.divisions.push({'id': randomHash(), portal_division_type_id: 'news', name: ''});
+                $scope.data.portal.divisions.push({
+                    'id': randomHash(),
+                    portal_division_type_id: 'news',
+                    name: '',
+                    publication_count: 0
+                });
             };
 
             $scope.removeDivision = function (index) {
@@ -101,8 +112,12 @@
 
     <div class="controller-portal-edit" ng-controller="portal_edit" ng-cloak>
         <form name="formPortal">
-            <div class="container" af af-after-save="afterSave" af-amid-load="amidLoad" af-watch="data.portal"
+            <div class="container pr" af af-after-save="afterSave" af-amid-load="amidLoad" af-watch="data.portal"
                  ng-model="data">
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed"></div>
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed-message">
+                    <p><i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _(data_state + ' portal data...') }}</p>
+                </div>
                 <div class="row">
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                         <h2>{{ ::_(portal_id?'Updating portal':'Creating portal') }}</h2>
@@ -239,7 +254,8 @@
                                         <option ng-selected="division_type.id == division.portal_division_type_id"
                                                 ng-repeat="(division_type_id, division_type) in data.select.division_types"
                                                 value="{{ division_type_id }}">{{
-                                            ::_('option division type %(division_type)s', {'division_type': division_type.id}) }}
+                                            ::_('option division type %(division_type)s', {'division_type':
+                                            division_type.id}) }}
                                         </option>
                                     </select>
                                 </div>
@@ -278,7 +294,6 @@
                 <div class="row">
                     <hr/>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 p025em">
-
                         <button class="btn btn-primary pull-right border-radius w20em" type="button"
                                 ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">{{
                             ::_(portal_id?'Save preferences':'Create portal') }}

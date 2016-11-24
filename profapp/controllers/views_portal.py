@@ -124,13 +124,13 @@ def profile_load(json, create_or_update, company_id):
                     nd.id = None
             portal.logo = jp['logo']
             for del_div in deleted_divisions:
-                del_div.delete_publications()
                 del_div.notice_about_deleted_publications('division deleted')
 
             for div in portal.divisions:
                 if div.id in changed_division_types:
-                    div.delete_publications()
                     div.notice_about_deleted_publications('division type changed')
+                    div.publications = []
+
 
             portal.save()
             g.db.commit()
@@ -353,8 +353,8 @@ def get_publication_dict(publication):
     if ret.get('long'):
         del ret['long']
     ret['id'] = publication.id
-    ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.division,
-                                              company=publication.division.portal.own_company).actions()
+    ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.portal_division,
+                                              company=publication.portal_division.portal.own_company).actions()
     return ret
 
 

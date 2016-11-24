@@ -81,8 +81,8 @@ class Portal(Base, PRBase):
                                 secondary='portal_division',
                                 primaryjoin="Portal.id == PortalDivision.portal_id",
                                 secondaryjoin="PortalDivision.id == Publication.portal_division_id",
-                                back_populates='portal',
-                                uselist=False)
+                                # back_populates='portal',
+                                uselist=True)
 
     company_memberships = relationship('MemberCompanyPortal',
                                        # secondary='member_company_portal'
@@ -625,14 +625,10 @@ class PortalDivision(Base, PRBase):
 
     tags = relationship(Tag, secondary='tag_portal_division', uselist=True)
 
-    publications = relationship('Publication', back_populates='division')
+    publications = relationship('Publication', cascade="all, delete-orphan")
 
     TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
              'catalog': 'catalog'}
-
-    def delete_publications(self):
-        for p in self.publications:
-            p.delete()
 
 
     def notice_about_deleted_publications(self, because_of):

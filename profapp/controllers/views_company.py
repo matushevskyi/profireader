@@ -72,7 +72,7 @@ def materials_load(json, company_id):
     materials, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
 
     grid_filters = {
-        'portal.name': [{'value': portal, 'label': portal} for portal_id, portal in
+        'portal_division.portal.name': [{'value': portal, 'label': portal} for portal_id, portal in
                         Material.get_portals_where_company_send_article(company_id).items()],
         'material_status': Grid.filter_for_status(Material.STATUSES),
         'status': Grid.filter_for_status(Publication.STATUSES),
