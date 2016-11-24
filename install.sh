@@ -450,6 +450,17 @@ function menu_db_reassign_ownership {
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT tablename      FROM pg_tables                     WHERE schemaname      = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT sequence_name  FROM information_schema.sequences  WHERE sequence_schema = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT table_name     FROM information_schema.views      WHERE table_schema    = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
+" sudo 'db_localize'
+    }
+
+function menu_db_localize {
+
+    profidb=$(get_profidb)
+
+    maindomain=$(rr 'Enter main domain' `get_main_domain`)
+    conf_comm "
+su postgres -c \"psql -c 'SELECT __localize_emails()' $profidb;\"
+su postgres -c \"psql -c 'SELECT __localize_hosts('\\\"'\\\"'$maindomain'\\\"'\\\"')' $profidb;\"
 " sudo 'elastic_reindex_all'
     }
 
@@ -522,6 +533,7 @@ if [[ "$1" == "" ]]; then
       "db_download_full" "get full database from x.m.ntaxa.com" \
       "db_load_full" "load full database from file" \
       "db_reassign_ownership" "reassign ownership" \
+      "db_localize" "localize project (change emails and portal hosts)" \
       "elastic_reindex_all" "recreate all documents in elasticsearch" \
       "compare_local_makarony" "compare local database and dev version" \
       "compare_local_kupyty" "compare local database and testing version" \

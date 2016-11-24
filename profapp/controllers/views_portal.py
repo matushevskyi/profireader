@@ -62,7 +62,7 @@ def profile_load(json, create_or_update, company_id):
         },
         'portal': portal.get_client_side_dict(
             fields='name,host,logo,url_facebook,url_google,url_tweeter,url_linkedin,portal_layout_id,divisions,divisions.cr_tm,lang,host,own_company,company_memberships.company',
-            get_own_or_profi_host=True)
+            get_own_or_profi_host=True, get_publications_count=True)
     }
 
     if action == 'load':
@@ -81,7 +81,7 @@ def profile_load(json, create_or_update, company_id):
 
         division_position = 0
         unpublish_warning = {}
-        old_division_types = {}
+        changed_division_types = {}
         deleted_divisions = []
         for jd in jp['divisions']:
             ndi = utils.find_by_id(portal.divisions, jd['id']) or PortalDivision(portal=portal, id=jd['id'])
@@ -98,7 +98,7 @@ def profile_load(json, create_or_update, company_id):
                 ndi.name = jd['name']
                 if ndi in portal.divisions:
                     if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
-                        old_division_types[ndi.id] = ndi.portal_division_type.id
+                        changed_division_types[ndi.id] = ndi.portal_division_type.id
                         utils.dict_deep_replace(
                             'this division have %s published articles. they will be unpublished becouse of division type changed' % (
                                 len(ndi.publications),), unpublish_warning, ndi.id, 'type')
@@ -127,7 +127,10 @@ def profile_load(json, create_or_update, company_id):
                 del_div.notice_about_deleted_publications('division deleted')
 
             for div in portal.divisions:
-                div.notice_about_deleted_publications('division type changed')
+                if div.id in changed_division_types:
+                    div.notice_about_deleted_publications('division type changed')
+                    div.publications = []
+
 
             portal.save()
             g.db.commit()
@@ -350,8 +353,8 @@ def get_publication_dict(publication):
     if ret.get('long'):
         del ret['long']
     ret['id'] = publication.id
-    ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.division,
-                                              company=publication.division.portal.own_company).actions()
+    ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.portal_division,
+                                              company=publication.portal_division.portal.own_company).actions()
     return ret
 
 
