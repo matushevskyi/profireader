@@ -70,7 +70,6 @@ class Portal(Base, PRBase):
                              order_by='asc(PortalDivision.position)',
                              primaryjoin='Portal.id==PortalDivision.portal_id')
 
-
     own_company = relationship('Company',
                                # back_populates='own_portal',
                                uselist=False)
@@ -78,6 +77,7 @@ class Portal(Base, PRBase):
     #                         back_populates='portal',
     #                         uselist=False)
     publications = relationship('Publication',
+                                cascade="all, merge",
                                 secondary='portal_division',
                                 primaryjoin="Portal.id == PortalDivision.portal_id",
                                 secondaryjoin="PortalDivision.id == Publication.portal_division_id",
@@ -260,21 +260,27 @@ class Portal(Base, PRBase):
                              fields='id|name|host|tags, divisions.*, divisions.tags.*, layout.*, logo.url, '
                                     'favicon_file_id, '
                                     'company_owner_id, url_facebook',
-                             more_fields=None, get_own_or_profi_host = False):
+                             more_fields=None, get_own_or_profi_host=False, get_publications_count=False):
+        if get_publications_count:
+            more_fields = more_fields + ', divisions.id' if more_fields else 'divisions.id'
         ret = self.to_dict(fields, more_fields)
+        if get_publications_count:
+            for d in self.divisions:
+                if d.portal_division_type.id in [PortalDivision.TYPES['events'], PortalDivision.TYPES['news']]:
+                    utils.find_by_id(ret['divisions'], d.id)['publication_count'] = len(d.publications)
+
         if get_own_or_profi_host:
             if ret['host'][
                len(ret['host']) - len(Config.MAIN_DOMAIN) - 1:] == '.' + Config.MAIN_DOMAIN:
                 ret['host_profi_or_own'] = 'profi'
                 ret['host_profi'] = ret['host'][
-                                              0:len(ret['host']) - len(Config.MAIN_DOMAIN) - 1]
+                                    0:len(ret['host']) - len(Config.MAIN_DOMAIN) - 1]
                 ret['host_own'] = ''
             else:
                 ret['host_profi_or_own'] = 'own'
                 ret['host_own'] = ret['host']
                 ret['host_profi'] = ''
         return ret
-
 
     @staticmethod
     def search_for_portal_to_join(company_id, searchtext):
@@ -605,13 +611,16 @@ class PortalDivision(Base, PRBase):
     md_tm = Column(TABLE_TYPES['timestamp'])
     portal_division_type_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division_type.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
+
     name = Column(TABLE_TYPES['short_name'], default='')
     position = Column(TABLE_TYPES['int'])
 
     portal = relationship(Portal, uselist=False)
+
     portal_division_type = relationship('PortalDivisionType', uselist=False)
 
-    portal_division_settings_company_subportal = relationship('PortalDivisionSettingsCompanySubportal', uselist=False, cascade="all, merge, delete-orphan")
+    portal_division_settings_company_subportal = relationship('PortalDivisionSettingsCompanySubportal', uselist=False,
+                                                              cascade="all, merge, delete-orphan")
     settings = PortalDivisionSettingsDescriptor()
 
     tags = relationship(Tag, secondary='tag_portal_division', uselist=True)
@@ -620,6 +629,11 @@ class PortalDivision(Base, PRBase):
 
     TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
              'catalog': 'catalog'}
+
+    def delete_publications(self):
+        for p in self.publications:
+            p.delete()
+
 
     def notice_about_deleted_publications(self, because_of):
         from ..models.messenger import Socket, Notification
@@ -635,15 +649,16 @@ class PortalDivision(Base, PRBase):
                 'material': p.material
             })
             phrase = "Because of " + because_of + " user <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just complitelly deleted a " \
-                                                         "material named `%(material.title)s` from portal <a class=\"external_link\" target=\"blank_\" href=\"//%(portal.host)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
+                                                  "material named `%(material.title)s` from portal <a class=\"external_link\" target=\"blank_\" href=\"//%(portal.host)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
 
-            to_users = PublishUnpublishInPortal(p, self, self.portal.own_company).get_user_with_rights(PublishUnpublishInPortal.publish_rights)
+            to_users = PublishUnpublishInPortal(p, self, self.portal.own_company).get_user_with_rights(
+                PublishUnpublishInPortal.publish_rights)
             if p.material.editor not in to_users:
                 to_users.append(p.material.editor)
 
             # possible notification - 2
-            Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrase, dict_pub)()
-
+            Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrase,
+                                         dict_pub)()
 
     def is_active(self):
         return True

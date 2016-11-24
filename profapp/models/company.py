@@ -375,7 +375,7 @@ class UserCompany(Base, PRBase):
         return self.to_dict(fields, more_fields)
 
     def set_client_side_dict(self, json):
-        self.attr(g.filter_json(json, 'status|position|rights'))
+        self.attr(utils.filter_json(json, 'status|position|rights'))
 
     @staticmethod
     def get_by_user_and_company_ids(user_id=None, company_id=None):

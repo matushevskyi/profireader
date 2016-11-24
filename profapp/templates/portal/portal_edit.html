@@ -238,9 +238,8 @@
                                             class="form-control" ng-model="division.portal_division_type_id">
                                         <option ng-selected="division_type.id == division.portal_division_type_id"
                                                 ng-repeat="(division_type_id, division_type) in data.select.division_types"
-                                                value="{{ division_type_id }}">{{ ::_('option division type
-                                            %(division_type)s',
-                                            {'division_type': division_type.id}) }}
+                                                value="{{ division_type_id }}">{{
+                                            ::_('option division type %(division_type)s', {'division_type': division_type.id}) }}
                                         </option>
                                     </select>
                                 </div>
@@ -248,6 +247,9 @@
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
                                 <div class="dib border-none"
                                      pr-validation-answer="data_validation:divisions[division.id].settings">
+                                    <span ng-if="division.portal_division_type_id == 'events' || division.portal_division_type_id == 'news'">
+                                        {{ ::_('%(publication_count)s publications', division) }}
+                                    </span>
                                     <select
                                             ng-disabled="division['remove_this_existing_division']"
                                             popover-trigger="none"
