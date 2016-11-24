@@ -11,7 +11,7 @@ from ..models.company import Company, UserCompany
 from ..models.tag import Tag, TagPublication
 from ..models.materials import Material, Publication
 
-from utils.db_utils import db
+from tools.db_utils import db
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import expression, and_
 from sqlalchemy import text
@@ -50,7 +50,7 @@ def load_form_create(json_data, company_id=None, material_id=None):
     if action == 'load':
         return {'material': material.get_client_side_dict(more_fields='long|company|illustration')}
     else:
-        parameters = g.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
+        parameters = utils.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
         material.attr(parameters['material'])
         if action == 'validate':
             material.detach()
@@ -76,7 +76,7 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
     ret['portal'] = portal.get_client_side_dict(
         fields='id, name, host, logo.url, divisions.id|name|portal_division_type_id, own_company.name|id, own_company.logo.url')
 
-    # ret['rights'] = MemberCompanyPortal.get(company_id=company_id, portal_id=ret['id']).rights
+    
     ret['divisions'] = PRBase.get_ordered_dict([d for d in ret['portal']['divisions'] if (
         d['portal_division_type_id'] == 'events' or d['portal_division_type_id'] == 'news')])
     ret['company_id'] = company.id
@@ -92,10 +92,10 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
         ret['id'] = portal.id if submit else publication_in_portal.id
         ret['publication'] = publication_in_portal.get_client_side_dict(
             'id,status,visibility,portal_division_id,publishing_tm')
-        ret['publication']['division'] = ret['divisions'][ret['publication']['portal_division_id']]
+        ret['publication']['portal_division'] = ret['divisions'][ret['publication']['portal_division_id']]
         ret['publication']['counts'] = '0/0/0/0'
         ret['actions'] = PublishUnpublishInPortal(publication=publication_in_portal,
-                                                  division=publication_in_portal.division, company=company).actions()
+                                                  division=publication_in_portal.portal_division, company=company).actions()
 
     else:
         ret['id'] = portal.id
@@ -167,12 +167,14 @@ def submit_publish(json, article_action):
     else:
 
         # publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
-        publication.division = PortalDivision.get(json['publication']['portal_division_id'], returnNoneIfNotExists=True)
+        publication.portal_division = PortalDivision.get(json['publication']['portal_division_id'], returnNoneIfNotExists=True)
         # publication.division = PortalDivision.get(json['publication']['portal_division_id'])
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
         publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))
         publication.event_end_tm = PRBase.parse_timestamp(json['publication'].get('event_end_tm'))
         publication.tags = [Tag.get(t['id']) for t in json['publication']['tags']]
+
+        publication.status = PublishUnpublishInPortal.STATUSES['SUBMITTED']
 
         if 'also_publish' in json and json['also_publish']:
             publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
@@ -190,7 +192,7 @@ def submit_publish(json, article_action):
             publication.detach()
             return (publication.validate(True if article_action == 'SUBMIT' else False)
                     if (
-            article_action in ['SUBMIT', 'PUBLISH', 'REPUBLISH']) else publication.DEFAULT_VALIDATION_ANSWER())
+                article_action in ['SUBMIT', 'PUBLISH', 'REPUBLISH']) else publication.DEFAULT_VALIDATION_ANSWER())
         else:
             # if article_action == 'SUBMIT':
             #     publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,
@@ -198,10 +200,9 @@ def submit_publish(json, article_action):
             publication.save()
 
             g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
-                                     (publication.id, "', '".join([t.id for t in publication.tags])))
+                           (publication.id, "', '".join([t.id for t in publication.tags])))
 
-
-            return get_portal_dict_for_material(publication.portal, company, publication=publication,
+            return get_portal_dict_for_material(publication.portal_division.portal, company, publication=publication,
                                                 submit=article_action == 'SUBMIT')
 
 # @article_bp.route('/list_reader')

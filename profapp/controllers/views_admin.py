@@ -6,7 +6,7 @@ from .request_wrapers import check_right
 from flask.ext.login import login_required
 from ..models.translate import TranslateTemplate
 from ..models.ip import Ips
-from utils.db_utils import db
+from tools.db_utils import db
 from sqlalchemy.sql import expression
 import datetime
 from ..models.config import Config
@@ -21,7 +21,7 @@ from .request_wrapers import check_right
 from flask.ext.login import login_required
 from ..models.translate import TranslateTemplate
 from ..models.ip import Ips
-from utils.db_utils import db
+from tools.db_utils import db
 from sqlalchemy.sql import expression
 import datetime
 from ..models.config import Config
@@ -35,29 +35,6 @@ def translations():
     return render_template('admin/translations.html',
                            angular_ui_bootstrap_version='//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.14.2.js')
 
-# class test:
-#     a = 1
-#
-#     def __init__(self, n):
-#         self.a = n
-#
-# @admin_bp.route('/set_session_a', methods=['OK'])
-# @check_right(UserIsActive)
-# def set_session_a(json):
-#     z = session['test'] if 'test' in session else None
-#     # print(z.a)
-#     y = test('a')
-#     session['test'] = y
-#     return {'old_value': z.__repr__(), 'new_value': session['test'].__repr__()}
-#
-# @admin_bp.route('/set_session_b', methods=['OK'])
-# @check_right(UserIsActive)
-# def set_session_b(json):
-#     z = session['test'] if 'test' in session else None
-#     # print(z.a)
-#     y = test('b')
-#     session['test'] = y
-#     return {'old_value': z.__repr__(), 'new_value': session['test'].__repr__()}
 
 @admin_bp.route('/translations', methods=['OK'])
 @check_right(UserIsActive)

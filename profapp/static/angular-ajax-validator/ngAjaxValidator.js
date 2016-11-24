@@ -38,6 +38,9 @@
 
 
     angular.module('ajaxFormModule', ['ui.bootstrap'])
+        .config(['$uibTooltipProvider', function ($uibTooltipProvider) {
+            $uibTooltipProvider.setTriggers({'af_tooltip_show': 'af_tooltip_hide'});
+        }])
         .factory('$af', ['$ok', function ($ok) {
 
             var modelsForValidation = [];
@@ -381,32 +384,60 @@
             terminal: true,
             priority: 1000,
             link: function link(scope, element, attrs) {
-                //var model_name = '';
-                //var field_name = '';
-                //console.log(attrs);
-                //if (attrs['prValidationAnswer'] === '') {
-                //    //data.user.profireader_name
-                //    //data_validation.user:profireader_name
-                //    var model_field  = attrs['ngModel'].split('.');
-                //    field_name = model_field.pop();
-                //    model_name = model_field.shift() + '_validation';
-                //    model_name = model_name + '.' + model_field.join('.');
-                //}
-                //else {
                 var model_fields = attrs['prValidationAnswer'].split(':');
                 var model_name = model_fields[0];
                 var field_name = model_fields[1];
-                //}
+
 
                 element.attr('uib-popover', "{{ " + model_name + ".errors." + field_name + " || " + model_name + ".warnings." + field_name + "" +
                     " || " + model_name + ".notices." + field_name + " }}");
-                element.attr('popover-is-open', model_name + ".errors['" + field_name + "'] !== undefined");
-                element.attr('popover-trigger', 'none');
-                element.attr('popover-placement', 'auto bottom-right');
+
+                if (element.attr('popover-trigger') === undefined) {
+                    element.attr('popover-trigger', 'af_tooltip_show');
+                }
 
 
-                element.attr('ng-class', "{'pr-validation-error': " + model_name + ".errors." + field_name + ", 'pr-validation-warning':" +
-                    " " + model_name + ".warnings." + field_name + ", 'pr-validation-notice': " + model_name + ".notices." + field_name + "}");
+                if (element.attr('popover-placement') === undefined) {
+                    element.attr('popover-placement', 'right');
+                }
+
+                var getAfElement = function (e) {
+                    return e && e.length ? (typeof e.attr('af') === 'string' ? e : getAfElement(e.parent())) : null;
+                }
+
+                element.on('mouseover', function () {
+                    element[0].dispatchEvent(new Event('af_tooltip_show'));
+                });
+                element.on('mouseleave', function () {
+                    if (!element[0].af_focused) {
+                        element[0].dispatchEvent(new Event('af_tooltip_hide'));
+                    }
+                });
+                element.on('blur', function () {
+                    element[0].af_focused = false;
+                    element[0].dispatchEvent(new Event('af_tooltip_hide'));
+                });
+                element.on('focus', function () {
+                    var all_validations = getAfElement(element).find('[popover-trigger]');
+                    element[0].af_focused = true;
+                    for (var i = 0; i < all_validations.lemgth; i++) {
+                        if (all_validations[i] !== element[0]) {
+                            all_validations[i].dispatchEvent(new Event('af_tooltip_hide'));
+                            all_validations[i].af_focused = false;
+                        }
+                    }
+                    element[0].dispatchEvent(new Event('af_tooltip_show'));
+                });
+
+
+                var disabl = ''
+                if (element.attr('pr-validation-disable')) {
+                    disabl = '!(' + element.attr('pr-validation-disable') + ') && '
+                }
+
+
+                element.attr('ng-class', "{'pr-validation-error': " + disabl + model_name + ".errors." + field_name + ", 'pr-validation-warning':" +
+                    " " + disabl + model_name + ".warnings." + field_name + ", 'pr-validation-notice': " + disabl + model_name + ".notices." + field_name + "}");
                 element.removeAttr("pr-validation-answer"); //remove the attribute to avoid indefinite loop
                 element.removeAttr("data-pr-validation-answer"); //also remove the same attribute with data- prefix in case users specify data-common-things in the html
                 $compile(element)(scope);

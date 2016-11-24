@@ -1,7 +1,7 @@
 from .pr_base import PRBase, Base, Grid
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Column, ForeignKey, text
-from utils.db_utils import db
+from tools.db_utils import db
 import datetime
 import re
 from flask import g, request, current_app
@@ -44,24 +44,34 @@ class TranslateTemplate(Base, PRBase):
     @staticmethod
     def try_to_get_phrase(template, phrase, url, portal_id=None, allow_html=''):
 
-        exist = db(TranslateTemplate, template=template, name=phrase, portal_id=portal_id).first()
+        a_filter = dict(template=template, name=phrase, portal_id=portal_id)
+
+        # TODO: OZ by OZ: this functions exists because we sometemes inmsert recort in flashing process (see on_value_changed decorator)
+        # and we can`t use ORM
+        def insert_record(**values):
+            from profapp import utils
+            g.db().execute(('INSERT INTO "%s" (template,   name,    portal_id, allow_html,   url,  %s) '
+                            'VALUES           (:template, :name, :portal_id, :allow_html, :url,  :%s)') %
+                           (TranslateTemplate.__tablename__, ', '.join(TranslateTemplate.languages),
+                            ", :".join(TranslateTemplate.languages)),
+                           params=utils.dict_merge(a_filter, {'allow_html': allow_html, 'url': url},
+                                                   {l: phrase for l in TranslateTemplate.languages}, values))
+            return db(TranslateTemplate, **a_filter).first()
+
+        exist = db(TranslateTemplate, **a_filter).first()
 
         if portal_id and not exist:
             exist_for_another = db(TranslateTemplate, template=template, name=phrase,
                                    portal_id=TranslateTemplate.exemplary_portal_id).first()
+            # TODO: OZ by OZ: how to select template portal? now we grab phrases from most recent portal, and there can be some unappropriate values
             if not exist_for_another:
                 exist_for_another = db(TranslateTemplate, template=template, name=phrase).filter(
-                    TranslateTemplate.portal != None).order_by(expression.desc(TranslateTemplate.cr_tm)).first()
+                    TranslateTemplate.portal != None).order_by(expression.asc(TranslateTemplate.cr_tm)).first()
             if exist_for_another:
-                exist = TranslateTemplate(template=template, name=phrase, portal_id=portal_id,
-                                          url=url,
-                                          **{l: getattr(exist_for_another, l) for l in
-                                             TranslateTemplate.languages}).save()
-                return exist
-
+                return insert_record(**{l: getattr(exist_for_another, l) for l in TranslateTemplate.languages})
         if not exist:
-            exist = TranslateTemplate(template=template, name=phrase, portal_id=portal_id, allow_html=allow_html,
-                                      url=url, **{l: phrase for l in TranslateTemplate.languages}).save()
+            return insert_record()
+
         return exist
 
     @staticmethod
@@ -75,19 +85,22 @@ class TranslateTemplate(Base, PRBase):
 
         url_adapter = g.get_url_adapter()
 
-        if url is None:
-            url_adapter = g.get_url_adapter()
-            rules = url_adapter.map._rules_by_endpoint.get(request.endpoint, ())
-            url = '' if len(rules) < 1 else rules[0].rule
-        else:
-            try:
+        try:
+            # TODO: OZ by OZ: this try is because i don't understand how to check application/request context stack'
+            if url is None:
+                url_adapter = g.get_url_adapter()
+                rules = url_adapter.map._rules_by_endpoint.get(request.endpoint, ())
+                url = '' if len(rules) < 1 else rules[0].rule
+            else:
+
                 from werkzeug.urls import url_parse
 
                 parsed_url = url_parse(url)
                 rules = url_adapter.match(parsed_url.path, method='GET', return_rule=True)
                 url = rules[0].rule
-            except Exception:
-                url = ''
+
+        except Exception:
+            url = ''
 
         return url
 
@@ -121,6 +134,26 @@ class TranslateTemplate(Base, PRBase):
             return phrase
 
     @staticmethod
+    def translate_and_substitute(template, phrase, dictionary={}, language=None, url=None, allow_html=''):
+        translated = TranslateTemplate.getTranslate(template, phrase, url, allow_html, language)
+        r = re.compile("%\\(([^)]*)\\)s")
+
+        def getFromDict(context, indexes, default):
+            d = context
+            for i in indexes:
+                if isinstance(d, dict):
+                    d = d[i] if i in d else default
+                else:
+                    d = getattr(d, i, default)
+            return d
+
+        def replaceinphrase(match):
+            indexes = match.group(1).split('.')
+            return str(getFromDict(dictionary, indexes, match.group(1)))
+
+        return r.sub(replaceinphrase, translated)
+
+    @staticmethod
     def update_last_accessed(template, phrase):
         i = datetime.datetime.now()
         obj = db(TranslateTemplate, template=template, name=phrase).first()
@@ -149,7 +182,7 @@ class TranslateTemplate(Base, PRBase):
     @staticmethod
     def subquery_search(filters=None, sorts=None, edit=None):
         sub_query = db(TranslateTemplate)
-        list_filters = [];
+        list_filters = []
         list_sorts = []
         if edit:
             exist = db(TranslateTemplate, template=edit['template'], name=edit['name']).first()

@@ -3,6 +3,7 @@ from flask.ext.login import current_user
 from flask import render_template, request, url_for, g, redirect, abort
 from ..models.company import Company, UserCompany
 from ..models.translate import TranslateTemplate
+from ..models.messenger import Notification
 from .request_wrapers import check_right
 from ..models.materials import Material, Publication
 from ..models.portal import PortalDivision
@@ -10,7 +11,7 @@ from sqlalchemy.sql import expression
 from sqlalchemy import and_, or_
 
 # from ..models.bak_articles import ArticleCompany, ArticlePortalDivision
-from utils.db_utils import db
+from tools.db_utils import db
 from .pagination import pagination, load_for_infinite_scroll
 from config import Config
 from .. import utils
@@ -46,11 +47,12 @@ def companies_load(json):
             'there_is_more': there_is_more,
             'actions': {'create_company': CanCreateCompanyRight(user=g.user).is_allowed()}}
 
+
 @company_bp.route('/join_to_company/', methods=['OK'])
 @check_right(UserIsActive)
 def join_to_company(json):
-    e = UserCompany(user_id=g.user.id, company_id=json['company_id']).save()
-    return {'employment': e.get_client_side_dict(fields='id,status, company, rights')}
+    return {'employment': UserCompany(user_id=g.user.id, company_id=json['company_id']).save().get_client_side_dict(
+        fields='id,status, company, rights')}
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
@@ -70,7 +72,7 @@ def materials_load(json, company_id):
     materials, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
 
     grid_filters = {
-        'portal.name': [{'value': portal, 'label': portal} for portal_id, portal in
+        'portal_division.portal.name': [{'value': portal, 'label': portal} for portal_id, portal in
                         Material.get_portals_where_company_send_article(company_id).items()],
         'material_status': Grid.filter_for_status(Material.STATUSES),
         'status': Grid.filter_for_status(Publication.STATUSES),
@@ -127,7 +129,7 @@ def employees_load(json, company_id):
 def employee_update(company_id, user_id):
     return render_template('company/company_employee_update.html',
                            company=Company.get(company_id),
-                           employment=UserCompany.get(user_id=user_id, company_id=company_id))
+                           employment=UserCompany.get_by_user_and_company_ids(user_id=user_id, company_id=company_id))
     # employer=employment.employer.get_client_side_dict(),
     # employee=employment.employee.get_client_side_dict())
 
@@ -136,7 +138,7 @@ def employee_update(company_id, user_id):
 @check_right(EmployeeAllowRight, ['company_id', 'user_id'])
 def employee_update_load(json, company_id, user_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
-    employment = UserCompany.get(user_id=user_id, company_id=company_id)
+    employment = UserCompany.get_by_user_and_company_ids(user_id=user_id, company_id=company_id)
 
     if action == 'load':
         return {'employment': employment.get_client_side_dict(),
@@ -219,13 +221,13 @@ def profile_load_validate_save(json, company_id=None):
     if action == 'load':
         company_dict = company.get_client_side_dict()
         # company_dict['logo'] = company.get_logo_client_side_dict()
-        user_company = UserCompany.get(company_id=company_id)
+        user_company = UserCompany.get_by_user_and_company_ids(company_id=company_id)
         if user_company:
             company_dict['actions'] = {'edit_company_profile': EditCompanyRight(company=company).is_allowed(),
                                        'edit_portal_profile': EditPortalRight(company=company_id).is_allowed()}
         return company_dict
     else:
-        company.attr(g.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
+        company.attr(utils.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
                                    'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
             if company_id is not None:
@@ -266,8 +268,6 @@ def search_for_user(json, company_id):
 @check_right(UserIsActive)
 def send_article_to_user(json):
     return {'user': json['send_to_user']}
-
-
 
 
 @company_bp.route('/add_subscriber/', methods=['POST'])

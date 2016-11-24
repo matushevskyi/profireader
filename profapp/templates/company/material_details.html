@@ -103,14 +103,10 @@
                         img_url: 'portal.logo.url'
                     }
                     , {
-                        name: 'publication.division.name', type: 'link', target: 'front',
-                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.portal.host)'
-                    }
-
-                    , {
-                        name: 'publication.material.title', type: 'link', target: 'front',
-                        href: 'url_front_publication_details_host(row.entity.material.id, row.entity.portal.host)'
+                        name: 'publication.portal_division.name', type: 'link', target: 'front',
+                        href: 'url_front_publication_division_host(row.entity.publication.portal_division.name, row.entity.portal.host)'
                     },
+
                     {
                         name: 'publication.status', afilter: {type: 'multi_select'}, width: '100'
                     },
@@ -173,7 +169,7 @@
         <h2>{{ _('Material is published or can be published at portals') }}</h2>
         <div class="grid" id="grid1" ui-grid-edit ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
-                <i class="fa fa-spin fa-spinner"></i>
+                <i class="fa fa-spinner fa-spin"></i>
                 <div>{{ _('Data Loading...') }}</div>
             </div>
         </div>

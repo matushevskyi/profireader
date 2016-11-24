@@ -144,14 +144,14 @@ function get_profidb {
     }
 
 function runsql {
-    conf_comm "service postgresql restart
+    conf_comm "systemctl restart postgresql.service
 su postgres -c \"echo \\\"$1\\\" | psql\"" sudo "$2"
     }
 
 function runsql_dump {
     profidb=$(get_profidb)
     filenam=$(rr "$1" "$2")
-    conf_comm "service postgresql restart
+    conf_comm "systemctl restart postgresql.service
 su postgres -c 'cat $filenam | psql $profidb'" sudo "$3"
     }
 
@@ -179,7 +179,7 @@ rm ./elasticsearch-"$elastic_version".deb" sudo deb
 
 function menu_deb {
     conf_comm "apt-get update
-apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev" sudo npm
+apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev openjdk-8-jre haproxy" sudo npm
     }
 
 function menu_npm {
@@ -215,30 +215,38 @@ gulp" nosudo hosts
 
 function menu_hosts {
     conf_comm "sed -i '/\(db\|web\|mail\|memcached\|elastic\).profi/d' /etc/hosts
-sed -i '/profireader.com/d' /etc/hosts
+sed -i '/\\.profi/d' /etc/hosts
 echo '' >> /etc/hosts
-echo '127.0.0.1 db.profi web.profi mail.profi memcached.profi elastic.profi' >> /etc/hosts
-echo '127.0.0.1 file001.profireader.com' >> /etc/hosts
-echo '127.0.0.1 static.profireader.com' >> /etc/hosts
-echo '127.0.0.1 profireader.com rodynni.firmy oles.profireader.com rodynnifirmy.profireader.com derevoobrobka.profireader.com viktor.profireader.com md.profireader.com oleh.profireader.com fsm.profireader.com' >> /etc/hosts
-echo '127.0.0.1 test.profireader.com test1.profireader.com test2.profireader.com test3.profireader.com test4.profireader.com test5.profireader.com test6.profireader.com test7.profireader.com test8.profireader.com test9.profireader.com' >> /etc/hosts
-cat /etc/hosts" sudo haproxy_compile
+echo '127.0.0.1 db.profi mail.profi memcached.profi elastic.profi' >> /etc/hosts
+echo '127.0.0.1 web.profi static.web.profi file001.web.profi socket.web.profi portal.web.profi' >> /etc/hosts
+cat /etc/hosts" sudo cron_files
     }
 
-function menu_haproxy_compile {
-    conf_comm "apt-get purge haproxy
-sed -i '/haproxy-1.5/d' /etc/apt/sources.list
-echo '' >> /etc/apt/sources.list
-echo 'deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
-echo 'deb-src http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
-apt-get update
-apt-get install haproxy" sudo haproxy_config
+function menu_cron_files {
+    conf_comm "mkdir /var/log/profi
+mkdir /run/profi
+rm /etc/cron.d/profi_*
+for file in `ls conf/cron/`
+do
+  cat conf/cron/\$file | sed 's#/var/www/#$PWD/#g' > /etc/cron.d/profi_\$file
+done
+systemctl restart cron.service" sudo haproxy_config
     }
+
+
+# function menu_haproxy_compile {
+#     conf_comm "apt-get purge haproxy
+# sed -i '/haproxy-1.5/d' /etc/apt/sources.list
+# echo '' >> /etc/apt/sources.list
+# echo 'deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
+# echo 'deb-src http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
+# apt-get update
+# apt-get install haproxy" sudo haproxy_config
+#     }
 
 function menu_haproxy_config {
     conf_comm "cp ./conf/haproxy.cfg /etc/haproxy/
-cp ./conf/profireader_haproxy.key.pem /etc/haproxy/
-service haproxy restart" sudo letsencrypt
+systemctl restart haproxy.service" sudo letsencrypt
     }
 
 function menu_letsencrypt {
@@ -258,16 +266,17 @@ rm /etc/apache2/sites-enabled/000-default.conf
 mkdir /var/log/profi
 a2enmod wsgi
 a2enmod ssl
-service apache2 restart" sudo apache2_profi_vh_ssl
+systemctl restart postgresql.service
+systemctl restart apache2.service" sudo apache2_profi_vh_ssl
     }
 
 function menu_apache2_profi_vh_ssl {
     wwwdir=$(rr 'Enter http dir' $PWD)
     maindomain=$(rr 'Enter main domain' `get_main_domain`)
     conf_comm "cat ./conf/apache2/main-domain.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/main-domain.conf
-cd `pwd`/utils
+cd `pwd`/tools
 ./get_ssl_for_domain.sh `pwd`/letsencryptrequests $maindomain www.$maindomain static.$maindomain file001.$maindomain 
-service apache2 restart" sudo apache2_fronts_vh_ssl
+systemctl restart apache2.service" sudo apache2_fronts_vh_ssl
     }
 
 
@@ -275,18 +284,18 @@ function menu_apache2_fronts_vh_ssl {
     venvdir=$(rr 'venv directory' .venv)
     conf_comm "cd `pwd`
 source $venvdir/bin/activate
-cd utils
+cd tools
 python check_ssl.py
-service apache2 restart" sudo secret_data
+systemctl restart apache2.service" sudo secret_data
     }
 
 function menu_apache2_check_ssls {
     venvdir=$(rr 'venv directory' .venv)
     conf_comm "cd `pwd`
 source $venvdir/bin/activate
-cd utils
+cd tools
 python check_ssl.py
-service apache2 restart" sudo secret_data
+systemctl restart apache2.service" sudo secret_data
     }
 
 function menu_secret_data {
@@ -428,16 +437,7 @@ function menu_db_download_full {
     }
 
 function menu_db_load_full {
-    runsql_dump 'Enter sql full dump filename' db/database_full.sql db_reindex_search
-    }
-
-function menu_db_reindex_search {
-    destdir=$(rr 'venv directory' .venv)
-    conf_comm "
-source $destdir/bin/activate
-cd ./utils
-python ./update_search_table.py
-" nosudo 'db_reassign_ownership'
+    runsql_dump 'Enter sql full dump filename' db/database_full.sql menu_db_reassign_ownership 
     }
 
 function menu_db_reassign_ownership {
@@ -450,7 +450,18 @@ function menu_db_reassign_ownership {
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT tablename      FROM pg_tables                     WHERE schemaname      = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT sequence_name  FROM information_schema.sequences  WHERE sequence_schema = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT table_name     FROM information_schema.views      WHERE table_schema    = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
-" sudo 'db_save_full'
+" sudo 'db_localize'
+    }
+
+function menu_db_localize {
+
+    profidb=$(get_profidb)
+
+    maindomain=$(rr 'Enter main domain' `get_main_domain`)
+    conf_comm "
+su postgres -c \"psql -c 'SELECT __localize_emails()' $profidb;\"
+su postgres -c \"psql -c 'SELECT __localize_hosts('\\\"'\\\"'$maindomain'\\\"'\\\"')' $profidb;\"
+" sudo 'elastic_reindex_all'
     }
 
 function menu_db_save_full {
@@ -460,6 +471,17 @@ mv db/database_full.sql db/database_full.sql."`$gitv`"_"`$datev`".bak
 su postgres -c 'pg_dump $profidb' > db/database_full.sql
 ls -l1sh db/database_full.*
 " sudo 'exit'
+    }
+
+
+function menu_elastic_reindex_all {
+    destdir=$(rr 'venv directory' .venv)
+    conf_comm "
+source $destdir/bin/activate
+cd ./tools
+python ./update_elastic_search.py delete_elastic_indexes
+python ./update_elastic_search.py recreate_all_elastic_documents
+" nosudo 'exit'
     }
 
 
@@ -476,18 +498,20 @@ if [[ "$1" == "" ]]; then
   while :
   do
 #next='exit'
+#"haproxy_compile" "compile and install haproxy" \
+#
     dialog --title "profireader" --nocancel --default-item $next --menu "Choose an option" 22 78 17 \
       "origin" "change git origin and add new remote repo" \
       "postgres_9_4" "install postgres 9.4" \
       "elastic" "install elastic search" \
       "deb" "install deb packages" \
+      "cron_files" "update cron files" \
+      "haproxy_config" "copy haproxy config to /etc/haproxy" \
       "npm" "install nodejs, npm, bower and gulp globally" \
       "bower" "download bower components in ./profapp/static/bower_components" \
       "bower_dev" "download bower development components in ./profapp/static/bower_components_dev" \
       "gulp" "install gulp in ./profapp/static" \
       "hosts" "create virtual domain zone in /etc/hosts" \
-      "haproxy_compile" "compile and install haproxy" \
-      "haproxy_config" "copy haproxy config to /etc/haproxy" \
       "letsencrypt" "install letsencrypt" \
       "apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
       "apache2_profi_vh_ssl" "create vh conf file and create/update ssl for main domain (with www., static. and file001. aliases)" \
@@ -508,8 +532,9 @@ if [[ "$1" == "" ]]; then
       "db_save_full" "save full database to file" \
       "db_download_full" "get full database from x.m.ntaxa.com" \
       "db_load_full" "load full database from file" \
-      "db_reindex_search" "reindex search table" \
       "db_reassign_ownership" "reassign ownership" \
+      "db_localize" "localize project (change emails and portal hosts)" \
+      "elastic_reindex_all" "recreate all documents in elasticsearch" \
       "compare_local_makarony" "compare local database and dev version" \
       "compare_local_kupyty" "compare local database and testing version" \
       "compare_local_artek" "compare local database and production version" \

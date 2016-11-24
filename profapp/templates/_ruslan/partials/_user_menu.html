@@ -4,18 +4,23 @@
         $scope.user = {{ g.user.get_client_side_dict()| tojson|safe if g.user else 'null'}};
         $scope.languages = {{ g.languages|tojson|safe }};
         $scope.lang = {{ g.lang|tojson|safe }};
-        $scope.unread_message_count = {{ g.user.get_unread_message_count() if g.user else 'null'}};
+        $scope.unread_message_count = {{ g.user.get_unread_message_count(g.user.id) if g.user else 'null'}};
+        $scope.unread_notification_count = {{ g.user.get_unread_notification_count(g.user.id) if g.user else 'null'}};
+        $scope.contact_request_count = {{ g.user.get_contact_request_count(g.user.id) if g.user else 'null' }};
 
-        $scope.set_unread_message_count = function (count) {
-            if ($scope.unread_message_count != count) {
-                $('#menu-site .unread_messages_count').hide(); // strage bug in chrome. text disappear until mouse click
-                $timeout(function () {
-                    $('#menu-site .unread_messages_count').show();
-                }, 10);
-                $scope.unread_message_count = count;
+        $scope.set_unread_messages_and_notifications_count = function (messages_count, notifications_count, contact_request_count) {
+            if ($scope.unread_message_count != messages_count || $scope.unread_notification_count != notifications_count || $scope.contact_request_count != contact_request_count) {
+                {#                $('#menu-site .unread_messages_and_notifications_count').hide(); // strage bug in chrome. text disappear until mouse click#}
+                $scope.unread_message_count = messages_count;
+                $scope.unread_notification_count = notifications_count;
+                $scope.contact_request_count = contact_request_count;
+                $scope.$digest();
+                {#                $timeout(function () {#}
+                {#                    $('#menu-site .unread_messages_and_notifications_count').show();#}
+                {#                }, 10);#}
+
             }
         };
-
 
         $scope.url_list_reader = {{ raw_url_for('index.list_reader')|safe }}
                 $scope.url_general = function () {
@@ -27,12 +32,12 @@
                     }
                 };
 
-        $scope.url_company_companies = {{ raw_url_for('company.companies')|safe }}
-                $scope.url_general_help = {{ raw_url_for('index.contact_us')|safe }}
-                        $scope.url_tutorial = {{ raw_url_for('tutorial.tutorial')|safe }}
-                                $scope.url_auth_logout = {{ raw_url_for('auth.logout')|safe }}
-                                        $scope.url_user_profile = {{ raw_url_for('user.profile')|safe }}
-                                                $scope.user_avatar_url = '{{ current_user.get_avatar()['url'] }}';
+        $scope.url_company_companies = {{ raw_url_for('company.companies')|safe }};
+        $scope.url_general_help = {{ raw_url_for('index.contact_us')|safe }};
+        $scope.url_tutorial = {{ raw_url_for('tutorial.index')|safe }};
+        $scope.url_auth_logout = {{ raw_url_for('auth.logout')|safe }};
+        $scope.url_user_profile = {{ raw_url_for('user.profile')|safe }};
+        $scope.user_avatar_url = '{{ current_user.get_avatar()['url'] }}';
         $scope.url_messenger = '{{ url_for('messenger.messenger'|safe) }}';
         $scope.login_url = '{{ url_for('auth.login_signup_endpoint')|safe }}';
 
@@ -50,11 +55,10 @@
         };
 
         $scope.changeLanguage = function (lang) {
-            console.log(lang)
             $ok('{{ url_for('user.change_language') }}', {'language': lang}, function (resp) {
                 location.reload();
             });
-        }
+        };
 
         $scope.selected_user_menu = '';
         $scope.set_selected_user_menu = function (menu_item) {
@@ -66,7 +70,7 @@
 
 </script>
 {% raw %}
-<nav ng-controller="user_controller" class="navbar navbar-fixed-top nav-bg">
+<nav ng-controller="user_controller" id="user_controller-controller" class="navbar navbar-fixed-top nav-bg">
     <div class="container" ng-cloak>
         <div class="navbar-header col-lg-4 col-md-4 col-sm-4 col-xs-12 hamburger-menu">
 
@@ -90,11 +94,15 @@
                             title="{{ _('Стрічкa читача') }}"
                             ng-class="{'selected': selected_user_menu == 'list_reader'}"><i
                             class="fa fa-newspaper-o"></i><span>{{ _('Стрічкa читача') }}</span></a></li>
+                    <!-- @formatter:off  -->
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_messenger }}"
-                                                                                           title="{{ _('Всі повідомлення') }}"
-                                                                                           class="pr"
-                                                                                           ng-class="{'selected': selected_user_menu == 'messages'}"><i
-                            class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span><div ng-if="unread_message_count" class="pa unread_messages_count">{{ unread_message_count }}</div></a></li>
+                        title="{{ _('Всі повідомлення') }}"
+                        class="pr" ng-class="{'selected': selected_user_menu == 'messages'}"><i
+                        class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span><div
+                        ng-if="unread_message_count || unread_notification_count || contact_request_count"
+                        class="pa unread_messages_and_notifications_count">{{ unread_message_count +
+                        unread_notification_count + contact_request_count}}</div></a></li>
+                    <!-- @formatter:on  -->
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %}
                             href="{{ url_company_companies() }}"
                             title="{{ _('Компанії') }}"
@@ -109,7 +117,6 @@
                                                                               title="{{ _('Contact us') }}"
                                                                               ng-class="{'selected': selected_user_menu == 'contact_us'}"><i
                             class="fa fa-question-circle"></i><span>{{ _('Contact us') }}</span></a></li>
-
                     <li class="dropdown"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_tutorial() }}"
                                                                               title="{{ _('tutorial') }}"
                                                                               ng-class="{'selected': selected_user_menu == 'tutorial'}"><i
@@ -124,7 +131,7 @@
                     </li>
 
                     <li ng-if="user" role="presentation" class="menu-profile">
-                        <a pr_test="UserProfile" href="{{ url_user_profile({user_id:user.id}) }}" role="button"
+                        <a href="{{ url_user_profile({user_id:user.id}) }}" role="button"
                            aria-haspopup="true"
                            aria-expanded="false">
                             <img class="person-small-cover" pr-image="" pr-no-image="{{ user_avatar_url }}">
@@ -133,7 +140,7 @@
                     </li>
 
                     <li ng-if="user" role="presentation" class="menu-profile">
-                        <a pr_test="LogOut" class="login-profile" href="{{ url_auth_logout() }}">{{ _('Log out') }}</a>
+                        <a class="login-profile" href="{{ url_auth_logout() }}">{{ _('Log out') }}</a>
                         <!--<ul class="dropdown-menu">
                             <li ng-show="user.id"><a href="{{ url_user_profile({user_id:user.id}) }}">{{ _('Profile') }}</a></li>
                             <li ng-show="user.id" ><a href="{{ url_auth_logout() }}" >{{_('Log Out') }}</a></li>
@@ -143,7 +150,7 @@
                     </li>
 
                     <li ng-if="!user" role="presentation" class="menu-profile">
-                        <a pr_test="LogIn" class="login-profile" href="{{ login_url }}">{{ _('Login') }}</a>
+                        <a class="login-profile" href="{{ login_url }}">{{ _('Login') }}</a>
                     </li>
                 </ul>
             </div>

@@ -86,6 +86,11 @@ gulp.task('install_angular-infinite-scroll', function () {
         .pipe(gulp.dest(dst + 'angular-ng-infinite-scroll/'));
 });
 
+gulp.task('install_angular-sortable', function () {
+    return gulp.src([src + 'angular-ui-sortable/sortable.min.js'])
+        .pipe(gulp.dest(dst + 'angular-ui-sortable/'));
+});
+
 gulp.task('install_angular_crop', function () {
     return gulp.src([src + 'angular-crop/ng-crop.*'])
         .pipe(gulp.dest(dst + 'angular-crop/'));
@@ -229,6 +234,7 @@ gulp.task('all', [
     'install_angular_ui_select',
     'install_angular_crop',
     'install_angular-infinite-scroll',
+    'install_angular-sortable',
     'install_angular_crop_from_dev',
     'install_angular-db-filemanager',
     'install_socket.io-client',

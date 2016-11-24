@@ -18,6 +18,8 @@ from flask.sessions import SessionInterface
 from beaker.middleware import SessionMiddleware
 from .utils.jinja_utils import update_jinja_engine, get_url_adapter
 import json
+from functools import wraps
+from sqlalchemy import event
 
 
 def req(name, allowed=None, default=None, exception=True):
@@ -32,27 +34,106 @@ def req(name, allowed=None, default=None, exception=True):
         return None
 
 
-def db_session_func(db_config):
+registry = {}
+
+
+def on_value_changed(an_attribute):
+    def wrapped(func):
+        if an_attribute.class_ not in registry:
+            registry[an_attribute.class_] = {}
+        if an_attribute not in registry[an_attribute.class_]:
+            registry[an_attribute.class_][an_attribute] = []
+        registry[an_attribute.class_][an_attribute].append(func)
+
+        @wraps(func)
+        def decorated(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return decorated
+
+    return wrapped
+
+
+def on_after_flush(session, flush_context):
+    def get_old_value(attribute_state):
+        history = attribute_state.history
+        return history.deleted[0] if history.deleted else None
+
+    def trigger_attribute_change_events(object_, action):
+        from sqlalchemy import inspect
+        from sqlalchemy.orm import object_mapper, ColumnProperty
+
+        if object_mapper(object_).class_ not in registry:
+            return False
+
+        for mapper_property in object_mapper(object_).iterate_properties:
+            if isinstance(mapper_property, ColumnProperty) and \
+                            mapper_property.class_attribute in registry[object_mapper(object_).class_]:
+
+                an_index = (object_mapper(object_).class_, mapper_property.class_attribute)
+
+                key = mapper_property.key
+                attribute_state = inspect(object_).attrs.get(key)
+                new_value = attribute_state.value
+                old_value = get_old_value(attribute_state)
+                if action == 'insert':
+                    old_value = None
+                if action == 'delete':
+                    new_value = None
+                if action == 'update':
+                    if not attribute_state.history.has_changes():
+                        new_value = ''
+                        old_value = ''
+
+                g.functions_to_call_after_commit[an_index] = []
+                if new_value != old_value:
+                    for f in registry[object_mapper(object_).class_][mapper_property.class_attribute]:
+                        add = f(object_, new_value, old_value, action)
+                        if add:
+                            g.functions_to_call_after_commit[an_index].append(add)
+
+    for o in session.new:
+        trigger_attribute_change_events(o, 'insert')
+    for o in session.dirty:
+        trigger_attribute_change_events(o, 'update')
+    for o in session.deleted:
+        trigger_attribute_change_events(o, 'deleted')
+
+
+def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import scoped_session, sessionmaker
 
-    engine = create_engine(db_config, echo=False)
+    engine = create_engine(db_config, echo=echo)
     g.sql_connection = engine.connect()
 
-    db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+    db_session = scoped_session(sessionmaker(autocommit=autocommit, autoflush=autoflush, bind=engine))
     # from sqlalchemy.orm import Session
     # strong_reference_session(Session())
     return db_session
 
 
-def load_database(db_config):
-    def load_db():
-        db_session = db_session_func(db_config)
+def load_database(db_config, echo=False):
+    def load_db(autocommit=False, autoflush=False, echo=echo):
+        from sqlalchemy import event
+        db_session = db_session_func(db_config, autocommit, autoflush, echo)
         g.db = db_session
         g.req = req
-        g.filter_json = utils.filter_json
         g.get_url_adapter = get_url_adapter
         g.fileUrl = utils.fileUrl
+        g.after_commit_models = []
+        g.functions_to_call_after_commit = {}
+
+        event.listen(db_session, 'after_flush', on_after_flush)
+
+        @event.listens_for(g.db, 'after_commit')
+        def after_commit(s):
+            # TODO: OZ by OZ: change SQLAchemy => Flask-SQLAchemy, and use http://flask-sqlalchemy.pocoo.org/dev/signals/#models_committed
+            for ind, functions in g.functions_to_call_after_commit.items():
+                for f in functions:
+                    if f:
+                        f()
+            g.functions_to_call_after_commit = {}
 
     return load_db
 
@@ -82,7 +163,10 @@ def setup_authomatic(app):
 
 
 def load_user(apptype):
+
     g.user = current_user if current_user.is_authenticated() else None
+    if current_user and current_user.is_authenticated():
+        current_user.ping()
 
     # lang = session['language'] if 'language' in session else 'uk'
     g.languages = Config.LANGUAGES
@@ -250,154 +334,6 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     elif apptype == 'file':
         from profapp.controllers.blueprints_register import register_file as register_blueprints_file
         register_blueprints_file(app)
-    elif apptype == 'socket':
-
-        # from flask_socketio import SocketIO, emit
-        # socketio = SocketIO(app)
-        #
-        # @socketio.on('connect')
-        # def connect_handler():
-        #     print(current_user)
-        #     if current_user.is_authenticated:
-        #         emit('my response',
-        #              {'message': '{0} has joined'.format(current_user.name)},
-        #              broadcast=True)
-        #     else:
-        #         return False  # not allowed here
-        #
-        # socketio.run(app)
-
-
-        # from sqlalchemy import create_engine
-        from config import database_uri
-        import select
-        from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-        import psycopg2
-        import psycopg2.extensions
-        import socketio, eventlet
-
-        conn = psycopg2.connect(dbname=Config.database, user=Config.username, password=Config.password,
-                                host=Config.host)
-        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-        conn.autocommit = True
-        curs = conn.cursor()
-
-        sio = socketio.Server(cookie='prsio')
-
-        sid2userid = {}
-        userid2seeds = {}
-
-        def check_user_id(environ):
-            session_id = environ.get('HTTP_COOKIE', None)
-            if not session_id:
-                return False
-            session_id = re.sub(r'^(.*;\s*)?beaker\.session\.id=([0-9a-f]*).*$', r'\2', session_id)
-            import memcache
-            mc = memcache.Client(['memcached.profi:11211'], debug=0)
-            session = mc.get(session_id + '_session')
-            return session.get('user_id', False) if session else False
-
-        @sio.on('connect')
-        def connect(sid, environ):
-            user_id = check_user_id(environ)
-            if not user_id:
-                return False
-            sid2userid[sid] = [user_id, None]
-
-            if not user_id in userid2seeds:
-                userid2seeds[user_id] = []
-                chanel = user_id.replace('-', '_')
-                print("Waiting for notifications on channel new_message_to_user___" + chanel)
-                curs.execute("LISTEN new_message_to_user___%s;" % (chanel,))
-                curs.execute("LISTEN message_read_user___%s;" % (chanel,))
-
-            userid2seeds[user_id].append(sid)
-            sio.enter_room(sid, 'set_unread_message_count-' + user_id)
-
-        @sio.on('disconnect')
-        def disconnect(sid):
-            (user_id, selected_chat_room_id) = tuple(sid2userid[sid])
-            del sid2userid[sid]
-            userid2seeds[user_id].remove(sid)
-            if not len(userid2seeds[user_id]):
-                chanel = user_id.replace('-', '_')
-                print("DON`T Waiting for notifications on channel new_message_to_user___" + chanel)
-                curs.execute("UNLISTEN new_message_to_user___%s;" % (chanel,))
-                curs.execute("UNLISTEN message_read_user___%s;" % (chanel,))
-                del userid2seeds[user_id]
-
-        @sio.on('select_chat_room_id')
-        def disconnect(sid, message):
-            print('select_chat_room_id', sid, message)
-            sid2userid[sid][1] = message['select_chat_room_id']
-
-        def get_cnt(user_id):
-            print('get_cnt', user_id)
-            curs.execute("SELECT contact.id, COUNT(contact.id) as cnt FROM contact LEFT JOIN "
-                         "message ON (message.contact_id = contact.id AND message.read_tm IS NULL AND message.from_user_id != '%s')"
-                         "WHERE (message.id IS NOT NULL AND (contact.user1_id = '%s' OR contact.user2_id = '%s'))"
-                         "GROUP BY contact.id" % (user_id, user_id, user_id))
-            ret = {contact_id: cnt for (contact_id, cnt) in curs.fetchall()}
-            print(ret)
-            return ret
-
-        def notify_unread(user_id):
-            print('notify_unread', user_id)
-            if user_id in userid2seeds:
-                sio.emit('set_unread_message_count', {'unread_message_count': get_cnt(user_id)},
-                         room='set_unread_message_count-' + user_id)
-
-        def new_message_to_user(user_id, message):
-            import time
-            import datetime
-            if not user_id in userid2seeds:
-                return False
-
-            contact_id = message['contact_id']
-            opened_chatrooms_id_for_reader_user = [sid2userid[sid1][1] for sid1 in
-                                                   [sid for sid in userid2seeds[user_id]] if sid2userid[sid1][1]]
-
-            if not contact_id:
-                return
-
-            if contact_id in opened_chatrooms_id_for_reader_user:
-                curs.execute("UPDATE message SET read_tm = clock_timestamp() WHERE id = '%s'" % (message['id'],))
-                for sid in userid2seeds[user_id]:
-                    tosend = {'id': message['id'],
-                              'content': message['content'],
-                              'from_user_id': message['from_user_id'],
-                              'cr_tm': message['cr_tm'],
-                              'timestamp': time.mktime(datetime.datetime.strptime(message['cr_tm'], "%Y-%m-%dT%H:%M:%S.%f").timetuple()),
-                              }
-                    print('tosend',tosend)
-                    sio.emit(event='new_message', data={'chat_room_id': message['contact_id'], 'message': tosend},
-                             room=sid)
-                notify_unread(user_id)
-            else:
-                notify_unread(user_id)
-
-        def dblisten():
-            from eventlet.hubs import trampoline
-            """
-            Open a db connection and add notifications to *q*.
-            """
-            while True:
-                trampoline(conn, read=True)
-                conn.poll()
-                while conn.notifies:
-                    notify = conn.notifies.pop(0)
-                    print("Got NOTIFY:", notify.pid, notify.channel, notify.payload)
-                    (messagetype, message_info_id) = tuple(notify.channel.split('___'))
-                    if messagetype == 'new_message_to_user':
-                        new_message_to_user(message_info_id.replace('_', '-'), json.loads(notify.payload))
-                    elif messagetype == 'message_read_user':
-                        notify_unread(message_info_id.replace('_', '-'))
-
-        eventlet.spawn(dblisten)
-        app = socketio.Middleware(sio, app)
-        eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
-
-        pass
     else:
         from profapp.controllers.blueprints_register import register_profi as register_blueprints_profi
         register_blueprints_profi(app)

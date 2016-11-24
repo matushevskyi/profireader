@@ -2,7 +2,7 @@ from flask import render_template, request, session, redirect, url_for, g
 from .blueprints_declaration import index_bp
 from ..models.portal import Portal, UserPortalReader
 from ..models.pr_base import Search, PRBase
-from utils.db_utils import db
+from tools.db_utils import db
 from .request_wrapers import check_right
 from ..models.rights import AllowAll
 from .. import utils

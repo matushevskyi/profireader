@@ -1,32 +1,5 @@
 import re
 
-# we don't need it still
-#
-# def admin_required(fn):
-#     # @wraps(fn)  # do we need it???
-#     def decorated(*args, **kw):
-#         if not g.user or not g.user.is_superuser:
-#             raise Unauthorized('Admin permissions required')
-#         return fn(*args, **kw)
-#
-#     return decorated
-
-# flask.ext.login.login_required function is used instead
-#
-# def login_required(fn):
-#     @wraps(fn)
-#     def decorated(*args, **kw):
-#         if g.user:
-#             return fn(*args, **kw)
-#         else:
-#             flash('Please log in first...', 'error')
-#             #  read this: http://flask.pocoo.org/snippets/62/
-#             return redirect(url_for('user.login', next=request.url))
-#             #next_url = request.url
-#             #login_url = '%s?next=%s' % (url_for('user.login'), next_url)
-#             #return redirect(login_url)
-#             #raise Unauthorized('You must be logged in first')
-#     return decorated
 
 def fileUrl(id, down=False, if_no_file=None):
     from config import Config
@@ -34,7 +7,7 @@ def fileUrl(id, down=False, if_no_file=None):
         return if_no_file if if_no_file else ''
 
     server = re.sub(r'^[^-]*-[^-]*-4([^-]*)-.*$', r'\1', id)
-    return '//file' + server + '.'+Config.MAIN_DOMAIN+'/' + id + '/' + ('?d' if down else '')
+    return '//file' + server + '.' + Config.MAIN_DOMAIN + '/' + id + '/' + ('?d' if down else '')
 
 
 def fileID(url):
@@ -168,7 +141,42 @@ def filter_json(json, *args, NoneTo='', ExceptionOnNotPresent=False, prefix=''):
 
     return ret
 
+
 def static_address(relative_file_name):
     from config import Config
     return '//static.' + Config.MAIN_DOMAIN + '/static/' + relative_file_name
 
+
+def find_by_id(list, id):
+    return next((d for d in list if (d['id'] if isinstance(d, dict) else d.id) == id), None)
+
+
+def dict_deep_replace(what_to_append, dictionary, *args, if_not_exists = False):
+    indexes = list(args)
+    lastindex = indexes.pop()
+    for a in indexes:
+        if not a in dictionary:
+            dictionary[a] = {}
+        dictionary = dictionary[a]
+    if not if_not_exists or lastindex not in dictionary:
+        dictionary[lastindex] = what_to_append
+
+
+def dict_deep_inc(dictionary, *args, inc_by=1):
+    indexes = list(args)
+    lastindex = indexes.pop()
+    for a in indexes:
+        if not a in dictionary:
+            dictionary[a] = {}
+        dictionary = dictionary[a]
+    if lastindex in dictionary:
+        dictionary[lastindex] += inc_by
+    else:
+        dictionary[lastindex] = inc_by
+
+def get_client_side_list(list, **kwargs):
+    return [x.get_client_side_dict(**kwargs) for x in list]
+
+
+def get_client_side_dict(list, **kwargs):
+    return {x.id: x.get_client_side_dict(**kwargs) for x in list}

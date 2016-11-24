@@ -47,4 +47,6 @@ profireader_haproxy.key.pem*
 main_domain.py
 letsencryptrequests/
 scrt/
+profapp/static/front/wood
+profapp/templates/front/wood
 

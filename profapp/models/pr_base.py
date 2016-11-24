@@ -10,7 +10,7 @@ from flask import g
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import event
 from ..controllers import errors
-from utils.db_utils import db
+from tools.db_utils import db
 from html.parser import HTMLParser
 from ..constants.SEARCH import RELEVANCE
 from config import Config
@@ -21,9 +21,7 @@ import datetime
 import time
 import operator
 from collections import OrderedDict
-import base64
-# from PIL import Image
-from io import BytesIO
+from sqlalchemy import event
 
 from .. import utils
 from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
@@ -403,7 +401,7 @@ class PRBase:
     def __init__(self):
         self.query = g.db.query_property()
 
-    # TODO: YG by OZ: move this (to next comment) static methods to utils (just like `putInRange` moved)
+    # TODO: YG by OZ: move this (to next comment) static methods to tools (just like `putInRange` moved)
 
     @classmethod
     def get_page(cls, select_from=None, order_by=None, filter=None, page=1, per_page=10):
@@ -456,7 +454,7 @@ class PRBase:
     def del_attr_by_keys(dict, keys):
         return {key: dict[key] for key in dict if key not in keys}
 
-    # TODO: YG by OZ: move this static methods to utils
+    # TODO: YG by OZ: move this static methods to tools
 
 
     def position_unique_filter(self):
@@ -507,30 +505,18 @@ class PRBase:
 
         return self
 
-    def get_image_cropped_file(self, parameters={}, croped_image_file_id=None):
-        ret = {
-            'upload': parameters.get('upload'),
-            'browse': parameters.get('browse'),
-            'none': parameters.get('none'),
-            'cropper': {'aspect_ratio': parameters.get('aspect_ratio')} if parameters.get('crop') else False,
-            'min_size': parameters.get('min_size'),
-            'preset_urls': parameters.get('preset_urls'),
-            'no_selection_url': parameters.get('no_selection_url'),
-            'selected_by_user': {'type': 'none'}
-        }
-        if croped_image_file_id:
-            ret['selected_by_user'] = {'type': 'browse', 'image_file_id': croped_image_file_id.original_image_id}
-            if ret['cropper']:
-                ret['selected_by_user']['crop_coordinates'] = croped_image_file_id.get_coordinates()
-
-        return ret
-
     @staticmethod
     def DEFAULT_VALIDATION_ANSWER():
         return {'errors': {}, 'warnings': {}, 'notices': {}}
 
-    def validate(self, is_new=False):
-        return self.DEFAULT_VALIDATION_ANSWER()
+    def validate(self, is_new=False, regexps = {}):
+        ret = self.DEFAULT_VALIDATION_ANSWER()
+
+        for (atr, regexp) in regexps.items():
+            if not re.match(regexp, getattr(self, atr)):
+                ret['errors'][atr] = "%s should match regexp %s" % (atr, regexp)
+        return ret
+
 
     def delete(self):
         g.db.delete(self)
@@ -552,6 +538,10 @@ class PRBase:
             setattr(self, k, kwargs[k])
         return self
 
+    def attr_filter(self, dictionary, *filters):
+        self.attr(utils.filter_json(dictionary, *filters))
+
+
     def detach(self):
         if self in g.db:
             g.db.expunge(self)
@@ -560,9 +550,9 @@ class PRBase:
         self.id = None
         return self
 
-    def expunge(self):
-        g.db.expunge(self)
-        return self
+    # def expunge(self):
+    #     g.db.expunge(self)
+    #     return self
 
     def get_client_side_dict(self, fields='id',
                              more_fields=None):
@@ -578,6 +568,9 @@ class PRBase:
         if isinstance(object_property, datetime.datetime):
             return object_property.replace(object_property.year, object_property.month, object_property.day,
                                            object_property.hour, object_property.minute, object_property.second, 0)
+            # return object_property.replace(object_property.year, object_property.month, object_property.day,
+            #                            object_property.hour, object_property.minute, object_property.second,
+            #                            0).strftime("%a, %d %b %Y %H:%M:%S")
         elif isinstance(object_property, datetime.date):
             return object_property.strftime('%Y-%m-%d')
         elif isinstance(object_property, dict):
@@ -588,6 +581,8 @@ class PRBase:
             # TODO: OZ by OZ:**kwargs should accept lambdafunction for fields formattings
 
     def to_dict(self, *args, prefix=''):
+        # TODO: OZ by OZ: this function is wrong. we need walk through requested fields and return appropriate attribute.
+        # Now we walk through attribute (yes?)
         ret = {}
         __debug = True
 
@@ -688,7 +683,7 @@ class PRBase:
         for relname, nextlevelargs in req_relationships.items():
             if hasattr(self, relname):
                 del_req_columns_in_attrs.append(relname)
-                add = g.filter_json(getattr(self, relname), *nextlevelargs) if nextlevelargs else getattr(
+                add = utils.filter_json(getattr(self, relname), *nextlevelargs) if nextlevelargs else getattr(
                     self, relname)
                 ret[relname] = utils.dict_merge_recursive(ret[relname] if relname in ret else {}, add)
 

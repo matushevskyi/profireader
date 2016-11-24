@@ -2,11 +2,12 @@ from .blueprints_declaration import portal_bp
 from flask import render_template, g, flash
 from ..models.company import Company
 from flask.ext.login import login_required
+from profapp.controllers.errors import BadDataProvided
 from ..models.portal import PortalDivisionType
 from ..models.translate import TranslateTemplate
-from utils.db_utils import db
+from tools.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
-    PortalDivisionSettingsCompanySubportal, PortalConfig, PortalAdvertisment, PortalAdvertismentPlace
+    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace, MemberCompanyPortalPlan
 from .request_wrapers import ok, check_right
 # from ..models.bak_articles import Publication, ArticleCompany, Article
 from ..models.company import UserCompany
@@ -14,6 +15,7 @@ from ..models.materials import Publication, Material
 from ..models.tag import Tag, TagPortalDivision
 from profapp.models.rights import RIGHTS
 from ..controllers import errors
+from sqlalchemy.sql import expression
 from ..models.pr_base import PRBase, Grid
 import copy
 from .. import utils
@@ -25,84 +27,115 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipR
     PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive
 
 
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/portal/<string:portal_id>/',
-                 methods=['GET'])
+@portal_bp.route('/portal/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
 @check_right(EditPortalRight, ['company_id'])
-def profile(create_or_update, company_id, portal_id=None):
-    return render_template('portal/portal_create.html', company=Company.get(company_id))
-
-
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['OK'])
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/portal/<string:portal_id>/',
-                 methods=['OK'])
-@check_right(EditPortalRight, ['company_id'])
-def profile_load(json, create_or_update, company_id, portal_id=None):
-    action = g.req('action', allowed=['load', 'save', 'validate'])
-    layouts = [x.get_client_side_dict() for x in db(PortalLayout).all()]
-    types = {x.id: x.get_client_side_dict() for x in PortalDivisionType.get_division_types()}
+def profile(create_or_update, company_id):
     company = Company.get(company_id)
-    portal = Portal() if portal_id is None else Portal.get(portal_id)
-    if action == 'load':
-        ret = {'company': company.get_client_side_dict(),
-               'layouts': layouts, 'division_types': types}
-        if create_or_update == 'update':
-            ret['portal'] = {}
-            ret['portal_company_members'] = company.portal_members
-            ret['host_profi_or_own'] = 'profi' if re.match(r'^profireader\.', ret['portal']['hostname']) else 'own'
-        else:
-            ret['portal_company_members'] = [company.get_client_side_dict()]
-            ret['portal'] = {'company_owner_id': company_id, 'name': '', 'host': '',
-                             'logo': portal.logo,
-                             'host_profi_or_own': 'profi',
-                             'host_own': '',
-                             'host_profi': '',
-                             'portal_layout_id': layouts[0]['id'],
-                             'divisions': [
-                                 {'name': 'index page', 'portal_division_type_id': 'index',
-                                  'page_size': ''},
-                                 {'name': 'news', 'portal_division_type_id': 'news', 'page_size': ''},
-                                 {'name': 'events', 'portal_division_type_id': 'events',
-                                  'page_size': ''},
-                                 {'name': 'catalog', 'portal_division_type_id': 'catalog',
-                                  'page_size': ''},
-                                 {'name': 'our subportal',
-                                  'portal_division_type_id': 'company_subportal',
-                                  'page_size': '',
-                                  'settings': {'company_id': ret['portal_company_members'][0]['id']}}]}
-        return ret
+    if create_or_update == 'update':
+        portal = g.db.query(Portal).filter_by(company_owner_id=company.id).first()
     else:
-        json_portal = json['portal']
-        if create_or_update == 'update':
-            pass
-        elif create_or_update == 'create':
-            page_size_for_config = dict()
-            for a in json_portal['divisions']:
-                page_size_for_config[a.get('name')] = a.get('page_size') \
-                    if type(a.get('page_size')) is int and a.get('page_size') != 0 \
-                    else Config.ITEMS_PER_PAGE
-            # print(json)
-            json_portal['host'] = (json_portal['host_profi'] + '.' + Config.MAIN_DOMAIN) \
-                if json_portal['host_profi_or_own'] == 'profi' else json_portal['host_own']
+        portal = None
 
-            portal = Portal(company_owner=company, aliases = '', **g.filter_json(json_portal, 'name', 'portal_layout_id', 'host'))
-            divisions = []
-            for division_json in json['portal']['divisions']:
-                division = PortalDivision(portal, portal_division_type_id=division_json['portal_division_type_id'],
-                                          position=len(json['portal']['divisions']) - len(divisions),
-                                          name=division_json['name'])
-                if division_json['portal_division_type_id'] == 'company_subportal':
-                    division.settings = {'member_company_portal': portal.company_members[0]}
-                divisions.append(division)
-            # self, portal=portal, portal_division_type=portal_division_type, name='', settings={}
-            portal.divisions = divisions
-            PortalConfig(portal=portal, page_size_for_divisions=page_size_for_config)
-        if action == 'save':
-            portal.setup_created_portal(json_portal).save()
-            portal_dict = portal.save().get_client_side_dict()
-            return portal_dict
+    return render_template('portal/portal_edit.html', company=company, portal_id=portal.id if portal else None)
+
+
+@portal_bp.route('/portal/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['OK'])
+@check_right(EditPortalRight, ['company_id'])
+def profile_load(json, create_or_update, company_id):
+    action = g.req('action', allowed=['load', 'save', 'validate'])
+    layouts = db(PortalLayout).all()
+    division_types = PortalDivisionType.get_division_types()
+    company = Company.get(company_id)
+    if create_or_update == 'update':
+        portal = g.db.query(Portal).filter_by(company_owner_id=company.id).first()
+    else:
+        portal = Portal(host='', lang=g.user.lang,
+                        own_company=company,
+                        company_owner_id=company.id,
+                        company_memberships=[MemberCompanyPortal(company=company,
+                                                                 plan=db(MemberCompanyPortalPlan).first())])
+
+    client_side = lambda: {
+        'select': {
+            'languages': Config.LANGUAGES,
+            'layouts': utils.get_client_side_list(layouts),
+            'division_types': utils.get_client_side_dict(division_types)
+        },
+        'portal': portal.get_client_side_dict(
+            fields='name,host,logo,url_facebook,url_google,url_tweeter,url_linkedin,portal_layout_id,divisions,divisions.cr_tm,lang,host,own_company,company_memberships.company',
+            get_own_or_profi_host=True, get_publications_count=True)
+    }
+
+    if action == 'load':
+        return client_side()
+    else:
+        jp = json['portal']
+
+        jp['host'] = (jp['host_profi'] + '.' + Config.MAIN_DOMAIN) if jp['host_profi_or_own'] == 'profi' else jp[
+            'host_own']
+
+        portal.attr_filter(jp, 'name', 'lang', 'portal_layout_id', 'host',
+                           *map(lambda x: 'url_' + x, ['facebook', 'google', 'tweeter', 'linkedin']))
+
+        if set(portal.divisions) - set(utils.find_by_id(portal.divisions, d['id']) for d in jp['divisions']) != set():
+            raise BadDataProvided('Information for some existing portal division is not provided by client')
+
+        division_position = 0
+        unpublish_warning = {}
+        changed_division_types = {}
+        deleted_divisions = []
+        for jd in jp['divisions']:
+            ndi = utils.find_by_id(portal.divisions, jd['id']) or PortalDivision(portal=portal, id=jd['id'])
+            if jd.get('remove_this_existing_division', None):
+                deleted_divisions.append(ndi)
+                if len(ndi.publications):
+                    utils.dict_deep_replace(
+                        'this division have %s published articles. they will be unpublished' % (len(ndi.publications),),
+                        unpublish_warning, ndi.id, 'actions')
+                portal.divisions.remove(ndi)
+            else:
+                ndi.portal = portal
+                ndi.position = division_position
+                ndi.name = jd['name']
+                if ndi in portal.divisions:
+                    if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
+                        changed_division_types[ndi.id] = ndi.portal_division_type.id
+                        utils.dict_deep_replace(
+                            'this division have %s published articles. they will be unpublished becouse of division type changed' % (
+                                len(ndi.publications),), unpublish_warning, ndi.id, 'type')
+                else:
+                    portal.divisions.append(ndi)
+
+                ndi.portal_division_type = utils.find_by_id(division_types, jd['portal_division_type_id'])
+                ndi.settings = jd.get('settings', {})
+
+                division_position += 1
+        if action == 'validate':
+            ret = portal.validate(create_or_update == 'create')
+            if len(unpublish_warning.keys()):
+                if 'divisions' not in ret['warnings']:
+                    ret['warnings']['divisions'] = {}
+                ret['warnings']['divisions'] = utils.dict_merge_recursive(ret['warnings']['divisions'],
+                                                                          unpublish_warning)
+            g.db.expunge_all()
+            return ret
         else:
-            return portal.validate(create_or_update == 'create')
+            for nd in portal.divisions:
+                if not nd.cr_tm:
+                    nd.id = None
+            portal.logo = jp['logo']
+            for del_div in deleted_divisions:
+                del_div.notice_about_deleted_publications('division deleted')
+
+            for div in portal.divisions:
+                if div.id in changed_division_types:
+                    div.notice_about_deleted_publications('division type changed')
+                    div.publications = []
+
+
+            portal.save()
+            g.db.commit()
+            return client_side()
 
 
 @portal_bp.route('/apply_company/<string:company_id>', methods=['OK'])
@@ -113,21 +146,6 @@ def apply_company(json, company_id):
     return {'portals_partners': [portal.get_client_side_dict(fields='name, company_owner_id,id')
                                  for portal in PublishUnpublishInPortal.get_portals_where_company_is_member(
             Company.get(company_id))], 'company_id': company_id}
-
-
-@portal_bp.route('/profile_edit/<string:portal_id>/', methods=['GET'])
-@check_right(EditPortalRight, ['portal_id'])
-def profile_edit(portal_id):
-    return render_template('portal/portal_profile_edit.html', company=Portal.get(portal_id).own_company)
-
-
-@portal_bp.route('/profile_edit/<string:portal_id>/', methods=['OK'])
-@check_right(EditPortalRight, ['portal_id'])
-def profile_edit_load(json, portal_id):
-    portal = db(Portal, id=portal_id).one()
-
-    return {'portal': portal.get_client_side_dict('id, name, divisions, own_company, portal_bound_tags_select.*'),
-            'tag': []}
 
 
 @portal_bp.route('/portals_partners/<string:company_id>/', methods=['GET'])
@@ -174,8 +192,10 @@ def portal_banners_load(json, company_id):
     portal = Company.get(company_id).own_portal
     if 'action_name' in json:
         if json['action_name'] == 'create':
-            place = db(PortalAdvertismentPlace, portal_layout_id = portal.portal_layout_id, place = json['row']['place']).one()
-            newrow = PortalAdvertisment(portal_id=portal.id, html=place.default_value if place.default_value else '', place=json['row']['place']).save()
+            place = db(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id,
+                       place=json['row']['place']).one()
+            newrow = PortalAdvertisment(portal_id=portal.id, html=place.default_value if place.default_value else '',
+                                        place=json['row']['place']).save()
             return {'grid_action': 'refresh_row', 'row': newrow.get_client_side_dict()}
 
         elif json['action_name'] == 'delete':
@@ -208,7 +228,7 @@ def save_portal_banner(json, company_id):
 @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def portals_partners_change_status(json, company_id, portal_id):
     partner = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
-    employee = UserCompany.get(company_id=company_id)
+    employee = UserCompany.get_by_user_and_company_ids(company_id=company_id)
     if MembershipRights(company=json.get('partner_id'), member_company=partner).action_is_allowed(json.get('action'),
                                                                                                   employee) == True:
         partner.set_client_side_dict(
@@ -269,7 +289,7 @@ def company_update_load(json, company_id, member_id):
 @check_right(PortalManageMembersCompaniesRight, ['company_id'])
 def company_partners_change_status(json, company_id, portal_id):
     partner = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
-    employee = UserCompany.get(company_id=company_id)
+    employee = UserCompany.get_by_user_and_company_ids(company_id=company_id)
     if MembersRights(company=json.get('partner_id'), member_company=partner).action_is_allowed(json.get('action'),
                                                                                                employee) == True:
         partner.set_client_side_dict(
@@ -287,7 +307,7 @@ def company_partners_change_status(json, company_id, portal_id):
 @check_right(UserIsEmployee, ['company_id'])
 def companies_partners(company_id):
     return render_template('company/companies_partners.html', company=Company.get(company_id),
-                           rights_user_in=UserCompany.get(company_id=company_id).has_rights(
+                           rights_user_in=UserCompany.get_by_user_and_company_ids(company_id=company_id).has_rights(
                                UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES))
 
 
@@ -334,8 +354,8 @@ def get_publication_dict(publication):
     if ret.get('long'):
         del ret['long']
     ret['id'] = publication.id
-    ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.division,
-                                              company=publication.division.portal.own_company).actions()
+    ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.portal_division,
+                                              company=publication.portal_division.portal.own_company).actions()
     return ret
 
 
@@ -361,7 +381,7 @@ def publications_load(json, company_id):
     # }
     return {'company': company.get_client_side_dict(),
             'portal': portal.get_client_side_dict(),
-            'rights_user_in_company': UserCompany.get(company_id=company_id).rights,
+            'rights_user_in_company': UserCompany.get_by_user_and_company_ids(company_id=company_id).rights,
             'grid_data': list(map(get_publication_dict, publications)),
             'total': len(publications)}
 
@@ -403,3 +423,32 @@ def tags_load(json, company_id):
             return get_client_model(portal)
         else:
             return validated
+
+
+@portal_bp.route('/<string:company_id>/translations/', methods=['GET'])
+@check_right(UserIsActive)
+def translations(company_id):
+    company = Company.get(company_id)
+    portal = company.own_portal
+    return render_template('portal/translations.html', portal = portal)
+
+
+@portal_bp.route('/<string:company_id>/translations/', methods=['OK'])
+@check_right(UserIsActive)
+def translations_load(json, company_id):
+
+    company = Company.get(company_id)
+    portal = company.own_portal
+    subquery = TranslateTemplate.subquery_search({'portal.name': portal.name}, json.get('sort'), json.get('editItem'))
+
+    translations, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
+
+    # grid_filters = {
+    #     'template': [{'value': portal[0], 'label': portal[0]} for portal in
+    #                  db(TranslateTemplate.template).group_by(TranslateTemplate.template) \
+    #                      .order_by(expression.asc(expression.func.lower(TranslateTemplate.template))).all()],
+    #     'url': [{'value': portal[0], 'label': portal[0]} for portal in
+    #             db(TranslateTemplate.url).group_by(TranslateTemplate.url) \
+    #                 .order_by(expression.asc(expression.func.lower(TranslateTemplate.url))).all()]
+    # }
+    return {'grid_data': [translation.get_client_side_dict() for translation in translations], 'total': count}

@@ -1,15 +1,16 @@
 from sqlalchemy import Column, String, ForeignKey, UniqueConstraint, Enum  # , update
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy import event
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from flask.ext.login import current_user
-from sqlalchemy import Column, String, ForeignKey, update, and_
+from sqlalchemy import Column, String, ForeignKey, update, and_, text
 from sqlalchemy.orm import relationship
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from flask import g
 from config import Config
-from utils.db_utils import db
+from tools.db_utils import db
 from sqlalchemy import CheckConstraint
-from flask import abort
+from flask import abort, url_for
 from .pr_base import PRBase, Base, Search, Grid
 from ..controllers import errors
 from functools import wraps
@@ -21,10 +22,14 @@ from .. import utils
 import re
 from .files import FileImg, FileImgDescriptor
 from .elastic import PRElasticDocument
+from profapp import on_value_changed
+from ..models.messenger import Notification, Socket
+from profapp.utils import jinja_utils
 
 
 class Company(Base, PRBase, PRElasticDocument):
     __tablename__ = 'company'
+
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     name = Column(TABLE_TYPES['name'], unique=True, nullable=False, default='')
 
@@ -74,12 +79,6 @@ class Company(Base, PRBase, PRElasticDocument):
 
     author_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id), nullable=False)
     user_owner = relationship(User, back_populates='companies')
-
-    # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
-    #                  'short_description': {'relevance': lambda field='short_description': RELEVANCE.short_description},
-    #                  'about': {'relevance': lambda field='about': RELEVANCE.about},
-    #                  'country': {'relevance': lambda field='country': RELEVANCE.country},
-    #                  'phone': {'relevance': lambda field='phone': RELEVANCE.phone}}
 
     # TODO: AA by OZ: we need employees.position (from user_company table) (also search and fix #ERROR employees.position.2#)
     # ERROR employees.position.1#
@@ -203,27 +202,13 @@ class Company(Base, PRBase, PRElasticDocument):
             ret.append(x.dict())
 
         return ret
-        # return PRBase.searchResult(query_companies)
 
-        # @staticmethod
-        # def update_comp(company_id, data):
-        #     """Edit company. Pass to data parameters which will be edited"""
-        #     company = db(Company, id=company_id)
-        #     upd = {x: y for x, y in zip(data.keys(), data.values())}
-        #     company.update(upd)
+    def get_user_with_rights(self, *args):
+        usrc = db(UserCompany).filter(
+            text("(company_id = '%s') AND (0 <> (rights & %s))" % (
+                self.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in args})))).all()
 
-        # if passed_file:
-        #     file = File(company_id=company_id,
-        #                 parent_id=company.one().system_folder_file_id,
-        #                 author_user_id=g.user_dict['id'],
-        #                 name=passed_file.filename,
-        #                 mime=passed_file.content_type)
-        #     company.update(
-        #         {'logo_file_id': file.upload(
-        #             content=passed_file.stream.read(-1)).id}
-        #     )
-        # db_session.flush()
-
+        return db(User).filter(User.id.in_([e.user_id for e in usrc])).all()
 
     def get_client_side_dict(self,
                              fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
@@ -231,17 +216,6 @@ class Company(Base, PRBase, PRElasticDocument):
                                     'own_portal.id|host',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
-
-    # def get_logo_client_side_dict(self):
-    #     return self.get_image_cropped_file(self.logo_file_properties(),
-    #                                        db(FileImg, croped_image_id=self.logo_file_id).first())
-
-    # def set_logo_client_side_dict(self, client_data):
-    #     if client_data['selected_by_user']['type'] == 'preset':
-    #         client_data['selected_by_user'] = {'type': 'none'}
-    #     self.logo_file_id = self.set_image_cropped_file(self.logo_file_properties(),
-    #                                                       client_data, self.logo_file_id, self.system_folder_file_id)
-    #     return self
 
     @staticmethod
     def get_allowed_statuses(company_id=None, portal_id=None):
@@ -386,15 +360,10 @@ class UserCompany(Base, PRBase):
         return True
 
     @staticmethod
-    # TODO: OZ by OZ: remove this func. use  get_by_user_and_company_ids instead
-    def get(user_id=None, company_id=None):
-        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
-
-    @staticmethod
     # TODO: OZ by OZ: rework this as in action-style
     def get_statuses_avaible(company_id):
         available_statuses = {s: True for s in UserCompany.STATUSES}
-        user_rights = UserCompany.get(user_id=current_user.id, company_id=company_id).rights
+        user_rights = UserCompany.get_by_user_and_company_ids(user_id=current_user.id, company_id=company_id).rights
         if user_rights['EMPLOYEE_ENLIST_OR_FIRE'] == False:
             available_statuses['ACTIVE'] = False
         if user_rights['EMPLOYEE_ENLIST_OR_FIRE'] == False:
@@ -406,38 +375,11 @@ class UserCompany(Base, PRBase):
         return self.to_dict(fields, more_fields)
 
     def set_client_side_dict(self, json):
-        self.attr(g.filter_json(json, 'status|position|rights'))
+        self.attr(utils.filter_json(json, 'status|position|rights'))
 
     @staticmethod
     def get_by_user_and_company_ids(user_id=None, company_id=None):
-        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).one()
-
-    # TODO: VK by OZ: pls teach everybody what is done here
-    # # do we provide any rights to user at subscribing? Not yet
-    # def subscribe_to_company(self):
-    #     """Add user to company with non-active status. After that Employer can accept request,
-    #     and add necessary rights, or reject this user. Method need instance of class with
-    #     parameters : user_id, company_id, status"""
-    #     if db(UserCompany, user_id=self.user_id,
-    #           company_id=self.company_id).count():
-    #         raise errors.AlreadyJoined({
-    #             'message': 'user already joined to company %(name)s',
-    #             'data': self.get_client_side_dict()})
-    #     self.employee = User.user_query(self.user_id)
-    #     self.employer = db(Company, id=self.company_id).one()
-    #     return self
-
-    # @staticmethod
-    # def change_status_employee(company_id, user_id, status=STATUSES['SUSPENDED']):
-    #     """This method make status employee in this company suspended"""
-    #     db(UserCompany, company_id=company_id, user_id=user_id). \
-    #         update({'status': status})
-    #     if status == UserCompany.STATUSES['FIRED']:
-    #         UserCompany.update_rights(user_id=user_id,
-    #                                   company_id=company_id,
-    #                                   new_rights=()
-    #                                   )
-    #         # db_session.flush()
+        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
 
     @staticmethod
     def apply_request(company_id, user_id, bool):
@@ -457,8 +399,6 @@ class UserCompany(Base, PRBase):
         if self.company.user_owner.id == self.user_id:
             return True
 
-        # if rightname == 'ARTICLES_EDIT_OTHERS':
-        #     if self.editor
         if rightname == '_OWNER':
             return rightname
         if rightname == '_ANY':
@@ -474,37 +414,33 @@ class UserCompany(Base, PRBase):
                 db(User).filter(~db(UserCompany, user_id=User.id, company_id=company_id).exists()).
                     filter(User.full_name.ilike("%" + searchtext + "%")).all()]
 
-        # @staticmethod
-        # def permissions(needed_rights_iterable, user_object, company_object):
-        #
-        #     needed_rights_int = Right.transform_rights_into_integer(needed_rights_iterable)
-        #     # TODO: implement Anonymous User handling
-        #     if not (user_object and company_object):
-        #         raise errors.ImproperRightsDecoratorUse
-        #
-        #     user = user_object
-        #     company = company_object
-        #     if type(user_object) is str:
-        #         user = g.db.query(User).filter_by(id=user_object).first()
-        #         if not user:
-        #             return abort(400)
-        #     if type(company_object) is str:
-        #         company = g.db.query(Company).filter_by(id=company_object).first()
-        #         if not company:
-        #             return abort(400)
-        #
-        #     user_company = user.company_employers.filter_by(company_id=company.id).first()
-        #
-        #     if not user_company:
-        #         return False if needed_rights_iterable else True
-        #
-        #     if user_company.banned:  # or user_company.status != STATUS.ACTIVE():
-        #         return False
-        #
-        #     if user_company:
-        #         available_rights = user_company.rights_int
-        #     else:
-        #         return False
-        #         # available_rights = 0
-        #
-        #     return True if available_rights & needed_rights_int == needed_rights_int else False
+
+@on_value_changed(UserCompany.status)
+def user_company_status_changed(target, new_value, old_value, action):
+
+    company = Company.get(target.company_id)
+
+    dict_main = {
+        'company': company,
+        'url_company_profile': url_for('company.profile', company_id=company.id)
+    }
+
+    to_users = [User.get(target.user_id)]
+
+    if new_value == UserCompany.STATUSES['APPLICANT']:
+        phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
+        dict_main['url_company_employees'] = jinja_utils.grid_url(target.id, 'company.employees', company_id=company.id)
+        to_users = company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
+    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
+        phrase = "Your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> is accepted"
+    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
+        phrase = "You are now enlisted to <a href=\"%(url_company_profile)s\">%(company.name)s</a> company"
+    elif new_value == UserCompany.STATUSES['REJECTED'] and g.user.id != target.user_id:
+        phrase = "Sorry, but your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> was rejected"
+    elif new_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
+        phrase = "Sorry, your was fired from company <a href=\"%(url_company_profile)s\">%(company.name)s</a>"
+    else:
+        phrase = None
+
+    # possible notification - 5
+    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'], phrase, dict_main)

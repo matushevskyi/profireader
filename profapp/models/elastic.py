@@ -1,7 +1,7 @@
 import json
 import math
 from .. import utils
-from utils.db_utils import db
+from tools.db_utils import db
 import requests
 import inspect
 from sqlalchemy import event
@@ -28,8 +28,9 @@ class PRElasticConnection:
         return (self.host + '/' + '/'.join(args)) + '?' + \
                ('&'.join(["%s=%s" % (k, v) for k, v in params.items()]) if params else '')
 
-    def rq(self, path='', req={}, method='GET', returnstatusonly=False, notjson=False):
+    def rq(self, path='', req={}, method='GET', returnstatusonly=False, notjson=False, do_not_raise_exception = False):
         import sys
+        do_not_raise_exception = do_not_raise_exception if do_not_raise_exception else (method == 'DELETE')
 
         print(method + ' - ' + path + ' called from ' + sys._getframe(1).f_code.co_name)
         print('------ request = `' + req.__str__() + '`')
@@ -50,9 +51,9 @@ class PRElasticConnection:
             return True if response.status_code == 200 else False
         else:
             print('++++++ response(header) =`' + response.status_code.__str__() + '`')
-            if response.status_code > 299:
+            if response.status_code > 299 and not do_not_raise_exception:
                 ret = json.loads(response.text)
-                raise PRElasticException(ret['error'], response)
+                raise PRElasticException(ret, response)
             print('++++++ response(text) =`' + response.text + '`')
             return response.text if notjson else json.loads(response.text)
 
@@ -525,7 +526,7 @@ class PRElasticField:
 
         # def search_elastic(type, body):
         #     es = Elasticsearch(hosts='elastic.profi')
-        #     return ([utils.dict_merge(r['_source'], {'id': r['_id']}) for r in es.search(index='profireader',
+        #     return ([tools.dict_merge(r['_source'], {'id': r['_id']}) for r in es.search(index='profireader',
         #                                                                                   doc_type=type,
         #                                                                                   body=body)['hits']['hits']], 10, 1)
 

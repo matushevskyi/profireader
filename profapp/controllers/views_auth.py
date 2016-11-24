@@ -5,7 +5,7 @@ from ..constants.SOCIAL_NETWORKS import DB_FIELDS, SOC_NET_FIELDS, \
 from flask.ext.login import current_user, login_required
 from urllib.parse import quote
 from ..models.users import User
-from utils.db_utils import db
+from tools.db_utils import db
 import re
 from .request_wrapers import check_right
 from authomatic.adapters import WerkzeugAdapter
@@ -13,10 +13,10 @@ from flask import redirect, make_response
 from flask.ext.login import login_user
 from ..constants.SOCIAL_NETWORKS import SOC_NET_NONE
 from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
-from ..utils.redirect_url import redirect_url
+from .. import utils
 from ..models.rights import AllowAll
 from ..models.portal import Portal
-from ..models.messenger import Message
+from ..models.messenger import Socket
 import sys
 import string
 #
@@ -69,7 +69,7 @@ def login_signup_endpoint():
 def signup(json_data):
     action = g.req('action', allowed=['validate', 'save'])
 
-    params = g.filter_json(json_data, 'first_name,last_name,email,password,password_confirmation')
+    params = utils.filter_json(json_data, 'first_name,last_name,email,password,password_confirmation')
     params['address_email'] = params['email']
     del params['email']
     new_user = User(**params)
@@ -78,9 +78,12 @@ def signup(json_data):
         return new_user.validate(True)
     else:
         new_user.set_password_hash()
-        new_user.generate_confirmation_token(get_after_logination_params()).save()
+        new_user.save()
         g.db.commit()
-        Message.send_greeting_message(new_user)
+        new_user.generate_confirmation_token(get_after_logination_params()).save()
+        Socket.send_greeting([new_user])
+        g.db.commit()
+
         return {}
 
 
@@ -202,7 +205,7 @@ def login_signup_soc_network(soc_network_name):
                 user.avatar_selected_preset = 'gravatar'
                 g.db.add(user)
                 user.save()
-                Message.send_greeting_message(user)
+                Socket.send_greeting([user])
 
             if user:
                 User.logout()

@@ -2,9 +2,10 @@ from .blueprints_declaration import front_bp
 from flask import render_template, request, url_for, redirect, g
 from ..models.materials import Publication, ReaderPublication, Material
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
-    PortalDivisionSettingsCompanySubportal, PortalConfig, UserPortalReader
+    PortalDivisionSettingsCompanySubportal, UserPortalReader
 from ..models.company import Company
 from ..models.users import User
+from ..models.messenger import Socket, Notification
 from ..utils.session_utils import back_to_url
 from ..utils import email_utils
 from config import Config
@@ -13,24 +14,32 @@ from ..models.rights import AllowAll
 from ..models.elastic import elasticsearch
 from collections import OrderedDict
 from .. import utils
-from utils.db_utils import db
-from flask import Flask, abort
+from tools.db_utils import db
+from functools import wraps
+from sqlalchemy.sql import expression
+from ..models.pr_base import MLStripper
+
+
+def all_tags(portal):
+    def url_search_tag_in_index(tag):
+        return url_for('front.division', tags=tag, division_name='')
+
+    return {'all': portal.get_client_side_dict(fields='tags')['tags'], 'selected_names': [],
+            'url_toggle_tag': url_search_tag_in_index}
 
 
 def get_search_text_and_division(portal, division_name):
     search_text = request.args.get('search') or ''
     print('division_name', division_name)
 
-    dvsn = g.db().query(PortalDivision).filter_by(**utils.dict_merge(
-        {'portal_id': portal.id},
-        {'portal_division_type_id': 'index'} if division_name is None else {'name': division_name})).first()
-    
-    if not dvsn:
-        abort(404)
+    dvsn = g.db().query(PortalDivision).filter_by(portal_id =  portal.id)
+
+    if division_name is not None:
+        dvsn = dvsn.filter_by(name = division_name)
 
     # TODO: OZ by OZ: 404 if no company
 
-    return search_text, dvsn
+    return search_text, dvsn.order_by(expression.asc(PortalDivision.position)).first()
 
 
 def portal_and_settings(portal):
@@ -39,7 +48,7 @@ def portal_and_settings(portal):
     newd = OrderedDict()
     subportals_by_companies_id = OrderedDict()
     for di in ret['divisions']:
-        if di['portal_division_type_id'] == 'company_subportal':
+        if di['portal_division_type_id'] == PortalDivision.TYPES['company_subportal']:
             pdset = g.db().query(PortalDivisionSettingsCompanySubportal). \
                 filter_by(portal_division_id=di['id']).first()
             com_port = g.db().query(MemberCompanyPortal).get(pdset.member_company_portal_id)
@@ -137,8 +146,7 @@ def get_urls_change_tag_page(url_tags, search_text, selected_tag_names):
 
 
 def get_search_tags_pages_search(portal, page, tags, search_text):
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name='', default=10)
+    items_per_page = 10
 
     def url_tags(tag_names):
         url_args = {}
@@ -192,12 +200,11 @@ def get_search_tags_pages_search(portal, page, tags, search_text):
                 pager={'total': pages, 'current': page,
                        'url_construct': url_page_division,
                        'neighbours': Config.PAGINATION_BUTTONS},
-                search={'text': search_text, 'url': url_for('front.search', tags = tags), 'messages': messages})
+                search={'text': search_text, 'url': url_for('front.search', tags=tags), 'messages': messages})
 
 
 def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company_publisher=None):
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=10)
+    items_per_page = 10
 
     def url_tags(tag_names):
         url_args = {'division_name': dvsn.name}
@@ -239,8 +246,7 @@ def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company
 
 
 def get_articles_tags_pages_search(portal, dvsn, page, tags, search_text, company_publisher=None):
-    items_per_page = portal.get_value_from_config(key=PortalConfig.PAGE_SIZE_PER_DIVISION,
-                                                  division_name=dvsn.name, default=10)
+    items_per_page = 10
 
     pdt = dvsn.portal_division_type_id
 
@@ -311,6 +317,7 @@ def company_page(portal, member_company_id, member_company_name, member_company_
     return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
                            portal=portal_and_settings(portal),
                            division=dvsn.get_client_side_dict(),
+                           tags=all_tags(portal),
                            membership=db(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one(),
                            url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
                            member_company=member_company.get_client_side_dict(
@@ -362,7 +369,23 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                    portal=portal_and_settings(portal),
                                    **membership_data
                                    )
+        elif dvsn.portal_division_type_id == 'company_subportal':
+            member_company_page = 'about'
 
+            member_company, dvsn = \
+                get_company_member_and_division(portal, dvsn.settings['company_id'], member_company_name)
+
+            return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
+                               portal=portal_and_settings(portal),
+                               division=dvsn.get_client_side_dict(),
+                               tags=all_tags(portal),
+                               membership=db(MemberCompanyPortal, company_id=member_company.id,
+                                             portal_id=portal.id).one(),
+                               url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
+                               member_company=member_company.get_client_side_dict(
+                                   more_fields='employments,employments.user,employments.user.avatar.url'),
+                               company_menu_selected_item=member_company_page,
+                               member_company_page=member_company_page)
         else:
             return 'unknown division.portal_division_type_id = %s' % (dvsn.portal_division_type_id,)
 
@@ -412,12 +435,12 @@ def article_details(portal, publication_id, publication_title):
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
+                           tags=all_tags(portal),
                            division=division.get_client_side_dict(),
                            article=publication.create_article(),
                            article_visibility=article_visibility,
                            articles_related=publication.get_related_articles(),
-                           tags={'all': [], 'selected_names': [],
-                                 'url_toggle_tag': url_search_tag})
+                           )
 
 
 @front_bp.route('_s/', methods=['GET'])
@@ -451,8 +474,18 @@ def add_delete_liked(json, publication_id):
 @check_right(AllowAll)
 def send_message(json, member_company_id):
     send_to = User.get(json['user_id'])
-    email_utils.send_email_from_template(
-        send_to_email=[send_to.address_email], subject='New message', template='messenger/email_send_message',
-        user_to=send_to, user_from=g.user.get_client_side_dict() if g.user else None,
-        in_company=Company.get(member_company_id), message=json['message'])
+    company = Company.get(member_company_id)
+    import html
+
+    if g.user and g.user.id:
+        phrase = 'User <a href="%(url_profile_from_user)s">%(from_user.full_name)s</a> sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
+    else:
+        phrase = 'Anonymous sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
+
+    Socket.prepare_notifications([send_to], Notification.NOTIFICATION_TYPES['CUSTOM'],
+                                 phrase + '<hr/>%(message)s',
+                                 {'company': company,
+                                  'url_company_profile': url_for('company.profile', company_id=company.id),
+                                  'message': html.escape(json['message'])})()
+
     return {}
