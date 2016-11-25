@@ -62,16 +62,15 @@
                         name: 'title', category:"searching",  width: '30%',
                         type: 'link', cellStyle:"getBackground(row)",
                         img_url: 'illustration.url',
-                        href: 'url_material_details({company_id:grid.appScope.company.id,material_id:row.entity.id})'
+                        href: "url_material_details({company_id:grid.appScope.company.id,material_id:row.entity.id})"
                     },{
                         name: 'editor.full_name', category:"searching"
                     },{
                         name: 'md_tm',enableCellEdit: true,
                         afilter: {type: 'date_range'}
                     },{
-                        name: 'portal.name', type: 'link',
-                        //TODO: OZ by OZ: fix it, data from server is constructed in wrong way. If I understand material/publication field are mixed up
-                        href: "url_publication_details({'publication_id': row.entity.id, 'publication_title': row.entity.title}, row.entity.portal.host)",
+                        name: 'portal_division.portal.name', type: 'link',
+                        href: "url_publication_details({'publication_id': row.entity.id, 'publication_title': row.entity.title}, row.entity.portal_division.portal.host)",
                         classes: 'link',
                         filter: {type:'multi_select'}
                     },{

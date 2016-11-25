@@ -68,7 +68,7 @@ class Material(Base, PRBase, PRElasticDocument):
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Company.id))
     company = relationship(Company, uselist=False)
 
-    publications = relationship('Publication', primaryjoin="Material.id==Publication.material_id")
+    publications = relationship('Publication', primaryjoin="Material.id==Publication.material_id", cascade="save-update, merge, delete")
 
     # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
     #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
@@ -108,7 +108,7 @@ class Material(Base, PRBase, PRElasticDocument):
         dict.update({'portal.name': None if len(material.publications) == 0 else '', 'level': True})
         dict.update({'actions': None if len(material.publications) == 0 else '', 'level': True})
         list = [utils.dict_merge(
-            publication.get_client_side_dict(fields='portal.name|host,status, id, portal_division_id'),
+            publication.get_client_side_dict(fields='portal_division.portal.name|host,status, id, portal_division_id'),
             {
                 #    'actions':
                 #     {'edit': PublishUnpublishInPortal(publication=publication,
@@ -127,7 +127,7 @@ class Material(Base, PRBase, PRElasticDocument):
 
         for m in db(Material, company_id=company_id).all():
             for pub in m.publications:
-                portals[pub.portal.id] = pub.portal.name
+                portals[pub.portal_division.portal.id] = pub.portal_division.portal.name
         return portals
 
     @staticmethod
@@ -184,10 +184,9 @@ class Publication(Base, PRBase, PRElasticDocument):
     __tablename__ = 'publication'
     # portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
-    portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
 
     material_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('material.id'))
-    material = relationship('Material', cascade="save-update, merge, delete")
+    material = relationship(Material, cascade="save-update, merge")
 
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
@@ -208,14 +207,15 @@ class Publication(Base, PRBase, PRElasticDocument):
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
     VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
 
-    division = relationship('PortalDivision', cascade="save-update, delete", back_populates='publications')
+    portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
+    portal_division = relationship('PortalDivision', uselist=False)
 
-    portal = relationship('Portal',
-                          secondary='portal_division',
-                          primaryjoin="Publication.portal_division_id == PortalDivision.id",
-                          secondaryjoin="PortalDivision.portal_id == Portal.id",
-                          back_populates='publications',
-                          uselist=False)
+    # portal = relationship('Portal',
+    #                       secondary='portal_division',
+    #                       primaryjoin="Publication.portal_division_id == PortalDivision.id",
+    #                       secondaryjoin="PortalDivision.portal_id == Portal.id",
+    #                       back_populates='publications',
+    #                       uselist=False)
 
     company = relationship(Company, secondary='material',
                            primaryjoin="Publication.material_id == Material.id",
@@ -235,12 +235,12 @@ class Publication(Base, PRBase, PRElasticDocument):
             'company_id': PRElasticField(analyzed=False, setter=lambda: self.material.company_id),
             'company_name': PRElasticField(setter=lambda: self.material.company_id),
 
-            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.division.portal_id),
-            'portal_name': PRElasticField(setter=lambda: self.division.portal.name),
+            'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal_division.portal_id),
+            'portal_name': PRElasticField(setter=lambda: self.portal_division.portal.name),
 
-            'division_id': PRElasticField(analyzed=False, setter=lambda: self.division.id),
-            'division_type': PRElasticField(analyzed=False, setter=lambda: self.division.id),
-            'division_name': PRElasticField(setter=lambda: self.division.name),
+            'division_id': PRElasticField(analyzed=False, setter=lambda: self.portal_division.id),
+            'division_type': PRElasticField(analyzed=False, setter=lambda: self.portal_division.portal_division_type.id),
+            'division_name': PRElasticField(setter=lambda: self.portal_division.name),
 
             'date': PRElasticField(ftype='date', setter=lambda: int(self.publishing_tm.timestamp() * 1000)),
 
@@ -276,7 +276,7 @@ class Publication(Base, PRBase, PRElasticDocument):
 
     def create_article(self):
         return utils.dict_merge(
-            self.get_client_side_dict(more_fields='division.portal_division_type_id,portal.logo.url'),
+            self.get_client_side_dict(more_fields='portal_division.portal_division_type_id,portal_division.portal.logo.url'),
             Material.get(self.material_id).get_client_side_dict(
                 fields='long|short|title|subtitle|keywords|illustration|author'),
             {'social_activity': self.social_activity_dict()},
@@ -363,7 +363,7 @@ class Publication(Base, PRBase, PRElasticDocument):
                         message='This article can read only by users which bought subscription on this portal.',
                         context='buy subscription'),
                    Publication.VISIBILITIES['CONFIDENTIAL']:
-                       lambda portal_id=self.portal.id: True if
+                       lambda portal_id=self.portal_division.portal.id: True if
                        Publication.articles_visibility_for_user(portal_id)[1] else
                        dict(redirect_url='//' + Config.MAIN_DOMAIN + '/auth/login_signup',
                             message='This article can read only employees of this company.',
@@ -373,7 +373,7 @@ class Publication(Base, PRBase, PRElasticDocument):
 
     def get_client_side_dict(self, fields='id|read_count|tags|portal_division_id|cr_tm|md_tm|status|material_id|'
                                           'visibility|publishing_tm|event_begin_tm,event_end_tm,company.id|name, '
-                                          'division.id|name|portal_id, portal.id|name|host, material',
+                                          'portal_division.id|name|portal_id, portal_division.portal.id|name|host, material',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
@@ -396,7 +396,7 @@ class Publication(Base, PRBase, PRElasticDocument):
             list_filters.append(
                 {'type': 'date_range', 'value': filters['date'], 'field': Publication.publishing_tm})
         sub_query = sub_query. \
-            join(Publication.division). \
+            join(Publication.portal_division). \
             join(PortalDivision.portal). \
             filter(Portal.id == portal_id)
         if 'title' in filters:
@@ -420,11 +420,11 @@ class Publication(Base, PRBase, PRElasticDocument):
         if not self.publishing_tm:
             ret['errors']['publishing_tm'] = 'Please select publication date'
 
-        if not self.portal_division_id and not self.division:
+        if not self.portal_division_id and not self.portal_division:
             ret['errors']['portal_division_id'] = 'Please select portal division'
         else:
             portalDivision = PortalDivision.get(
-                self.portal_division_id if self.portal_division_id else self.division.id)
+                self.portal_division_id if self.portal_division_id else self.portal_division.id)
             if portalDivision.portal_division_type_id == 'events':
                 if not self.event_begin_tm:
                     ret['errors']['event_begin_tm'] = 'Please select event start date'
@@ -460,7 +460,7 @@ class Publication(Base, PRBase, PRElasticDocument):
         return g.db().query(Publication).filter(
             and_(Publication.id != self.id,
                  Publication.portal_division_id.in_(
-                     db(PortalDivision.id).filter(PortalDivision.portal_id == self.division.portal_id))
+                     db(PortalDivision.id).filter(PortalDivision.portal_id == self.portal_division.portal_id))
                  )).order_by(func.random()).limit(count).all()
 
     def add_to_read(self):
@@ -517,7 +517,8 @@ def publication_status_changed(target, new_value, old_value, action):
     from ..models.rights import PublishUnpublishInPortal
     from ..models.messenger import Notification, Socket
 
-    portal_division = target.division if target.division else PortalDivision.get(target.portal_division_id)
+    portal_division = target.portal_division if target.portal_division else PortalDivision.get(
+        target.portal_division_id)
     portal = portal_division.portal
     material = Material.get(target.material_id)
 
@@ -526,7 +527,8 @@ def publication_status_changed(target, new_value, old_value, action):
         'portal': portal,
         'publication': target,
         'material': material,
-        'url_publication': '//' + portal.host + url_for('front.article_details', publication_id=target.id, publication_title=material.title),
+        'url_publication': '//' + portal.host + url_for('front.article_details', publication_id=target.id,
+                                                        publication_title=material.title),
         'url_portal_publications': jinja_utils.grid_url(target.id, 'portal.publications',
                                                         company_id=portal.company_owner_id)
     }
@@ -544,8 +546,8 @@ def publication_status_changed(target, new_value, old_value, action):
 
     if phrase:
         rights_phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just <a href=\"%(url_portal_publications)s\">" + \
-                 phrase + \
-                 "</a> a material named `%(material.title)s` at portal <a class=\"external_link\" target=\"blank_\" href=\"%(url_publication)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link ng-scope\"></span></a>"
+                        phrase + \
+                        "</a> a material named `%(material.title)s` at portal <a class=\"external_link\" target=\"blank_\" href=\"%(url_publication)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
         to_users = PublishUnpublishInPortal(target, portal_division, material.company).get_user_with_rights(r)
         if material.editor not in to_users:
             to_users.append(material.editor)
@@ -553,8 +555,7 @@ def publication_status_changed(target, new_value, old_value, action):
         to_users = []
         rights_phrase = None
 
-    # possible notification - 2
-    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], rights_phrase,
+    # possible notification - 3
+    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'],
+                                        rights_phrase,
                                         dict_main, except_to_user=[g.user])
-
-

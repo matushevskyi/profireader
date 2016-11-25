@@ -228,6 +228,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
         if not employee:
             return "Sorry!You are not employee in this company!"
 
+
         membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=membership_portal_id,
                                                                      company_id=company.id)
         if not membership:

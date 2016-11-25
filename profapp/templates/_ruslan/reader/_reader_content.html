@@ -56,21 +56,21 @@
                 <div class="block-item list-elements">
                     <div class="item-type article">
                         <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
-                            <a href="//{{ article.portal.host }}">
+                            <a href="//{{ article.portal_division.portal.host }}">
                                 <img class="logo-portal-news" style="height: 65px"
-                                     pr-image-url="{{ article.portal.logo.url }}"/>
+                                     pr-image-url="{{ article.portal_division.portal.logo.url }}"/>
                             </a>
                         </div>
                         <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
                             <span class="fr ml05em label label-default item-tags" ng-repeat="tag in article.tags">
-                                <a target="_blank" href="//{{ article.portal.host }}{{ tag_url({tags: tag.text}) }}">{{ tag.text }}</a>
+                                <a target="_blank" href="//{{ article.portal_division.portal.host }}{{ tag_url({tags: tag.text}) }}">{{ tag.text }}</a>
                             </span>
-                            <a target="_blank" href="//{{ article.portal.host }}/">{{article.portal.name}}</a>
+                            <a target="_blank" href="//{{ article.portal_division.portal.host }}/">{{article.portal_division.portal.name}}</a>
                             &rightarrow;
-                            <a target="_blank" href="//{{ article.portal.host }}/{{ article.division.name}}/">{{article.division.name}}</a>
+                            <a target="_blank" href="//{{ article.portal_division.portal.host }}/{{ article.portal_division.portal_division.name}}/">{{article.portal_division.portal_division.name}}</a>
                             <div class="item-publication-date">{{ moment(article.publishing_tm) }}</div>
                             <a target="_blank"
-                               href="//{{ article.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
+                               href="//{{ article.portal_division.portal.host}}/_c/{{ article.company.id}}/{{ article.company.name}}"
                                class="item-company">{{ article.company.name}}</a>
                             <span class="fr">{{ article.author}}</span>
                         </div>
@@ -79,7 +79,7 @@
 
                 </div>
                 <a target="_blank" type="link"
-                   ng-href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">
+                   ng-href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal_division.portal.host) }}">
                     <img class="list-reader-image" pr-image-url="{{ article.illustration.url }}"
                          alt="img">
                 </a>
@@ -87,7 +87,7 @@
                 <div class="item-short-content">
                     <h3 class="item-title">
                         <a target="_blank"
-                           ng-href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal.host) }}">{{
+                           ng-href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal_division.portal.host) }}">{{
                             article.title}}</a>
                     </h3>
                     <div>{{ article.short}}</div>

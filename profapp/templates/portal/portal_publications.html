@@ -71,13 +71,13 @@
                 loadGridData: $scope.loadPublications,
                 columnDefs: [
                     {
-                        name: 'publication.division.name', type: 'link', target: 'front',
-                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.publication.portal.host)'
+                        name: 'publication.portal_division.name', type: 'link', target: 'front',
+                        href: 'url_front_publication_division_host(row.entity.publication.portal_division.name, row.entity.publication.portal_division.portal.host)'
                     }
                     ,
                     {
                         name: 'publication.material.title', type: 'link', target: 'front',
-                        href: 'url_front_publication_details_host(row.entity.publication, row.entity.publication.portal.host)'
+                        href: 'url_front_publication_details_host(row.entity.publication, row.entity.publication.portal_division.portal.host)'
                     },
                     {
                         name: 'publication.status', afilter: {type: 'select'}, width: 100
@@ -116,7 +116,6 @@
     </style>
 
     <div ng-controller="article_list" ng-cloak>
-       <!-- <h2>{{ _('Publications at portal `%(data.portal.name)s` (of company `%(data.company.name)s`)')}}</h2> -->
         <h2>{{ _('Publications at portal') }}</h2>
         <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
