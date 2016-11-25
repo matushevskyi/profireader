@@ -72,7 +72,7 @@ class Socket:
     def send_greeting(to_users):
         # possible notification - 1
         return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['GREETING'],
-                                            "Welcome to profireader. You can change <a href=\"%(url_profile_to_user)s\">your profile </a> or get a look at <a href=\"%(url_tutorial)s\">tutorial</a>", dict = {'url_tutorial': url_for('tutorial.index')})()
+                                            "Welcome to profireader. You can change <a href=\"%(url_profile_to_user)s\">your profile </a> or get a look at <a href=\"%(url_tutorial)s\">tutorial</a>", dict_main = {'url_tutorial': url_for('tutorial.index')})()
 
 
 

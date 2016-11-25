@@ -69,6 +69,7 @@
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
                 loadGridData: $scope.loadPublications,
+		paginationPageSize: 1000,
                 columnDefs: [
                     {
                         name: 'publication.portal_division.name', type: 'link', target: 'front',

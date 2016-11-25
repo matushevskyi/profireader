@@ -20,6 +20,7 @@ from ..models.pr_base import PRBase, Grid
 import copy
 from .. import utils
 import re
+from sqlalchemy import desc
 from .pagination import pagination
 from config import Config
 from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipRights, RequireMembereeAtPortalsRight, \
@@ -365,7 +366,7 @@ def publications_load(json, company_id):
     portal = company.own_portal
 
     publications = db(Publication).join(PortalDivision, PortalDivision.id == Publication.portal_division_id). \
-        filter(PortalDivision.portal_id == portal.id).all()
+        filter(PortalDivision.portal_id == portal.id).order_by(desc(Publication.publishing_tm)).all()
 
     # subquery = Company.subquery_portal_articles(portal.id, json.get('filter'), json.get('sort'))
     # publications, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
