@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-basen = $(echo $1 | sed 's/.py$//g')
+basen=$(echo $1 | sed 's/.py$//g')
 
 source ../.venv/bin/activate
 

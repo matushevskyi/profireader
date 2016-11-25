@@ -37,7 +37,6 @@ def get_search_text_and_division(portal, division_name):
     if division_name is not None:
         dvsn = dvsn.filter_by(name = division_name)
 
-
     # TODO: OZ by OZ: 404 if no company
 
     return search_text, dvsn.order_by(expression.asc(PortalDivision.position)).first()
