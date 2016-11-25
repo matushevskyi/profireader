@@ -612,7 +612,8 @@ class PortalDivision(Base, PRBase):
     portal_division_type_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division_type.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
 
-    name = Column(TABLE_TYPES['short_name'], default='')
+    title = Column(TABLE_TYPES['short_name'], default='')
+    description = Column(TABLE_TYPES['string_10000'], default='')
     position = Column(TABLE_TYPES['int'])
 
     portal = relationship(Portal, uselist=False)
@@ -659,7 +660,7 @@ class PortalDivision(Base, PRBase):
     def is_active(self):
         return True
 
-    def get_client_side_dict(self, fields='id|name|portal_division_type_id|tags|settings',
+    def get_client_side_dict(self, fields='id|portal_division_type_id|tags|settings',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 

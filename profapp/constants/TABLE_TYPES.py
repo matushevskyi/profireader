@@ -144,6 +144,7 @@ TABLE_TYPES = {
     'string_200': String(200),
     'string_500': String(500),
     'string_1000': String(1000),
+    'string_1000': String(10000),
     'short_name': String(50),
     'title': String(100),
     'short_text': String(120),
