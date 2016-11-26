@@ -2,8 +2,11 @@
 <html lang="{{ g.lang }}">
 <head>
     {{ portal.advs['head_begin']|safe }}
-    <title>{% block title %}{{ _('%(portal_name)s', {'portal_name': portal.name}) }}{% endblock %}</title>
-    <meta name="description" content="{% block description %}{% endblock %}">
+
+    <title>{% block title %}{{ seo.title }}{% endblock %}</title>
+    <meta name="description" content="{% block description %}{{ seo.description }}{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}{{ seo.keywords }}{% endblock %}">
+
     {% block og -%}
     <meta property="og:site_name" content="{% block og_name %}{{ portal.name }}{% endblock %}"/>
     <meta property="og:title" content="{% block og_title %}{{ self.title()|trim }}{% endblock %}"/>

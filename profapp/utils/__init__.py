@@ -180,3 +180,7 @@ def get_client_side_list(list, **kwargs):
 
 def get_client_side_dict(list, **kwargs):
     return {x.id: x.get_client_side_dict(**kwargs) for x in list}
+
+
+def get_from_list_by_key(list, key):
+    return [x.get(key, '') for x in list]

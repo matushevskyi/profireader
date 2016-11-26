@@ -288,6 +288,13 @@ class Publication(Base, PRBase, PRElasticDocument):
     #     article.favorite = True if liked else False
     #     self.like_count += 1
 
+    def seo_dict(self):
+        return {
+            'title': self.material.title,
+            'keywords': ','.join(t.text for t in self.tags),
+            'description': self.material.short if self.material.short else self.material.subtitle
+        }
+
 
 
     def search_filter_default(self, division_id, company_id=None):

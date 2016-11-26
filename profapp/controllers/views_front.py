@@ -32,10 +32,10 @@ def get_search_text_and_division(portal, division_name):
     search_text = request.args.get('search') or ''
     print('division_name', division_name)
 
-    dvsn = g.db().query(PortalDivision).filter_by(portal_id =  portal.id)
+    dvsn = g.db().query(PortalDivision).filter_by(portal_id=portal.id)
 
     if division_name is not None:
-        dvsn = dvsn.filter_by(name = division_name)
+        dvsn = dvsn.filter_by(name=division_name)
 
     # TODO: OZ by OZ: 404 if no company
 
@@ -317,6 +317,7 @@ def company_page(portal, member_company_id, member_company_name, member_company_
     return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
                            portal=portal_and_settings(portal),
                            division=dvsn.get_client_side_dict(),
+                           seo=dvsn.seo_dict(),
                            tags=all_tags(portal),
                            membership=db(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one(),
                            url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
@@ -357,6 +358,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
             return render_template(
                 'front/' + g.portal_layout_path + 'division_articles.html',
                 division=dvsn.get_client_side_dict(),
+                seo=dvsn.seo_dict(),
                 portal=portal_and_settings(portal),
                 **articles_data)
 
@@ -367,6 +369,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
             return render_template('front/' + g.portal_layout_path + 'division_catalog.html',
                                    division=dvsn.get_client_side_dict(),
                                    portal=portal_and_settings(portal),
+                                   seo=dvsn.seo_dict(),
                                    **membership_data
                                    )
         elif dvsn.portal_division_type_id == 'company_subportal':
@@ -376,16 +379,17 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                 get_company_member_and_division(portal, dvsn.settings['company_id'], member_company_name)
 
             return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
-                               portal=portal_and_settings(portal),
-                               division=dvsn.get_client_side_dict(),
-                               tags=all_tags(portal),
-                               membership=db(MemberCompanyPortal, company_id=member_company.id,
-                                             portal_id=portal.id).one(),
-                               url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
-                               member_company=member_company.get_client_side_dict(
-                                   more_fields='employments,employments.user,employments.user.avatar.url'),
-                               company_menu_selected_item=member_company_page,
-                               member_company_page=member_company_page)
+                                   portal=portal_and_settings(portal),
+                                   division=dvsn.get_client_side_dict(),
+                                   tags=all_tags(portal),
+                                   seo=dvsn.seo_dict(),
+                                   membership=db(MemberCompanyPortal, company_id=member_company.id,
+                                                 portal_id=portal.id).one(),
+                                   url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
+                                   member_company=member_company.get_client_side_dict(
+                                       more_fields='employments,employments.user,employments.user.avatar.url'),
+                                   company_menu_selected_item=member_company_page,
+                                   member_company_page=member_company_page)
         else:
             return 'unknown division.portal_division_type_id = %s' % (dvsn.portal_division_type_id,)
 
@@ -408,6 +412,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
         return render_template('front/' + g.portal_layout_path + 'division_company.html',
                                portal=portal_and_settings(portal),
                                division=dvsn.get_client_side_dict(),
+                               seo=dvsn.seo_dict(),
                                member_company=member_company.get_client_side_dict(),
                                membership=membership,
                                url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
@@ -437,6 +442,7 @@ def article_details(portal, publication_id, publication_title):
                            portal=portal_and_settings(portal),
                            tags=all_tags(portal),
                            division=division.get_client_side_dict(),
+                           seo=publication.seo_dict(),
                            article=publication.create_article(),
                            article_visibility=article_visibility,
                            articles_related=publication.get_related_articles(),
@@ -453,6 +459,7 @@ def search(portal, page=1, tags=None):
     search_data = get_search_tags_pages_search(portal, page, tags, request.args.get('search') or '')
 
     return render_template('front/' + g.portal_layout_path + 'search.html',
+                           seo={'title': '', 'description': '', 'keywords':''},
                            portal=portal_and_settings(portal), **search_data)
 
 

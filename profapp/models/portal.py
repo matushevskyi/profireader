@@ -62,14 +62,14 @@ class Portal(Base, PRBase):
     favicon_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
     favicon_file_img = relationship(FileImg, uselist=False, foreign_keys=[favicon_file_img_id])
     favicon = FileImgDescriptor(relation_name='favicon_file_img',
-                             file_decorator=lambda p, r, f: f.attr(
-                                 name='%s_for_portal_favico_%s' % (f.name, p.id),
-                                 parent_id=p.own_company.system_folder_file_id,
-                                 root_folder_id=p.own_company.system_folder_file_id),
-                             image_size=[64, 64],
-                             min_size=[1, 1],
-                             aspect_ratio=[1, 1],
-                             no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_favicon()))
+                                file_decorator=lambda p, r, f: f.attr(
+                                    name='%s_for_portal_favico_%s' % (f.name, p.id),
+                                    parent_id=p.own_company.system_folder_file_id,
+                                    root_folder_id=p.own_company.system_folder_file_id),
+                                image_size=[64, 64],
+                                min_size=[1, 1],
+                                aspect_ratio=[1, 1],
+                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_favicon()))
 
     layout = relationship('PortalLayout')
 
@@ -239,8 +239,8 @@ class Portal(Base, PRBase):
         grouped_by_company_member = {}
 
         for inddiv, div in enumerate(self.divisions):
-            if not re.match('[^\s]{3,}', div.title):
-                utils.dict_deep_replace('pls enter valid name', errors, 'divisions', div.id, 'title')
+            if not re.match('[^\s]{3,}', div.name):
+                utils.dict_deep_replace('pls enter valid name', errors, 'divisions', div.id, 'name')
 
             # number of division of some type
             utils.dict_deep_inc(grouped_by_division_type, div.portal_division_type.id)
@@ -624,8 +624,11 @@ class PortalDivision(Base, PRBase):
     portal_division_type_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division_type.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
 
-    title = Column(TABLE_TYPES['short_name'], default='')
-    description = Column(TABLE_TYPES['string_10000'], default='')
+    name = Column(TABLE_TYPES['short_name'], default='')
+
+    html_description = Column(TABLE_TYPES['string_10000'], default='')
+    html_title = Column(TABLE_TYPES['string_1000'], default='')
+    html_keywords = Column(TABLE_TYPES['string_1000'], default='')
 
     position = Column(TABLE_TYPES['int'])
 
@@ -643,6 +646,13 @@ class PortalDivision(Base, PRBase):
 
     TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
              'catalog': 'catalog'}
+
+    def seo_dict(self):
+        return {
+            'title': self.html_title if self.html_title else self.name,
+            'keywords': self.html_keywords if self.html_keywords else ','.join(t.text for t in self.tags),
+            'description': self.html_description
+        }
 
     def notice_about_deleted_publications(self, because_of):
         from ..models.messenger import Socket, Notification
@@ -672,7 +682,8 @@ class PortalDivision(Base, PRBase):
     def is_active(self):
         return True
 
-    def get_client_side_dict(self, fields='id|portal_division_type_id|tags|settings',
+    def get_client_side_dict(self,
+                             fields='id|portal_division_type_id|tags|settings|name|html_title|html_keywords|html_description',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 

@@ -16,11 +16,18 @@
     <script type="text/ng-template" id="portal_edit_division_decription.html">
         <div>
             <div class="modal-header">
-                <h3 class="modal-title">{{ _('set division meta description') }}</h3>
+                <h3 class="modal-title">{{ _('set division html seo data') }}</h3>
             </div>
 
             <div class="modal-body">
-                <textarea class="w100 h10em" ng-model="description"></textarea>
+                <label>{{ ::_('html title') }}</label><br/>
+                <input class="w100 form-control mb2em" ng-model="seo_data.title" placeholder="{{ ::_('leave empty to use division name') }}"/>
+
+                <label>{{ ::_('html keywords') }}</label><br/>
+                <input class="w100 form-control mb2em" ng-model="seo_data.keywords" placeholder="{{ ::_('leave empty to use division tags') }}"/>
+
+                <label>{{ ::_('html description') }}</label><br/>
+                <textarea class="w100 h10em form-control" ng-model="seo_data.description" placeholder=""></textarea>
             </div>
 
             <div class="modal-footer">
@@ -45,23 +52,20 @@
             });
         });
 
-        module.controller('PortalDivisionDescriptionDialogControler', function ($scope, $uibModalInstance, description) {
+        module.controller('PortalDivisionDescriptionDialogControler', function ($scope, $uibModalInstance, seo_data) {
 
             $scope.$$translate = {{ translates('PortalDivisionDescriptionDialogControler')|safe }};
 
             {% raw %}
 
-            $scope.description = description;
-
+            $scope.seo_data = seo_data;
             $scope.set = function () {
-                $uibModalInstance.close($scope.description);
-            }
+                $uibModalInstance.close(seo_data);
+            };
 
             $scope.cancel = $uibModalInstance.dismiss;
 
-
             {% endraw %}
-
         });
 
         module.controller('portal_edit', ['$scope', '$uibModal', function ($scope, $uibModal) {
@@ -73,16 +77,22 @@
 
             $scope.url_after_save = {{ raw_url_for('company.profile')|safe }};
 
-            $scope.changeDescription = function (division) {
+            $scope.changeDescription = function (d) {
                 var modalInstance = $uibModal.open({
                     templateUrl: 'portal_edit_division_decription.html',
                     controller: 'PortalDivisionDescriptionDialogControler',
                     resolve: resolveDictForAngularController({
-                        description: division.description
+                        seo_data: {
+                            'description': d.html_description,
+                            'title': d.html_title,
+                            'keywords': d.html_keywords
+                        }
                     })
                 });
-                modalInstance.result.then(function (description) {
-                    division.description = description;
+                modalInstance.result.then(function (new_seo_data) {
+                    d.html_title = new_seo_data['title'];
+                    d.html_keywords = new_seo_data['keywords'];
+                    d.html_description = new_seo_data['description'];
                 });
             };
 
@@ -127,8 +137,10 @@
                             _.map(['index', 'news', 'events', 'catalog', 'company_subportal'], function (t) {
                                 return {
                                     'id': randomHash(), 'portal_division_type_id': t,
-                                    'description': '',
-                                    'title': $scope._('new portal division ' + t)
+                                    'html_description': '',
+                                    'html_keywords': '',
+                                    'html_title': '',
+                                    'name': $scope._('new portal division ' + t)
                                 };
                             });
 
@@ -144,7 +156,10 @@
                 $scope.data.portal.divisions.push({
                     'id': randomHash(),
                     portal_division_type_id: 'news',
-                    title: '',
+                    name: '',
+                    html_title: '',
+                    html_keywords: '',
+                    html_description: '',
                     publication_count: 0
                 });
             };
@@ -288,13 +303,16 @@
                     <div class="col-lg-10 col-md-10 col-sm-10 col-xs-10"><h4>{{ _('Portal divisions') }}</h4></div>
                 </div>
                 <div class="row">
-                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 p025em">
-                        <label class="form-control border-none pull-right">{{ ::_('Division title') }}</label>
+                    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Division name') }}</label>
                     </div>
                     <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
                         <label class="form-control border-none pull-right w15em">{{ ::_('Division type') }}</label>
                     </div>
                     <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em"></div>
+                    <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1 p025em">
+                        <label class="form-control border-none">{{ ::_('SEO data') }}</label>
+                    </div>
                     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                         <button class="pull-right btn btn-success form-control" type="button"
                                 popover-placement="left"
@@ -314,9 +332,9 @@
                                       class="fa fa-arrows-v form-control w2em border-none di"></span>
                                 <input class="form-control w15em di"
                                        ng-disabled="division['remove_this_existing_division']"
-                                       pr-validation-answer="data_validation:divisions[division.id].title"
-                                       placeholder="{{ _('Division title placeholder') }}"
-                                       ng-model="division.title">
+                                       pr-validation-answer="data_validation:divisions[division.id].name"
+                                       placeholder="{{ _('Division name placeholder') }}"
+                                       ng-model="division.name">
                             </div>
 
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
@@ -355,7 +373,7 @@
                             <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1 p025em">
                                 <button ng-disabled="division['remove_this_existing_division']"
                                         ng-click="changeDescription(division)"
-                                        class="nowrap btn">{{ ::_('Meta description') }}
+                                        class="nowrap btn">{{ ::_('Set seo data') }}
                                 </button>
                             </div>
                         </div>
