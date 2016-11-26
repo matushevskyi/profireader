@@ -45,7 +45,7 @@ class Portal(Base, PRBase):
     # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
     logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
-    logo_file_img = relationship(FileImg, uselist=False)
+    logo_file_img = relationship(FileImg, uselist=False, foreign_keys=[logo_file_img_id])
     logo = FileImgDescriptor(relation_name='logo_file_img',
                              file_decorator=lambda p, r, f: f.attr(
                                  name='%s_for_portal_logo_%s' % (f.name, p.id),
@@ -56,7 +56,20 @@ class Portal(Base, PRBase):
                              aspect_ratio=[0.25, 4.],
                              no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
 
-    favicon_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
+    # favicon_from = Column(TABLE_TYPES['string_10'], default='')
+    # favicon_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(File.id), nullable=True)
+
+    favicon_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
+    favicon_file_img = relationship(FileImg, uselist=False, foreign_keys=[favicon_file_img_id])
+    favicon = FileImgDescriptor(relation_name='favicon_file_img',
+                             file_decorator=lambda p, r, f: f.attr(
+                                 name='%s_for_portal_favico_%s' % (f.name, p.id),
+                                 parent_id=p.own_company.system_folder_file_id,
+                                 root_folder_id=p.own_company.system_folder_file_id),
+                             image_size=[64, 64],
+                             min_size=[1, 1],
+                             aspect_ratio=[1, 1],
+                             no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_favicon()))
 
     layout = relationship('PortalLayout')
 
@@ -226,8 +239,8 @@ class Portal(Base, PRBase):
         grouped_by_company_member = {}
 
         for inddiv, div in enumerate(self.divisions):
-            if not re.match('[^\s]{3,}', div.name):
-                utils.dict_deep_replace('pls enter valid name', errors, 'divisions', div.id, 'name')
+            if not re.match('[^\s]{3,}', div.title):
+                utils.dict_deep_replace('pls enter valid name', errors, 'divisions', div.id, 'title')
 
             # number of division of some type
             utils.dict_deep_inc(grouped_by_division_type, div.portal_division_type.id)
@@ -258,8 +271,7 @@ class Portal(Base, PRBase):
 
     def get_client_side_dict(self,
                              fields='id|name|host|tags, divisions.*, divisions.tags.*, layout.*, logo.url, '
-                                    'favicon_file_id, '
-                                    'company_owner_id, url_facebook',
+                                    'favicon.url, company_owner_id, url_facebook',
                              more_fields=None, get_own_or_profi_host=False, get_publications_count=False):
         if get_publications_count:
             more_fields = more_fields + ', divisions.id' if more_fields else 'divisions.id'
@@ -614,6 +626,7 @@ class PortalDivision(Base, PRBase):
 
     title = Column(TABLE_TYPES['short_name'], default='')
     description = Column(TABLE_TYPES['string_10000'], default='')
+
     position = Column(TABLE_TYPES['int'])
 
     portal = relationship(Portal, uselist=False)
@@ -630,7 +643,6 @@ class PortalDivision(Base, PRBase):
 
     TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
              'catalog': 'catalog'}
-
 
     def notice_about_deleted_publications(self, because_of):
         from ..models.messenger import Socket, Notification

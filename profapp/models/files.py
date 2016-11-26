@@ -6,7 +6,6 @@ from sqlalchemy.orm import relationship, backref
 from flask import g
 from .pr_base import PRBase, Base
 from ..controllers.errors import VideoAlreadyExistInPlaylist
-# from PIL import Image
 import json
 from config import Config
 from urllib import request as req
@@ -691,6 +690,7 @@ class FileImgDescriptor(object):
                  aspect_ratio=None, no_selection_url=None, before_set=None, after_get=None):
         self.relation_name = relation_name
         self.file_decorator = file_decorator
+        self.no_selection_url = ''
 
         if after_get is not None:
             self.after_get = after_get
@@ -722,6 +722,7 @@ class FileImgDescriptor(object):
                                  'crop': file_img.get_client_side_dict(),
                                  'provenance_file_id': file_img.provenance_image_file_id
                                  } if file_img else {'type': 'none'},
+
             'cropper': {
                 'browse': self.browse,
                 'upload': self.upload,
@@ -744,8 +745,8 @@ class FileImgDescriptor(object):
         scale_by = max(img.width / (self.image_size[0] * 10), img.height / (self.image_size[1] * 10), 1)
         if scale_by > 1:
             old_center = [l + w / 2., t + h / 2.]
-            w, h = w / scale_by, h / scale_by
-            l, t = old_center[0] - w / 2, old_center[1] - h / 2
+            w, h = w * scale_by, h * scale_by
+            l, t = old_center[0] * scale_by - w / 2, old_center[1] * scale_by - h / 2
             img = img.resize((round(w), round(h)), Image.ANTIALIAS)
 
         if self.aspect_ratio and self.aspect_ratio[0] and w / h < self.aspect_ratio[0]:
@@ -756,7 +757,8 @@ class FileImgDescriptor(object):
             l, w = l - increase_width / 2, w + increase_width
 
         l, t, w, h = round(l, 2), round(t, 2), round(w, 2), round(h, 2)
-        if l < 0 or t < 0 or h > img.height or w > img.width:
+
+        if round(l) < 0 or round(t) < 0 or round(h) > img.height or round(w) > img.width:
             raise Exception(
                 "cant fit coordinates %s, %s, %s, %s in image with size %s x %s" % (l, t, w, h, img.width, img.height))
 
@@ -823,185 +825,28 @@ class FileImgDescriptor(object):
                          [file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height]]:
             return True
 
-        fmt = provenance_img.format
+        fmt = user_img.format
 
         file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
 
-        # file_decorator = client_data['file_decorator']
+
         file_img.provenance_image_file = self.file_decorator(instance, file_img,
                                                              self.create_file_from_pillow_image(provenance_img,
                                                                                                 'provenance', fmt))
+        scale_to_image_size = min(self.image_size[0]/w, self.image_size[1]/h)
 
-        cropped_pil_img = provenance_img.crop((round(l), round(t), round(l + w), round(t + h)))
+        if scale_to_image_size < 1:
+            cropped_pil_img = provenance_img.crop((l, t, l + w, t + h)).\
+                resize((round(w*scale_to_image_size), round(h*scale_to_image_size)), Image.ANTIALIAS)
+        else:
+            cropped_pil_img = provenance_img.crop(map(round, [l, t, l + w, t + h]))
+
 
         file_img.proceeded_image_file = self.file_decorator(instance, file_img,
                                                             self.create_file_from_pillow_image(cropped_pil_img,
                                                                                                'proceeded', fmt))
 
         return True
-
-
-#
-# class FileImgProxy_:
-#     # TODO: OZ by OZ: http://stackoverflow.com/questions/38284423/access-parent-object-from-sqlalchemy-association-proxy-creator
-#     # file_decorator = None
-#     browse = True
-#     upload = True
-#     crop = True
-#     image_size = [600, 600]
-#     min_size = [60, 60]
-#     aspect_ratio = [0.1, 10]
-#     # preset_urls = {}
-#     proxy = None
-#
-#     # none = tools.fileUrl(FOLDER_AND_FILE.no_image())
-#     no_selection_url = tools.fileUrl(FOLDER_AND_FILE.no_image())
-#
-#     def __init__(self, browse=None, upload=None, crop=None, image_size=None, min_size=None,
-#                  aspect_ratio=None, preset_urls=None, no_selection_url=None):
-#         # self.file_decorator = file_decorator
-#
-#         if browse is not None:
-#             self.browse = browse
-#         if upload is not None:
-#             self.upload = upload
-#         if crop is not None:
-#             self.crop = crop
-#         if image_size is not None:
-#             self.image_size = image_size
-#         if min_size is not None:
-#             self.min_size = min_size
-#         if aspect_ratio is not None:
-#             self.aspect_ratio = aspect_ratio
-#         if preset_urls is not None:
-#             self.preset_urls = preset_urls
-#         if no_selection_url is not None:
-#             self.no_selection_url = no_selection_url
-#
-#     def proxy_getter(self, file_img: FileImg):
-#
-#         ret = {
-#             'url': tools.fileUrl(file_img.proceeded_image_file_id) if file_img else self.no_selection_url,
-#             'selected_by_user': {'type': 'provenance',
-#                                  'crop': file_img.get_client_side_dict(),
-#                                  'provenance_file_id': file_img.provenance_image_file_id
-#                                  } if file_img else {'type': 'none'},
-#             'cropper': {
-#                 'browse': self.browse,
-#                 'upload': self.upload,
-#                 'crop': self.crop,
-#                 'image_size': self.image_size,
-#                 'min_size': self.min_size,
-#                 'aspect_ratio': self.aspect_ratio,
-#                 'no_selection_url': self.no_selection_url
-#             }}
-#
-#         return ret
-#
-#     def get_correct_coordinates(self, coords_by_client, img):
-#
-#         l, t, w, h = (coords_by_client['crop_left'], coords_by_client['crop_top'],
-#                       coords_by_client['crop_width'], coords_by_client['crop_height'])
-#
-#         # resize image if it is to big
-#
-#         scale_by = max(img.width / (self.image_size[0] * 10), img.height / (self.image_size[1] * 10), 1)
-#         if scale_by > 1:
-#             old_center = [l + w / 2., t + h / 2.]
-#             w, h = w / scale_by, h / scale_by
-#             l, t = old_center[0] - w / 2, old_center[1] - h / 2
-#             img = img.resize((round(w), round(h)), Image.ANTIALIAS)
-#
-#         if self.aspect_ratio and self.aspect_ratio[0] and w / h < self.aspect_ratio[0]:
-#             increase_height = (w / self.aspect_ratio[0] - h)
-#             t, h = t - increase_height / 2, h + increase_height
-#         elif self.aspect_ratio and self.aspect_ratio[1] and w / h > self.aspect_ratio[1]:
-#             increase_width = (h * self.aspect_ratio[1] - w)
-#             l, w = l - increase_width / 2, w + increase_width
-#
-#         if l < 0 or t < 0 or t + h > img.height or l + w > img.width:
-#             raise Exception("cant fit coordinates in image %s, %s, %s, %s" % (l, t, w, h))
-#
-#         if self.min_size and (w < self.min_size[0] or h < self.min_size[1]):
-#             raise Exception("cant fit coordinates in min image %s, %s:  %s" % (w, h, self.min_size))
-#
-#         return img, l, t, w, h
-#
-#     @staticmethod
-#     def create_file_from_pillow_image(pillow_img, name):
-#         bytes_file = BytesIO()
-#         fmt = (pillow_img.format if pillow_img.format else 'JPEG')
-#         pillow_img.save(bytes_file, fmt)
-#         file = File(size=sys.getsizeof(bytes_file.getvalue()),
-#                     mime='image/' + fmt.lower(),
-#                     name=name)
-#
-#         FileContent(content=bytes_file.getvalue(), file=file)
-#         return file
-#
-#     def proxy_setter(self, file_img: FileImg, client_data):
-#         import uuid
-#
-#         sel_by_user = client_data['selected_by_user']
-#         sel_by_user_type = sel_by_user['type']
-#         sel_by_user_crop = sel_by_user['crop']
-#
-#         if sel_by_user_type == 'none' or sel_by_user_type == 'preset':
-#             from sqlalchemy import inspect
-#             if file_img and inspect(file_img).persistent:
-#                 file_img.delete()
-#             return False
-#
-#         if sel_by_user_type == 'provenance':
-#             user_img = Image.open(BytesIO(file_img.provenance_image_file.file_content.content))
-#         elif sel_by_user_type == 'browse':
-#             user_img = Image.open(BytesIO(File.get(sel_by_user['image_file_id']).file_content.content))
-#         elif sel_by_user_type == 'upload':
-#             user_img = Image.open(
-#                 BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', sel_by_user['file']['content']))))
-#         else:
-#             raise Exception('Unknown selected by user image source type `%s`', sel_by_user_type)
-#
-#         provenance_img, l, t, w, h = self.get_correct_coordinates(sel_by_user_crop, user_img)
-#
-#         file_img.origin_left, file_img.origin_top, file_img.origin_zoom = \
-#             sel_by_user_crop['origin_left'], sel_by_user_crop['origin_top'], sel_by_user_crop['origin_zoom']
-#
-#         if sel_by_user_type == 'provenance' and \
-#                         provenance_img == user_img and \
-#                         [round(c) for c in [l, t, w, h]] == \
-#                         [round(c) for c in
-#                          [file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height]]:
-#             return True
-#
-#         file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
-#
-#         file_decorator = client_data['file_decorator']
-#         file_img.provenance_image_file = file_decorator(self.create_file_from_pillow_image(provenance_img,
-#                                                                                                 'provenance')).save()
-#
-#         cropped_pil_img = provenance_img.crop((round(l), round(t), round(l + w), round(t + h)))
-#
-#         file_img.proceeded_image_file = file_decorator(self.create_file_from_pillow_image(cropped_pil_img,
-#                                                                                                'proceeded')).save()
-#
-#         return True
-#
-#     def get_factory(self, *args, **kwargs):
-#         return self.proxy_getter, self.proxy_setter
-#
-#     def creator(self, client_data):
-#         ret = FileImg()
-#         return ret if self.proxy_setter(ret, client_data) else None
-#
-#     def get_proxy(self, target_collection_name):
-#         self.proxy = association_proxy(target_collection_name, 'aaa', creator=self.creator,
-#                                  getset_factory=self.get_factory)
-#         return self.proxy
-
-
-# TODO: OZ by OZ: remove me
-
 
 class CropCoordinates:
     left = 0
@@ -1021,138 +866,6 @@ class CropCoordinates:
             self.top = top
         if height is not None:
             self.height = height
-
-
-class FileImgCropProperties:
-    from ..constants.RECORD_IDS import FOLDER_AND_FILE
-    from sqlalchemy import orm
-
-    field = None
-    relationship = None
-    browse = True
-    upload = True
-    crop = True
-    image_size = [600, 600]
-    min_size = [60, 60]
-    aspect_ratio = [0.1, 10]
-    preset_urls = {}
-    none = utils.fileUrl(FOLDER_AND_FILE.no_image())
-    no_selection_url = utils.fileUrl(FOLDER_AND_FILE.no_image())
-
-    def get_client_side_dict(self):
-        ret = {
-            'upload': self.upload,
-            'browse': self.browse,
-            'none': self.none,
-            'cropper': {'aspect_ratio': self.aspect_ratio,
-                        'min_size': self.min_size,
-                        'preset_urls': self.preset_urls,
-                        'no_selection_url': self.no_selection_url,
-                        'selected_by_user': {'type': 'none'}
-                        } if self.crop else None
-        }
-
-        if self.relationship:
-            ret['selected_by_user'] = {'type': 'provenance'}
-            if ret['cropper']:
-                ret['selected_by_user']['crop_coordinates'] = self.get_crop_coordinates()
-
-        return ret
-
-    def get_crop_coordinates(self):
-        print(self.relationship)
-        if self.relationship:
-            return CropCoordinates(left=self.relationship.crop_left, top=self.relationship.crop_top,
-                                   width=self.relationship.crop_width, height=self.relationship.crop_height)
-        else:
-            return None
-
-    # @staticmethod
-    # def get_correct_coordinates(self, left, top, width, height):
-    #     area_aspect = width / height
-    #
-    #     if self.aspect_ratio and self.aspect_ratio[0] and area_aspect < self.aspect_ratio[0]:
-    #         change_height = (width / self.aspect_ratio[0] - height)
-    #         return CropCoordinates(left, top - change_height / 2, width, height + change_height)
-    #     elif self.aspect_ratio and self.aspect_ratio[1] and area_aspect > self.aspect_ratio[1]:
-    #         change_width = (height * self.aspect_ratio[1] - width)
-    #         return CropCoordinates(left - change_width / 2, top, width + change_width, height)
-    #     else:
-    #         return CropCoordinates(left, top, width, height)
-
-    def crop_with_coordinates(self, coordinates, params):
-        try:
-            image_pil = Image.open(
-                BytesIO(self.file_content.content))
-            left = min(max(0, coordinates['x']), image_pil.width)
-            top = min(max(0, coordinates['y']), image_pil.height)
-            right = max(min(coordinates['x'] + coordinates['width'], image_pil.width), coordinates['x'])
-            bottom = max(min(coordinates['y'] + coordinates['height'], image_pil.height), coordinates['y'])
-
-            left, top, right, bottom = File.get_correct_coordinates(left, top, right, bottom, params)
-
-            wider = (right - left) / (bottom - top) / (params['image_size'][0] / params['image_size'][1])
-            if wider > 1:
-                newwidth = params['image_size'][0]
-                newheight = params['image_size'][1] / wider
-            else:
-                newheight = params['image_size'][1]
-                newwidth = params['image_size'][0] * wider
-            cropped = image_pil.crop((int(left), int(top), int(right), int(bottom)))
-            cropped = cropped.resize((int(newwidth), int(newheight)))
-            bytes_file = BytesIO()
-            cropped.save(bytes_file, self.mime.split('/')[-1].upper())
-            return bytes_file, [left, top, right, bottom, newwidth, newheight]
-        except ValueError:
-            return False
-
-    # def set_image_cropped_file(self, file_img: FileImg, client_data: dict, folder_id):
-    #
-    #     selected_by_user = client_data['selected_by_user']
-    #     selected_by_user_type = selected_by_user['type']
-    #
-    #     if selected_by_user_type == 'none':
-    #         file_img.delete()
-    #
-    #     coordinates = File.get_correct_coordinates(client_data['x'], client_data['y'],
-    #                                                client_data['width'], client_data['height'], self)
-    #
-    #     if selected_by_user_type == 'provenance':
-    #         # user didn't change anything
-    #         if [round(c) for c in coordinates] == [round(c) for c in self.get_crop_coordinates()]:
-    #             return self
-    #         provenance_img = Image.open(BytesIO(self.provenance_image_file.file_content.content))
-    #         original_img = None
-    #     elif selected_by_user_type == 'browse':
-    #         original_img = Image.open(BytesIO(File.get(selected_by_user['image_file_id']).file_content.content))
-    #     elif selected_by_user_type == 'upload':
-    #         original_img = Image.open(
-    #             BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', selected_by_user['file']['content']))))
-    #     else:
-    #         raise Exception('Unknown selected by user image source type `%s`', selected_by_user_type)
-    #
-    #     if original_img:
-    #         # provenance file sholdn't be too large
-    #         provenance_size = self.get_provenance_size(original_img.width, original_img.height, self)
-    #         provenance_img = self.createCropedAndScaledImageInFile(original_img,
-    #                                                                CropCoordinates(width=provenance_size[0],
-    #                                                                                height=provenance_size[1]))
-    #
-    #         self.provenance_image_file = self.createFileFromPillowImage(provenance_img)
-    #
-    #     self.proceeded_image_file = \
-    #         self.createFileFromPillowImage(self.createCropedAndScaledImageInFile(provenance_img, coordinates))
-    #     return self
-
-    def __init__(self, field, relationship, **kwargs):
-        print((field, relationship))
-        self.field = field
-        self.relationship = relationship
-        for k, v in kwargs.items():
-            if hasattr(self, k):
-                setattr(self, k, v)
-            else:
-                raise ValueError("Unknown attribute `%s` in CropFileProperties" % (k,))
 
 
 class YoutubeApi(GoogleAuthorize):

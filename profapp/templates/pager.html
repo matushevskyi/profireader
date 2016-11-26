@@ -9,52 +9,62 @@
 
 <script type="text/ng-template" id="pr-crop-buttons.html">
     {% raw %}
-    <div class="btn-group">
+    <div class="pr tar">
+        <div class="btn-group">
         <span ng-if="zoomable" ng-disabled="!zoom_by(1.1, true)" ng-click="zoom_by(1.1)" class="btn
         btn-primary"
               type="button" title="Zoom In">
                   <span class="docs-tooltip" data-toggle="tooltip"><span
-                          class="glyphicon glyphicon-zoom-in"></span></span>
+                          class="fa fa-search-plus"></span></span>
         </span>
 
-        <span ng-if="zoomable" ng-disabled="!zoom_by(0.9, true)" ng-click="zoom_by(0.9)" class="btn
+            <span ng-if="zoomable" ng-disabled="!zoom_by(0.9, true)" ng-click="zoom_by(0.9)" class="btn
         btn-primary"
-              type="button"
-              title="Zoom Out">
-                 <span class="glyphicon glyphicon-zoom-out"></span>
+                  type="button"
+                  title="Zoom Out">
+                 <span class="fa fa-search-minus"></span>
         </span>
 
-        <span ng-if="browsable" ng-click="chooseImage(true)" class="btn btn-primary docs-tooltip"
-              ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'browse'}"
-              title="Choose image"><span class="glyphicon glyphicon-folder-open"></span></span>
+            <span ng-disabled="!select_all(true)" ng-click="select_all()" class="btn btn-primary"
+                  type="button"
+                  title="Select all">
+                 <span class="fa fa-arrows-alt"></span>
+        </span>
+
+            <span ng-if="browsable" ng-click="chooseImage(true)" class="btn btn-danger"
+                  ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'browse'}"
+                  title="Choose image"><span class="fa fa-folder-open-o"></span></span>
 
 
-        <label ng-if="uploadable" class="btn btn-primary btn-upload"
-               ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'upload'}"
-               title="Upload image file">
-            <input pr-file-change="fileUploaded" type="file" class="sr-only pr-cropper-input-image" name="file"
-                   accept="image/*">
-            <span class="glyphicon glyphicon-upload"></span>
-        </label>
-
-        <span ng-repeat="(preset_id, preset_url) in preset_urls" class="btn btn-primary" type="button"
-              ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'preset' &&
+            <label ng-if="uploadable" class="btn btn-danger"
+                   ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'upload'}"
+                   title="Upload image file">
+                <input pr-file-change="fileUploaded" type="file" class="sr-only pr-cropper-input-image" name="file"
+                       accept="image/*">
+                <span class="fa fa-upload"></span>
+            </label>
+            <span ng-repeat="(preset_id, preset_url) in preset_urls" class="btn btn-danger" type="button"
+                  ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'preset' &&
               prCrop['selected_by_user']['preset_id'] == preset_id}"
-              ng-click="selectPresetUrl(preset_id)">
-                <span title="{{ url_class_name }}" class="glyphicon {{ preset_button_classes[preset_id] }}"></span>
+                  ng-click="selectPresetUrl(preset_id)">
+                <span title="{{ url_class_name }}" class="fa {{ preset_button_classes[preset_id] }}"></span>
         </span>
 
-        <span ng-if="noneurl" class="btn btn-primary" type="button"
-              ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'none'}" ng-click="selectNone()">
-                <span title="none" class="glyphicon glyphicon-remove-circle"></span>
+            <span ng-if="noneurl" class="btn btn-danger" type="button"
+                  ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'none'}" ng-click="selectNone()">
+                <span title="none" class="fa fa-times-circle-o"></span>
         </span>
 
-        <span ng-if="resetable"
-              ng-click="resetModel()" class="btn btn-primary" title="Reset image"><span
-                class="glyphicon glyphicon-repeat"></span></span>
+            <span ng-if="resetable"
+                  ng-click="resetModel()" class="btn btn-warning" title="Reset image"><span
+                    class="fa fa-refresh"></span></span>
 
-        <input type="hidden" ng-model="data.article.image_file_id">
+            {% endraw %}
+            {#            TODO OZ by OZ: we need that?#}
+            {#            <input type="hidden" ng-model="data.article.image_file_id">#}
+            {% raw %}
 
+        </div>
     </div>
 
     {% endraw %}

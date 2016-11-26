@@ -23,8 +23,10 @@ import re
 from sqlalchemy import desc
 from .pagination import pagination
 from config import Config
+import base64
 from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipRights, RequireMembereeAtPortalsRight, \
     PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive
+from PIL import Image
 
 
 @portal_bp.route('/portal/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
@@ -62,7 +64,8 @@ def profile_load(json, create_or_update, company_id):
             'division_types': utils.get_client_side_dict(division_types)
         },
         'portal': portal.get_client_side_dict(
-            fields='name,host,logo,url_facebook,url_google,url_tweeter,url_linkedin,portal_layout_id,divisions,divisions.cr_tm,lang,host,own_company,company_memberships.company',
+            fields='name,host, logo, favicon, lang, url_facebook, url_google, url_tweeter, url_linkedin,'
+                   'portal_layout_id,divisions,divisions.description|cr_tm|title,own_company,company_memberships.company',
             get_own_or_profi_host=True, get_publications_count=True)
     }
 
@@ -96,7 +99,8 @@ def profile_load(json, create_or_update, company_id):
             else:
                 ndi.portal = portal
                 ndi.position = division_position
-                ndi.name = jd['name']
+                ndi.title = jd['title']
+                ndi.description = jd['description']
                 if ndi in portal.divisions:
                     if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
                         changed_division_types[ndi.id] = ndi.portal_division_type.id
@@ -110,6 +114,27 @@ def profile_load(json, create_or_update, company_id):
                 ndi.settings = jd.get('settings', {})
 
                 division_position += 1
+
+        # from PIL import Image
+        # from io import BytesIO
+        # scaled_image = False
+        # if jp['favicon_from'] == 'upload':
+        #     file = jp.get('favico_uploaded_file', {'content': None})
+        #     if file and file['content']:
+        #         user_img = Image.open(BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', file['content']))))
+        #         w, h = user_img.size  # Get dimensions
+        #         scaled_image = user_img.crop(
+        #             (0, (h - w) / 2, w, h - (h - w) / 2) if w < h else ((w - h) / 2, 0, w - (w - h) / 2, h))
+        #         scaled_image.thumbnail((64, 64), Image.ANTIALIAS)
+
+        # from io import BytesIO
+        # if 'favicon' in jp:
+        #     favico_img = Image.open(BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', jp['favicon']['content']))))
+        # else:
+        #     favico_img = None
+
+
+
         if action == 'validate':
             ret = portal.validate(create_or_update == 'create')
             if len(unpublish_warning.keys()):
@@ -117,6 +142,8 @@ def profile_load(json, create_or_update, company_id):
                     ret['warnings']['divisions'] = {}
                 ret['warnings']['divisions'] = utils.dict_merge_recursive(ret['warnings']['divisions'],
                                                                           unpublish_warning)
+            # if favico_img and favico_img.size[0] != favico_img.size[1]:
+            #     ret['warnings']['favicon'] = 'Please use square image'
             g.db.expunge_all()
             return ret
         else:
@@ -124,6 +151,7 @@ def profile_load(json, create_or_update, company_id):
                 if not nd.cr_tm:
                     nd.id = None
             portal.logo = jp['logo']
+            portal.favicon = jp['favicon']
             for del_div in deleted_divisions:
                 del_div.notice_about_deleted_publications('division deleted')
 
@@ -131,7 +159,6 @@ def profile_load(json, create_or_update, company_id):
                 if div.id in changed_division_types:
                     div.notice_about_deleted_publications('division type changed')
                     div.publications = []
-
 
             portal.save()
             g.db.commit()
@@ -430,13 +457,12 @@ def tags_load(json, company_id):
 def translations(company_id):
     company = Company.get(company_id)
     portal = company.own_portal
-    return render_template('portal/translations.html', portal = portal)
+    return render_template('portal/translations.html', portal=portal)
 
 
 @portal_bp.route('/<string:company_id>/translations/', methods=['OK'])
 @check_right(UserIsActive)
 def translations_load(json, company_id):
-
     company = Company.get(company_id)
     portal = company.own_portal
     subquery = TranslateTemplate.subquery_search({'portal.name': portal.name}, json.get('sort'), json.get('editItem'))

@@ -139,6 +139,7 @@ TABLE_TYPES = {
     'email': String(100),
     'name': String(200),
     'subtitle': String(1000),
+    'string_10': String(10),
     'string_30': String(30),
     'string_100': String(100),
     'string_200': String(200),

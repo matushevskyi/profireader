@@ -16,6 +16,10 @@ class FOLDER_AND_FILE:
     def no_user_avatar():
         return '00000000-0000-4001-3b0f-f75d5f3942fd'
 
+    @staticmethod
+    def no_favicon():
+        return '00000000-0000-4001-9158-37b8a28c9a26'
+
 class SYSTEM_USERS:
 
     @staticmethod
