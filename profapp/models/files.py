@@ -735,7 +735,7 @@ class FileImgDescriptor(object):
 
         return self.after_get(instance, file_img, ret) if self.after_get else ret
 
-    def get_correct_coordinates(self, coords_by_client, img):
+    def get_correct_coordinates_and_provenance_image(self, coords_by_client, img):
 
         l, t, w, h = (coords_by_client['crop_left'], coords_by_client['crop_top'],
                       coords_by_client['crop_width'], coords_by_client['crop_height'])
@@ -745,9 +745,9 @@ class FileImgDescriptor(object):
         scale_by = max(img.width / (self.image_size[0] * 10), img.height / (self.image_size[1] * 10), 1)
         if scale_by > 1:
             old_center = [l + w / 2., t + h / 2.]
-            w, h = w * scale_by, h * scale_by
-            l, t = old_center[0] * scale_by - w / 2, old_center[1] * scale_by - h / 2
-            img = img.resize((round(w), round(h)), Image.ANTIALIAS)
+            w, h = w / scale_by, h / scale_by
+            l, t = old_center[0] / scale_by - w / 2, old_center[1] / scale_by - h / 2
+            img = img.resize((round(img.width / scale_by), round(img.height / scale_by)), Image.ANTIALIAS)
 
         if self.aspect_ratio and self.aspect_ratio[0] and w / h < self.aspect_ratio[0]:
             increase_height = (w / self.aspect_ratio[0] - h)
@@ -807,7 +807,7 @@ class FileImgDescriptor(object):
         sel_by_user_crop = sel_by_user['crop'] if 'crop' in sel_by_user and sel_by_user['crop'] else \
             {'crop_left': 0, 'crop_top': 0, 'crop_width': user_img.width, 'crop_height': user_img.height}
 
-        provenance_img, l, t, w, h = self.get_correct_coordinates(sel_by_user_crop, user_img)
+        provenance_img, l, t, w, h = self.get_correct_coordinates_and_provenance_image(sel_by_user_crop, user_img)
 
         if not file_img:
             setattr(instance, self.relation_name, FileImg())
@@ -829,24 +829,23 @@ class FileImgDescriptor(object):
 
         file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
 
-
         file_img.provenance_image_file = self.file_decorator(instance, file_img,
                                                              self.create_file_from_pillow_image(provenance_img,
                                                                                                 'provenance', fmt))
-        scale_to_image_size = min(self.image_size[0]/w, self.image_size[1]/h)
+        scale_to_image_size = min(self.image_size[0] / w, self.image_size[1] / h)
 
         if scale_to_image_size < 1:
-            cropped_pil_img = provenance_img.crop((l, t, l + w, t + h)).\
-                resize((round(w*scale_to_image_size), round(h*scale_to_image_size)), Image.ANTIALIAS)
+            cropped_pil_img = provenance_img.crop((l, t, l + w, t + h)). \
+                resize((round(w * scale_to_image_size), round(h * scale_to_image_size)), Image.ANTIALIAS)
         else:
             cropped_pil_img = provenance_img.crop(map(round, [l, t, l + w, t + h]))
-
 
         file_img.proceeded_image_file = self.file_decorator(instance, file_img,
                                                             self.create_file_from_pillow_image(cropped_pil_img,
                                                                                                'proceeded', fmt))
 
         return True
+
 
 class CropCoordinates:
     left = 0
