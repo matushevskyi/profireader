@@ -1,5 +1,5 @@
 from .blueprints_declaration import front_bp
-from flask import render_template, request, url_for, redirect, g
+from flask import render_template, request, url_for, redirect, g, current_app
 from ..models.materials import Publication, ReaderPublication, Material
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal, UserPortalReader
@@ -528,3 +528,10 @@ def sitemap(portal):
                                          'lastmod': p.md_tm
                                      } for p in portal.publications if p.status == Publication.STATUSES['PUBLISHED']]
                            )
+
+
+def error_404():
+    return render_template('front/' + g.portal_layout_path + '404.html',
+                           seo={'title': '', 'description': '', 'keywords': ''},
+                           tags=all_tags(g.portal),
+                           portal=portal_and_settings(g.portal))

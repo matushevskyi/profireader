@@ -28,9 +28,11 @@
                 window.location.href = 'http://' + host;
             };
 
+            {% if company.id %}
             $scope.launch_portal = function (host) {
                 window.location.href = '{{ url_for('portal.profile', create_or_update = 'create', company_id = company.id) | safe }}';
             };
+            {% endif %}
 
             $scope.edit = function () {
                 $scope.editing = $scope.can_edit_company;

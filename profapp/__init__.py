@@ -163,7 +163,6 @@ def setup_authomatic(app):
 
 
 def load_user(apptype):
-
     g.user = current_user if current_user.is_authenticated() else None
     if current_user and current_user.is_authenticated():
         current_user.ping()
@@ -327,6 +326,13 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
         from profapp.controllers.blueprints_register import register_front as register_blueprints_front
         register_blueprints_front(app)
         update_jinja_engine(app)
+
+        @app.errorhandler(404)
+        def page_not_found(e):
+
+            from flask import Flask, render_template
+            from profapp.controllers.views_front import error_404
+            return error_404()
 
     elif apptype == 'static':
         from profapp.controllers.blueprints_register import register_static as register_blueprints_static

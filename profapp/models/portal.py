@@ -67,7 +67,7 @@ class Portal(Base, PRBase):
                                     parent_id=p.own_company.system_folder_file_id,
                                     root_folder_id=p.own_company.system_folder_file_id),
                                 image_size=[64, 64],
-                                min_size=[1, 1],
+                                min_size=[16, 16],
                                 aspect_ratio=[1, 1],
                                 no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_favicon()))
 
