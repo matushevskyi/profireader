@@ -11,7 +11,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import event
 from ..controllers import errors
 from tools.db_utils import db
-from html.parser import HTMLParser
 from ..constants.SEARCH import RELEVANCE
 from config import Config
 import collections
@@ -327,28 +326,6 @@ class Search(Base):
                 line=line_, assert_message=e.args, file=filename_)
             raise errors.BadDataProvided({'message': message})
 
-
-class MLStripper(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        # TODO OZ BY VK : WHY WE ARE USING reset() method?
-        # self.reset()
-        self.strict = False
-        self.convert_charrefs = True
-        self.fed = []
-
-    def handle_data(self, d):
-        self.fed.append(d)
-
-    def get_data(self):
-        return ''.join(self.fed)
-
-    def strip_tags(self, html):
-        self.feed(html)
-        data = self.get_data()
-        if data is '':
-            data = html
-        return data
 
 
 class Grid:
@@ -730,7 +707,7 @@ class PRBase:
 
     @staticmethod
     def strip_tags(text):
-        return MLStripper().strip_tags(text)
+        return utils.strip_tags(text)
 
     @staticmethod
     def add_to_search(mapper=None, connection=None, target=None):
@@ -739,7 +716,7 @@ class PRBase:
             target_fields = ','.join(target.search_fields.keys())
             target_dict = target.get_client_side_dict(fields=target_fields + ',id')
             options = {'relevance': lambda field_name: getattr(RELEVANCE, field_name),
-                       'processing': lambda text: MLStripper().strip_tags(text),
+                       'processing': lambda text: utils.strip_tags(text),
                        'index': lambda target_id: target_id}
             default_time = datetime.datetime.now()
             time = default_time

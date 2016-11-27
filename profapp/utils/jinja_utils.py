@@ -6,7 +6,6 @@ from ..models.translate import TranslateTemplate
 import re
 import json
 from ..models.tools import HtmlHelper
-from ..models.pr_base import MLStripper
 from .. import utils
 from .. import Config
 from config import secret_data
@@ -67,7 +66,7 @@ def translates(template):
     for ph in phrases:
         tim = ph.ac_tm.timestamp() if ph.ac_tm else ''
         html_or_text = getattr(ph, g.lang)
-        html_or_text = MLStripper().strip_tags(html_or_text) if ph.allow_html == '' else html_or_text
+        html_or_text = utils.strip_tags(html_or_text) if ph.allow_html == '' else html_or_text
         ret[ph.name] = {'lang': html_or_text, 'time': tim, 'allow_html': ph.allow_html}
     return json.dumps(ret)
 
@@ -111,7 +110,7 @@ def config_variables():
 
 @jinja2.contextfunction
 def translate_phrase(context, phrase, dictionary=None):
-    return MLStripper().strip_tags(translate_phrase_or_html(context, phrase, dictionary, ''))
+    return utils.strip_tags(translate_phrase_or_html(context, phrase, dictionary, ''))
 
 
 @jinja2.contextfunction
@@ -165,6 +164,16 @@ def nl2br(value):
     result = Markup(result)
     return result
 
+@jinja2.contextfunction
+def nl2space(value):
+    # _spaces = re.compile(r'(?:\r\n|\r|\n){2,}')
+    return Markup(value.replace('\n', ' '))
+
+@jinja2.contextfunction
+def strip_tags(value):
+    # _spaces = re.compile(r'(?:\r\n|\r|\n){2,}')
+    return Markup(utils.strip_tags(value))
+
 
 @jinja2.contextfunction
 def highlighted(val_dict_or_obj, key):
@@ -206,6 +215,8 @@ def update_jinja_engine(app):
     app.jinja_env.globals.update(
         _URL_JOIN=lambda: '//' + MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + g.portal_id if g.portal_id else None)
     app.jinja_env.filters['nl2br'] = nl2br
+    app.jinja_env.filters['nl2space'] = nl2space
+    app.jinja_env.filters['strip_tags'] = strip_tags
     app.jinja_env.filters['highlighted'] = highlighted
     app.jinja_env.filters['timestamp'] = timestamp
     app.jinja_env.filters['date'] = date

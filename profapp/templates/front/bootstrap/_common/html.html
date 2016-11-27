@@ -4,16 +4,16 @@
     {{ portal.advs['head_begin']|safe }}
 
     <title>{% block title %}{{ seo.title }}{% endblock %}</title>
-    <meta name="description" content="{% block description %}{{ seo.description }}{% endblock %}">
-    <meta name="keywords" content="{% block keywords %}{{ seo.keywords }}{% endblock %}">
+    <meta name="description" content="{% block description %}{{ seo.description|strip_tags|trim }}{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}{{ seo.keywords|strip_tags|trim }}{% endblock %}">
 
     {% block og -%}
-    <meta property="og:site_name" content="{% block og_name %}{{ portal.name }}{% endblock %}"/>
-    <meta property="og:title" content="{% block og_title %}{{ seo.title|trim }}{% endblock %}"/>
-    <meta property="og:description" content="{% block og_description %}{{ seo.description|trim }}{% endblock %}"/>
+    <meta property="og:site_name" content="{% block og_name %}{{ portal.name|strip_tags|trim }}{% endblock %}"/>
+    <meta property="og:title" content="{% block og_title %}{{ seo.title|strip_tags|trim }}{% endblock %}"/>
+    <meta property="og:description" content="{% block og_description %}{{ seo.description|strip_tags|trim }}{% endblock %}"/>
     <meta property="og:image:width" content="300"/>
     <meta property="og:image:height" content="300"/>
-    <meta property="og:image" content="http:{% block og_img_url %}{{ seo.image_url if seo.image_url else portal.logo.url }}{% endblock %}"/>
+    <meta property="og:image" content="{{ g.protocol }}{% block og_img_url %}{{ seo.image_url if seo.image_url else portal.logo.url }}{% endblock %}"/>
     {%- endblock %}
 
     {% block head %}{% include 'block_head.html' %}{% endblock head %}

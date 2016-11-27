@@ -192,6 +192,7 @@ def load_user(apptype):
     g.portal = None
     g.portal_id = None
     g.portal_layout_path = ''
+    g.protocol = 'http:'
 
     g.debug = current_app.debug
     g.testing = current_app.testing

@@ -17,7 +17,6 @@ from .. import utils
 from tools.db_utils import db
 from functools import wraps
 from sqlalchemy.sql import expression
-from ..models.pr_base import MLStripper
 
 
 def all_tags(portal):

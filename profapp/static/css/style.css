@@ -122,8 +122,9 @@ body {
   padding: 15px;
 }
 .menu-company img.menu-company-logo {
-  height: 41px;
-  margin-right: 5px;
+  height: 2.7em;
+  width: 10em;
+  margin: 2px 5px;
 }
 .menu-company a {
   display: inline;

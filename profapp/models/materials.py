@@ -6,7 +6,7 @@ from ..models.portal import PortalDivision, Portal
 from ..models.users import User
 from ..models.files import File
 from ..models.tag import Tag, TagPortalDivision, TagPublication
-from .pr_base import PRBase, Base, MLStripper, Grid
+from .pr_base import PRBase, Base, Grid
 from tools.db_utils import db
 from flask import g, session, app, current_app, url_for
 from sqlalchemy.sql import or_, and_, expression

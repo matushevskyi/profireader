@@ -5,7 +5,7 @@ from ..models.users import User
 from ..models.files import File
 from ..models.translate import TranslateTemplate
 from ..models.tag import Tag, TagPortalDivision, TagPublication
-from .pr_base import PRBase, Base, MLStripper, Grid
+from .pr_base import PRBase, Base, Grid
 from tools.db_utils import db
 from flask import g, session, app, current_app, url_for
 from sqlalchemy.sql import or_, and_
@@ -270,4 +270,4 @@ class Notification(Base, PRBase):
 
 @event.listens_for(Notification.content, "set")
 def set_notification_content(target, value, oldvalue, initiator):
-    target.content_stripped = MLStripper().strip_tags(value)
+    target.content_stripped = utils.strip_tags(value)

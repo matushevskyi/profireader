@@ -1,7 +1,7 @@
 import smtplib
 from email.mime.text import MIMEText
 from config import Config
-
+from profapp import utils
 
 # def send_async_email(app, msg):
 #     with app.app_context():
@@ -43,7 +43,7 @@ def send_email_from_template(send_to_email, subject=None, template=None, diction
                              language=None):
     from flask import current_app, render_template, g
     from profapp.models.translate import TranslateTemplate
-    from profapp.models.pr_base import MLStripper
+
 
     language = language if language else 'en'
     # (g.user.lang if g and g.user else 'en')
@@ -57,5 +57,5 @@ def send_email_from_template(send_to_email, subject=None, template=None, diction
     fromname = TranslateTemplate.translate_and_substitute(template=template, language=language, dictionary=dictionary,
                                                           phrase=fromname) if fromname else None
 
-    return send_email(subject=subj, html=html, text=MLStripper().strip_tags(html), send_to=send_to_email,
+    return send_email(subject=subj, html=html, text=utils.strip_tags(html), send_to=send_to_email,
                       FromName=fromname)
