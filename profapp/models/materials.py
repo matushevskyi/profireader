@@ -292,7 +292,8 @@ class Publication(Base, PRBase, PRElasticDocument):
         return {
             'title': self.material.title,
             'keywords': ','.join(t.text for t in self.tags),
-            'description': self.material.short if self.material.short else self.material.subtitle
+            'description': self.material.short if self.material.short else self.material.subtitle,
+            'image_url': self.material.illustration['url'] if self.material.illustration['selected_by_user']['type'] == 'provenance' else None
         }
 
 

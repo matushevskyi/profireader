@@ -440,6 +440,14 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
 
+    def seo_dict(self):
+        return {
+            'title': self.company.name,
+            'keywords': ','.join(t.text for t in self.tags),
+            'description': self.company.short_description if self.company.short_description else self.company.about,
+            'image_url': self.company.logo['url'] if self.company.logo['selected_by_user']['type'] == 'provenance' else None
+        }
+
     # elasticsearch begin
     def elastic_get_fields(self):
         return {
