@@ -32,26 +32,26 @@
         </span>
 
             <span ng-if="browsable" ng-click="chooseImage(true)" class="btn btn-danger"
-                  ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'browse'}"
+                  ng-class="{'active': prCrop['selected_by_user']['type'] == 'browse' || prCrop['selected_by_user']['type'] == 'provenance'}"
                   title="Choose image"><span class="fa fa-folder-open-o"></span></span>
 
 
             <label ng-if="uploadable" class="btn btn-danger"
-                   ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'upload'}"
+                   ng-class="{'active': prCrop['selected_by_user']['type'] == 'upload'}"
                    title="Upload image file">
                 <input pr-file-change="fileUploaded" type="file" class="sr-only pr-cropper-input-image" name="file"
                        accept="image/*">
                 <span class="fa fa-upload"></span>
             </label>
             <span ng-repeat="(preset_id, preset_url) in preset_urls" class="btn btn-danger" type="button"
-                  ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'preset' &&
+                  ng-class="{'active': prCrop['selected_by_user']['type'] == 'preset' &&
               prCrop['selected_by_user']['preset_id'] == preset_id}"
                   ng-click="selectPresetUrl(preset_id)">
                 <span title="{{ url_class_name }}" class="fa {{ preset_button_classes[preset_id] }}"></span>
         </span>
 
             <span ng-if="noneurl" class="btn btn-danger" type="button"
-                  ng-class="{'btn-success': prCrop['selected_by_user']['type'] == 'none'}" ng-click="selectNone()">
+                  ng-class="{'active': prCrop['selected_by_user']['type'] == 'none'}" ng-click="selectNone()">
                 <span title="none" class="fa fa-times-circle-o"></span>
         </span>
 

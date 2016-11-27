@@ -23,10 +23,9 @@ import re
 from sqlalchemy import desc
 from .pagination import pagination
 from config import Config
-import base64
 from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipRights, RequireMembereeAtPortalsRight, \
     PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive
-from PIL import Image
+
 
 
 @portal_bp.route('/portal/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
@@ -100,6 +99,7 @@ def profile_load(json, create_or_update, company_id):
                 ndi.portal = portal
                 ndi.position = division_position
                 ndi.attr_filter(jd, 'name', 'html_title', 'html_keywords', 'html_description')
+
                 if ndi in portal.divisions:
                     if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
                         changed_division_types[ndi.id] = ndi.portal_division_type.id
@@ -113,26 +113,6 @@ def profile_load(json, create_or_update, company_id):
                 ndi.settings = jd.get('settings', {})
 
                 division_position += 1
-
-        # from PIL import Image
-        # from io import BytesIO
-        # scaled_image = False
-        # if jp['favicon_from'] == 'upload':
-        #     file = jp.get('favico_uploaded_file', {'content': None})
-        #     if file and file['content']:
-        #         user_img = Image.open(BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', file['content']))))
-        #         w, h = user_img.size  # Get dimensions
-        #         scaled_image = user_img.crop(
-        #             (0, (h - w) / 2, w, h - (h - w) / 2) if w < h else ((w - h) / 2, 0, w - (w - h) / 2, h))
-        #         scaled_image.thumbnail((64, 64), Image.ANTIALIAS)
-
-        # from io import BytesIO
-        # if 'favicon' in jp:
-        #     favico_img = Image.open(BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', jp['favicon']['content']))))
-        # else:
-        #     favico_img = None
-
-
 
         if action == 'validate':
             ret = portal.validate(create_or_update == 'create')
@@ -416,6 +396,7 @@ def publications_load(json, company_id):
 @check_right(UserIsEmployee, 'company_id')
 def tags(company_id):
     return render_template('portal/tags.html', company=Company.get(company_id))
+
 
 
 @portal_bp.route('/company/<string:company_id>/tags/', methods=['OK'])

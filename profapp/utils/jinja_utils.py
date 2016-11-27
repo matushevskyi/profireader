@@ -150,6 +150,14 @@ def moment(value, out_format=None):
 
 
 @jinja2.contextfunction
+def date(value):
+    return Markup(value.strftime('%Y-%m-%d'))
+
+@jinja2.contextfunction
+def timestamp(value):
+    return Markup(value.strftime("%Y-%m-%d %H:%M:%S"))
+
+@jinja2.contextfunction
 def nl2br(value):
     _paragraph_re = re.compile(r'(?:\r\n|\r|\n){2,}')
     result = u'\n\n'.join(u'<p>%s</p>' % p.replace('\n', Markup('<br>\n'))
@@ -199,3 +207,5 @@ def update_jinja_engine(app):
         _URL_JOIN=lambda: '//' + MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + g.portal_id if g.portal_id else None)
     app.jinja_env.filters['nl2br'] = nl2br
     app.jinja_env.filters['highlighted'] = highlighted
+    app.jinja_env.filters['timestamp'] = timestamp
+    app.jinja_env.filters['date'] = date

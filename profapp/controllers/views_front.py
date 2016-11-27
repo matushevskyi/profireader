@@ -459,7 +459,7 @@ def search(portal, page=1, tags=None):
     search_data = get_search_tags_pages_search(portal, page, tags, request.args.get('search') or '')
 
     return render_template('front/' + g.portal_layout_path + 'search.html',
-                           seo={'title': '', 'description': '', 'keywords':''},
+                           seo={'title': '', 'description': '', 'keywords': ''},
                            portal=portal_and_settings(portal), **search_data)
 
 
@@ -496,3 +496,35 @@ def send_message(json, member_company_id):
                                   'message': html.escape(json['message'])})()
 
     return {}
+
+
+@front_bp.route('robots.txt', methods=['GET'], strict_slashes=True)
+def robots_txt():
+    return "User-agent: *\n"
+
+
+@front_bp.route('sitemap.xml', methods=['GET'], strict_slashes=True)
+@get_portal
+def sitemap(portal):
+    from sqlalchemy import desc
+
+    return render_template('front/sitemap.xml', portal=portal,
+                           divisions=[{
+                                          'loc': portal.host + url_for('front.division',
+                                                                       division_name=d.name),
+                                          'lastmod': max(d.md_tm, (g.db().query(Publication).filter_by(
+                                              portal_division_id=d.id).order_by(
+                                              desc(Publication.md_tm)).first() or d).md_tm)
+                                      } for d in portal.divisions],
+                           companies=[{
+                                          'loc': url_for('front.company_page', member_company_name=m.company.name,
+                                                         member_company_id=m.company.id),
+                                          'lastmod': m.company.md_tm
+                                      } for m in portal.company_memberships if
+                                      m.status == MemberCompanyPortal.STATUSES['ACTIVE']],
+                           articles=[{
+                                         'loc': url_for('front.article_details', publication_id=p.id,
+                                                        publication_title=p.material.title),
+                                         'lastmod': p.md_tm
+                                     } for p in portal.publications if p.status == Publication.STATUSES['PUBLISHED']]
+                           )

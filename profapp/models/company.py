@@ -31,6 +31,8 @@ class Company(Base, PRBase, PRElasticDocument):
     __tablename__ = 'company'
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
+    cr_tm = Column(TABLE_TYPES['timestamp'])
+    md_tm = Column(TABLE_TYPES['timestamp'])
     name = Column(TABLE_TYPES['name'], unique=True, nullable=False, default='')
 
     _delme_logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=True)
