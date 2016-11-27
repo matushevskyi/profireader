@@ -20,12 +20,12 @@ from ..models.pr_base import PRBase, Grid
 import copy
 from .. import utils
 import re
+from sqlalchemy.sql import text, and_
 from sqlalchemy import desc
 from .pagination import pagination
 from config import Config
 from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipRights, RequireMembereeAtPortalsRight, \
     PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive
-
 
 
 @portal_bp.route('/portal/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
@@ -249,7 +249,9 @@ def membership_set_tags(json, company_id, portal_id):
     membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=company_id)
     action = g.req('action', allowed=['load', 'validate', 'save'])
     if action == 'load':
-        return membership.get_client_side_dict(fields='id,portal,portal.tags,company,tags')
+        # catalog_division = g.db.query(PortalDivision).filter(and_(PortalDivision.portal_id == portal_id,
+        #                                                     PortalDivision.portal_division_type_id == 'catalog')).first()
+        return membership.get_client_side_dict(fields='id,portal,company,tags')
     else:
         membership.tags = [Tag.get(t['id']) for t in json['tags']]
 
@@ -398,7 +400,6 @@ def tags(company_id):
     return render_template('portal/tags.html', company=Company.get(company_id))
 
 
-
 @portal_bp.route('/company/<string:company_id>/tags/', methods=['OK'])
 @check_right(UserIsEmployee, 'company_id')
 def tags_load(json, company_id):
@@ -409,8 +410,7 @@ def tags_load(json, company_id):
     def get_client_model(aportal):
         portal_dict = aportal.get_client_side_dict()
         portal_dict['divisions'] = [division for division in portal_dict['divisions']
-                                    if division['portal_division_type_id'] == 'news' or division[
-                                        'portal_division_type_id'] == 'events']
+                                    if division['portal_division_type_id'] in ['news', 'events', 'catalog']]
         ret = {'company': company.get_client_side_dict(),
                'portal': portal_dict}
         for division in ret['portal']['divisions']:

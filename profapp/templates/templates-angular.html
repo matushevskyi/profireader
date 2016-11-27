@@ -222,7 +222,8 @@
         };
 
         $scope.get_tags = function (search_text) {
-            return _.filter($scope.data.portal.tags, function (tag) {
+            var catalog_division = _.findWhere($scope.data.portal.divisions, {'portal_division_type_id': 'catalog'}) || {'tags': []};
+            return _.filter(catalog_division.tags, function (tag) {
                 var ret = ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
                 (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
                 return ret;
