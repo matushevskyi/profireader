@@ -19,6 +19,7 @@ import json
 from functools import reduce
 from sqlalchemy.sql import and_
 from .elastic import PRElasticField, PRElasticDocument
+from sqlalchemy.sql import or_, and_, expression
 
 
 class Portal(Base, PRBase):
@@ -422,7 +423,10 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
                     default={RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: True},
                     nullable=False)
 
-    tags = relationship(Tag, secondary='tag_membership')
+    # tags = relationship(Tag, secondary='tag_membership', foreign_keys = [portal_id, ])
+    tags = relationship(Tag, secondary='tag_membership', uselist=True,
+
+                        order_by=lambda: expression.desc(TagMembership.position))
 
     member_company_portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
 

@@ -1,7 +1,6 @@
 from profapp import create_app
 import argparse
 
-
 # if __name__ == '__main__':
 parser = argparse.ArgumentParser(description='profireader application type')
 parser.add_argument("apptype", default='profi')
@@ -20,6 +19,5 @@ if __name__ == '__main__':
         port = 9000
     else:
         port = 8080
-    app.run(port=port, host='0.0.0.0', debug= True)  # app.run(debug=True)
 
-
+    app.run(port=port, host='0.0.0.0', debug=port in [8080, 8888])  # app.run(debug=True)
