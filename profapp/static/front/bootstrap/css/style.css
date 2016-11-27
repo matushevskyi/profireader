@@ -197,9 +197,15 @@ table.tablelist tr td {
 .bottom-content {
     width: 100%;
     background-color: #ccc;
-    height: 1.5em;
+    height: 4em;
     position: absolute;
     bottom: 0px;
+}
+
+.bottom-content .fa {
+    margin: 0px 5px;
+    font-size: 4em;
+    float: right;
 }
 
 @media only screen and (max-width: 992px) {

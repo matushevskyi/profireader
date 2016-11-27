@@ -6,7 +6,7 @@ from ..models.portal import PortalDivision, Portal
 from ..models.users import User
 from ..models.files import File
 from ..models.tag import Tag, TagPortalDivision, TagPublication
-from .pr_base import PRBase, Base, MLStripper, Grid
+from .pr_base import PRBase, Base, Grid
 from tools.db_utils import db
 from flask import g, session, app, current_app, url_for
 from sqlalchemy.sql import or_, and_, expression
@@ -287,6 +287,14 @@ class Publication(Base, PRBase, PRElasticDocument):
     #                  user_id=g.user.id if g.user else None).one()
     #     article.favorite = True if liked else False
     #     self.like_count += 1
+
+    def seo_dict(self):
+        return {
+            'title': self.material.title,
+            'keywords': ','.join(t.text for t in self.tags),
+            'description': self.material.short if self.material.short else self.material.subtitle,
+            'image_url': self.material.illustration['url'] if self.material.illustration['selected_by_user']['type'] == 'provenance' else None
+        }
 
 
 

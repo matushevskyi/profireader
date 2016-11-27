@@ -31,7 +31,7 @@
     };
 
     var compileTemplate = function ($scope, $compile, element) {
-        element.html('<div class="ng-crop-container">' +
+        element.append('<div class="ng-crop-container">' +
             '<div class="ng-crop-loading"></div>' +
             '<div class="ng-crop-canvas">' +
             // '<canvas class="ng-crop-canvas"></canvas>' +

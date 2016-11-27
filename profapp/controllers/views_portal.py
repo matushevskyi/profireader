@@ -27,6 +27,7 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipR
     PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive
 
 
+
 @portal_bp.route('/portal/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
 @check_right(EditPortalRight, ['company_id'])
 def profile(create_or_update, company_id):
@@ -62,7 +63,8 @@ def profile_load(json, create_or_update, company_id):
             'division_types': utils.get_client_side_dict(division_types)
         },
         'portal': portal.get_client_side_dict(
-            fields='name,host,logo,url_facebook,url_google,url_tweeter,url_linkedin,portal_layout_id,divisions,divisions.cr_tm,lang,host,own_company,company_memberships.company',
+            fields='name,host, logo, favicon, lang, url_facebook, url_google, url_twitter, url_linkedin,'
+                   'portal_layout_id,divisions,divisions.html_description|html_keywords|html_title|cr_tm|name,own_company,company_memberships.company',
             get_own_or_profi_host=True, get_publications_count=True)
     }
 
@@ -75,7 +77,7 @@ def profile_load(json, create_or_update, company_id):
             'host_own']
 
         portal.attr_filter(jp, 'name', 'lang', 'portal_layout_id', 'host',
-                           *map(lambda x: 'url_' + x, ['facebook', 'google', 'tweeter', 'linkedin']))
+                           *map(lambda x: 'url_' + x, ['facebook', 'google', 'twitter', 'linkedin']))
 
         if set(portal.divisions) - set(utils.find_by_id(portal.divisions, d['id']) for d in jp['divisions']) != set():
             raise BadDataProvided('Information for some existing portal division is not provided by client')
@@ -96,7 +98,8 @@ def profile_load(json, create_or_update, company_id):
             else:
                 ndi.portal = portal
                 ndi.position = division_position
-                ndi.name = jd['name']
+                ndi.attr_filter(jd, 'name', 'html_title', 'html_keywords', 'html_description')
+
                 if ndi in portal.divisions:
                     if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
                         changed_division_types[ndi.id] = ndi.portal_division_type.id
@@ -110,6 +113,7 @@ def profile_load(json, create_or_update, company_id):
                 ndi.settings = jd.get('settings', {})
 
                 division_position += 1
+
         if action == 'validate':
             ret = portal.validate(create_or_update == 'create')
             if len(unpublish_warning.keys()):
@@ -117,6 +121,8 @@ def profile_load(json, create_or_update, company_id):
                     ret['warnings']['divisions'] = {}
                 ret['warnings']['divisions'] = utils.dict_merge_recursive(ret['warnings']['divisions'],
                                                                           unpublish_warning)
+            # if favico_img and favico_img.size[0] != favico_img.size[1]:
+            #     ret['warnings']['favicon'] = 'Please use square image'
             g.db.expunge_all()
             return ret
         else:
@@ -124,6 +130,7 @@ def profile_load(json, create_or_update, company_id):
                 if not nd.cr_tm:
                     nd.id = None
             portal.logo = jp['logo']
+            portal.favicon = jp['favicon']
             for del_div in deleted_divisions:
                 del_div.notice_about_deleted_publications('division deleted')
 
@@ -131,7 +138,6 @@ def profile_load(json, create_or_update, company_id):
                 if div.id in changed_division_types:
                     div.notice_about_deleted_publications('division type changed')
                     div.publications = []
-
 
             portal.save()
             g.db.commit()
@@ -392,6 +398,7 @@ def tags(company_id):
     return render_template('portal/tags.html', company=Company.get(company_id))
 
 
+
 @portal_bp.route('/company/<string:company_id>/tags/', methods=['OK'])
 @check_right(UserIsEmployee, 'company_id')
 def tags_load(json, company_id):
@@ -430,13 +437,12 @@ def tags_load(json, company_id):
 def translations(company_id):
     company = Company.get(company_id)
     portal = company.own_portal
-    return render_template('portal/translations.html', portal = portal)
+    return render_template('portal/translations.html', portal=portal)
 
 
 @portal_bp.route('/<string:company_id>/translations/', methods=['OK'])
 @check_right(UserIsActive)
 def translations_load(json, company_id):
-
     company = Company.get(company_id)
     portal = company.own_portal
     subquery = TranslateTemplate.subquery_search({'portal.name': portal.name}, json.get('sort'), json.get('editItem'))

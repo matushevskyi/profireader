@@ -763,7 +763,7 @@ div.pr-row:last-child div.pr-cell {
 }
 
 .dn {
-    display: none;
+    display: none !important;
 }
 
 .noselect {
@@ -824,3 +824,10 @@ div.pr-row:last-child div.pr-cell {
 }
 
 
+.fa-gravatar:before {
+    content: "\f1a0"; }
+.fa-gravatar {
+  filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+  -webkit-transform: rotate(270deg);
+  -ms-transform: rotate(270deg);
+  transform: rotate(270deg); }

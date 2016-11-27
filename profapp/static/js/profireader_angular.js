@@ -313,13 +313,13 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 scope.zoomable = true;
                 scope.disabled = false;
                 scope.original_model = null;
-                scope.preset_button_classes = {'gravatar': 'glyphicon-share'};
+                scope.preset_button_classes = {'gravatar': 'fa-gravatar'};
+
 
                 scope.onerror = function (m) {
                     add_message(m, 'warning')
                 };
 
-                $(element).after($templateCache.get('pr-crop-buttons.html'));
 
                 scope.$watch('zoom', function (newv, oldv) {
                         if (newv) {
@@ -359,14 +359,16 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 });
 
                 scope.$watch('prCrop', function (newv, oldv) {
-                    console.log('prCrop prCrop', newv, oldv);
+                    // console.log('prCrop prCrop', newv, oldv);
                     // scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
                     if (!newv) return;
-                    console.log(newv);
+                    // console.log(newv);
+
+                    // scope.model_name = attrs['prCrop'].split('.').pop();
 
                     var selected_by_user = newv['selected_by_user'];
                     var cropper_options = newv['cropper'];
-                    console.log(cropper_options);
+                    // console.log(cropper_options);
                     // if (!scope.original_model) {
 
                     scope.preset_urls = cropper_options['preset_urls'] ? cropper_options['preset_urls'] : {};
@@ -416,11 +418,11 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 scope.setModel = function (model, do_not_set_ng_crop) {
 
-                    console.log('set_model', model);
+                    // console.log('set_model', model);
 
                     switch (model['type']) {
                         case 'browse':
-                            console.log(model);
+                            // console.log(model);
                             scope.selectedurl = fileUrl(model['image_file_id']);
                             scope.disabled = false;
                             scope.coordinates = null;
@@ -506,14 +508,24 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     if (by < 1 && scope.zoom >= scope.logic.ctr.min_zoom * 1.01) ok = true;
                     if (!check_only && ok) $timeout(function () {
                         scope.zoom *= by;
-                        console.log(scope.zoom);
-                    })
+                    });
                     return ok;
                 };
 
+                scope.select_all = function (check_only) {
+                    if (scope.loading || scope.disabled || !scope.logic) return false;
 
+                    if (!check_only) {
+                        scope.coordinates = [0, 0, scope.logic.ctr.image_size[0], scope.logic.ctr.image_size[1]];
+                    }
+                    return true;
+                };
+
+
+                $(element).append($templateCache.get('pr-crop-buttons.html'));
                 $compile(element)(scope);
-                $compile($(element).next())(scope);
+
+                // $compile($(element).prev())(scope);
             }
         }
     })

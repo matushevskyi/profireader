@@ -33,7 +33,7 @@ class Portal(Base, PRBase):
 
     url_facebook = Column(TABLE_TYPES['url'])
     url_google = Column(TABLE_TYPES['url'])
-    url_tweeter = Column(TABLE_TYPES['url'])
+    url_twitter = Column(TABLE_TYPES['url'])
     url_linkedin = Column(TABLE_TYPES['url'])
     # url_vkontakte = Column(TABLE_TYPES['url'])
 
@@ -45,7 +45,7 @@ class Portal(Base, PRBase):
     # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
     logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
-    logo_file_img = relationship(FileImg, uselist=False)
+    logo_file_img = relationship(FileImg, uselist=False, foreign_keys=[logo_file_img_id])
     logo = FileImgDescriptor(relation_name='logo_file_img',
                              file_decorator=lambda p, r, f: f.attr(
                                  name='%s_for_portal_logo_%s' % (f.name, p.id),
@@ -56,7 +56,20 @@ class Portal(Base, PRBase):
                              aspect_ratio=[0.25, 4.],
                              no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
 
-    favicon_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
+    # favicon_from = Column(TABLE_TYPES['string_10'], default='')
+    # favicon_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(File.id), nullable=True)
+
+    favicon_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
+    favicon_file_img = relationship(FileImg, uselist=False, foreign_keys=[favicon_file_img_id])
+    favicon = FileImgDescriptor(relation_name='favicon_file_img',
+                                file_decorator=lambda p, r, f: f.attr(
+                                    name='%s_for_portal_favico_%s' % (f.name, p.id),
+                                    parent_id=p.own_company.system_folder_file_id,
+                                    root_folder_id=p.own_company.system_folder_file_id),
+                                image_size=[64, 64],
+                                min_size=[16, 16],
+                                aspect_ratio=[1, 1],
+                                no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_favicon()))
 
     layout = relationship('PortalLayout')
 
@@ -258,8 +271,7 @@ class Portal(Base, PRBase):
 
     def get_client_side_dict(self,
                              fields='id|name|host|tags, divisions.*, divisions.tags.*, layout.*, logo.url, '
-                                    'favicon_file_id, '
-                                    'company_owner_id, url_facebook',
+                                    'favicon.url, company_owner_id, url_facebook, url_google, url_twitter, url_linkedin',
                              more_fields=None, get_own_or_profi_host=False, get_publications_count=False):
         if get_publications_count:
             more_fields = more_fields + ', divisions.id' if more_fields else 'divisions.id'
@@ -427,6 +439,14 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    def seo_dict(self):
+        return {
+            'title': self.company.name,
+            'keywords': ','.join(t.text for t in self.tags),
+            'description': self.company.short_description if self.company.short_description else self.company.about,
+            'image_url': self.company.logo['url'] if self.company.logo['selected_by_user']['type'] == 'provenance' else None
+        }
 
     # elasticsearch begin
     def elastic_get_fields(self):
@@ -612,8 +632,12 @@ class PortalDivision(Base, PRBase):
     portal_division_type_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division_type.id'))
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
 
-    title = Column(TABLE_TYPES['short_name'], default='')
-    description = Column(TABLE_TYPES['string_10000'], default='')
+    name = Column(TABLE_TYPES['short_name'], default='')
+
+    html_description = Column(TABLE_TYPES['string_10000'], default='')
+    html_title = Column(TABLE_TYPES['string_1000'], default='')
+    html_keywords = Column(TABLE_TYPES['string_1000'], default='')
+
     position = Column(TABLE_TYPES['int'])
 
     portal = relationship(Portal, uselist=False)
@@ -631,6 +655,12 @@ class PortalDivision(Base, PRBase):
     TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
              'catalog': 'catalog'}
 
+    def seo_dict(self):
+        return {
+            'title': self.html_title if self.html_title else self.name,
+            'keywords': self.html_keywords if self.html_keywords else ','.join(t.text for t in self.tags),
+            'description': self.html_description
+        }
 
     def notice_about_deleted_publications(self, because_of):
         from ..models.messenger import Socket, Notification
@@ -660,7 +690,8 @@ class PortalDivision(Base, PRBase):
     def is_active(self):
         return True
 
-    def get_client_side_dict(self, fields='id|portal_division_type_id|tags|settings',
+    def get_client_side_dict(self,
+                             fields='id|portal_division_type_id|tags|settings|name|html_title|html_keywords|html_description',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 

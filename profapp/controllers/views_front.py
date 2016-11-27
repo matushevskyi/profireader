@@ -1,5 +1,5 @@
 from .blueprints_declaration import front_bp
-from flask import render_template, request, url_for, redirect, g
+from flask import render_template, request, url_for, redirect, g, current_app
 from ..models.materials import Publication, ReaderPublication, Material
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal, UserPortalReader
@@ -17,7 +17,6 @@ from .. import utils
 from tools.db_utils import db
 from functools import wraps
 from sqlalchemy.sql import expression
-from ..models.pr_base import MLStripper
 
 
 def all_tags(portal):
@@ -32,10 +31,10 @@ def get_search_text_and_division(portal, division_name):
     search_text = request.args.get('search') or ''
     print('division_name', division_name)
 
-    dvsn = g.db().query(PortalDivision).filter_by(portal_id =  portal.id)
+    dvsn = g.db().query(PortalDivision).filter_by(portal_id=portal.id)
 
     if division_name is not None:
-        dvsn = dvsn.filter_by(name = division_name)
+        dvsn = dvsn.filter_by(name=division_name)
 
     # TODO: OZ by OZ: 404 if no company
 
@@ -66,6 +65,7 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
     portal_dict = portal_and_settings(portal)
     # TODO: OZ by OZ: heck company is member
     member_company = Company.get(company_id)
+    membership = db(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one()
     di = None
     for d_id, d in portal_dict['divisions'].items():
         if 'subportal_company' in d and d['subportal_company'].id == company_id:
@@ -86,7 +86,7 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
         di = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
                                                     portal_division_type_id=PortalDivision.TYPES[
                                                         'index']).one()
-    return member_company, di
+    return membership, member_company, di
 
 
 def elastic_article_to_orm_article(item):
@@ -311,14 +311,16 @@ def company_page(portal, member_company_id, member_company_name, member_company_
     if member_company_page not in ['about', 'address', 'contacts']:
         member_company_page = 'about'
     # TODO: OZ by OZ: redirect if company name is wrong. 404 if id is wrong
-    member_company, dvsn = \
+    membership, member_company, dvsn = \
         get_company_member_and_division(portal, member_company_id, member_company_name)
+
 
     return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
                            portal=portal_and_settings(portal),
                            division=dvsn.get_client_side_dict(),
+                           seo=membership.seo_dict(),
                            tags=all_tags(portal),
-                           membership=db(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one(),
+                           membership=membership,
                            url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
                            member_company=member_company.get_client_side_dict(
                                more_fields='employments,employments.user,employments.user.avatar.url'),
@@ -357,6 +359,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
             return render_template(
                 'front/' + g.portal_layout_path + 'division_articles.html',
                 division=dvsn.get_client_side_dict(),
+                seo=dvsn.seo_dict(),
                 portal=portal_and_settings(portal),
                 **articles_data)
 
@@ -367,32 +370,34 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
             return render_template('front/' + g.portal_layout_path + 'division_catalog.html',
                                    division=dvsn.get_client_side_dict(),
                                    portal=portal_and_settings(portal),
+                                   seo=dvsn.seo_dict(),
                                    **membership_data
                                    )
         elif dvsn.portal_division_type_id == 'company_subportal':
             member_company_page = 'about'
 
-            member_company, dvsn = \
+            membership, member_company, dvsn = \
                 get_company_member_and_division(portal, dvsn.settings['company_id'], member_company_name)
 
             return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
-                               portal=portal_and_settings(portal),
-                               division=dvsn.get_client_side_dict(),
-                               tags=all_tags(portal),
-                               membership=db(MemberCompanyPortal, company_id=member_company.id,
-                                             portal_id=portal.id).one(),
-                               url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
-                               member_company=member_company.get_client_side_dict(
-                                   more_fields='employments,employments.user,employments.user.avatar.url'),
-                               company_menu_selected_item=member_company_page,
-                               member_company_page=member_company_page)
+                                   portal=portal_and_settings(portal),
+                                   division=dvsn.get_client_side_dict(),
+                                   tags=all_tags(portal),
+                                   seo=membership.seo_dict(),
+                                   membership=db(MemberCompanyPortal, company_id=member_company.id,
+                                                 portal_id=portal.id).one(),
+                                   url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
+                                   member_company=member_company.get_client_side_dict(
+                                       more_fields='employments,employments.user,employments.user.avatar.url'),
+                                   company_menu_selected_item=member_company_page,
+                                   member_company_page=member_company_page)
         else:
             return 'unknown division.portal_division_type_id = %s' % (dvsn.portal_division_type_id,)
 
     else:
 
         # TODO: OZ by OZ: redirect if company name is wrong. 404 if id is wrong
-        member_company, dvsn = \
+        membership, member_company, dvsn = \
             get_company_member_and_division(portal, member_company_id, member_company_name)
         search_text, subportal_dvsn = get_search_text_and_division(portal, division_name)
 
@@ -401,15 +406,13 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
         if 'redirect' in articles_data:
             return articles_data['redirect']
 
-        membership = db(MemberCompanyPortal, company_id=member_company.id,
-                        portal_id=portal.id).one()
-        membership = MemberCompanyPortal.get(membership.id).get_client_side_dict(fields="id|company|tags")
 
         return render_template('front/' + g.portal_layout_path + 'division_company.html',
                                portal=portal_and_settings(portal),
                                division=dvsn.get_client_side_dict(),
+                               seo=membership.seo_dict(),
                                member_company=member_company.get_client_side_dict(),
-                               membership=membership,
+                               membership=membership.get_client_side_dict(fields="id|company|tags"),
                                url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
                                company_menu_selected_item=subportal_dvsn.get_client_side_dict(),
                                **articles_data
@@ -437,6 +440,7 @@ def article_details(portal, publication_id, publication_title):
                            portal=portal_and_settings(portal),
                            tags=all_tags(portal),
                            division=division.get_client_side_dict(),
+                           seo=publication.seo_dict(),
                            article=publication.create_article(),
                            article_visibility=article_visibility,
                            articles_related=publication.get_related_articles(),
@@ -453,6 +457,7 @@ def search(portal, page=1, tags=None):
     search_data = get_search_tags_pages_search(portal, page, tags, request.args.get('search') or '')
 
     return render_template('front/' + g.portal_layout_path + 'search.html',
+                           seo={'title': '', 'description': '', 'keywords': ''},
                            portal=portal_and_settings(portal), **search_data)
 
 
@@ -489,3 +494,42 @@ def send_message(json, member_company_id):
                                   'message': html.escape(json['message'])})()
 
     return {}
+
+
+@front_bp.route('robots.txt', methods=['GET'], strict_slashes=True)
+def robots_txt():
+    return "User-agent: *\n"
+
+
+@front_bp.route('sitemap.xml', methods=['GET'], strict_slashes=True)
+@get_portal
+def sitemap(portal):
+    from sqlalchemy import desc
+
+    return render_template('front/sitemap.xml', portal=portal,
+                           divisions=[{
+                                          'loc': portal.host + url_for('front.division',
+                                                                       division_name=d.name),
+                                          'lastmod': max(d.md_tm, (g.db().query(Publication).filter_by(
+                                              portal_division_id=d.id).order_by(
+                                              desc(Publication.md_tm)).first() or d).md_tm)
+                                      } for d in portal.divisions],
+                           companies=[{
+                                          'loc': url_for('front.company_page', member_company_name=m.company.name,
+                                                         member_company_id=m.company.id),
+                                          'lastmod': m.company.md_tm
+                                      } for m in portal.company_memberships if
+                                      m.status == MemberCompanyPortal.STATUSES['ACTIVE']],
+                           articles=[{
+                                         'loc': url_for('front.article_details', publication_id=p.id,
+                                                        publication_title=p.material.title),
+                                         'lastmod': p.md_tm
+                                     } for p in portal.publications if p.status == Publication.STATUSES['PUBLISHED']]
+                           )
+
+
+def error_404():
+    return render_template('front/' + g.portal_layout_path + '404.html',
+                           seo={'title': '', 'description': '', 'keywords': ''},
+                           tags=all_tags(g.portal),
+                           portal=portal_and_settings(g.portal))

@@ -151,7 +151,7 @@ def find_by_id(list, id):
     return next((d for d in list if (d['id'] if isinstance(d, dict) else d.id) == id), None)
 
 
-def dict_deep_replace(what_to_append, dictionary, *args, if_not_exists = False):
+def dict_deep_replace(what_to_append, dictionary, *args, if_not_exists=False):
     indexes = list(args)
     lastindex = indexes.pop()
     for a in indexes:
@@ -174,9 +174,32 @@ def dict_deep_inc(dictionary, *args, inc_by=1):
     else:
         dictionary[lastindex] = inc_by
 
+
 def get_client_side_list(list, **kwargs):
     return [x.get_client_side_dict(**kwargs) for x in list]
 
 
 def get_client_side_dict(list, **kwargs):
     return {x.id: x.get_client_side_dict(**kwargs) for x in list}
+
+
+def get_from_list_by_key(list, key):
+    return [x.get(key, '') for x in list]
+
+
+from html.parser import HTMLParser
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.fed = []
+    def handle_data(self, d):
+        self.fed.append(d)
+    def get_data(self):
+        return ''.join(self.fed)
+
+def strip_tags(html, allowed_tags=[]):
+    html_parser = MLStripper()
+    html_parser.feed(html)
+    return html_parser.get_data()

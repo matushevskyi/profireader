@@ -8,7 +8,8 @@
             <div class="fr">{% include 'block_user.html' %}</div>
             <div class="fr">
                 <form class="search-form nw" action="{{ search.url if search else url_for('front.search') }}">
-                    <input class="form-control" name="search" placeholder="{{ _('Search') }}" value="{{ search.text if search and search.text else ''  }}">
+                    <input class="form-control" name="search" placeholder="{{ _('Search text placeholder') }}"
+                           value="{{ search.text if search and search.text else '' }}">
                     <button class="btn btn-success" type="submit"><i class="fa fa-search"> {{ _('Search') }}</i>
                     </button>
                 </form>
@@ -41,5 +42,3 @@
         </div>
     </div>
 </nav>
-
-

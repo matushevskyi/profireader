@@ -6,7 +6,6 @@ from profapp.models.materials import Publication
 from profapp.models.files import File
 from profapp.models.users import User
 from profapp.models.portal import Portal
-from profapp.models.pr_base import MLStripper
 from sqlalchemy import create_engine, event
 from profapp.models.pr_base import Search
 from profapp.constants.SEARCH import RELEVANCE
