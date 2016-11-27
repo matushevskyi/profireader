@@ -204,6 +204,8 @@ table.tablelist tr td {
 
 .bottom-content .fa {
     margin: 0px 5px;
+    font-size: 4em;
+    float: right;
 }
 
 @media only screen and (max-width: 992px) {

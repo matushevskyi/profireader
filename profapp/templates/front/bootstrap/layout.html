@@ -25,10 +25,10 @@
 
     {% block bottom_content %}
         <div class="bottom-content">
-        {% if portal.url_facebook %}<a href="{{ portal.url_facebook }}" ><li class="fa fa-facebook-square fr" style="font-size: 4em"></li></a>{% endif %}
-        {% if portal.url_google %}<a href="{{ portal.url_google }}" ><li class="fa fa-google-plus-square fr" style="font-size: 4em"></li></a>{% endif %}
-        {% if portal.url_linkedin %}<a href="{{ portal.url_linkedin }}" ><li class="fa fa-linkedin-square fr" style="font-size: 4em"></li></a>{% endif %}
-        {% if portal.url_twitter %}<a href="{{ portal.url_twitter }}" ><li class="fa fa-twitter-square fr" style="font-size: 4em"></li></a>{% endif %}
+        {% if portal.url_twitter %}<a href="{{ portal.url_twitter }}" ><li class="fa fa-twitter-square" style="color: #1da1f2"></li></a>{% endif %}
+        {% if portal.url_linkedin %}<a href="{{ portal.url_linkedin }}" ><li class="fa fa-linkedin-square" style="color: #0177b5"></li></a>{% endif %}
+        {% if portal.url_google %}<a href="{{ portal.url_google }}" ><li class="fa fa-google-plus-square" style="color: #dc4e41"></li></a>{% endif %}
+        {% if portal.url_facebook %}<a href="{{ portal.url_facebook }}" ><li class="fa fa-facebook-square" style="color: #3b5998"></li></a>{% endif %}
         {{ __('__Profireader bottom text') }}
         </div>
    {% endblock %}
