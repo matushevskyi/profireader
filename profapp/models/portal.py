@@ -33,7 +33,7 @@ class Portal(Base, PRBase):
 
     url_facebook = Column(TABLE_TYPES['url'])
     url_google = Column(TABLE_TYPES['url'])
-    url_tweeter = Column(TABLE_TYPES['url'])
+    url_twitter = Column(TABLE_TYPES['url'])
     url_linkedin = Column(TABLE_TYPES['url'])
     # url_vkontakte = Column(TABLE_TYPES['url'])
 
@@ -271,7 +271,7 @@ class Portal(Base, PRBase):
 
     def get_client_side_dict(self,
                              fields='id|name|host|tags, divisions.*, divisions.tags.*, layout.*, logo.url, '
-                                    'favicon.url, company_owner_id, url_facebook',
+                                    'favicon.url, company_owner_id, url_facebook, url_google, url_twitter, url_linkedin',
                              more_fields=None, get_own_or_profi_host=False, get_publications_count=False):
         if get_publications_count:
             more_fields = more_fields + ', divisions.id' if more_fields else 'divisions.id'

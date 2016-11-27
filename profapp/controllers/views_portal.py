@@ -63,7 +63,7 @@ def profile_load(json, create_or_update, company_id):
             'division_types': utils.get_client_side_dict(division_types)
         },
         'portal': portal.get_client_side_dict(
-            fields='name,host, logo, favicon, lang, url_facebook, url_google, url_tweeter, url_linkedin,'
+            fields='name,host, logo, favicon, lang, url_facebook, url_google, url_twitter, url_linkedin,'
                    'portal_layout_id,divisions,divisions.html_description|html_keywords|html_title|cr_tm|name,own_company,company_memberships.company',
             get_own_or_profi_host=True, get_publications_count=True)
     }
@@ -77,7 +77,7 @@ def profile_load(json, create_or_update, company_id):
             'host_own']
 
         portal.attr_filter(jp, 'name', 'lang', 'portal_layout_id', 'host',
-                           *map(lambda x: 'url_' + x, ['facebook', 'google', 'tweeter', 'linkedin']))
+                           *map(lambda x: 'url_' + x, ['facebook', 'google', 'twitter', 'linkedin']))
 
         if set(portal.divisions) - set(utils.find_by_id(portal.divisions, d['id']) for d in jp['divisions']) != set():
             raise BadDataProvided('Information for some existing portal division is not provided by client')
