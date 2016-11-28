@@ -40,10 +40,7 @@ class Portal(Base, PRBase):
 
 
     company_owner_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), unique=True)
-    # portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
     portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_layout.id'))
-
-    # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
     logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
     logo_file_img = relationship(FileImg, uselist=False, foreign_keys=[logo_file_img_id])
@@ -98,11 +95,8 @@ class Portal(Base, PRBase):
                                 # back_populates='portal',
                                 uselist=True)
 
-    company_memberships = relationship('MemberCompanyPortal',
-                                       # secondary='member_company_portal'
-                                       # back_populates='portal',
-                                       # lazy='dynamic'
-                                       )
+    company_memberships = relationship('MemberCompanyPortal')
+
     # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
     #                  'host': {'relevance': lambda field='host': RELEVANCE.host}}
 
@@ -121,12 +115,6 @@ class Portal(Base, PRBase):
         """This method create portal in db. Before define this method you have to create
         instance of class with parameters: name, host, portal_layout_id, company_owner_id,
         divisions. Return portal)"""
-
-        # for division in self.divisions:
-        #     if division.portal_division_type_id == PortalDivision.TYPES['company_subportal']:
-        #         PortalDivisionSettingsCompanySubportal(
-        #             member_company_portal=division.settings['member_company_portal'],
-        #             portal_division=division).save()
 
         self.logo = client_data['logo']
 
@@ -407,6 +395,43 @@ class PortalAdvertisment(Base, PRBase):
     def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
         return self.to_dict(fields, more_fields)
 
+class MembershipPlan(Base, PRBase):
+    __tablename__ = 'membership_plan'
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+
+class MembershipPlanUsage(Base, PRBase):
+    # TODO: OZ by OZ: sale_auto_renewal
+
+    __tablename__ = 'membership_plan_usage'
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    cr_tm = Column(TABLE_TYPES['timestamp'])
+    md_tm = Column(TABLE_TYPES['timestamp'])
+
+    name = Column(TABLE_TYPES['short_name'])
+
+    stop_tm = Column(TABLE_TYPES['timestamp'])
+    sale_price = Column(TABLE_TYPES['price'])
+    sale_duration = Column(TABLE_TYPES['timeinterval'])
+
+    sale_publication_count_open = Column(TABLE_TYPES['int'])
+    sale_publication_count_registered = Column(TABLE_TYPES['int'])
+    sale_publication_count_payed = Column(TABLE_TYPES['int'])
+    sale_publication_count_confidential = Column(TABLE_TYPES['int'])
+
+    used_publication_count_open = Column(TABLE_TYPES['int'])
+    used_publication_count_registered = Column(TABLE_TYPES['int'])
+    used_publication_count_payed = Column(TABLE_TYPES['int'])
+    used_publication_count_confidential = Column(TABLE_TYPES['int'])
+
+    started_by_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
+    started_by_user = relationship('User', foreign_keys=[started_by_user_id])
+    stopped_by_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
+    stopped_by_user = relationship('User', foreign_keys=[stopped_by_user_id])
+
+    membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'))
+
+    membership_plan = relationship(MembershipPlan)
+
 
 class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     __tablename__ = 'member_company_portal'
@@ -425,10 +450,10 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     # tags = relationship(Tag, secondary='tag_membership', foreign_keys = [portal_id, ])
     tags = relationship(Tag, secondary='tag_membership', uselist=True,
-
                         order_by=lambda: expression.desc(TagMembership.position))
 
-    member_company_portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
+    membership_plan_usage_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_usage.id'))
+    membership_plan_usage = relationship(MembershipPlanUsage)
 
     status = Column(TABLE_TYPES['status'], default='APPLICANT', nullable=False)
 
@@ -436,7 +461,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     company = relationship('Company')
 
-    plan = relationship('MemberCompanyPortalPlan')
+    # membership_plan = relationship(MembershipPlan)
 
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
                 'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
@@ -449,7 +474,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             'title': self.company.name,
             'keywords': ','.join(t.text for t in self.tags),
             'description': self.company.short_description if self.company.short_description else self.company.about,
-            'image_url': self.company.logo['url'] if self.company.logo['selected_by_user']['type'] == 'provenance' else None
+            'image_url': self.company.logo['url'] if self.company.logo['selected_by_user'][
+                                                         'type'] == 'provenance' else None
         }
 
     # elasticsearch begin
@@ -538,8 +564,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             member.save()
         else:
             g.db.add(MemberCompanyPortal(company=Company.get(company_id),
-                                         portal=db(Portal, id=portal_id).one(),
-                                         plan=db(MemberCompanyPortalPlan).first()))
+                                         portal=db(Portal, id=portal_id).one()))
             g.db.flush()
 
     @staticmethod
@@ -597,10 +622,6 @@ class ReaderUserPortalPlan(Base, PRBase):
         self.amount = amount
 
 
-class MemberCompanyPortalPlan(Base, PRBase):
-    __tablename__ = 'member_company_portal_plan'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
-    name = Column(TABLE_TYPES['short_name'], default='')
 
 
 class PortalDivisionSettingsDescriptor(object):

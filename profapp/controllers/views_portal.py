@@ -7,7 +7,7 @@ from ..models.portal import PortalDivisionType
 from ..models.translate import TranslateTemplate
 from tools.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
-    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace, MemberCompanyPortalPlan
+    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace, MembershipPlanUsage, MembershipPlan
 from .request_wrapers import ok, check_right
 # from ..models.bak_articles import Publication, ArticleCompany, Article
 from ..models.company import UserCompany

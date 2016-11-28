@@ -1,9 +1,6 @@
 from sqlalchemy import Integer, String, TIMESTAMP, SMALLINT, BOOLEAN, Column, ForeignKey, UnicodeText, BigInteger, \
     Binary, Float, Date
-from sqlalchemy.dialects.postgresql import BIGINT, INTEGER, JSON
-
-
-
+from sqlalchemy.dialects.postgresql import BIGINT, INTEGER, JSON, NUMERIC, INTERVAL
 
 
 class BinaryRightsMetaClass1(type):
@@ -25,8 +22,8 @@ class BinaryRightsMetaClass1(type):
                 bit_position = all_rights.get(rightname)
                 if bit_position is None:
                     raise Exception(
-                            "right `{}` doesn't exists in allowed columns rights: {}".format(rightname,
-                                                                                             self._allrights()))
+                        "right `{}` doesn't exists in allowed columns rights: {}".format(rightname,
+                                                                                         self._allrights()))
                 else:
                     ret |= (1 << bit_position) if truefalse else 0
 
@@ -41,8 +38,8 @@ class BinaryRightsMetaClass1(type):
             return key
         else:
             raise Exception(
-                            "right `{}` doesn't exists in allowed columns rights: {}".format(key,
-                                                                                             self._allrights()))
+                "right `{}` doesn't exists in allowed columns rights: {}".format(key,
+                                                                                 self._allrights()))
 
 
 class BinaryRights(metaclass=BinaryRightsMetaClass1):
@@ -58,7 +55,7 @@ class RIGHTS(BIGINT):
             self._rights_class = rights
         else:
             raise Exception(
-                    'rights attribute should be BinaryRights class')
+                'rights attribute should be BinaryRights class')
 
         super(RIGHTS, self).__init__()
 
@@ -76,6 +73,7 @@ class RIGHTS(BIGINT):
 
     def adapt(self, impltype):
         return RIGHTS(self._rights_class)
+
 
 # class IMAGE(String):
 #
@@ -108,8 +106,6 @@ TABLE_TYPES = {
     'binary_rights': RIGHTS,
     # 'image': IMAGE,
     'date': Date,
-
-
 
     'id_profireader': String(36),
 
@@ -160,5 +156,7 @@ TABLE_TYPES = {
     'phonecode': String(5),
     'url': String(1000),  # URLType,
     'binary': Binary,
-    'json': JSON
+    'json': JSON,
+    'price': NUMERIC(20, 2),
+    'timeinterval': INTERVAL(),
 }
