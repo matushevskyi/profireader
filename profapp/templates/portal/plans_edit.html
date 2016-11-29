@@ -1,0 +1,388 @@
+{% extends "_ruslan/_index_layout.html" %}
+{% block title %}Profireader{% endblock title %}
+{% block head %}
+    {{ super() }}
+    {% include '_ruslan/partials/_header_files_sortable.html' %}
+{% endblock head %}
+
+{% block portal_content %}
+
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+
+    {#    <script type="text/ng-template" id="portal_edit_division_decription.html">#}
+    {#        <div>#}
+    {#            <div class="modal-header">#}
+    {#                <h3 class="modal-title">{{ _('set division html seo data') }}</h3>#}
+    {#            </div>#}
+    {##}
+    {#            <div class="modal-body">#}
+    {#                <label>{{ ::_('html title') }}</label><br/>#}
+    {#                <input class="w100 form-control mb2em" ng-model="seo_data.title" placeholder="{{ ::_('leave empty to use division name') }}"/>#}
+    {##}
+    {#                <label>{{ ::_('html keywords') }}</label><br/>#}
+    {#                <input class="w100 form-control mb2em" ng-model="seo_data.keywords" placeholder="{{ ::_('leave empty to use division tags') }}"/>#}
+    {##}
+    {#                <label>{{ ::_('html description') }}</label><br/>#}
+    {#                <textarea class="w100 h10em form-control" ng-model="seo_data.description" placeholder=""></textarea>#}
+    {#            </div>#}
+    {##}
+    {#            <div class="modal-footer">#}
+    {#                <button class="btn btn-primary" type="button" ng-click="set()">{{ _('Set') }}#}
+    {#                </button>#}
+    {#                <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>#}
+    {#            </div>#}
+    {#        </div>#}
+    {#    </script>#}
+
+
+    <script>
+        {#        module.controller('PortalDivisionController', function ($scope) {#}
+        {##}
+        {#            $scope.$watch('division.portal_division_type_id', function (newv, oldv) {#}
+        {#                if (newv !== oldv && newv == 'company_subportal' && (!$scope.division.settings || !$scope.division.company_id)) {#}
+        {#                    $scope.division.settings = {'company_id': $scope.data.portal.company_memberships[0]['company']['id']}#}
+        {#                }#}
+        {#                if ((newv === 'news' || newv === 'events') && !$scope.division['publication_count']) {#}
+        {#                    $scope.division['publication_count'] = 0;#}
+        {#                }#}
+        {#            });#}
+        {#        });#}
+
+        {#        module.controller('PortalDivisionDescriptionDialogControler', function ($scope, $uibModalInstance, seo_data) {#}
+        {##}
+        {#            $scope.$$translate = {{ translates('PortalDivisionDescriptionDialogControler')|safe }};#}
+        {##}
+        {#            {% raw %}#}
+        {##}
+        {#            $scope.seo_data = seo_data;#}
+        {#            $scope.set = function () {#}
+        {#                $uibModalInstance.close(seo_data);#}
+        {#            };#}
+        {##}
+        {#            $scope.cancel = $uibModalInstance.dismiss;#}
+        {##}
+        {#            {% endraw %}#}
+        {#        });#}
+
+        module.controller('PortalPlanController', function ($scope) {
+
+            {#            $scope.$watch('division.portal_division_type_id', function (newv, oldv) {#}
+            {#                if (newv !== oldv && newv == 'company_subportal' && (!$scope.division.settings || !$scope.division.company_id)) {#}
+            {#                    $scope.division.settings = {'company_id': $scope.data.portal.company_memberships[0]['company']['id']}#}
+            {#                }#}
+            {#                if ((newv === 'news' || newv === 'events') && !$scope.division['publication_count']) {#}
+            {#                    $scope.division['publication_count'] = 0;#}
+            {#                }#}
+            {#            });#}
+        });
+
+        module.controller('portal_plans', ['$scope', '$uibModal', function ($scope, $uibModal) {
+            $scope.$$translate = {{ translates('portal_plans')|safe }};
+
+
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portal_plans');
+
+
+            {#            $scope.url_after_save = {{ raw_url_for('company.profile')|safe }};#}
+
+            {#            $scope.changeDescription = function (d) {#}
+            {#                var modalInstance = $uibModal.open({#}
+            {#                    templateUrl: 'portal_edit_division_decription.html',#}
+            {#                    controller: 'PortalDivisionDescriptionDialogControler',#}
+            {#                    resolve: resolveDictForAngularController({#}
+            {#                        seo_data: {#}
+            {#                            'description': d.html_description,#}
+            {#                            'title': d.html_title,#}
+            {#                            'keywords': d.html_keywords#}
+            {#                        }#}
+            {#                    })#}
+            {#                });#}
+            {#                modalInstance.result.then(function (new_seo_data) {#}
+            {#                    d.html_title = new_seo_data['title'];#}
+            {#                    d.html_keywords = new_seo_data['keywords'];#}
+            {#                    d.html_description = new_seo_data['description'];#}
+            {#                });#}
+            {#            };#}
+
+            {#            $scope.openForFavIcoFile = function (set_none) {#}
+            {#                $('.favico-select-file-upload').click();#}
+            {#            };#}
+
+
+            {#            $scope.selectFiveIcoFile = function () {#}
+            {#                var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;#}
+            {#                $(this).val('');#}
+            {#                if (the_file) {#}
+            {#                    var fr = new FileReader();#}
+            {#                    fr.onload = function (e) {#}
+            {#                        $scope.data.portal['favicon'] = {#}
+            {#                            'mime': the_file.type,#}
+            {#                            'name': the_file.name,#}
+            {#                            'content': fr.result#}
+            {#                        }#}
+            {#                    }#}
+            {##}
+            {#                    fr.onerror = function (e) {#}
+            {#                        add_message('File loading error', 'warning');#}
+            {#                    };#}
+            {#                    fr.readAsDataURL(the_file);#}
+            {#                }#}
+            {#            };#}
+
+            {#            $scope.afterSave = function (resp) {#}
+            {#                if (!$scope.portal_id) {#}
+            {#                    window.location.href = $scope.url_after_save({company_id: resp['portal']['own_company']['id']})#}
+            {#                }#}
+            {#                else {#}
+            {#                    $scope.data = $scope.amidLoad(resp);#}
+            {#                }#}
+            {#            };#}
+            {##}
+            {##}
+            {#            $scope.amidLoad = function (resp) {#}
+            {#                if (!$scope.portal_id) {#}
+            {#                    resp['portal']['divisions'] =#}
+            {#                            _.map(['index', 'news', 'events', 'catalog', 'company_subportal'], function (t) {#}
+            {#                                return {#}
+            {#                                    'id': randomHash(), 'portal_division_type_id': t,#}
+            {#                                    'html_description': '',#}
+            {#                                    'html_keywords': '',#}
+            {#                                    'html_title': '',#}
+            {#                                    'name': $scope._('new portal division ' + t)#}
+            {#                                };#}
+            {#                            });#}
+            {##}
+            {#                    resp['portal']['divisions'][1]['publication_count'] = 0;#}
+            {#                    resp['portal']['divisions'][2]['publication_count'] = 0;#}
+            {#                    resp['portal']['divisions'][resp['portal']['divisions'].length - 1]['settings'] =#}
+            {#                    {'company_id': resp['portal']['own_company']['id']};#}
+            {#                }#}
+            {#                return resp;#}
+            {#            };#}
+
+            $scope.addPlan = function () {
+                $scope.data.plans.push({
+                    id: randomHash(),
+                    name: '',
+                    cr_tm: null,
+                    publication_count_open: -1,
+                    publication_count_registered: 99,
+                    publication_count_payed: 0,
+                    publication_count_confidential: 0,
+                    price: 1.00,
+                    status: 'ACTIVE',
+                    currency_id: $scope.data.select.currency[0]['id'],
+                    duration: 1,
+                    duration_unit: 'months'
+                });
+            };
+
+            $scope.removePlan = function (index) {
+                if ($scope.data.plans[index]['remove_this_existing_plan']) {
+                    $scope.data.plans[index]['remove_this_existing_plan'] = false;
+                    return;
+                }
+                if ($scope.data.plans[index]['cr_tm']) {
+                    $scope.data.plans[index]['remove_this_existing_plan'] = true;
+                } else {
+                    $scope.data.plans.splice(index, 1);
+
+                }
+
+            };
+
+            $scope.togglePlanStatus = function (index) {
+                $scope.data.plans[index]['status'] = ($scope.data.plans[index]['status'] === 'ACTIVE') ? 'INACTIVE' : 'ACTIVE';
+
+            };
+
+            $scope.sortableOptions = {
+                stop: function (e, ui) {
+                    if ($scope.data_validation.errors && $scope.data_validation.errors.remove_division) {
+                        $scope.data_validation.errors.remove_division = []
+                    }
+                    if ($scope.data_validation.warnings && $scope.data_validation.warnings.remove_division) {
+                        $scope.data_validation.warnings.remove_division = []
+                    }
+                    if ($scope.data_validation.errors && $scope.data_validation.errors.company_subportal) {
+                        $scope.data_validation.errors.company_subportal = []
+                    }
+                    if ($scope.data_validation.warnings && $scope.data_validation.warnings.company_subportal) {
+                        $scope.data_validation.warnings.company_subportal = []
+                    }
+                },
+                'tolerance': 'pointer',
+                containment: "parent",
+                axis: "y",
+                handle: ".fa-arrows-v"
+            };
+
+        }]);
+    </script>
+    {% raw %}
+
+    <div class="controller-portal-plans" ng-controller="portal_plans" ng-cloak>
+        <form name="formPortalPlans">
+            <div class="container pr" af af-after-save="afterSave" af-amid-load="amidLoad" af-watch="data.portal"
+                 ng-model="data">
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed"></div>
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed-message">
+                    <p><i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _(data_state + ' portal data...') }}
+                    </p>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <h2>{{ ::_('Portal membership plans') }}</h2>
+                        <hr/>
+                    </div>
+                </div>
+
+
+                <div class="row">
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Plan name') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Publications count') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Plan duration') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Plan price') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <label class="form-control border-none">{{ ::_('Plan status') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <button class="pull-right btn btn-success form-control" type="button"
+                                popover-placement="left"
+                                pr-validation-answer="data_validation:add_division"
+                                ng-click="addPlan()"><i class="fa fa-plus"></i> {{ ::_('add plan') }}
+                        </button>
+                    </div>
+
+                </div>
+                <div ui-sortable="sortableOptions" ng-model="data.plans">
+                    <div class="row"
+                         ng-controller="PortalPlanController"
+                         ng-repeat="(plan_index, plan) in data.plans">
+                        <div ng-class="{'disabled': plan['remove_this_existing_plan'] || plan['status'] !== 'ACTIVE'}">
+                            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                <span style="cursor: row-resize"
+                                      class="fa fa-arrows-v form-control w2em border-none di"></span>
+                                <input class="form-control w10em di"
+                                       ng-disabled="plan['remove_this_existing_division']"
+                                       pr-validation-answer="data_validation:plan[plan.id].name"
+                                       placeholder="{{ _('Plan name placeholder') }}"
+                                       ng-model="plan.name">
+                            </div>
+
+                            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                <input class="form-control w3em di"
+                                       ng-disabled="plan['remove_this_existing_division']"
+                                       pr-validation-answer="data_validation:plan[plan.id].publication_count_open"
+                                       placeholder="{{ _('Open') }}"
+                                       ng-model="plan.publication_count_open">
+                                <input class="form-control w3em di"
+                                       ng-disabled="plan['remove_this_existing_division']"
+                                       pr-validation-answer="data_validation:plan[plan.id].publication_count_registered"
+                                       placeholder="{{ _('Registered') }}"
+                                       ng-model="plan.publication_count_registered">
+                                <input class="form-control w3em di"
+                                       ng-disabled="plan['remove_this_existing_division']"
+                                       pr-validation-answer="data_validation:plan[plan.id].publication_count_payed"
+                                       placeholder="{{ _('Payed') }}"
+                                       ng-model="plan.publication_count_payed">
+                            </div>
+
+                            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+
+                                <input class="form-control w3em di"
+                                       ng-disabled="plan['remove_this_existing_division']"
+                                       pr-validation-answer="data_validation:plan[plan.id].duration"
+                                       placeholder="{{ _('Plan duration') }}"
+                                       ng-model="plan.duration">
+
+
+                                <select
+                                        ng-disabled="plan['remove_this_existing_division']"
+                                        popover-trigger="none"
+                                        class="form-control w7em di"
+                                        ng-model="plan.duration_unit"
+                                        ng-options="du.id as du.name for du in data.select.duration_unit">
+                                </select>
+                            </div>
+
+                            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                <input class="form-control w3em di"
+                                       ng-disabled="plan['remove_this_existing_division']"
+                                       pr-validation-answer="data_validation:plan[plan.id].price"
+                                       placeholder="{{ _('Set price (0 for free)') }}"
+                                       ng-model="plan.price"/>
+
+                                <select
+                                        ng-disabled="plan['remove_this_existing_division']"
+                                        popover-trigger="none"
+                                        class="form-control w7em di"
+                                        ng-model="plan.currency_id"
+                                        ng-options="cr.id as cr.name for cr in data.select.currency">
+                                </select>
+
+                            </div>
+
+
+                        </div>
+
+
+                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                            <button ng-click="togglePlanStatus($index)"
+                                    pr-validation-answer="data_validation:plan[plan.id].status"
+                                    class="pull-right btn btn-warning form-control"><i
+                                    ng-class="{'fa-toggle-on': plan['status'] === 'ACTIVE','fa-toggle-off': plan['status'] !== 'ACTIVE'}"
+                                    class="fa"></i>
+                                {{ _('plan is ' + plan['status']) }}
+                            </button>
+                        </div>
+
+                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                            <button ng-click="removePlan($index)"
+                                    pr-validation-answer="data_validation:plan[plan.id].actions"
+                                    class="pull-right btn btn-warning form-control"><i
+                                    ng-class="{'fa-minus': !plan['remove_this_existing_plan'],'fa-undo': plan['remove_this_existing_plan']}"
+                                    class="fa"></i>
+                                {{ _(plan['remove_this_existing_division']?'undo remove':'remove plan') }}
+                            </button>
+                        </div>
+
+
+                    </div>
+                </div>
+                <div class="row">
+                    <hr/>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 p025em">
+                        <button class="btn btn-primary pull-right border-radius w20em" type="button"
+                                ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">{{
+                            ::_('Save plans') }}
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+    {% endraw %}
+
+
+{% endblock portal_content %}

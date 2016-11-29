@@ -399,6 +399,10 @@ class PRBase:
             ret[item['id']] = item
         return ret
 
+    @classmethod
+    def get_all_active_ordered_by_position(classname, **kwargs):
+        return [e.get_client_side_dict(**kwargs) for e in db(classname).filter_by(active = True).order_by(classname.position).all()]
+
     @staticmethod
     def str2float(str, onfail=None):
         try:

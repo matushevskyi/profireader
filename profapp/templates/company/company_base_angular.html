@@ -10,6 +10,8 @@
         $scope.url_portal_companies_partners = {{ raw_url_for('portal.companies_partners')|safe }};
         $scope.url_company_employees = {{ raw_url_for('company.employees')|safe }};
         $scope.url_portal_publications = {{ raw_url_for('portal.publications')|safe }};
+        $scope.url_portal_plans = {{ raw_url_for('portal.plans')|safe }};
+
 
         $scope.url_portal_portal = {{ raw_url_for('portal.profile')|safe }};
 
@@ -64,6 +66,8 @@
                     <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_readers'}"
                        id="companies_readers"
                        href="{{ url_company_readers({company_id: company.id}) }}">{{ _('Readers') }}</a>
+                    <a class="pull-right" ng-class="{'selected': selected_company_menu == 'membership_plans'}"
+                       href="{{ url_portal_plans({company_id: company.id}) }}">{{ _('Membership plans') }}</a>
                     <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_partners'}"
                        href="{{ url_portal_companies_partners({company_id: company.id}) }}">{{ _('Members') }}</a>
                     <a class="pull-right" ng-if="0" ng-class="{'selected': selected_company_menu == 'statistics'}"

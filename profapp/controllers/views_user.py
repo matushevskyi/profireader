@@ -6,7 +6,7 @@ from tools.db_utils import db
 from ..constants.UNCATEGORIZED import AVATAR_SIZE
 from ..controllers.request_wrapers import check_right
 from config import Config
-from ..models.country import Country
+from ..models.dictionary import Country
 from flask import session
 from ..models.rights import UserIsActive, UserEditProfieRight, AllowAll
 from .. import utils

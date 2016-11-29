@@ -107,6 +107,11 @@
 
                     var $parent = $scope['$parent'];
                     var ctrl = afModelCtrl[0];
+
+                    var allowed_states = {'save': ['init', 'clean', 'saving_failed', 'valid']};
+                    allowed_states['validate'] = allowed_states['save'] + ['dirty', 'validating_failed', 'invalid'];
+                    allowed_states['load'] = allowed_states['save'] + ['dirty', 'validating_failed', 'invalid', 'loading_failed'];
+
                     $parent.$af = $af;
 
 
@@ -293,7 +298,7 @@
                         }
                         else {
                             debouncedvalidate();
-                            // console.error('action `validate` is not allowed now')
+                            console.error('action `validate` is not allowed now')
                         }
                     };
 
@@ -316,9 +321,8 @@
                             //console.error('called method `' + action + '` is forbidden for model because http sent');
                             return false;
                         }
-                        var allowed_states = {'save': ['init', 'clean', 'saving_failed', 'valid', 'loading_failed']};
-                        allowed_states['load'] = allowed_states['save'] + ['dirty', 'validating_failed', 'invalid'];
-                        allowed_states['validate'] = allowed_states['load'];
+
+                        // console.log(action, $parent[params['afState']], allowed_states[action]);
 
                         if (allowed_states[action].indexOf($parent[params['afState']]) === -1) {
                             //console.error('called method `'+action+'` is forbidden for model because current model is in state: `' + $parent[params['afState']] + '`');
@@ -337,10 +341,12 @@
                     }, params['afDebounce']);
 
                     var watchfunc = function (oldval, newval) {
-                        setInParent('afState', 'dirty');
-                        $scope.$af_original_model_dirty = true;
-                        debouncedvalidate();
-                    };
+                        if ($scope.isActionAllowed('validate')) {
+                            setInParent('afState', 'dirty');
+                            $scope.$af_original_model_dirty = true;
+                            debouncedvalidate();
+                        }
+                    }
 
                     $timeout(function () {
                         $parent.$watch(attrs['afWatch'] ? attrs['afWatch'] : attrs['ngModel'], watchfunc, true)
@@ -360,7 +366,6 @@
             //},
             template: function (tElement, tAttrs) {
                 var model_fields = tAttrs['afValidationAnswer'].split(':');
-                //$(tElement).attr('uib-popover', "Ops! Pls enter at least one keyword");
                 var model_name = model_fields[0];
                 var field_name = model_fields[1];
                 var erm = '' + model_name + '.errors.' + field_name;

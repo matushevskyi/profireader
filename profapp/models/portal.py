@@ -75,6 +75,8 @@ class Portal(Base, PRBase):
 
     tags = relationship(Tag, uselist=True, cascade="all, delete-orphan")
 
+    plans = relationship('MembershipPlan', uselist=True, cascade="all, delete-orphan")
+
     divisions = relationship('PortalDivision',
                              # backref='portal',
                              cascade="all, merge, delete-orphan",
@@ -397,9 +399,31 @@ class PortalAdvertisment(Base, PRBase):
 
 class MembershipPlan(Base, PRBase):
     __tablename__ = 'membership_plan'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
 
-class MembershipPlanUsage(Base, PRBase):
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    cr_tm = Column(TABLE_TYPES['timestamp'])
+    md_tm = Column(TABLE_TYPES['timestamp'])
+
+    name = Column(TABLE_TYPES['string_100'])
+
+    portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Portal.id))
+    portal = relationship('Portal')
+
+    publication_count_open = Column(TABLE_TYPES['int'])
+    publication_count_registered = Column(TABLE_TYPES['int'])
+    publication_count_payed = Column(TABLE_TYPES['int'])
+    publication_count_confidential = Column(TABLE_TYPES['int'])
+
+    price = Column(TABLE_TYPES['price'])
+    duration = Column(TABLE_TYPES['timeinterval'])
+
+    position = Column(TABLE_TYPES['int'])
+    status = Column(TABLE_TYPES['string_100'])
+
+    STATUSES = {'ACTIVE': 'ACTIVE', 'INACTIVE':'INACTIVE', 'DELETED':'DELETED'}
+
+
+class MembershipPlanUsed(Base, PRBase):
     # TODO: OZ by OZ: sale_auto_renewal
 
     __tablename__ = 'membership_plan_usage'
@@ -407,30 +431,32 @@ class MembershipPlanUsage(Base, PRBase):
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
 
-    name = Column(TABLE_TYPES['short_name'])
-
-    stop_tm = Column(TABLE_TYPES['timestamp'])
-    sale_price = Column(TABLE_TYPES['price'])
-    sale_duration = Column(TABLE_TYPES['timeinterval'])
-
-    sale_publication_count_open = Column(TABLE_TYPES['int'])
-    sale_publication_count_registered = Column(TABLE_TYPES['int'])
-    sale_publication_count_payed = Column(TABLE_TYPES['int'])
-    sale_publication_count_confidential = Column(TABLE_TYPES['int'])
-
-    used_publication_count_open = Column(TABLE_TYPES['int'])
-    used_publication_count_registered = Column(TABLE_TYPES['int'])
-    used_publication_count_payed = Column(TABLE_TYPES['int'])
-    used_publication_count_confidential = Column(TABLE_TYPES['int'])
-
+    started_tm = Column(TABLE_TYPES['timestamp'])
     started_by_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
     started_by_user = relationship('User', foreign_keys=[started_by_user_id])
+
+    name = Column(TABLE_TYPES['short_name'])
+    stopped_tm = Column(TABLE_TYPES['timestamp'])
+
+
+    price = Column(TABLE_TYPES['price'])
+    duration = Column(TABLE_TYPES['timeinterval'])
+    publication_count_open = Column(TABLE_TYPES['int'])
+    publication_count_registered = Column(TABLE_TYPES['int'])
+    publication_count_payed = Column(TABLE_TYPES['int'])
+    publication_count_confidential = Column(TABLE_TYPES['int'])
+
+
     stopped_by_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
     stopped_by_user = relationship('User', foreign_keys=[stopped_by_user_id])
 
-    membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'))
+    member_company_portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal.id'))
+    member_company_portal = relationship('MemberCompanyPortal')
 
+    membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'))
     membership_plan = relationship(MembershipPlan)
+
+    status = Column(TABLE_TYPES['string_100'])
 
 
 class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
@@ -452,8 +478,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     tags = relationship(Tag, secondary='tag_membership', uselist=True,
                         order_by=lambda: expression.desc(TagMembership.position))
 
-    membership_plan_usage_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_usage.id'))
-    membership_plan_usage = relationship(MembershipPlanUsage)
+    # membership_plan_usaged_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_usaged.id'))
+    # membership_plan_usaged = relationship(MembershipPlanUsed)
 
     status = Column(TABLE_TYPES['status'], default='APPLICANT', nullable=False)
 

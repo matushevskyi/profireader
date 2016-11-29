@@ -4,10 +4,12 @@ from ..models.company import Company
 from flask.ext.login import login_required
 from profapp.controllers.errors import BadDataProvided
 from ..models.portal import PortalDivisionType
+from ..models.dictionary import Currency
 from ..models.translate import TranslateTemplate
 from tools.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
-    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace, MembershipPlanUsage, MembershipPlan
+    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace, MembershipPlanUsed, \
+    MembershipPlan
 from .request_wrapers import ok, check_right
 # from ..models.bak_articles import Publication, ArticleCompany, Article
 from ..models.company import UserCompany
@@ -53,8 +55,7 @@ def profile_load(json, create_or_update, company_id):
         portal = Portal(host='', lang=g.user.lang,
                         own_company=company,
                         company_owner_id=company.id,
-                        company_memberships=[MemberCompanyPortal(company=company,
-                                                                 plan=db(MemberCompanyPortalPlan).first())])
+                        company_memberships=[MemberCompanyPortal(company=company)])
 
     client_side = lambda: {
         'select': {
@@ -95,6 +96,102 @@ def profile_load(json, create_or_update, company_id):
                         'this division have %s published articles. they will be unpublished' % (len(ndi.publications),),
                         unpublish_warning, ndi.id, 'actions')
                 portal.divisions.remove(ndi)
+            else:
+                ndi.portal = portal
+                ndi.position = division_position
+                ndi.attr_filter(jd, 'name', 'html_title', 'html_keywords', 'html_description')
+
+                if ndi in portal.divisions:
+                    if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
+                        changed_division_types[ndi.id] = ndi.portal_division_type.id
+                        utils.dict_deep_replace(
+                            'this division have %s published articles. they will be unpublished becouse of division type changed' % (
+                                len(ndi.publications),), unpublish_warning, ndi.id, 'type')
+                else:
+                    portal.divisions.append(ndi)
+
+                ndi.portal_division_type = utils.find_by_id(division_types, jd['portal_division_type_id'])
+                ndi.settings = jd.get('settings', {})
+
+                division_position += 1
+
+        if action == 'validate':
+            ret = portal.validate(create_or_update == 'create')
+            if len(unpublish_warning.keys()):
+                if 'divisions' not in ret['warnings']:
+                    ret['warnings']['divisions'] = {}
+                ret['warnings']['divisions'] = utils.dict_merge_recursive(ret['warnings']['divisions'],
+                                                                          unpublish_warning)
+            g.db.expunge_all()
+            return ret
+        else:
+            for nd in portal.divisions:
+                if not nd.cr_tm:
+                    nd.id = None
+            portal.logo = jp['logo']
+            portal.favicon = jp['favicon']
+            for del_div in deleted_divisions:
+                del_div.notice_about_deleted_publications('division deleted')
+
+            for div in portal.divisions:
+                if div.id in changed_division_types:
+                    div.notice_about_deleted_publications('division type changed')
+                    div.publications = []
+
+            portal.save()
+            g.db.commit()
+            return client_side()
+
+
+@portal_bp.route('/plans/company/<string:company_id>/', methods=['GET'])
+@check_right(EditPortalRight, ['company_id'])
+def plans(company_id):
+    portal = db(Portal).filter(Portal.company_owner_id == company_id).one()
+    return render_template('portal/plans_edit.html', portal=portal, company=portal.own_company)
+
+
+@portal_bp.route('/plans/company/<string:company_id>/', methods=['OK'])
+@check_right(EditPortalRight, ['company_id'])
+def plans_load(json, company_id):
+    action = g.req('action', allowed=['load', 'save', 'validate'])
+    portal = db(Portal).filter(Portal.company_owner_id == company_id).one()
+
+    client_side = lambda: {
+        'plans': utils.get_client_side_list(portal.plans),
+        'select': {
+            'currency': Currency.get_all_active_ordered_by_position(),
+            'duration_unit': [{'id': 'days', 'name': 'Days'}, {'id': 'weeks', 'name': 'Weeks'},
+                              {'id': 'months', 'name': 'Months'}, {'id': 'years', 'name': 'Years'}]
+        }
+    }
+
+    if action == 'load':
+        return client_side()
+    else:
+
+
+
+
+        # portal.attr_filter(jp, 'name', 'lang', 'portal_layout_id', 'host',
+        #                    *map(lambda x: 'url_' + x, ['facebook', 'google', 'twitter', 'linkedin']))
+
+        if set(portal.plans) - set(utils.find_by_id(portal.plans, d['id']) for d in json['plans']) != set():
+            raise BadDataProvided('Information for some existing plans division is not provided by client')
+
+        # plan_position = 0
+        # unpublish_warning = {}
+        # changed_division_types = {}
+        deleted_plans = []
+        for jp in json['plans']:
+            plan = utils.find_by_id(portal.plans, jp['id']) or MembershipPlan(portal=portal, id=jp['id'])
+            if jp.get('remove_this_existing_plan', None):
+                deleted_plans.append(plan)
+                # if len(ndi.publications):
+                #     utils.dict_deep_replace(
+                #         'this division have %s published articles. they will be unpublished' % (len(ndi.publications),),
+                #         unpublish_warning, ndi.id, 'actions')
+                plan.status = MembershipPlan.STATUSES['DELETED']
+
             else:
                 ndi.portal = portal
                 ndi.position = division_position

@@ -16,7 +16,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from tools.db_utils import db
 from sqlalchemy import String
-from . import country
+from . import dictionary
 import hashlib
 from flask.ext.login import UserMixin
 from .pr_base import PRBase, Base
