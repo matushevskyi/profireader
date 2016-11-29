@@ -428,8 +428,9 @@ function menu_db_save_minimal {
     profidb=$(get_profidb)
     conf_comm "su postgres -c 'pg_dump -s $profidb' > db/database.structure
 tables=\$(su postgres -c \"echo 'SELECT RelName FROM pg_Description JOIN pg_Class ON pg_Description.ObjOID = pg_Class.OID WHERE ObjSubID = 0 AND Description LIKE '\\\"'\\\"%persistent%\\\"'\\\" | psql -t $profidb\" | sed '/^\\s*\$/d' | sed -e 's/^/-t /g' | tr \"\\n\" \" \" )
-su postgres -c \"pg_dump --inserts -a \$tables $profidb\" >> database.structure
-git diff database.structure" sudo 'db_download_full'
+su postgres -c \"pg_dump --inserts -a \$tables $profidb\" >> db/database.initial
+git diff db/database.structure
+git diff db/database.initial" sudo 'db_download_full'
     }
 
 function menu_db_download_full {

@@ -1,0 +1,3220 @@
+--
+-- PostgreSQL database dump
+--
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+
+--
+-- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
+--
+
+CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+
+
+SET search_path = public, pg_catalog;
+
+--
+-- Name: pr_config_type_enum_type; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_config_type_enum_type AS ENUM (
+    'int',
+    'float',
+    'bool',
+    'string',
+    'timestamp'
+);
+
+
+ALTER TYPE pr_config_type_enum_type OWNER TO postgres;
+
+--
+-- Name: pr_enum_company_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_enum_company_status AS ENUM (
+    'ACTIVE',
+    'SUSPENDED',
+    'DELETED'
+);
+
+
+ALTER TYPE pr_enum_company_status OWNER TO postgres;
+
+--
+-- Name: pr_enum_config_type; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_enum_config_type AS ENUM (
+    'int',
+    'float',
+    'bool',
+    'string',
+    'timestamp'
+);
+
+
+ALTER TYPE pr_enum_config_type OWNER TO postgres;
+
+--
+-- Name: pr_enum_contact_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_enum_contact_status AS ENUM (
+    'ACTIVE_ACTIVE',
+    'READONLY',
+    'REVOKED_ANY',
+    'ANY_REVOKED',
+    'BANNED_ACTIVE',
+    'ACTIVE_BANNED',
+    'UNCONFIRMED_REQUESTED',
+    'REQUESTED_UNCONFIRMED'
+);
+
+
+ALTER TYPE pr_enum_contact_status OWNER TO postgres;
+
+--
+-- Name: pr_enum_material_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_enum_material_status AS ENUM (
+    'NORMAL',
+    'EDITING',
+    'FINISHED',
+    'DELETED',
+    'APPROVED'
+);
+
+
+ALTER TYPE pr_enum_material_status OWNER TO postgres;
+
+--
+-- Name: pr_enum_member_company_portal_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_enum_member_company_portal_status AS ENUM (
+    'APPLICANT',
+    'REJECTED',
+    'ACTIVE',
+    'SUSPENDED',
+    'CANCELED',
+    'DELETED',
+    'FROZEN'
+);
+
+
+ALTER TYPE pr_enum_member_company_portal_status OWNER TO postgres;
+
+--
+-- Name: pr_enum_message_types; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_enum_message_types AS ENUM (
+    'MESSAGE',
+    'PROFIREADER_NOTIFICATION'
+);
+
+
+ALTER TYPE pr_enum_message_types OWNER TO postgres;
+
+--
+-- Name: pr_enum_publication_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_enum_publication_status AS ENUM (
+    'PUBLISHED',
+    'DELETED',
+    'SUBMITTED',
+    'UNPUBLISHED'
+);
+
+
+ALTER TYPE pr_enum_publication_status OWNER TO postgres;
+
+--
+-- Name: pr_enum_publication_visibility; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_enum_publication_visibility AS ENUM (
+    'OPEN',
+    'REGISTERED',
+    'PAYED',
+    'CONFIDENTIAL'
+);
+
+
+ALTER TYPE pr_enum_publication_visibility OWNER TO postgres;
+
+--
+-- Name: pr_enum_user_company_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_enum_user_company_status AS ENUM (
+    'APPLICANT',
+    'ACTIVE',
+    'REJECTED',
+    'SUSPENDED',
+    'FIRED'
+);
+
+
+ALTER TYPE pr_enum_user_company_status OWNER TO postgres;
+
+--
+-- Name: status_name_type; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE status_name_type AS ENUM (
+    'active',
+    'nonactive',
+    'blocked',
+    'deleted',
+    'rejected',
+    'suspended'
+);
+
+
+ALTER TYPE status_name_type OWNER TO postgres;
+
+--
+-- Name: __disfigure_email(character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __disfigure_email(an_email character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$BEGIN
+   UPDATE "user" SET address_email = address_email || create_uuid() WHERE address_email = an_email;
+   RETURN 0;
+END$$;
+
+
+ALTER FUNCTION public.__disfigure_email(an_email character varying) OWNER TO postgres;
+
+--
+-- Name: __get_all_referring_columns(character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __get_all_referring_columns(a_table character varying, a_column character varying) RETURNS TABLE("table" character varying, "column" character varying)
+    LANGUAGE plpgsql
+    AS $$
+begin
+    return query select R.TABLE_NAME::character varying, U.COLUMN_NAME::character varying
+from INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE u
+inner join INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS FK
+    on U.CONSTRAINT_CATALOG = FK.UNIQUE_CONSTRAINT_CATALOG
+    and U.CONSTRAINT_SCHEMA = FK.UNIQUE_CONSTRAINT_SCHEMA
+    and U.CONSTRAINT_NAME = FK.UNIQUE_CONSTRAINT_NAME
+inner join INFORMATION_SCHEMA.KEY_COLUMN_USAGE R
+    ON R.CONSTRAINT_CATALOG = FK.CONSTRAINT_CATALOG
+    AND R.CONSTRAINT_SCHEMA = FK.CONSTRAINT_SCHEMA
+    AND R.CONSTRAINT_NAME = FK.CONSTRAINT_NAME
+WHERE U.TABLE_NAME = a_table AND U.COLUMN_NAME = a_column;
+end;
+$$;
+
+
+ALTER FUNCTION public.__get_all_referring_columns(a_table character varying, a_column character varying) OWNER TO postgres;
+
+--
+-- Name: __localize_emails(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __localize_emails() RETURNS integer
+    LANGUAGE plpgsql
+    AS $$BEGIN
+  UPDATE "user" SET address_email = replace(address_email, '@', '__AT__') || '@profi.ntaxa.com';
+   RETURN 0;
+END$$;
+
+
+ALTER FUNCTION public.__localize_emails() OWNER TO postgres;
+
+--
+-- Name: __localize_hosts(character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __localize_hosts(a_local_host character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$BEGIN
+   UPDATE "portal" SET host = host || '.' || a_local_host;
+   RETURN 0;
+END$$;
+
+
+ALTER FUNCTION public.__localize_hosts(a_local_host character varying) OWNER TO postgres;
+
+--
+-- Name: __strip_tags(text); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __strip_tags(text) RETURNS text
+    LANGUAGE sql
+    AS $_$     SELECT replace(regexp_replace(
+        regexp_replace($1, E'(?x)<[^>]*?(\s alt \s* = \s* ([\'"]) ([^>]*?) \2) [^>]*? >', E'\3'), 
+       E'(?x)(< [^>]*? >)', '', 'g'), '&nbsp;',' ')$_$;
+
+
+ALTER FUNCTION public.__strip_tags(text) OWNER TO postgres;
+
+--
+-- Name: average_usage_func(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION average_usage_func() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+NEW.average_time = NEW.total_time/NEW.total_using;
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.average_usage_func() OWNER TO postgres;
+
+--
+-- Name: contact_request_count(character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION contact_request_count(a_user_id character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$DECLARE 
+cnt INTEGER;
+BEGIN
+
+SELECT INTO cnt COUNT(*) FROM contact WHERE (contact.user2_id = a_user_id AND contact.status = 'REQUESTED_UNCONFIRMED') OR (contact.user1_id = a_user_id AND contact.status = 'UNCONFIRMED_REQUESTED');
+
+RETURN cnt;
+
+END$$;
+
+
+ALTER FUNCTION public.contact_request_count(a_user_id character varying) OWNER TO postgres;
+
+--
+-- Name: create_company_root_folders(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION create_company_root_folders() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+-- NEW.id = create_uuid();
+
+WITH a AS (INSERT INTO file (mime, name) VALUES ('root', '.journalist_files') RETURNING id)
+  SELECT id INTO NEW.journalist_folder_file_id FROM a;
+
+WITH a AS (INSERT INTO file (mime, name) VALUES ('root', '.system_company_files') RETURNING id)
+  SELECT id INTO NEW.system_folder_file_id FROM a;
+
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.create_company_root_folders() OWNER TO postgres;
+
+--
+-- Name: create_personal_folder_for_user(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION create_personal_folder_for_user() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+-- NEW.id = create_uuid();
+
+WITH a AS (INSERT INTO file (mime, name) VALUES ('root', '.system_user_files') RETURNING id) SELECT id INTO NEW.system_folder_file_id FROM a;
+
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.create_personal_folder_for_user() OWNER TO postgres;
+
+--
+-- Name: create_uuid(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION create_uuid() RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$DECLARE
+BEGIN
+   -- f47ac10b-58cc-4372-a567-0e02b2c3d479
+
+   return create_uuid_from_timestamp_and_server_id(localtimestamp, '001');
+
+END
+$$;
+
+
+ALTER FUNCTION public.create_uuid() OWNER TO postgres;
+
+--
+-- Name: create_uuid_from_timestamp_and_server_id(timestamp without time zone, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION create_uuid_from_timestamp_and_server_id(tmstmp timestamp without time zone, server_id character varying) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$DECLARE
+    local_time double precision := EXTRACT(EPOCH FROM tmstmp)::double precision;
+BEGIN
+
+return lpad(to_hex(floor(local_time)::int), 8, '0') || '-' ||
+             lpad(to_hex(floor((local_time - floor(local_time))*65535)::int), 4, '0') || '-' ||
+             '4' || server_id || '-' ||
+             overlay(
+                     to_hex((floor(random() * 65535)::int | (x'8000'::int) ) &  (x'bfff'::int)  ) ||
+                     lpad(to_hex(floor(random() * 65535)::bigint),4,'0') || lpad(to_hex(floor(random() * 65535)::bigint),4,'0') || lpad(to_hex(floor(random() * 65535)::bigint),4,'0')
+                  placing '-' from 5 for 0);
+
+END$$;
+
+
+ALTER FUNCTION public.create_uuid_from_timestamp_and_server_id(tmstmp timestamp without time zone, server_id character varying) OWNER TO postgres;
+
+--
+-- Name: message_set_last_message_tm_in_contact(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION message_set_last_message_tm_in_contact() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+   UPDATE "contact" SET last_message_tm = NEW.cr_tm WHERE contact.id = NEW.contact_id;
+   return NEW;
+END$$;
+
+
+ALTER FUNCTION public.message_set_last_message_tm_in_contact() OWNER TO postgres;
+
+--
+-- Name: message_set_read(character varying, character varying[]); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION message_set_read(a_contact_id character varying, a_message_ids character varying[]) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$BEGIN
+   UPDATE message SET read_tm = clock_timestamp() WHERE read_tm IS NULL AND message.contact_id = a_contact_id AND message.id = ANY(a_message_ids);
+   RETURN 0;
+END$$;
+
+
+ALTER FUNCTION public.message_set_read(a_contact_id character varying, a_message_ids character varying[]) OWNER TO postgres;
+
+--
+-- Name: message_unread_count(character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION message_unread_count(a_to_user_id character varying, a_contact_id character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$DECLARE 
+cnt INTEGER;
+BEGIN
+IF a_contact_id is NULL THEN
+  SELECT INTO cnt COUNT(*) FROM message LEFT JOIN contact ON (message.contact_id = contact.id) 
+  WHERE message.read_tm IS NULL AND message.from_user_id != a_to_user_id AND (contact.user1_id = a_to_user_id OR contact.user2_id = a_to_user_id);
+ELSE
+  IF a_contact_id = 'notification' THEN
+    SELECT INTO cnt COUNT(*) FROM notification WHERE notification.read_tm IS NULL AND notification.to_user_id = a_to_user_id;
+  ELSE
+    SELECT INTO cnt COUNT(*) FROM message LEFT JOIN contact ON (message.contact_id = contact.id) 
+    WHERE message.read_tm IS NULL AND message.from_user_id != a_to_user_id AND (contact.user1_id = a_to_user_id OR contact.user2_id = a_to_user_id) AND contact.id = a_contact_id;
+  END IF;
+END IF;
+RETURN cnt;
+END$$;
+
+
+ALTER FUNCTION public.message_unread_count(a_to_user_id character varying, a_contact_id character varying) OWNER TO postgres;
+
+--
+-- Name: notification_set_read(character varying[]); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION notification_set_read(a_notification_ids character varying[]) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$BEGIN
+   UPDATE notification SET read_tm = clock_timestamp() WHERE read_tm IS NULL AND notification.id = ANY(a_notification_ids);
+   RETURN 0;
+END$$;
+
+
+ALTER FUNCTION public.notification_set_read(a_notification_ids character varying[]) OWNER TO postgres;
+
+--
+-- Name: notification_unread_count(character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION notification_unread_count(a_to_user_id character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$DECLARE 
+cnt INTEGER;
+BEGIN
+
+SELECT INTO cnt COUNT(*) FROM notification WHERE  to_user_id=a_to_user_id AND read_tm IS NULL;
+RETURN cnt;
+
+END$$;
+
+
+ALTER FUNCTION public.notification_unread_count(a_to_user_id character varying) OWNER TO postgres;
+
+--
+-- Name: row_cr(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION row_cr() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+NEW.cr_tm = clock_timestamp();
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.row_cr() OWNER TO postgres;
+
+--
+-- Name: row_cr_md(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION row_cr_md() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+NEW.cr_tm = clock_timestamp();
+NEW.md_tm = NEW.cr_tm;
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.row_cr_md() OWNER TO postgres;
+
+--
+-- Name: row_cr_md_ac(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION row_cr_md_ac() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+NEW.cr_tm = clock_timestamp();
+NEW.md_tm = NEW.cr_tm;
+NEW.ac_tm = NEW.cr_tm;
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.row_cr_md_ac() OWNER TO postgres;
+
+--
+-- Name: row_id(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION row_id() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$DECLARE
+    local_time double precision := EXTRACT(EPOCH FROM localtimestamp)::double precision;
+    server_id character(3) := '001';
+BEGIN
+   -- f47ac10b-58cc-4372-a567-0e02b2c3d479
+
+   NEW.id = create_uuid();
+
+--   lpad(to_hex(floor(local_time)::int), 8, '0') || '-' ||
+--             lpad(to_hex(floor((local_time - floor(local_time))*100000)::int), 4, '0') || '-' ||
+--           '4' || server_id || '-' ||
+--         overlay(
+--                   to_hex((floor(random() * 65535)::int | (x'8000'::int) ) &  (x'bfff'::int)  ) ||
+--                 lpad(to_hex(floor(random() * 65535)::bigint),4,'0') || lpad(to_hex(floor(random() * 65535)::bigint),4,'0') || lpad(to_hex(floor(random() * 65535)::bigint),4,'0')
+--                  placing '-' from 5 for 0);
+
+
+   return NEW;
+
+
+END$$;
+
+
+ALTER FUNCTION public.row_id() OWNER TO postgres;
+
+--
+-- Name: row_id_cr(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION row_id_cr() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+   NEW.id = create_uuid();
+
+   NEW.cr_tm = clock_timestamp();
+
+   return NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.row_id_cr() OWNER TO postgres;
+
+--
+-- Name: row_id_cr_md(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION row_id_cr_md() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$    
+BEGIN
+   NEW.id = create_uuid();
+
+   NEW.cr_tm = clock_timestamp();
+   NEW.md_tm = NEW.cr_tm;
+
+   return NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.row_id_cr_md() OWNER TO postgres;
+
+--
+-- Name: row_id_cr_md_ac(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION row_id_cr_md_ac() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+NEW.id = create_uuid();
+NEW.cr_tm = clock_timestamp();
+NEW.md_tm = NEW.cr_tm;
+NEW.ac_tm = NEW.cr_tm;
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.row_id_cr_md_ac() OWNER TO postgres;
+
+--
+-- Name: row_last_message_tm(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION row_last_message_tm() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+NEW.last_message_tm = clock_timestamp();
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.row_last_message_tm() OWNER TO postgres;
+
+--
+-- Name: row_md(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION row_md() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+NEW.md_tm = clock_timestamp();
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.row_md() OWNER TO postgres;
+
+--
+-- Name: row_publishing_tm_if_null(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION row_publishing_tm_if_null() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+NEW.publishing_tm = (case when NEW.publishing_tm IS NULL then clock_timestamp() else NEW.publishing_tm end);
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.row_publishing_tm_if_null() OWNER TO postgres;
+
+--
+-- Name: search_tm_if_null(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION search_tm_if_null() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+NEW.md_tm = (case when NEW.md_tm IS NULL then clock_timestamp() else NEW.md_tm end);
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.search_tm_if_null() OWNER TO postgres;
+
+--
+-- Name: seconds_ago(timestamp without time zone); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION seconds_ago(a_time timestamp without time zone) RETURNS double precision
+    LANGUAGE plpgsql
+    AS $$BEGIN
+IF a_time IS NULL THEN
+  RETURN to_tmstp(NULL);
+ELSE
+  RETURN to_tmstp(NULL) - to_tmstp(a_time);
+END IF;
+END$$;
+
+
+ALTER FUNCTION public.seconds_ago(a_time timestamp without time zone) OWNER TO postgres;
+
+--
+-- Name: show_enum_types(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION show_enum_types() RETURNS TABLE(enum_schema text, enum_name text, enum_values text)
+    LANGUAGE plpgsql
+    AS $$
+
+BEGIN
+   RETURN QUERY EXECUTE 'SELECT n.nspname::text as enum_schema, t.typname::text as enum_name, string_agg(e.enumlabel, '', '')::text AS enum_values FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace GROUP BY enum_schema, enum_name';
+
+END
+$$;
+
+
+ALTER FUNCTION public.show_enum_types() OWNER TO postgres;
+
+--
+-- Name: tag_membersgip_set_portal_division_to_catalog(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION tag_membersgip_set_portal_division_to_catalog() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+SELECT INTO NEW.portal_division_id id FROM portal_division WHERE portal_division.portal_division_type_id = 'catalog' AND portal_division.portal_id = NEW.portal_id;
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.tag_membersgip_set_portal_division_to_catalog() OWNER TO postgres;
+
+--
+-- Name: tag_membership_unset_all_tags_on_catalog_change(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION tag_membership_unset_all_tags_on_catalog_change() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+IF OLD.portal_division_type_id = 'catalog' AND NEW.portal_division_type_id != 'catalog' THEN
+   DELETE FROM tag_membership WHERE tag_membership.portal_division_id = OLD.id;
+END IF;
+
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.tag_membership_unset_all_tags_on_catalog_change() OWNER TO postgres;
+
+--
+-- Name: tag_publication_set_position(character varying, character varying[]); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION tag_publication_set_position(pub_id character varying, tag_ids character varying[]) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$DECLARE
+    total integer := 0;
+BEGIN
+    total := array_length(tag_ids, 1);
+    FOR i in 1 .. total LOOP
+      UPDATE tag_publication SET position = total - i + 1 WHERE tag_publication.publication_id = pub_id AND tag_publication.tag_id = tag_ids[i];
+   END LOOP;
+   RETURN total;
+END$$;
+
+
+ALTER FUNCTION public.tag_publication_set_position(pub_id character varying, tag_ids character varying[]) OWNER TO postgres;
+
+--
+-- Name: thumbnails_delete_from_files(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION thumbnails_delete_from_files() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+IF TG_OP = 'UPDATE' then
+  DELETE FROM "file" WHERE (id = OLD.provenance_image_file_id AND NEW.provenance_image_file_id <> id) OR (id = OLD.proceeded_image_file_id AND NEW.proceeded_image_file_id <> id);
+  RETURN NEW;
+ELSIF TG_OP = 'DELETE' then
+  DELETE FROM "file" WHERE (id = OLD.provenance_image_file_id) OR (id = OLD.proceeded_image_file_id);
+  RETURN OLD;
+END IF;
+END$$;
+
+
+ALTER FUNCTION public.thumbnails_delete_from_files() OWNER TO postgres;
+
+--
+-- Name: to_tmstp(timestamp without time zone); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION to_tmstp(a_time timestamp without time zone) RETURNS double precision
+    LANGUAGE plpgsql
+    AS $$DECLARE 
+  cnt double precision;
+BEGIN
+IF a_time is NULL THEN
+  SELECT INTO cnt extract(epoch from clock_timestamp());
+ELSE
+  SELECT INTO cnt extract(epoch from a_time);
+END IF;
+RETURN cnt;
+END$$;
+
+
+ALTER FUNCTION public.to_tmstp(a_time timestamp without time zone) OWNER TO postgres;
+
+--
+-- Name: user_full_name(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION user_full_name() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+NEW.full_name = trim(both ' ' from trim(both ' ' from NEW.first_name) || ' ' || trim(both ' ' from NEW.last_name));
+
+IF NEW.full_name = '' THEN
+NEW.full_name = NEW.address_email;
+END IF;
+
+IF NEW.full_name = '' THEN
+NEW.full_name = NEW.id;
+END IF;
+
+RETURN NEW;
+
+END$$;
+
+
+ALTER FUNCTION public.user_full_name() OWNER TO postgres;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: _del_article; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE _del_article (
+    id character varying(36) NOT NULL,
+    author_user_id character varying(36) NOT NULL
+);
+
+
+ALTER TABLE _del_article OWNER TO pfuser;
+
+--
+-- Name: _del_article_company; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE _del_article_company (
+    id character varying(36) NOT NULL,
+    editor_user_id character varying(36) NOT NULL,
+    company_id character varying(36),
+    title character varying(200) DEFAULT ''::character varying NOT NULL,
+    short text DEFAULT ''::text NOT NULL,
+    long text DEFAULT ''::text NOT NULL,
+    article_id character varying(36) NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone NOT NULL,
+    status pr_enum_material_status DEFAULT 'NORMAL'::pr_enum_material_status NOT NULL,
+    image_file_id character varying(36),
+    keywords character varying(1000) DEFAULT ''::character varying NOT NULL,
+    long_stripped text DEFAULT ''::text NOT NULL,
+    subtitle character varying(1000) DEFAULT ''::character varying NOT NULL
+);
+
+
+ALTER TABLE _del_article_company OWNER TO pfuser;
+
+--
+-- Name: article_company_history_id_seq; Type: SEQUENCE; Schema: public; Owner: pfuser
+--
+
+CREATE SEQUENCE article_company_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE article_company_history_id_seq OWNER TO pfuser;
+
+--
+-- Name: _del_article_company_history; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE _del_article_company_history (
+    id bigint DEFAULT nextval('article_company_history_id_seq'::regclass) NOT NULL,
+    editor_user_id character varying(36),
+    company_id character varying(36),
+    name character varying(200),
+    short text,
+    long text,
+    article_company_id character varying(36),
+    article_id character varying(36)
+);
+
+
+ALTER TABLE _del_article_company_history OWNER TO pfuser;
+
+--
+-- Name: _del_article_portal_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE _del_article_portal_division (
+    id character varying NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    article_company_id character varying(36) NOT NULL,
+    title character varying(200) DEFAULT ''::text NOT NULL,
+    short text DEFAULT ''::text NOT NULL,
+    long text DEFAULT ''::text NOT NULL,
+    md_tm timestamp without time zone NOT NULL,
+    status pr_enum_publication_status DEFAULT 'SUBMITTED'::pr_enum_publication_status NOT NULL,
+    portal_division_id character varying(36) NOT NULL,
+    publishing_tm timestamp without time zone NOT NULL,
+    image_file_id character varying(36),
+    long_stripped text DEFAULT ''::text NOT NULL,
+    keywords character varying(1000) DEFAULT ''::character varying NOT NULL,
+    "position" integer,
+    read_count integer DEFAULT 0 NOT NULL,
+    subtitle character varying DEFAULT ''::character varying NOT NULL,
+    visibility pr_enum_publication_visibility DEFAULT 'OPEN'::pr_enum_publication_visibility NOT NULL,
+    like_count integer DEFAULT 0 NOT NULL,
+    event_begin_tm timestamp without time zone,
+    event_end_tm timestamp without time zone,
+    author character varying(50) DEFAULT ''::character varying NOT NULL
+);
+
+
+ALTER TABLE _del_article_portal_division OWNER TO pfuser;
+
+--
+-- Name: TABLE _del_article_portal_division; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON TABLE _del_article_portal_division IS 'rename to publication';
+
+
+--
+-- Name: COLUMN _del_article_portal_division.portal_division_id; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON COLUMN _del_article_portal_division.portal_division_id IS 'this field added to primary key only for _ternary_relationship_ only (e.g. by table tag_publication)';
+
+
+--
+-- Name: company; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE company (
+    id character varying(36) NOT NULL,
+    name character varying(100) NOT NULL,
+    _delme_logo_file_id character varying(36),
+    portal_consist boolean,
+    author_user_id character varying(36) NOT NULL,
+    country character varying(100),
+    region character varying(100),
+    address character varying(100),
+    phone character varying(20),
+    phone2 character varying(20),
+    email character varying(100),
+    short_description character varying(100000) DEFAULT ''::character varying NOT NULL,
+    journalist_folder_file_id character varying(36),
+    portal_domain character varying,
+    system_folder_file_id character varying(36),
+    about character varying(100000) DEFAULT ''::character varying NOT NULL,
+    lat real DEFAULT 49.8419097,
+    lon real DEFAULT 24.0316193,
+    status pr_enum_company_status DEFAULT 'ACTIVE'::pr_enum_company_status NOT NULL,
+    city character varying(100) DEFAULT ''::character varying NOT NULL,
+    postcode character varying(50) DEFAULT ''::character varying NOT NULL,
+    logo_file_img_id character varying(36),
+    cr_tm timestamp without time zone DEFAULT ('now'::text)::timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone DEFAULT ('now'::text)::timestamp without time zone NOT NULL
+);
+
+
+ALTER TABLE company OWNER TO pfuser;
+
+--
+-- Name: config; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE config (
+    id character varying(200) NOT NULL,
+    value character varying(1000),
+    type pr_enum_config_type DEFAULT 'string'::pr_enum_config_type NOT NULL,
+    comment character varying(10000),
+    client_side integer DEFAULT 1 NOT NULL,
+    server_side integer DEFAULT 1 NOT NULL
+);
+
+
+ALTER TABLE config OWNER TO pfuser;
+
+--
+-- Name: contact; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE contact (
+    id character varying(36) NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone NOT NULL,
+    user1_id character varying(36) NOT NULL,
+    user2_id character varying(36) NOT NULL,
+    status pr_enum_contact_status NOT NULL,
+    last_message_tm timestamp without time zone,
+    CONSTRAINT contact_user1_less_user2 CHECK (((user1_id)::text < (user2_id)::text))
+);
+
+
+ALTER TABLE contact OWNER TO pfuser;
+
+--
+-- Name: country; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE country (
+    id character varying(36) NOT NULL,
+    iso character(2) NOT NULL,
+    name character varying(80) NOT NULL,
+    phonecode character varying(5) NOT NULL
+);
+
+
+ALTER TABLE country OWNER TO pfuser;
+
+--
+-- Name: employee; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE employee (
+    id integer NOT NULL,
+    name character varying,
+    hired_on timestamp without time zone
+);
+
+
+ALTER TABLE employee OWNER TO pfuser;
+
+--
+-- Name: employee_id_seq; Type: SEQUENCE; Schema: public; Owner: pfuser
+--
+
+CREATE SEQUENCE employee_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE employee_id_seq OWNER TO pfuser;
+
+--
+-- Name: employee_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pfuser
+--
+
+ALTER SEQUENCE employee_id_seq OWNED BY employee.id;
+
+
+--
+-- Name: file; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE file (
+    id character varying(36) NOT NULL,
+    parent_id character varying(36),
+    name character varying(1000) NOT NULL,
+    mime character varying(1000) NOT NULL,
+    description character varying(666) DEFAULT ''::character varying NOT NULL,
+    copyright character varying(666) DEFAULT ''::character varying NOT NULL,
+    company_id character varying(36),
+    ac_count integer DEFAULT 0 NOT NULL,
+    size integer DEFAULT 0 NOT NULL,
+    author_user_id character varying(36),
+    cr_tm timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone NOT NULL,
+    ac_tm timestamp without time zone NOT NULL,
+    copyright_author_name character varying(100) DEFAULT ''::character varying NOT NULL,
+    root_folder_id character varying(36),
+    material_id character varying(36),
+    youtube_id character varying(36),
+    thumbnail_id character varying(36)
+);
+
+
+ALTER TABLE file OWNER TO pfuser;
+
+--
+-- Name: file_content; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE file_content (
+    id character varying(36) NOT NULL,
+    content bytea
+);
+
+
+ALTER TABLE file_content OWNER TO pfuser;
+
+--
+-- Name: file_img; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE file_img (
+    id character varying(36) NOT NULL,
+    provenance_image_file_id character varying(36) NOT NULL,
+    crop_top real DEFAULT 0 NOT NULL,
+    crop_left real DEFAULT 0 NOT NULL,
+    crop_width real NOT NULL,
+    crop_height real NOT NULL,
+    rotate integer DEFAULT 0,
+    proceeded_image_file_id character varying(36) NOT NULL,
+    provenance_width integer DEFAULT 0,
+    provenance_height integer DEFAULT 0,
+    origin_zoom real NOT NULL,
+    cr_tm timestamp without time zone,
+    origin_left real DEFAULT 0 NOT NULL,
+    origin_top real DEFAULT 0 NOT NULL,
+    md_tm timestamp without time zone NOT NULL
+);
+
+
+ALTER TABLE file_img OWNER TO pfuser;
+
+--
+-- Name: func_profiler; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE func_profiler (
+    id character varying(36) NOT NULL,
+    name character varying(200) NOT NULL,
+    blueprint_name character varying(200) NOT NULL,
+    cr_tm timestamp without time zone,
+    total_time real,
+    average_time real,
+    md_tm timestamp without time zone,
+    method character varying(30),
+    total_using integer
+);
+
+
+ALTER TABLE func_profiler OWNER TO pfuser;
+
+--
+-- Name: google_token; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE google_token (
+    id character varying(36) NOT NULL,
+    credentials character varying(1000) NOT NULL
+);
+
+
+ALTER TABLE google_token OWNER TO pfuser;
+
+--
+-- Name: group; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE "group" (
+    id character varying(30) NOT NULL
+);
+
+
+ALTER TABLE "group" OWNER TO pfuser;
+
+--
+-- Name: TABLE "group"; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON TABLE "group" IS 'persistent';
+
+
+--
+-- Name: ip; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE ip (
+    id character varying(36) NOT NULL,
+    ip character varying(100) NOT NULL
+);
+
+
+ALTER TABLE ip OWNER TO pfuser;
+
+--
+-- Name: material; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE material (
+    id character varying NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    title character varying(200) DEFAULT ''::character varying NOT NULL,
+    short text DEFAULT ''::text NOT NULL,
+    long text DEFAULT ''::text NOT NULL,
+    md_tm timestamp without time zone NOT NULL,
+    _del_image_file_id character varying(36),
+    keywords character varying(1000) DEFAULT ''::character varying NOT NULL,
+    subtitle character varying DEFAULT ''::character varying NOT NULL,
+    author character varying(50) DEFAULT ''::character varying NOT NULL,
+    editor_user_id character varying(36) NOT NULL,
+    company_id character varying(36) NOT NULL,
+    status pr_enum_material_status DEFAULT 'NORMAL'::pr_enum_material_status NOT NULL,
+    illustration_file_img_id character varying(36)
+);
+
+
+ALTER TABLE material OWNER TO pfuser;
+
+--
+-- Name: member_company_portal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE member_company_portal (
+    id character varying(36) NOT NULL,
+    company_id character varying(36) NOT NULL,
+    portal_id character varying(36) NOT NULL,
+    member_company_portal_plan_id character varying(36),
+    rights bigint DEFAULT 0 NOT NULL,
+    status pr_enum_member_company_portal_status DEFAULT 'APPLICANT'::pr_enum_member_company_portal_status NOT NULL,
+    cr_tm timestamp without time zone NOT NULL
+);
+
+
+ALTER TABLE member_company_portal OWNER TO pfuser;
+
+--
+-- Name: member_company_portal_plan; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE member_company_portal_plan (
+    id character varying(36) NOT NULL,
+    name character varying(100) NOT NULL
+);
+
+
+ALTER TABLE member_company_portal_plan OWNER TO pfuser;
+
+--
+-- Name: TABLE member_company_portal_plan; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON TABLE member_company_portal_plan IS 'persistent';
+
+
+--
+-- Name: message; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE message (
+    id character varying(36) NOT NULL,
+    contact_id character varying(36) NOT NULL,
+    read_tm timestamp without time zone,
+    content character varying(1000) NOT NULL,
+    from_user_id character varying(36) NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    del_informed_by_email_about_unread timestamp without time zone
+);
+
+
+ALTER TABLE message OWNER TO pfuser;
+
+--
+-- Name: notification; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE notification (
+    id character varying(36) NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    read_tm timestamp without time zone,
+    content character varying(65535) NOT NULL,
+    to_user_id character varying(36) NOT NULL,
+    notification_type character varying(100) NOT NULL,
+    del_informed_by_email_about_unread timestamp without time zone,
+    notification_data json DEFAULT '{}'::json NOT NULL,
+    content_stripped character varying(1000) NOT NULL
+);
+
+
+ALTER TABLE notification OWNER TO pfuser;
+
+--
+-- Name: portal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE portal (
+    id character varying(36) NOT NULL,
+    name character varying(100) NOT NULL,
+    company_owner_id character varying(36) NOT NULL,
+    portal_layout_id character varying(36) DEFAULT '579944f0-82a0-4001-b175-e97255232d1c'::character varying NOT NULL,
+    host character varying(200),
+    lang character varying(2) DEFAULT 'uk'::character varying NOT NULL,
+    url_facebook character varying(1000),
+    url_google character varying(1000),
+    url_linkedin character varying(1000),
+    logo_file_img_id character varying(36),
+    aliases text DEFAULT ''::text,
+    status character varying(50) DEFAULT 'ACTIVE'::character varying NOT NULL,
+    favicon_file_img_id character varying(36),
+    url_twitter character varying(1000)
+);
+
+
+ALTER TABLE portal OWNER TO pfuser;
+
+--
+-- Name: portal_adv; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE portal_adv (
+    id character varying(36) NOT NULL,
+    portal_id character varying(36) NOT NULL,
+    place character varying(100) NOT NULL,
+    html character varying(100000) DEFAULT ''::character varying NOT NULL
+);
+
+
+ALTER TABLE portal_adv OWNER TO pfuser;
+
+--
+-- Name: portal_config; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE portal_config (
+    id character varying(36) NOT NULL,
+    division_page_size character varying(1000)
+);
+
+
+ALTER TABLE portal_config OWNER TO pfuser;
+
+--
+-- Name: portal_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE portal_division (
+    id character varying(36) NOT NULL,
+    cr_tm timestamp without time zone,
+    md_tm timestamp without time zone,
+    portal_division_type_id character varying(36) NOT NULL,
+    name character varying(50) DEFAULT ''::character varying NOT NULL,
+    portal_id character varying(36) NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    html_description character varying(10000) DEFAULT ''::character varying NOT NULL,
+    html_keywords character varying(1000) DEFAULT ''::character varying NOT NULL,
+    html_title character varying(1000) DEFAULT ''::character varying NOT NULL
+);
+
+
+ALTER TABLE portal_division OWNER TO pfuser;
+
+--
+-- Name: COLUMN portal_division.portal_id; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON COLUMN portal_division.portal_id IS 'this field added to primary key only for _ternary_relationship_ only (e.g. by table tag_portal_division)';
+
+
+--
+-- Name: portal_division_settings_company_subportal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE portal_division_settings_company_subportal (
+    id character varying(36) NOT NULL,
+    cr_tm timestamp without time zone,
+    md_tm timestamp without time zone,
+    portal_division_id character varying(36) NOT NULL,
+    member_company_portal_id character varying(36) NOT NULL
+);
+
+
+ALTER TABLE portal_division_settings_company_subportal OWNER TO pfuser;
+
+--
+-- Name: portal_division_type; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE portal_division_type (
+    id character varying(50) NOT NULL,
+    min integer DEFAULT 0 NOT NULL,
+    max integer DEFAULT 3 NOT NULL
+);
+
+
+ALTER TABLE portal_division_type OWNER TO pfuser;
+
+--
+-- Name: TABLE portal_division_type; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON TABLE portal_division_type IS 'persistent';
+
+
+--
+-- Name: portal_layout; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE portal_layout (
+    id character varying(36) NOT NULL,
+    name character varying(50) NOT NULL,
+    path character varying DEFAULT 'bird/'::character varying
+);
+
+
+ALTER TABLE portal_layout OWNER TO pfuser;
+
+--
+-- Name: TABLE portal_layout; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON TABLE portal_layout IS 'persistent';
+
+
+--
+-- Name: portal_layout_adv_places; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE portal_layout_adv_places (
+    id character varying(36) NOT NULL,
+    portal_layout_id character varying(36) NOT NULL,
+    place character varying(100) NOT NULL,
+    default_value text DEFAULT ''::text NOT NULL,
+    help text
+);
+
+
+ALTER TABLE portal_layout_adv_places OWNER TO pfuser;
+
+--
+-- Name: publication; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE publication (
+    id character varying NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone NOT NULL,
+    status pr_enum_publication_status DEFAULT 'SUBMITTED'::pr_enum_publication_status NOT NULL,
+    portal_division_id character varying(36) NOT NULL,
+    publishing_tm timestamp without time zone NOT NULL,
+    read_count integer DEFAULT 0 NOT NULL,
+    visibility pr_enum_publication_visibility DEFAULT 'REGISTERED'::pr_enum_publication_visibility NOT NULL,
+    like_count integer DEFAULT 0 NOT NULL,
+    event_begin_tm timestamp without time zone,
+    event_end_tm timestamp without time zone,
+    author character varying(50),
+    material_id character varying(36) NOT NULL
+);
+
+
+ALTER TABLE publication OWNER TO pfuser;
+
+--
+-- Name: reader_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE reader_division (
+    id character varying(36) NOT NULL,
+    reader_portal_id character varying(36),
+    division_id character varying(36),
+    _show_division_and_comments integer
+);
+
+
+ALTER TABLE reader_division OWNER TO pfuser;
+
+--
+-- Name: reader_portal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE reader_portal (
+    id character varying(36) NOT NULL,
+    user_id character varying(36) NOT NULL,
+    status character varying(36) DEFAULT 'active'::character varying NOT NULL,
+    portal_plan_id character varying(36) NOT NULL,
+    portal_id character varying(36) NOT NULL,
+    start_tm timestamp without time zone DEFAULT '2016-02-01 15:21:26.413273'::timestamp without time zone,
+    end_tm timestamp without time zone DEFAULT '2019-04-04 02:08:05.413273'::timestamp without time zone,
+    amount integer DEFAULT 9999999
+);
+
+
+ALTER TABLE reader_portal OWNER TO pfuser;
+
+--
+-- Name: reader_publication; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE reader_publication (
+    id character varying(36) NOT NULL,
+    user_id character varying(36),
+    publication_id character varying(36),
+    favorite boolean DEFAULT false,
+    liked boolean DEFAULT false
+);
+
+
+ALTER TABLE reader_publication OWNER TO pfuser;
+
+--
+-- Name: reader_user_portal_plan; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE reader_user_portal_plan (
+    id character varying(36) NOT NULL,
+    name character varying(100) NOT NULL,
+    price real DEFAULT 0,
+    "time" bigint DEFAULT 99999999,
+    amount integer DEFAULT 9999999
+);
+
+
+ALTER TABLE reader_user_portal_plan OWNER TO pfuser;
+
+--
+-- Name: TABLE reader_user_portal_plan; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON TABLE reader_user_portal_plan IS 'persistent';
+
+
+--
+-- Name: search; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE search (
+    id character varying(36) NOT NULL,
+    index character varying(36),
+    table_name character varying(100),
+    text character varying(65000),
+    relevance integer,
+    kind character varying(100),
+    md_tm timestamp without time zone,
+    "position" integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE search OWNER TO pfuser;
+
+--
+-- Name: tag; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE tag (
+    id character varying(36) NOT NULL,
+    portal_id character varying(36) NOT NULL,
+    text character varying(100) NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone NOT NULL,
+    description character varying(500) DEFAULT ''::character varying NOT NULL
+);
+
+
+ALTER TABLE tag OWNER TO pfuser;
+
+--
+-- Name: COLUMN tag.portal_id; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON COLUMN tag.portal_id IS 'this field added to primary key only for _ternary_relationship_ only (e.g. by table tag_portal_division)';
+
+
+--
+-- Name: tag_membership; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE tag_membership (
+    tag_id character varying(36) NOT NULL,
+    portal_id character varying(36) NOT NULL,
+    member_company_portal_id character varying(36) NOT NULL,
+    "position" integer DEFAULT 1 NOT NULL,
+    portal_division_id character varying(36) NOT NULL,
+    CONSTRAINT tag_membership_ck_position CHECK (("position" > 0))
+);
+
+
+ALTER TABLE tag_membership OWNER TO pfuser;
+
+--
+-- Name: tag_portal_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE tag_portal_division (
+    portal_division_id character varying(36) NOT NULL,
+    tag_id character varying(36) NOT NULL,
+    portal_id character varying(36) NOT NULL
+);
+
+
+ALTER TABLE tag_portal_division OWNER TO pfuser;
+
+--
+-- Name: COLUMN tag_portal_division.portal_id; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON COLUMN tag_portal_division.portal_id IS 'this column contain superfluous data (can be achieved via column portal_division_id=>portal_id) but added to prohibit inconsistent data (diamond relationship exists)';
+
+
+--
+-- Name: tag_publication; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE tag_publication (
+    publication_id character varying(36) NOT NULL,
+    tag_id character varying(36) NOT NULL,
+    "position" integer NOT NULL,
+    portal_division_id character varying(36) NOT NULL,
+    CONSTRAINT tag_portal_division_article_check_positin_gt0 CHECK (("position" > 0))
+);
+
+
+ALTER TABLE tag_publication OWNER TO pfuser;
+
+--
+-- Name: COLUMN tag_publication.portal_division_id; Type: COMMENT; Schema: public; Owner: pfuser
+--
+
+COMMENT ON COLUMN tag_publication.portal_division_id IS 'this column contain superfluous data (can be achieved via column article_portal_division_id=>portal_division_id) but added to prohibit inconsistent data (diamond relationship exists)';
+
+
+--
+-- Name: translate; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE translate (
+    id character varying(36) NOT NULL,
+    template character varying(200) DEFAULT NULL::character varying,
+    name character varying(65535) NOT NULL,
+    uk character varying(65535) NOT NULL,
+    en character varying(65535) NOT NULL,
+    cr_tm timestamp without time zone DEFAULT clock_timestamp() NOT NULL,
+    md_tm timestamp without time zone DEFAULT clock_timestamp() NOT NULL,
+    ac_tm timestamp without time zone DEFAULT clock_timestamp(),
+    url character varying(10000) DEFAULT ''::character varying NOT NULL,
+    portal_id character varying(36),
+    allow_html character varying(1000) DEFAULT ''::character varying NOT NULL
+);
+
+
+ALTER TABLE translate OWNER TO pfuser;
+
+--
+-- Name: user; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE "user" (
+    id character varying(36) NOT NULL,
+    address_email character varying(100),
+    first_name character varying(100),
+    last_name character varying(100),
+    gender character varying(6),
+    address_url character varying(1000),
+    address_phone character varying(20),
+    about character varying(1000),
+    address_city character varying(64),
+    password_hash character varying(128),
+    email_confirmed boolean,
+    cr_tm timestamp without time zone,
+    last_seen_tm timestamp without time zone,
+    email_conf_token character varying(256),
+    email_conf_tm timestamp without time zone,
+    pass_reset_token character varying(128),
+    pass_reset_conf_tm timestamp without time zone,
+    google_id character varying(50),
+    facebook_id character varying(50),
+    linkedin_id character varying(50),
+    twitter_id character varying(50),
+    microsoft_id character varying(50),
+    yahoo_id character varying(50),
+    banned boolean DEFAULT false NOT NULL,
+    system_folder_file_id character varying(36),
+    lang character varying(2) DEFAULT 'uk'::character varying NOT NULL,
+    tos boolean DEFAULT false NOT NULL,
+    birth_tm date,
+    _delme_avatar_file_id character varying(36),
+    country_id character varying(36),
+    avatar_file_img_id character varying(36),
+    avatar_selected_preset character varying(50),
+    registered_via character varying(30) DEFAULT 'email'::character varying NOT NULL,
+    address_location character varying(500) DEFAULT ''::character varying NOT NULL,
+    md_tm timestamp without time zone NOT NULL,
+    full_name character varying(200) DEFAULT ''::character varying NOT NULL,
+    last_informed_about_unread_communication_tm timestamp without time zone
+);
+
+
+ALTER TABLE "user" OWNER TO pfuser;
+
+--
+-- Name: user_company; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE user_company (
+    id character varying(36) NOT NULL,
+    user_id character varying(36) NOT NULL,
+    company_id character varying(36) NOT NULL,
+    md_tm timestamp without time zone,
+    rights bigint DEFAULT 0 NOT NULL,
+    status pr_enum_user_company_status DEFAULT 'APPLICANT'::pr_enum_user_company_status NOT NULL,
+    "position" character varying(50) DEFAULT ''::character varying NOT NULL,
+    banned boolean DEFAULT false NOT NULL,
+    works_since_tm timestamp without time zone,
+    cr_tm timestamp without time zone NOT NULL,
+    CONSTRAINT unsigned_rights CHECK ((rights >= 0))
+);
+
+
+ALTER TABLE user_company OWNER TO pfuser;
+
+--
+-- Name: youtube_playlist; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE youtube_playlist (
+    id character varying(36) NOT NULL,
+    playlist_id character varying(120) NOT NULL,
+    name character varying(120),
+    company_id character varying(36),
+    md_tm timestamp without time zone
+);
+
+
+ALTER TABLE youtube_playlist OWNER TO pfuser;
+
+--
+-- Name: youtube_video; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE youtube_video (
+    id character varying(36) NOT NULL,
+    video_id character varying(120),
+    title character varying(120),
+    "authorization" character varying(128),
+    size bigint,
+    user_id character varying(36),
+    status character varying(30),
+    playlist_id character varying(120)
+);
+
+
+ALTER TABLE youtube_video OWNER TO pfuser;
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY employee ALTER COLUMN id SET DEFAULT nextval('employee_id_seq'::regclass);
+
+
+--
+-- Name: article_bulk_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY _del_article
+    ADD CONSTRAINT article_bulk_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: article_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY _del_article_company
+    ADD CONSTRAINT article_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: article_portal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY _del_article_portal_division
+    ADD CONSTRAINT article_portal_pkey PRIMARY KEY (id, portal_division_id);
+
+
+--
+-- Name: company_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY company
+    ADD CONSTRAINT company_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: company_portal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY member_company_portal
+    ADD CONSTRAINT company_portal_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: config_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY config
+    ADD CONSTRAINT config_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contact_unique_frendship; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY contact
+    ADD CONSTRAINT contact_unique_frendship UNIQUE (user1_id, user2_id);
+
+
+--
+-- Name: contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY contact
+    ADD CONSTRAINT contacts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: employee_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: favorite_reader_article_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY reader_publication
+    ADD CONSTRAINT favorite_reader_article_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: file_content_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY file_content
+    ADD CONSTRAINT file_content_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: file_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY file
+    ADD CONSTRAINT file_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: for_one_company_one_version; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY _del_article_company
+    ADD CONSTRAINT for_one_company_one_version UNIQUE (company_id, article_id);
+
+
+--
+-- Name: func_profiler_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY func_profiler
+    ADD CONSTRAINT func_profiler_pk PRIMARY KEY (id);
+
+
+--
+-- Name: google_token_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY google_token
+    ADD CONSTRAINT google_token_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: image_croped_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY file_img
+    ADD CONSTRAINT image_croped_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ip_ip_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY ip
+    ADD CONSTRAINT ip_ip_key UNIQUE (ip);
+
+
+--
+-- Name: ip_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY ip
+    ADD CONSTRAINT ip_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: membership_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY tag_membership
+    ADD CONSTRAINT membership_pk PRIMARY KEY (tag_id, member_company_portal_id);
+
+
+--
+-- Name: membership_uk_id_portal_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY member_company_portal
+    ADD CONSTRAINT membership_uk_id_portal_id UNIQUE (id, portal_id);
+
+
+--
+-- Name: pk_material_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY material
+    ADD CONSTRAINT pk_material_id PRIMARY KEY (id);
+
+
+--
+-- Name: pk_message; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY message
+    ADD CONSTRAINT pk_message PRIMARY KEY (id);
+
+
+--
+-- Name: pk_notification; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY notification
+    ADD CONSTRAINT pk_notification PRIMARY KEY (id);
+
+
+--
+-- Name: pk_portal_layout_adv_places; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_layout_adv_places
+    ADD CONSTRAINT pk_portal_layout_adv_places PRIMARY KEY (id);
+
+
+--
+-- Name: pk_publication; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY publication
+    ADD CONSTRAINT pk_publication PRIMARY KEY (id, portal_division_id);
+
+
+--
+-- Name: pkey_country; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY country
+    ADD CONSTRAINT pkey_country PRIMARY KEY (id);
+
+
+--
+-- Name: portal_adv_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_adv
+    ADD CONSTRAINT portal_adv_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_company_owner_id_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal
+    ADD CONSTRAINT portal_company_owner_id_key UNIQUE (company_owner_id);
+
+
+--
+-- Name: portal_config_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_config
+    ADD CONSTRAINT portal_config_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_division_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_division
+    ADD CONSTRAINT portal_division_pk PRIMARY KEY (id, portal_id);
+
+
+--
+-- Name: portal_division_settings_company_subportal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_division_settings_company_subportal
+    ADD CONSTRAINT portal_division_settings_company_subportal_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_division_type_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_division_type
+    ADD CONSTRAINT portal_division_type_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_layout_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_layout
+    ADD CONSTRAINT portal_layout_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal
+    ADD CONSTRAINT portal_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_plan_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY member_company_portal_plan
+    ADD CONSTRAINT portal_plan_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_uk_host; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal
+    ADD CONSTRAINT portal_uk_host UNIQUE (host);
+
+
+--
+-- Name: reader_division_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY reader_division
+    ADD CONSTRAINT reader_division_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: reader_user_portal_plan_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY reader_user_portal_plan
+    ADD CONSTRAINT reader_user_portal_plan_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: search_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY search
+    ADD CONSTRAINT search_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tag_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY tag
+    ADD CONSTRAINT tag_pk PRIMARY KEY (id, portal_id);
+
+
+--
+-- Name: tag_portal_division_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY tag_portal_division
+    ADD CONSTRAINT tag_portal_division_pk PRIMARY KEY (tag_id, portal_division_id);
+
+
+--
+-- Name: tag_portal_uk_portal_id_tag; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY tag
+    ADD CONSTRAINT tag_portal_uk_portal_id_tag UNIQUE (portal_id, text);
+
+
+--
+-- Name: tag_publication_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY tag_publication
+    ADD CONSTRAINT tag_publication_pk PRIMARY KEY (publication_id, tag_id);
+
+
+--
+-- Name: translate_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY translate
+    ADD CONSTRAINT translate_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: uk_member_company_portal_company_portal; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY member_company_portal
+    ADD CONSTRAINT uk_member_company_portal_company_portal UNIQUE (company_id, portal_id);
+
+
+--
+-- Name: uk_portal_adv_portal_place; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_adv
+    ADD CONSTRAINT uk_portal_adv_portal_place UNIQUE (portal_id, place);
+
+
+--
+-- Name: uk_portal_division_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_division
+    ADD CONSTRAINT uk_portal_division_id UNIQUE (id);
+
+
+--
+-- Name: uk_portal_division_name; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_division
+    ADD CONSTRAINT uk_portal_division_name UNIQUE (portal_id, name);
+
+
+--
+-- Name: uk_portal_layout_adv_places_layout_place; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY portal_layout_adv_places
+    ADD CONSTRAINT uk_portal_layout_adv_places_layout_place UNIQUE (portal_layout_id, place);
+
+
+--
+-- Name: uk_publication_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY publication
+    ADD CONSTRAINT uk_publication_id UNIQUE (id);
+
+
+--
+-- Name: uk_user_company_user_id_company_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY user_company
+    ADD CONSTRAINT uk_user_company_user_id_company_id UNIQUE (user_id, company_id);
+
+
+--
+-- Name: user_company_pk_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY user_company
+    ADD CONSTRAINT user_company_pk_id PRIMARY KEY (id);
+
+
+--
+-- Name: user_group_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY "group"
+    ADD CONSTRAINT user_group_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY "user"
+    ADD CONSTRAINT user_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_portal_reader_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY reader_portal
+    ADD CONSTRAINT user_portal_reader_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_profireader_email_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY "user"
+    ADD CONSTRAINT user_profireader_email_key UNIQUE (address_email);
+
+
+--
+-- Name: youtube_playlist_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY youtube_playlist
+    ADD CONSTRAINT youtube_playlist_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: youtube_playlist_playlist_id_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY youtube_playlist
+    ADD CONSTRAINT youtube_playlist_playlist_id_key UNIQUE (playlist_id);
+
+
+--
+-- Name: youtube_video_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY youtube_video
+    ADD CONSTRAINT youtube_video_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ind_notification_user_read; Type: INDEX; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE INDEX ind_notification_user_read ON notification USING btree (to_user_id, read_tm);
+
+
+--
+-- Name: message_index_id_read; Type: INDEX; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE INDEX message_index_id_read ON message USING btree (contact_id, read_tm);
+
+
+--
+-- Name: uk_translate_template_name_portal; Type: INDEX; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE UNIQUE INDEX uk_translate_template_name_portal ON translate USING btree (template, name, portal_id) WHERE (portal_id IS NOT NULL);
+
+
+--
+-- Name: uk_translate_template_name_portal_null; Type: INDEX; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE UNIQUE INDEX uk_translate_template_name_portal_null ON translate USING btree (template, name) WHERE (portal_id IS NULL);
+
+
+--
+-- Name: average_usage; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER average_usage BEFORE UPDATE ON func_profiler FOR EACH ROW EXECUTE PROCEDURE average_usage_func();
+
+
+--
+-- Name: cr_md_ac; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER cr_md_ac BEFORE INSERT ON file FOR EACH ROW EXECUTE PROCEDURE row_cr_md_ac();
+
+
+--
+-- Name: cr_md_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER cr_md_tm BEFORE INSERT ON _del_article_company FOR EACH ROW EXECUTE PROCEDURE row_cr_md();
+
+
+--
+-- Name: cr_tm_fp; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER cr_tm_fp BEFORE INSERT ON func_profiler FOR EACH ROW EXECUTE PROCEDURE row_cr();
+
+
+--
+-- Name: create_company_folders; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER create_company_folders BEFORE INSERT ON company FOR EACH ROW EXECUTE PROCEDURE create_company_root_folders();
+
+
+--
+-- Name: create_personal_folder; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER create_personal_folder BEFORE INSERT ON "user" FOR EACH ROW EXECUTE PROCEDURE create_personal_folder_for_user();
+
+
+--
+-- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id BEFORE INSERT ON file FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id BEFORE INSERT ON _del_article FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id BEFORE INSERT ON _del_article_company FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id BEFORE INSERT ON portal FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id BEFORE INSERT ON portal_layout FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id BEFORE INSERT ON country FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id BEFORE INSERT ON func_profiler FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id BEFORE INSERT ON translate FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: id_cr_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id_cr_md BEFORE INSERT ON portal_division FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: id_cr_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id_cr_md BEFORE INSERT ON _del_article_portal_division FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: id_cr_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER id_cr_md BEFORE INSERT ON portal_division_settings_company_subportal FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: ip_id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER ip_id BEFORE INSERT ON ip FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: md_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER md_tm BEFORE UPDATE ON _del_article_company FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: md_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER md_tm BEFORE UPDATE ON portal_division FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: md_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER md_tm BEFORE UPDATE ON _del_article_portal_division FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: md_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER md_tm BEFORE UPDATE ON portal_division_settings_company_subportal FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: md_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER md_tm BEFORE INSERT OR UPDATE ON youtube_playlist FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: md_tm_fp; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER md_tm_fp BEFORE UPDATE ON func_profiler FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: portal_adv_trigger_id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER portal_adv_trigger_id BEFORE INSERT ON portal_adv FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: publishing_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER publishing_tm BEFORE INSERT OR UPDATE ON _del_article_portal_division FOR EACH ROW EXECUTE PROCEDURE row_publishing_tm_if_null();
+
+
+--
+-- Name: row_cr_md_ac; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER row_cr_md_ac BEFORE INSERT ON translate FOR EACH ROW EXECUTE PROCEDURE row_cr_md_ac();
+
+
+--
+-- Name: tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tm BEFORE INSERT OR UPDATE ON search FOR EACH ROW EXECUTE PROCEDURE search_tm_if_null();
+
+
+--
+-- Name: tr_company_create; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_company_create BEFORE INSERT ON company FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_company_update; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_company_update BEFORE UPDATE ON company FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: tr_contact_last_message_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_contact_last_message_tm BEFORE INSERT ON contact FOR EACH ROW EXECUTE PROCEDURE row_last_message_tm();
+
+
+--
+-- Name: tr_contacts_id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_contacts_id BEFORE INSERT ON contact FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_contacts_md_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_contacts_md_tm BEFORE UPDATE ON contact FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: tr_delete_thumbnail_files; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_delete_thumbnail_files AFTER DELETE OR UPDATE ON file_img FOR EACH ROW EXECUTE PROCEDURE thumbnails_delete_from_files();
+
+
+--
+-- Name: tr_file_img_md_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_file_img_md_tm BEFORE UPDATE ON file_img FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: tr_file_img_on_create; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_file_img_on_create BEFORE INSERT ON file_img FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_material_md_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_material_md_tm BEFORE UPDATE ON material FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: tr_material_row; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_material_row BEFORE INSERT ON material FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_member_company_portal_id_cr; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_member_company_portal_id_cr BEFORE INSERT ON member_company_portal FOR EACH ROW EXECUTE PROCEDURE row_id_cr();
+
+
+--
+-- Name: tr_message_id_cr; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_message_id_cr BEFORE INSERT ON message FOR EACH ROW EXECUTE PROCEDURE row_id_cr();
+
+
+--
+-- Name: tr_message_id_cr_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_message_id_cr_tm BEFORE INSERT ON notification FOR EACH ROW EXECUTE PROCEDURE row_id_cr();
+
+
+--
+-- Name: tr_message_set_last_message_in_contact; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_message_set_last_message_in_contact AFTER INSERT ON message FOR EACH ROW EXECUTE PROCEDURE message_set_last_message_tm_in_contact();
+
+
+--
+-- Name: tr_portal_division_remove_tag_membership_not_for_catalog; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_portal_division_remove_tag_membership_not_for_catalog BEFORE UPDATE ON portal_division FOR EACH ROW EXECUTE PROCEDURE tag_membership_unset_all_tags_on_catalog_change();
+
+
+--
+-- Name: tr_portal_layout_adv_places_id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_portal_layout_adv_places_id BEFORE INSERT ON portal_layout_adv_places FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: tr_publication_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_publication_md BEFORE UPDATE ON publication FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: tr_publication_row; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_publication_row BEFORE INSERT ON publication FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_tag_membership_catalog; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_tag_membership_catalog BEFORE INSERT OR UPDATE ON tag_membership FOR EACH ROW EXECUTE PROCEDURE tag_membersgip_set_portal_division_to_catalog();
+
+
+--
+-- Name: tr_tag_portal_id_cr_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_tag_portal_id_cr_md BEFORE INSERT ON tag FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_tag_portal_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_tag_portal_md BEFORE UPDATE ON tag FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: tr_user_company_id_cr_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_user_company_id_cr_md BEFORE INSERT ON user_company FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_user_company_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_user_company_md BEFORE UPDATE ON user_company FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: tr_user_full_name; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_user_full_name BEFORE INSERT OR UPDATE ON "user" FOR EACH ROW EXECUTE PROCEDURE user_full_name();
+
+
+--
+-- Name: tr_user_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_user_md BEFORE UPDATE ON "user" FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: tr_user_row; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_user_row BEFORE INSERT ON "user" FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: uid; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER uid BEFORE INSERT ON member_company_portal_plan FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: uid; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER uid BEFORE INSERT ON google_token FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: uid; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER uid BEFORE INSERT ON youtube_playlist FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: uid; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER uid BEFORE INSERT ON search FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: uid; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER uid BEFORE INSERT ON reader_user_portal_plan FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: uid; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER uid BEFORE INSERT ON reader_portal FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: uid; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER uid BEFORE INSERT ON reader_publication FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: uid; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER uid BEFORE INSERT ON reader_division FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: article_author_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY _del_article_company
+    ADD CONSTRAINT article_author_user_id_fkey FOREIGN KEY (editor_user_id) REFERENCES "user"(id);
+
+
+--
+-- Name: article_company_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY _del_article_company
+    ADD CONSTRAINT article_company_id_fkey FOREIGN KEY (company_id) REFERENCES company(id);
+
+
+--
+-- Name: article_portal_article_company_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY _del_article_portal_division
+    ADD CONSTRAINT article_portal_article_company_id FOREIGN KEY (article_company_id) REFERENCES _del_article_company(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: company_author_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY company
+    ADD CONSTRAINT company_author_user_id_fkey FOREIGN KEY (author_user_id) REFERENCES "user"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: company_logo_file_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY company
+    ADD CONSTRAINT company_logo_file_fkey FOREIGN KEY (_delme_logo_file_id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: company_portal_company_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY member_company_portal
+    ADD CONSTRAINT company_portal_company_id_fkey FOREIGN KEY (company_id) REFERENCES company(id);
+
+
+--
+-- Name: company_portal_portal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY member_company_portal
+    ADD CONSTRAINT company_portal_portal_id_fkey FOREIGN KEY (portal_id) REFERENCES portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: favorite_reader_article_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY reader_publication
+    ADD CONSTRAINT favorite_reader_article_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+
+
+--
+-- Name: file_author_user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY file
+    ADD CONSTRAINT file_author_user_id_fk FOREIGN KEY (author_user_id) REFERENCES "user"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: file_company_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY file
+    ADD CONSTRAINT file_company_id_fk FOREIGN KEY (company_id) REFERENCES company(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: file_fid; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY youtube_video
+    ADD CONSTRAINT file_fid FOREIGN KEY (id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: file_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY file_content
+    ADD CONSTRAINT file_id FOREIGN KEY (id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: file_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY file
+    ADD CONSTRAINT file_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: file_thumbnail_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY file
+    ADD CONSTRAINT file_thumbnail_id_fkey FOREIGN KEY (thumbnail_id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_article_article_bulk_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY _del_article_company
+    ADD CONSTRAINT fk_article_article_bulk_id FOREIGN KEY (article_id) REFERENCES _del_article(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: fk_company_logo; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY company
+    ADD CONSTRAINT fk_company_logo FOREIGN KEY (logo_file_img_id) REFERENCES file_img(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: fk_contacts_contacted_user_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY contact
+    ADD CONSTRAINT fk_contacts_contacted_user_id FOREIGN KEY (user2_id) REFERENCES "user"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_contacts_user_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY contact
+    ADD CONSTRAINT fk_contacts_user_id FOREIGN KEY (user1_id) REFERENCES "user"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_material_portal_division_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY publication
+    ADD CONSTRAINT fk_material_portal_division_id FOREIGN KEY (portal_division_id) REFERENCES portal_division(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_member_company_portal_plan_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY member_company_portal
+    ADD CONSTRAINT fk_member_company_portal_plan_id FOREIGN KEY (member_company_portal_plan_id) REFERENCES member_company_portal_plan(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: fk_message_contact; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY message
+    ADD CONSTRAINT fk_message_contact FOREIGN KEY (contact_id) REFERENCES contact(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_message_to_user_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY message
+    ADD CONSTRAINT fk_message_to_user_id FOREIGN KEY (from_user_id) REFERENCES "user"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_notification_to_user_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY notification
+    ADD CONSTRAINT fk_notification_to_user_id FOREIGN KEY (to_user_id) REFERENCES "user"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_pd_settings_company_subportal; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal_division_settings_company_subportal
+    ADD CONSTRAINT fk_pd_settings_company_subportal FOREIGN KEY (member_company_portal_id) REFERENCES member_company_portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_portal_division_settings_division; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal_division_settings_company_subportal
+    ADD CONSTRAINT fk_portal_division_settings_division FOREIGN KEY (portal_division_id) REFERENCES portal_division(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_portal_favicon; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal
+    ADD CONSTRAINT fk_portal_favicon FOREIGN KEY (favicon_file_img_id) REFERENCES file_img(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: fk_portal_layout_adv_places_layout; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal_layout_adv_places
+    ADD CONSTRAINT fk_portal_layout_adv_places_layout FOREIGN KEY (portal_layout_id) REFERENCES portal_layout(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_portal_logo; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal
+    ADD CONSTRAINT fk_portal_logo FOREIGN KEY (logo_file_img_id) REFERENCES file_img(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: fk_portal_portal_division_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal_division
+    ADD CONSTRAINT fk_portal_portal_division_id FOREIGN KEY (portal_id) REFERENCES portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_reader_division_division_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY reader_division
+    ADD CONSTRAINT fk_reader_division_division_id FOREIGN KEY (division_id) REFERENCES portal_division(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_reader_division_reader_portal_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY reader_division
+    ADD CONSTRAINT fk_reader_division_reader_portal_id FOREIGN KEY (reader_portal_id) REFERENCES reader_portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_tag_membership_tag_portal; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY tag_membership
+    ADD CONSTRAINT fk_tag_membership_tag_portal FOREIGN KEY (tag_id, portal_id) REFERENCES tag(id, portal_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_tag_membership_tag_portal_division; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY tag_membership
+    ADD CONSTRAINT fk_tag_membership_tag_portal_division FOREIGN KEY (tag_id, portal_division_id) REFERENCES tag_portal_division(tag_id, portal_division_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_tag_publication_publication; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY tag_publication
+    ADD CONSTRAINT fk_tag_publication_publication FOREIGN KEY (publication_id, portal_division_id) REFERENCES publication(id, portal_division_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_translate_portal_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY translate
+    ADD CONSTRAINT fk_translate_portal_id FOREIGN KEY (portal_id) REFERENCES portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_user_avatar_file_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY "user"
+    ADD CONSTRAINT fk_user_avatar_file_id FOREIGN KEY (_delme_avatar_file_id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: fk_user_country_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY "user"
+    ADD CONSTRAINT fk_user_country_id FOREIGN KEY (country_id) REFERENCES country(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: image_croped_croped_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY file_img
+    ADD CONSTRAINT image_croped_croped_image_id_fkey FOREIGN KEY (proceeded_image_file_id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: image_croped_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY file_img
+    ADD CONSTRAINT image_croped_image_id_fkey FOREIGN KEY (provenance_image_file_id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: image_file_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY _del_article_company
+    ADD CONSTRAINT image_file_id FOREIGN KEY (image_file_id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: image_file_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY _del_article_portal_division
+    ADD CONSTRAINT image_file_id FOREIGN KEY (image_file_id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: material_editor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY material
+    ADD CONSTRAINT material_editor_user_id_fkey FOREIGN KEY (editor_user_id) REFERENCES "user"(id);
+
+
+--
+-- Name: material_illustration_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY material
+    ADD CONSTRAINT material_illustration_id FOREIGN KEY (illustration_file_img_id) REFERENCES file_img(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: portal_adv_portal_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal_adv
+    ADD CONSTRAINT portal_adv_portal_id FOREIGN KEY (portal_id) REFERENCES portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: portal_company_owner_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal
+    ADD CONSTRAINT portal_company_owner_id FOREIGN KEY (company_owner_id) REFERENCES company(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: portal_config_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal_config
+    ADD CONSTRAINT portal_config_id_fkey FOREIGN KEY (id) REFERENCES portal(id);
+
+
+--
+-- Name: portal_division_portal_division_type_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal_division
+    ADD CONSTRAINT portal_division_portal_division_type_id FOREIGN KEY (portal_division_type_id) REFERENCES portal_division_type(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: portal_portal_layout_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal
+    ADD CONSTRAINT portal_portal_layout_id FOREIGN KEY (portal_layout_id) REFERENCES portal_layout(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: publication_material_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY publication
+    ADD CONSTRAINT publication_material_id_fkey FOREIGN KEY (material_id) REFERENCES material(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: reader_publication_publication_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY reader_publication
+    ADD CONSTRAINT reader_publication_publication_id FOREIGN KEY (publication_id) REFERENCES publication(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: root_folder_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY file
+    ADD CONSTRAINT root_folder_id FOREIGN KEY (root_folder_id) REFERENCES file(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: tag_fk_portal_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY tag
+    ADD CONSTRAINT tag_fk_portal_id FOREIGN KEY (portal_id) REFERENCES portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: tag_membership_fk_membership; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY tag_membership
+    ADD CONSTRAINT tag_membership_fk_membership FOREIGN KEY (member_company_portal_id, portal_id) REFERENCES member_company_portal(id, portal_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: tag_portal_division_fk_portal_division; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY tag_portal_division
+    ADD CONSTRAINT tag_portal_division_fk_portal_division FOREIGN KEY (portal_division_id, portal_id) REFERENCES portal_division(id, portal_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: tag_portal_division_fk_tag; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY tag_portal_division
+    ADD CONSTRAINT tag_portal_division_fk_tag FOREIGN KEY (tag_id, portal_id) REFERENCES tag(id, portal_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: tag_publication_fk_tag_portal_division; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY tag_publication
+    ADD CONSTRAINT tag_publication_fk_tag_portal_division FOREIGN KEY (tag_id, portal_division_id) REFERENCES tag_portal_division(tag_id, portal_division_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: user_avatar_file_img_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY "user"
+    ADD CONSTRAINT user_avatar_file_img_id_fkey FOREIGN KEY (avatar_file_img_id) REFERENCES file_img(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: user_company_company_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY user_company
+    ADD CONSTRAINT user_company_company_id_fkey FOREIGN KEY (company_id) REFERENCES company(id);
+
+
+--
+-- Name: user_company_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY user_company
+    ADD CONSTRAINT user_company_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+
+
+--
+-- Name: user_portal_reader_portal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY reader_portal
+    ADD CONSTRAINT user_portal_reader_portal_id_fkey FOREIGN KEY (portal_id) REFERENCES portal(id);
+
+
+--
+-- Name: user_portal_reader_portal_plan_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY reader_portal
+    ADD CONSTRAINT user_portal_reader_portal_plan_id_fkey FOREIGN KEY (portal_plan_id) REFERENCES reader_user_portal_plan(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: user_portal_reader_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY reader_portal
+    ADD CONSTRAINT user_portal_reader_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+
+
+--
+-- Name: youtube_playlist_company_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY youtube_playlist
+    ADD CONSTRAINT youtube_playlist_company_id_fkey FOREIGN KEY (company_id) REFERENCES company(id);
+
+
+--
+-- Name: youtube_video_playlist_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY youtube_video
+    ADD CONSTRAINT youtube_video_playlist_id_fkey FOREIGN KEY (playlist_id) REFERENCES youtube_playlist(playlist_id);
+
+
+--
+-- Name: youtube_video_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY youtube_video
+    ADD CONSTRAINT youtube_video_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+
+
+--
+-- Name: public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON SCHEMA public FROM postgres;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO pfuser;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
