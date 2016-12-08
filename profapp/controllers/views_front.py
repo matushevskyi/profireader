@@ -90,7 +90,11 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
 
 
 def elastic_article_to_orm_article(item):
-    ret = Publication.get(item['id']).create_article()
+    try:
+        ret = Publication.get(item['id']).create_article()
+    except:
+        raise AssertionError("Can't convert elastic article to orm one. maybe elastic db should be reindexed")
+
     if '_highlight' in item:
         for k in ['short', 'title', 'subtitle', 'keywords', 'author']:
             if k in item['_highlight']:
