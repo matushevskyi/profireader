@@ -1,0 +1,48 @@
+<!--Pagination-->
+
+{% if pager.total>1 %}
+    <nav class="text-center" aria-label="Page navigation">
+        <ul class="pagination">
+            <li>
+                <a {% if pager.current>1 %}href="{{ pager.url_construct(page=pager.current-1) }}"{% endif %} aria-label="{{ _('Previous page') }}">
+                    <i class="fa fa-caret-left" aria-hidden="true"></i>
+                </a>
+                </li>
+            {% if pager.current>1 %}
+                <li>
+                    <a href="{{ pager.url_construct(page=1) }}">{{ 1 }}</a>
+                </li>
+            {% endif %}
+            {% if pager.current-pager.neighbours>2 %}
+                <li><a>...</a></li>
+            {% endif %}
+
+            {% for pg in range(2 if 2 > pager.current-pager.neighbours else pager.current-pager.neighbours, pager.current) %}
+                <li>
+                    <a href="{{ pager.url_construct(page=pg) }}">{{ pg }}</a>
+                </li>
+            {% endfor %}
+            <li class="active">
+                <a href="{{ pager.url_construct(page=1) }}" style="background-color: #eee;">{{ pager.current }}</a>
+            </li>
+            {% for pg in range(pager.current+1, pager.current+pager.neighbours + 1 if pager.current+pager.neighbours < pager.total - 1 else pager.total) %}
+                <li>
+                    <a href="{{ pager.url_construct(page=pg) }}">{{ pg }}</a>
+                </li>
+            {% endfor %}
+            {% if pager.current+pager.neighbours<pager.total - 1 %}
+                <li><a>...</a></li>
+            {% endif %}
+            {% if pager.current<pager.total %}
+                <li>
+                    <a href="{{ pager.url_construct(page=pager.total) }}">{{ pager.total }}</a>
+                </li>
+            {% endif %}
+        <li>
+                <a {% if pager.current<pager.total %}href="{{ pager.url_construct(page=pager.current+1) }}"{% endif %} aria-label="{{ _('Next page') }}">
+                    <i class="fa fa-caret-right" aria-hidden="true"></i>
+                </a>
+                </li>
+        </ul>
+    </nav>
+{% endif %}
