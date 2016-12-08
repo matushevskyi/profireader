@@ -28,6 +28,28 @@ from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
 Base = declarative_base()
 
 
+class DateIntervalDescriptor(object):
+    def __init__(self):
+        pass
+
+    def __get__(self, instance, owner):
+        res, am = instance.split(' ')
+        return {'resolution': res, 'amount': am}
+
+    # def proxy_setter(self, file_img: FileImg, client_data):
+    def __set__(self, instance, data):
+        if data['amount'] < 0:
+            raise errors.BadDataProvided({'message': 'amount < 0'})
+        if data['resolution'] not in ['days', 'years', 'weeks', 'months']:
+            raise errors.BadDataProvided({'message': "resolution should have following values: 'days', 'years', 'weeks', 'months'"})
+
+        instance = "%s %s" % (int(data['amount']), data['resolution'])
+
+        # self.id = client_data.get('id', None)
+        # self.company_id = client_data.get('company_id', None)
+        # self.member_company_portal_id = client_data.get('member_company_portal_id', None)
+        return True
+
 # this event is called whenever an attribute
 # on a class is instrumented
 # @event.listens_for(Base, 'attribute_instrument')

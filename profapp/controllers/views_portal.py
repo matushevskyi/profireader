@@ -169,16 +169,13 @@ def plans_load(json, company_id):
         return client_side()
     else:
 
-
-
-
         # portal.attr_filter(jp, 'name', 'lang', 'portal_layout_id', 'host',
         #                    *map(lambda x: 'url_' + x, ['facebook', 'google', 'twitter', 'linkedin']))
 
         if set(portal.plans) - set(utils.find_by_id(portal.plans, d['id']) for d in json['plans']) != set():
             raise BadDataProvided('Information for some existing plans division is not provided by client')
 
-        # plan_position = 0
+        plan_position = 0
         # unpublish_warning = {}
         # changed_division_types = {}
         deleted_plans = []
@@ -193,25 +190,31 @@ def plans_load(json, company_id):
                 plan.status = MembershipPlan.STATUSES['DELETED']
 
             else:
-                ndi.portal = portal
-                ndi.position = division_position
-                ndi.attr_filter(jd, 'name', 'html_title', 'html_keywords', 'html_description')
+                plan.portal = portal
+                plan.position = plan_position
+                plan.attr_filter(jp, 'name', 'price', 'currency_id', 'status',
+                                 *['publication_count_' + t for t in ['open', 'payed', 'registered']])
 
-                if ndi in portal.divisions:
-                    if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
-                        changed_division_types[ndi.id] = ndi.portal_division_type.id
-                        utils.dict_deep_replace(
-                            'this division have %s published articles. they will be unpublished becouse of division type changed' % (
-                                len(ndi.publications),), unpublish_warning, ndi.id, 'type')
+                plan.duration = "%s %s" % (jp['duration'], jp['duration_unit'])
+
+                if plan in portal.plans:
+                    pass
+                    # if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
+                    #     changed_division_types[ndi.id] = ndi.portal_division_type.id
+                    #     utils.dict_deep_replace(
+                    #         'this division have %s published articles. they will be unpublished becouse of division type changed' % (
+                    #             len(ndi.publications),), unpublish_warning, ndi.id, 'type')
                 else:
-                    portal.divisions.append(ndi)
+                    portal.plans.append(plan)
 
-                ndi.portal_division_type = utils.find_by_id(division_types, jd['portal_division_type_id'])
-                ndi.settings = jd.get('settings', {})
+                # ndi.portal_division_type = utils.find_by_id(division_types, jd['portal_division_type_id'])
+                # ndi.settings = jd.get('settings', {})
 
-                division_position += 1
+                plan_position += 1
 
         if action == 'validate':
+            g.db.expunge_all()
+            return PRBase.DEFAULT_VALIDATION_ANSWER()
             ret = portal.validate(create_or_update == 'create')
             if len(unpublish_warning.keys()):
                 if 'divisions' not in ret['warnings']:
@@ -223,18 +226,20 @@ def plans_load(json, company_id):
             g.db.expunge_all()
             return ret
         else:
-            for nd in portal.divisions:
-                if not nd.cr_tm:
-                    nd.id = None
-            portal.logo = jp['logo']
-            portal.favicon = jp['favicon']
-            for del_div in deleted_divisions:
-                del_div.notice_about_deleted_publications('division deleted')
+            for plan in portal.plans:
+                if not plan.cr_tm:
+                    plan.id = None
 
-            for div in portal.divisions:
-                if div.id in changed_division_types:
-                    div.notice_about_deleted_publications('division type changed')
-                    div.publications = []
+            for del_plan in deleted_plans:
+                del_plan.status = MembershipPlan.STATUSES['DELETED']
+                # TODO fall all membership to default plan
+
+            for div in portal.plans:
+                pass
+                # TODO change publication visibility/status
+                # if div.id in changed_division_types:
+                #     div.notice_about_deleted_publications('division type changed')
+                #     div.publications = []
 
             portal.save()
             g.db.commit()

@@ -397,6 +397,7 @@ class PortalAdvertisment(Base, PRBase):
     def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
         return self.to_dict(fields, more_fields)
 
+
 class MembershipPlan(Base, PRBase):
     __tablename__ = 'membership_plan'
 
@@ -415,12 +416,20 @@ class MembershipPlan(Base, PRBase):
     publication_count_confidential = Column(TABLE_TYPES['int'])
 
     price = Column(TABLE_TYPES['price'])
-    duration = Column(TABLE_TYPES['timeinterval'])
+    currency_id = Column(TABLE_TYPES['string_10'])
+
+    duration = Column(TABLE_TYPES['string_100'])
 
     position = Column(TABLE_TYPES['int'])
     status = Column(TABLE_TYPES['string_100'])
 
-    STATUSES = {'ACTIVE': 'ACTIVE', 'INACTIVE':'INACTIVE', 'DELETED':'DELETED'}
+
+    STATUSES = {'ACTIVE': 'ACTIVE', 'INACTIVE': 'INACTIVE', 'DELETED': 'DELETED'}
+
+    def get_client_side_dict(self,
+                             fields='id,name,cr_tm,status,currency_id,price,publication_count_open,publication_count_registered,publication_count_payed,duration',
+                             more_fields=None):
+        return self.to_dict(fields, more_fields)
 
 
 class MembershipPlanUsed(Base, PRBase):
@@ -438,14 +447,12 @@ class MembershipPlanUsed(Base, PRBase):
     name = Column(TABLE_TYPES['short_name'])
     stopped_tm = Column(TABLE_TYPES['timestamp'])
 
-
     price = Column(TABLE_TYPES['price'])
     duration = Column(TABLE_TYPES['timeinterval'])
     publication_count_open = Column(TABLE_TYPES['int'])
     publication_count_registered = Column(TABLE_TYPES['int'])
     publication_count_payed = Column(TABLE_TYPES['int'])
     publication_count_confidential = Column(TABLE_TYPES['int'])
-
 
     stopped_by_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
     stopped_by_user = relationship('User', foreign_keys=[stopped_by_user_id])
@@ -646,8 +653,6 @@ class ReaderUserPortalPlan(Base, PRBase):
         self.time = time
         self.price = price
         self.amount = amount
-
-
 
 
 class PortalDivisionSettingsDescriptor(object):
