@@ -12,8 +12,8 @@
         </div>
         <div class="col-xs-12 col-md-8">
             <!--Article division link-->
-            {% if show_division_name %}<a href="{{ url_for('front.division', division_name=article['division']['name']) }}"><h3
-                    class="div-link">{{ article['division']['name']|safe }}</h3></a>{% endif %}
+            {% if show_division_name %}<a href="{{ url_for('front.division', division_name=article['portal_division']['name']) }}"><h3
+                    class="div-link">{{ article['portal_division']['name']|safe }}</h3></a>{% endif %}
             <!--Article headling-->
             <header class="clearfix">
                 <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">
@@ -39,7 +39,7 @@
                 <!--Article publication date-->
                                             <span class="post-date">
                                                 <i class="fa fa-clock-o" aria-hidden="true"></i>
-                                                <time class="publication-date">{{ frontmacros.article_date(article.division.portal_division_type_id, article) }}</time>
+                                                <time class="publication-date">{{ frontmacros.article_date(article.portal_division.portal_division_type_id, article) }}</time>
                                             </span>
             </div>
             <!--Article description-->

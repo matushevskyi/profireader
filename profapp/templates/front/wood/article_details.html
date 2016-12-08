@@ -37,7 +37,7 @@
                                 <!--Article publication date-->
                                     <span class="post-date">
                                         <i class="fa fa-clock-o" aria-hidden="true"></i>
-                                        <time class="publication-date">{{ frontmacros.article_date(article.division.portal_division_type_id, article) }}</time>
+                                        <time class="publication-date">{{ frontmacros.article_date(article.portal_division.portal_division_type_id, article) }}</time>
                                     </span>
                             <span class="article-read-count"><i class="fa fa-eye" aria-hidden="true"
                                                                 style="margin-right: 5px"></i>{{ _('%(read_count)s readers', article) }}</span>
@@ -71,7 +71,7 @@
 
                             <span class="mr15px">
 
-                <a href="{{ url_for('front.division', division_name=article['division']['name']) }}">{{ article['division']['name']|safe }}</a>
+                <a href="{{ url_for('front.division', division_name=article['portal_division']['name']) }}">{{ article['portal_division']['name']|safe }}</a>
 
                                 </span>
                             </div>

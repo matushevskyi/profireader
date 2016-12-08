@@ -20,4 +20,4 @@ if __name__ == '__main__':
     else:
         port = 8080
 
-    app.run(port=port, host='0.0.0.0', debug=port in [8080, 8888])  # app.run(debug=True)
+    app.run(port=port, host='0.0.0.0', debug=True)  # app.run(debug=True)
