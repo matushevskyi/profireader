@@ -4,10 +4,11 @@
     <nav class="text-center" aria-label="Page navigation">
         <ul class="pagination">
             <li>
-                <a {% if pager.current>1 %}href="{{ pager.url_construct(page=pager.current-1) }}"{% endif %} aria-label="{{ _('Previous page') }}">
+                <a {% if pager.current>1 %}href="{{ pager.url_construct(page=pager.current-1) }}"{% endif %}
+                   aria-label="{{ _('Previous page') }}">
                     <i class="fa fa-caret-left" aria-hidden="true"></i>
                 </a>
-                </li>
+            </li>
             {% if pager.current>1 %}
                 <li>
                     <a href="{{ pager.url_construct(page=1) }}">{{ 1 }}</a>
@@ -38,11 +39,12 @@
                     <a href="{{ pager.url_construct(page=pager.total) }}">{{ pager.total }}</a>
                 </li>
             {% endif %}
-        <li>
-                <a {% if pager.current<pager.total %}href="{{ pager.url_construct(page=pager.current+1) }}"{% endif %} aria-label="{{ _('Next page') }}">
+            <li>
+                <a {% if pager.current<pager.total %}href="{{ pager.url_construct(page=pager.current+1) }}"{% endif %}
+                   aria-label="{{ _('Next page') }}">
                     <i class="fa fa-caret-right" aria-hidden="true"></i>
                 </a>
-                </li>
+            </li>
         </ul>
     </nav>
 {% endif %}
