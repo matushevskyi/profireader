@@ -172,10 +172,10 @@ class Company(Base, PRBase, PRElasticDocument):
     def setup_new_company(self):
         """Add new company to company table and make all necessary relationships,
         if company with this name already exist raise DublicateName"""
-#        if db(Company, name=self.name).count():
-#            raise errors.DublicateName({
-#                'message': 'Company name %(name)s already exist. Please choose another name',
-#                'data': self.get_client_side_dict()})
+        #        if db(Company, name=self.name).count():
+        #            raise errors.DublicateName({
+        #                'message': 'Company name %(name)s already exist. Please choose another name',
+        #                'data': self.get_client_side_dict()})
 
         user_company = UserCompany(status=UserCompany.STATUSES['ACTIVE'], rights={UserCompany.RIGHT_AT_COMPANY._OWNER:
                                                                                       True})
@@ -338,11 +338,6 @@ class UserCompany(Base, PRBase):
                     default={RIGHT_AT_COMPANY.FILES_BROWSE: True, RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH: True},
                     nullable=False)
 
-    # TODO: VK by OZ: custom collumn
-    # company_logo = Column(TABLE_TYPES['image'](size=[100,200]),
-    #                 default='324235423-423423',
-    #                 nullable=False)
-
     company = relationship(Company, back_populates='employments')
     user = relationship('User', back_populates='employments')
 
@@ -419,7 +414,6 @@ class UserCompany(Base, PRBase):
 
 @on_value_changed(UserCompany.status)
 def user_company_status_changed(target, new_value, old_value, action):
-
     company = Company.get(target.company_id)
 
     dict_main = {
@@ -433,9 +427,11 @@ def user_company_status_changed(target, new_value, old_value, action):
         phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
         dict_main['url_company_employees'] = jinja_utils.grid_url(target.id, 'company.employees', company_id=company.id)
         to_users = company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
-    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
+    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES[
+        'FIRED'] and g.user.id != target.user_id:
         phrase = "Your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> is accepted"
-    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
+    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value == UserCompany.STATUSES[
+        'FIRED'] and g.user.id != target.user_id:
         phrase = "You are now enlisted to <a href=\"%(url_company_profile)s\">%(company.name)s</a> company"
     elif new_value == UserCompany.STATUSES['REJECTED'] and g.user.id != target.user_id:
         phrase = "Sorry, but your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> was rejected"
@@ -445,4 +441,5 @@ def user_company_status_changed(target, new_value, old_value, action):
         phrase = None
 
     # possible notification - 5
-    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'], phrase, dict_main)
+    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'], phrase,
+                                        dict_main)

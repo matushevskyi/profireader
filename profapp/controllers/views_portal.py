@@ -156,24 +156,24 @@ def plans_load(json, company_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
     portal = db(Portal).filter(Portal.company_owner_id == company_id).one()
 
-    client_side = lambda: {
-        'plans': utils.get_client_side_list(portal.plans),
-        'select': {
-            'currency': Currency.get_all_active_ordered_by_position(),
-            'duration_unit': [{'id': 'days', 'name': 'Days'}, {'id': 'weeks', 'name': 'Weeks'},
-                              {'id': 'months', 'name': 'Months'}, {'id': 'years', 'name': 'Years'}]
+    def client_side():
+        client_dict = {
+            'plans': utils.get_client_side_list(portal.plans),
+            'select': {
+                'currency': Currency.get_all_active_ordered_by_position(),
+                'duration_unit': MembershipPlan.DURATION_UNITS
+            }
         }
-    }
+        for plan in client_dict['plans']:
+            plan['duration'], plan['duration_unit'] = plan['duration'].split(' ')
+
+        return client_dict
 
     if action == 'load':
         return client_side()
     else:
-
-        # portal.attr_filter(jp, 'name', 'lang', 'portal_layout_id', 'host',
-        #                    *map(lambda x: 'url_' + x, ['facebook', 'google', 'twitter', 'linkedin']))
-
         if set(portal.plans) - set(utils.find_by_id(portal.plans, d['id']) for d in json['plans']) != set():
-            raise BadDataProvided('Information for some existing plans division is not provided by client')
+            raise BadDataProvided('Information for some existing plans is not provided by client')
 
         plan_position = 0
         # unpublish_warning = {}
@@ -213,18 +213,11 @@ def plans_load(json, company_id):
                 plan_position += 1
 
         if action == 'validate':
+            ret = PRBase.DEFAULT_VALIDATION_ANSWER()
             g.db.expunge_all()
-            return PRBase.DEFAULT_VALIDATION_ANSWER()
-            ret = portal.validate(create_or_update == 'create')
-            if len(unpublish_warning.keys()):
-                if 'divisions' not in ret['warnings']:
-                    ret['warnings']['divisions'] = {}
-                ret['warnings']['divisions'] = utils.dict_merge_recursive(ret['warnings']['divisions'],
-                                                                          unpublish_warning)
-            # if favico_img and favico_img.size[0] != favico_img.size[1]:
-            #     ret['warnings']['favicon'] = 'Please use square image'
-            g.db.expunge_all()
+            portal.validation_append_by_ids(ret, portal.plans, 'plans')
             return ret
+
         else:
             for plan in portal.plans:
                 if not plan.cr_tm:
@@ -234,7 +227,7 @@ def plans_load(json, company_id):
                 del_plan.status = MembershipPlan.STATUSES['DELETED']
                 # TODO fall all membership to default plan
 
-            for div in portal.plans:
+            for plan in portal.plans:
                 pass
                 # TODO change publication visibility/status
                 # if div.id in changed_division_types:
@@ -264,11 +257,12 @@ def portals_partners(company_id):
                            actions={'require_memberee': RequireMembereeAtPortalsRight(company=company_id).is_allowed()})
 
 
-def membership_grid_row(membership):
-    return utils.dict_merge(membership.get_client_side_dict(fields='id,status,portal.own_company,portal,rights,tags'),
-                            {'actions': MembershipRights(company=membership.company_id,
-                                                         member_company=membership).actions()},
-                            {'who': MembershipRights.MEMBERSHIP})
+def membership_grid_row(membership: MemberCompanyPortal):
+    return utils.dict_merge(membership.get_client_side_dict(
+        fields='id,status,portal.own_company,portal,rights,tags,membership_plan_used,requested_membership_plan'),
+        {'actions': MembershipRights(company=membership.company_id,
+                                     member_company=membership).actions()},
+        {'who': MembershipRights.MEMBERSHIP})
 
 
 @portal_bp.route('/portals_partners/<string:company_id>/', methods=['OK'])
@@ -285,6 +279,15 @@ def portals_partners_load(json, company_id):
                                                    MembershipRights.STATUSES]}.items()},
             'grid_filters_except': list(MembershipRights.INITIALLY_FILTERED_OUT_STATUSES),
             'total': count}
+
+
+@portal_bp.route('/request_membership_plan/<string:membership_id>/', methods=['OK'])
+def request_membership_plan(json, membership_id):
+    membership = MemberCompanyPortal.get(membership_id)
+    return {
+        'membership': membership.get_client_side_dict(more_fields='membership_plan_used,requested_membership_plan'),
+        'select': {'plans': utils.get_client_side_list(membership.portal.plans_active)}
+    }
 
 
 @portal_bp.route('/portal_banners/<string:company_id>/', methods=['GET'])

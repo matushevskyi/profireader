@@ -95,6 +95,9 @@ body {
   border: none !important;
   box-shadow: none !important;
 }
+.background-none {
+  background: none !important;
+}
 /* ---footer--- */
 .footer-layout {
   background-color: #212121;

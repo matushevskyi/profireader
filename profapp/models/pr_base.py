@@ -41,7 +41,8 @@ class DateIntervalDescriptor(object):
         if data['amount'] < 0:
             raise errors.BadDataProvided({'message': 'amount < 0'})
         if data['resolution'] not in ['days', 'years', 'weeks', 'months']:
-            raise errors.BadDataProvided({'message': "resolution should have following values: 'days', 'years', 'weeks', 'months'"})
+            raise errors.BadDataProvided(
+                {'message': "resolution should have following values: 'days', 'years', 'weeks', 'months'"})
 
         instance = "%s %s" % (int(data['amount']), data['resolution'])
 
@@ -49,6 +50,7 @@ class DateIntervalDescriptor(object):
         # self.company_id = client_data.get('company_id', None)
         # self.member_company_portal_id = client_data.get('member_company_portal_id', None)
         return True
+
 
 # this event is called whenever an attribute
 # on a class is instrumented
@@ -349,7 +351,6 @@ class Search(Base):
             raise errors.BadDataProvided({'message': message})
 
 
-
 class Grid:
     @staticmethod
     def filter_for_status(statuses):
@@ -393,6 +394,7 @@ class Grid:
 
 
 class PRBase:
+    # TODO: OZ by OZ: for what is this property?
     omit_validation = False
 
     # search_fields = {}
@@ -423,7 +425,8 @@ class PRBase:
 
     @classmethod
     def get_all_active_ordered_by_position(classname, **kwargs):
-        return [e.get_client_side_dict(**kwargs) for e in db(classname).filter_by(active = True).order_by(classname.position).all()]
+        return [e.get_client_side_dict(**kwargs) for e in
+                db(classname).filter_by(active=True).order_by(classname.position).all()]
 
     @staticmethod
     def str2float(str, onfail=None):
@@ -512,7 +515,7 @@ class PRBase:
     def DEFAULT_VALIDATION_ANSWER():
         return {'errors': {}, 'warnings': {}, 'notices': {}}
 
-    def validate(self, is_new=False, regexps = {}):
+    def validate(self, is_new=False, regexps={}):
         ret = self.DEFAULT_VALIDATION_ANSWER()
 
         for (atr, regexp) in regexps.items():
@@ -520,6 +523,13 @@ class PRBase:
                 ret['errors'][atr] = "%s should match regexp %s" % (atr, regexp)
         return ret
 
+    @staticmethod
+    def validation_append_by_ids(validation_result, collection, *dict_indicies):
+        for item in collection:
+            append = item.validate()
+            for k in ['errors', 'warnings', 'notices']:
+                if k in append and append[k]:
+                    utils.dict_deep_replace(append[k], validation_result, *((k,) + dict_indicies + (item.id,)))
 
     def delete(self):
         g.db.delete(self)
@@ -543,7 +553,6 @@ class PRBase:
 
     def attr_filter(self, dictionary, *filters):
         self.attr(utils.filter_json(dictionary, *filters))
-
 
     def detach(self):
         if self in g.db:

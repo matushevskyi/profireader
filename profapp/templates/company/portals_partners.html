@@ -12,8 +12,58 @@
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
 
+    {% raw %}
+    <script type="text/ng-template" id="request_membership_plan.html">
+        <div>
+            <div class="modal-header">
+                <h3 class="modal-title">{{ _('set division html seo data') }}</h3>
+            </div>
+
+            <div class="modal-body">
+                <label>{{ ::_('html title') }}</label><br/>
+                <input class="w100 form-control mb2em" ng-model="seo_data.title"
+                       placeholder="{{ ::_('leave empty to use division name') }}"/>
+
+                <label>{{ ::_('html keywords') }}</label><br/>
+                <input class="w100 form-control mb2em" ng-model="seo_data.keywords"
+                       placeholder="{{ ::_('leave empty to use division tags') }}"/>
+
+                <label>{{ ::_('html description') }}</label><br/>
+                <textarea class="w100 h10em form-control" ng-model="seo_data.description" placeholder=""></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" type="button" ng-click="set()">{{ _('Set') }}
+                </button>
+                <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>
+            </div>
+        </div>
+    </script>
+    {% endraw %}
+
     <script>
-        module.controller('portals_partners', function ($scope, $ok, $sce, $membership_tags) {
+
+        module.controller('RequestMembershipPlanController', function ($scope, $ok, $uibModalInstance, membership_id) {
+
+            $scope.$$translate = {{ translates('RequestMembershipPlanController')|safe }};
+
+            $scope.url_request_membership_plan = {{ raw_url_for('portal.request_membership_plan')|safe }};
+            $scope.membership_id = membership_id;
+
+            $ok($scope.url_request_membership_plan($scope), function (resp) {
+
+            });
+            // $scope.membership_plan_used = membership_plan_used;
+            // $scope.request_membership_plan = request_membership_plan;
+            //$scope.set = function () {
+//                $uibModalInstance.close(seo_data);
+  //          };
+
+            $scope.cancel = $uibModalInstance.dismiss;
+
+        });
+
+        module.controller('portals_partners', function ($scope, $ok, $sce, $membership_tags, $uibModal) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portals_partners');
             $scope.$$translate = {{ translates('portals_partners')|safe }};
             $scope.url_portals_partners = '{{ url_for('portal.portals_partners', company_id=company.id)}}';
@@ -69,7 +119,8 @@
                     portal_id: row.portal.id
                 }), {action: action, who: row.who, partner_id: $scope.company_id}, function (resp) {
                     $scope.gridApi.grid.grid_change_row(resp)
-                }).finally(function () {})
+                }).finally(function () {
+                })
             };
 
             $scope.portal_link = function (link) {
@@ -90,6 +141,22 @@
 
             };
 
+            $scope.request_membership_plan = function (id, row, column_name) {
+                console.log(arguments);
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'request_membership_plan.html',
+                    controller: 'RequestMembershipPlanController',
+                    resolve: resolveDictForAngularController({
+                        membership_id: row['id']
+                    })
+                });
+                modalInstance.result.then(function (new_seo_data) {
+                    d.html_title = new_seo_data['title'];
+                    d.html_keywords = new_seo_data['keywords'];
+                    d.html_description = new_seo_data['description'];
+                });
+            };
+
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
                 urlLoadGridData: $scope.url_portals_partners,
                 columnDefs: [
@@ -104,17 +171,20 @@
                         img_url: "portal.own_company.logo.url"
                     },
                     {
-                        name: 'tags', type: 'tags',
-                        onclick: 'set_tags'
+                        name: 'membership_plan',
+                        onclick: 'request_membership_plan',
+                        render: function (row, value) {
+                            return (row['membership_plan_used'] ? row['membership_plan_used']['name'] : '<i>None</i>') +
+                                    (row['requested_membership_plan'] ? (' (' + row['requested_membership_plan']['name'] + ')') : '');
+                        }
                     },
+                    {name: 'tags', type: 'tags', onclick: 'set_tags'},
                     {
-                        name: 'status', width: '20%', filter: {type: 'multi_select', default_selected: true} //we can default select all and deselect that we need, 'exception' can be string or array of string
-                    }, {
-                        name: 'rights', width: '200', type: 'icons', afilter: {type: 'input'}
+                        name: 'status', width: '20%', filter: {type: 'multi_select', default_selected: true}
+                        //we can default select all and deselect that we need, 'exception' can be string or array of string
                     },
-                    {
-                        name: 'actions', type: 'actions', onclick: 'grid_action'
-                    }
+                    {name: 'rights', width: '200', type: 'icons', afilter: {type: 'input'}},
+                    {name: 'actions', type: 'actions', onclick: 'grid_action'}
                 ]
             });
             {% endraw %}

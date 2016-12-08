@@ -75,7 +75,15 @@ class Portal(Base, PRBase):
 
     tags = relationship(Tag, uselist=True, cascade="all, delete-orphan")
 
-    plans = relationship('MembershipPlan', uselist=True, cascade="all, delete-orphan")
+    plans = relationship('MembershipPlan',
+                         cascade="all, merge, delete-orphan",
+                         order_by='asc(MembershipPlan.position)',
+                         primaryjoin='and_(Portal.id==MembershipPlan.portal_id, MembershipPlan.status != \'DELETED\')')
+
+    plans_active = relationship('MembershipPlan',
+                         cascade="all, merge, delete-orphan",
+                         order_by='asc(MembershipPlan.position)',
+                         primaryjoin='and_(Portal.id==MembershipPlan.portal_id, MembershipPlan.status == \'ACTIVE\')')
 
     divisions = relationship('PortalDivision',
                              # backref='portal',
@@ -128,30 +136,6 @@ class Portal(Base, PRBase):
         #             parent_folder_id=self.own_company.system_folder_file_id,
         #             publication_id=None).save().id
         return self
-
-    # def fallback_default_value(self, key=None, division_name=None):
-    #
-    #     return default
-
-    # # TODO: OZ by OZ fix this
-    # def get_value_from_config(self, key=None, division_name=None, default=None):
-    #     return default
-    #
-    #     """
-    #     :param key: string, variable which you want to return from config
-    #     optional:
-    #         :param division_name: string, if provided return value from config for division this.
-    #     :return: variable which you want to return from config
-    #     """
-    #     conf = getattr(self.config, key, None)
-    #     if not conf:
-    #         return Config.ITEMS_PER_PAGE
-    #     values = simplejson.loads(conf)
-    #     if division_name:
-    #         ret = values.get(division_name)
-    #     else:
-    #         ret = values
-    #     return ret
 
     def validate_tags(self, new_portal_tags):
         ret = PRBase.DEFAULT_VALIDATION_ANSWER()
@@ -240,7 +224,7 @@ class Portal(Base, PRBase):
                 utils.dict_deep_inc(grouped_by_company_member, div.settings['company_id'])
 
         for check_division_type in db(PortalDivisionType).all():
-            utils.dict_deep_replace(0, grouped_by_division_type, check_division_type.id, if_not_exists=True)
+            utils.dict_deep_replace(0, grouped_by_division_type, check_division_type.id, add_only_if_not_exists=True)
 
             if check_division_type.min > grouped_by_division_type[check_division_type.id]:
                 errors['add_division'] = 'you need at least %s `%s`' % (check_division_type.min, check_division_type.id)
@@ -423,19 +407,29 @@ class MembershipPlan(Base, PRBase):
     position = Column(TABLE_TYPES['int'])
     status = Column(TABLE_TYPES['string_100'])
 
-
     STATUSES = {'ACTIVE': 'ACTIVE', 'INACTIVE': 'INACTIVE', 'DELETED': 'DELETED'}
+
+    DURATION_UNITS = [
+        {'id': 'days', 'name': 'Days'},
+        {'id': 'weeks', 'name': 'Weeks'},
+        {'id': 'months', 'name': 'Months'},
+        {'id': 'years', 'name': 'Years'},
+    ]
 
     def get_client_side_dict(self,
                              fields='id,name,cr_tm,status,currency_id,price,publication_count_open,publication_count_registered,publication_count_payed,duration',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
+    def validate(self, is_new=False):
+        ret = super().validate(is_new=is_new, regexps={'name': '[^\s]{3,}'})
+        return ret
+
 
 class MembershipPlanUsed(Base, PRBase):
     # TODO: OZ by OZ: sale_auto_renewal
 
-    __tablename__ = 'membership_plan_usage'
+    __tablename__ = 'membership_plan_used'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
@@ -458,7 +452,7 @@ class MembershipPlanUsed(Base, PRBase):
     stopped_by_user = relationship('User', foreign_keys=[stopped_by_user_id])
 
     member_company_portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal.id'))
-    member_company_portal = relationship('MemberCompanyPortal')
+    member_company_portal = relationship('MemberCompanyPortal', foreign_keys=[member_company_portal_id])
 
     membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'))
     membership_plan = relationship(MembershipPlan)
@@ -485,8 +479,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     tags = relationship(Tag, secondary='tag_membership', uselist=True,
                         order_by=lambda: expression.desc(TagMembership.position))
 
-    # membership_plan_usaged_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_usaged.id'))
-    # membership_plan_usaged = relationship(MembershipPlanUsed)
 
     status = Column(TABLE_TYPES['status'], default='APPLICANT', nullable=False)
 
@@ -494,7 +486,14 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     company = relationship('Company')
 
-    # membership_plan = relationship(MembershipPlan)
+
+    requested_membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'),
+                                          nullable=True)
+    requested_membership_plan = relationship('MembershipPlan')
+
+    membership_plan_used_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_used.id'),
+                                     nullable=True)
+    membership_plan_used = relationship('MembershipPlanUsed', foreign_keys=[membership_plan_used_id])
 
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
                 'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}

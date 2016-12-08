@@ -151,14 +151,14 @@ def find_by_id(list, id):
     return next((d for d in list if (d['id'] if isinstance(d, dict) else d.id) == id), None)
 
 
-def dict_deep_replace(what_to_append, dictionary, *args, if_not_exists=False):
+def dict_deep_replace(what_to_append, dictionary, *args, add_only_if_not_exists=False):
     indexes = list(args)
     lastindex = indexes.pop()
     for a in indexes:
         if not a in dictionary:
             dictionary[a] = {}
         dictionary = dictionary[a]
-    if not if_not_exists or lastindex not in dictionary:
+    if not add_only_if_not_exists or lastindex not in dictionary:
         dictionary[lastindex] = what_to_append
 
 
