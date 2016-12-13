@@ -100,6 +100,7 @@
                     publication_count_payed: 0,
                     publication_count_confidential: 0,
                     price: 1.00,
+                    default: false,
                     status: 'ACTIVE',
                     currency_id: $scope.data.select.currency[0]['id'],
                     duration: 1,
@@ -121,10 +122,23 @@
 
             };
 
+            $scope.unset_all_other_defaults = function (plan) {
+                _.each($scope.data.plans, function (p) {
+                    console.log(p, plan, p !== plan)
+                    if (p !== plan) {
+                        p.default = false;
+                    }
+                });
+            };
+
             $scope.togglePlanStatus = function (index) {
                 $scope.data.plans[index]['status'] = ($scope.data.plans[index]['status'] === 'ACTIVE') ? 'INACTIVE' : 'ACTIVE';
 
             };
+
+            $scope.plan_is_not_active = function (plan) {
+                return plan['remove_this_existing_plan'] || plan['status'] !== 'ACTIVE';
+            }
 
             $scope.sortableOptions = {
                 stop: function (e, ui) {
@@ -200,8 +214,17 @@
                             <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                                 <span style="cursor: row-resize"
                                       class="fa fa-arrows-v form-control w2em border-none di"></span>
-                                <input class="form-control w10em di"
-                                       ng-disabled="plan['remove_this_existing_plan']"
+                                <input class="di"
+                                       pr-validation-answer="data_validation:one_default_active_plan"
+                                       pr-validation-disable="plan_is_not_active(plan)"
+                                       ng-disabled="plan_is_not_active(plan)"
+                                       type="radio"
+                                       ng-click="unset_all_other_defaults(plan)"
+                                       ng-value="true"
+                                       ng-model="plan.default"/>
+                                <input class="form-control w9em di"
+                                       pr-validation-disable="plan_is_not_active(plan)"
+                                       ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].name"
                                        placeholder="{{ _('Plan name placeholder') }}"
                                        ng-model="plan.name">
@@ -209,55 +232,70 @@
 
                             <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                                 <input class="form-control w3em di"
-                                       ng-disabled="plan['remove_this_existing_plan']"
+                                       pr-validation-disable="plan_is_not_active(plan)"
+                                       ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].publication_count_open"
                                        placeholder="{{ _('Open') }}"
                                        ng-model="plan.publication_count_open">
                                 <input class="form-control w3em di"
-                                       ng-disabled="plan['remove_this_existing_plan']"
+                                       pr-validation-disable="plan_is_not_active(plan)"
+                                       ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].publication_count_registered"
                                        placeholder="{{ _('Registered') }}"
                                        ng-model="plan.publication_count_registered">
                                 <input class="form-control w3em di"
-                                       ng-disabled="plan['remove_this_existing_plan']"
+                                       pr-validation-disable="plan_is_not_active(plan)"
+                                       ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].publication_count_payed"
                                        placeholder="{{ _('Payed') }}"
                                        ng-model="plan.publication_count_payed">
                             </div>
-
-                            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
-
-                                <input class="form-control w3em di"
-                                       ng-disabled="plan['remove_this_existing_plan']"
-                                       pr-validation-answer="data_validation:plans[plan.id].duration"
-                                       placeholder="{{ _('Plan duration') }}"
-                                       ng-model="plan.duration">
-
-
-                                <select
-                                        ng-disabled="plan['remove_this_existing_plan']"
-                                        popover-trigger="none"
-                                        class="form-control w7em di"
-                                        ng-model="plan.duration_unit"
-                                        ng-options="du.id as du.name for du in data.select.duration_unit">
-                                </select>
+                            <div ng-if="plan.default">
+                                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                    <span class="form-control border-none">{{ ::_('Unlimited') }}</span>
+                                </div>
+                                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                    <span class="form-control border-none">{{ ::_('Free') }}</span>
+                                </div>
                             </div>
+                            <div ng-if="!plan.default">
+                                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
 
-                            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
-                                <input class="form-control w3em di"
-                                       ng-disabled="plan['remove_this_existing_plan']"
-                                       pr-validation-answer="data_validation:plans[plan.id].price"
-                                       placeholder="{{ _('Set price (0 for free)') }}"
-                                       ng-model="plan.price"/>
+                                    <input class="form-control w4em di"
+                                           pr-validation-disable="plan_is_not_active(plan)"
+                                           ng-disabled="plan_is_not_active(plan)"
+                                           pr-validation-answer="data_validation:plans[plan.id].duration"
+                                           placeholder="{{ _('Plan duration') }}"
+                                           ng-model="plan.duration">
 
-                                <select
-                                        ng-disabled="plan['remove_this_existing_plan']"
-                                        popover-trigger="none"
-                                        class="form-control w7em di"
-                                        ng-model="plan.currency_id"
-                                        ng-options="cr.id as cr.name for cr in data.select.currency">
-                                </select>
 
+                                    <select pr-validation-disable="plan_is_not_active(plan)"
+                                            ng-disabled="plan_is_not_active(plan)"
+                                            popover-trigger="none"
+                                            class="form-control w7em di"
+                                            ng-model="plan.duration_unit"
+                                            ng-options="du.id as du.name for du in data.select.duration_unit">
+                                    </select>
+                                </div>
+
+                                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                    <input class="form-control w3em di"
+                                           pr-validation-disable="plan_is_not_active(plan)"
+                                           ng-disabled="plan_is_not_active(plan)"
+                                           pr-validation-answer="data_validation:plans[plan.id].price"
+                                           placeholder="{{ _('Set price (0 for free)') }}"
+                                           ng-model="plan.price"/>
+
+                                    <select
+                                            pr-validation-disable="plan_is_not_active(plan)"
+                                            ng-disabled="plan_is_not_active(plan)"
+                                            popover-trigger="none"
+                                            class="form-control w7em di"
+                                            ng-model="plan.currency_id"
+                                            ng-options="cr.id as cr.name for cr in data.select.currency">
+                                    </select>
+
+                                </div>
                             </div>
 
 

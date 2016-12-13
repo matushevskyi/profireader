@@ -6,7 +6,7 @@ def db(*args, **kwargs):
 
 
 def execute_function(sql):
-    print(sql)
+    # print(sql)
     ret = g.db().execute("SELECT %s" % (sql,))
 
     for (r,) in ret:

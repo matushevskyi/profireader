@@ -8,7 +8,7 @@ from ..models.dictionary import Currency
 from ..models.translate import TranslateTemplate
 from tools.db_utils import db
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
-    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace, MembershipPlanUsed, \
+    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace, MembershipPlanIssued, \
     MembershipPlan
 from .request_wrapers import ok, check_right
 # from ..models.bak_articles import Publication, ArticleCompany, Article
@@ -55,7 +55,12 @@ def profile_load(json, create_or_update, company_id):
         portal = Portal(host='', lang=g.user.lang,
                         own_company=company,
                         company_owner_id=company.id,
+                        # default_membership_plan_id = default_membership_plan_id,
                         company_memberships=[MemberCompanyPortal(company=company)])
+
+
+
+        # default_membership_plan
 
     client_side = lambda: {
         'select': {
@@ -138,7 +143,28 @@ def profile_load(json, create_or_update, company_id):
                     div.notice_about_deleted_publications('division type changed')
                     div.publications = []
 
-            portal.save()
+            if not portal.default_membership_plan:
+                from tools import db_utils
+                portal.default_membership_plan_id = db_utils.execute_function('create_uuid(NULL)')
+                portal.save()
+                portal.company_memberships[0].current_membership_plan_issued_id = db_utils.execute_function('create_uuid(NULL)')
+                default_membership_plan = MembershipPlan(id=portal.default_membership_plan_id,
+                                                         name='default', position=0,
+                                                         portal_id=portal.id,
+                                                         status=MembershipPlan.STATUSES['ACTIVE'],
+                                                         duration='999999 years',
+                                                         publication_count_open=-1,
+                                                         publication_count_registered=10,
+                                                         publication_count_payed=0,
+                                                         price=0, currency_id='UAH')
+                default_membership_plan.save()
+                default_membership_plan_issued = MembershipPlanIssued.create_from_membership_plan(default_membership_plan)
+                default_membership_plan_issued.member_company_portal_id = default_membership_plan_issued.id = portal.company_memberships[0].id
+                default_membership_plan_issued.id = portal.company_memberships[0].current_membership_plan_issued_id
+                default_membership_plan_issued.save()
+            else:
+                portal.save()
+
             g.db.commit()
             return client_side()
 
@@ -179,6 +205,7 @@ def plans_load(json, company_id):
         # unpublish_warning = {}
         # changed_division_types = {}
         deleted_plans = []
+        validation = PRBase.DEFAULT_VALIDATION_ANSWER()
         for jp in json['plans']:
             plan = utils.find_by_id(portal.plans, jp['id']) or MembershipPlan(portal=portal, id=jp['id'])
             if jp.get('remove_this_existing_plan', None):
@@ -192,7 +219,7 @@ def plans_load(json, company_id):
             else:
                 plan.portal = portal
                 plan.position = plan_position
-                plan.attr_filter(jp, 'name', 'price', 'currency_id', 'status',
+                plan.attr_filter(jp, 'name', 'default', 'price', 'currency_id', 'status',
                                  *['publication_count_' + t for t in ['open', 'payed', 'registered']])
 
                 plan.duration = "%s %s" % (jp['duration'], jp['duration_unit'])
@@ -212,12 +239,13 @@ def plans_load(json, company_id):
 
                 plan_position += 1
 
-        if action == 'validate':
-            ret = PRBase.DEFAULT_VALIDATION_ANSWER()
-            g.db.expunge_all()
-            portal.validation_append_by_ids(ret, portal.plans, 'plans')
-            return ret
+        portal.validation_append_by_ids(validation, portal.plans, 'plans')
+        if len([p for p in portal.plans if p.default and p.status == MembershipPlan.STATUSES['ACTIVE']]) != 1:
+            validation['errors']['one_default_active_plan'] = 'You need one and only one default plan'
 
+        if action == 'validate':
+            g.db.expunge_all()
+            return validation
         else:
             for plan in portal.plans:
                 if not plan.cr_tm:
@@ -259,7 +287,7 @@ def portals_partners(company_id):
 
 def membership_grid_row(membership: MemberCompanyPortal):
     return utils.dict_merge(membership.get_client_side_dict(
-        fields='id,status,portal.own_company,portal,rights,tags,membership_plan_used,requested_membership_plan'),
+        fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,requested_membership_plan_issued'),
         {'actions': MembershipRights(company=membership.company_id,
                                      member_company=membership).actions()},
         {'who': MembershipRights.MEMBERSHIP})
@@ -283,11 +311,46 @@ def portals_partners_load(json, company_id):
 
 @portal_bp.route('/request_membership_plan/<string:membership_id>/', methods=['OK'])
 def request_membership_plan(json, membership_id):
+    action = g.req('action', allowed=['load', 'save', 'validate'])
     membership = MemberCompanyPortal.get(membership_id)
-    return {
-        'membership': membership.get_client_side_dict(more_fields='membership_plan_used,requested_membership_plan'),
-        'select': {'plans': utils.get_client_side_list(membership.portal.plans_active)}
-    }
+    if action == 'load':
+        return {
+            'membership': membership.get_client_side_dict(
+                fields='id,current_membership_plan_issued,requested_membership_plan_issued,company.name,company.logo.url,portal.name, portal.logo.url'),
+            'select': {'plans': utils.get_client_side_list(membership.portal.plans_active)}
+        }
+    else:
+        new_membership_plan = MembershipPlan.get(json.get('selected_by_user_plan_id', None), returnNoneIfNotExists=True)
+        if action == 'validate':
+            ret = PRBase.DEFAULT_VALIDATION_ANSWER()
+            if not new_membership_plan:
+                ret['errors']['selected_by_user_plan_id'] = 'please select plan'
+            return ret
+        else:
+            return membership_grid_row(membership.use_plan(new_membership_plan, request_only=True).save())
+
+
+@portal_bp.route('/set_membership_plan/<string:membership_id>/', methods=['OK'])
+def set_membership_plan(json, membership_id):
+    action = g.req('action', allowed=['load', 'save', 'validate'])
+    membership = MemberCompanyPortal.get(membership_id)
+    if action == 'load':
+        return {
+            'membership': membership.get_client_side_dict(
+                fields='id,current_membership_plan_issued,requested_membership_plan_issued,company.name,company.logo.url,portal.name, portal.logo.url'),
+            'select': {'plans': utils.get_client_side_list(membership.portal.plans_active)}
+        }
+    else:
+        new_membership_plan = MembershipPlan.get(json.get('selected_by_user_plan_id', None), returnNoneIfNotExists=True)
+        if action == 'validate':
+            ret = PRBase.DEFAULT_VALIDATION_ANSWER()
+            if not new_membership_plan:
+                ret['errors']['selected_by_user_plan_id'] = 'please select plan'
+            return ret
+        else:
+            membership.use_plan(new_membership_plan)
+            membership.save()
+            return membership_grid_row(membership)
 
 
 @portal_bp.route('/portal_banners/<string:company_id>/', methods=['GET'])
@@ -430,12 +493,13 @@ def companies_partners_load(json, company_id):
     subquery = Company.subquery_company_partners(company_id, json.get('filter'),
                                                  filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
     members, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
-    return {'grid_data': [utils.dict_merge({'member': member.get_client_side_dict(more_fields='company'),
-                                            'company_id': company_id,
-                                            'portal_id': db(Portal, company_owner_id=company_id).first().id},
-                                           {'actions': MembersRights(company=company_id,
-                                                                     member_company=member).actions()},
-                                           {'id': member.id})
+    return {'grid_data': [utils.dict_merge({'membership': member.get_client_side_dict(
+        more_fields='company,current_membership_plan_issued,requested_membership_plan_issued'),
+        'company_id': company_id,
+        'portal_id': db(Portal, company_owner_id=company_id).first().id},
+        {'actions': MembersRights(company=company_id,
+                                  member_company=member).actions()},
+        {'id': member.id})
                           for member in members],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'member.status': [{'value': status, 'label': status} for status in

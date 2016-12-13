@@ -13,27 +13,111 @@
     {% endblock company_base %}
 
     {% raw %}
+
     <script type="text/ng-template" id="request_membership_plan.html">
-        <div>
+        <div class="SelectMembershipPlanController_class"
+             af ng-model="data" af-after-save="afterSave" af-url="{{ url_request_membership_plan() }}">
             <div class="modal-header">
-                <h3 class="modal-title">{{ _('set division html seo data') }}</h3>
+                <h3 class="modal-title">{{ ::_('please select desired plan') }}</h3>
+                <h4>{{ __('for company `%(data.membership.company.name)s` in portal `%(data.membership.portal.name)s`')
+                    }}</h4>
             </div>
 
             <div class="modal-body">
-                <label>{{ ::_('html title') }}</label><br/>
-                <input class="w100 form-control mb2em" ng-model="seo_data.title"
-                       placeholder="{{ ::_('leave empty to use division name') }}"/>
 
-                <label>{{ ::_('html keywords') }}</label><br/>
-                <input class="w100 form-control mb2em" ng-model="seo_data.keywords"
-                       placeholder="{{ ::_('leave empty to use division tags') }}"/>
+                <table>
+                    <tr>
+                        <th class="border-none" colspan="7"><h5>{{ ::_('current active plan') }}</h5></th>
+                    </tr>
 
-                <label>{{ ::_('html description') }}</label><br/>
-                <textarea class="w100 h10em form-control" ng-model="seo_data.description" placeholder=""></textarea>
+                    <tr ng-if="!data.membership.membership_plan_used">
+                        <td class="border-none" colspan="7"><em>{{ ::_('Your membership running now without any plan')
+                            }}</em>
+                            <hr/>
+                        </td>
+                    </tr>
+
+                    <tr ng-if="data.membership.membership_plan_used">
+                        <td class="border-none" colspan="7"><h5>{{data.membership.membership_plan_used }}</h5>
+                            <hr/>
+                        </td>
+                    </tr>
+
+                    <tbody ng-if="data.membership.requested_membership_plan">
+                    <tr>
+                        <th class="border-none" colspan="7"><h5>{{ ::_('Your request following plan. This plan
+                            was not yet confirmed by portal owner') }}</h5>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>{{ data.membership.requested_membership_plan.name }}</td>
+                        <td>{{ data.membership.requested_membership_plan.price }} {{
+                            data.membership.requested_membership_plan.currency_id }}
+                        </td>
+                        <td>{{ data.membership.requested_membership_plan.duration }}</td>
+                        <td class="w1em">{{ publication_count(data.membership.requested_membership_plan, 'open') }}</td>
+                        <td class="w1em">{{ publication_count(data.membership.requested_membership_plan, 'registered')
+                            }}
+                        </td>
+                        <td class="w1em">{{ publication_count(data.membership.requested_membership_plan, 'payed') }}
+                        </td>
+                    </tr>
+                    </tbody>
+
+                    <tr ng-if="data.membership.requested_membership_plan">
+                        <td class="border-none" colspan="7">
+                            <hr/>
+                        </td>
+                    </tr>
+
+
+                    <tr>
+                        <th class="border-none" colspan="7"><h5>{{ ::_('please select membership plan') }}</h5></th>
+                    </tr>
+
+                    <tr ng-if="!data.select.plans.length">
+                        <th class="border-none error" colspan="7"><h5>{{ ::_('Sorry there is no plan in this portal')
+                            }}</h5></th>
+                    </tr>
+                    <tbody ng-if="data.select.plans.length">
+                    <tr>
+                        <td rowspan="2"></td>
+                        <th rowspan="2">{{ ::_('Plan name') }}</th>
+                        <th rowspan="2">{{ ::_('Plan price') }}</th>
+                        <th rowspan="2">{{ ::_('Plan duration') }}</th>
+                        <th colspan="3" class="nowrap">{{ ::_('Publication count') }}</th>
+                    </tr>
+
+                    <tr>
+                        <th>{{ ::_('open') }}</th>
+                        <th>{{ ::_('registered') }}</th>
+                        <th>{{ ::_('payed') }}</th>
+                    </tr>
+
+                    <tr class="link" ng-click="data.selected_by_user_plan_id = plan.id"
+                        ng-repeat="plan in data.select.plans">
+                        <td class="tac">
+                            <div pr-validation-answer="data_validation:selected_by_user_plan_id"><input
+                                    ng-value="plan.id" type="radio" ng-model="data.selected_by_user_plan_id"/></div>
+                        </td>
+                        <td>{{ plan.name }}</td>
+                        <td>{{ plan.price }} {{ plan.currency_id }}</td>
+                        <td>{{ plan.duration }}</td>
+                        <td class="w1em">{{ publication_count(plan, 'open') }}</td>
+                        <td class="w1em">{{ publication_count(plan, 'registered') }}</td>
+                        <td class="w1em">{{ publication_count(plan, 'payed') }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+
+
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-primary" type="button" ng-click="set()">{{ _('Set') }}
+                <button class="btn btn-primary" type="button"
+                        ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">
+                    {{ ::_('Select plan') }}
                 </button>
                 <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>
             </div>
@@ -50,14 +134,14 @@
             $scope.url_request_membership_plan = {{ raw_url_for('portal.request_membership_plan')|safe }};
             $scope.membership_id = membership_id;
 
-            $ok($scope.url_request_membership_plan($scope), function (resp) {
+            $scope.afterSave = function (resp) {
+                $uibModalInstance.close(resp)
+            };
 
-            });
-            // $scope.membership_plan_used = membership_plan_used;
-            // $scope.request_membership_plan = request_membership_plan;
-            //$scope.set = function () {
-//                $uibModalInstance.close(seo_data);
-  //          };
+            $scope.publication_count = function (plan, pub_type) {
+                var ret = plan['publication_count_' + pub_type];
+                return ret < 0 ? 'unlimited' : (ret ? ret : '0');
+            };
 
             $scope.cancel = $uibModalInstance.dismiss;
 
@@ -142,7 +226,6 @@
             };
 
             $scope.request_membership_plan = function (id, row, column_name) {
-                console.log(arguments);
                 var modalInstance = $uibModal.open({
                     templateUrl: 'request_membership_plan.html',
                     controller: 'RequestMembershipPlanController',
@@ -150,10 +233,8 @@
                         membership_id: row['id']
                     })
                 });
-                modalInstance.result.then(function (new_seo_data) {
-                    d.html_title = new_seo_data['title'];
-                    d.html_keywords = new_seo_data['keywords'];
-                    d.html_description = new_seo_data['description'];
+                modalInstance.result.then(function (resp) {
+                    $scope.gridApi.grid.grid_change_row(resp);
                 });
             };
 
@@ -175,12 +256,14 @@
                         onclick: 'request_membership_plan',
                         render: function (row, value) {
                             return (row['membership_plan_used'] ? row['membership_plan_used']['name'] : '<i>None</i>') +
-                                    (row['requested_membership_plan'] ? (' (' + row['requested_membership_plan']['name'] + ')') : '');
+                                    (row['requested_membership_plan'] ? (' (<em>' + row['requested_membership_plan']['name'] + '</em>)') : '');
                         }
                     },
-                    {name: 'tags', type: 'tags', onclick: 'set_tags'},
                     {
-                        name: 'status', width: '20%', filter: {type: 'multi_select', default_selected: true}
+                        name: 'tags', type: 'tags', onclick: 'set_tags'
+                    },
+                    {
+                        name: 'status', width: '20%', afilter: {type: 'multi_select', default_selected: true}
                         //we can default select all and deselect that we need, 'exception' can be string or array of string
                     },
                     {name: 'rights', width: '200', type: 'icons', afilter: {type: 'input'}},
@@ -193,7 +276,7 @@
 
     {% raw %}
     <div ng-controller="portals_partners" ng-cloak>
-        <h3> {{ _('Join to portal') }} </h3>
+        <h5> {{ _('Join to portal') }} </h5>
         <input pr-user-can="actions.require_memberee" typeahead-on-select="onSelect($item, $model, $label)"
                uib-typeahead-template-url="typeaheadTemplate.html"
                uib-typeahead-loading="loadingPortals"

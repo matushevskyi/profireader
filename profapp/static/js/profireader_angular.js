@@ -236,6 +236,30 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             );
         }
     }])
+    // .directive('prSay', ['$controller', '$ok', function ($controller, $ok) {
+    //     return {
+    //         restrict: 'A',
+    //         scope: {
+    //             'prSay': '=',
+    //         },
+    //         link: function (scope, element, attrs) {
+    //             var allow_html = ('allow-only-tags' in attrs) ? attrs['allow-only-tags'] : '*';
+    //             var phrase = element.html();
+    //
+    //             if ('watch' in attrs) {
+    //                 scope.$watch('prSay', function (nv, ov) {
+    //                     if (nv) {
+    //                         element.html(pr_dictionary(phrase, [nv], allow_html, scope.$parent, $ok, $controller));
+    //                     }
+    //                 });
+    //             }
+    //             else {
+    //                 element.html(pr_dictionary(phrase, [scope['prSay']], allow_html, scope.$parent, $ok, $controller));
+    //             }
+    //
+    //         }
+    //     }
+    // }])
     .directive('prHelpTooltip', ['$compile', '$templateCache', '$controller', function ($compile, $templateCache, $controller) {
         return {
             restrict: 'E',
@@ -257,33 +281,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             }
         };
     })
-    // // .directive('schrollBottom', function () {
-    // //     return {
-    // //         scope: {
-    // //             schrollBottom: "=",
-    // //             schrollBottomStickTo: "="
-    // //         },
-    // //         link: function (scope, element) {
-    // //
-    // //             // scope.$watchCollection('schrollBottom', function (newValue) {
-    // //             //
-    // //             //     if (newValue) {
-    // //             //         setTimeout(function () {
-    // //             //             var max_scroll = $(element).outerHeight() - $(element).parent().height();
-    // //             //             console.log(oldscrolltop, max_scroll, $(element).parent().height(), $(element).outerHeight());
-    // //             //             if ($(element).parent()[0].scrollTop > max_scroll - 10 || $(element).parent().height()>$(element).outerHeight()) {
-    // //             //                 $(element).parent().animate({scrollTop: max_scroll}, 500, "easeOutQuint");
-    // //             //             }
-    // //             //             else if ($(element).parent()[0].scrollTop < 10) {
-    // //             //                 $(element).parent().animate({scrollTop: 0}, 500, "easeOutQuint"
-    // //             //                 );
-    // //             //             }
-    // //             //         }, 0);
-    // //             //     }
-    // //             // });
-    // //         }
-    // //     }
-    // })
     .directive('prCrop', function ($compile, $templateCache, $timeout) {
         return {
             restrict: 'A',
@@ -1547,11 +1544,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
                     var cell_raw_value = 'COL_FIELD';
                     if (col['render']) {
-
                         cell_raw_value = 'grid.options.columnDefs[' + i + '][\'render\'](row.entity, COL_FIELD)';
                     }
-                    var cell_value = '{{ ::' + cell_raw_value + ' }}';
-                    var cell_html_value = '<span ng-bind-html="::' + cell_raw_value + '"></span>';
+                    var cell_value = '{{ ' + cell_raw_value + ' }}';
+                    var cell_html_value = '<span ng-bind-html="' + cell_raw_value + '"></span>';
 
 
                     var prefix_img = '';
@@ -1624,6 +1620,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             };
 
             gridApi.grid['grid_change_row'] = function (new_row) {
+                console.log(new_row);
                 $.each(gridApi.grid.options.data, function (index, old_row) {
                     if (old_row['id'] === new_row['id']) {
                         if (new_row.hasOwnProperty('replace_id')) {
@@ -2192,7 +2189,7 @@ function find_and_build_url_for_endpoint(dict, rules, host) {
     });
 
     if (found === false) {
-        console.error('Can\'t found flask endpoint for passed dictionary', dict, rules);
+        console.error('Can`t found flask endpoint for passed dictionary', dict, rules);
         return '';
     }
     else {

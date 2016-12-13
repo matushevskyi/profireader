@@ -78,12 +78,12 @@ class Portal(Base, PRBase):
     plans = relationship('MembershipPlan',
                          cascade="all, merge, delete-orphan",
                          order_by='asc(MembershipPlan.position)',
-                         primaryjoin='and_(Portal.id==MembershipPlan.portal_id, MembershipPlan.status != \'DELETED\')')
+                         primaryjoin='and_(Portal.id == MembershipPlan.portal_id, MembershipPlan.status != \'DELETED\')')
 
     plans_active = relationship('MembershipPlan',
-                         cascade="all, merge, delete-orphan",
-                         order_by='asc(MembershipPlan.position)',
-                         primaryjoin='and_(Portal.id==MembershipPlan.portal_id, MembershipPlan.status == \'ACTIVE\')')
+                                cascade="all, merge, delete-orphan",
+                                order_by='asc(MembershipPlan.position)',
+                                primaryjoin='and_(Portal.id==MembershipPlan.portal_id, MembershipPlan.status == \'ACTIVE\')')
 
     divisions = relationship('PortalDivision',
                              # backref='portal',
@@ -106,6 +106,9 @@ class Portal(Base, PRBase):
                                 uselist=True)
 
     company_memberships = relationship('MemberCompanyPortal')
+
+    default_membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'), nullable=False)
+    default_membership_plan = relationship('MembershipPlan', uselist=False, foreign_keys=[default_membership_plan_id])
 
     # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
     #                  'host': {'relevance': lambda field='host': RELEVANCE.host}}
@@ -392,7 +395,7 @@ class MembershipPlan(Base, PRBase):
     name = Column(TABLE_TYPES['string_100'])
 
     portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Portal.id))
-    portal = relationship('Portal')
+    portal = relationship('Portal', foreign_keys=[portal_id])
 
     publication_count_open = Column(TABLE_TYPES['int'])
     publication_count_registered = Column(TABLE_TYPES['int'])
@@ -402,10 +405,12 @@ class MembershipPlan(Base, PRBase):
     price = Column(TABLE_TYPES['price'])
     currency_id = Column(TABLE_TYPES['string_10'])
 
-    duration = Column(TABLE_TYPES['string_100'])
+    duration = Column(TABLE_TYPES['timeinterval'])
 
     position = Column(TABLE_TYPES['int'])
     status = Column(TABLE_TYPES['string_100'])
+
+    # default = Column(TABLE_TYPES['boolean'])
 
     STATUSES = {'ACTIVE': 'ACTIVE', 'INACTIVE': 'INACTIVE', 'DELETED': 'DELETED'}
 
@@ -417,7 +422,8 @@ class MembershipPlan(Base, PRBase):
     ]
 
     def get_client_side_dict(self,
-                             fields='id,name,cr_tm,status,currency_id,price,publication_count_open,publication_count_registered,publication_count_payed,duration',
+                             fields='id,name,cr_tm,status,currency_id,price,duration,default,'
+                                    'publication_count_open,publication_count_registered,publication_count_payed',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
@@ -426,10 +432,10 @@ class MembershipPlan(Base, PRBase):
         return ret
 
 
-class MembershipPlanUsed(Base, PRBase):
+class MembershipPlanIssued(Base, PRBase):
     # TODO: OZ by OZ: sale_auto_renewal
 
-    __tablename__ = 'membership_plan_used'
+    __tablename__ = 'membership_plan_issued'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
@@ -442,6 +448,7 @@ class MembershipPlanUsed(Base, PRBase):
     stopped_tm = Column(TABLE_TYPES['timestamp'])
 
     price = Column(TABLE_TYPES['price'])
+    currency_id = Column(TABLE_TYPES['string_10'])
     duration = Column(TABLE_TYPES['timeinterval'])
     publication_count_open = Column(TABLE_TYPES['int'])
     publication_count_registered = Column(TABLE_TYPES['int'])
@@ -457,7 +464,27 @@ class MembershipPlanUsed(Base, PRBase):
     membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'))
     membership_plan = relationship(MembershipPlan)
 
-    status = Column(TABLE_TYPES['string_100'])
+    @staticmethod
+    def create_from_membership_plan(membership_plan: MembershipPlan):
+        ret = MembershipPlanIssued(
+            started_by_user_id = g.user.id,
+            name=membership_plan.name,
+            price=membership_plan.price,
+            currency_id=membership_plan.currency_id,
+            duration=membership_plan.duration,
+            publication_count_open=membership_plan.publication_count_open,
+            publication_count_registered=membership_plan.publication_count_registered,
+            publication_count_payed=membership_plan.publication_count_payed,
+        )
+        ret.membership_plan = membership_plan
+        return ret
+
+    def get_client_side_dict(self,
+                             fields='id,name,cr_tm,currency_id,price,publication_count_open,publication_count_registered,publication_count_payed,duration',
+                             more_fields=None):
+        return self.to_dict(fields, more_fields)
+
+        # status = Column(TABLE_TYPES['string_100'])
 
 
 class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
@@ -479,24 +506,42 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     tags = relationship(Tag, secondary='tag_membership', uselist=True,
                         order_by=lambda: expression.desc(TagMembership.position))
 
-
     status = Column(TABLE_TYPES['status'], default='APPLICANT', nullable=False)
 
     portal = relationship(Portal)
 
     company = relationship('Company')
 
+    requested_membership_plan_issued_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_issued.id'),
+                                                 nullable=True)
+    requested_membership_plan_issued = relationship('MembershipPlanIssued',
+                                                    foreign_keys=[requested_membership_plan_issued_id])
 
-    requested_membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'),
-                                          nullable=True)
-    requested_membership_plan = relationship('MembershipPlan')
-
-    membership_plan_used_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_used.id'),
-                                     nullable=True)
-    membership_plan_used = relationship('MembershipPlanUsed', foreign_keys=[membership_plan_used_id])
+    current_membership_plan_issued_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_issued.id'),
+                                               nullable=True)
+    current_membership_plan_issued = relationship('MembershipPlanIssued',
+                                                  foreign_keys=[current_membership_plan_issued_id])
 
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
                 'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
+
+    def use_plan(self, new_membership_plan: MembershipPlan):
+        new_plan = MembershipPlanIssued(
+            name=new_membership_plan.name,
+            price=new_membership_plan.price,
+            duration=new_membership_plan.duration,
+            publication_count_open=new_membership_plan.publication_count_open,
+            publication_count_registered=new_membership_plan.publication_count_registered,
+            publication_count_payed=new_membership_plan.publication_count_payed,
+            publication_count_confidential=new_membership_plan.publication_count_confidential,
+            started_by_user_id=g.user.id,
+            membership_plan_id=new_membership_plan.id,
+            member_company_portal_id=self.id,
+        )
+        self.membership_plan_used = new_plan
+        if self.requested_membership_plan and self.requested_membership_plan.id == new_membership_plan.id:
+            self.requested_membership_plan = None
+        return self
 
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)

@@ -122,6 +122,11 @@
     overflow: hidden;
 }
 
+.w4em {
+    width: 4em !important;
+    overflow: hidden;
+}
+
 .w5em {
     width: 5em !important;
     overflow: hidden;
@@ -129,6 +134,16 @@
 
 .w7em {
     width: 7em !important;
+    overflow: hidden;
+}
+
+.w8em {
+    width: 8em !important;
+    overflow: hidden;
+}
+
+.w9em {
+    width: 9em !important;
     overflow: hidden;
 }
 
@@ -498,6 +513,12 @@ div.pr-row {
     display: table-row;
 }
 
+div.pr-column-group {
+    display: table-column-group;
+}
+
+
+
 div.pr-cell {
     display: table-cell;
     padding: 0.2em 1em;
@@ -837,3 +858,5 @@ div.pr-row:last-child div.pr-cell {
   -webkit-transform: rotate(270deg);
   -ms-transform: rotate(270deg);
   transform: rotate(270deg); }
+
+

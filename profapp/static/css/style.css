@@ -1455,4 +1455,22 @@ body {
   opacity: 1;
   z-index: 1002;
 }
+.SelectMembershipPlanController_class table {
+  width: 100%;
+}
+.SelectMembershipPlanController_class table td,
+.SelectMembershipPlanController_class table th {
+  padding: 2px;
+  border: solid gray 2px;
+}
+.SelectMembershipPlanController_class table th {
+  text-align: center;
+}
+.SelectMembershipPlanController_class table h5 {
+  text-align: left;
+  font-weight: bold;
+}
+.SelectMembershipPlanController_class table hr {
+  margin: 10px 0px;
+}
 /*# sourceMappingURL=style.css.map */
