@@ -56,7 +56,8 @@ def profile_load(json, create_or_update, company_id):
                         own_company=company,
                         company_owner_id=company.id,
                         # default_membership_plan_id = default_membership_plan_id,
-                        company_memberships=[MemberCompanyPortal(company=company)])
+                        company_memberships=[
+                            MemberCompanyPortal(company=company, status=MemberCompanyPortal.STATUSES['ACTIVE'])])
 
 
 
