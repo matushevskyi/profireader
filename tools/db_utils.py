@@ -12,5 +12,8 @@ def execute_function(sql):
     for (r,) in ret:
         return r
 
+def create_uuid():
+    return execute_function('create_uuid(NULL)')
+
 def compile(q):
     print(q.statement.compile(compile_kwargs={"literal_binds": True}))

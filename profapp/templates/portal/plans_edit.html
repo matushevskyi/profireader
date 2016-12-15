@@ -100,7 +100,6 @@
                     publication_count_payed: 0,
                     publication_count_confidential: 0,
                     price: 1.00,
-                    default: false,
                     status: 'ACTIVE',
                     currency_id: $scope.data.select.currency[0]['id'],
                     duration: 1,
@@ -161,7 +160,7 @@
 
     <div class="controller-portal-plans" ng-controller="portal_plans" ng-cloak>
         <form name="formPortalPlans">
-            <div class="container pr" af af-after-save="afterSave" af-amid-load="amidLoad" af-watch="data.plans"
+            <div class="container pr" af af-after-save="afterSave" af-amid-load="amidLoad" af-watch="[data.plans, data.select.portal.default_membership_plan_id]"
                  ng-model="data">
                 <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed"></div>
                 <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed-message">
@@ -220,8 +219,8 @@
                                        ng-disabled="plan_is_not_active(plan)"
                                        type="radio"
                                        ng-click="unset_all_other_defaults(plan)"
-                                       ng-value="true"
-                                       ng-model="plan.default"/>
+                                       ng-value="plan.id"
+                                       ng-model="data.select.portal.default_membership_plan_id"/>
                                 <input class="form-control w9em di"
                                        pr-validation-disable="plan_is_not_active(plan)"
                                        ng-disabled="plan_is_not_active(plan)"
@@ -250,7 +249,7 @@
                                        placeholder="{{ _('Payed') }}"
                                        ng-model="plan.publication_count_payed">
                             </div>
-                            <div ng-if="plan.default">
+                            <div ng-if="plan.id === data.select.portal.default_membership_plan_id">
                                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                                     <span class="form-control border-none">{{ ::_('Unlimited') }}</span>
                                 </div>
@@ -258,7 +257,7 @@
                                     <span class="form-control border-none">{{ ::_('Free') }}</span>
                                 </div>
                             </div>
-                            <div ng-if="!plan.default">
+                            <div ng-if="plan.id != data.select.portal.default_membership_plan_id">
                                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
 
                                     <input class="form-control w4em di"

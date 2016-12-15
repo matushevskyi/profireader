@@ -108,7 +108,10 @@ class Portal(Base, PRBase):
     company_memberships = relationship('MemberCompanyPortal')
 
     default_membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'), nullable=False)
-    default_membership_plan = relationship('MembershipPlan', uselist=False, foreign_keys=[default_membership_plan_id])
+    default_membership_plan = relationship('MembershipPlan', uselist=False, post_update=True,
+                                           foreign_keys=[default_membership_plan_id])
+    # post_update parameter is for breaking Circular dependency error (which us because mutual dependency exists default_membership_plan <-> plans)
+    # http://docs.sqlalchemy.org/en/rel_1_1/orm/relationship_api.html#sqlalchemy.orm.relationship.params.post_update
 
     # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
     #                  'host': {'relevance': lambda field='host': RELEVANCE.host}}
@@ -422,7 +425,7 @@ class MembershipPlan(Base, PRBase):
     ]
 
     def get_client_side_dict(self,
-                             fields='id,name,cr_tm,status,currency_id,price,duration,default,'
+                             fields='id,name,cr_tm,status,currency_id,price,duration,'
                                     'publication_count_open,publication_count_registered,publication_count_payed',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
@@ -467,7 +470,7 @@ class MembershipPlanIssued(Base, PRBase):
     @staticmethod
     def create_from_membership_plan(membership_plan: MembershipPlan):
         ret = MembershipPlanIssued(
-            started_by_user_id = g.user.id,
+            started_by_user_id=g.user.id,
             name=membership_plan.name,
             price=membership_plan.price,
             currency_id=membership_plan.currency_id,
