@@ -251,7 +251,8 @@ class Company(Base, PRBase, PRElasticDocument):
                 #     if 'company' in filters:
                 #         sub_query = sub_query.join(Company, Portal.company_owner_id == Company.id)
                 #         list_filters.append({'type': 'text', 'value': filters['company'], 'field': Company.name})
-            sub_query = Grid.subquery_grid(sub_query, list_filters)
+            sub_query = Grid.subquery_grid(sub_query, list_filters,
+                                           sorts=[{'value': 'asc', 'field': MemberCompanyPortal.id}])
         return sub_query
 
     @staticmethod

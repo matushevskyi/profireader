@@ -126,22 +126,42 @@ class Portal(Base, PRBase):
         if not self.portal_layout_id:
             self.portal_layout_id = db(PortalLayout).first().id
 
-    def setup_created_portal(self, client_data):
-        # TODO: OZ by OZ: move this to some event maybe
-        """This method create portal in db. Before define this method you have to create
-        instance of class with parameters: name, host, portal_layout_id, company_owner_id,
-        divisions. Return portal)"""
+    @staticmethod
+    def launch_new_portal(company):
+        # This all ids (by db_utils.create_uuid()) we need because we have mutual foreign keys in database and
+        # NOT NULL constrain (and not null constrain don't support deferrable property')
 
-        self.logo = client_data['logo']
+        from tools import db_utils
+        ret = Portal(host='', lang=g.user.lang,
+                     id=db_utils.create_uuid(),
+                     own_company=company,
+                     company_owner_id=company.id,
+                     default_membership_plan_id=db_utils.create_uuid(),
+                     company_memberships=[
+                         MemberCompanyPortal(
+                             id=db_utils.create_uuid(),
+                             company=company,
+                             rights={MemberCompanyPortal.RIGHT_AT_PORTAL._OWNER: True},
+                             status=MemberCompanyPortal.STATUSES['ACTIVE'])])
 
-        # if logo_file_id:
-        #     originalfile = File.get(logo_file_id)
-        #     if originalfile:
-        #         self.logo_file_id = originalfile.copy_file(
-        #             company_id=self.company_owner_id,
-        #             parent_folder_id=self.own_company.system_folder_file_id,
-        #             publication_id=None).save().id
-        return self
+        ret.default_membership_plan = MembershipPlan(name='default', position=0,
+                                                     portal_id=ret.id,
+                                                     status=MembershipPlan.STATUSES['ACTIVE'],
+                                                     duration='1 years',
+                                                     publication_count_open=-1,
+                                                     publication_count_registered=10,
+                                                     publication_count_payed=0,
+                                                     price=1, currency_id='UAH')
+
+        ret.company_memberships[0].portal = ret
+        MembershipPlanIssued.start_plan(ret.company_memberships[0])
+
+        return ret
+
+        # ret.company_memberships[0].current_membership_plan_issued \
+        #     = MembershipPlanIssued.create_for_membership(ret.company_memberships[0], ret.default_membership_plan)
+        # ret.company_memberships[0].current_membership_plan_issued. \
+        #     member_company_portal_id = ret.company_memberships[0].id
 
     def validate_tags(self, new_portal_tags):
         ret = PRBase.DEFAULT_VALIDATION_ANSWER()
@@ -461,26 +481,59 @@ class MembershipPlanIssued(Base, PRBase):
     stopped_by_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
     stopped_by_user = relationship('User', foreign_keys=[stopped_by_user_id])
 
+    requested_by_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
+    requested_by_user = relationship('User', foreign_keys=[requested_by_user_id])
+
     member_company_portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal.id'))
     member_company_portal = relationship('MemberCompanyPortal', foreign_keys=[member_company_portal_id])
+
+    portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
+    company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'))
 
     membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'))
     membership_plan = relationship(MembershipPlan)
 
+    # current_for_member_company_portal = relationship('MemberCompanyPortal')
+
     @staticmethod
-    def create_from_membership_plan(membership_plan: MembershipPlan):
-        ret = MembershipPlanIssued(
-            started_by_user_id=g.user.id,
-            name=membership_plan.name,
-            price=membership_plan.price,
-            currency_id=membership_plan.currency_id,
-            duration=membership_plan.duration,
-            publication_count_open=membership_plan.publication_count_open,
-            publication_count_registered=membership_plan.publication_count_registered,
-            publication_count_payed=membership_plan.publication_count_payed,
-        )
-        ret.membership_plan = membership_plan
-        return ret
+    def start_plan(membership, membership_plan: MembershipPlan = None):
+        # def use_plan(self, new_membership_plan: MembershipPlan):
+        #     new_plan = MembershipPlanIssued(
+        #         name=new_membership_plan.name,
+        #         price=new_membership_plan.price,
+        #         duration=new_membership_plan.duration,
+        #         publication_count_open=new_membership_plan.publication_count_open,
+        #         publication_count_registered=new_membership_plan.publication_count_registered,
+        #         publication_count_payed=new_membership_plan.publication_count_payed,
+        #         publication_count_confidential=new_membership_plan.publication_count_confidential,
+        #         requested_by_user_id=g.user.id,
+        #         membership_plan_id=new_membership_plan.id,
+        #         member_company_portal_id=self.id,
+        #     )
+        #     self.membership_plan_used = new_plan
+        #     if self.requested_membership_plan and self.requested_membership_plan.id == new_membership_plan.id:
+        #         self.requested_membership_plan = None
+        #     return self
+
+        plan = membership_plan if membership_plan else membership.portal.default_membership_plan
+        issued_plan = MembershipPlanIssued(
+            requested_by_user_id=g.user.id,
+            portal_id=membership.portal.id,
+            company_id=membership.company.id,
+            name=plan.name,
+            price=plan.price,
+            currency_id=plan.currency_id,
+            duration=plan.duration,
+            publication_count_open=plan.publication_count_open,
+            publication_count_registered=plan.publication_count_registered,
+            publication_count_payed=plan.publication_count_payed)
+
+        issued_plan.membership_plan = plan
+        if not membership.id:
+            from tools import db_utils
+            membership.id = db_utils.create_uuid()
+        membership.current_membership_plan_issued = issued_plan
+        membership.current_membership_plan_issued.member_company_portal_id = membership.id
 
     def get_client_side_dict(self,
                              fields='id,name,cr_tm,currency_id,price,publication_count_open,publication_count_registered,publication_count_payed,duration',
@@ -522,29 +575,13 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     current_membership_plan_issued_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_issued.id'),
                                                nullable=True)
+
     current_membership_plan_issued = relationship('MembershipPlanIssued',
+                                                  # backref='current_for_member_company_portal',
                                                   foreign_keys=[current_membership_plan_issued_id])
 
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
                 'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
-
-    def use_plan(self, new_membership_plan: MembershipPlan):
-        new_plan = MembershipPlanIssued(
-            name=new_membership_plan.name,
-            price=new_membership_plan.price,
-            duration=new_membership_plan.duration,
-            publication_count_open=new_membership_plan.publication_count_open,
-            publication_count_registered=new_membership_plan.publication_count_registered,
-            publication_count_payed=new_membership_plan.publication_count_payed,
-            publication_count_confidential=new_membership_plan.publication_count_confidential,
-            started_by_user_id=g.user.id,
-            membership_plan_id=new_membership_plan.id,
-            member_company_portal_id=self.id,
-        )
-        self.membership_plan_used = new_plan
-        if self.requested_membership_plan and self.requested_membership_plan.id == new_membership_plan.id:
-            self.requested_membership_plan = None
-        return self
 
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
@@ -637,15 +674,16 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     @staticmethod
     def apply_company_to_portal(company_id, portal_id):
         from ..models.company import Company
+
         """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
-        member = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
-        if member:
-            member.set_client_side_dict(MemberCompanyPortal.STATUSES['APPLICANT'])
-            member.save()
+        membership = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
+        if membership:
+            membership.set_client_side_dict(MemberCompanyPortal.STATUSES['APPLICANT'])
         else:
-            g.db.add(MemberCompanyPortal(company=Company.get(company_id),
-                                         portal=db(Portal, id=portal_id).one()))
-            g.db.flush()
+            membership = MemberCompanyPortal(company=Company.get(company_id),
+                                             portal=db(Portal, id=portal_id).one())
+        MembershipPlanIssued.start_plan(membership)
+        membership.save()
 
     @staticmethod
     def get_by_portal_id_company_id(portal_id=None, company_id=None):

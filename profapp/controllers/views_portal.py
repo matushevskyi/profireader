@@ -52,16 +52,7 @@ def profile_load(json, create_or_update, company_id):
     if create_or_update == 'update':
         portal = g.db.query(Portal).filter_by(company_owner_id=company.id).first()
     else:
-        portal = Portal(host='', lang=g.user.lang,
-                        own_company=company,
-                        company_owner_id=company.id,
-                        # default_membership_plan_id = default_membership_plan_id,
-                        company_memberships=[
-                            MemberCompanyPortal(company=company, status=MemberCompanyPortal.STATUSES['ACTIVE'])])
-
-
-
-        # default_membership_plan
+        portal = Portal.launch_new_portal(company)
 
     client_side = lambda: {
         'select': {
@@ -144,31 +135,7 @@ def profile_load(json, create_or_update, company_id):
                     div.notice_about_deleted_publications('division type changed')
                     div.publications = []
 
-            if not portal.default_membership_plan:
-                from tools import db_utils
-                portal.default_membership_plan_id = db_utils.create_uuid()
-                portal.save()
-                # save to generate id
-                portal.default_membership_plan = MembershipPlan(name='default', position=0,
-                                                                portal_id=portal.id,
-                                                                status=MembershipPlan.STATUSES['ACTIVE'],
-                                                                duration='1 years',
-                                                                publication_count_open=-1,
-                                                                publication_count_registered=10,
-                                                                publication_count_payed=0,
-                                                                price=1, currency_id='UAH')
-
-                portal.company_memberships[0].current_membership_plan_issued_id = db_utils.create_uuid()
-                portal.save()
-                # save to generate id in portal.company_memberships[0]
-                portal.company_memberships[
-                    0].current_membership_plan_issued = MembershipPlanIssued.create_from_membership_plan(
-                    portal.default_membership_plan)
-                portal.company_memberships[0].current_membership_plan_issued.member_company_portal_id = \
-                    portal.company_memberships[0].id
-                portal.save()
-            else:
-                portal.save()
+            portal.save()
 
             g.db.commit()
             return client_side()
@@ -201,57 +168,32 @@ def plans_load(json, company_id):
 
         return client_dict
 
-    if action == 'load':
-        return client_side()
-    else:
+    if action != 'load':
         if set(portal.plans) - set(utils.find_by_id(portal.plans, d['id']) for d in json['plans']) != set():
             raise BadDataProvided('Information for some existing plans is not provided by client')
 
         plan_position = 0
-        # unpublish_warning = {}
-        # changed_division_types = {}
-        deleted_plans = []
         validation = PRBase.DEFAULT_VALIDATION_ANSWER()
         default_plan = 0
 
         for jp in json['plans']:
             plan = utils.find_by_id(portal.plans, jp['id']) or MembershipPlan(portal=portal, id=jp['id'])
-            if jp.get('remove_this_existing_plan', None):
-                deleted_plans.append(plan)
-                # if len(ndi.publications):
-                #     utils.dict_deep_replace(
-                #         'this division have %s published articles. they will be unpublished' % (len(ndi.publications),),
-                #         unpublish_warning, ndi.id, 'actions')
-                plan.status = MembershipPlan.STATUSES['DELETED']
 
-            else:
+            plan.portal = portal
+            plan.position = plan_position
+            plan.attr_filter(jp, 'name', 'default', 'price', 'currency_id', 'status',
+                             *['publication_count_' + t for t in ['open', 'payed', 'registered']])
+            plan.duration = "%s %s" % (jp['duration'], jp['duration_unit'])
 
-                plan.portal = portal
-                plan.position = plan_position
-                plan.attr_filter(jp, 'name', 'default', 'price', 'currency_id', 'status',
-                                 *['publication_count_' + t for t in ['open', 'payed', 'registered']])
+            if plan not in portal.plans:
+                portal.plans.append(plan)
 
-                plan.duration = "%s %s" % (jp['duration'], jp['duration_unit'])
+            if jp['id'] == json['select']['portal'].get('default_membership_plan_id', None) and plan.status == \
+                    MembershipPlan.STATUSES['ACTIVE']:
+                default_plan += 1
+                portal.default_membership_plan = plan
 
-                if plan in portal.plans:
-                    pass
-                    # if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
-                    #     changed_division_types[ndi.id] = ndi.portal_division_type.id
-                    #     utils.dict_deep_replace(
-                    #         'this division have %s published articles. they will be unpublished becouse of division type changed' % (
-                    #             len(ndi.publications),), unpublish_warning, ndi.id, 'type')
-                else:
-                    portal.plans.append(plan)
-
-                # ndi.portal_division_type = utils.find_by_id(division_types, jd['portal_division_type_id'])
-                # ndi.settings = jd.get('settings', {})
-
-                if jp['id'] == json['select']['portal'].get('default_membership_plan_id', None) and plan.status == \
-                        MembershipPlan.STATUSES['ACTIVE']:
-                    default_plan += 1
-                    portal.default_membership_plan = plan
-
-                plan_position += 1
+            plan_position += 1
 
         portal.validation_append_by_ids(validation, portal.plans, 'plans')
         if default_plan != 1:
@@ -265,21 +207,11 @@ def plans_load(json, company_id):
                 if not plan.cr_tm:
                     plan.id = None
 
-            for del_plan in deleted_plans:
-                del_plan.status = MembershipPlan.STATUSES['DELETED']
-                # TODO fall all membership to default plan
-
-            for plan in portal.plans:
-                pass
-                # TODO change publication visibility/status
-                # if div.id in changed_division_types:
-                #     div.notice_about_deleted_publications('division type changed')
-                #     div.publications = []
-
             if not len(validation['errors']):
                 portal.save()
                 g.db.commit()
-            return client_side()
+
+    return client_side()
 
 
 @portal_bp.route('/apply_company/<string:company_id>', methods=['OK'])

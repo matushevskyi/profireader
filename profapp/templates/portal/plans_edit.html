@@ -83,7 +83,7 @@
             $scope.$$translate = {{ translates('portal_plans')|safe }};
 
 
-            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portal_plans');
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('membership_plans');
 
             {#            TODO: OZ by OZ: set this functionality by default (maybe)#}
             $scope.afterSave = function (resp) {
@@ -108,12 +108,13 @@
             };
 
             $scope.removePlan = function (index) {
-                if ($scope.data.plans[index]['remove_this_existing_plan']) {
-                    $scope.data.plans[index]['remove_this_existing_plan'] = false;
+                if ($scope.data.plans[index]['status'] == 'DELETED') {
+                    $scope.data.plans[index]['status'] = $scope.data.plans[index]['old_status'];
                     return;
                 }
                 if ($scope.data.plans[index]['cr_tm']) {
-                    $scope.data.plans[index]['remove_this_existing_plan'] = true;
+                    $scope.data.plans[index]['old_status'] = $scope.data.plans[index]['status'];
+                    $scope.data.plans[index]['status'] = 'DELETED';
                 } else {
                     $scope.data.plans.splice(index, 1);
 
@@ -123,7 +124,6 @@
 
             $scope.unset_all_other_defaults = function (plan) {
                 _.each($scope.data.plans, function (p) {
-                    console.log(p, plan, p !== plan)
                     if (p !== plan) {
                         p.default = false;
                     }
@@ -136,8 +136,8 @@
             };
 
             $scope.plan_is_not_active = function (plan) {
-                return plan['remove_this_existing_plan'] || plan['status'] !== 'ACTIVE';
-            }
+                return plan['status'] !== 'ACTIVE';
+            };
 
             $scope.sortableOptions = {
                 stop: function (e, ui) {
@@ -177,11 +177,11 @@
 
                 <div class="row">
 
-                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
                         <label class="form-control border-none pull-right">{{ ::_('Plan name') }}</label>
                     </div>
 
-                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
                         <label class="form-control border-none pull-right">{{ ::_('Publications count') }}</label>
                     </div>
 
@@ -193,13 +193,11 @@
                         <label class="form-control border-none pull-right">{{ ::_('Plan price') }}</label>
                     </div>
 
-                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
-                        <label class="form-control border-none">{{ ::_('Plan status') }}</label>
-                    </div>
 
                     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                         <button class="pull-right btn btn-success form-control" type="button"
                                 popover-placement="left"
+                                pr-validation-answer="data_validation:one_default_active_plan"
                                 ng-click="addPlan()"><i class="fa fa-plus"></i> {{ ::_('add plan') }}
                         </button>
                     </div>
@@ -209,8 +207,8 @@
                     <div class="row"
                          ng-controller="PortalPlanController"
                          ng-repeat="(plan_index, plan) in data.plans">
-                        <div ng-class="{'disabled': plan['remove_this_existing_plan'] || plan['status'] !== 'ACTIVE'}">
-                            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <div ng-class="{'disabled': plan_is_not_active(plan)}">
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
                                 <span style="cursor: row-resize"
                                       class="fa fa-arrows-v form-control w2em border-none di"></span>
                                 <input class="di"
@@ -221,7 +219,7 @@
                                        ng-click="unset_all_other_defaults(plan)"
                                        ng-value="plan.id"
                                        ng-model="data.select.portal.default_membership_plan_id"/>
-                                <input class="form-control w9em di"
+                                <input class="form-control w15em di"
                                        pr-validation-disable="plan_is_not_active(plan)"
                                        ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].name"
@@ -229,20 +227,20 @@
                                        ng-model="plan.name">
                             </div>
 
-                            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
-                                <input class="form-control w3em di"
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
+                                <input class="form-control w5em di"
                                        pr-validation-disable="plan_is_not_active(plan)"
                                        ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].publication_count_open"
                                        placeholder="{{ _('Open') }}"
                                        ng-model="plan.publication_count_open">
-                                <input class="form-control w3em di"
+                                <input class="form-control w5em di"
                                        pr-validation-disable="plan_is_not_active(plan)"
                                        ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].publication_count_registered"
                                        placeholder="{{ _('Registered') }}"
                                        ng-model="plan.publication_count_registered">
-                                <input class="form-control w3em di"
+                                <input class="form-control w5em di"
                                        pr-validation-disable="plan_is_not_active(plan)"
                                        ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].publication_count_payed"
@@ -260,7 +258,7 @@
                             <div ng-if="plan.id != data.select.portal.default_membership_plan_id">
                                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
 
-                                    <input class="form-control w4em di"
+                                    <input class="form-control w5em di"
                                            pr-validation-disable="plan_is_not_active(plan)"
                                            ng-disabled="plan_is_not_active(plan)"
                                            pr-validation-answer="data_validation:plans[plan.id].duration"
@@ -278,7 +276,7 @@
                                 </div>
 
                                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
-                                    <input class="form-control w3em di"
+                                    <input class="form-control w5em di"
                                            pr-validation-disable="plan_is_not_active(plan)"
                                            ng-disabled="plan_is_not_active(plan)"
                                            pr-validation-answer="data_validation:plans[plan.id].price"
@@ -300,26 +298,14 @@
 
                         </div>
 
-                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
-
-                            <label ng-click="plan['remove_this_existing_plan'] || togglePlanStatus($index)"
-                                   ng-disabled="plan['remove_this_existing_plan']"
-                                   pr-validation-answer="data_validation:plans[plan.id].status"
-                                   class="form-control border-none background-none link"><i
-                                    ng-class="{'fa-toggle-on': plan['status'] === 'ACTIVE','fa-toggle-off': plan['status'] !== 'ACTIVE'}"
-                                    class="fa"></i>
-                                {{ _('plan is ' + plan['status']) }}
-                            </label>
-                        </div>
-
 
                         <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                             <button ng-click="removePlan($index)"
                                     pr-validation-answer="data_validation:plans[plan.id].actions"
                                     class="pull-right btn btn-warning form-control"><i
-                                    ng-class="{'fa-minus': !plan['remove_this_existing_plan'],'fa-undo': plan['remove_this_existing_plan']}"
+                                    ng-class="{'fa-minus': plan['status'] != 'DELETED','fa-undo': plan['status'] == 'DELETED'}"
                                     class="fa"></i>
-                                {{ _(plan['remove_this_existing_plan']?'undo remove':'remove plan') }}
+                                {{ _(plan['status'] == 'DELETE'?'undo remove':'remove plan') }}
                             </button>
                         </div>
 
@@ -329,8 +315,9 @@
                 <div class="row">
                     <hr/>
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 p025em">
-                        <button class="btn btn-primary pull-right border-radius w20em" type="button"
-                                ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">{{
+                        <button class="btn btn-primary pull-right border-radius w20em"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save')">{{
                             ::_('Save plans') }}
                         </button>
                     </div>
