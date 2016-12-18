@@ -181,7 +181,7 @@ def plans_load(json, company_id):
 
             plan.portal = portal
             plan.position = plan_position
-            plan.attr_filter(jp, 'name', 'default', 'price', 'currency_id', 'status',
+            plan.attr_filter(jp, 'name', 'default', 'price', 'currency_id', 'status', 'auto_apply',
                              *['publication_count_' + t for t in ['open', 'payed', 'registered']])
             plan.duration = "%s %s" % (jp['duration'], jp['duration_unit'])
 
@@ -234,7 +234,7 @@ def portals_partners(company_id):
 
 def membership_grid_row(membership: MemberCompanyPortal):
     return utils.dict_merge(membership.get_client_side_dict(
-        fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,requested_membership_plan_issued'),
+        fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,requested_membership_plan_issued,request_membership_plan_issued_immediately'),
         {'actions': MembershipRights(company=membership.company_id,
                                      member_company=membership).actions()},
         {'who': MembershipRights.MEMBERSHIP})
@@ -263,15 +263,27 @@ def request_membership_plan(json, membership_id):
     if action == 'load':
         return {
             'membership': membership.get_client_side_dict(
-                fields='id,current_membership_plan_issued,requested_membership_plan_issued,company.name,company.logo.url,portal.name, portal.logo.url'),
-            'select': {'plans': utils.get_client_side_list(membership.portal.plans_active)}
+                fields='id,current_membership_plan_issued,requested_membership_plan_issued,'
+                       'request_membership_plan_issued_immediately,'
+                       'company.name,company.logo.url,portal.name, portal.logo.url, portal.default_membership_plan_id'),
+            'select': {
+                'plans': utils.get_client_side_list(membership.portal.plans_active),
+                'publications': membership.get_publication_count()
+            },
+            'selected_by_user_plan_id': True if membership.requested_membership_plan_issued else False
         }
     else:
-        new_membership_plan = MembershipPlan.get(json.get('selected_by_user_plan_id', None), returnNoneIfNotExists=True)
+        requested_plan_id = json.get('selected_by_user_plan_id', None)
+        if requested_plan_id == False:
+            membership.requested_membership_plan_issued = None
+        elif requested_plan_id != True:
+            membership.set_requested_issued_plan(membership_plan = MembershipPlan.get(requested_plan_id))
+            
+
         if action == 'validate':
             ret = PRBase.DEFAULT_VALIDATION_ANSWER()
-            if not new_membership_plan:
-                ret['errors']['selected_by_user_plan_id'] = 'please select plan'
+            # if not new_membership_plan:
+            #     ret['errors']['requested_membership_plan_issued_id'] = 'please select plan'
             return ret
         else:
             return membership_grid_row(membership.use_plan(new_membership_plan, request_only=True).save())
@@ -288,11 +300,11 @@ def set_membership_plan(json, membership_id):
             'select': {'plans': utils.get_client_side_list(membership.portal.plans_active)}
         }
     else:
-        new_membership_plan = MembershipPlan.get(json.get('selected_by_user_plan_id', None), returnNoneIfNotExists=True)
+        new_membership_plan = MembershipPlan.get(json.get('requested_membership_plan_issued_id', None), returnNoneIfNotExists=True)
         if action == 'validate':
             ret = PRBase.DEFAULT_VALIDATION_ANSWER()
             if not new_membership_plan:
-                ret['errors']['selected_by_user_plan_id'] = 'please select plan'
+                ret['errors']['requested_membership_plan_issued_id'] = 'please select plan'
             return ret
         else:
             membership.use_plan(new_membership_plan)

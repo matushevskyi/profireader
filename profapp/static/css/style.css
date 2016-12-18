@@ -1458,6 +1458,9 @@ body {
 .SelectMembershipPlanController_class table {
   width: 100%;
 }
+.SelectMembershipPlanController_class table h5 {
+  margin-bottom: 0px;
+}
 .SelectMembershipPlanController_class table td,
 .SelectMembershipPlanController_class table th {
   padding: 2px;
@@ -1472,5 +1475,32 @@ body {
 }
 .SelectMembershipPlanController_class table hr {
   margin: 10px 0px;
+}
+.publication-bg-VISIBILITY-OPEN {
+  background-color: #AAffAA;
+}
+.publication-bg-VISIBILITY-REGISTERED {
+  background-color: #ffffaa;
+}
+.publication-bg-VISIBILITY-PAYED {
+  background-color: #FFCCCC;
+}
+.publication-bg-VISIBILITY-CONFIDENTIAL {
+  background-color: #AAAAAA;
+}
+.publication-fg-STATUS-SUBMITTED {
+  color: #000;
+}
+.publication-fg-STATUS-UNPUBLISHED {
+  color: #550;
+}
+.publication-fg-STATUS-HOLDED {
+  color: #700;
+}
+.publication-fg-STATUS-PUBLISHED {
+  color: #050;
+}
+.publication-fg-STATUS-DELETED {
+  color: #555;
 }
 /*# sourceMappingURL=style.css.map */

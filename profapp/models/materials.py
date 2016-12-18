@@ -68,7 +68,8 @@ class Material(Base, PRBase, PRElasticDocument):
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Company.id))
     company = relationship(Company, uselist=False)
 
-    publications = relationship('Publication', primaryjoin="Material.id==Publication.material_id", cascade="save-update, merge, delete")
+    publications = relationship('Publication', primaryjoin="Material.id==Publication.material_id",
+                                cascade="save-update, merge, delete")
 
     # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
     #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
@@ -202,7 +203,8 @@ class Publication(Base, PRBase, PRElasticDocument):
                         order_by=lambda: expression.desc(TagPublication.position))
 
     status = Column(TABLE_TYPES['status'])
-    STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED'}
+    STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED',
+                'HOLDED': 'HOLDED'}
 
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
     VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
@@ -239,7 +241,8 @@ class Publication(Base, PRBase, PRElasticDocument):
             'portal_name': PRElasticField(setter=lambda: self.portal_division.portal.name),
 
             'division_id': PRElasticField(analyzed=False, setter=lambda: self.portal_division.id),
-            'division_type': PRElasticField(analyzed=False, setter=lambda: self.portal_division.portal_division_type.id),
+            'division_type': PRElasticField(analyzed=False,
+                                            setter=lambda: self.portal_division.portal_division_type.id),
             'division_name': PRElasticField(setter=lambda: self.portal_division.name),
 
             'date': PRElasticField(ftype='date', setter=lambda: int(self.publishing_tm.timestamp() * 1000)),
@@ -276,7 +279,8 @@ class Publication(Base, PRBase, PRElasticDocument):
 
     def create_article(self):
         return utils.dict_merge(
-            self.get_client_side_dict(more_fields='portal_division.portal_division_type_id,portal_division.portal.logo.url'),
+            self.get_client_side_dict(
+                more_fields='portal_division.portal_division_type_id,portal_division.portal.logo.url'),
             Material.get(self.material_id).get_client_side_dict(
                 fields='long|short|title|subtitle|keywords|illustration|author'),
             {'social_activity': self.social_activity_dict()},
@@ -293,10 +297,9 @@ class Publication(Base, PRBase, PRElasticDocument):
             'title': self.material.title,
             'keywords': ','.join(t.text for t in self.tags),
             'description': self.material.short if self.material.short else self.material.subtitle,
-            'image_url': self.material.illustration['url'] if self.material.illustration['selected_by_user']['type'] == 'provenance' else None
+            'image_url': self.material.illustration['url'] if self.material.illustration['selected_by_user'][
+                                                                  'type'] == 'provenance' else None
         }
-
-
 
     def search_filter_default(self, division_id, company_id=None):
         """ :param division_id: string with id from table portal_division,

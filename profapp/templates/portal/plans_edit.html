@@ -95,6 +95,7 @@
                     id: randomHash(),
                     name: '',
                     cr_tm: null,
+                    auto_apply: false,
                     publication_count_open: -1,
                     publication_count_registered: 99,
                     publication_count_payed: 0,
@@ -160,7 +161,8 @@
 
     <div class="controller-portal-plans" ng-controller="portal_plans" ng-cloak>
         <form name="formPortalPlans">
-            <div class="container pr" af af-after-save="afterSave" af-amid-load="amidLoad" af-watch="[data.plans, data.select.portal.default_membership_plan_id]"
+            <div class="container pr" af af-after-save="afterSave" af-amid-load="amidLoad"
+                 af-watch="[data.plans, data.select.portal.default_membership_plan_id]"
                  ng-model="data">
                 <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed"></div>
                 <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed-message">
@@ -177,7 +179,11 @@
 
                 <div class="row">
 
-                    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
+                    <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Default/Auto') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                         <label class="form-control border-none pull-right">{{ ::_('Plan name') }}</label>
                     </div>
 
@@ -193,7 +199,6 @@
                         <label class="form-control border-none pull-right">{{ ::_('Plan price') }}</label>
                     </div>
 
-
                     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                         <button class="pull-right btn btn-success form-control" type="button"
                                 popover-placement="left"
@@ -208,7 +213,7 @@
                          ng-controller="PortalPlanController"
                          ng-repeat="(plan_index, plan) in data.plans">
                         <div ng-class="{'disabled': plan_is_not_active(plan)}">
-                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
+                            <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1 p025em">
                                 <span style="cursor: row-resize"
                                       class="fa fa-arrows-v form-control w2em border-none di"></span>
                                 <input class="di"
@@ -218,35 +223,43 @@
                                        type="radio"
                                        ng-click="unset_all_other_defaults(plan)"
                                        ng-value="plan.id"
-                                       ng-model="data.select.portal.default_membership_plan_id"/>
-                                <input class="form-control w15em di"
+                                       ng-model="data.select.portal.default_membership_plan_id"/>/
+                                    <input ng-if="data.select.portal.default_membership_plan_id !== plan.id"
+                                    class="di" ng-disabled="plan_is_not_active(plan)"
+                                    type="checkbox" ng-model="plan.auto_apply"/>
+                                    <input ng-if="data.select.portal.default_membership_plan_id === plan.id"
+                                           class="di" ng-disabled="true" checked="checked" type="checkbox"/>
+                            </div>
+                            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                <input class="form-control w10em di"
                                        pr-validation-disable="plan_is_not_active(plan)"
                                        ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].name"
                                        placeholder="{{ _('Plan name placeholder') }}"
-                                       ng-model="plan.name">
+                                       ng-model="plan.name"/>
                             </div>
 
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
-                                <input class="form-control w5em di"
+                                <input class="form-control w5em di publication-bg-VISIBILITY-OPEN"
                                        pr-validation-disable="plan_is_not_active(plan)"
                                        ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].publication_count_open"
                                        placeholder="{{ _('Open') }}"
-                                       ng-model="plan.publication_count_open">
-                                <input class="form-control w5em di"
+                                       ng-model="plan.publication_count_open"/>
+                                <input class="form-control w5em di publication-bg-VISIBILITY-REGISTERED"
                                        pr-validation-disable="plan_is_not_active(plan)"
                                        ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].publication_count_registered"
                                        placeholder="{{ _('Registered') }}"
-                                       ng-model="plan.publication_count_registered">
-                                <input class="form-control w5em di"
+                                       ng-model="plan.publication_count_registered"/>
+                                <input class="form-control w5em di publication-bg-VISIBILITY-PAYED"
                                        pr-validation-disable="plan_is_not_active(plan)"
                                        ng-disabled="plan_is_not_active(plan)"
                                        pr-validation-answer="data_validation:plans[plan.id].publication_count_payed"
                                        placeholder="{{ _('Payed') }}"
-                                       ng-model="plan.publication_count_payed">
+                                       ng-model="plan.publication_count_payed"/>
                             </div>
+
                             <div ng-if="plan.id === data.select.portal.default_membership_plan_id">
                                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                                     <span class="form-control border-none">{{ ::_('Unlimited') }}</span>
@@ -255,7 +268,7 @@
                                     <span class="form-control border-none">{{ ::_('Free') }}</span>
                                 </div>
                             </div>
-                            <div ng-if="plan.id != data.select.portal.default_membership_plan_id">
+                            <div ng-if="plan.id !== data.select.portal.default_membership_plan_id">
                                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
 
                                     <input class="form-control w5em di"
@@ -293,6 +306,7 @@
                                     </select>
 
                                 </div>
+
                             </div>
 
 
@@ -305,7 +319,7 @@
                                     class="pull-right btn btn-warning form-control"><i
                                     ng-class="{'fa-minus': plan['status'] != 'DELETED','fa-undo': plan['status'] == 'DELETED'}"
                                     class="fa"></i>
-                                {{ _(plan['status'] == 'DELETE'?'undo remove':'remove plan') }}
+                                {{ _(plan['status'] == 'DELETED'?'undo remove':'remove plan') }}
                             </button>
                         </div>
 

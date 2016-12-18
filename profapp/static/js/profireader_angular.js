@@ -871,7 +871,11 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
         return out;
     };
-});
+}).filter('html', ['$sce', function($sce){
+        return function(text) {
+            return $sce.trustAsHtml(text);
+        };
+    }]);
 
 
 areAllEmpty = function () {

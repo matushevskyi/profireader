@@ -27,88 +27,97 @@
 
                 <table>
                     <tr>
-                        <th class="border-none" colspan="7"><h5>{{ ::_('current active plan') }}</h5></th>
-                    </tr>
-
-                    <tr ng-if="!data.membership.membership_plan_used">
-                        <td class="border-none" colspan="7"><em>{{ ::_('Your membership running now without any plan')
-                            }}</em>
-                            <hr/>
-                        </td>
-                    </tr>
-
-                    <tr ng-if="data.membership.membership_plan_used">
-                        <td class="border-none" colspan="7"><h5>{{data.membership.membership_plan_used }}</h5>
-                            <hr/>
-                        </td>
-                    </tr>
-
-                    <tbody ng-if="data.membership.requested_membership_plan">
-                    <tr>
-                        <th class="border-none" colspan="7"><h5>{{ ::_('Your request following plan. This plan
-                            was not yet confirmed by portal owner') }}</h5>
-                        </th>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td>{{ data.membership.requested_membership_plan.name }}</td>
-                        <td>{{ data.membership.requested_membership_plan.price }} {{
-                            data.membership.requested_membership_plan.currency_id }}
-                        </td>
-                        <td>{{ data.membership.requested_membership_plan.duration }}</td>
-                        <td class="w1em">{{ publication_count(data.membership.requested_membership_plan, 'open') }}</td>
-                        <td class="w1em">{{ publication_count(data.membership.requested_membership_plan, 'registered')
-                            }}
-                        </td>
-                        <td class="w1em">{{ publication_count(data.membership.requested_membership_plan, 'payed') }}
-                        </td>
-                    </tr>
-                    </tbody>
-
-                    <tr ng-if="data.membership.requested_membership_plan">
-                        <td class="border-none" colspan="7">
-                            <hr/>
-                        </td>
-                    </tr>
-
-
-                    <tr>
-                        <th class="border-none" colspan="7"><h5>{{ ::_('please select membership plan') }}</h5></th>
-                    </tr>
-
-                    <tr ng-if="!data.select.plans.length">
-                        <th class="border-none error" colspan="7"><h5>{{ ::_('Sorry there is no plan in this portal')
-                            }}</h5></th>
-                    </tr>
-                    <tbody ng-if="data.select.plans.length">
-                    <tr>
-                        <td rowspan="2"></td>
+                        <td rowspan="2" class="border-none"></td>
                         <th rowspan="2">{{ ::_('Plan name') }}</th>
                         <th rowspan="2">{{ ::_('Plan price') }}</th>
                         <th rowspan="2">{{ ::_('Plan duration') }}</th>
                         <th colspan="3" class="nowrap">{{ ::_('Publication count') }}</th>
                     </tr>
+                    <tr>
+                        <th class="publication-bg-VISIBILITY-OPEN">{{ ::_('open') }}</th>
+                        <th class="publication-bg-VISIBILITY-REGISTERED">{{ ::_('registered') }}</th>
+                        <th class="publication-bg-VISIBILITY-PAYED">{{ ::_('payed') }}</th>
+                    </tr>
 
                     <tr>
-                        <th>{{ ::_('open') }}</th>
-                        <th>{{ ::_('registered') }}</th>
-                        <th>{{ ::_('payed') }}</th>
+                        <th class="border-none"></th>
+                        <th class="border-none" colspan="6"><h5>{{ ::_('current active plan') }}</h5></th>
                     </tr>
+
+                    <tr class="link" ng-click="data.selected_by_user_plan_id = false">
+                        <td class="tac border-none"><input ng-value="false" type="radio"
+                                               ng-model="data.selected_by_user_plan_id"/></td>
+                        <td>{{ data.membership.current_membership_plan_issued.name }}</td>
+                        <td ng-bind-html="pP(data.membership.current_membership_plan_issued)|html"></td>
+                        <td ng-bind-html="pD(data.membership.current_membership_plan_issued)|html"></td>
+                        <td class="w1em publication-bg-VISIBILITY-OPEN"
+                            ng-bind-html="pC(data.membership.current_membership_plan_issued, 'open')|html"></td>
+                        <td class="w1em publication-bg-VISIBILITY-REGISTERED"
+                            ng-bind-html="pC(data.membership.current_membership_plan_issued, 'registered')|html"></td>
+                        <td class="w1em publication-bg-VISIBILITY-PAYED"
+                            ng-bind-html="pC(data.membership.current_membership_plan_issued, 'payed')|html"></td>
+                    </tr>
+
+
+                    <tbody ng-if="data.membership.requested_membership_plan_issued">
+
+                    <tr>
+                        <th class="border-none"></th>
+                        <th class="border-none" colspan="6"><h5>{{ ::_('current active plan') }}</h5></th>
+                    </tr>
+
+                    <tr class="link" ng-click="data.selected_by_user_plan_id = true">
+                        <td class="tac"><input ng-value="true" type="radio" class="border-none"
+                                               ng-model="data.selected_by_user_plan_id"/></td>
+                        <td>{{ data.membership.requested_membership_plan_issued.name }}</td>
+                        <td ng-bind-html="pP(data.membership.requested_membership_plan_issued)|html"></td>
+                        <td ng-bind-html="pD(data.membership.requested_membership_plan_issued)|html"></td>
+                        <td class="w1em publication-bg-VISIBILITY-OPEN"
+                            ng-bind-html="pC(data.membership.requested_membership_plan_issued, 'open')|html"></td>
+                        <td class="w1em publication-bg-VISIBILITY-REGISTERED"
+                            ng-bind-html="pC(data.membership.requested_membership_plan_issued, 'registered')|html"></td>
+                        <td class="w1em publication-bg-VISIBILITY-PAYED"
+                            ng-bind-html="pC(data.membership.requested_membership_plan_issued, 'payed')|html"></td>
+                    </tr>
+
+                    </tbody>
+
+                    <tr>
+                        <th class="border-none"></th>
+                        <th class="border-none" colspan="6"><h5>{{ ::_('please select desired membership plan') }}</h5>
+                    </tr>
+
 
                     <tr class="link" ng-click="data.selected_by_user_plan_id = plan.id"
                         ng-repeat="plan in data.select.plans">
-                        <td class="tac">
+                        <td class="tac border-none">
                             <div pr-validation-answer="data_validation:selected_by_user_plan_id"><input
                                     ng-value="plan.id" type="radio" ng-model="data.selected_by_user_plan_id"/></div>
                         </td>
                         <td>{{ plan.name }}</td>
-                        <td>{{ plan.price }} {{ plan.currency_id }}</td>
-                        <td>{{ plan.duration }}</td>
-                        <td class="w1em">{{ publication_count(plan, 'open') }}</td>
-                        <td class="w1em">{{ publication_count(plan, 'registered') }}</td>
-                        <td class="w1em">{{ publication_count(plan, 'payed') }}</td>
+                        <td ng-bind-html="pP(plan)|html"></td>
+                        <td ng-bind-html="pD(plan)|html"></td>
+                        <td class="w1em publication-bg-VISIBILITY-OPEN" ng-bind-html="pC(plan, 'open', true)|html"></td>
+                        <td class="w1em publication-bg-VISIBILITY-REGISTERED"
+                            ng-bind-html="pC(plan, 'registered', true)|html"></td>
+                        <td class="w1em publication-bg-VISIBILITY-PAYED"
+                            ng-bind-html="pC(plan, 'payed', true)|html"></td>
                     </tr>
-                    </tbody>
+
+                    <tr>
+                        <td class="border-none tar" colspan="7">
+                            <label><input
+                                    ng-value="false" type="radio"
+                                    ng-model="data.membership.request_membership_plan_issued_immediately"/>&nbsp;{{
+                                _('request after the current plan will be finished') }}</label>
+                            &nbsp;&nbsp;&nbsp;
+                            <label><input
+                                    ng-value="true" type="radio"
+                                    ng-model="data.membership.request_membership_plan_issued_immediately"/>&nbsp;{{
+                                _('request immediately') }}</label>
+                        </td>
+                    </tr>
+
                 </table>
 
 
@@ -138,10 +147,42 @@
                 $uibModalInstance.close(resp)
             };
 
-            $scope.publication_count = function (plan, pub_type) {
+            $scope.get_count = function (pub_type, planed_count) {
+                var holded =
+                        $scope.data.select['publications']['by_status_visibility']['HOLDED'][pub_type.toUpperCase()];
+                var published =
+                        $scope.data.select['publications']['by_status_visibility']['PUBLISHED'][pub_type.toUpperCase()];
+                if (planed_count !== false) {
+                    holded = published + holded - planed_count;
+                    holded = holded < 0 ? 0 : holded;
+                    holded = planed_count < 0 ? 0 : holded;
+                    published = published - holded;
+                }
+                return '&nbsp;(<nothing class="publication-fg-STATUS-PUBLISHED">' + published + ',</nothing><nothing class="publication-fg-STATUS-HOLDED">' + holded + '</nothing>)';
+            }
+
+            $scope.pC = function (plan, pub_type, planed) {
+                if (!$scope.data) {
+                    return ''
+                }
                 var ret = plan['publication_count_' + pub_type];
-                return ret < 0 ? 'unlimited' : (ret ? ret : '0');
+                return (ret < 0 ? ('&infin;') : (ret ? ret : '0')) + $scope.get_count(pub_type, planed ? ret : false);
             };
+
+            $scope.pD = function (plan) {
+                if (!$scope.data) {
+                    return ''
+                }
+                return ((parseInt(plan.duration) <= 0 || plan.id == $scope.data.membership.portal.default_membership_plan_id) ? '&infin;' : plan.duration);
+            };
+
+            $scope.pP = function (plan) {
+                if (!$scope.data) {
+                    return ''
+                }
+                return ((plan.price <= 0 || plan.id == $scope.data.membership.portal.default_membership_plan_id) ? 'free' : ('' + plan.price + ' ' + plan.currency_id));
+            };
+
 
             $scope.cancel = $uibModalInstance.dismiss;
 
@@ -255,8 +296,8 @@
                         name: 'membership_plan',
                         onclick: 'request_membership_plan',
                         render: function (row, value) {
-                            return (row['membership_plan_used'] ? row['membership_plan_used']['name'] : '<i>None</i>') +
-                                    (row['requested_membership_plan'] ? (' (<em>' + row['requested_membership_plan']['name'] + '</em>)') : '');
+                            return row['current_membership_plan_issued']['name'] +
+                                    (row['requested_membership_plan_issued'] ? ('/<em>' + row['requested_membership_plan_issued']['name'] + '</em>') : '');
                         }
                     },
                     {
