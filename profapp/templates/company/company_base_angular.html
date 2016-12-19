@@ -7,7 +7,7 @@
 
         $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
         $scope.url_company_materials = {{ raw_url_for('company.materials')|safe }};
-        $scope.url_portal_companies_partners = {{ raw_url_for('portal.companies_partners')|safe }};
+        $scope.url_portal_companies_members = {{ raw_url_for('portal.companies_members')|safe }};
         $scope.url_company_employees = {{ raw_url_for('company.employees')|safe }};
         $scope.url_portal_publications = {{ raw_url_for('portal.publications')|safe }};
         $scope.url_portal_plans = {{ raw_url_for('portal.plans')|safe }};
@@ -19,7 +19,7 @@
         $scope.url_portal_banners = {{ raw_url_for('portal.portal_banners')|safe }};
         $scope.url_portal_translations = {{ raw_url_for('portal.translations')|safe }};
         $scope.url_company_readers = {{ raw_url_for('company.readers')|safe }};
-        $scope.url_portal_portals_partners = {{ raw_url_for('portal.portals_partners')|safe }};
+        $scope.url_portal_portals_partners = {{ raw_url_for('company.portal_memberees')|safe }};
 
         $scope.selected_company_menu = '';
         $scope.set_selected_company_menu = function (menu_item) {
@@ -37,7 +37,7 @@
                 <div class="col-lg-12 col-md-6 col-sm-4 col-xs-4 pl0 pr0">
                     <a ng-class="{'selected': selected_company_menu == 'materials'}"
                        href="{{ url_company_materials({company_id: company.id}) }}">{{ _('Materials') }}</a>
-                    <a ng-class="{'selected': selected_company_menu == 'portals_partners'}" id="companies_partners"
+                    <a ng-class="{'selected': selected_company_menu == 'portal_memberees'}" id="portal_memberees"
                        href="{{ url_portal_portals_partners({company_id: company.id}) }}">{{ _('Membership') }}</a>
                     <a ng-class="{'selected': selected_company_menu == 'companies_employees'}"
                        href="{{ url_company_employees({company_id: company.id}) }}">{{ _('Employees') }}</a>
@@ -68,8 +68,8 @@
                        href="{{ url_company_readers({company_id: company.id}) }}">{{ _('Readers') }}</a>
                     <a class="pull-right" ng-class="{'selected': selected_company_menu == 'membership_plans'}"
                        href="{{ url_portal_plans({company_id: company.id}) }}">{{ _('Membership plans') }}</a>
-                    <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_partners'}"
-                       href="{{ url_portal_companies_partners({company_id: company.id}) }}">{{ _('Members') }}</a>
+                    <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_members'}"
+                       href="{{ url_portal_companies_members({company_id: company.id}) }}">{{ _('Members') }}</a>
                     <a class="pull-right" ng-if="0" ng-class="{'selected': selected_company_menu == 'statistics'}"
                        id="statistics"
                        href="#">{{ _('Statistics') }}</a>

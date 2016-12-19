@@ -155,7 +155,8 @@ class Portal(Base, PRBase):
                                                      price=1, currency_id='UAH')
 
         ret.company_memberships[0].portal = ret
-        ret.company_memberships[0].set_requested_issued_plan(start=True)
+        ret.company_memberships[0].current_membership_plan_issued = ret.company_memberships[0].create_issued_plan()
+        ret.company_memberships[0].current_membership_plan_issued.start()
 
         return ret
 
@@ -503,6 +504,10 @@ class MembershipPlanIssued(Base, PRBase):
 
         # status = Column(TABLE_TYPES['string_100'])
 
+    def start(self, user = None):
+        self.started_tm = datetime.datetime.utcnow()
+        if user:
+            self.started_by_user = user
 
 class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     __tablename__ = 'member_company_portal'
@@ -533,6 +538,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
                                                  nullable=True)
     requested_membership_plan_issued = relationship('MembershipPlanIssued',
                                                     cascade="all, merge, delete-orphan",
+                                                    single_parent = True,
                                                     foreign_keys=[requested_membership_plan_issued_id])
 
     request_membership_plan_issued_immediately = Column(TABLE_TYPES['boolean'], nullable=False, default=False)
@@ -549,6 +555,13 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    def membership_grid_row(self):
+        from ..models.rights import MembershipRights
+        return utils.dict_merge(self.get_client_side_dict(
+            fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,requested_membership_plan_issued,request_membership_plan_issued_immediately'),
+            {'actions': MembershipRights(company=self.company_id, member_company=self).actions()},
+            {'who': MembershipRights.MEMBERSHIP})
 
     def seo_dict(self):
         return {
@@ -648,51 +661,29 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
                                              company=Company.get(company_id),
                                              portal=db(Portal, id=portal_id).one())
 
-        membership.set_requested_issued_plan(start=True)
+
+        membership.current_membership_plan_issued = membership.create_issued_plan()
         membership.save()
 
-    def set_requested_issued_plan(self, membership_plan: MembershipPlan = None, start=False):
-        # def use_plan(self, new_membership_plan: MembershipPlan):
-        #     new_plan = MembershipPlanIssued(
-        #         name=new_membership_plan.name,
-        #         price=new_membership_plan.price,
-        #         duration=new_membership_plan.duration,
-        #         publication_count_open=new_membership_plan.publication_count_open,
-        #         publication_count_registered=new_membership_plan.publication_count_registered,
-        #         publication_count_payed=new_membership_plan.publication_count_payed,
-        #         publication_count_confidential=new_membership_plan.publication_count_confidential,
-        #         requested_by_user_id=g.user.id,
-        #         membership_plan_id=new_membership_plan.id,
-        #         member_company_portal_id=self.id,
-        #     )
-        #     self.membership_plan_used = new_plan
-        #     if self.requested_membership_plan and self.requested_membership_plan.id == new_membership_plan.id:
-        #         self.requested_membership_plan = None
-        #     return self
-
+    def create_issued_plan(self, membership_plan: MembershipPlan = None, user = None):
+        from ..constants.RECORD_IDS import SYSTEM_USERS
         plan = membership_plan if membership_plan else self.portal.default_membership_plan
-        self.requested_membership_plan_issued = MembershipPlanIssued(
-            requested_by_user_id=g.user.id,
+        ret = MembershipPlanIssued(
+            requested_by_user_id=user.id if user else SYSTEM_USERS.profireader(),
             portal_id=self.portal.id,
             company_id=self.company.id,
             name=plan.name,
-            price=plan.price,
+            price=plan.price if membership_plan else '-1',
             currency_id=plan.currency_id,
-            duration=plan.duration,
+            duration=plan.duration if membership_plan else '-1 years',
             publication_count_open=plan.publication_count_open,
             publication_count_registered=plan.publication_count_registered,
             publication_count_payed=plan.publication_count_payed)
 
-        self.requested_membership_plan_issued.membership_plan = plan
-        self.requested_membership_plan_issued.member_company_portal_id = self.id
+        ret.membership_plan = plan
+        ret.member_company_portal_id = self.id
 
-        if start:
-            self.start_requested_plan()
-
-    def start_requested_plan(self):
-        self.current_membership_plan_issued = None
-
-        self.current_membership_plan_issued.member_company_portal_id = self.id
+        return ret
 
     @staticmethod
     def get_by_portal_id_company_id(portal_id=None, company_id=None):

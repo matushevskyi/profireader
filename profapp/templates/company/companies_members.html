@@ -176,10 +176,9 @@
 
 
         module.controller('company_partners', function ($scope, $ok, $uibModal) {
-            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_partners');
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_members');
             $scope.$$translate = {{translates('company_partners') | safe}};
-            $scope.url_companies_partners = '{{ url_for('portal.companies_partners_load', company_id=company.id)
-         }}';
+            $scope.url_load = '{{ url_for('portal.companies_members_load', company_id=company.id)}}';
             $scope.url_company_partner_details = {{ raw_url_for('portal.company_partner_update')| safe}};
             $scope.url_change_status = {{ raw_url_for('portal.company_partners_change_status')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
@@ -232,7 +231,7 @@
             };
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                urlLoadGridData: $scope.url_companies_partners,
+                urlLoadGridData: $scope.url_load,
                 columnDefs: [
                     {
                         name: 'membership.company.name',

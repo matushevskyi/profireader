@@ -41,7 +41,7 @@
 
                     <tr>
                         <th class="border-none"></th>
-                        <th class="border-none" colspan="6"><h5>{{ ::_('current active plan') }}</h5></th>
+                        <th class="border-none" colspan="6"><h5>{{ ::_('current plan') }}</h5></th>
                     </tr>
 
                     <tr class="link" ng-click="data.selected_by_user_plan_id = false">
@@ -63,7 +63,7 @@
 
                     <tr>
                         <th class="border-none"></th>
-                        <th class="border-none" colspan="6"><h5>{{ ::_('current active plan') }}</h5></th>
+                        <th class="border-none" colspan="6"><h5>{{ ::_('requested plan') }}</h5></th>
                     </tr>
 
                     <tr class="link" ng-click="data.selected_by_user_plan_id = true">
@@ -189,15 +189,15 @@
         });
 
         module.controller('portals_partners', function ($scope, $ok, $sce, $membership_tags, $uibModal) {
-            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portals_partners');
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portal_memberees');
             $scope.$$translate = {{ translates('portals_partners')|safe }};
-            $scope.url_portals_partners = '{{ url_for('portal.portals_partners', company_id=company.id)}}';
+            $scope.url_portal_memberees = '{{ url_for('company.portal_memberees', company_id=company.id)}}';
             $scope.company_id = '{{ company.id|safe }}';
             $scope.url_search_for_portal = function () {
                 return ( '/portal/search_for_portal_to_join/' );
             };
             $scope.url_change_status = {{ raw_url_for('portal.portals_partners_change_status')|safe }};
-            $scope.url_join = {{ raw_url_for('portal.apply_company')|safe }};
+            $scope.url_join = {{ raw_url_for('company.join_to_portal')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.selectedPortal_name = '';
             $scope.selectedPortal = null;
@@ -253,7 +253,9 @@
             };
 
             $scope.set_tags = function (id, row, name) {
-
+                if (row['status'] !== 'ACTIVE') {
+                    return false;
+                }
                 var modalInstance = $membership_tags({
                     company_id: $scope.company_id,
                     portal_id: row['portal']['id']
@@ -267,6 +269,9 @@
             };
 
             $scope.request_membership_plan = function (id, row, column_name) {
+                if (row['status'] !== 'ACTIVE') {
+                    return false;
+                }
                 var modalInstance = $uibModal.open({
                     templateUrl: 'request_membership_plan.html',
                     controller: 'RequestMembershipPlanController',
@@ -280,7 +285,7 @@
             };
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                urlLoadGridData: $scope.url_portals_partners,
+                urlLoadGridData: $scope.url_portal_memberees,
                 columnDefs: [
                     {
                         name: 'portal.name', type: 'link',
@@ -295,13 +300,19 @@
                     {
                         name: 'membership_plan',
                         onclick: 'request_membership_plan',
+                        classes: function (id, row, field) {
+                            return row['status'] === 'ACTIVE'?'':'disabled';
+                        },
                         render: function (row, value) {
                             return row['current_membership_plan_issued']['name'] +
                                     (row['requested_membership_plan_issued'] ? ('/<em>' + row['requested_membership_plan_issued']['name'] + '</em>') : '');
                         }
                     },
                     {
-                        name: 'tags', type: 'tags', onclick: 'set_tags'
+                        name: 'tags', type: 'tags', onclick: 'set_tags',
+                        classes: function (id, row, field) {
+                            return row['status'] === 'ACTIVE'?'':'disabled';
+                        },
                     },
                     {
                         name: 'status', width: '20%', afilter: {type: 'multi_select', default_selected: true}

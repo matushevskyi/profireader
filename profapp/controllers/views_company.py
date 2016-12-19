@@ -17,7 +17,8 @@ from config import Config
 from .. import utils
 from ..models.pr_base import PRBase, Grid
 from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, UserIsEmployee, EmployeeAllowRight, \
-    CanCreateCompanyRight, UserIsActive, BaseRightsEmployeeInCompany
+    CanCreateCompanyRight, UserIsActive, BaseRightsEmployeeInCompany, MembersRights, MemberCompanyPortal, \
+    MembershipRights, RequireMembereeAtPortalsRight
 
 
 @company_bp.route('/search_to_submit_article/', methods=['POST'])
@@ -73,7 +74,7 @@ def materials_load(json, company_id):
 
     grid_filters = {
         'portal_division.portal.name': [{'value': portal, 'label': portal} for portal_id, portal in
-                        Material.get_portals_where_company_send_article(company_id).items()],
+                                        Material.get_portals_where_company_send_article(company_id).items()],
         'material_status': Grid.filter_for_status(Material.STATUSES),
         'status': Grid.filter_for_status(Publication.STATUSES),
         'publication_visibility': Grid.filter_for_status(Publication.VISIBILITIES)
@@ -227,8 +228,9 @@ def profile_load_validate_save(json, company_id=None):
                                        'edit_portal_profile': EditPortalRight(company=company_id).is_allowed()}
         return company_dict
     else:
-        company.attr(utils.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
-                                   'phone2', 'region', 'short_description', 'lon', 'lat'))
+        company.attr(
+            utils.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
+                              'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
             if company_id is not None:
                 company.detach()
@@ -347,3 +349,38 @@ def readers_load(json, company_id):
                           company_readers],
             'total': count
             }
+
+
+@company_bp.route('/<string:company_id>/portal_memberees/', methods=['GET'])
+@check_right(UserIsEmployee, ['company_id'])
+def portal_memberees(company_id):
+    return render_template('company/portal_memberees.html',
+                           company=Company.get(company_id),
+                           actions={'require_memberee': RequireMembereeAtPortalsRight(company=company_id).is_allowed()})
+
+
+@company_bp.route('/<string:company_id>/portal_memberees/', methods=['OK'])
+@check_right(UserIsEmployee, ['company_id'])
+def portal_memberees_load(json, company_id):
+    subquery = Company.subquery_portal_partners(company_id, json.get('filter'),
+                                                filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
+    memberships, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
+
+    return {'page': current_page,
+            'grid_data': [membership.membership_grid_row() for membership in memberships],
+            'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
+                             (k, v) in {'status': [{'value': status, 'label': status} for status in
+                                                   MembershipRights.STATUSES]}.items()},
+            'grid_filters_except': list(MembershipRights.INITIALLY_FILTERED_OUT_STATUSES),
+            'total': count}
+
+@company_bp.route('/<string:company_id>/join_to_portal/', methods=['OK'])
+@check_right(RequireMembereeAtPortalsRight, ['company_id'])
+def join_to_portal(json, company_id):
+    from ..models.rights import PublishUnpublishInPortal
+
+    MemberCompanyPortal.apply_company_to_portal(company_id=company_id,
+                                                portal_id=json['portal_id'])
+    return {'portals_partners': [portal.get_client_side_dict(fields='name, company_owner_id,id')
+                                 for portal in PublishUnpublishInPortal.get_portals_where_company_is_member(
+            Company.get(company_id))], 'company_id': company_id}

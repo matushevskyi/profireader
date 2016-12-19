@@ -30,7 +30,7 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipR
     PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive
 
 
-@portal_bp.route('/portal/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
+@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
 @check_right(EditPortalRight, ['company_id'])
 def profile(create_or_update, company_id):
     company = Company.get(company_id)
@@ -42,7 +42,7 @@ def profile(create_or_update, company_id):
     return render_template('portal/portal_edit.html', company=company, portal_id=portal.id if portal else None)
 
 
-@portal_bp.route('/portal/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['OK'])
+@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['OK'])
 @check_right(EditPortalRight, ['company_id'])
 def profile_load(json, create_or_update, company_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
@@ -214,47 +214,6 @@ def plans_load(json, company_id):
     return client_side()
 
 
-@portal_bp.route('/apply_company/<string:company_id>', methods=['OK'])
-@check_right(RequireMembereeAtPortalsRight, ['company_id'])
-def apply_company(json, company_id):
-    MemberCompanyPortal.apply_company_to_portal(company_id=company_id,
-                                                portal_id=json['portal_id'])
-    return {'portals_partners': [portal.get_client_side_dict(fields='name, company_owner_id,id')
-                                 for portal in PublishUnpublishInPortal.get_portals_where_company_is_member(
-            Company.get(company_id))], 'company_id': company_id}
-
-
-@portal_bp.route('/portals_partners/<string:company_id>/', methods=['GET'])
-@check_right(UserIsEmployee, ['company_id'])
-def portals_partners(company_id):
-    return render_template('company/portals_partners.html',
-                           company=Company.get(company_id),
-                           actions={'require_memberee': RequireMembereeAtPortalsRight(company=company_id).is_allowed()})
-
-
-def membership_grid_row(membership: MemberCompanyPortal):
-    return utils.dict_merge(membership.get_client_side_dict(
-        fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,requested_membership_plan_issued,request_membership_plan_issued_immediately'),
-        {'actions': MembershipRights(company=membership.company_id,
-                                     member_company=membership).actions()},
-        {'who': MembershipRights.MEMBERSHIP})
-
-
-@portal_bp.route('/portals_partners/<string:company_id>/', methods=['OK'])
-@check_right(UserIsEmployee, ['company_id'])
-def portals_partners_load(json, company_id):
-    subquery = Company.subquery_portal_partners(company_id, json.get('filter'),
-                                                filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
-    partners_g, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
-
-    return {'page': current_page,
-            'grid_data': [membership_grid_row(partner) for partner in partners_g],
-            'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
-                             (k, v) in {'status': [{'value': status, 'label': status} for status in
-                                                   MembershipRights.STATUSES]}.items()},
-            'grid_filters_except': list(MembershipRights.INITIALLY_FILTERED_OUT_STATUSES),
-            'total': count}
-
 
 @portal_bp.route('/request_membership_plan/<string:membership_id>/', methods=['OK'])
 def request_membership_plan(json, membership_id):
@@ -274,19 +233,25 @@ def request_membership_plan(json, membership_id):
         }
     else:
         requested_plan_id = json.get('selected_by_user_plan_id', None)
-        if requested_plan_id == False:
-            membership.requested_membership_plan_issued = None
-        elif requested_plan_id != True:
-            membership.set_requested_issued_plan(membership_plan = MembershipPlan.get(requested_plan_id))
-            
+
+
+        # if requested_plan_id == False:
+        #     requested_membership_plan = None
+        #     # membership.requested_membership_plan_issued = None
+        # elif requested_plan_id == True:
+        #     requested_membership_plan = True
+        # else:
+        #     requested_membership_plan = MembershipPlan.get(requested_plan_id)
+        #     membership.set_requested_issued_plan(membership_plan = )
 
         if action == 'validate':
             ret = PRBase.DEFAULT_VALIDATION_ANSWER()
+
             # if not new_membership_plan:
             #     ret['errors']['requested_membership_plan_issued_id'] = 'please select plan'
             return ret
         else:
-            return membership_grid_row(membership.use_plan(new_membership_plan, request_only=True).save())
+            return membership.use_plan(new_membership_plan, request_only=True).save().membership_grid_row()
 
 
 @portal_bp.route('/set_membership_plan/<string:membership_id>/', methods=['OK'])
@@ -309,7 +274,7 @@ def set_membership_plan(json, membership_id):
         else:
             membership.use_plan(new_membership_plan)
             membership.save()
-            return membership_grid_row(membership)
+            return membership.membership_grid_row()
 
 
 @portal_bp.route('/portal_banners/<string:company_id>/', methods=['GET'])
@@ -367,7 +332,7 @@ def portals_partners_change_status(json, company_id, portal_id):
         partner.set_client_side_dict(
             status=MembershipRights.STATUS_FOR_ACTION[json.get('action')])
         partner.save()
-    return membership_grid_row(partner)
+    return partner.membership_grid_row()
 
 
 @portal_bp.route('/membership_set_tags/<string:company_id>/<string:portal_id>/', methods=['OK'])
@@ -387,7 +352,7 @@ def membership_set_tags(json, company_id, portal_id):
             return PRBase.DEFAULT_VALIDATION_ANSWER()
         else:
             membership.save().set_tags_positions()
-            return {'membership': membership_grid_row(membership)}
+            return {'membership': membership.membership_grid_row()}
 
 
 @portal_bp.route('/<string:company_id>/company_partner_update/<string:member_id>/', methods=['GET'])
@@ -438,17 +403,17 @@ def company_partners_change_status(json, company_id, portal_id):
             'id': partner.id}
 
 
-@portal_bp.route('/companies_partners/<string:company_id>/', methods=['GET'])
+@portal_bp.route('/companies_members/<string:company_id>/', methods=['GET'])
 @check_right(UserIsEmployee, ['company_id'])
-def companies_partners(company_id):
-    return render_template('company/companies_partners.html', company=Company.get(company_id),
+def companies_members(company_id):
+    return render_template('company/companies_members.html', company=Company.get(company_id),
                            rights_user_in=UserCompany.get_by_user_and_company_ids(company_id=company_id).has_rights(
                                UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES))
 
 
-@portal_bp.route('/companies_partners/<string:company_id>/', methods=['OK'])
+@portal_bp.route('/companies_members/<string:company_id>/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
-def companies_partners_load(json, company_id):
+def companies_members_load(json, company_id):
     subquery = Company.subquery_company_partners(company_id, json.get('filter'),
                                                  filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
     members, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
@@ -456,10 +421,8 @@ def companies_partners_load(json, company_id):
         more_fields='company,current_membership_plan_issued,requested_membership_plan_issued'),
         'company_id': company_id,
         'portal_id': db(Portal, company_owner_id=company_id).first().id},
-        {'actions': MembersRights(company=company_id,
-                                  member_company=member).actions()},
-        {'id': member.id})
-                          for member in members],
+        {'actions': MembersRights(company=company_id, member_company=member).actions()},
+        {'id': member.id}) for member in members],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'member.status': [{'value': status, 'label': status} for status in
                                                           MembersRights.STATUSES]}.items()},
