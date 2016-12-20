@@ -529,6 +529,11 @@ class MembershipPlanIssued(Base, PRBase):
         if user:
             self.started_by_user = user
 
+    def stop(self, user=None):
+        self.stopped_tm = datetime.datetime.utcnow()
+        if user:
+            self.stopped_by_user = user
+
 
 class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     __tablename__ = 'member_company_portal'
@@ -558,7 +563,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     requested_membership_plan_issued_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_issued.id'),
                                                  nullable=True)
     requested_membership_plan_issued = relationship('MembershipPlanIssued',
-                                                    cascade="all, merge, delete-orphan",
+                                                    cascade="all, merge",
                                                     single_parent=True,
                                                     foreign_keys=[requested_membership_plan_issued_id])
 
@@ -702,9 +707,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             portal_id=self.portal.id,
             company_id=self.company.id,
             name=plan.name,
-            price=plan.price if membership_plan else '-1',
+            price=plan.price if plan.id != self.portal.default_membership_plan_id else '-1',
             currency_id=plan.currency_id,
-            duration=plan.duration if membership_plan else '-1 years',
+            duration=plan.duration if plan.id != self.portal.default_membership_plan_id else '-1 years',
             publication_count_open=plan.publication_count_open,
             publication_count_registered=plan.publication_count_registered,
             publication_count_payed=plan.publication_count_payed)

@@ -231,25 +231,30 @@ def request_membership_plan(json, membership_id):
             'selected_by_user_plan_id': True if membership.requested_membership_plan_issued else False
         }
     else:
-        requested_plan_id = json.get('selected_by_user_plan_id', None)
-
-        # if requested_plan_id == False:
-        #     requested_membership_plan = None
-        #     # membership.requested_membership_plan_issued = None
-        # elif requested_plan_id == True:
-        #     requested_membership_plan = True
-        # else:
-        #     requested_membership_plan = MembershipPlan.get(requested_plan_id)
-        #     membership.set_requested_issued_plan(membership_plan = )
-
         if action == 'validate':
-            ret = PRBase.DEFAULT_VALIDATION_ANSWER()
-
-            # if not new_membership_plan:
-            #     ret['errors']['requested_membership_plan_issued_id'] = 'please select plan'
-            return ret
+            return PRBase.DEFAULT_VALIDATION_ANSWER()
         else:
-            return membership.use_plan(new_membership_plan, request_only=True).save().portal_memberee_grid_row()
+            requested_plan_id = json.get('selected_by_user_plan_id', None)
+            immediately = True if json['membership']['request_membership_plan_issued_immediately'] else False
+
+            if requested_plan_id == False:
+                # user don't want any new plan
+                membership.requested_membership_plan_issued = None
+                membership.request_membership_plan_issued_immediately = False
+            elif requested_plan_id != True:
+                membership_plan = MembershipPlan.get(requested_plan_id)
+                issued_plan = membership.create_issued_plan(membership_plan, user=g.user)
+                if membership_plan.auto_apply and immediately:
+                    membership.current_membership_plan_issued.stop()
+                    membership.current_membership_plan_issued = issued_plan
+                    membership.current_membership_plan_issued.start()
+                    membership.requested_membership_plan_issued = None
+                    membership.request_membership_plan_issued_immediately = False
+                else:
+                    membership.requested_membership_plan_issued = issued_plan
+                    membership.request_membership_plan_issued_immediately = immediately
+
+            return membership.save().portal_memberee_grid_row()
 
 
 @portal_bp.route('/set_membership_plan/<string:membership_id>/', methods=['OK'])
@@ -396,7 +401,7 @@ def company_member_change_status(json, company_id, portal_id):
 
         if old_status != MemberCompanyPortal.STATUSES['ACTIVE'] and \
                         membership.status == MemberCompanyPortal.STATUSES['ACTIVE'] and \
-                        not membership.current_membership_plan_issued.started_tm:
+                not membership.current_membership_plan_issued.started_tm:
             membership.current_membership_plan_issued.start()
 
         membership.save()

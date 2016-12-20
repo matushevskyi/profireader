@@ -42,13 +42,15 @@
                     <tr>
                         <th class="border-none"></th>
                         <th class="border-none" colspan="6"><h5>{{ _('current plan valid until ' +
-                            (data.membership.current_membership_plan_issued.calculated_stopping_tm?'%(date)s':'last of days'),
-                            {date: moment(data.membership.current_membership_plan_issued.calculated_stopping_tm)}) }}</h5></th>
+                            (data.membership.current_membership_plan_issued.calculated_stopping_tm?'%(date)s':'last of
+                            days'),
+                            {date: moment(data.membership.current_membership_plan_issued.calculated_stopping_tm)})
+                            }}</h5></th>
                     </tr>
 
                     <tr class="link" ng-click="data.selected_by_user_plan_id = false">
                         <td class="tac border-none"><input ng-value="false" type="radio"
-                                               ng-model="data.selected_by_user_plan_id"/></td>
+                                                           ng-model="data.selected_by_user_plan_id"/></td>
                         <td>{{ data.membership.current_membership_plan_issued.name }}</td>
                         <td ng-bind-html="pP(data.membership.current_membership_plan_issued)|html"></td>
                         <td ng-bind-html="pD(data.membership.current_membership_plan_issued)|html"></td>
@@ -69,8 +71,8 @@
                     </tr>
 
                     <tr class="link" ng-click="data.selected_by_user_plan_id = true">
-                        <td class="tac"><input ng-value="true" type="radio" class="border-none"
-                                               ng-model="data.selected_by_user_plan_id"/></td>
+                        <td class="tac border-none"><input ng-value="true" type="radio" class="border-none"
+                                                           ng-model="data.selected_by_user_plan_id"/></td>
                         <td>{{ data.membership.requested_membership_plan_issued.name }}</td>
                         <td ng-bind-html="pP(data.membership.requested_membership_plan_issued)|html"></td>
                         <td ng-bind-html="pD(data.membership.requested_membership_plan_issued)|html"></td>
@@ -106,17 +108,20 @@
                             ng-bind-html="pC(plan, 'payed', true)|html"></td>
                     </tr>
 
-                    <tr>
+                    <tr ng-class="{'disabled': data.selected_by_user_plan_id === false || data.selected_by_user_plan_id === true}">
                         <td class="border-none tar" colspan="7">
                             <label><input
-                                    ng-value="false" type="radio"
-                                    ng-model="data.membership.request_membership_plan_issued_immediately"/>&nbsp;{{
-                                _('request after the current plan will be finished') }}</label>
-                            &nbsp;&nbsp;&nbsp;
-                            <label><input
+                                    ng-disabled="data.selected_by_user_plan_id === false || data.selected_by_user_plan_id === true"
                                     ng-value="true" type="radio"
                                     ng-model="data.membership.request_membership_plan_issued_immediately"/>&nbsp;{{
                                 _('request immediately') }}</label>
+                            &nbsp;&nbsp;&nbsp;
+                            <label><input
+                                    ng-disabled="data.selected_by_user_plan_id === false || data.selected_by_user_plan_id === true"
+                                    ng-value="false" type="radio"
+                                    ng-model="data.membership.request_membership_plan_issued_immediately"/>&nbsp;{{
+                                _('request after the current plan will be finished') }}</label>
+
                         </td>
                     </tr>
 
@@ -303,7 +308,7 @@
                         name: 'membership_plan',
                         onclick: 'request_membership_plan',
                         classes: function (id, row, field) {
-                            return row['status'] === 'ACTIVE'?'':'disabled';
+                            return row['status'] === 'ACTIVE' ? '' : 'disabled';
                         },
                         render: function (row, value) {
                             return row['current_membership_plan_issued']['name'] +
@@ -313,7 +318,7 @@
                     {
                         name: 'tags', type: 'tags', onclick: 'set_tags',
                         classes: function (id, row, field) {
-                            return row['status'] === 'ACTIVE'?'':'disabled';
+                            return row['status'] === 'ACTIVE' ? '' : 'disabled';
                         },
                     },
                     {
