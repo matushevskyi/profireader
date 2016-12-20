@@ -1,53 +1,53 @@
-/**
- * Function calculates difference between two objects/arrays
- * return array or object depending on type of second argument
- * @param {type} a
- * @param {type} b
- * @param {type} notstrict - compare by == if true (if false/ommted by ===)
- * @returns {Array/Object} with elements different in a and b. also if index is present only in one object (a or b)
- * if returened element is array same object are reffered by 'undefined'
- */
-function getObjectsDifference(a, b, setval, notstrict) {
-
-    'use strict';
-
-    if ((typeof a !== 'object') || (typeof b !== 'object')) {
-        console.log('getObjectsDifference expects both arguments to be array or object');
-        return null;
-    }
-
-    var ret = $.isArray(b) ? [] : {};
-
-    $.each(a, function (ind, aobj) {
-        if ((typeof aobj === 'object') && (typeof b[ind] === 'object')) {
-            if ((aobj === null) && (b[ind] === null)) {
-                return;
-            }
-            var nl = getObjectsDifference(aobj, b[ind], setval, notstrict);
-            if (!$.isEmptyObject(nl)) {
-                ret[ind] = nl;
-            }
-        }
-        else {
-            if ((notstrict && (a[ind] == b[ind])) || (!notstrict && (a[ind] === b[ind]))) {
-                return;
-            }
-            ret[ind] = (setval === undefined) ? aobj : setval;
-        }
-    });
-    $.each(b, function (ind, bobj) {
-        if ((typeof bobj === 'object') && (typeof a[ind] === 'object')) {
-
-        }
-        else {
-            if ((notstrict && (a[ind] == b[ind])) || (!notstrict && (a[ind] === b[ind]))) {
-                return;
-            }
-            ret[ind] = (setval === undefined) ? bobj : setval;
-        }
-    });
-    return ret;
-}
+// /**
+//  * Function calculates difference between two objects/arrays
+//  * return array or object depending on type of second argument
+//  * @param {type} a
+//  * @param {type} b
+//  * @param {type} notstrict - compare by == if true (if false/ommted by ===)
+//  * @returns {Array/Object} with elements different in a and b. also if index is present only in one object (a or b)
+//  * if returened element is array same object are reffered by 'undefined'
+//  */
+// function getObjectsDifference(a, b, setval, notstrict) {
+//
+//     'use strict';
+//
+//     if ((typeof a !== 'object') || (typeof b !== 'object')) {
+//         console.log('getObjectsDifference expects both arguments to be array or object');
+//         return null;
+//     }
+//
+//     var ret = $.isArray(b) ? [] : {};
+//
+//     $.each(a, function (ind, aobj) {
+//         if ((typeof aobj === 'object') && (typeof b[ind] === 'object')) {
+//             if ((aobj === null) && (b[ind] === null)) {
+//                 return;
+//             }
+//             var nl = getObjectsDifference(aobj, b[ind], setval, notstrict);
+//             if (!$.isEmptyObject(nl)) {
+//                 ret[ind] = nl;
+//             }
+//         }
+//         else {
+//             if ((notstrict && (a[ind] == b[ind])) || (!notstrict && (a[ind] === b[ind]))) {
+//                 return;
+//             }
+//             ret[ind] = (setval === undefined) ? aobj : setval;
+//         }
+//     });
+//     $.each(b, function (ind, bobj) {
+//         if ((typeof bobj === 'object') && (typeof a[ind] === 'object')) {
+//
+//         }
+//         else {
+//             if ((notstrict && (a[ind] == b[ind])) || (!notstrict && (a[ind] === b[ind]))) {
+//                 return;
+//             }
+//             ret[ind] = (setval === undefined) ? bobj : setval;
+//         }
+//     });
+//     return ret;
+// }
 
 function quoteattr(s, preserveCR) {
     preserveCR = preserveCR ? '&#13;' : '\n';
@@ -151,14 +151,13 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
     }])
     .factory('$membership_tags', ['$http', '$uibModal', function ($http, $uibModal) {
         return function (dict) {
-            var modalInstance = $uibModal.open({
+            return modalInstance = $uibModal.open({
                 templateUrl: 'membership_tags.html',
                 controller: 'membership_tags',
                 backdrop: 'static',
                 keyboard: false,
                 resolve: resolveDictForAngularController(dict)
             });
-            return modalInstance;
         }
     }])
     .controller('confirm_dialog_controller', function ($scope, $uibModalInstance, title, question, buttons) {
@@ -236,30 +235,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             );
         }
     }])
-    // .directive('prSay', ['$controller', '$ok', function ($controller, $ok) {
-    //     return {
-    //         restrict: 'A',
-    //         scope: {
-    //             'prSay': '=',
-    //         },
-    //         link: function (scope, element, attrs) {
-    //             var allow_html = ('allow-only-tags' in attrs) ? attrs['allow-only-tags'] : '*';
-    //             var phrase = element.html();
-    //
-    //             if ('watch' in attrs) {
-    //                 scope.$watch('prSay', function (nv, ov) {
-    //                     if (nv) {
-    //                         element.html(pr_dictionary(phrase, [nv], allow_html, scope.$parent, $ok, $controller));
-    //                     }
-    //                 });
-    //             }
-    //             else {
-    //                 element.html(pr_dictionary(phrase, [scope['prSay']], allow_html, scope.$parent, $ok, $controller));
-    //             }
-    //
-    //         }
-    //     }
-    // }])
     .directive('prHelpTooltip', ['$compile', '$templateCache', '$controller', function ($compile, $templateCache, $controller) {
         return {
             restrict: 'E',
@@ -272,260 +247,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             }
         }
     }])
-    .directive('prFileChange', function () {
-        return {
-            restrict: 'A',
-            link: function (scope, element, attrs) {
-                var onChangeHandler = scope.$eval(attrs.prFileChange);
-                element.bind('change', onChangeHandler);
-            }
-        };
-    })
-    .directive('prCrop', function ($compile, $templateCache, $timeout) {
-        return {
-            restrict: 'A',
-            replace: false,
-            terminal: true,
-            priority: 1000,
-            scope: {
-                prCrop: '='
-            },
-            link: function link(scope, element, attrs) {
-                element.attr('ng-crop', 'selectedurl');
-                element.attr('ng-crop-coordinates', 'coordinates');
-                element.attr('ng-crop-options', 'options');
-                element.attr('ng-crop-zoom', 'zoom');
-                element.attr('ng-crop-origin', 'origin');
-                element.attr('logic', 'logic');
-                element.attr('ng-crop-disabled', 'disabled');
-                element.attr('ng-crop-loading', 'loading');
 
-                element.attr('ng-crop-on-error', 'onerror');
-                element.attr('ng-crop-on-load', 'onload');
-
-
-                element.removeAttr("pr-crop");
-
-                scope.logic = null;
-                scope.zoomable = true;
-                scope.disabled = false;
-                scope.original_model = null;
-                scope.preset_button_classes = {'gravatar': 'fa-gravatar'};
-
-
-                scope.onerror = function (m) {
-                    add_message(m, 'warning')
-                };
-
-
-                scope.$watch('zoom', function (newv, oldv) {
-                        if (newv) {
-                            if (!scope.prCrop['selected_by_user']['crop'])
-                                scope.prCrop['selected_by_user']['crop'] = {};
-                            scope.prCrop['selected_by_user']['crop']['origin_zoom'] = newv;
-                        }
-                    }
-                );
-
-                scope.$watch('origin', function (newv, oldv) {
-                        if (newv) {
-                            if (!scope.prCrop['selected_by_user']['crop'])
-                                scope.prCrop['selected_by_user']['crop'] = {};
-                            if (newv) {
-                                scope.prCrop['selected_by_user']['crop']['origin_left'] = newv[0];
-                                scope.prCrop['selected_by_user']['crop']['origin_top'] = newv[1];
-                            }
-                            else {
-                                scope.prCrop['selected_by_user']['crop']['origin_left'] = 0;
-                                scope.prCrop['selected_by_user']['crop']['origin_top'] = 0;
-                            }
-
-                        }
-                    }
-                );
-
-                scope.$watchCollection('coordinates', function (newv, oldv) {
-                    if (newv) {
-                        if (!scope.prCrop['selected_by_user']['crop'])
-                            scope.prCrop['selected_by_user']['crop'] = {};
-                        scope.prCrop['selected_by_user']['crop']['crop_left'] = newv[0];
-                        scope.prCrop['selected_by_user']['crop']['crop_top'] = newv[1];
-                        scope.prCrop['selected_by_user']['crop']['crop_width'] = newv[2] - newv[0];
-                        scope.prCrop['selected_by_user']['crop']['crop_height'] = newv[3] - newv[1];
-                    }
-                });
-
-                scope.$watch('prCrop', function (newv, oldv) {
-                    // console.log('prCrop prCrop', newv, oldv);
-                    // scope.preset_urls = scope.prCrop ? scope.prCrop['preset_urls'] : {};
-                    if (!newv) return;
-                    // console.log(newv);
-
-                    // scope.model_name = attrs['prCrop'].split('.').pop();
-
-                    var selected_by_user = newv['selected_by_user'];
-                    var cropper_options = newv['cropper'];
-                    // console.log(cropper_options);
-                    // if (!scope.original_model) {
-
-                    scope.preset_urls = cropper_options['preset_urls'] ? cropper_options['preset_urls'] : {};
-                    scope.original_model = $.extend(true, {}, selected_by_user);
-                    // }
-                    scope.coordinates = [];
-                    scope.state = {};
-                    scope.browsable = cropper_options['browse'] ? true : false;
-                    scope.uploadable = cropper_options['upload'] ? true : false;
-                    scope.resetable = true;
-                    scope.noneurl = cropper_options['no_selection_url'];
-                    scope.options = {};
-                    if (cropper_options.min_size) {
-                        scope.options['min_width'] = cropper_options.min_size[0];
-                        scope.options['min_height'] = cropper_options.min_size[1];
-                    }
-
-                    if (cropper_options.aspect_ratio) {
-                        scope.options['min_aspect'] = cropper_options.aspect_ratio[0];
-                        scope.options['max_aspect'] = cropper_options.aspect_ratio[1];
-                    }
-                    scope.setModel(selected_by_user, false);
-                });
-
-                scope.selectPresetUrl = function (preset_id) {
-                    if (scope.preset_urls && scope.preset_urls[preset_id]) {
-                        scope.setModel({'type': 'preset', 'preset_id': preset_id});
-                    }
-                };
-
-                var callback_name = 'pr_cropper_image_selected_in_filemanager_callback_' + scope.controllerName + '_' + randomHash();
-
-
-                window[callback_name] = function (item) {
-                    scope.setModel({'type': 'browse', 'image_file_id': item.id, crop_coordinates: null});
-                    closeFileManager();
-                };
-
-                scope.selectNone = function () {
-                    scope.setModel({'type': 'none'});
-                };
-
-                scope.resetModel = function () {
-                    scope.setModel($.extend(true, {}, scope.original_model));
-                };
-
-
-                scope.setModel = function (model, do_not_set_ng_crop) {
-
-                    // console.log('set_model', model);
-
-                    switch (model['type']) {
-                        case 'browse':
-                            // console.log(model);
-                            scope.selectedurl = fileUrl(model['image_file_id']);
-                            scope.disabled = false;
-                            scope.coordinates = null;
-                            scope.zoom = null;
-                            scope.origin = null;
-                            break;
-                        case 'provenance':
-                            var crd = model.crop;
-                            scope.selectedurl = fileUrl(model['provenance_file_id']);
-                            scope.disabled = false;
-                            scope.coordinates = crd ? [crd.crop_left, crd.crop_top, crd.crop_width + crd.crop_left, crd.crop_height + crd.crop_top] : null;
-                            scope.origin = crd ? [crd.origin_left, crd.origin_top] : null;
-                            scope.zoom = crd ? crd.origin_zoom : null;
-                            break;
-                        case 'none':
-                            scope.selectedurl = scope.noneurl;
-                            scope.disabled = true;
-                            scope.coordinates = null;
-                            scope.zoom = null;
-                            scope.origin = null;
-                            // scope.state = null;
-                            break;
-                        case 'upload':
-                            scope.selectedurl = model['file']['content'];
-                            scope.disabled = false;
-                            scope.coordinates = null;
-                            scope.zoom = null;
-                            scope.origin = null;
-                            // scope.state = null;
-                            break;
-                        case 'preset':
-                            scope.selectedurl = scope.preset_urls[model['preset_id']];
-                            scope.disabled = true;
-                            scope.coordinates = null;
-                            scope.zoom = null;
-                            scope.origin = null;
-                            // scope.state = null;
-                            break;
-                        default:
-                            console.log('unknown model type');
-                            break;
-                    }
-
-                    scope.onload = function (cropper_logic) {
-                        if (!do_not_set_ng_crop) {
-                            $timeout(function () {
-                                scope.prCrop['selected_by_user'] = model;
-                            })
-                        }
-                    }
-
-                };
-
-                scope.fileUploaded = function (event) {
-                    var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
-                    $(this).val('');
-                    if (the_file) {
-                        var fr = new FileReader();
-                        fr.onload = function (e) {
-                            scope.setModel({
-                                'type': 'upload',
-                                'file': {'mime': the_file.type, 'name': the_file.name, 'content': fr.result}
-                            })
-                        };
-                        fr.onerror = function (e) {
-                            add_message('File loading error', 'warning');
-                        };
-                        fr.readAsDataURL(the_file);
-                    }
-                };
-
-                scope.chooseImage = function (setImage) {
-                    scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.original_model['browse']);
-                };
-
-
-                scope.zoom_by = function (by, check_only) {
-                    if (scope.loading || scope.disabled || !scope.logic) return false;
-                    // console.log(scope.logic, scope.logic.ctr);
-                    // debugger;
-                    var ok = false;
-                    if (by > 1 && scope.zoom <= scope.logic.ctr.max_zoom * 0.99) ok = true;
-                    if (by < 1 && scope.zoom >= scope.logic.ctr.min_zoom * 1.01) ok = true;
-                    if (!check_only && ok) $timeout(function () {
-                        scope.zoom *= by;
-                    });
-                    return ok;
-                };
-
-                scope.select_all = function (check_only) {
-                    if (scope.loading || scope.disabled || !scope.logic) return false;
-
-                    if (!check_only) {
-                        scope.coordinates = [0, 0, scope.logic.ctr.image_size[0], scope.logic.ctr.image_size[1]];
-                    }
-                    return true;
-                };
-
-
-                $(element).append($templateCache.get('pr-crop-buttons.html'));
-                $compile(element)(scope);
-
-                // $compile($(element).prev())(scope);
-            }
-        }
-    })
 
     .directive('dateTimestampFormat', function () {
         return {
@@ -731,148 +453,8 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             }
         };
     })
-    .service('objectTransformation', function () {
-        var objectTransformation = {};
-
-        objectTransformation.reverseKeyValue = function (objIn) {
-            var objOut = {}, keys, i;
-            keys = Object.keys($scope.data.PortalDivisionTags3);
-            for (i = 0; i < objIn.length; i++) {
-                objOut[objIn[keys[i]]] = keys[i];
-            }
-            return objOut;
-        };
-
-        objectTransformation.getValues1 = function (objList, key, unique) {
-            var values = [], value;
-            for (var i = 0; i < objList.length; i++) {
-                value = objList[i][key];
-                if (!unique || (values.indexOf(value) === -1)) {
-                    values.push(value);
-                }
-            }
-            return values;
-        };
-
-        objectTransformation.getValues2 = function (objList, key1, key2) {
-            var resultObject = {}, key, value;
-            for (var i = 0; i < objList.length; i++) {
-                key = objList[i][key1];
-                value = objList[i][key2];
-
-                if (typeof resultObject[key] === 'undefined') {
-                    resultObject[key] = [value]
-                } else {
-                    if (resultObject[key].indexOf(value) === -1) {
-                        resultObject[key].push(value)
-                    }
-                }
-            }
-            return resultObject;
-        };
-
-        objectTransformation.getValues3 = function (objList, key1, key2, key2List) {
-            var resultObject = {}, key, i, objFilledWithFalse = {};
-
-            for (i = 0; i < key2List.length; i++) {
-                objFilledWithFalse[key2List[i]] = false
-            }
-
-            for (i = 0; i < objList.length; i++) {
-                key = objList[i][key1];
-                if (typeof resultObject[key] === 'undefined') {
-                    resultObject[key] = $.extend(true, {}, objFilledWithFalse);
-                }
-                resultObject[key][objList[i][key2]] = true;
-            }
-
-            return resultObject;
-        };
-
-        objectTransformation.getValues4 = function (objList, key1, key2, key2List) {
-            var resultObject = {}, key, i, objFilledWithFalse = {}, lList, elem;
-
-            lList = [];
-            for (i = 0; i < objList.length; i++) {
-                elem = objList[i][key1];
-                if (lList.indexOf(elem) === -1) {
-                    lList.push(elem);
-                }
-            }
-
-            for (i = 0; i < lList.length; i++) {
-                objFilledWithFalse[lList[i]] = false;
-            }
-
-            for (i = 0; i < key2List.length; i++) {
-                resultObject[key2List[i]] = $.extend(true, {}, objFilledWithFalse);
-            }
-
-            for (i = 0; i < objList.length; i++) {
-                key = objList[i];
-                resultObject[key[key2]][key[key1]] = true;
-            }
-
-            return resultObject;
-        };
-
-        // substitution in keys is performed
-        objectTransformation.subsInKey = function (objIn, objForSubstitution) {
-            var keys, i, objOut;
-
-            keys = Object.keys(objIn);
-            objOut = {};
-
-            for (i = 0; i < keys.length; i++) {
-                objOut[objForSubstitution[keys[i]]] = objIn[keys[i]];
-            }
-
-            return objOut;
-        };
-
-        // substitution of list elements is performed
-        objectTransformation.subsElemOfList = function (listIn, objForSubstitution) {
-            var i, listOut;
-            listOut = [];
-            for (i = 0; i < listIn.length; i++) {
-                listOut.push(objForSubstitution[listIn[i]])
-            }
-            return listOut;
-        };
-
-        return objectTransformation;
-    }).filter('propsFilter', function () {
-    return function (items, props) {
-        var out = [];
-
-        if (angular.isArray(items)) {
-            var keys = Object.keys(props);
-
-            items.forEach(function (item) {
-                var itemMatches = false;
-
-                for (var i = 0; i < keys.length; i++) {
-                    var prop = keys[i];
-                    var text = props[prop].toLowerCase();
-                    if (item[prop].toString().toLowerCase().indexOf(text) !== -1) {
-                        itemMatches = true;
-                        break;
-                    }
-                }
-
-                if (itemMatches) {
-                    out.push(item);
-                }
-            });
-        } else {
-            // Let the output be the input untouched
-            out = items;
-        }
-
-        return out;
-    };
-}).filter('html', ['$sce', function($sce){
-        return function(text) {
+    .filter('html', ['$sce', function ($sce) {
+        return function (text) {
             return $sce.trustAsHtml(text);
         };
     }]);
@@ -935,12 +517,6 @@ Date.prototype.toISOString = function () {
     //dateFormat(this, "dddd, mmmm dS, yyyy, h:MM:ss TT");
     //  return 'here goes my awesome formatting of Date Objects '+ this;
 };
-//    .config(function($httpProvider) {
-//    $httpProvider.defaults.transformRequest.unshift(function (data) {
-//        console.log(data);
-//        return data;
-//    })
-//});
 
 
 module.controller('filemanagerCtrl', ['$scope', '$uibModalInstance', 'file_manager_called_for', 'file_manager_on_action',
@@ -989,348 +565,6 @@ module.directive('ngEnter', function () {
         });
     };
 });
-module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '$parse', '$timeout', '$ok',
-    function ($filter, $document, $compile, $parse, $timeout, $ok) {
-
-        return {
-            restrict: 'AE',
-            scope: {
-                addData: '=',
-                data: '=',
-                send: '=',
-                parentScope: '=',
-                selectedModel: '=',
-                options: '=',
-                extraSettings: '=',
-                events: '=',
-                searchFilter: '=?',
-                translationTexts: '=',
-                groupBy: '@'
-            },
-            template: function (element, attrs) {
-                var checkboxes = attrs.checkboxes ? true : false;
-                var groups = attrs.groupBy ? true : false;
-
-                var template = '<div class="multiselect-parent btn-group dropdown-multiselect" style="width:100%"><div class="kk"><div>';
-                template += '<button type="button" style="width:100%"  id="t1" class="dropdown-toggle" ng-class="settings.buttonClasses" ng-disabled="parentScope.loading" ng-click="toggleDropdown()">{{getButtonText()}}&nbsp;<span class="caret"></span></button>';
-                template += '<ul class="dropdown-menu dropdown-menu-form ng-dr-ms" ng-style="{display: open ? \'block\' : \'none\', height : settings.scrollable ? settings.scrollableHeight : \'auto\' }" style="position: fixed; top:auto; left: auto; width: 20%;cursor: pointer" >';
-                template += '<li ng-show="settings.selectionLimit === 0"><a data-ng-click="selectAll()"><span class="glyphicon glyphicon-ok"></span>  {{texts.checkAll}}</a>';
-                template += '<li ng-show="settings.showUncheckAll"><a data-ng-click="deselectAll(true);"><span class="glyphicon glyphicon-remove"></span>   {{texts.uncheckAll}}</a></li>';
-                template += '<li ng-show="(settings.showCheckAll || settings.selectionLimit < 0) && !settings.showUncheckAll" class="divider"></li>';
-                template += '<li ng-show="settings.enableSearch"><div class="dropdown-header"><input type="text" class="form-control" style="width: 100%;" ng-model="searchFilter" placeholder="{{texts.searchPlaceholder}}" /></li>';
-                template += '<li ng-show="settings.enableSearch" class="divider"></li>';
-                if (groups) {
-                    template += '<li ng-repeat-start="option in orderedItems | filter: searchFilter" ng-show="getPropertyForObject(option, settings.groupBy) !== getPropertyForObject(orderedItems[$index - 1], settings.groupBy)" role="presentation" class="dropdown-header">{{ getGroupTitle(getPropertyForObject(option, settings.groupBy)) }}</li>';
-                    template += '<li ng-repeat-end role="presentation">';
-                } else {
-                    template += '<li role="presentation" ng-repeat="option in options | filter: searchFilter">';
-                }
-                template += '<a role="menuitem" tabindex="-1" ng-click="setSelectedItem(getPropertyForObject(option,settings.idProp) , getPropertyForObject(option,settings.displayProp))">';
-                if (checkboxes) {
-                    template += '<div class="checkbox"><label><input class="checkboxInput" type="checkbox" ng-click="checkboxClick($event, getPropertyForObject(option,settings.idProp))" ng-checked="isChecked(getPropertyForObject(option,settings.idProp), getPropertyForObject(option,settings.displayProp))" /> {{getPropertyForObject(option, settings.displayProp)}}</label></div></a>';
-                } else {
-                    template += '<span data-ng-class="{\'glyphicon glyphicon-check\': isChecked(getPropertyForObject(option,settings.idProp), getPropertyForObject(option,settings.displayProp)), \'glyphicon glyphicon-unchecked\': !isChecked(getPropertyForObject(option,settings.idProp), getPropertyForObject(option,settings.displayProp))}"></span> {{getPropertyForObject(option, settings.displayProp)}}</a>';
-                }
-                template += '</li>';
-                template += '<li role="presentation" ng-show="settings.selectionLimit > 1"><a role="menuitem">{{selectedModel.length}} {{texts.selectionOf}} {{settings.selectionLimit}} {{texts.selectionCount}}</a></li>';
-                template += '</ul>';
-                template += '</div>';
-
-                element.html(template);
-            },
-            link: function ($scope, $element, $attrs) {
-                var $dropdownTrigger = $element.children()[0];
-
-                $scope.toggleDropdown = function () {
-                    $scope.open = !$scope.open;
-                };
-
-                $scope.checkboxClick = function ($event, id) {
-                    $scope.setSelectedItem(id);
-                    $event.stopImmediatePropagation();
-                };
-
-                $scope.externalEvents = {
-                    onItemSelect: angular.noop,
-                    onItemDeselect: angular.noop,
-                    onSelectAll: angular.noop,
-                    onDeselectAll: angular.noop,
-                    onInitDone: angular.noop,
-                    onMaxSelectionReached: angular.noop
-                };
-
-                $scope.settings = {
-                    dynamicTitle: true,
-                    scrollable: false,
-                    scrollableHeight: '300px',
-                    closeOnBlur: true,
-                    displayProp: 'label',
-                    idProp: 'value',
-                    externalIdProp: 'value',
-                    enableSearch: false,
-                    selectionLimit: $scope.addData.limit ? $scope.addData.limit : 0,
-                    showCheckAll: true,
-                    showUncheckAll: true,
-                    closeOnSelect: false,
-                    buttonClasses: 'btn btn-default ',
-                    closeOnDeselect: false,
-                    groupBy: $attrs.groupBy || undefined,
-                    groupByTextProvider: null,
-                    smartButtonMaxItems: 0,
-                    smartButtonTextConverter: angular.noop
-                };
-
-                $scope.translate_phrase = function () {
-                    $scope.$$translate = $scope.parentScope.$$translate;
-                    var args = [].slice.call(arguments);
-                    return pr_dictionary(args.shift(), args, '', $scope, $ok, $scope.parentScope.controllerName)
-                };
-
-                $scope.texts = {
-                    checkAll: $scope.translate_phrase("Check All"),
-                    uncheckAll: $scope.translate_phrase('Uncheck All'),
-                    selectionCount: $scope.translate_phrase('checked'),
-                    selectionOf: '/',
-                    searchPlaceholder: $scope.translate_phrase('Search...'),
-                    buttonDefaultText: $scope.translate_phrase('Select'),
-                    dynamicButtonTextSuffix: $scope.translate_phrase('checked')
-                };
-
-                $scope.searchFilter = $scope.searchFilter || '';
-
-                if (angular.isDefined($scope.settings.groupBy)) {
-                    $scope.$watch('options', function (newValue) {
-                        if (angular.isDefined(newValue)) {
-                            $scope.orderedItems = $filter('orderBy')(newValue, $scope.settings.groupBy);
-                        }
-                    });
-                }
-
-                angular.extend($scope.settings, $scope.extraSettings || []);
-                angular.extend($scope.externalEvents, $scope.events || []);
-                angular.extend($scope.texts, $scope.translationTexts);
-
-                $scope.singleSelection = $scope.settings.selectionLimit === 1;
-
-                function getFindObj(id) {
-                    var findObj = {};
-
-                    if ($scope.settings.externalIdProp === '') {
-                        findObj[$scope.settings.idProp] = id;
-                    } else {
-                        findObj[$scope.settings.externalIdProp] = id;
-                    }
-
-                    return findObj;
-                }
-
-                function clearObject(object) {
-                    for (var prop in object) {
-                        delete object[prop];
-                    }
-                }
-
-                if ($scope.singleSelection) {
-                    if (angular.isArray($scope.selectedModel) && $scope.selectedModel.length === 0) {
-                        clearObject($scope.selectedModel);
-                    }
-                }
-
-                if ($scope.settings.closeOnBlur) {
-                    $document.on('click', function (e) {
-                        var target = e.target.parentElement;
-                        var parentFound = false;
-
-                        while (angular.isDefined(target) && target !== null && !parentFound) {
-                            if (_.contains(target.className.split(' '), 'multiselect-parent') && !parentFound) {
-                                if (target === $dropdownTrigger) {
-                                    parentFound = true;
-                                }
-                            }
-                            target = target.parentElement;
-                        }
-
-                        if (!parentFound) {
-                            $scope.$apply(function () {
-                                $scope.open = false;
-                            });
-                        }
-                    });
-                }
-
-                $scope.getGroupTitle = function (groupValue) {
-                    if ($scope.settings.groupByTextProvider !== null) {
-                        return $scope.settings.groupByTextProvider(groupValue);
-                    }
-
-                    return groupValue;
-                };
-
-                $scope.get_default_selected = function (exeptions) {
-                    if (exeptions) {
-                        $scope.listElemens[$scope.addData.field] = [];
-                        $timeout(function () {
-                            for (var f = 0; f < $scope.options.length; f++) {
-                                if (exeptions instanceof Array) {
-                                    if (exeptions.indexOf($scope.options[f]['label']) === -1) {
-                                        $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
-                                    }
-                                } else {
-                                    if ($scope.options[f]['label'] !== exeptions) {
-                                        $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
-                                    }
-                                }
-                            }
-                        }, 500)
-                    }
-                };
-
-                $scope.getButtonText = function () {
-                    if (!$scope.listElemens) {
-                        $scope.listElemens = {};
-                        $scope.listElemens[$scope.addData.field] = [];
-                        $timeout(function () {
-                            $scope.filters_exception = $scope.parentScope.gridApi.grid.filters_init_exception
-                            if ($scope.filters_exception) {
-                                $scope.get_default_selected($scope.filters_exception)
-                            }
-                        }, 2000);
-
-                    }
-                    if ($scope.settings.dynamicTitle && ($scope.selectedModel.length > 0 || (angular.isObject($scope.selectedModel) && _.keys($scope.selectedModel).length > 0))) {
-                        if ($scope.settings.smartButtonMaxItems > 0) {
-                            var itemsText = [];
-                            angular.forEach($scope.options, function (optionItem) {
-                                if ($scope.isChecked($scope.getPropertyForObject(optionItem, $scope.settings.idProp))) {
-                                    var displayText = $scope.getPropertyForObject(optionItem, $scope.settings.displayProp);
-                                    var converterResponse = $scope.settings.smartButtonTextConverter(displayText, optionItem);
-                                    itemsText.push(converterResponse ? converterResponse : displayText);
-                                }
-                            });
-
-                            if ($scope.selectedModel.length > $scope.settings.smartButtonMaxItems) {
-                                itemsText = itemsText.slice(0, $scope.settings.smartButtonMaxItems);
-                                itemsText.push('...');
-                            }
-
-                            return itemsText.join(', ');
-                        } else {
-                            var totalSelected;
-                            if ($scope.singleSelection) {
-                                totalSelected = ($scope.selectedModel !== null && angular.isDefined($scope.selectedModel[$scope.settings.idProp])) ? 1 : 0;
-                            } else {
-                                totalSelected = angular.isDefined($scope.selectedModel) ? $scope.listElemens[$scope.addData.field].length : 0;
-                            }
-
-                            if (totalSelected === 0) {
-                                return $scope.texts.buttonDefaultText;
-                            } else {
-                                return totalSelected + ' ' + $scope.texts.dynamicButtonTextSuffix;
-                            }
-                        }
-                    } else {
-                        return $scope.texts.buttonDefaultText;
-                    }
-                };
-
-                $scope.getPropertyForObject = function (object, property) {
-                    if (angular.isDefined(object) && object.hasOwnProperty(property)) {
-                        return object[property];
-                    }
-                    return '';
-                };
-
-                $scope.selectAll = function () {
-                    $scope.isSelectAll = true;
-                    if ($scope.options.length !== $scope.listElemens[$scope.addData.field].length) {
-                        $scope.externalEvents.onSelectAll();
-                        $scope.listElemens[$scope.addData.field] = [];
-                        angular.forEach($scope.options, function (value) {
-                            $scope.setSelectedItem(value[$scope.settings.idProp], '', true);
-                        });
-                        for (var f = 0; f < $scope.options.length; f++) {
-                            $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
-                        }
-                        $scope.data.filter[$scope.addData.field] = $scope.listElemens[$scope.addData.field];
-                        $scope.send($scope.data)
-                    }
-                };
-
-                $scope.deselectAll = function (sendEvent) {
-                    if (sendEvent && $scope.listElemens[$scope.addData.field].length > 0) {
-                        $scope.isSelectAll = false;
-                        delete $scope.data.filter[$scope.addData.field];
-                        $scope.listElemens[$scope.addData.field] = [];
-                        if ($scope.filters_exception)
-                            $scope.data.filter[$scope.addData.field] = []
-                        $scope.send($scope.data);
-                        if ($scope.singleSelection) {
-                            clearObject($scope.selectedModel);
-                        } else {
-                            $scope.selectedModel.splice(0, $scope.selectedModel.length);
-                        }
-                    }
-                };
-
-                $scope.setSelectedItem = function (id, label, dontRemove) {
-                    var findObj = getFindObj(id);
-                    var finalObj = null;
-                    if ($scope.settings.externalIdProp === '') {
-                        finalObj = _.find($scope.options, findObj);
-                    } else {
-                        finalObj = findObj;
-                    }
-                    if ($scope.singleSelection) {
-                        clearObject($scope.selectedModel);
-                        angular.extend($scope.selectedModel, finalObj);
-                        $scope.externalEvents.onItemSelect(finalObj);
-                        $scope.listElemens[$scope.addData.field].push(label);
-                        $scope.data.filter[$scope.addData.field] = $scope.listElemens[$scope.addData.field];
-                        $scope.send($scope.data);
-                        if ($scope.settings.closeOnSelect) $scope.open = false;
-
-                        return;
-                    }
-
-                    dontRemove = dontRemove || false;
-                    var exists = $scope.listElemens[$scope.addData.field].indexOf(label) !== -1;
-
-                    if (!dontRemove && exists) {
-                        $scope.externalEvents.onItemDeselect(findObj);
-                        $scope.isSelectAll = false;
-                        index = $scope.listElemens[$scope.addData.field].indexOf(label);
-                        $scope.listElemens[$scope.addData.field].splice(index, 1);
-                        if ($scope.listElemens[$scope.addData.field].length > 0) {
-                            $scope.data.filter[$scope.addData.field] = $scope.listElemens[$scope.addData.field];
-                        } else {
-                            delete $scope.data.filter[$scope.addData.field];
-                        }
-                        $scope.send($scope.data)
-                    } else if (!exists && ($scope.settings.selectionLimit === 0 || $scope.listElemens[$scope.addData.field].length < $scope.settings.selectionLimit)) {
-                        $scope.externalEvents.onItemSelect(finalObj);
-                        if (label.length > 0) {
-                            $scope.listElemens[$scope.addData.field].push(label);
-                            $scope.data.filter[$scope.addData.field] = $scope.listElemens[$scope.addData.field];
-                            $scope.send($scope.data)
-                        }
-                    }
-                    if ($scope.settings.closeOnSelect) $scope.open = false;
-                };
-
-                $scope.isChecked = function (id, label) {
-                    if ($scope.singleSelection) {
-                        return $scope.selectedModel !== null && angular.isDefined($scope.selectedModel[$scope.settings.idProp]) && $scope.selectedModel[$scope.settings.idProp] === getFindObj(id)[$scope.settings.idProp];
-                    }
-                    if ($scope.isSelectAll) {
-                        return true
-                    }
-                    return $scope.listElemens[$scope.addData.field].indexOf(label) !== -1;
-                };
-
-                $scope.externalEvents.onInitDone();
-            }
-        };
-    }]);
 
 function now() {
     return Date.now() / 1000;
@@ -1445,7 +679,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             return pr_dictionary(args.shift(), args, '', this, $ok);
         },
         moment: function (value, out_format) {
-            return value?moment.utc(value).local().format(out_format ? out_format : 'dddd, LL (HH:mm)', value):''
+            return value ? moment.utc(value).local().format(out_format ? out_format : 'dddd, LL (HH:mm)', value) : ''
         },
         MAIN_DOMAIN: MAIN_DOMAIN,
         static_address: function (relative_file_name) {

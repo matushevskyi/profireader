@@ -219,17 +219,7 @@ def request_membership_plan(json, membership_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
     membership = MemberCompanyPortal.get(membership_id)
     if action == 'load':
-        return {
-            'membership': membership.get_client_side_dict(
-                fields='id,current_membership_plan_issued,requested_membership_plan_issued,'
-                       'request_membership_plan_issued_immediately,'
-                       'company.name,company.logo.url,portal.name, portal.logo.url, portal.default_membership_plan_id'),
-            'select': {
-                'plans': utils.get_client_side_list(membership.portal.plans_active),
-                'publications': membership.get_publication_count()
-            },
-            'selected_by_user_plan_id': True if membership.requested_membership_plan_issued else False
-        }
+        return membership.get_client_side_dict_for_plan()
     else:
         if action == 'validate':
             return PRBase.DEFAULT_VALIDATION_ANSWER()
@@ -262,11 +252,7 @@ def set_membership_plan(json, membership_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
     membership = MemberCompanyPortal.get(membership_id)
     if action == 'load':
-        return {
-            'membership': membership.get_client_side_dict(
-                fields='id,current_membership_plan_issued,requested_membership_plan_issued,company.name,company.logo.url,portal.name, portal.logo.url'),
-            'select': {'plans': utils.get_client_side_list(membership.portal.plans_active)}
-        }
+        return membership.get_client_side_dict_for_plan()
     else:
         new_membership_plan = MembershipPlan.get(json.get('requested_membership_plan_issued_id', None),
                                                  returnNoneIfNotExists=True)

@@ -598,6 +598,19 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             {'actions': MembersRights(company=self.portal.company_owner_id, member_company=self).actions()},
             {'id': self.id})
 
+    def get_client_side_dict_for_plan(self):
+        return {
+            'membership': self.get_client_side_dict(
+                fields='id,current_membership_plan_issued,requested_membership_plan_issued,'
+                       'request_membership_plan_issued_immediately,'
+                       'company.name,company.logo.url,portal.name, portal.logo.url, portal.default_membership_plan_id'),
+            'select': {
+                'plans': utils.get_client_side_list(self.portal.plans_active),
+                'publications': self.get_publication_count()
+            },
+            'selected_by_user_plan_id': True if self.requested_membership_plan_issued else False
+        }
+
     def seo_dict(self):
         return {
             'title': self.company.name,
