@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy import event
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from flask.ext.login import current_user
-from sqlalchemy import Column, String, ForeignKey, update, and_, text
+from sqlalchemy import Column, String, ForeignKey, update, and_, text, desc
 from sqlalchemy.orm import relationship
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from flask import g
@@ -257,7 +257,7 @@ class Company(Base, PRBase, PRElasticDocument):
 
     @staticmethod
     def subquery_company_partners(company_id, filters, filters_exсept=None):
-        sub_query = db(MemberCompanyPortal, portal_id=db(Portal, company_owner_id=company_id).subquery().c.id)
+        sub_query = db(MemberCompanyPortal, portal_id=db(Portal, company_owner_id=company_id).subquery().c.id).order_by(desc(MemberCompanyPortal.id))
         list_filters = [];
         list_sorts = []
         if filters_exсept:

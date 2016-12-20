@@ -158,5 +158,5 @@ TABLE_TYPES = {
     'binary': Binary,
     'json': JSON,
     'price': NUMERIC(20, 2),
-    'timeinterval': INTERVAL(),
+    'timeinterval': String(50),
 }

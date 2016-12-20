@@ -41,7 +41,9 @@
 
                     <tr>
                         <th class="border-none"></th>
-                        <th class="border-none" colspan="6"><h5>{{ ::_('current plan') }}</h5></th>
+                        <th class="border-none" colspan="6"><h5>{{ _('current plan valid until ' +
+                            (data.membership.current_membership_plan_issued.calculated_stopping_tm?'%(date)s':'last of days'),
+                            {date: moment(data.membership.current_membership_plan_issued.calculated_stopping_tm)}) }}</h5></th>
                     </tr>
 
                     <tr class="link" ng-click="data.selected_by_user_plan_id = false">
@@ -196,7 +198,7 @@
             $scope.url_search_for_portal = function () {
                 return ( '/portal/search_for_portal_to_join/' );
             };
-            $scope.url_change_status = {{ raw_url_for('portal.portals_partners_change_status')|safe }};
+            $scope.url_change_status = {{ raw_url_for('portal.portals_memberee_change_status')|safe }};
             $scope.url_join = {{ raw_url_for('company.join_to_portal')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.selectedPortal_name = '';

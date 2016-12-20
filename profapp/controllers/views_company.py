@@ -367,7 +367,7 @@ def portal_memberees_load(json, company_id):
     memberships, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
 
     return {'page': current_page,
-            'grid_data': [membership.membership_grid_row() for membership in memberships],
+            'grid_data': [membership.portal_memberee_grid_row() for membership in memberships],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'status': [{'value': status, 'label': status} for status in
                                                    MembershipRights.STATUSES]}.items()},

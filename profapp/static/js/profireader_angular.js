@@ -1445,7 +1445,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             return pr_dictionary(args.shift(), args, '', this, $ok);
         },
         moment: function (value, out_format) {
-            return moment.utc(value).local().format(out_format ? out_format : 'dddd, LL (HH:mm)', value)
+            return value?moment.utc(value).local().format(out_format ? out_format : 'dddd, LL (HH:mm)', value):''
         },
         MAIN_DOMAIN: MAIN_DOMAIN,
         static_address: function (relative_file_name) {
