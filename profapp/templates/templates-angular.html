@@ -350,9 +350,10 @@
 
                 <tr>
                     <th class="border-none"></th>
-                    <th ng-if="request_set_t_f" class="border-none" colspan="6"><h5>{{ ::_('requested plan') }}
-                        <span ng-if="request_set_t_f && !data.membership.requested_membership_plan_issued.confirmed">{{ ::_('awaiting for confirmation') }}</span>
-                        <span ng-if="request_set_t_f && data.membership.requested_membership_plan_issued.confirmed">{{ ::_('awaiting for current plan expiration') }}</span>
+                    <th ng-if="request_set_t_f" class="border-none" colspan="6"><h5
+                            ng-if="request_set_t_f && !data.membership.requested_membership_plan_issued.confirmed"
+                    >{{ ::_('requested plan awaiting for confirmation') }}</h5>
+                        <h5 ng-if="request_set_t_f && data.membership.requested_membership_plan_issued.confirmed">{{ ::_('requested plan awaiting for current plan expiration') }}</h5>
                     </h5>
                     </th>
                     <th ng-if="!request_set_t_f" class="border-none" colspan="6"><h5>{{ _('requested plan at
@@ -429,7 +430,7 @@
             <button class="btn btn-primary" type="button"
                     popover-placement="left"
                     popover-append-to-body="true"
-                    pr-validation-answer="data_validation:request_membership_plan_issued_immediately"
+                    pr-validation-answer="data_validation:general"
                     ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">
                 {{ ::_(request_set_t_f?'Request plan':'Set plan') }}
             </button>
