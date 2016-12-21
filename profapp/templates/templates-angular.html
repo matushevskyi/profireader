@@ -293,6 +293,148 @@
         <button ng-repeat="b in buttons" class="btn {{b.class_name}}" ng-click="ans(b.answer)">{{ b.text }}</button>
     </div>
 </script>
+
+<script type="text/ng-template" id="request_set_membership_plan.html">
+    <div class="SelectMembershipPlanController_class"
+         af ng-model="data" af-after-save="afterSave"
+         af-url="{{ request_set_t_f?url_request_membership_plan():url_set_membership_plan() }}">
+        <div class="modal-header">
+            <h3 class="modal-title">{{ ::_(request_set_t_f?'please select desired plan':'please set plan') }}</h3>
+            <h4>{{ __('for company `%(data.membership.company.name)s` in portal `%(data.membership.portal.name)s`')
+                }}</h4>
+        </div>
+
+        <div class="modal-body">
+
+            <table>
+                <tr>
+                    <td rowspan="2" class="border-none"></td>
+                    <th rowspan="2">{{ ::_('Plan name') }}</th>
+                    <th rowspan="2">{{ ::_('Plan price') }}</th>
+                    <th rowspan="2">{{ ::_('Plan duration') }}</th>
+                    <th colspan="3" class="nowrap">{{ ::_('Publication count') }}</th>
+                </tr>
+                <tr>
+                    <th class="publication-bg-VISIBILITY-OPEN">{{ ::_('open') }}</th>
+                    <th class="publication-bg-VISIBILITY-REGISTERED">{{ ::_('registered') }}</th>
+                    <th class="publication-bg-VISIBILITY-PAYED">{{ ::_('payed') }}</th>
+                </tr>
+
+                <tr>
+                    <th class="border-none"></th>
+                    <th class="border-none" colspan="6"><h5>{{ _('current plan valid until ' +
+                        (data.membership.current_membership_plan_issued.calculated_stopping_tm?'%(date)s':'last of
+                        days'),
+                        {date: moment(data.membership.current_membership_plan_issued.calculated_stopping_tm)})
+                        }}</h5></th>
+                </tr>
+
+                <tr ng-class="{'link': request_set_t_f}"
+                    ng-click="request_set_t_f?(data.selected_by_user_plan_id = false):false">
+                    <td class="tac border-none"><input ng-value="false" type="radio"
+                                                       ng-if="request_set_t_f" type="radio"
+                                                       ng-model="data.selected_by_user_plan_id"/></td>
+                    <td>{{ data.membership.current_membership_plan_issued.name }}</td>
+                    <td ng-bind-html="price(data.membership.current_membership_plan_issued)|html"></td>
+                    <td ng-bind-html="duration(data.membership.current_membership_plan_issued)|html"></td>
+                    <td class="w1em publication-bg-VISIBILITY-OPEN"
+                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'open')|html"></td>
+                    <td class="w1em publication-bg-VISIBILITY-REGISTERED"
+                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'registered')|html"></td>
+                    <td class="w1em publication-bg-VISIBILITY-PAYED"
+                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'payed')|html"></td>
+                </tr>
+
+
+                <tbody ng-if="data.membership.requested_membership_plan_issued">
+
+                <tr>
+                    <th class="border-none"></th>
+                    <th ng-if="request_set_t_f" class="border-none" colspan="6"><h5>{{ ::_('requested plan') }}
+                        <span ng-if="request_set_t_f && !data.membership.requested_membership_plan_issued.confirmed">{{ ::_('awaiting for confirmation') }}</span>
+                        <span ng-if="request_set_t_f && data.membership.requested_membership_plan_issued.confirmed">{{ ::_('awaiting for current plan expiration') }}</span>
+                    </h5>
+                    </th>
+                    <th ng-if="!request_set_t_f" class="border-none" colspan="6"><h5>{{ _('requested plan at
+                        %(request_date)s by
+                        %(request_user_name)s', {
+                        'request_date': moment(data.membership.requested_membership_plan_issued.cr_tm),
+                        'request_user_name':
+                        data.membership.requested_membership_plan_issued.requested_by_user.full_name}) }}</h5></th>
+                </tr>
+
+                <tr class="link" ng-click="data.selected_by_user_plan_id = true">
+                    <td class="tac border-none"><input ng-value="true" type="radio" class="border-none"
+                                                       ng-model="data.selected_by_user_plan_id"/></td>
+                    <td>{{ data.membership.requested_membership_plan_issued.name }}</td>
+                    <td ng-bind-html="price(data.membership.requested_membership_plan_issued)|html"></td>
+                    <td ng-bind-html="duration(data.membership.requested_membership_plan_issued)|html"></td>
+                    <td class="w1em publication-bg-VISIBILITY-OPEN"
+                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'open')|html"></td>
+                    <td class="w1em publication-bg-VISIBILITY-REGISTERED"
+                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'registered')|html"></td>
+                    <td class="w1em publication-bg-VISIBILITY-PAYED"
+                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'payed')|html"></td>
+                </tr>
+
+                </tbody>
+
+                <tr>
+                    <th class="border-none"></th>
+                    <th class="border-none" colspan="6"><h5>{{ ::_(request_set_t_f?'please select desired membership
+                        plan':'you can also select other available plan') }}</h5>
+                </tr>
+
+                <tr class="link" ng-click="data.selected_by_user_plan_id = plan.id"
+                    ng-repeat="plan in data.select.plans">
+                    <td class="tac border-none">
+                        <div><input
+                                ng-value="plan.id" type="radio" ng-model="data.selected_by_user_plan_id"/></div>
+                    </td>
+                    <td>{{ plan.name }}</td>
+                    <td ng-bind-html="price(plan)|html"></td>
+                    <td ng-bind-html="duration(plan)|html"></td>
+                    <td class="w1em publication-bg-VISIBILITY-OPEN"
+                        ng-bind-html="publication_count(plan, 'open', true)|html"></td>
+                    <td class="w1em publication-bg-VISIBILITY-REGISTERED"
+                        ng-bind-html="publication_count(plan, 'registered', true)|html"></td>
+                    <td class="w1em publication-bg-VISIBILITY-PAYED"
+                        ng-bind-html="publication_count(plan, 'payed', true)|html"></td>
+                </tr>
+
+                <tr>
+                    <td class="border-none tar" colspan="7">
+                        <label class="p025em"
+                               ng-class="{'disabled': immediately_cant_be_selected(true)}"><input
+                                ng-disabled="immediately_cant_be_selected(true)" ng-value="true" type="radio"
+                                ng-model="data.membership.request_membership_plan_issued_immediately"/>&nbsp;{{
+                            _(request_set_t_f?'request immediately':'set immediately') }}</label>
+                        &nbsp;&nbsp;&nbsp;
+                        <label class="p025em"
+                               ng-class="{'disabled': immediately_cant_be_selected(false)}"><input
+                                ng-disabled="immediately_cant_be_selected(false)" ng-value="false" type="radio"
+                                ng-model="data.membership.request_membership_plan_issued_immediately"/>&nbsp;{{
+                            _(request_set_t_f?'request after the current plan will be finished':'set after the current
+                            plan will be finished') }}</label>
+
+                    </td>
+                </tr>
+
+            </table>
+
+
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" type="button"
+                    popover-placement="left"
+                    popover-append-to-body="true"
+                    pr-validation-answer="data_validation:request_membership_plan_issued_immediately"
+                    ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">
+                {{ ::_(request_set_t_f?'Request plan':'Set plan') }}
+            </button>
+            <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>
+        </div>
+    </div>
+</script>
 {% endraw %}
-
-

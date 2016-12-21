@@ -222,19 +222,38 @@ def request_membership_plan(json, membership_id):
         return membership.get_client_side_dict_for_plan()
     else:
         if action == 'validate':
-            return PRBase.DEFAULT_VALIDATION_ANSWER()
+            ret = PRBase.DEFAULT_VALIDATION_ANSWER()
+            immediately = True if json['membership']['request_membership_plan_issued_immediately'] else False
+            requested_plan_id = json.get('selected_by_user_plan_id', None)
+            # if we can apply it immediately and it have to be appli
+            if immediately and \
+                    (requested_plan_id is True and not membership.requested_membership_plan_issued.auto_apply) \
+                    or (requested_plan_id is not False and requested_plan_id is not True and
+                            not MembershipPlan.get(
+                                requested_plan_id).auto_apply and requested_plan_id != membership.portal.default_membership_plan_id):
+                ret['warnings']['request_membership_plan_issued_immediately'] = \
+                    'plan must be confirmed by company owner before activation'
+            return ret
         else:
             requested_plan_id = json.get('selected_by_user_plan_id', None)
             immediately = True if json['membership']['request_membership_plan_issued_immediately'] else False
 
-            if requested_plan_id == False:
+            if requested_plan_id is False:
                 # user don't want any new plan
                 membership.requested_membership_plan_issued = None
                 membership.request_membership_plan_issued_immediately = False
-            elif requested_plan_id != True:
+            elif requested_plan_id is True:
+                if membership.requested_membership_plan_issued.auto_apply and immediately:
+                    membership.current_membership_plan_issued.stop()
+                    membership.current_membership_plan_issued = membership.requested_membership_plan_issued
+                    membership.current_membership_plan_issued.start()
+                    membership.requested_membership_plan_issued = None
+                    membership.request_membership_plan_issued_immediately = False
+            else:
                 membership_plan = MembershipPlan.get(requested_plan_id)
                 issued_plan = membership.create_issued_plan(membership_plan, user=g.user)
-                if membership_plan.auto_apply and immediately:
+                if immediately and \
+                        (membership.portal.default_membership_plan_id == requested_plan_id or membership_plan.auto_apply):
                     membership.current_membership_plan_issued.stop()
                     membership.current_membership_plan_issued = issued_plan
                     membership.current_membership_plan_issued.start()

@@ -496,10 +496,13 @@ class MembershipPlanIssued(Base, PRBase):
     membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'))
     membership_plan = relationship(MembershipPlan)
 
+    auto_apply = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
+    confirmed = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
+
     auto_renew = Column(TABLE_TYPES['boolean'], default=True, nullable=False)
 
     def get_client_side_dict(self,
-                             fields='id,name,cr_tm,started_tm,calculated_stopping_tm,stopped_tm,'
+                             fields='id,name,cr_tm,started_tm,calculated_stopping_tm,stopped_tm,confirmed,'
                                     'currency_id,price,publication_count_open,publication_count_registered,publication_count_payed,duration',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
@@ -519,12 +522,14 @@ class MembershipPlanIssued(Base, PRBase):
                 if new_month > 12:
                     add_year += new_month // 12
                     new_month -= (new_month // 12) * 12
-                self.calculated_stopping_tm = self.started_tm.replace(year=self.started_tm.year + add_year, month=new_month)
+                self.calculated_stopping_tm = self.started_tm.replace(year=self.started_tm.year + add_year,
+                                                                      month=new_month)
             elif duration_unit == 'weeks':
                 self.calculated_stopping_tm = datetime.datetime.fromtimestamp(
                     self.started_tm.timestamp() + duration * 7 * 24 * 3600)
             elif duration_unit == 'days':
-                self.calculated_stopping_tm = datetime.datetime.fromtimestamp(self.started_tm.timestamp() + duration * 24 * 3600)
+                self.calculated_stopping_tm = datetime.datetime.fromtimestamp(
+                    self.started_tm.timestamp() + duration * 24 * 3600)
 
         if user:
             self.started_by_user = user
@@ -585,7 +590,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def portal_memberee_grid_row(self):
         from ..models.rights import MembershipRights
         return utils.dict_merge(self.get_client_side_dict(
-            fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,requested_membership_plan_issued,request_membership_plan_issued_immediately'),
+            fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,'
+                   'requested_membership_plan_issued,request_membership_plan_issued_immediately'),
             {'actions': MembershipRights(company=self.company_id, member_company=self).actions()},
             {'who': MembershipRights.MEMBERSHIP})
 
@@ -599,9 +605,10 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             {'id': self.id})
 
     def get_client_side_dict_for_plan(self):
-        return {
+        ret = {
             'membership': self.get_client_side_dict(
                 fields='id,current_membership_plan_issued,requested_membership_plan_issued,'
+                       'requested_membership_plan_issued.requested_by_user,'
                        'request_membership_plan_issued_immediately,'
                        'company.name,company.logo.url,portal.name, portal.logo.url, portal.default_membership_plan_id'),
             'select': {
@@ -610,6 +617,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             },
             'selected_by_user_plan_id': True if self.requested_membership_plan_issued else False
         }
+        if int(float(ret['membership']['current_membership_plan_issued']['duration'].split(' ')[0])) < 0:
+            ret['membership']['request_membership_plan_issued_immediately'] = True
+        return ret
 
     def seo_dict(self):
         return {
@@ -715,14 +725,17 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def create_issued_plan(self, membership_plan: MembershipPlan = None, user=None):
         from ..constants.RECORD_IDS import SYSTEM_USERS
         plan = membership_plan if membership_plan else self.portal.default_membership_plan
+        plan_is_default = self.portal.default_membership_plan_id == plan.id
         ret = MembershipPlanIssued(
             requested_by_user_id=user.id if user else SYSTEM_USERS.profireader(),
             portal_id=self.portal.id,
+            auto_apply=plan.auto_apply or plan_is_default,
+            confirmed=plan.auto_apply or plan_is_default,
             company_id=self.company.id,
             name=plan.name,
-            price=plan.price if plan.id != self.portal.default_membership_plan_id else '-1',
+            price=-1 if plan_is_default else plan.price,
             currency_id=plan.currency_id,
-            duration=plan.duration if plan.id != self.portal.default_membership_plan_id else '-1 years',
+            duration='-1 years' if plan_is_default else plan.duration,
             publication_count_open=plan.publication_count_open,
             publication_count_registered=plan.publication_count_registered,
             publication_count_payed=plan.publication_count_payed)

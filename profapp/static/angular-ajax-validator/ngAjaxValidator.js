@@ -406,6 +406,10 @@
                     element.attr('popover-placement', 'right');
                 }
 
+                if (element.attr('popover-append-to-body') === undefined) {
+                    element.attr('popover-append-to-body', 'false');
+                }
+
                 var getAfElement = function (e) {
                     return e && e.length ? (typeof e.attr('af') === 'string' ? e : getAfElement(e.parent())) : null;
                 }

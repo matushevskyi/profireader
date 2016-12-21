@@ -13,15 +13,9 @@
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
 
-    {% raw %}
-
-
-    {% endraw %}
-
     <script>
 
-
-        module.controller('portals_partners', function ($scope, $ok, $sce, $membership_plan, $membership_tags, $uibModal) {
+        module.controller('portals_partners', function ($scope, $ok, $sce, $membership_plan, $membership_tags) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portal_memberees');
             $scope.$$translate = {{ translates('portals_partners')|safe }};
             $scope.url_portal_memberees = '{{ url_for('company.portal_memberees', company_id=company.id)}}';
@@ -105,10 +99,10 @@
                 if (row['status'] !== 'ACTIVE') {
                     return false;
                 }
-                var modalInstance = $membership_plan({
-                    membership_id: row['id']
-                });
-                modalInstance.result.then(function (resp) {
+                $membership_plan({
+                    membership_id: row['id'],
+                    request_or_set: 'request'
+                }).result.then(function (resp) {
                     $scope.gridApi.grid.grid_change_row(resp);
                 });
             };
