@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ g.lang }}" xmlns="http://www.w3.org/1999/html">
+<html lang="{{ g.lang }}">
 <head>
     {% block head %}
         {{ portal.advs['head_begin']|safe }}
@@ -54,11 +54,12 @@
 {{ portal.advs['body_begin']|safe }}
 {% include 'header.html' %}
 {% block body %}{% endblock %}
+
 {% include 'footer.html' %}
 <script src="{{ static_address('front/' + portal.layout.name + '/js/bootstrap.min.js') }}"></script>
 <script src="{{ static_address('front/' + portal.layout.name + '/js/jasny-bootstrap.min.js') }}"></script>
 <script src="{{ static_address('front/' + portal.layout.name + '/js/jquery.fittext.js') }}"></script>
 <script src="{{ static_address('front/' + portal.layout.name + '/js/custom.js') }}"></script>
-{{ portal.advs['body_end']|safe }}
+
 </body>
 </html>

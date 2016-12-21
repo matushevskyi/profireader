@@ -1,7 +1,5 @@
 {% extends 'layout_company_page.html' %}
 {% block company_content %}
-
-
     {% block head %}
         {{ super() }}
         <script src="https://maps.googleapis.com/maps/api/js?key={{ secret_data.GOOGLE_MAP_KEY }}"></script>
@@ -31,32 +29,26 @@
             google.maps.event.addDomListener(window, 'load', initialize);
         </script>
     {% endblock %}
-
-
     <div id="contacts" class="tab-pane">
         <!--Company contacts-->
-        <div class="row">
+        <section class="company-contacts col-md-12">
             <p class="contacts-header">{{ _('Contact persons') }}</p>
+        <hr>
             {% for employment in member_company.employments if employment['status'] == 'ACTIVE' %}
                 <div class="contact col-md-4">
-                    <a class="contact-userpic" href="#"><img class="img-circle"
-                                                             src="{{ employment.user['avatar']['url'] }}"></a>
+                    <a class="contact-userpic" href="#"><img class="img-circle" src="{{ employment.user['avatar']['url'] }}"></a>
                     <a href="#"><h6 class="contact-name">{{ employment.user['full_name'] }}</h6></a>
                     {% if employment['position'] %}{{ employment['position'] }}{% endif %}
-                    <a class="message"
-                       onclick="openMessageDialog('{{ employment.user['id'] }}', '{{ employment.user['full_name'] }}')"
-                       data-user-id="{{ employment.user['id'] }}" href="#"><i class="fa fa-envelope" aria-hidden="true"
-                                                                              style="margin-right: 5px"></i>{{ _('send message') }}
+                    <a class="message" onclick="openMessageDialog('{{ employment.user['id'] }}', '{{ employment.user['full_name'] }}')" data-user-id="{{ employment.user['id'] }}" href="#">
+                        <i class="fa fa-envelope" aria-hidden="true" style="margin-right: 5px"></i>{{ _('send message') }}
                     </a>
                 </div>
             {% endfor %}
-
-        </div>
-        <hr class="article-thumbnail-divider">
+        </section>
         <!--Company adress-->
-        <div class="row">
-            <p class="contacts-header">Наша адреса</p>
-
+        <section class="company-adress col-md-12">
+            <p class="contacts-header">{{ _('Adress') }}</p>
+            <hr>
             <div class="col-md-6 address">
                 <p><i class="fa fa-map-marker" aria-hidden="true" style="margin-right: 5px"></i>{{ [member_company['country'], member_company['region'], member_company['city']]|join(', ') }}</p>
                 {% if member_company['address'] %}<p><i class="fa fa-inbox" aria-hidden="true" style="margin-right: 5px"></i>{{ member_company['address'] }}</p>{% endif %}
@@ -69,12 +61,8 @@
             <div class="col-md-6">
                 <div id="map"></div>
             </div>
-        </div>
-        <hr class="article-thumbnail-divider">
+        </section>
     </div>
-
-
-
     <div class="modal fade" id="messageModal" role="dialog" data-keyboard="false">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -93,8 +81,6 @@
             </div>
         </div>
     </div>
-
-
     <script>
 
         function openMessageDialog(user_id, user_name) {
@@ -131,7 +117,4 @@
 
 
     </script>
-
-
-
 {% endblock %}

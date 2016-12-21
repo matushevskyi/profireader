@@ -11,7 +11,7 @@
         <div class="row">
             <div class="col-xs-12 col-lg-10">
                 <main class="clearfix" role="main">
-                    <article>
+                    <article class="article-full">
                         <!--Main article image-->
                         <figure class="article-main-img">
                             <img class="img-responsive" src="{{ article['illustration']['url'] }}" alt="">
@@ -99,7 +99,6 @@
                                 {% endif %}
                             </p>
                         </section>
-                        <hr>
                     </article>
                 </main>
                 <!--Pager-->
@@ -118,6 +117,5 @@
             </aside>
         </div>
     </div>
-
     {% include 'article_social_script.html' %}
 {% endblock %}

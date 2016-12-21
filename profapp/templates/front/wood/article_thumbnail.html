@@ -1,7 +1,7 @@
 <section class="row article-thumbnail">
     <article>
         <!--Article image thumbnail-->
-        <div class="col-xs-12 col-md-4">
+        <div class="col-xs-12 col-md-4 img">
             <div class="pull-left article-thumbnail-img">
                 <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">
                     {% if article['illustration']['selected_by_user']['type'] != 'none' %}
@@ -10,7 +10,7 @@
                 </a>
             </div>
         </div>
-        <div class="col-xs-12 col-md-8">
+        <div class="col-xs-12 col-md-8 text">
             <!--Article division link-->
             {% if show_division_name %}<a href="{{ url_for('front.division', division_name=article['portal_division']['name']) }}"><h3
                     class="div-link">{{ article['portal_division']['name']|safe }}</h3></a>{% endif %}
