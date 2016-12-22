@@ -33,7 +33,7 @@
         <!--Company contacts-->
         <section class="company-contacts col-md-12">
             <p class="contacts-header">{{ _('Contact persons') }}</p>
-        <hr>
+        <hr class="contacts-divider">
             {% for employment in member_company.employments if employment['status'] == 'ACTIVE' %}
                 <div class="contact col-md-4">
                     <a class="contact-userpic" href="#"><img class="img-circle" src="{{ employment.user['avatar']['url'] }}"></a>
@@ -46,9 +46,9 @@
             {% endfor %}
         </section>
         <!--Company adress-->
-        <section class="company-adress col-md-12">
+        <section class="company-address col-md-12">
             <p class="contacts-header">{{ _('Adress') }}</p>
-            <hr>
+            <hr class="contacts-divider">
             <div class="col-md-6 address">
                 <p><i class="fa fa-map-marker" aria-hidden="true" style="margin-right: 5px"></i>{{ [member_company['country'], member_company['region'], member_company['city']]|join(', ') }}</p>
                 {% if member_company['address'] %}<p><i class="fa fa-inbox" aria-hidden="true" style="margin-right: 5px"></i>{{ member_company['address'] }}</p>{% endif %}
