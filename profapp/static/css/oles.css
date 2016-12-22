@@ -353,6 +353,11 @@
     color: dodgerblue;
 }
 
+.pr-grid-cell-field-type-icons-icon-COMPANY_MANAGE_PARTICIPATION:before {
+    content: "\f196";
+    color: #790B79;
+}
+
 .pr-grid-cell-field-type-icons-icon-COMPANY_REQUIRE_MEMBEREE_AT_PORTALS:before {
     content: "\f196";
     color: #790B79;

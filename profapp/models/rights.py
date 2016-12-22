@@ -367,6 +367,14 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
                                                           actions=BaseRightsEmployeeInCompany.ACTIONS,
                                                           actions_for_statuses=BaseRightsEmployeeInCompany.ACTIONS_FOR_EMPLOYEE_IN_COMPANY)
 
+    def get_user_with_rights(self, *args):
+        usrc = g.db.query(UserCompany).filter(
+            text("(company_id = '%s') AND (0 <> (rights & %s))" % (
+                self.company.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in args})))).all()
+
+        return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
+
+
 
 class FilemanagerRights(BaseRightsEmployeeInCompany):
     def __init__(self, company=None):

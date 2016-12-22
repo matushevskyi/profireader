@@ -1,7 +1,7 @@
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
-from flask import g
+from flask import g, url_for
 from tools import db_utils
 from .pr_base import PRBase, Base
 import re
@@ -708,7 +708,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     @staticmethod
     def apply_company_to_portal(company_id, portal_id):
-        from ..models.company import Company
+        from ..models.company import Company, UserCompany
+        from ..models.messenger import Notification, Socket
+        from ..models.rights import BaseRightsEmployeeInCompany
 
         """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
         membership = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
@@ -721,6 +723,22 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
         membership.current_membership_plan_issued = membership.create_issued_plan()
         membership.save()
+
+        Socket.prepare_notifications(BaseRightsEmployeeInCompany(membership.portal.own_company).get_user_with_rights(
+            UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION),
+            Notification.NOTIFICATION_TYPES['COMPANY_MEMBER_ACTIVITY'],
+            "Company %s %s of membership at portal %s" %
+            (Notification.internal_link('url_company_profile', 'company.name'),
+             Notification.internal_link('url_portal_companies_members', 'aspire', True),
+             Notification.external_link()),
+            {
+                'portal': membership.portal,
+                'company': membership.company,
+                'url_company_profile': url_for('company.profile', company_id=membership.company_id),
+                'url_portal_companies_members': utils.jinja_utils.grid_url(membership.id, 'portal.companies_members',
+                                                                     company_id=membership.portal.company_owner_id)
+            },
+            except_to_user=[g.user])()
 
     def create_issued_plan(self, membership_plan: MembershipPlan = None, user=None):
         from ..constants.RECORD_IDS import SYSTEM_USERS
@@ -891,8 +909,9 @@ class PortalDivision(Base, PRBase):
                 'publication': p,
                 'material': p.material
             })
-            phrase = "Because of " + because_of + " user <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just complitelly deleted a " \
-                                                  "material named `%(material.title)s` from portal <a class=\"external_link\" target=\"blank_\" href=\"//%(portal.host)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
+            phrase = "Because of %s user %s just complitelly deleted a material named `%%(material.title)s` from portal %s" % \
+                     (because_of, Notification.internal_link('url_profile_from_user', 'from_user.full_name'),
+                      Notification.external_link())
 
             to_users = PublishUnpublishInPortal(p, self, self.portal.own_company).get_user_with_rights(
                 PublishUnpublishInPortal.publish_rights)

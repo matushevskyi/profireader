@@ -379,8 +379,7 @@ def portal_memberees_load(json, company_id):
 def join_to_portal(json, company_id):
     from ..models.rights import PublishUnpublishInPortal
 
-    MemberCompanyPortal.apply_company_to_portal(company_id=company_id,
-                                                portal_id=json['portal_id'])
+    MemberCompanyPortal.apply_company_to_portal(company_id=company_id, portal_id=json['portal_id'])
     return {'portals_partners': [portal.get_client_side_dict(fields='name, company_owner_id,id')
                                  for portal in PublishUnpublishInPortal.get_portals_where_company_is_member(
             Company.get(company_id))], 'company_id': company_id}

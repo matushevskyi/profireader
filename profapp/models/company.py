@@ -205,13 +205,6 @@ class Company(Base, PRBase, PRElasticDocument):
 
         return ret
 
-    def get_user_with_rights(self, *args):
-        usrc = db(UserCompany).filter(
-            text("(company_id = '%s') AND (0 <> (rights & %s))" % (
-                self.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in args})))).all()
-
-        return db(User).filter(User.id.in_([e.user_id for e in usrc])).all()
-
     def get_client_side_dict(self,
                              fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
                                     'short_description,journalist_folder_file_id,logo,about,lat,lon,'
@@ -257,7 +250,8 @@ class Company(Base, PRBase, PRElasticDocument):
 
     @staticmethod
     def subquery_company_partners(company_id, filters, filters_exсept=None):
-        sub_query = db(MemberCompanyPortal, portal_id=db(Portal, company_owner_id=company_id).subquery().c.id).order_by(desc(MemberCompanyPortal.id))
+        sub_query = db(MemberCompanyPortal, portal_id=db(Portal, company_owner_id=company_id).subquery().c.id).order_by(
+            desc(MemberCompanyPortal.id))
         list_filters = [];
         list_sorts = []
         if filters_exсept:
@@ -322,6 +316,7 @@ class UserCompany(Base, PRBase):
 
         COMPANY_REQUIRE_MEMBEREE_AT_PORTALS = 15
         COMPANY_EDIT_PROFILE = 1
+        COMPANY_MANAGE_PARTICIPATION = 2
 
         PORTAL_EDIT_PROFILE = 10
         PORTAL_MANAGE_READERS = 16
@@ -416,6 +411,7 @@ class UserCompany(Base, PRBase):
 @on_value_changed(UserCompany.status)
 def user_company_status_changed(target, new_value, old_value, action):
     company = Company.get(target.company_id)
+    from ..models.rights import BaseRightsEmployeeInCompany
 
     dict_main = {
         'company': company,
@@ -423,21 +419,25 @@ def user_company_status_changed(target, new_value, old_value, action):
     }
 
     to_users = [User.get(target.user_id)]
+    company_links_placeholders = (Notification.internal_link('url_company_profile', 'company.name'),)
 
     if new_value == UserCompany.STATUSES['APPLICANT']:
-        phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> want to join to company <a href=\"%(url_company_employees)s\">%(company.name)s</a>"
+        phrase = "User %s want to join to company %s" \
+                 % (Notification.internal_link('url_profile_from_user', 'from_user.full_name'),
+                    Notification.internal_link('url_company_employees', 'company.name'))
         dict_main['url_company_employees'] = jinja_utils.grid_url(target.id, 'company.employees', company_id=company.id)
-        to_users = company.get_user_with_rights(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
-    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES[
-        'FIRED'] and g.user.id != target.user_id:
-        phrase = "Your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> is accepted"
-    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value == UserCompany.STATUSES[
-        'FIRED'] and g.user.id != target.user_id:
-        phrase = "You are now enlisted to <a href=\"%(url_company_profile)s\">%(company.name)s</a> company"
+        to_users = BaseRightsEmployeeInCompany(company).get_user_with_rights(
+            UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
+    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES['FIRED'] and \
+                    g.user.id != target.user_id:
+        phrase = "Your request to join company company %s is accepted" % company_links_placeholders
+    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value == UserCompany.STATUSES['FIRED'] \
+            and g.user.id != target.user_id:
+        phrase = "You are now enlisted to %s company" % company_links_placeholders
     elif new_value == UserCompany.STATUSES['REJECTED'] and g.user.id != target.user_id:
-        phrase = "Sorry, but your request to join company company <a href=\"%(url_company_profile)s\">%(company.name)s</a> was rejected"
+        phrase = "Sorry, but your request to join company company %s was rejected" % company_links_placeholders
     elif new_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
-        phrase = "Sorry, your was fired from company <a href=\"%(url_company_profile)s\">%(company.name)s</a>"
+        phrase = "Sorry, your was fired from company %s" % company_links_placeholders
     else:
         phrase = None
 

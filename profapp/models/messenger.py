@@ -51,7 +51,8 @@ class Socket:
     @staticmethod
     def prepare_notifications(to_users, notification_type, phrase, dict_main={}, except_to_user=[]):
         from_user_dict = {'from_user': g.user.get_client_side_dict(fields='full_name'),
-                          'url_profile_from_user': url_for('user.profile', user_id=g.user.id)} if getattr(g,'user',None) else {}
+                          'url_profile_from_user': url_for('user.profile', user_id=g.user.id)} if getattr(g, 'user',
+                                                                                                          None) else {}
 
         datas = [{'to_user_id': u.id,
                   'content': TranslateTemplate.translate_and_substitute(
@@ -72,8 +73,10 @@ class Socket:
     def send_greeting(to_users):
         # possible notification - 1
         return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['GREETING'],
-                                            "Welcome to profireader. You can change <a href=\"%(url_profile_to_user)s\">your profile </a> or get a look at <a href=\"%(url_tutorial)s\">tutorial</a>", dict_main = {'url_tutorial': url_for('tutorial.index')})()
-
+                                            "Welcome to profireader. You can change %s or get a look at %s" % \
+                                            (Notification.internal_link('url_profile_to_user', 'your profile', True),
+                                             Notification.internal_link('url_tutorial', 'tutorial', True)),
+                                            dict_main={'url_tutorial': url_for('tutorial.index')})()
 
 
 class Contact(Base, PRBase):
@@ -179,10 +182,14 @@ def contact_status_changed_2(target, new_value, old_value, action):
     new_status = target.get_status_for_user(to_user.id, new_value) if new_value else None
     old_status = target.get_status_for_user(to_user.id, old_value) if old_value else None
 
+    placeholders = (
+        Notification.internal_link('url_profile_from_user', 'from_user.full_name'),
+    )
+
     if new_status == Contact.STATUSES['ACTIVE_ACTIVE'] and old_status == Contact.STATUSES['REQUESTED_UNCONFIRMED']:
-        phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> accepted your friendship request :)"
+        phrase = "User %s accepted your friendship request :)" % placeholders
     elif new_status == Contact.STATUSES['ANY_REVOKED'] and old_status == Contact.STATUSES['ACTIVE_ACTIVE']:
-        phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> revoked your friendship :("
+        phrase = "User %s revoked your friendship :(" % placeholders
     else:
         phrase = None
 
@@ -231,8 +238,21 @@ class Notification(Base, PRBase):
         'GREETING': 'GREETING', 'CUSTOM': 'CUSTOM',
         'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY',
         'COMPANY_EMPLOYERS_ACTIVITY': 'COMPANY_EMPLOYERS_ACTIVITY',
-        'PUBLICATION_ACTIVITY': 'PUBLICATION_ACTIVITY'
+        'PUBLICATION_ACTIVITY': 'PUBLICATION_ACTIVITY',
+        'COMPANY_MEMBER_ACTIVITY': 'COMPANY_MEMBER_ACTIVITY',
+        'PORTAL_MEMBEREE_ACTIVITY': 'PORTAL_MEMBEREE_ACTIVITY'
     }
+
+    @staticmethod
+    def external_link(href_placeholder='portal.host', text_placeholder='portal.name', url_prefix='//'):
+        return "<a class=\"external_link\" target=\"blank_\" href=\"" + url_prefix + "%(" + href_placeholder + ")s\">%(" + \
+               text_placeholder + ")s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
+
+    @staticmethod
+    def internal_link(href_placeholder, text_placeholder, placeholder_is_text=False):
+        return "<a href=\"%(" + href_placeholder + ")s\">" + text_placeholder + "</a>" \
+            if placeholder_is_text else \
+            "<a href=\"%(" + href_placeholder + ")s\">%(" + text_placeholder + ")s</a>"
 
     @staticmethod
     def get_notifications(count, to_user_id, get_older=False, than_id=None):

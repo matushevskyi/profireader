@@ -318,7 +318,6 @@ def company_page(portal, member_company_id, member_company_name, member_company_
     membership, member_company, dvsn = \
         get_company_member_and_division(portal, member_company_id, member_company_name)
 
-
     return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
                            portal=portal_and_settings(portal),
                            division=dvsn.get_client_side_dict(),
@@ -410,7 +409,6 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
         if 'redirect' in articles_data:
             return articles_data['redirect']
 
-
         return render_template('front/' + g.portal_layout_path + 'division_company.html',
                                portal=portal_and_settings(portal),
                                division=dvsn.get_client_side_dict(),
@@ -487,9 +485,12 @@ def send_message(json, member_company_id):
     import html
 
     if g.user and g.user.id:
-        phrase = 'User <a href="%(url_profile_from_user)s">%(from_user.full_name)s</a> sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
+        phrase = "User %s sent you email as member of company %s" % (
+            Notification.internal_link('url_profile_from_user', 'from_user.full_name'),
+            Notification.internal_link('url_company_profile', 'company.name'))
     else:
-        phrase = 'Anonymous sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
+        phrase = "Anonymous sent you email as member of company %s" % (
+            Notification.internal_link('url_company_profile', 'company.name'),)
 
     Socket.prepare_notifications([send_to], Notification.NOTIFICATION_TYPES['CUSTOM'],
                                  phrase + '<hr/>%(message)s',

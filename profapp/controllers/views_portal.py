@@ -443,7 +443,7 @@ def company_member_change_status(json, company_id, portal_id):
     return membership.company_member_grid_row()
 
 
-@portal_bp.route('/companies_members/<string:company_id>/', methods=['GET'])
+@portal_bp.route('/company/<string:company_id>/members/', methods=['GET'])
 @check_right(UserIsEmployee, ['company_id'])
 def companies_members(company_id):
     return render_template('company/companies_members.html', company=Company.get(company_id),
@@ -451,7 +451,7 @@ def companies_members(company_id):
                                UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES))
 
 
-@portal_bp.route('/companies_members/<string:company_id>/', methods=['OK'])
+@portal_bp.route('/company/<string:company_id>/members/', methods=['OK'])
 @check_right(UserIsEmployee, ['company_id'])
 def companies_members_load(json, company_id):
     subquery = Company.subquery_company_partners(company_id, json.get('filter'),

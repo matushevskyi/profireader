@@ -538,8 +538,8 @@ def publication_status_changed(target, new_value, old_value, action):
         'portal': portal,
         'publication': target,
         'material': material,
-        'url_publication': '//' + portal.host + url_for('front.article_details', publication_id=target.id,
-                                                        publication_title=material.title),
+        'url_publication': portal.host + url_for('front.article_details', publication_id=target.id,
+                                                 publication_title=material.title),
         'url_portal_publications': jinja_utils.grid_url(target.id, 'portal.publications',
                                                         company_id=portal.company_owner_id)
     }
@@ -556,9 +556,10 @@ def publication_status_changed(target, new_value, old_value, action):
         phrase = None
 
     if phrase:
-        rights_phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just <a href=\"%(url_portal_publications)s\">" + \
-                        phrase + \
-                        "</a> a material named `%(material.title)s` at portal <a class=\"external_link\" target=\"blank_\" href=\"%(url_publication)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
+        rights_phrase = "User %s just %s a material named `%%(material.title)s` at portal %s" % \
+                        (Notification.internal_link('url_profile_from_user', 'from_user.full_name'),
+                         Notification.internal_link('url_portal_publications', 'phrase', True),
+                         Notification.external_link('url_publication', 'portal.name'))
         to_users = PublishUnpublishInPortal(target, portal_division, material.company).get_user_with_rights(r)
         if material.editor not in to_users:
             to_users.append(material.editor)
