@@ -24,7 +24,6 @@ from .files import FileImg, FileImgDescriptor
 from .elastic import PRElasticDocument
 from profapp import on_value_changed
 from ..models.messenger import Notification, Socket
-from profapp.utils import jinja_utils
 
 
 class Company(Base, PRBase, PRElasticDocument):
@@ -419,25 +418,24 @@ def user_company_status_changed(target, new_value, old_value, action):
     }
 
     to_users = [User.get(target.user_id)]
-    company_links_placeholders = (Notification.internal_link('url_company_profile', 'company.name'),)
 
     if new_value == UserCompany.STATUSES['APPLICANT']:
         phrase = "User %s want to join to company %s" \
-                 % (Notification.internal_link('url_profile_from_user', 'from_user.full_name'),
-                    Notification.internal_link('url_company_employees', 'company.name'))
-        dict_main['url_company_employees'] = jinja_utils.grid_url(target.id, 'company.employees', company_id=company.id)
+                 % (utils.jinja.link_user_profile(), utils.jinja.link('url_company_employees', 'company.name'))
+
+        dict_main['url_company_employees'] = utils.jinja.grid_url(target.id, 'company.employees', company_id=company.id)
         to_users = BaseRightsEmployeeInCompany(company).get_user_with_rights(
             UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
     elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES['FIRED'] and \
                     g.user.id != target.user_id:
-        phrase = "Your request to join company company %s is accepted" % company_links_placeholders
+        phrase = "Your request to join company company %s is accepted" % (utils.jinja.link_company_profile(),)
     elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value == UserCompany.STATUSES['FIRED'] \
             and g.user.id != target.user_id:
-        phrase = "You are now enlisted to %s company" % company_links_placeholders
+        phrase = "You are now enlisted to %s company" % (utils.jinja.link_company_profile(),)
     elif new_value == UserCompany.STATUSES['REJECTED'] and g.user.id != target.user_id:
-        phrase = "Sorry, but your request to join company company %s was rejected" % company_links_placeholders
+        phrase = "Sorry, but your request to join company company %s was rejected" % (utils.jinja.link_company_profile(),)
     elif new_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
-        phrase = "Sorry, your was fired from company %s" % company_links_placeholders
+        phrase = "Sorry, your was fired from company %s" % (utils.jinja.link_company_profile(),)
     else:
         phrase = None
 

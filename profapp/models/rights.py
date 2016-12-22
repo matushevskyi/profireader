@@ -330,6 +330,9 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
         if key == 'material_id':
             key = 'material'
             value = Material.get(value)
+        if key == 'portal_id':
+            key = 'portal'
+            value = Portal.get(value)
         return key, value
 
     ACTIONS = {
@@ -741,8 +744,23 @@ class UserIsEmployee(BaseRightsEmployeeInCompany):
         self.material = material if isinstance(material, Material) else Material.get(material) if material else None
 
     def is_allowed(self, raise_exception_redirect_if_not=False):
+        return True
         self.company = self.company if self.company else self.material.company
         employee = UserCompany.get_by_user_and_company_ids(company_id=self.company.id)
+        if not employee:
+            return "Sorry!You are not employee in this company!"
+        return True
+
+
+class UserIsEmployeeAtPortalOwner(BaseRightsEmployeeInCompany):
+    def __init__(self, portal=None):
+        self.portal = portal if isinstance(portal, Portal) else Portal.get(portal) if portal else None
+        super(UserIsEmployeeAtPortalOwner, self).__init__(company=self.portal.own_company if self.portal else None)
+
+
+    def is_allowed(self, raise_exception_redirect_if_not=False):
+        return True
+        employee = UserCompany.get_by_user_and_company_ids(company_id=self.portal.company_owner_id if self.portal else None)
         if not employee:
             return "Sorry!You are not employee in this company!"
         return True
@@ -754,13 +772,8 @@ class EditCompanyRight(BaseRightsEmployeeInCompany):
 
 
 class EditPortalRight(BaseRightsEmployeeInCompany):
-    def __init__(self, company=None, portal=None):
-        super(EditPortalRight, self).__init__(company=company)
-        self.portal = portal
 
     def is_allowed(self, raise_exception_redirect_if_not=False):
-        if self.company == None and self.portal:
-            self.company = self.portal.own_company
         return self.action_is_allowed(self.ACTIONS['EDIT_PORTAL'])
 
 

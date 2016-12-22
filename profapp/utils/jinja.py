@@ -14,8 +14,28 @@ from ..models.config import Config as ModelConfig
 import hashlib
 
 
+def link(href_placeholder, text_placeholder, placeholder_is_text=False):
+    return "<a href=\"%(" + href_placeholder + ")s\">" + text_placeholder + "</a>" \
+        if placeholder_is_text else \
+        "<a href=\"%(" + href_placeholder + ")s\">%(" + text_placeholder + ")s</a>"
+
+
+def link_external(href_placeholder='portal.host', text_placeholder='portal.name', url_prefix='//'):
+    return "<a class=\"external_link\" target=\"blank_\" href=\"" + url_prefix + "%(" + href_placeholder + ")s\">%(" + \
+           text_placeholder + ")s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
+
+
+def link_company_profile():
+    return link('url_company_profile', 'company.name')
+
+
+def link_user_profile():
+    return link('url_profile_from_user', 'from_user.full_name')
+
+
 def grid_url(id, endpoint, **kwargs):
     return url_for(endpoint, **kwargs) + '#guuid=' + id
+
 
 def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):
     return TranslateTemplate.translate_and_substitute(context.name, phrase,
@@ -152,9 +172,11 @@ def moment(value, out_format=None):
 def date(value):
     return Markup(value.strftime('%Y-%m-%d'))
 
+
 @jinja2.contextfunction
 def timestamp(value):
     return Markup(value.strftime("%Y-%m-%d %H:%M:%S"))
+
 
 @jinja2.contextfunction
 def nl2br(value):
@@ -164,10 +186,12 @@ def nl2br(value):
     result = Markup(result)
     return result
 
+
 @jinja2.contextfunction
 def nl2space(value):
     # _spaces = re.compile(r'(?:\r\n|\r|\n){2,}')
     return Markup(value.replace('\n', ' '))
+
 
 @jinja2.contextfunction
 def strip_tags(value):

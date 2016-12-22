@@ -23,7 +23,6 @@ from .pr_base import PRBase, Base
 from ..constants.SEARCH import RELEVANCE
 from .. import utils
 from flask import url_for, render_template
-from ..utils import email_utils
 from tools import db_utils
 
 import random
@@ -270,7 +269,7 @@ class User(Base, UserMixin, PRBase):
         self.email_conf_token = random.getrandbits(128)
         self.email_conf_tm = datetime.datetime.now()
 
-        email_utils.send_email(subject='Confirm Your Account',
+        utils.email.send_email(subject='Confirm Your Account',
                                html=render_template('auth/email/resend_confirmation.html', user=self,
                                                     confirmation_url=url_for('auth.email_confirmation',
                                                                              token=self.email_conf_token,
@@ -291,7 +290,7 @@ class User(Base, UserMixin, PRBase):
         self.pass_reset_token = random.getrandbits(128)
         self.pass_reset_conf_tm = datetime.datetime.now()
 
-        email_utils.send_email(subject='Reset password',
+        utils.email.send_email(subject='Reset password',
                                html=render_template('auth/email/reset_password.html', user=self,
                                                     reset_password_url=url_for('auth.reset_password',
                                                                                token=self.pass_reset_token,

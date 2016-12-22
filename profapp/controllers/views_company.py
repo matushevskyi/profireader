@@ -6,7 +6,7 @@ from ..models.translate import TranslateTemplate
 from ..models.messenger import Notification
 from .request_wrapers import check_right
 from ..models.materials import Material, Publication
-from ..models.portal import PortalDivision
+from ..models.portal import PortalDivision, Portal
 from sqlalchemy.sql import expression
 from sqlalchemy import and_, or_
 
@@ -315,40 +315,6 @@ def confirm_subscriber():
 #
 #
 #
-
-
-
-@company_bp.route('/readers/<string:company_id>/', methods=['GET'])
-@company_bp.route('/readers/<string:company_id>/<int:page>/', methods=['GET'])
-@check_right(UserIsEmployee, ['company_id'])
-def readers(company_id, page=1):
-    company = Company.get(company_id)
-    company_readers, pages, page, count = pagination(query=company.readers_query, page=page)
-
-    reader_fields = ('id', 'email', 'nickname', 'first_name', 'last_name')
-    company_readers_list_dict = list(map(lambda x: dict(zip(reader_fields, x)), company_readers))
-
-    return render_template('company/company_readers.html',
-                           company=company,
-                           companyReaders=company_readers_list_dict,
-                           pages=pages,
-                           current_page=page,
-                           page_buttons=Config.PAGINATION_BUTTONS,
-                           search_text=None,
-                           )
-
-
-@company_bp.route('/readers/<string:company_id>/', methods=['OK'])
-@check_right(UserIsEmployee, ['company_id'])
-def readers_load(json, company_id):
-    company = Company.get(company_id)
-    company_readers, pages, page, count = pagination(query=company.get_readers_for_portal(json.get('filter')),
-                                                     **Grid.page_options(json.get('paginationOptions')))
-    return {'grid_data': [reader.get_client_side_dict(
-        'id,address_email,full_name,first_name,last_name') for reader in
-                          company_readers],
-            'total': count
-            }
 
 
 @company_bp.route('/<string:company_id>/portal_memberees/', methods=['GET'])

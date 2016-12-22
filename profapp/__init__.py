@@ -16,7 +16,7 @@ import os.path
 from profapp import utils
 from flask.sessions import SessionInterface
 from beaker.middleware import SessionMiddleware
-from .utils.jinja_utils import update_jinja_engine, get_url_adapter
+from .utils.jinja import update_jinja_engine, get_url_adapter
 import json
 from functools import wraps
 from sqlalchemy import event

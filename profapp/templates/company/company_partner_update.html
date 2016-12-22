@@ -14,12 +14,10 @@
 
             $scope.url_companies_members = {{ raw_url_for('portal.companies_members')|safe }};
             $scope.after_save = function () {
-                window.location.href = $scope.url_companies_members({
-                    'company_id': $scope.data.employeer.id
-                });
+                window.location.href = $scope.url_companies_members({'portal_id': $scope.data.employeer.own_portal.id});
             };
             $scope.after_load = function () {
-               $scope.loading = true
+                $scope.loading = true
             }
 
         });

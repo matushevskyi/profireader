@@ -6,8 +6,6 @@ from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
 from ..models.company import Company
 from ..models.users import User
 from ..models.messenger import Socket, Notification
-from ..utils.session_utils import back_to_url
-from ..utils import email_utils
 from config import Config
 from .request_wrapers import check_right, get_portal
 from ..models.rights import AllowAll
@@ -433,7 +431,7 @@ def article_details(portal, publication_id, publication_title):
     if article_visibility is True:
         publication.add_to_read()
     else:
-        back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
+        utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
 
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.name)
@@ -485,12 +483,11 @@ def send_message(json, member_company_id):
     import html
 
     if g.user and g.user.id:
-        phrase = "User %s sent you email as member of company %s" % (
-            Notification.internal_link('url_profile_from_user', 'from_user.full_name'),
-            Notification.internal_link('url_company_profile', 'company.name'))
+        phrase = "User %s sent you email as member of company %s" % (utils.jinja.link_user_profile(),
+                                                                     utils.jinja.link_company_profile())
     else:
         phrase = "Anonymous sent you email as member of company %s" % (
-            Notification.internal_link('url_company_profile', 'company.name'),)
+            utils.jinja.link_company_profile(),)
 
     Socket.prepare_notifications([send_to], Notification.NOTIFICATION_TYPES['CUSTOM'],
                                  phrase + '<hr/>%(message)s',

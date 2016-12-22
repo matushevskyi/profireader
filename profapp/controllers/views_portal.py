@@ -1,5 +1,5 @@
 from .blueprints_declaration import portal_bp
-from flask import render_template, g, flash
+from flask import render_template, g, flash, redirect, url_for
 from ..models.company import Company
 from flask.ext.login import login_required
 from profapp.controllers.errors import BadDataProvided
@@ -27,9 +27,10 @@ from sqlalchemy import desc
 from .pagination import pagination
 from config import Config
 from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipRights, RequireMembereeAtPortalsRight, \
-    PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive
+    PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive, UserIsEmployeeAtPortalOwner
 
 
+# TODO change to /portal_id/.... Warning we have not portal_id if we want create portal
 @portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
 @check_right(EditPortalRight, ['company_id'])
 def profile(create_or_update, company_id):
@@ -42,6 +43,7 @@ def profile(create_or_update, company_id):
     return render_template('portal/portal_edit.html', company=company, portal_id=portal.id if portal else None)
 
 
+# TODO change to /portal_id/.... Warning we have not portal_id if we want create portal
 @portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['OK'])
 @check_right(EditPortalRight, ['company_id'])
 def profile_load(json, create_or_update, company_id):
@@ -128,11 +130,11 @@ def profile_load(json, create_or_update, company_id):
             portal.logo = jp['logo']
             portal.favicon = jp['favicon']
             for del_div in deleted_divisions:
-                del_div.notice_about_deleted_publications('division deleted')
+                del_div.notify_about_deleted_publications('division deleted')
 
             for div in portal.divisions:
                 if div.id in changed_division_types:
-                    div.notice_about_deleted_publications('division type changed')
+                    div.notify_about_deleted_publications('division type changed')
                     div.publications = []
 
             portal.save()
@@ -141,18 +143,53 @@ def profile_load(json, create_or_update, company_id):
             return client_side()
 
 
-@portal_bp.route('/plans/company/<string:company_id>/', methods=['GET'])
-@check_right(EditPortalRight, ['company_id'])
-def plans(company_id):
-    portal = db(Portal).filter(Portal.company_owner_id == company_id).one()
+@portal_bp.route('/<string:portal_id>/readers/', methods=['GET'])
+@portal_bp.route('/<string:portal_id>/readers/<int:page>/', methods=['GET'])
+# @check_right(UserIsEmployee, ['portal_id'])
+def readers(portal_id, page=1):
+    portal = Portal.get(portal_id)
+    company = portal.own_company
+    company_readers, pages, page, count = pagination(query=company.readers_query, page=page)
+
+    reader_fields = ('id', 'email', 'nickname', 'first_name', 'last_name')
+    company_readers_list_dict = list(map(lambda x: dict(zip(reader_fields, x)), company_readers))
+
+    return render_template('portal/readers.html',
+                           company=company, portal=portal,
+                           companyReaders=company_readers_list_dict,
+                           pages=pages,
+                           current_page=page,
+                           page_buttons=Config.PAGINATION_BUTTONS,
+                           search_text=None,
+                           )
+
+
+@portal_bp.route('/<string:portal_id>/readers/', methods=['OK'])
+@check_right(UserIsEmployee, ['portal_id'])
+def readers_load(json, portal_id):
+    portal = Portal.get(portal_id)
+    company = portal.own_company
+    company_readers, pages, page, count = pagination(query=company.get_readers_for_portal(json.get('filter')),
+                                                     **Grid.page_options(json.get('paginationOptions')))
+    return {'grid_data': [reader.get_client_side_dict(
+        'id,address_email,full_name,first_name,last_name') for reader in
+                          company_readers],
+            'total': count
+            }
+
+
+@portal_bp.route('/<string:portal_id>/plans/', methods=['GET'])
+# @check_right(EditPortalRight, ['portal_id'])
+def plans(portal_id):
+    portal = Portal.get(portal_id)
     return render_template('portal/plans_edit.html', portal=portal, company=portal.own_company)
 
 
-@portal_bp.route('/plans/company/<string:company_id>/', methods=['OK'])
-@check_right(EditPortalRight, ['company_id'])
-def plans_load(json, company_id):
+@portal_bp.route('/<string:portal_id>/plans/', methods=['OK'])
+# @check_right(EditPortalRight, ['portal_id'])
+def plans_load(json, portal_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
-    portal = db(Portal).filter(Portal.company_owner_id == company_id).one()
+    portal = Portal.get(portal_id)
 
     def client_side():
         client_dict = {
@@ -225,8 +262,7 @@ def request_membership_plan(json, membership_id):
         requested_plan_id = json.get('selected_by_user_plan_id', None)
         if action == 'validate':
             ret = PRBase.DEFAULT_VALIDATION_ANSWER()
-
-            # if we can apply it immediately and it have to be appli
+            # if we can apply it immediately and it have to be confirmed by portal company owner
             if (requested_plan_id is True and not membership.requested_membership_plan_issued.auto_apply) \
                     or (requested_plan_id is not False and requested_plan_id is not True and
                             not MembershipPlan.get(requested_plan_id).auto_apply and
@@ -234,39 +270,7 @@ def request_membership_plan(json, membership_id):
                 ret['warnings']['general'] = 'plan must be confirmed by company owner before activation'
             return ret
         else:
-            to_delete = None
-            if requested_plan_id is False:
-                # user don't want any new plan
-                membership.requested_membership_plan_issued = None
-                membership.request_membership_plan_issued_immediately = False
-            elif requested_plan_id is True:
-                if membership.requested_membership_plan_issued.auto_apply and immediately:
-                    membership.current_membership_plan_issued.stop()
-                    membership.current_membership_plan_issued = membership.requested_membership_plan_issued
-                    membership.current_membership_plan_issued.start()
-                    membership.requested_membership_plan_issued = None
-                    membership.request_membership_plan_issued_immediately = False
-                else:
-                    membership.request_membership_plan_issued_immediately = immediately
-            else:
-                membership_plan = MembershipPlan.get(requested_plan_id)
-                issued_plan = membership.create_issued_plan(membership_plan, user=g.user)
-                to_delete = membership.requested_membership_plan_issued
-                if immediately and \
-                        (
-                                        membership.portal.default_membership_plan_id == requested_plan_id or membership_plan.auto_apply):
-                    membership.current_membership_plan_issued.stop()
-                    membership.current_membership_plan_issued = issued_plan
-                    membership.current_membership_plan_issued.start()
-                    membership.requested_membership_plan_issued = None
-                    membership.request_membership_plan_issued_immediately = False
-                else:
-                    membership.requested_membership_plan_issued = issued_plan
-                    membership.request_membership_plan_issued_immediately = immediately
-            membership.save()
-            if to_delete:
-                to_delete.delete()
-            return membership.portal_memberee_grid_row()
+            return membership.requested_new_plan_issued(requested_plan_id, immediately).portal_memberee_grid_row()
 
 
 @portal_bp.route('/set_membership_plan/<string:membership_id>/', methods=['OK'])
@@ -278,53 +282,27 @@ def set_membership_plan(json, membership_id):
     else:
         immediately = True if json['membership']['request_membership_plan_issued_immediately'] else False
         requested_plan_id = json.get('selected_by_user_plan_id', None)
-
         if action == 'validate':
             ret = PRBase.DEFAULT_VALIDATION_ANSWER()
             if not requested_plan_id:
                 ret['errors']['general'] = 'pls select membership plan'
             return ret
         else:
-            to_delete = None
-            if requested_plan_id is True:
-                if immediately:
-                    membership.current_membership_plan_issued.stop()
-                    membership.current_membership_plan_issued = membership.requested_membership_plan_issued
-                    membership.current_membership_plan_issued.start()
-                    membership.requested_membership_plan_issued = None
-                    membership.request_membership_plan_issued_immediately = False
-                else:
-                    membership.requested_membership_plan_issued.confirmed = True
-            else:
-                issued_plan = membership.create_issued_plan(MembershipPlan.get(requested_plan_id), user=g.user)
-                to_delete = membership.requested_membership_plan_issued
-                if immediately:
-                    membership.current_membership_plan_issued.stop()
-                    membership.current_membership_plan_issued = issued_plan
-                    membership.current_membership_plan_issued.start()
-                    membership.requested_membership_plan_issued = None
-                    membership.request_membership_plan_issued_immediately = False
-                else:
-                    membership.requested_membership_plan_issued = issued_plan
-                    membership.requested_membership_plan_issued.confirmed = True
-
-            membership.save()
-            if to_delete:
-                to_delete.delete()
-            return membership.company_member_grid_row()
+            return membership.set_client_side_dict(requested_plan_id, immediately).company_member_grid_row()
 
 
-@portal_bp.route('/portal_banners/<string:company_id>/', methods=['GET'])
-@check_right(UserIsEmployee, 'company_id')
-def portal_banners(company_id):
-    return render_template('company/portal_banners.html',
-                           company=Company.get(company_id))
+@portal_bp.route('/<string:portal_id>/banners/', methods=['GET'])
+# @check_right(UserIsEmployee, 'portal_id')
+def banners(portal_id):
+    portal = Portal.get(portal_id)
+    return render_template('portal/banners.html', portal=portal, company=portal.own_company)
 
 
-@portal_bp.route('/portal_banners/<string:company_id>/', methods=['OK'])
-@check_right(UserIsEmployee, 'company_id')
-def portal_banners_load(json, company_id):
-    portal = Company.get(company_id).own_portal
+@portal_bp.route('/<string:portal_id>/banners/', methods=['OK'])
+# @check_right(UserIsEmployee, 'portal_id')
+def banners_load(json, portal_id):
+    portal = Portal.get(portal_id)
+    company = portal.own_company
     if 'action_name' in json:
         if json['action_name'] == 'create':
             place = db(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id,
@@ -350,29 +328,33 @@ def portal_banners_load(json, company_id):
                 'total': len(banners)}
 
 
-@portal_bp.route('/save_portal_banner/<string:company_id>/', methods=['OK'])
-@check_right(UserIsEmployee, 'company_id')
-def save_portal_banner(json, company_id):
+@portal_bp.route('/<string:portal_id>/save_banners/', methods=['OK'])
+# @check_right(UserIsEmployee, 'portal_id')
+def save_portal_banner(json, portal_id):
     advertisment = PortalAdvertisment.get(json.get('editBanners')['id'])
     advertisment.html = json.get('editBanners')['html']
     advertisment.save()
     return advertisment.get_client_side_dict()
 
 
-@portal_bp.route('/portals_memberee_change_status/<string:company_id>/<string:portal_id>', methods=['OK'])
+@portal_bp.route('/company/<string:company_id>/portal/<string:portal_id>/memberee_change_status/', methods=['OK'])
 @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def portals_memberee_change_status(json, company_id, portal_id):
-    partner = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
+    membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
     employee = UserCompany.get_by_user_and_company_ids(company_id=company_id)
-    if MembershipRights(company=json.get('partner_id'), member_company=partner).action_is_allowed(json.get('action'),
-                                                                                                  employee) == True:
-        partner.set_client_side_dict(
-            status=MembershipRights.STATUS_FOR_ACTION[json.get('action')])
-        partner.save()
-    return partner.portal_memberee_grid_row()
+
+    if MembershipRights(company=json.get('partner_id'), member_company=membership).action_is_allowed(json.get('action'),
+                                                                                                     employee) == True:
+        membership.set_client_side_dict(status=MembershipRights.STATUS_FOR_ACTION[json.get('action')])
+        membership.save().notify_portal_company_member(
+            "Company %s changed status of membership to %s at portal %s" %
+            (utils.jinja.link_company_profile(),
+             utils.jinja.link('url_portal_companies_members', membership.status, True),
+             utils.jinja.link_external()))
+    return membership.portal_memberee_grid_row()
 
 
-@portal_bp.route('/membership_set_tags/<string:company_id>/<string:portal_id>/', methods=['OK'])
+@portal_bp.route('/company/<string:company_id>/portal/<string:portal_id>/memberee_change_status/', methods=['OK'])
 # @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def membership_set_tags(json, company_id, portal_id):
     membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=company_id)
@@ -422,7 +404,7 @@ def company_update_load(json, company_id, member_id):
     return member.get_client_side_dict()
 
 
-@portal_bp.route('/company_member_change_status/<string:company_id>/<string:portal_id>', methods=['OK'])
+@portal_bp.route('/company/<string:company_id>/portal/<string:portal_id>/member_change_status/', methods=['OK'])
 @check_right(PortalManageMembersCompaniesRight, ['company_id'])
 def company_member_change_status(json, company_id, portal_id):
     membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
@@ -438,23 +420,31 @@ def company_member_change_status(json, company_id, portal_id):
                 not membership.current_membership_plan_issued.started_tm:
             membership.current_membership_plan_issued.start()
 
-        membership.save()
+        membership.save().notify_company_portal_memberee(
+            "Administrator of portal %s changed status of your company %s membership to %s" %
+            (utils.jinja.link_external(), utils.jinja.link_company_profile(),
+             utils.jinja.link('url_company_portal_memberees', membership.status, True),))
 
     return membership.company_member_grid_row()
 
 
-@portal_bp.route('/company/<string:company_id>/members/', methods=['GET'])
-@check_right(UserIsEmployee, ['company_id'])
-def companies_members(company_id):
-    return render_template('company/companies_members.html', company=Company.get(company_id),
-                           rights_user_in=UserCompany.get_by_user_and_company_ids(company_id=company_id).has_rights(
+@portal_bp.route('/<string:portal_id>/companies_members/', methods=['GET'])
+@check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
+def companies_members(portal_id):
+    portal = Portal.get(portal_id)
+    return render_template('company/companies_members.html',
+                           portal=portal,
+                           company=portal.own_company,
+                           rights_user_in=UserCompany.get_by_user_and_company_ids(
+                               company_id=portal.company_owner_id).has_rights(
                                UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES))
 
 
-@portal_bp.route('/company/<string:company_id>/members/', methods=['OK'])
-@check_right(UserIsEmployee, ['company_id'])
-def companies_members_load(json, company_id):
-    subquery = Company.subquery_company_partners(company_id, json.get('filter'),
+@portal_bp.route('/<string:portal_id>/companies_members/', methods=['OK'])
+@check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
+def companies_members_load(json, portal_id):
+    portal = Portal.get(portal_id)
+    subquery = Company.subquery_company_partners(portal.company_owner_id, json.get('filter'),
                                                  filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
     memberships, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [membership.company_member_grid_row() for membership in memberships],
@@ -477,9 +467,16 @@ def search_for_portal_to_join(json):
 
 
 @portal_bp.route('/company/<string:company_id>/publications/', methods=['GET'])
-@check_right(UserIsEmployee, ['company_id'])
-def publications(company_id):
-    return render_template('portal/portal_publications.html', company=Company.get(company_id))
+def old_publications_url(company_id):
+    # this url is presented in sent notificatuions
+    return redirect(url_for('portal.publications', portal_id=Company.get(company_id).own_portal.id))
+
+
+@portal_bp.route('/<string:portal_id>/publications/', methods=['GET'])
+# @check_right(UserIsEmployee, ['company_id'])
+def publications(portal_id):
+    portal = Portal.get(portal_id)
+    return render_template('portal/portal_publications.html', company=portal.own_company, portal=portal)
 
 
 def get_publication_dict(publication):
@@ -493,11 +490,11 @@ def get_publication_dict(publication):
     return ret
 
 
-@portal_bp.route('/company/<string:company_id>/publications/', methods=['OK'])
-@check_right(UserIsEmployee, ['company_id'])
-def publications_load(json, company_id):
-    company = Company.get(company_id)
-    portal = company.own_portal
+@portal_bp.route('/<string:portal_id>/publications/', methods=['OK'])
+# @check_right(UserIsEmployee, ['company_id'])
+def publications_load(json, portal_id):
+    portal = Portal.get(portal_id)
+    company = portal.own_company
 
     publications = db(Publication).join(PortalDivision, PortalDivision.id == Publication.portal_division_id). \
         filter(PortalDivision.portal_id == portal.id).order_by(desc(Publication.publishing_tm)).all()
@@ -515,23 +512,24 @@ def publications_load(json, company_id):
     # }
     return {'company': company.get_client_side_dict(),
             'portal': portal.get_client_side_dict(),
-            'rights_user_in_company': UserCompany.get_by_user_and_company_ids(company_id=company_id).rights,
+            'rights_user_in_company': UserCompany.get_by_user_and_company_ids(company_id=company.id).rights,
             'grid_data': list(map(get_publication_dict, publications)),
             'total': len(publications)}
 
 
-@portal_bp.route('/company/<string:company_id>/tags/', methods=['GET'])
-@check_right(UserIsEmployee, 'company_id')
-def tags(company_id):
-    return render_template('portal/tags.html', company=Company.get(company_id))
+@portal_bp.route('/<string:portal_id>/tags/', methods=['GET'])
+# @check_right(UserIsEmployee, 'portal_id')
+def tags(portal_id):
+    portal = Portal.get(portal_id)
+    return render_template('portal/tags.html', portal=portal, company=portal.own_company)
 
 
-@portal_bp.route('/company/<string:company_id>/tags/', methods=['OK'])
-@check_right(UserIsEmployee, 'company_id')
-def tags_load(json, company_id):
+@portal_bp.route('/<string:portal_id>/tags/', methods=['OK'])
+# @check_right(UserIsEmployee, 'portal_id')
+def tags_load(json, portal_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
-    company = Company.get(company_id)
-    portal = company.own_portal
+    portal = Portal.get(portal_id)
+    company = portal.own_company
 
     def get_client_model(aportal):
         portal_dict = aportal.get_client_side_dict()
