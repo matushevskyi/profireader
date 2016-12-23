@@ -775,12 +775,13 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             to_delete.delete()
         if what_is_done:
             self.notify_portal_company_member(
-                "Company %s just %s plan of membership at portal %s" %
+                "Company %s just %s plan %s of membership at portal %s" %
                 (utils.jinja.link_company_profile(),
-                 utils.jinja.link('url_portal_companies_members', what_is_done, True), utils.jinja.link_external()),
-                self.requested_membership_plan_issued.name if
-                self.requested_membership_plan_issued else self.current_membership_plan_issued.name
-            )
+                 utils.jinja.link('url_portal_companies_members', what_is_done, True),
+                 self.requested_membership_plan_issued.name if
+                 self.requested_membership_plan_issued else self.current_membership_plan_issued.name,
+                 utils.jinja.link_external(),
+                ))
         return self
 
     def set_new_plan_issued(self, requested_plan_id, immediately):

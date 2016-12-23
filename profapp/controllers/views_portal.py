@@ -30,31 +30,28 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipR
     PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive, UserIsEmployeeAtPortalOwner
 
 
-# TODO change to /portal_id/.... Warning we have not portal_id if we want create portal
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['GET'])
-@check_right(EditPortalRight, ['company_id'])
-def profile(create_or_update, company_id):
-    company = Company.get(company_id)
-    if create_or_update == 'update':
-        portal = g.db.query(Portal).filter_by(company_owner_id=company.id).first()
-    else:
-        portal = None
+@portal_bp.route('/create/company/<string:company_id>/', methods=['GET'])
+@portal_bp.route('/<string:portal_id>/profile/', methods=['GET'])
+# @check_right(EditPortalRight, ['company_id'])
+def profile(company_id=None, portal_id=None):
 
+    if portal_id:
+        portal = Portal.get(portal_id)
+        company = portal.own_company
+    else:
+        company = Company.get(company_id)
+        portal = None
     return render_template('portal/portal_edit.html', company=company, portal_id=portal.id if portal else None)
 
 
-# TODO change to /portal_id/.... Warning we have not portal_id if we want create portal
-@portal_bp.route('/<any(create,update):create_or_update>/company/<string:company_id>/', methods=['OK'])
-@check_right(EditPortalRight, ['company_id'])
-def profile_load(json, create_or_update, company_id):
+@portal_bp.route('/create/company/<string:company_id>/', methods=['OK'])
+@portal_bp.route('/<string:portal_id>/profile/', methods=['OK'])
+# @check_right(EditPortalRight, ['company_id'])
+def profile_load(json, company_id=None, portal_id=None):
     action = g.req('action', allowed=['load', 'save', 'validate'])
     layouts = db(PortalLayout).all()
     division_types = PortalDivisionType.get_division_types()
-    company = Company.get(company_id)
-    if create_or_update == 'update':
-        portal = g.db.query(Portal).filter_by(company_owner_id=company.id).first()
-    else:
-        portal = Portal.launch_new_portal(company)
+    portal = Portal.get(portal_id) if portal_id else Portal.launch_new_portal(Company.get(company_id))
 
     client_side = lambda: {
         'select': {
@@ -115,7 +112,7 @@ def profile_load(json, create_or_update, company_id):
                 division_position += 1
 
         if action == 'validate':
-            ret = portal.validate(create_or_update == 'create')
+            ret = portal.validate(not portal_id)
             if len(unpublish_warning.keys()):
                 if 'divisions' not in ret['warnings']:
                     ret['warnings']['divisions'] = {}

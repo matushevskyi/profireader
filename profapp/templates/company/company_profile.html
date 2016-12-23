@@ -30,7 +30,7 @@
 
             {% if company.id %}
             $scope.launch_portal = function (host) {
-                window.location.href = '{{ url_for('portal.profile', create_or_update = 'create', company_id = company.id) | safe }}';
+                window.location.href = '{{ url_for('portal.profile', company_id = company.id) | safe }}';
             };
             {% endif %}
 
