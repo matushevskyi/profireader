@@ -507,7 +507,7 @@ a:hover {
 
 .vertical-banner {
     width: 165px;
-    height: 240px;
+    height: auto;
     margin-bottom: 30px;
     cursor: pointer;
     display: inline-block;
