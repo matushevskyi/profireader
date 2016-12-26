@@ -570,7 +570,11 @@ function now() {
     return Date.now() / 1000;
 }
 
+var update_last_acessed_phrases = [];
+var update_last_acessed_phrases_timer = null;
+
 function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
+
     allow_html = allow_html ? allow_html : '';
     if (typeof phrase !== 'string') {
         return '';
@@ -578,7 +582,7 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     // if (!scope.$$translate) {
     //     scope.$$translate = {};
     // }
-    //console.log(scope.$$translate)
+    phrase = phrase.replace(/^(.*)\/\//g, '$1');
 
     var t = now();
     //TODO OZ by OZ hasOwnProperty
@@ -610,8 +614,17 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
 
     if ((t - phrase_dict['time']) > 86400) {
         phrase_dict['time'] = t;
-        $ok('/tools/update_last_accessed/', {template: CtrlName, phrase: phrase}, function (resp) {
-        });
+        update_last_acessed_phrases.push({template: CtrlName, phrase: phrase});
+        if (update_last_acessed_phrases_timer) {
+            clearTimeout(update_last_acessed_phrases_timer);
+            update_last_acessed_phrases_timer = null;
+        }
+        update_last_acessed_phrases_timer = setTimeout(function () {
+            $ok('/tools/update_last_accessed/', {'to_update': update_last_acessed_phrases}, function (resp) {
+            });
+            update_last_acessed_phrases = [];
+        }, 5000);
+
     }
 
     if (phrase_dict['allow_html'] !== allow_html) {
