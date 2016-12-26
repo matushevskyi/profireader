@@ -34,6 +34,6 @@ function $ok(url, data, success, fail) {
     });
 }
 
-function add_message(message, type) {
+function add_message(message, type) {}
 
-}
+

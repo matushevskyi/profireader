@@ -54,7 +54,7 @@ class Portal(Base, PRBase):
                                  root_folder_id=p.own_company.system_folder_file_id),
                              image_size=[480, 480],
                              min_size=[100, 100],
-                             aspect_ratio=[0.25, 4.],
+                             aspect_ratio=[0.125, 8.],
                              no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
 
     # favicon_from = Column(TABLE_TYPES['string_10'], default='')

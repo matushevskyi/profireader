@@ -29,12 +29,37 @@ a:hover {
     text-decoration: none;
 }
 
+.tag-selected a{
+    color: #fff;
+}
+
+.search_highlighted {
+    color: #E53935;
+}
+
+.tag-selected {
+    background-color: #E53935;
+}
+
+.tag-selected:hover {
+    background-color: #C62828;
+}
+
+.tag-selected a {
+    color: #fff;
+}
+
 /*Offcanvas menu settings*/
 
 .tag-menu {
     width: 300px;
     background-color: #263238;
     border: 0;
+}
+
+.tag-menu li a {
+    color: #BDBDBD;
+    padding: 6px 0 6px 0;
 }
 
 .offcanvas-btn {
@@ -431,18 +456,6 @@ a:hover {
 }
 
 .main-tag a {
-    color: #fff;
-}
-
-.tag-selected {
-    background-color: #E53935;
-}
-
-.tag-selected:hover {
-    background-color: #C62828;
-}
-
-.tag-selected a {
     color: #fff;
 }
 
