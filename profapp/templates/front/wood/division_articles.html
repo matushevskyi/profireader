@@ -2,7 +2,6 @@
 {% block title -%}
     {{ _('%(division_name)s - %(portal_name)s', {'portal_name': portal.name, 'division_name': division.name}) }}
 {%- endblock %}
-
 {% block body %}
     {% import 'macros.html' as frontmacros %}
     {% include 'tags_menu.html' %}
@@ -18,9 +17,7 @@
                             {% endwith %}
                             {% if loop.index in wide_banners and portal.advs['wide_banner_' + wide_banners[loop.index]] %}
                                 <a href="#">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a>
-                                <hr class="article-thumbnail-divider">
                             {% endif %}
-                            <hr class="article-thumbnail-divider">
                             {% if loop.index in wide_banners and portal.advs['wide_banner_' + wide_banners[loop.index]] %}
                                 <a href="#"
                                    class="wide-banner">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a>
@@ -33,12 +30,12 @@
                             {% endif %}
                         {% endfor %}
                     </main>
+                {% include 'pagination.html' %}
                 </div>
             </div>
-            <aside class="col-lg-2">
+            <aside class="col-xs-12 col-lg-2">
                 {% include 'right_banners.html' %}
             </aside>
         </div>
     </div>
-    {% include 'pagination.html' %}
 {% endblock %}
