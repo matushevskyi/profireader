@@ -1,10 +1,11 @@
 <footer class="footer">
-            <div class="container footer-content">
-                <div class="pull-left social hide">
-                    <a class="social-btn" href="#"><i class="fa fa-facebook-square" aria-hidden="true"></i></a>
-                    <a class="social-btn" href="#"><i class="fa fa-google-plus-square" aria-hidden="true"></i></a>
-                    <a class="social-btn" href="#"><i class="fa fa-linkedin-square" aria-hidden="true"></i></a>
-                </div>
-                <div class="pr pull-right">Powered by <a class="pr-link" href="#"><b>Profireader</b></a></div>
-            </div>
-        </footer>
+    <div class="container footer-content">
+       <!-- <div class="pull-left social">
+            <a class="social-btn" href="#"><i class="fa fa-facebook-square" aria-hidden="true"></i></a>
+            <a class="social-btn" href="#"><i class="fa fa-google-plus-square" aria-hidden="true"></i></a>
+            <a class="social-btn" href="#"><i class="fa fa-linkedin-square" aria-hidden="true"></i></a>
+        </div>-->
+        {{ portal.advs['body_end']|safe }}
+        <div class="pr pull-right">Powered by <a class="pr-link" href="#"><b>Profireader</b></a></div>
+    </div>
+</footer>
