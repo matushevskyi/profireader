@@ -27,7 +27,10 @@ def save_translate(json):
 @tools_bp.route('/update_last_accessed/', methods=['OK'])
 @check_right(AllowAll)
 def update_last_accessed(json):
-    return TranslateTemplate.update_last_accessed(json['template'], json['phrase'])
+    for p in json['to_update']:
+        print(p)
+        TranslateTemplate.update_last_accessed(p['template'], p['phrase'])
+    return True
 
 @tools_bp.route('/SSO/<string:front_cookie>/', methods=['GET'])
 @check_right(AllowAll)

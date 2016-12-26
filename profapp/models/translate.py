@@ -27,6 +27,8 @@ class TranslateTemplate(Base, PRBase):
     uk = Column(TABLE_TYPES['name'], default='')
     en = Column(TABLE_TYPES['name'], default='')
 
+    comment = Column(TABLE_TYPES['text'], default='')
+
     portal = relationship(Portal, uselist=False)
 
     exemplary_portal_id = '5721ed5f-d35d-4001-ae46-cdfd372b322b'
@@ -42,7 +44,7 @@ class TranslateTemplate(Base, PRBase):
         self.portal_id = portal_id
 
     @staticmethod
-    def try_to_get_phrase(template, phrase, url, portal_id=None, allow_html=''):
+    def try_to_get_phrase(template, phrase, url, portal_id=None, allow_html='', comment=''):
 
         a_filter = dict(template=template, name=phrase, portal_id=portal_id)
 
@@ -50,11 +52,11 @@ class TranslateTemplate(Base, PRBase):
         # and we can`t use ORM
         def insert_record(**values):
             from profapp import utils
-            g.db().execute(('INSERT INTO "%s" (template,   name,    portal_id, allow_html,   url,  %s) '
-                            'VALUES           (:template, :name, :portal_id, :allow_html, :url,  :%s)') %
+            g.db().execute(('INSERT INTO "%s" (template,   name,  portal_id,  allow_html,  comment,  url,   %s) '
+                            'VALUES           (:template, :name, :portal_id, :allow_html, :comment, :url,  :%s)') %
                            (TranslateTemplate.__tablename__, ', '.join(TranslateTemplate.languages),
                             ", :".join(TranslateTemplate.languages)),
-                           params=utils.dict_merge(a_filter, {'allow_html': allow_html, 'url': url},
+                           params=utils.dict_merge(a_filter, {'allow_html': allow_html, 'url': url, 'comment': comment},
                                                    {l: phrase for l in TranslateTemplate.languages}, values))
             return db(TranslateTemplate, **a_filter).first()
 
@@ -107,13 +109,21 @@ class TranslateTemplate(Base, PRBase):
     @staticmethod
     def getTranslate(template, phrase, url=None, allow_html='', language=None):
 
+        match = re.match("(^.*)//(.*)$", phrase)
+        phrase, comment = (match.group(1), match.group(2)) if match else (phrase, '')
+
+        print(phrase)
+        print(comment)
+
         url = TranslateTemplate.try_to_guess_url(url)
 
         (phrase, template) = (phrase[2:], '__GLOBAL') if phrase[:2] == '__' else (phrase, template)
 
         translation = TranslateTemplate.try_to_get_phrase(template, phrase, url,
                                                           portal_id=getattr(g, "portal_id", None),
-                                                          allow_html=allow_html)
+                                                          allow_html=allow_html, comment=comment)
+
+        print(translation)
 
         if translation:
             if translation.allow_html != allow_html:
@@ -135,6 +145,7 @@ class TranslateTemplate(Base, PRBase):
 
     @staticmethod
     def translate_and_substitute(template, phrase, dictionary={}, language=None, url=None, allow_html=''):
+
         translated = TranslateTemplate.getTranslate(template, phrase, url, allow_html, language)
         r = re.compile("%\\(([^)]*)\\)s")
 
