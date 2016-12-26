@@ -2,7 +2,15 @@
  * Created by oles on 12/19/16.
  */
 
-module.directive('prCrop', function ($compile, $templateCache, $timeout) {
+module.directive('prFileChange', function () {
+    return {
+        restrict: 'A',
+        link: function (scope, element, attrs) {
+            var onChangeHandler = scope.$eval(attrs.prFileChange);
+            element.bind('change', onChangeHandler);
+        }
+    };
+}).directive('prCrop', function ($compile, $templateCache, $timeout) {
     return {
         restrict: 'A',
         replace: false,
