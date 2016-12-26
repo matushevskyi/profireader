@@ -5,6 +5,7 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_grid.html' %}
+    {% include '_ruslan/partials/_header_files_membership_plan.html' %}
 {% endblock head %}
 
 {% block portal_content %}
@@ -13,16 +14,17 @@
     {% endblock company_base %}
 
     <script>
-        module.controller('portals_partners', function ($scope, $ok, $sce, $membership_tags) {
-            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portals_partners');
+
+        module.controller('portals_partners', function ($scope, $ok, $sce, $membership_plan, $membership_tags) {
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portal_memberees');
             $scope.$$translate = {{ translates('portals_partners')|safe }};
-            $scope.url_portals_partners = '{{ url_for('portal.portals_partners', company_id=company.id)}}';
+            $scope.url_portal_memberees = '{{ url_for('company.portal_memberees', company_id=company.id)}}';
             $scope.company_id = '{{ company.id|safe }}';
             $scope.url_search_for_portal = function () {
                 return ( '/portal/search_for_portal_to_join/' );
             };
-            $scope.url_change_status = {{ raw_url_for('portal.portals_partners_change_status')|safe }};
-            $scope.url_join = {{ raw_url_for('portal.apply_company')|safe }};
+            $scope.url_change_status = {{ raw_url_for('portal.portals_memberee_change_status')|safe }};
+            $scope.url_join = {{ raw_url_for('company.join_to_portal')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.selectedPortal_name = '';
             $scope.selectedPortal = null;
@@ -69,15 +71,18 @@
                     portal_id: row.portal.id
                 }), {action: action, who: row.who, partner_id: $scope.company_id}, function (resp) {
                     $scope.gridApi.grid.grid_change_row(resp)
-                }).finally(function () {})
+                }).finally(function () {
+                })
             };
 
             $scope.portal_link = function (link) {
                 return 'http://' + link;
             };
 
-            $scope.set_tags = function (id, row, name) {
-
+            $scope.set_tags = function (id, row, column_name) {
+                if (row['status'] !== 'ACTIVE') {
+                    return false;
+                }
                 var modalInstance = $membership_tags({
                     company_id: $scope.company_id,
                     portal_id: row['portal']['id']
@@ -90,8 +95,20 @@
 
             };
 
+            $scope.request_membership_plan = function (id, row, column_name) {
+                if (row['status'] !== 'ACTIVE') {
+                    return false;
+                }
+                $membership_plan({
+                    membership_id: row['id'],
+                    request_or_set: 'request'
+                }).result.then(function (resp) {
+                    $scope.gridApi.grid.grid_change_row(resp);
+                });
+            };
+
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                urlLoadGridData: $scope.url_portals_partners,
+                urlLoadGridData: $scope.url_portal_memberees,
                 columnDefs: [
                     {
                         name: 'portal.name', type: 'link',
@@ -104,17 +121,28 @@
                         img_url: "portal.own_company.logo.url"
                     },
                     {
-                        name: 'tags', type: 'tags',
-                        onclick: 'set_tags'
+                        name: 'membership_plan',
+                        onclick: 'request_membership_plan',
+                        classes: function (id, row, field) {
+                            return row['status'] === 'ACTIVE' ? '' : 'disabled';
+                        },
+                        render: function (row, value) {
+                            return row['current_membership_plan_issued']['name'] +
+                                    (row['requested_membership_plan_issued'] ? ('/<em>' + row['requested_membership_plan_issued']['name'] + '</em>') : '');
+                        }
                     },
                     {
-                        name: 'status', width: '20%', filter: {type: 'multi_select', default_selected: true} //we can default select all and deselect that we need, 'exception' can be string or array of string
-                    }, {
-                        name: 'rights', width: '200', type: 'icons', afilter: {type: 'input'}
+                        name: 'tags', type: 'tags', onclick: 'set_tags',
+                        classes: function (id, row, field) {
+                            return row['status'] === 'ACTIVE' ? '' : 'disabled';
+                        },
                     },
                     {
-                        name: 'actions', type: 'actions', onclick: 'grid_action'
-                    }
+                        name: 'status', width: '20%', afilter: {type: 'multi_select', default_selected: true}
+                        //we can default select all and deselect that we need, 'exception' can be string or array of string
+                    },
+                    {name: 'rights', width: '200', type: 'icons', afilter: {type: 'input'}},
+                    {name: 'actions', type: 'actions', onclick: 'grid_action'}
                 ]
             });
             {% endraw %}
@@ -123,7 +151,7 @@
 
     {% raw %}
     <div ng-controller="portals_partners" ng-cloak>
-        <h3> {{ _('Join to portal') }} </h3>
+        <h5> {{ _('Join to portal') }} </h5>
         <input pr-user-can="actions.require_memberee" typeahead-on-select="onSelect($item, $model, $label)"
                uib-typeahead-template-url="typeaheadTemplate.html"
                uib-typeahead-loading="loadingPortals"

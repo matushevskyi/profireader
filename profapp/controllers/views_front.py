@@ -6,8 +6,6 @@ from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
 from ..models.company import Company
 from ..models.users import User
 from ..models.messenger import Socket, Notification
-from ..utils.session_utils import back_to_url
-from ..utils import email_utils
 from config import Config
 from .request_wrapers import check_right, get_portal
 from ..models.rights import AllowAll
@@ -90,7 +88,11 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
 
 
 def elastic_article_to_orm_article(item):
-    ret = Publication.get(item['id']).create_article()
+    try:
+        ret = Publication.get(item['id']).create_article()
+    except:
+        raise AssertionError("Can't convert elastic article to orm one. maybe elastic db should be reindexed")
+
     if '_highlight' in item:
         for k in ['short', 'title', 'subtitle', 'keywords', 'author']:
             if k in item['_highlight']:
@@ -314,7 +316,6 @@ def company_page(portal, member_company_id, member_company_name, member_company_
     membership, member_company, dvsn = \
         get_company_member_and_division(portal, member_company_id, member_company_name)
 
-
     return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
                            portal=portal_and_settings(portal),
                            division=dvsn.get_client_side_dict(),
@@ -406,7 +407,6 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
         if 'redirect' in articles_data:
             return articles_data['redirect']
 
-
         return render_template('front/' + g.portal_layout_path + 'division_company.html',
                                portal=portal_and_settings(portal),
                                division=dvsn.get_client_side_dict(),
@@ -431,7 +431,7 @@ def article_details(portal, publication_id, publication_title):
     if article_visibility is True:
         publication.add_to_read()
     else:
-        back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
+        utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
 
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.name)
@@ -483,9 +483,11 @@ def send_message(json, member_company_id):
     import html
 
     if g.user and g.user.id:
-        phrase = 'User <a href="%(url_profile_from_user)s">%(from_user.full_name)s</a> sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
+        phrase = "User %s sent you email as member of company %s" % (utils.jinja.link_user_profile(),
+                                                                     utils.jinja.link_company_profile())
     else:
-        phrase = 'Anonymous sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
+        phrase = "Anonymous sent you email as member of company %s" % (
+            utils.jinja.link_company_profile(),)
 
     Socket.prepare_notifications([send_to], Notification.NOTIFICATION_TYPES['CUSTOM'],
                                  phrase + '<hr/>%(message)s',

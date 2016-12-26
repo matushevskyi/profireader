@@ -21,7 +21,6 @@ from .elastic import PRElasticField, PRElasticDocument
 from config import Config
 import simplejson
 from profapp import on_value_changed
-from profapp.utils import jinja_utils
 
 
 class Material(Base, PRBase, PRElasticDocument):
@@ -68,7 +67,8 @@ class Material(Base, PRBase, PRElasticDocument):
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Company.id))
     company = relationship(Company, uselist=False)
 
-    publications = relationship('Publication', primaryjoin="Material.id==Publication.material_id", cascade="save-update, merge, delete")
+    publications = relationship('Publication', primaryjoin="Material.id==Publication.material_id",
+                                cascade="save-update, merge, delete")
 
     # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
     #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
@@ -202,7 +202,8 @@ class Publication(Base, PRBase, PRElasticDocument):
                         order_by=lambda: expression.desc(TagPublication.position))
 
     status = Column(TABLE_TYPES['status'])
-    STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED'}
+    STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED',
+                'HOLDED': 'HOLDED'}
 
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
     VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
@@ -239,7 +240,8 @@ class Publication(Base, PRBase, PRElasticDocument):
             'portal_name': PRElasticField(setter=lambda: self.portal_division.portal.name),
 
             'division_id': PRElasticField(analyzed=False, setter=lambda: self.portal_division.id),
-            'division_type': PRElasticField(analyzed=False, setter=lambda: self.portal_division.portal_division_type.id),
+            'division_type': PRElasticField(analyzed=False,
+                                            setter=lambda: self.portal_division.portal_division_type.id),
             'division_name': PRElasticField(setter=lambda: self.portal_division.name),
 
             'date': PRElasticField(ftype='date', setter=lambda: int(self.publishing_tm.timestamp() * 1000)),
@@ -276,7 +278,8 @@ class Publication(Base, PRBase, PRElasticDocument):
 
     def create_article(self):
         return utils.dict_merge(
-            self.get_client_side_dict(more_fields='portal_division.portal_division_type_id,portal_division.portal.logo.url'),
+            self.get_client_side_dict(
+                more_fields='portal_division.portal_division_type_id,portal_division.portal.logo.url'),
             Material.get(self.material_id).get_client_side_dict(
                 fields='long|short|title|subtitle|keywords|illustration|author'),
             {'social_activity': self.social_activity_dict()},
@@ -293,10 +296,9 @@ class Publication(Base, PRBase, PRElasticDocument):
             'title': self.material.title,
             'keywords': ','.join(t.text for t in self.tags),
             'description': self.material.short if self.material.short else self.material.subtitle,
-            'image_url': self.material.illustration['url'] if self.material.illustration['selected_by_user']['type'] == 'provenance' else None
+            'image_url': self.material.illustration['url'] if self.material.illustration['selected_by_user'][
+                                                                  'type'] == 'provenance' else None
         }
-
-
 
     def search_filter_default(self, division_id, company_id=None):
         """ :param division_id: string with id from table portal_division,
@@ -535,10 +537,9 @@ def publication_status_changed(target, new_value, old_value, action):
         'portal': portal,
         'publication': target,
         'material': material,
-        'url_publication': '//' + portal.host + url_for('front.article_details', publication_id=target.id,
-                                                        publication_title=material.title),
-        'url_portal_publications': jinja_utils.grid_url(target.id, 'portal.publications',
-                                                        company_id=portal.company_owner_id)
+        'url_publication': portal.host + url_for('front.article_details', publication_id=target.id,
+                                                 publication_title=material.title),
+        'url_portal_publications': utils.jinja.grid_url(target.id, 'portal.publications', portal_id=portal.id)
     }
 
     phrase = new_value
@@ -553,9 +554,10 @@ def publication_status_changed(target, new_value, old_value, action):
         phrase = None
 
     if phrase:
-        rights_phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just <a href=\"%(url_portal_publications)s\">" + \
-                        phrase + \
-                        "</a> a material named `%(material.title)s` at portal <a class=\"external_link\" target=\"blank_\" href=\"%(url_publication)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
+        rights_phrase = "User %s just %s a material named `%%(material.title)s` at portal %s" % \
+                        (utils.jinja.link_user_profile(),
+                         utils.jinja.link('url_portal_publications', phrase, True),
+                         utils.jinja.link_external('url_publication', 'portal.name'))
         to_users = PublishUnpublishInPortal(target, portal_division, material.company).get_user_with_rights(r)
         if material.editor not in to_users:
             to_users.append(material.editor)

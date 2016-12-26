@@ -1,8 +1,8 @@
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
-from flask import g
-from tools.db_utils import db
+from flask import g, url_for
+from tools import db_utils
 from .pr_base import PRBase, Base
 import re
 from ..constants.SEARCH import RELEVANCE
@@ -20,6 +20,7 @@ from functools import reduce
 from sqlalchemy.sql import and_
 from .elastic import PRElasticField, PRElasticDocument
 from sqlalchemy.sql import or_, and_, expression
+from tools.db_utils import db
 
 
 class Portal(Base, PRBase):
@@ -40,10 +41,7 @@ class Portal(Base, PRBase):
 
 
     company_owner_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), unique=True)
-    # portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
     portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_layout.id'))
-
-    # logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
     logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
     logo_file_img = relationship(FileImg, uselist=False, foreign_keys=[logo_file_img_id])
@@ -54,7 +52,7 @@ class Portal(Base, PRBase):
                                  root_folder_id=p.own_company.system_folder_file_id),
                              image_size=[480, 480],
                              min_size=[100, 100],
-                             aspect_ratio=[0.25, 4.],
+                             aspect_ratio=[0.125, 8.],
                              no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_company_logo()))
 
     # favicon_from = Column(TABLE_TYPES['string_10'], default='')
@@ -78,6 +76,16 @@ class Portal(Base, PRBase):
 
     tags = relationship(Tag, uselist=True, cascade="all, delete-orphan")
 
+    plans = relationship('MembershipPlan',
+                         cascade="all, merge, delete-orphan",
+                         order_by='asc(MembershipPlan.position)',
+                         primaryjoin='and_(Portal.id == MembershipPlan.portal_id, MembershipPlan.status != \'DELETED\')')
+
+    plans_active = relationship('MembershipPlan',
+                                cascade="all, merge, delete-orphan",
+                                order_by='asc(MembershipPlan.position)',
+                                primaryjoin='and_(Portal.id==MembershipPlan.portal_id, MembershipPlan.status == \'ACTIVE\')')
+
     divisions = relationship('PortalDivision',
                              # backref='portal',
                              cascade="all, merge, delete-orphan",
@@ -98,11 +106,14 @@ class Portal(Base, PRBase):
                                 # back_populates='portal',
                                 uselist=True)
 
-    company_memberships = relationship('MemberCompanyPortal',
-                                       # secondary='member_company_portal'
-                                       # back_populates='portal',
-                                       # lazy='dynamic'
-                                       )
+    company_memberships = relationship('MemberCompanyPortal')
+
+    default_membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'), nullable=False)
+    default_membership_plan = relationship('MembershipPlan', uselist=False, post_update=True,
+                                           foreign_keys=[default_membership_plan_id])
+    # post_update parameter is for breaking Circular dependency error (which us because mutual dependency exists default_membership_plan <-> plans)
+    # http://docs.sqlalchemy.org/en/rel_1_1/orm/relationship_api.html#sqlalchemy.orm.relationship.params.post_update
+
     # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
     #                  'host': {'relevance': lambda field='host': RELEVANCE.host}}
 
@@ -116,52 +127,43 @@ class Portal(Base, PRBase):
         if not self.portal_layout_id:
             self.portal_layout_id = db(PortalLayout).first().id
 
-    def setup_created_portal(self, client_data):
-        # TODO: OZ by OZ: move this to some event maybe
-        """This method create portal in db. Before define this method you have to create
-        instance of class with parameters: name, host, portal_layout_id, company_owner_id,
-        divisions. Return portal)"""
+    @staticmethod
+    def launch_new_portal(company):
+        # This all ids (by db_utils.create_uuid()) we need because we have mutual foreign keys in database and
+        # NOT NULL constrain (and not null constrain don't support deferrable property')
 
-        # for division in self.divisions:
-        #     if division.portal_division_type_id == PortalDivision.TYPES['company_subportal']:
-        #         PortalDivisionSettingsCompanySubportal(
-        #             member_company_portal=division.settings['member_company_portal'],
-        #             portal_division=division).save()
+        from tools import db_utils
+        ret = Portal(host='', lang=g.user.lang,
+                     id=db_utils.create_uuid(),
+                     own_company=company,
+                     company_owner_id=company.id,
+                     default_membership_plan_id=db_utils.create_uuid(),
+                     company_memberships=[
+                         MemberCompanyPortal(
+                             id=db_utils.create_uuid(),
+                             company=company,
+                             rights={MemberCompanyPortal.RIGHT_AT_PORTAL._OWNER: True},
+                             status=MemberCompanyPortal.STATUSES['ACTIVE'])])
 
-        self.logo = client_data['logo']
+        ret.default_membership_plan = MembershipPlan(name='default', position=0,
+                                                     portal_id=ret.id,
+                                                     status=MembershipPlan.STATUSES['ACTIVE'],
+                                                     duration='1 years',
+                                                     publication_count_open=-1,
+                                                     publication_count_registered=10,
+                                                     publication_count_payed=0,
+                                                     price=1, currency_id='UAH')
 
-        # if logo_file_id:
-        #     originalfile = File.get(logo_file_id)
-        #     if originalfile:
-        #         self.logo_file_id = originalfile.copy_file(
-        #             company_id=self.company_owner_id,
-        #             parent_folder_id=self.own_company.system_folder_file_id,
-        #             publication_id=None).save().id
-        return self
+        ret.company_memberships[0].portal = ret
+        ret.company_memberships[0].current_membership_plan_issued = ret.company_memberships[0].create_issued_plan()
+        ret.company_memberships[0].current_membership_plan_issued.start()
 
-    # def fallback_default_value(self, key=None, division_name=None):
-    #
-    #     return default
+        return ret
 
-    # # TODO: OZ by OZ fix this
-    # def get_value_from_config(self, key=None, division_name=None, default=None):
-    #     return default
-    #
-    #     """
-    #     :param key: string, variable which you want to return from config
-    #     optional:
-    #         :param division_name: string, if provided return value from config for division this.
-    #     :return: variable which you want to return from config
-    #     """
-    #     conf = getattr(self.config, key, None)
-    #     if not conf:
-    #         return Config.ITEMS_PER_PAGE
-    #     values = simplejson.loads(conf)
-    #     if division_name:
-    #         ret = values.get(division_name)
-    #     else:
-    #         ret = values
-    #     return ret
+        # ret.company_memberships[0].current_membership_plan_issued \
+        #     = MembershipPlanIssued.create_for_membership(ret.company_memberships[0], ret.default_membership_plan)
+        # ret.company_memberships[0].current_membership_plan_issued. \
+        #     member_company_portal_id = ret.company_memberships[0].id
 
     def validate_tags(self, new_portal_tags):
         ret = PRBase.DEFAULT_VALIDATION_ANSWER()
@@ -250,7 +252,7 @@ class Portal(Base, PRBase):
                 utils.dict_deep_inc(grouped_by_company_member, div.settings['company_id'])
 
         for check_division_type in db(PortalDivisionType).all():
-            utils.dict_deep_replace(0, grouped_by_division_type, check_division_type.id, if_not_exists=True)
+            utils.dict_deep_replace(0, grouped_by_division_type, check_division_type.id, add_only_if_not_exists=True)
 
             if check_division_type.min > grouped_by_division_type[check_division_type.id]:
                 errors['add_division'] = 'you need at least %s `%s`' % (check_division_type.min, check_division_type.id)
@@ -408,6 +410,136 @@ class PortalAdvertisment(Base, PRBase):
         return self.to_dict(fields, more_fields)
 
 
+class MembershipPlan(Base, PRBase):
+    __tablename__ = 'membership_plan'
+
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    cr_tm = Column(TABLE_TYPES['timestamp'])
+    md_tm = Column(TABLE_TYPES['timestamp'])
+
+    name = Column(TABLE_TYPES['string_100'])
+
+    portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Portal.id))
+    portal = relationship('Portal', foreign_keys=[portal_id])
+
+    publication_count_open = Column(TABLE_TYPES['int'])
+    publication_count_registered = Column(TABLE_TYPES['int'])
+    publication_count_payed = Column(TABLE_TYPES['int'])
+    publication_count_confidential = Column(TABLE_TYPES['int'])
+
+    price = Column(TABLE_TYPES['price'])
+    currency_id = Column(TABLE_TYPES['string_10'])
+
+    duration = Column(TABLE_TYPES['timeinterval'])
+
+    position = Column(TABLE_TYPES['int'])
+    status = Column(TABLE_TYPES['string_100'])
+
+    auto_apply = Column(TABLE_TYPES['string_100'], default=False, nullable=False)
+
+    # default = Column(TABLE_TYPES['boolean'])
+
+    STATUSES = {'ACTIVE': 'ACTIVE', 'INACTIVE': 'INACTIVE', 'DELETED': 'DELETED'}
+
+    DURATION_UNITS = [
+        {'id': 'days', 'name': 'Days'},
+        {'id': 'weeks', 'name': 'Weeks'},
+        {'id': 'months', 'name': 'Months'},
+        {'id': 'years', 'name': 'Years'},
+    ]
+
+    def get_client_side_dict(self,
+                             fields='id,name,cr_tm,status,currency_id,price,duration,auto_apply,'
+                                    'publication_count_open,publication_count_registered,publication_count_payed',
+                             more_fields=None):
+        return self.to_dict(fields, more_fields)
+
+    def validate(self, is_new=False):
+        ret = super().validate(is_new=is_new, regexps={'name': '[^\s]{3,}'})
+        return ret
+
+
+class MembershipPlanIssued(Base, PRBase):
+    __tablename__ = 'membership_plan_issued'
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    cr_tm = Column(TABLE_TYPES['timestamp'])
+    md_tm = Column(TABLE_TYPES['timestamp'])
+
+    started_tm = Column(TABLE_TYPES['timestamp'])
+    started_by_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
+    started_by_user = relationship('User', foreign_keys=[started_by_user_id])
+
+    name = Column(TABLE_TYPES['short_name'])
+    stopped_tm = Column(TABLE_TYPES['timestamp'])
+    calculated_stopping_tm = Column(TABLE_TYPES['timestamp'])
+
+    price = Column(TABLE_TYPES['price'])
+    currency_id = Column(TABLE_TYPES['string_10'])
+    duration = Column(TABLE_TYPES['timeinterval'])
+    publication_count_open = Column(TABLE_TYPES['int'])
+    publication_count_registered = Column(TABLE_TYPES['int'])
+    publication_count_payed = Column(TABLE_TYPES['int'])
+    publication_count_confidential = Column(TABLE_TYPES['int'])
+
+    stopped_by_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
+    stopped_by_user = relationship('User', foreign_keys=[stopped_by_user_id])
+
+    requested_by_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
+    requested_by_user = relationship('User', foreign_keys=[requested_by_user_id])
+
+    member_company_portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal.id'))
+    member_company_portal = relationship('MemberCompanyPortal', foreign_keys=[member_company_portal_id])
+
+    portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal.id'))
+    company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'))
+
+    membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'))
+    membership_plan = relationship(MembershipPlan)
+
+    auto_apply = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
+    confirmed = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
+
+    auto_renew = Column(TABLE_TYPES['boolean'], default=True, nullable=False)
+
+    def get_client_side_dict(self,
+                             fields='id,name,cr_tm,started_tm,calculated_stopping_tm,stopped_tm,confirmed,'
+                                    'currency_id,price,publication_count_open,publication_count_registered,publication_count_payed,duration',
+                             more_fields=None):
+        return self.to_dict(fields, more_fields)
+
+        # status = Column(TABLE_TYPES['string_100'])
+
+    def start(self, user=None):
+        self.started_tm = datetime.datetime.utcnow()
+        duration, duration_unit = self.duration.split(' ')
+        duration = int(float(duration))
+        if duration > 0:
+            if duration_unit == 'years':
+                self.calculated_stopping_tm = self.started_tm.replace(year=self.started_tm.year + duration)
+            elif duration_unit == 'months':
+                add_year = duration // 12
+                new_month = self.started_tm.month + duration - add_year * 12
+                if new_month > 12:
+                    add_year += new_month // 12
+                    new_month -= (new_month // 12) * 12
+                self.calculated_stopping_tm = self.started_tm.replace(year=self.started_tm.year + add_year,
+                                                                      month=new_month)
+            elif duration_unit == 'weeks':
+                self.calculated_stopping_tm = datetime.datetime.fromtimestamp(
+                    self.started_tm.timestamp() + duration * 7 * 24 * 3600)
+            elif duration_unit == 'days':
+                self.calculated_stopping_tm = datetime.datetime.fromtimestamp(
+                    self.started_tm.timestamp() + duration * 24 * 3600)
+
+        if user:
+            self.started_by_user = user
+
+    def stop(self, user=None):
+        self.stopped_tm = datetime.datetime.utcnow()
+        if user:
+            self.stopped_by_user = user
+
+
 class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     __tablename__ = 'member_company_portal'
 
@@ -425,10 +557,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     # tags = relationship(Tag, secondary='tag_membership', foreign_keys = [portal_id, ])
     tags = relationship(Tag, secondary='tag_membership', uselist=True,
-
                         order_by=lambda: expression.desc(TagMembership.position))
-
-    member_company_portal_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal_plan.id'))
 
     status = Column(TABLE_TYPES['status'], default='APPLICANT', nullable=False)
 
@@ -436,7 +565,21 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     company = relationship('Company')
 
-    plan = relationship('MemberCompanyPortalPlan')
+    requested_membership_plan_issued_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_issued.id'),
+                                                 nullable=True)
+    requested_membership_plan_issued = relationship('MembershipPlanIssued',
+                                                    cascade="all, merge",
+                                                    single_parent=True,
+                                                    foreign_keys=[requested_membership_plan_issued_id])
+
+    request_membership_plan_issued_immediately = Column(TABLE_TYPES['boolean'], nullable=False, default=False)
+
+    current_membership_plan_issued_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_issued.id'),
+                                               nullable=True)
+
+    current_membership_plan_issued = relationship('MembershipPlanIssued',
+                                                  # backref='current_for_member_company_portal',
+                                                  foreign_keys=[current_membership_plan_issued_id])
 
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
                 'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
@@ -444,12 +587,47 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
 
+    def portal_memberee_grid_row(self):
+        from ..models.rights import MembershipRights
+        return utils.dict_merge(self.get_client_side_dict(
+            fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,'
+                   'requested_membership_plan_issued,request_membership_plan_issued_immediately'),
+            {'actions': MembershipRights(company=self.company_id, member_company=self).actions()},
+            {'who': MembershipRights.MEMBERSHIP})
+
+    def company_member_grid_row(self):
+        from ..models.rights import MembersRights
+        return utils.dict_merge({'membership': self.get_client_side_dict(
+            more_fields='company,current_membership_plan_issued,requested_membership_plan_issued'),
+            'company_id': self.portal.company_owner_id,
+            'portal_id': self.portal_id},
+            {'actions': MembersRights(company=self.portal.company_owner_id, member_company=self).actions()},
+            {'id': self.id})
+
+    def get_client_side_dict_for_plan(self):
+        ret = {
+            'membership': self.get_client_side_dict(
+                fields='id,current_membership_plan_issued,requested_membership_plan_issued,'
+                       'requested_membership_plan_issued.requested_by_user,'
+                       'request_membership_plan_issued_immediately,'
+                       'company.name,company.logo.url,portal.name, portal.logo.url, portal.default_membership_plan_id'),
+            'select': {
+                'plans': utils.get_client_side_list(self.portal.plans_active),
+                'publications': self.get_publication_count()
+            },
+            'selected_by_user_plan_id': True if self.requested_membership_plan_issued else False
+        }
+        if int(float(ret['membership']['current_membership_plan_issued']['duration'].split(' ')[0])) < 0:
+            ret['membership']['request_membership_plan_issued_immediately'] = True
+        return ret
+
     def seo_dict(self):
         return {
             'title': self.company.name,
             'keywords': ','.join(t.text for t in self.tags),
             'description': self.company.short_description if self.company.short_description else self.company.about,
-            'image_url': self.company.logo['url'] if self.company.logo['selected_by_user']['type'] == 'provenance' else None
+            'image_url': self.company.logo['url'] if self.company.logo['selected_by_user'][
+                                                         'type'] == 'provenance' else None
         }
 
     # elasticsearch begin
@@ -517,30 +695,123 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             return False
         return True
 
-    # def __init__(self, company_id=None, portal=None, company=None, plan=None, status=None):
-    #     if company_id and company:
-    #         raise BadDataProvided
-    #     if company_id:
-    #         self.company_id = company_id
-    #     else:
-    #         self.company = company
-    #     self.portal = portal
-    #     self.plan = plan
-    #     self.status = status
-
     @staticmethod
     def apply_company_to_portal(company_id, portal_id):
         from ..models.company import Company
+
         """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
-        member = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
-        if member:
-            member.set_client_side_dict(MemberCompanyPortal.STATUSES['APPLICANT'])
-            member.save()
+        membership = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
+        if membership:
+            membership.set_client_side_dict(MemberCompanyPortal.STATUSES['APPLICANT'])
         else:
-            g.db.add(MemberCompanyPortal(company=Company.get(company_id),
-                                         portal=db(Portal, id=portal_id).one(),
-                                         plan=db(MemberCompanyPortalPlan).first()))
-            g.db.flush()
+            membership = MemberCompanyPortal(id=db_utils.create_uuid(),
+                                             company=Company.get(company_id),
+                                             portal=db(Portal, id=portal_id).one())
+
+        membership.current_membership_plan_issued = membership.create_issued_plan()
+        membership.save().notify_portal_company_member("Company %s %s of membership at portal %s" % (
+            utils.jinja.link_company_profile(), utils.jinja.link('url_portal_companies_members', 'aspire', True),
+            utils.jinja.link_external()))
+
+    def create_issued_plan(self, membership_plan: MembershipPlan = None, user=None):
+        from ..constants.RECORD_IDS import SYSTEM_USERS
+        plan = membership_plan if membership_plan else self.portal.default_membership_plan
+        plan_is_default = self.portal.default_membership_plan_id == plan.id
+        ret = MembershipPlanIssued(
+            requested_by_user_id=user.id if user else SYSTEM_USERS.profireader(),
+            portal_id=self.portal.id,
+            auto_apply=plan.auto_apply or plan_is_default,
+            confirmed=plan.auto_apply or plan_is_default,
+            company_id=self.company.id,
+            name=plan.name,
+            price=-1 if plan_is_default else plan.price,
+            currency_id=plan.currency_id,
+            duration='-1 years' if plan_is_default else plan.duration,
+            publication_count_open=plan.publication_count_open,
+            publication_count_registered=plan.publication_count_registered,
+            publication_count_payed=plan.publication_count_payed)
+
+        ret.membership_plan = plan
+        ret.member_company_portal_id = self.id
+
+        return ret
+
+    def requested_new_plan_issued(self, requested_plan_id, immediately):
+        to_delete = None
+        what_is_done = None
+        if requested_plan_id is False:
+            # user don't want any new plan
+            self.requested_membership_plan_issued = None
+            self.request_membership_plan_issued_immediately = False
+        elif requested_plan_id is True:
+            if self.requested_membership_plan_issued.auto_apply and immediately:
+                self.current_membership_plan_issued.stop()
+                self.current_membership_plan_issued = self.requested_membership_plan_issued
+                self.current_membership_plan_issued.start()
+                self.requested_membership_plan_issued = None
+                self.request_membership_plan_issued_immediately = False
+                what_is_done = 'started'
+            else:
+                self.request_membership_plan_issued_immediately = immediately
+                what_is_done = 'planed' if self.requested_membership_plan_issued.auto_apply else 'requested'
+        else:
+            membership_plan = MembershipPlan.get(requested_plan_id)
+            issued_plan = self.create_issued_plan(membership_plan, user=g.user)
+            to_delete = self.requested_membership_plan_issued
+            if immediately and \
+                    (self.portal.default_membership_plan_id == requested_plan_id or membership_plan.auto_apply):
+                self.current_membership_plan_issued.stop()
+                self.current_membership_plan_issued = issued_plan
+                self.current_membership_plan_issued.start()
+                self.requested_membership_plan_issued = None
+                self.request_membership_plan_issued_immediately = False
+                what_is_done = 'started'
+            else:
+                self.requested_membership_plan_issued = issued_plan
+                self.request_membership_plan_issued_immediately = immediately
+                what_is_done = 'planed' if self.requested_membership_plan_issued.auto_apply else 'requested'
+        self.save()
+        if to_delete:
+            to_delete.delete()
+        if what_is_done:
+            self.notify_portal_company_member(
+                "Company %s just %s plan %s of membership at portal %s" %
+                (utils.jinja.link_company_profile(),
+                 utils.jinja.link('url_portal_companies_members', what_is_done, True),
+                 self.requested_membership_plan_issued.name if
+                 self.requested_membership_plan_issued else self.current_membership_plan_issued.name,
+                 utils.jinja.link_external(),
+                ))
+        return self
+
+    def set_new_plan_issued(self, requested_plan_id, immediately):
+        to_delete = None
+        if requested_plan_id is True:
+            if immediately:
+                self.current_membership_plan_issued.stop()
+                self.current_membership_plan_issued = self.requested_membership_plan_issued
+                self.current_membership_plan_issued.start()
+                self.requested_membership_plan_issued = None
+                self.request_membership_plan_issued_immediately = False
+            else:
+                self.requested_membership_plan_issued.confirmed = True
+        else:
+            issued_plan = self.create_issued_plan(MembershipPlan.get(requested_plan_id), user=g.user)
+            to_delete = self.requested_membership_plan_issued
+            if immediately:
+                self.current_membership_plan_issued.stop()
+                self.current_membership_plan_issued = issued_plan
+                self.current_membership_plan_issued.start()
+                self.requested_membership_plan_issued = None
+                self.request_membership_plan_issued_immediately = False
+            else:
+                self.requested_membership_plan_issued = issued_plan
+                self.requested_membership_plan_issued.confirmed = True
+
+        self.save()
+        if to_delete:
+            to_delete.delete()
+        return self
 
     @staticmethod
     def get_by_portal_id_company_id(portal_id=None, company_id=None):
@@ -580,6 +851,60 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             tag_pub.save()
         return self
 
+    def get_publication_count(self):
+        from ..models.materials import Publication, Material
+        ret = {}
+        for status in Publication.STATUSES:
+            for visibility in Publication.VISIBILITIES:
+                cnt = db(Publication).outerjoin(Material).outerjoin(PortalDivision).filter(and_(
+                    Material.company_id == self.company_id,
+                    PortalDivision.portal_id == self.portal_id,
+                    Publication.status == status,
+                    Publication.visibility == visibility
+                )).count()
+                utils.dict_deep_replace(cnt, ret, 'by_status_visibility', status, visibility)
+                utils.dict_deep_replace(cnt, ret, 'by_visibility_status', visibility, status)
+        return ret
+
+    def notify_portal_company_member(self, phrase, rights=None):
+        from ..models.messenger import Notification, Socket
+        from ..models.rights import BaseRightsEmployeeInCompany
+        from ..models.company import UserCompany
+
+        rights = rights or UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES
+
+        Socket.prepare_notifications(
+            BaseRightsEmployeeInCompany(self.portal.own_company).get_user_with_rights(rights),
+            Notification.NOTIFICATION_TYPES['PORTAL_COMPANIES_MEMBERS_ACTIVITY'],
+            phrase,
+            {
+                'portal': self.portal,
+                'company': self.company,
+                'url_company_profile': url_for('company.profile', company_id=self.company.id),
+                'url_portal_companies_members': utils.jinja.grid_url(self.id, 'portal.companies_members',
+                                                                     portal_id=self.portal.id)
+            },
+            except_to_user=[g.user])()
+
+    def notify_company_portal_memberee(self, phrase, rights=None):
+        from ..models.messenger import Notification, Socket
+        from ..models.rights import BaseRightsEmployeeInCompany
+        from ..models.company import UserCompany
+
+        rights = rights or UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION
+
+        Socket.prepare_notifications(
+            BaseRightsEmployeeInCompany(self.company).get_user_with_rights(rights),
+            Notification.NOTIFICATION_TYPES['COMPANY_PORTAL_MEMBEREE_ACTIVITY'], phrase,
+            {
+                'portal': self.portal,
+                'company': self.company,
+                'url_company_profile': url_for('company.profile', company_id=self.company.id),
+                'url_company_portal_memberees': utils.jinja.grid_url(self.id, 'company.portal_memberees',
+                                                                     company_id=self.company.id)
+            },
+            except_to_user=[g.user])()
+
 
 class ReaderUserPortalPlan(Base, PRBase):
     __tablename__ = 'reader_user_portal_plan'
@@ -595,12 +920,6 @@ class ReaderUserPortalPlan(Base, PRBase):
         self.time = time
         self.price = price
         self.amount = amount
-
-
-class MemberCompanyPortalPlan(Base, PRBase):
-    __tablename__ = 'member_company_portal_plan'
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
-    name = Column(TABLE_TYPES['short_name'], default='')
 
 
 class PortalDivisionSettingsDescriptor(object):
@@ -666,7 +985,7 @@ class PortalDivision(Base, PRBase):
             'description': self.html_description
         }
 
-    def notice_about_deleted_publications(self, because_of):
+    def notify_about_deleted_publications(self, because_of):
         from ..models.messenger import Socket, Notification
         from ..models.rights import PublishUnpublishInPortal
         dict_main = {
@@ -679,8 +998,8 @@ class PortalDivision(Base, PRBase):
                 'publication': p,
                 'material': p.material
             })
-            phrase = "Because of " + because_of + " user <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> just complitelly deleted a " \
-                                                  "material named `%(material.title)s` from portal <a class=\"external_link\" target=\"blank_\" href=\"//%(portal.host)s\">%(portal.name)s<span class=\"fa fa-external-link pr-external-link\"></span></a>"
+            phrase = "Because of %s user %s just complitelly deleted a material named `%%(material.title)s` from portal %s" % \
+                     (because_of, utils.jinja.link_user_profile(), utils.jinja.link_external())
 
             to_users = PublishUnpublishInPortal(p, self, self.portal.own_company).get_user_with_rights(
                 PublishUnpublishInPortal.publish_rights)

@@ -1,0 +1,348 @@
+{% extends "_ruslan/_index_layout.html" %}
+{% block title %}Profireader{% endblock title %}
+{% block head %}
+    {{ super() }}
+    {% include '_ruslan/partials/_header_files_sortable.html' %}
+{% endblock head %}
+
+{% block portal_content %}
+
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+
+    {#    <script type="text/ng-template" id="portal_edit_division_decription.html">#}
+    {#        <div>#}
+    {#            <div class="modal-header">#}
+    {#                <h3 class="modal-title">{{ _('set division html seo data') }}</h3>#}
+    {#            </div>#}
+    {##}
+    {#            <div class="modal-body">#}
+    {#                <label>{{ ::_('html title') }}</label><br/>#}
+    {#                <input class="w100 form-control mb2em" ng-model="seo_data.title" placeholder="{{ ::_('leave empty to use division name') }}"/>#}
+    {##}
+    {#                <label>{{ ::_('html keywords') }}</label><br/>#}
+    {#                <input class="w100 form-control mb2em" ng-model="seo_data.keywords" placeholder="{{ ::_('leave empty to use division tags') }}"/>#}
+    {##}
+    {#                <label>{{ ::_('html description') }}</label><br/>#}
+    {#                <textarea class="w100 h10em form-control" ng-model="seo_data.description" placeholder=""></textarea>#}
+    {#            </div>#}
+    {##}
+    {#            <div class="modal-footer">#}
+    {#                <button class="btn btn-primary" type="button" ng-click="set()">{{ _('Set') }}#}
+    {#                </button>#}
+    {#                <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>#}
+    {#            </div>#}
+    {#        </div>#}
+    {#    </script>#}
+
+
+    <script>
+        {#        module.controller('PortalDivisionController', function ($scope) {#}
+        {##}
+        {#            $scope.$watch('division.portal_division_type_id', function (newv, oldv) {#}
+        {#                if (newv !== oldv && newv == 'company_subportal' && (!$scope.division.settings || !$scope.division.company_id)) {#}
+        {#                    $scope.division.settings = {'company_id': $scope.data.portal.company_memberships[0]['company']['id']}#}
+        {#                }#}
+        {#                if ((newv === 'news' || newv === 'events') && !$scope.division['publication_count']) {#}
+        {#                    $scope.division['publication_count'] = 0;#}
+        {#                }#}
+        {#            });#}
+        {#        });#}
+
+        {#        module.controller('PortalDivisionDescriptionDialogControler', function ($scope, $uibModalInstance, seo_data) {#}
+        {##}
+        {#            $scope.$$translate = {{ translates('PortalDivisionDescriptionDialogControler')|safe }};#}
+        {##}
+        {#            {% raw %}#}
+        {##}
+        {#            $scope.seo_data = seo_data;#}
+        {#            $scope.set = function () {#}
+        {#                $uibModalInstance.close(seo_data);#}
+        {#            };#}
+        {##}
+        {#            $scope.cancel = $uibModalInstance.dismiss;#}
+        {##}
+        {#            {% endraw %}#}
+        {#        });#}
+
+        module.controller('PortalPlanController', function ($scope) {
+
+            {#            $scope.$watch('division.portal_division_type_id', function (newv, oldv) {#}
+            {#                if (newv !== oldv && newv == 'company_subportal' && (!$scope.division.settings || !$scope.division.company_id)) {#}
+            {#                    $scope.division.settings = {'company_id': $scope.data.portal.company_memberships[0]['company']['id']}#}
+            {#                }#}
+            {#                if ((newv === 'news' || newv === 'events') && !$scope.division['publication_count']) {#}
+            {#                    $scope.division['publication_count'] = 0;#}
+            {#                }#}
+            {#            });#}
+        });
+
+        module.controller('portal_plans', ['$scope', '$uibModal', function ($scope, $uibModal) {
+            $scope.$$translate = {{ translates('portal_plans')|safe }};
+
+
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('membership_plans');
+
+            {#            TODO: OZ by OZ: set this functionality by default (maybe)#}
+            $scope.afterSave = function (resp) {
+                $scope.data = resp;
+            };
+
+            $scope.addPlan = function () {
+                $scope.data.plans.push({
+                    id: randomHash(),
+                    name: '',
+                    cr_tm: null,
+                    auto_apply: false,
+                    publication_count_open: -1,
+                    publication_count_registered: 99,
+                    publication_count_payed: 0,
+                    publication_count_confidential: 0,
+                    price: 1.00,
+                    status: 'ACTIVE',
+                    currency_id: $scope.data.select.currency[0]['id'],
+                    duration: 1,
+                    duration_unit: 'months'
+                });
+            };
+
+            $scope.removePlan = function (index) {
+                if ($scope.data.plans[index]['status'] == 'DELETED') {
+                    $scope.data.plans[index]['status'] = $scope.data.plans[index]['old_status'];
+                    return;
+                }
+                if ($scope.data.plans[index]['cr_tm']) {
+                    $scope.data.plans[index]['old_status'] = $scope.data.plans[index]['status'];
+                    $scope.data.plans[index]['status'] = 'DELETED';
+                } else {
+                    $scope.data.plans.splice(index, 1);
+
+                }
+
+            };
+
+            $scope.unset_all_other_defaults = function (plan) {
+                _.each($scope.data.plans, function (p) {
+                    if (p !== plan) {
+                        p.default = false;
+                    }
+                });
+            };
+
+            $scope.togglePlanStatus = function (index) {
+                $scope.data.plans[index]['status'] = ($scope.data.plans[index]['status'] === 'ACTIVE') ? 'INACTIVE' : 'ACTIVE';
+
+            };
+
+            $scope.plan_is_not_active = function (plan) {
+                return plan['status'] !== 'ACTIVE';
+            };
+
+            $scope.sortableOptions = {
+                stop: function (e, ui) {
+                    if ($scope.data_validation.errors && $scope.data_validation.errors.remove_plan) {
+                        $scope.data_validation.errors.remove_plan = []
+                    }
+                    if ($scope.data_validation.warnings && $scope.data_validation.warnings.remove_plan) {
+                        $scope.data_validation.warnings.remove_plan = []
+                    }
+                },
+                'tolerance': 'pointer',
+                containment: "parent",
+                axis: "y",
+                handle: ".fa-arrows-v"
+            };
+
+        }]);
+    </script>
+    {% raw %}
+
+    <div class="controller-portal-plans" ng-controller="portal_plans" ng-cloak>
+        <form name="formPortalPlans">
+            <div class="container pr" af af-after-save="afterSave" af-amid-load="amidLoad"
+                 af-watch="[data.plans, data.select.portal.default_membership_plan_id]"
+                 ng-model="data">
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed"></div>
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed-message">
+                    <p><i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _(data_state + ' portal data...') }}
+                    </p>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <h2>{{ ::_('Portal membership plans') }}</h2>
+                        <hr/>
+                    </div>
+                </div>
+
+
+                <div class="row">
+
+                    <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Default/Auto') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Plan name') }}</label>
+                    </div>
+
+                    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Publications count') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Plan duration') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('Plan price') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <button class="pull-right btn btn-success form-control" type="button"
+                                popover-placement="left"
+                                pr-validation-answer="data_validation:one_default_active_plan"
+                                ng-click="addPlan()"><i class="fa fa-plus"></i> {{ ::_('add plan') }}
+                        </button>
+                    </div>
+
+                </div>
+                <div ui-sortable="sortableOptions" ng-model="data.plans">
+                    <div class="row"
+                         ng-controller="PortalPlanController"
+                         ng-repeat="(plan_index, plan) in data.plans">
+                        <div ng-class="{'disabled': plan_is_not_active(plan)}">
+                            <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1 p025em">
+                                <span style="cursor: row-resize"
+                                      class="fa fa-arrows-v form-control w2em border-none di"></span>
+                                <input class="di"
+                                       pr-validation-answer="data_validation:one_default_active_plan"
+                                       pr-validation-disable="plan_is_not_active(plan)"
+                                       ng-disabled="plan_is_not_active(plan)"
+                                       type="radio"
+                                       ng-click="unset_all_other_defaults(plan)"
+                                       ng-value="plan.id"
+                                       ng-model="data.select.portal.default_membership_plan_id"/>/
+                                    <input ng-if="data.select.portal.default_membership_plan_id !== plan.id"
+                                    class="di" ng-disabled="plan_is_not_active(plan)"
+                                    type="checkbox" ng-model="plan.auto_apply"/>
+                                    <input ng-if="data.select.portal.default_membership_plan_id === plan.id"
+                                           class="di" ng-disabled="true" checked="checked" type="checkbox"/>
+                            </div>
+                            <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                <input class="form-control w10em di"
+                                       pr-validation-disable="plan_is_not_active(plan)"
+                                       ng-disabled="plan_is_not_active(plan)"
+                                       pr-validation-answer="data_validation:plans[plan.id].name"
+                                       placeholder="{{ _('Plan name placeholder') }}"
+                                       ng-model="plan.name"/>
+                            </div>
+
+                            <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
+                                <input class="form-control w5em di publication-bg-VISIBILITY-OPEN"
+                                       pr-validation-disable="plan_is_not_active(plan)"
+                                       ng-disabled="plan_is_not_active(plan)"
+                                       pr-validation-answer="data_validation:plans[plan.id].publication_count_open"
+                                       placeholder="{{ _('Open') }}"
+                                       ng-model="plan.publication_count_open"/>
+                                <input class="form-control w5em di publication-bg-VISIBILITY-REGISTERED"
+                                       pr-validation-disable="plan_is_not_active(plan)"
+                                       ng-disabled="plan_is_not_active(plan)"
+                                       pr-validation-answer="data_validation:plans[plan.id].publication_count_registered"
+                                       placeholder="{{ _('Registered') }}"
+                                       ng-model="plan.publication_count_registered"/>
+                                <input class="form-control w5em di publication-bg-VISIBILITY-PAYED"
+                                       pr-validation-disable="plan_is_not_active(plan)"
+                                       ng-disabled="plan_is_not_active(plan)"
+                                       pr-validation-answer="data_validation:plans[plan.id].publication_count_payed"
+                                       placeholder="{{ _('Payed') }}"
+                                       ng-model="plan.publication_count_payed"/>
+                            </div>
+
+                            <div ng-if="plan.id === data.select.portal.default_membership_plan_id">
+                                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                    <span class="form-control border-none">{{ ::_('Unlimited') }}</span>
+                                </div>
+                                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                    <span class="form-control border-none">{{ ::_('Free') }}</span>
+                                </div>
+                            </div>
+                            <div ng-if="plan.id !== data.select.portal.default_membership_plan_id">
+                                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+
+                                    <input class="form-control w5em di"
+                                           pr-validation-disable="plan_is_not_active(plan)"
+                                           ng-disabled="plan_is_not_active(plan)"
+                                           pr-validation-answer="data_validation:plans[plan.id].duration"
+                                           placeholder="{{ _('Plan duration') }}"
+                                           ng-model="plan.duration">
+
+
+                                    <select pr-validation-disable="plan_is_not_active(plan)"
+                                            ng-disabled="plan_is_not_active(plan)"
+                                            popover-trigger="none"
+                                            class="form-control w7em di"
+                                            ng-model="plan.duration_unit"
+                                            ng-options="du.id as du.name for du in data.select.duration_unit">
+                                    </select>
+                                </div>
+
+                                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                                    <input class="form-control w5em di"
+                                           pr-validation-disable="plan_is_not_active(plan)"
+                                           ng-disabled="plan_is_not_active(plan)"
+                                           pr-validation-answer="data_validation:plans[plan.id].price"
+                                           placeholder="{{ _('Set price (0 for free)') }}"
+                                           ng-model="plan.price"/>
+
+                                    <select
+                                            pr-validation-disable="plan_is_not_active(plan)"
+                                            ng-disabled="plan_is_not_active(plan)"
+                                            popover-trigger="none"
+                                            class="form-control w7em di"
+                                            ng-model="plan.currency_id"
+                                            ng-options="cr.id as cr.name for cr in data.select.currency">
+                                    </select>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+
+                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                            <button ng-click="removePlan($index)"
+                                    pr-validation-answer="data_validation:plans[plan.id].actions"
+                                    class="pull-right btn btn-warning form-control"><i
+                                    ng-class="{'fa-minus': plan['status'] != 'DELETED','fa-undo': plan['status'] == 'DELETED'}"
+                                    class="fa"></i>
+                                {{ _(plan['status'] == 'DELETED'?'undo remove':'remove plan') }}
+                            </button>
+                        </div>
+
+
+                    </div>
+                </div>
+                <div class="row">
+                    <hr/>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 p025em">
+                        <button class="btn btn-primary pull-right border-radius w20em"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save')">{{
+                            ::_('Save plans') }}
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+    {% endraw %}
+
+
+{% endblock portal_content %}

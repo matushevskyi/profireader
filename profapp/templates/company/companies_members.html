@@ -5,6 +5,7 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_grid.html' %}
+    {% include '_ruslan/partials/_header_files_membership_plan.html' %}
 {% endblock head %}
 
 {% block portal_content %}
@@ -14,13 +15,14 @@
 
 
     <script>
-        module.controller('company_partners', function ($scope, $ok, $uibModal) {
-            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_partners');
+
+        module.controller('company_partners', function ($scope, $ok, $membership_plan) {
+
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_members');
             $scope.$$translate = {{translates('company_partners') | safe}};
-            $scope.url_companies_partners = '{{ url_for('portal.companies_partners_load', company_id=company.id)
-         }}';
+            $scope.url_load = '{{ url_for('portal.companies_members_load', portal_id=portal.id)}}';
             $scope.url_company_partner_details = {{ raw_url_for('portal.company_partner_update')| safe}};
-            $scope.url_change_status = {{ raw_url_for('portal.company_partners_change_status')|safe }};
+            $scope.url_change_status = {{ raw_url_for('portal.company_member_change_status')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
 
             {% raw %}
@@ -42,31 +44,49 @@
                 if (column_name == 'actions') {
                     if (action === 'ALLOW') {
                         window.location.href = $scope.url_company_partner_details({
-                            company_id: row.company_id, member_id: row.member.company.id
+                            company_id: row.company_id, member_id: row.membership.company.id
                         });
                         return;
                     } else {
-                            return $ok($scope.url_change_status({
-                                company_id: row.company_id,
-                                portal_id: row.portal_id
-                            }), {action: action, who: row.who, partner_id: row.member.company.id}, function (resp) {
-                               $scope.gridApi.grid.grid_change_row(resp);
-                            }).finally(function () {})
+                        return $ok($scope.url_change_status({
+                            company_id: row.company_id,
+                            portal_id: row.portal_id
+                        }), {action: action, who: row.who, partner_id: row.membership.company.id}, function (resp) {
+                            $scope.gridApi.grid.grid_change_row(resp);
+                        }).finally(function () {
+                        })
                     }
                 }
             };
 
+            $scope.set_membership_plan = function (id, row, column_name) {
+                $membership_plan({
+                    membership_id: row['id'],
+                    request_or_set: 'set'
+                }).result.then(function (resp) {
+                    $scope.gridApi.grid.grid_change_row(resp);
+                });
+            };
+
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                urlLoadGridData: $scope.url_companies_partners,
+                urlLoadGridData: $scope.url_load,
                 columnDefs: [
                     {
-                        name: 'member.company.name',
+                        name: 'membership.company.name',
                         type: 'link',
-                        img_url: 'member.company.logo.url',
-                        href: 'portal_link(row.entity.member.company.own_portal.host)'
+                        img_url: 'membership.company.logo.url',
+                        href: 'portal_link(row.entity.membership.company.own_portal.host)'
                     },
-                    {name: 'member.status', filter: {type: 'multi_select', default_selected: true}},
-                    {name: 'member.rights', width: '200', type: 'icons', afilter: {type: 'input'}},
+                    {
+                        name: 'membership_plan',
+                        onclick: 'set_membership_plan',
+                        render: function (row, value) {
+                            return row['membership']['current_membership_plan_issued']['name'] +
+                                    (row['membership']['requested_membership_plan_issued'] ? ('/<em>' + row['membership']['requested_membership_plan_issued']['name'] + '</em>') : '');
+                        }
+                    },
+                    {name: 'membership.status', afilter: {type: 'multi_select', default_selected: true}},
+                    {name: 'membership.rights', width: '200', type: 'icons', afilter: {type: 'input'}},
                     {
                         name: 'actions', width: '*', type: 'actions', onclick: 'grid_action', classes: function (id,
                                                                                                                  entity, field) {

@@ -14,7 +14,7 @@ from sqlalchemy import and_, desc
 from .errors import BadDataProvided
 import re
 from ..controllers import errors
-from ..utils import email_utils
+
 
 @index_bp.route('portals_list/', methods=['GET'])
 @check_right(AllowAll)
@@ -44,7 +44,6 @@ def portals_list_load(json):
 def auth_before_subscribe_to_portal(portal_id):
     session['portal_id'] = portal_id
     return redirect(url_for('auth.login_signup_endpoint', login_signup='login'))
-
 
 
 # @index_bp.route('send_email', methods=['POST'])
@@ -141,7 +140,6 @@ def list_reader_load(json):
     }
 
 
-
 @index_bp.route('add_to_favorite/', methods=['OK'])
 @check_right(UserNonBanned)
 def add_delete_favorite(json):
@@ -155,7 +153,6 @@ def add_delete_like(json):
     ReaderPublication.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
     return {'liked': ReaderPublication.count_likes(g.user.id, json.get('article')['id']),
             'list_liked_reader': ReaderPublication.get_list_reader_liked(json.get('article')['id'])}
-
 
 
 @index_bp.route('subscribe/', methods=['OK'])
@@ -275,7 +272,7 @@ def contact_us_load(json_data):
     elif not re.match(REGEXP.EMAIL, json_data.get('email', '')):
         return {'error': 'Please enter correct email'}
     else:
-        email_utils.send_email(subject='Send help message', send_to=["profireader.service@gmail.com"],
+        utils.email.send_email(subject='Send help message', send_to=["profireader.service@gmail.com"],
                                html=('From ' + json_data['email'] + ': ' + json_data['message']))
 
         return {}
@@ -293,6 +290,3 @@ def reader_add_delete_favorite(json, publication_id):
 def reader_add_delete_liked(json, publication_id):
     publication = Publication.get(publication_id).add_delete_like(json['on'])
     return {'on': True if json['on'] else False, 'liked_count': publication.liked_count()}
-
-
-

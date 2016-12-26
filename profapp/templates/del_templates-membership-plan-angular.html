@@ -1,0 +1,201 @@
+<script>
+    module.controller('RequestSetMembershipPlanController', function ($scope, $ok, $uibModalInstance, membership_id) {
+
+        $scope.$$translate = {{ translates('RequestMembershipPlanController') | safe }};
+
+        $scope.url_request_membership_plan = {{ raw_url_for('portal.request_membership_plan') | safe }};
+        $scope.membership_id = membership_id;
+        $scope.$membership_plan = $membership_plan;
+
+        $scope.afterSave = function (resp) {
+            $uibModalInstance.close(resp)
+        };
+
+        $scope.cancel = $uibModalInstance.dismiss;
+
+    });
+</script>
+
+{% raw %}
+<script type="text/ng-template" id="submit_publish_dialog.html">
+    <div af ng-model="data" af-url="{{ url_submit_to_portal({'article_action': action}) }}"
+         af-after-save="afterSave"
+         af-amid-load="amidLoad"
+         af-watch="data.publication" ng-cloak>
+        <div class="modal-header">
+            <h3 class="modal-title">{{ _(action + ' ' + object_name + ' at portal') }}</h3>
+        </div>
+        <div class="modal-body">
+            {{ _('You are going to ' + action + ' ' + object_name + ' `%(data.publication.material.title)s` at portal
+            `%(data.portal.name)s`') }}<br/>
+            <div ng-if="action !== 'UNPUBLISH' && action !== 'DELETE' && action !== 'UNDELETE'">
+                <br/>
+                {{ _('Select portal division') }}<span
+                    af-validation-answer="data_validation:portal_division_id"></span><br/>
+                <div ng-repeat="division in data.portal.divisions">
+                    <label>
+                        <input
+                                name="material_details_publish_dialog_division"
+                                ng-value="division.id" ng-model="data.publication.portal_division_id"
+                                type="radio"> {{ division.name }}
+                    </label>
+                </div>
+                <hr/>
+                <div class="selected_tags">
+                    Tags:
+                    <ui-select ng-model="$parent.$parent.data.publication.tags" class="form-control" sortable="true"
+                               multiple>
+                        <ui-select-match placeholder="Select tag...">{{$item.text}}</ui-select-match>
+                        <ui-select-choices repeat="tag in get_tags_for_selected_division($select.search)">
+                            <div ng-bind-html="(tag.text | highlight: $select.search)"></div>
+                            <small ng-bind-html="tag.description | highlight: $select.search"></small>
+                        </ui-select-choices>
+                    </ui-select>
+                </div>
+                <hr/>
+                {{ _('Select publication date') }}<span
+                    af-validation-answer="data_validation:publishing_tm"></span><br/>
+                <input pr-date-time-picker class="form-control" ng-model="data.publication.publishing_tm"/>
+                <div ng-if="is_selection_division_event()">
+                    {{ _('Select event begin date') }}<span
+                        af-validation-answer="data_validation:event_begin_tm"></span><br/>
+                    <input pr-date-time-picker class="form-control" ng-model="data.publication.event_begin_tm"/>
+                </div>
+                <div ng-if="is_selection_division_event()">
+                    {{ _('Select event end date') }}<span
+                        af-validation-answer="data_validation:event_end_tm"></span><br/>
+                    <input pr-date-time-picker class="form-control" ng-model="data.publication.event_end_tm"/>
+                </div>
+                <div ng-if="object_name === 'material'">
+                    <hr/>
+                    <label ng-class="{disabled: !data.can_material_also_be_published}"><input
+                            ng-disabled="!data.can_material_also_be_published"
+                            ng-model="$parent.$parent.data.also_publish"
+                            type="checkbox">&nbsp;{{
+                        _('also publish material') }}</label><br/>
+                    <div ng-if="!data.can_material_also_be_published">
+                        {{ _('Sorry, you company `%(data.company.name)s` have no permission to publish at portal
+                        %(data.portal.name)s') }}<br/>
+                    </div>
+                    {{ _('You can send message to company administration') }}<br/>
+                    <textarea disabled="disabled" style="width: 100%" ng-model="message"></textarea>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="modal-footer">
+            <button ng-if="action === 'SUBMIT'" class="btn btn-primary"
+                    ng-disabled="!$af.isActionAllowed(data, 'save')"
+                    type="button" ng-click="$af.save(data)"><span ng-if="!data.also_publish">{{ _('Do submit') }}</span>
+                <span ng-if="data.also_publish">{{ _('Do submit & publish') }}</span>
+            </button>
+
+            <button ng-if="action !== 'SUBMIT' " class="btn btn-primary"
+                    ng-disabled="!$af.isActionAllowed(data, 'save')"
+                    type="button" ng-click="$af.save(data)">{{ _('Do ' + action) }}
+            </button>
+
+            <button class="btn btn-warning" type="button" ng-click="action_cancel()">{{ _('Cancel ' + action) }}
+            </button>
+        </div>
+    </div>
+</script>
+
+{% endraw %}
+
+
+<script>
+    module.controller('membership_tags', function ($scope, $ok, $uibModalInstance, company_id, portal_id) {
+
+        $scope.$$translate = {{ translates('membership_tags')|safe }};
+        $scope.set_membership_tags = {{ raw_url_for('portal.membership_set_tags')|safe }};
+        {% raw %}
+
+        $scope.data = {
+            portal: {id: portal_id},
+            company: {id: company_id},
+            all_tags: [],
+            selected_tags: []
+        };
+
+
+        $scope.afterSave = function (resp, defcallback) {
+            $uibModalInstance.close(resp)
+        };
+
+        $scope.get_tags = function (search_text) {
+            var catalog_division = _.findWhere($scope.data.portal.divisions, {'portal_division_type_id': 'catalog'}) || {'tags': []};
+            return _.filter(catalog_division.tags, function (tag) {
+                var ret = ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
+                (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
+                return ret;
+            })
+        };
+
+        $scope.action_cancel = $uibModalInstance.dismiss;
+
+        //added listener per @homerjam per https://github.com/angular-ui/ui-select/issues/974
+        $scope.$on('uiSelectSort:change', function (event, args) {
+            $scope.data.tags = args.array;
+            if (!$scope.$$phase) { //http://stackoverflow.com/questions/20263118/what-is-phase-in-angularjs
+                $scope.$apply();
+            }
+        });
+
+        {% endraw %}
+
+    });
+</script>
+
+{% raw %}
+<script type="text/ng-template" id="membership_tags.html">
+    <div af ng-model="data"
+         af-url="{{ set_membership_tags({company_id: data.company.id, portal_id: data.portal.id }) }}"
+         af-after-save="afterSave"
+         af-watch="data.tags" ng-cloak>
+        <div class="modal-header">
+            <h3 class="modal-title">{{ _('select tags') }}</h3>
+        </div>
+        <div class="modal-body">
+            {{ _('You are going to select tags for company `%(data.company.name)s` at portal
+            `%(data.portal.name)s`')}}<br/>
+            <div class="selected_tags">
+                Tags:
+                <ui-select ng-model="data.tags" class="form-control" sortable="true"
+                           multiple>
+                    <ui-select-match placeholder="Select tag...">{{$item.text}}</ui-select-match>
+                    <ui-select-choices repeat="tag in get_tags($select.search)">
+                        <div ng-bind-html="(tag.text | highlight: $select.search)"></div>
+                        <small ng-bind-html="tag.description | highlight: $select.search"></small>
+                    </ui-select-choices>
+                </ui-select>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary"
+                    ng-disabled="!$af.isActionAllowed(data, 'save')" type="button"
+                    ng-click="$af.save(data)">{{ _('Save tags') }}
+            </button>
+            <button class="btn btn-warning" type="button" ng-click="action_cancel()">{{ _('Cancel') }}
+            </button>
+        </div>
+    </div>
+</script>
+
+<script type="text/ng-template" id="confirm.html">
+    <div class="modal-header">
+        <h3 class="modal-title">{{ title }}</h3>
+    </div>
+    <div class="modal-body">
+        {{ question }}
+    </div>
+
+    <div class="modal-footer">
+        <button ng-repeat="b in buttons" class="btn {{b.class_name}}" ng-click="ans(b.answer)">{{ b.text }}</button>
+    </div>
+</script>
+{% endraw %}
+
+

@@ -174,6 +174,33 @@ CREATE TYPE pr_enum_user_company_status AS ENUM (
 ALTER TYPE pr_enum_user_company_status OWNER TO postgres;
 
 --
+-- Name: pr_membership_plan_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_membership_plan_status AS ENUM (
+    'ACTIVE',
+    'INACTIVE',
+    'DELETED'
+);
+
+
+ALTER TYPE pr_membership_plan_status OWNER TO postgres;
+
+--
+-- Name: pr_membership_plan_used_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_membership_plan_used_status AS ENUM (
+    'REQUESTED',
+    'ACTIVE',
+    'REFUSED',
+    'USED'
+);
+
+
+ALTER TYPE pr_membership_plan_used_status OWNER TO postgres;
+
+--
 -- Name: status_name_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -188,6 +215,48 @@ CREATE TYPE status_name_type AS ENUM (
 
 
 ALTER TYPE status_name_type OWNER TO postgres;
+
+--
+-- Name: __change_enum_type(character varying, character varying[]); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __change_enum_type(enum_name character varying, enum_values character varying[]) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$DECLARE
+
+tcs record;
+cnt integer;
+
+BEGIN
+
+CREATE TEMP TABLE cnts AS SELECT table_name as tab, column_name as col, column_default as cd FROM information_schema.columns WHERE data_type = 'USER-DEFINED' AND udt_name = enum_name;
+
+cnt = 0;
+FOR tcs IN SELECT * FROM cnts LOOP
+  EXECUTE 'ALTER TABLE "' || tcs.tab || '" ALTER COLUMN "' || tcs.col || '" TYPE character varying(1000)'; 
+  EXECUTE 'ALTER TABLE "' || tcs.tab || '" ALTER "' || tcs.col || '" DROP DEFAULT';
+  cnt = cnt +1;
+END LOOP;
+
+
+EXECUTE 'DROP TYPE "' || enum_name || '"';
+EXECUTE 'CREATE TYPE ' || enum_name || ' AS ENUM (''' || array_to_string(enum_values, ''', ''') || ''')';
+
+FOR tcs IN SELECT * FROM cnts LOOP
+  EXECUTE 'ALTER TABLE "' || tcs.tab || '" ALTER COLUMN "' || tcs.col || '" TYPE "' || enum_name || '" USING "'|| tcs.col || '"::"' || enum_name || '"';
+  IF tcs.cd IS NULL THEN
+    EXECUTE 'ALTER TABLE "' || tcs.tab || '" ALTER COLUMN "' || tcs.col || '" SET DEFAULT(NULL)';
+  ELSE
+    EXECUTE 'ALTER TABLE "' || tcs.tab || '" ALTER COLUMN "' || tcs.col || '" SET DEFAULT(' || tcs.cd || ')';
+  END IF;
+END LOOP;
+
+RETURN cnt;
+
+END$$;
+
+
+ALTER FUNCTION public.__change_enum_type(enum_name character varying, enum_values character varying[]) OWNER TO postgres;
 
 --
 -- Name: __disfigure_email(character varying); Type: FUNCTION; Schema: public; Owner: postgres
@@ -255,6 +324,38 @@ END$$;
 
 
 ALTER FUNCTION public.__localize_hosts(a_local_host character varying) OWNER TO postgres;
+
+--
+-- Name: __show_enum_types(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __show_enum_types() RETURNS TABLE(schema_name character varying, type_name character varying, type_values character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+
+return query select n.nspname::character varying as schema_name, t.typname::character varying as type_name, string_agg(e.enumlabel, ', ')::character varying FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace GROUP BY schema_name, type_name;
+
+END
+$$;
+
+
+ALTER FUNCTION public.__show_enum_types() OWNER TO postgres;
+
+--
+-- Name: __show_enum_types(character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __show_enum_types(enum_schema character varying) RETURNS SETOF record
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+return query select n.nspname::character varying, t.typname::character varying, string_agg(e.enumlabel, '', '')::character varying FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace GROUP BY e_schema, enum_name;
+
+END$$;
+
+
+ALTER FUNCTION public.__show_enum_types(enum_schema character varying) OWNER TO postgres;
 
 --
 -- Name: __strip_tags(text); Type: FUNCTION; Schema: public; Owner: postgres
@@ -474,6 +575,21 @@ END$$;
 ALTER FUNCTION public.notification_unread_count(a_to_user_id character varying) OWNER TO postgres;
 
 --
+-- Name: portal_create_default_plans(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION portal_create_default_plans() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+  INSERT INTO membership_plan (name, portal_id) VALUES('Free plan', NEW.id);
+  INSERT INTO membership_plan (name, portal_id, publication_count_open, publication_count_registered,publication_count_payed, publication_count_confidential, price, position) VALUES('Ultimate plan', NEW.id, -1, -1, -1, -1, -1, 1);
+  RETURN NEW;
+END;$$;
+
+
+ALTER FUNCTION public.portal_create_default_plans() OWNER TO postgres;
+
+--
 -- Name: row_cr(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -691,23 +807,6 @@ END$$;
 
 
 ALTER FUNCTION public.seconds_ago(a_time timestamp without time zone) OWNER TO postgres;
-
---
--- Name: show_enum_types(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION show_enum_types() RETURNS TABLE(enum_schema text, enum_name text, enum_values text)
-    LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-   RETURN QUERY EXECUTE 'SELECT n.nspname::text as enum_schema, t.typname::text as enum_name, string_agg(e.enumlabel, '', '')::text AS enum_values FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace GROUP BY enum_schema, enum_name';
-
-END
-$$;
-
-
-ALTER FUNCTION public.show_enum_types() OWNER TO postgres;
 
 --
 -- Name: tag_membersgip_set_portal_division_to_catalog(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1027,6 +1126,20 @@ CREATE TABLE country (
 ALTER TABLE country OWNER TO pfuser;
 
 --
+-- Name: currency; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE currency (
+    id character varying(10) NOT NULL,
+    name character varying(100),
+    "position" integer DEFAULT 0 NOT NULL,
+    active boolean DEFAULT true NOT NULL
+);
+
+
+ALTER TABLE currency OWNER TO pfuser;
+
+--
 -- Name: employee; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
 --
 
@@ -1218,33 +1331,71 @@ CREATE TABLE member_company_portal (
     id character varying(36) NOT NULL,
     company_id character varying(36) NOT NULL,
     portal_id character varying(36) NOT NULL,
-    member_company_portal_plan_id character varying(36),
     rights bigint DEFAULT 0 NOT NULL,
     status pr_enum_member_company_portal_status DEFAULT 'APPLICANT'::pr_enum_member_company_portal_status NOT NULL,
-    cr_tm timestamp without time zone NOT NULL
+    cr_tm timestamp without time zone NOT NULL,
+    membership_plan_used_id character varying(36)
 );
 
 
 ALTER TABLE member_company_portal OWNER TO pfuser;
 
 --
--- Name: member_company_portal_plan; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: membership_plan; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
 --
 
-CREATE TABLE member_company_portal_plan (
+CREATE TABLE membership_plan (
     id character varying(36) NOT NULL,
-    name character varying(100) NOT NULL
+    name character varying(100) NOT NULL,
+    portal_id character varying(36),
+    duration interval DEFAULT '666 years'::interval NOT NULL,
+    publication_count_open integer DEFAULT (-1) NOT NULL,
+    publication_count_registered integer DEFAULT 99 NOT NULL,
+    publication_count_payed integer DEFAULT 0 NOT NULL,
+    publication_count_confidential integer DEFAULT 0 NOT NULL,
+    price numeric(20,2) DEFAULT 0 NOT NULL,
+    cr_tm timestamp without time zone DEFAULT ('now'::text)::timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone DEFAULT ('now'::text)::timestamp without time zone NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    status pr_membership_plan_status DEFAULT 'ACTIVE'::pr_membership_plan_status NOT NULL,
+    currency_id character varying(5) NOT NULL
 );
 
 
-ALTER TABLE member_company_portal_plan OWNER TO pfuser;
+ALTER TABLE membership_plan OWNER TO pfuser;
 
 --
--- Name: TABLE member_company_portal_plan; Type: COMMENT; Schema: public; Owner: pfuser
+-- Name: TABLE membership_plan; Type: COMMENT; Schema: public; Owner: pfuser
 --
 
-COMMENT ON TABLE member_company_portal_plan IS 'persistent';
+COMMENT ON TABLE membership_plan IS 'persistent';
 
+
+--
+-- Name: membership_plan_used; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+CREATE TABLE membership_plan_used (
+    id character varying(36) NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone NOT NULL,
+    stopped_tm timestamp without time zone,
+    price numeric(20,2) NOT NULL,
+    duration interval NOT NULL,
+    publication_count_open integer NOT NULL,
+    publication_count_registered integer NOT NULL,
+    publication_count_payed integer NOT NULL,
+    publication_count_confidential integer NOT NULL,
+    started_by_user_id character varying(36) NOT NULL,
+    stopped_by_user_id character varying(36),
+    membership_plan_id character varying(36) NOT NULL,
+    member_company_portal_id character varying(36) NOT NULL,
+    started_tm timestamp without time zone,
+    status pr_membership_plan_used_status DEFAULT 'REQUESTED'::pr_membership_plan_used_status NOT NULL
+);
+
+
+ALTER TABLE membership_plan_used OWNER TO pfuser;
 
 --
 -- Name: message; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
@@ -1293,14 +1444,14 @@ CREATE TABLE portal (
     portal_layout_id character varying(36) DEFAULT '579944f0-82a0-4001-b175-e97255232d1c'::character varying NOT NULL,
     host character varying(200),
     lang character varying(2) DEFAULT 'uk'::character varying NOT NULL,
+    favicon_file_img_id character varying(36),
     url_facebook character varying(1000),
     url_google character varying(1000),
+    url_twitter character varying(1000),
     url_linkedin character varying(1000),
     logo_file_img_id character varying(36),
     aliases text DEFAULT ''::text,
-    status character varying(50) DEFAULT 'ACTIVE'::character varying NOT NULL,
-    favicon_file_img_id character varying(36),
-    url_twitter character varying(1000)
+    status character varying(50) DEFAULT 'ACTIVE'::character varying NOT NULL
 );
 
 
@@ -1814,6 +1965,14 @@ ALTER TABLE ONLY contact
 
 
 --
+-- Name: currency_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY currency
+    ADD CONSTRAINT currency_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: employee_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
 --
 
@@ -1899,6 +2058,14 @@ ALTER TABLE ONLY ip
 
 ALTER TABLE ONLY tag_membership
     ADD CONSTRAINT membership_pk PRIMARY KEY (tag_id, member_company_portal_id);
+
+
+--
+-- Name: membership_plan_usage_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+--
+
+ALTER TABLE ONLY membership_plan_used
+    ADD CONSTRAINT membership_plan_usage_pkey PRIMARY KEY (id);
 
 
 --
@@ -2025,7 +2192,7 @@ ALTER TABLE ONLY portal
 -- Name: portal_plan_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
 --
 
-ALTER TABLE ONLY member_company_portal_plan
+ALTER TABLE ONLY membership_plan
     ADD CONSTRAINT portal_plan_pkey PRIMARY KEY (id);
 
 
@@ -2330,6 +2497,13 @@ CREATE TRIGGER id BEFORE INSERT ON portal_layout FOR EACH ROW EXECUTE PROCEDURE 
 -- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
 --
 
+CREATE TRIGGER id BEFORE INSERT ON translate FOR EACH ROW EXECUTE PROCEDURE row_id();
+
+
+--
+-- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
 CREATE TRIGGER id BEFORE INSERT ON country FOR EACH ROW EXECUTE PROCEDURE row_id();
 
 
@@ -2338,13 +2512,6 @@ CREATE TRIGGER id BEFORE INSERT ON country FOR EACH ROW EXECUTE PROCEDURE row_id
 --
 
 CREATE TRIGGER id BEFORE INSERT ON func_profiler FOR EACH ROW EXECUTE PROCEDURE row_id();
-
-
---
--- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
---
-
-CREATE TRIGGER id BEFORE INSERT ON translate FOR EACH ROW EXECUTE PROCEDURE row_id();
 
 
 --
@@ -2523,6 +2690,20 @@ CREATE TRIGGER tr_member_company_portal_id_cr BEFORE INSERT ON member_company_po
 
 
 --
+-- Name: tr_membership_plan_id_cr_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_membership_plan_id_cr_md BEFORE INSERT ON membership_plan FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_membership_plan_usage; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_membership_plan_usage BEFORE INSERT ON membership_plan_used FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
 -- Name: tr_message_id_cr; Type: TRIGGER; Schema: public; Owner: pfuser
 --
 
@@ -2541,6 +2722,13 @@ CREATE TRIGGER tr_message_id_cr_tm BEFORE INSERT ON notification FOR EACH ROW EX
 --
 
 CREATE TRIGGER tr_message_set_last_message_in_contact AFTER INSERT ON message FOR EACH ROW EXECUTE PROCEDURE message_set_last_message_tm_in_contact();
+
+
+--
+-- Name: tr_portal_create_free_plan; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_portal_create_free_plan AFTER INSERT ON portal FOR EACH ROW EXECUTE PROCEDURE portal_create_default_plans();
 
 
 --
@@ -2625,13 +2813,6 @@ CREATE TRIGGER tr_user_md BEFORE UPDATE ON "user" FOR EACH ROW EXECUTE PROCEDURE
 --
 
 CREATE TRIGGER tr_user_row BEFORE INSERT ON "user" FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
-
-
---
--- Name: uid; Type: TRIGGER; Schema: public; Owner: pfuser
---
-
-CREATE TRIGGER uid BEFORE INSERT ON member_company_portal_plan FOR EACH ROW EXECUTE PROCEDURE row_id();
 
 
 --
@@ -2836,11 +3017,11 @@ ALTER TABLE ONLY publication
 
 
 --
--- Name: fk_member_company_portal_plan_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+-- Name: fk_membership_plan_portal_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
 --
 
-ALTER TABLE ONLY member_company_portal
-    ADD CONSTRAINT fk_member_company_portal_plan_id FOREIGN KEY (member_company_portal_plan_id) REFERENCES member_company_portal_plan(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE ONLY membership_plan
+    ADD CONSTRAINT fk_membership_plan_portal_id FOREIGN KEY (portal_id) REFERENCES portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --

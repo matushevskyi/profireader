@@ -96,30 +96,7 @@
                 });
             };
 
-            $scope.openForFavIcoFile = function (set_none) {
-                $('.favico-select-file-upload').click();
-            };
 
-
-            $scope.selectFiveIcoFile = function () {
-                var the_file = (event.target.files && event.target.files.length) ? event.target.files[0] : false;
-                $(this).val('');
-                if (the_file) {
-                    var fr = new FileReader();
-                    fr.onload = function (e) {
-                        $scope.data.portal['favicon'] = {
-                            'mime': the_file.type,
-                            'name': the_file.name,
-                            'content': fr.result
-                        }
-                    }
-
-                    fr.onerror = function (e) {
-                        add_message('File loading error', 'warning');
-                    };
-                    fr.readAsDataURL(the_file);
-                }
-            };
 
             $scope.afterSave = function (resp) {
                 if (!$scope.portal_id) {
