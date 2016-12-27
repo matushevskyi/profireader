@@ -75,12 +75,23 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 }
 
                 function generateCellTemplate(col, columnindex) {
-                    var classes_for_row = ' ui-grid-cell-contents pr-grid-cell-field-type-' + (col.type ? col.type : 'text') + ' pr-grid-cell-field-name-' + col.name.replace(/\./g, '-') + ' ' + (typeof col.classes === 'string' ? col.classes : '') + '';
+                    var classes_for_row = ' ui-grid-cell-contents pr-grid-cell-field-type-' +
+                        (col.type ? col.type : 'text') + ' pr-grid-cell-field-name-' + col.name.replace(/\./g, '-') + ' ' + (typeof col.classes === 'string' ? col.classes : '') + '';
                     if (typeof  col.classes === 'function') {
                         classes_for_row += '{{ grid.options.columnDefs[' + columnindex + '].classes(row.entity.id, row.entity, col.field) }}';
                     }
 
+                    var cell_raw_value = 'COL_FIELD';
+                    if (col['render']) {
+                        cell_raw_value = 'grid.options.columnDefs[' + i + '][\'render\'](row.entity, COL_FIELD)';
+                    }
+
                     var attributes_for_cell = +col.name + '" pr-id="{{ row.entity.id }}" ';
+                    var cell_title = 'title = "{{ ::' + cell_raw_value + '|strip_html }}"';
+                    if (col['uib-tooltip-html']) {
+                        attributes_for_cell += ' aatooltip-popup-close-delay="100000" tooltip-append-to-body="true" tooltip-class="pr-grid-tooltip-class" tooltip-animation="false" uib-tooltip-html="' + 'grid.options.columnDefs[' + i + '][\'uib-tooltip-html\'](row.entity, COL_FIELD)' + '" ';
+                        cell_title = '';
+                    }
 
                     var action_button_before_click_b = '';
                     var action_button_before_click_e = '';
@@ -94,11 +105,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
 
 
-                    var cell_raw_value = 'COL_FIELD';
-                    if (col['render']) {
-                        cell_raw_value = 'grid.options.columnDefs[' + i + '][\'render\'](row.entity, COL_FIELD)';
-                    }
-                    var cell_value = '{{ ' + cell_raw_value + ' }}';
+                    var cell_value = '{{ ::' + cell_raw_value + ' }}';
                     var cell_html_value = '<span ng-bind-html="' + cell_raw_value + '"></span>';
 
 
@@ -108,14 +115,14 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                     switch (col.type) {
                         case 'link':
-                            return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" class="' + classes_for_row + '" title="' + cell_value + '">' + prefix_img + '<a ng-style="grid.appScope.' + col.cellStyle + '"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>' + cell_value + '</a></div>';
+                            return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" class="' + classes_for_row + '" ' + cell_title + '">' + prefix_img + '<a ng-style="grid.appScope.' + col.cellStyle + '"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}"><i ng-if="' + col.link + '" class="fa fa-external-link" style="font-size: 12px"></i>' + cell_value + '</a></div>';
                         case 'img':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="' + cell_value + '" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
                         case 'tags':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<span ng-repeat="tag in ' + cell_raw_value + '"' +
                                 ' class="m025em label label-danger">{{ tag.text }}</span></div>';
                         case 'show_modal':
-                            return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" title="' + cell_value + '">' + prefix_img + '<a ng-click="' + col.modal + '">' + cell_value + '</a></div>';
+                            return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ' + cell_title + '">' + prefix_img + '<a ng-click="' + col.modal + '">' + cell_value + '</a></div>';
                         case 'actions':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<button ' +
                                 ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
@@ -127,13 +134,13 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                                 'class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ icon_name }}" ng-repeat="(icon_name, icon_enabled) in ' + cell_raw_value + '" ng-click="grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ icon_name }}\', row.entity, \'' + col['name'] + '\')" title="{{ grid.appScope._(\'grid icon \' + icon_name) }}"></i></div>';
                         case 'editable':
                             if (col.multiple === true && col.rule) {
-                                return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ng-if="grid.appScope.' + col.rule + '=== false" title="' + cell_value + '">' + prefix_img + '' + cell_value + '</div><div ng-if="grid.appScope.' + col.rule + '"><div ng-click="' + col.modal + '" title="' + cell_value + '" id=\'grid_{{row.entity.id}}\'>' + cell_value + '</div></div>';
+                                return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ng-if="grid.appScope.' + col.rule + '=== false" ' + cell_title + '">' + prefix_img + '' + cell_value + '</div><div ng-if="grid.appScope.' + col.rule + '"><div ng-click="' + col.modal + '" ' + cell_title + '" id=\'grid_{{row.entity.id}}\'>' + cell_value + '</div></div>';
                             }
                             if (col.subtype && col.subtype === 'tinymce') {
-                                return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ng-click="' + col.modal + '" title="' + cell_value + '" id=\'grid_{{row.entity.id}}\'>' + prefix_img + '' + cell_value + '</div>';
+                                return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ng-click="' + col.modal + '" ' + cell_title + '" id=\'grid_{{row.entity.id}}\'>' + prefix_img + '' + cell_value + '</div>';
                             }
                         default:
-                            return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" title="' + cell_value + '">' + prefix_img + '' + cell_html_value + '</div>';
+                            return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ' + cell_title + '">' + prefix_img + '' + cell_html_value + '</div>';
 
                     }
                 }
@@ -184,6 +191,13 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             };
 
             gridApi.grid['set_data_function'] = function (grid_data) {
+                for (var i = 0; i < gridApi.grid.options.columnDefs.length; i++) {
+                    if (gridApi.grid.options.columnDefs[i]['alias_for']) {
+                        for (var j = 0; j < grid_data.grid_data.length; j++) {
+                            grid_data.grid_data[j][gridApi.grid.options.columnDefs[i]['name']] = grid_data.grid_data[j][gridApi.grid.options.columnDefs[i]['alias_for']];
+                        }
+                    }
+                }
                 gridApi.grid.options.data = grid_data.grid_data;
                 gridApi.grid.filters_init_exception = grid_data.grid_filters_except
                 gridApi.grid.listsForMS = {};
@@ -217,7 +231,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             gridApi.grid['setGridData'] = function (grid_data) {
                 var all_grid_data = grid_data ? grid_data : gridApi.grid.all_grid_data
                 if (gridApi.grid.options.urlLoadGridData) {
-                    scope.loading = true
+                    scope.loading = true;
                     $ok(gridApi.grid.options.urlLoadGridData, all_grid_data, function (grid_data) {
                         gridApi.grid.set_data_function(grid_data)
                     }).finally(function () {

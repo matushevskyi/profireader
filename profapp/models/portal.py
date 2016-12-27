@@ -592,15 +592,16 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         return utils.dict_merge(self.get_client_side_dict(
             fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,'
                    'requested_membership_plan_issued,request_membership_plan_issued_immediately'),
+            {'publications': self.get_publication_count()},
             {'actions': MembershipRights(company=self.company_id, member_company=self).actions()},
             {'who': MembershipRights.MEMBERSHIP})
 
     def company_member_grid_row(self):
         from ..models.rights import MembersRights
         return utils.dict_merge({'membership': self.get_client_side_dict(
-            more_fields='company,current_membership_plan_issued,requested_membership_plan_issued'),
-            'company_id': self.portal.company_owner_id,
-            'portal_id': self.portal_id},
+            more_fields='company,current_membership_plan_issued,requested_membership_plan_issued,portal.company_owner_id')
+        },
+            {'publications': self.get_publication_count()},
             {'actions': MembersRights(company=self.portal.company_owner_id, member_company=self).actions()},
             {'id': self.id})
 
@@ -713,6 +714,14 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             utils.jinja.link_company_profile(), utils.jinja.link('url_portal_companies_members', 'aspire', True),
             utils.jinja.link_external()))
 
+    def set_memberee_status(self, status):
+        self.set_client_side_dict(status=status)
+        self.save().notify_portal_company_member("Company %s changed status of membership to %s at portal %s" %
+                                                 (utils.jinja.link_company_profile(),
+                                                  utils.jinja.link('url_portal_companies_members', self.status, True),
+                                                  utils.jinja.link_external()))
+        return self
+
     def create_issued_plan(self, membership_plan: MembershipPlan = None, user=None):
         from ..constants.RECORD_IDS import SYSTEM_USERS
         plan = membership_plan if membership_plan else self.portal.default_membership_plan
@@ -781,7 +790,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
                  self.requested_membership_plan_issued.name if
                  self.requested_membership_plan_issued else self.current_membership_plan_issued.name,
                  utils.jinja.link_external(),
-                ))
+                 ))
         return self
 
     def set_new_plan_issued(self, requested_plan_id, immediately):
@@ -853,17 +862,33 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     def get_publication_count(self):
         from ..models.materials import Publication, Material
-        ret = {}
-        for status in Publication.STATUSES:
-            for visibility in Publication.VISIBILITIES:
-                cnt = db(Publication).outerjoin(Material).outerjoin(PortalDivision).filter(and_(
-                    Material.company_id == self.company_id,
-                    PortalDivision.portal_id == self.portal_id,
-                    Publication.status == status,
-                    Publication.visibility == visibility
-                )).count()
-                utils.dict_deep_replace(cnt, ret, 'by_status_visibility', status, visibility)
-                utils.dict_deep_replace(cnt, ret, 'by_visibility_status', visibility, status)
+        from sqlalchemy.sql import functions
+        ret = {'by_status_visibility': {s: {v: 0 for v in Publication.VISIBILITIES} for s in Publication.STATUSES},
+               'by_visibility_status': {v: {s: 0 for s in Publication.STATUSES} for v in Publication.VISIBILITIES},
+               'by_status': {s: 0 for s in Publication.STATUSES},
+               'by_visibility': {s: 0 for s in Publication.VISIBILITIES},
+               'all': 0,
+               }
+
+        cnt = g.db.query(Publication.status, Publication.visibility, functions.count(Publication.id).label('cnt')). \
+            join(Material, Publication.material_id == Material.id). \
+            join(PortalDivision, Publication.portal_division_id == PortalDivision.id).filter(and_(
+            Material.company_id == self.company_id,
+            PortalDivision.portal_id == self.portal_id)).group_by(Publication.status, Publication.visibility).all()
+
+        for c in cnt:
+            ret['by_status_visibility'][c.status][c.visibility] = c.cnt
+            ret['by_status'][c.status] += c.cnt
+            ret['by_visibility_status'][c.visibility][c.status] = c.cnt
+            ret['by_visibility'][c.visibility] += c.cnt
+            ret['all'] += c.cnt
+
+        # for s, vis in ret['by_status_visibility'].items():
+        #     vis['__all'] = sum(v for v in vis.values())
+        # for v, sta in ret['by_visibility_status'].items():
+        #     sta['__all'] = sum(s for s in sta.values())
+        # ret['__all'] = sum(vis['__all'] for v, vis in ret['by_visibility_status'].items())
+
         return ret
 
     def notify_portal_company_member(self, phrase, rights=None):

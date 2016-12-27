@@ -113,6 +113,12 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
     return db_session
 
 
+def setup_logger(apptype, host='fluid.profi', port=24224):
+    from fluent import sender
+    g.logger = sender.FluentSender(apptype, host=host, port=port)
+    g.log = lambda *args: g.logger.emit(*args)
+
+
 def load_database(db_config, echo=False):
     def load_db(autocommit=False, autoflush=False, echo=echo):
         from sqlalchemy import event
@@ -269,6 +275,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))
     app.before_request(lambda: load_user(apptype))
+    app.before_request(lambda: setup_logger(apptype, host='fluid.profi', port=24224))
     app.before_request(setup_authomatic(app))
 
     def add_map_headers_to_less_files(response):

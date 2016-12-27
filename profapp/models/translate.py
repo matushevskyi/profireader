@@ -112,9 +112,6 @@ class TranslateTemplate(Base, PRBase):
         match = re.match("(^.*)//(.*)$", phrase)
         phrase, comment = (match.group(1), match.group(2)) if match else (phrase, '')
 
-        print(phrase)
-        print(comment)
-
         url = TranslateTemplate.try_to_guess_url(url)
 
         (phrase, template) = (phrase[2:], '__GLOBAL') if phrase[:2] == '__' else (phrase, template)
@@ -122,8 +119,6 @@ class TranslateTemplate(Base, PRBase):
         translation = TranslateTemplate.try_to_get_phrase(template, phrase, url,
                                                           portal_id=getattr(g, "portal_id", None),
                                                           allow_html=allow_html, comment=comment)
-
-        print(translation)
 
         if translation:
             if translation.allow_html != allow_html:

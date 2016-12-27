@@ -86,6 +86,7 @@
                         }
                     },
                     {name: 'membership.status', afilter: {type: 'multi_select', default_selected: true}},
+                    publication_column(),
                     {name: 'membership.rights', width: '200', type: 'icons', afilter: {type: 'input'}},
                     {
                         name: 'actions', width: '*', type: 'actions', onclick: 'grid_action', classes: function (id,
@@ -101,7 +102,7 @@
 
     {% raw %}
 
-    <div ng-controller="company_partners" ng-cloak>
+    <div id="company_partners_controller" ng-controller="company_partners" ng-cloak>
         <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
                 <i class="fa fa-spinner fa-spin"></i>

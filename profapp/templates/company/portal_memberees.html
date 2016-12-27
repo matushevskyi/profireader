@@ -137,6 +137,7 @@
                             return row['status'] === 'ACTIVE' ? '' : 'disabled';
                         },
                     },
+                        publication_column(),
                     {
                         name: 'status', width: '20%', afilter: {type: 'multi_select', default_selected: true}
                         //we can default select all and deselect that we need, 'exception' can be string or array of string

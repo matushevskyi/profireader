@@ -206,7 +206,8 @@ class Publication(Base, PRBase, PRElasticDocument):
                 'HOLDED': 'HOLDED'}
 
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
-    VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
+    VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED'}
+    # , 'CONFIDENTIAL': 'CONFIDENTIAL'
 
     portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
     portal_division = relationship('PortalDivision', uselist=False)

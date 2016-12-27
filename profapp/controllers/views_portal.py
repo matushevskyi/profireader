@@ -342,12 +342,7 @@ def portals_memberee_change_status(json, company_id, portal_id):
 
     if MembershipRights(company=json.get('partner_id'), member_company=membership).action_is_allowed(json.get('action'),
                                                                                                      employee) == True:
-        membership.set_client_side_dict(status=MembershipRights.STATUS_FOR_ACTION[json.get('action')])
-        membership.save().notify_portal_company_member(
-            "Company %s changed status of membership to %s at portal %s" %
-            (utils.jinja.link_company_profile(),
-             utils.jinja.link('url_portal_companies_members', membership.status, True),
-             utils.jinja.link_external()))
+        membership.set_memberee_status(MembershipRights.STATUS_FOR_ACTION[json.get('action')])
     return membership.portal_memberee_grid_row()
 
 
