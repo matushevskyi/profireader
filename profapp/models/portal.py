@@ -883,12 +883,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             ret['by_visibility'][c.visibility] += c.cnt
             ret['all'] += c.cnt
 
-        # for s, vis in ret['by_status_visibility'].items():
-        #     vis['__all'] = sum(v for v in vis.values())
-        # for v, sta in ret['by_visibility_status'].items():
-        #     sta['__all'] = sum(s for s in sta.values())
-        # ret['__all'] = sum(vis['__all'] for v, vis in ret['by_visibility_status'].items())
-
         return ret
 
     def notify_portal_company_member(self, phrase, rights=None):
