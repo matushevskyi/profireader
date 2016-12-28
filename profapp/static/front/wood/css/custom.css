@@ -34,32 +34,56 @@ a:hover {
 }
 
 .search_highlighted {
-    color: #E53935;
+    color: #26A69A;
 }
 
 .tag-selected {
-    background-color: #E53935;
+    background-color: #26A69A!important;
+    display: inline-block;
+    font-size: 0.875em;
+    font-weight: 400;
+    color: #fff;
 }
 
 .tag-selected:hover {
-    background-color: #C62828;
+    background-color: #26A69A;
 }
 
-.tag-selected a {
-    color: #fff;
+.tag-not-selected {
+    font-size: 0.875em;
+}
+
+p {
+    text-align: left!important;
+    line-height: 1.5;
 }
 
 /*Offcanvas menu settings*/
 
 .tag-menu {
     width: 300px;
-    background-color: #263238;
+    background-color: #37474F;
     border: 0;
 }
 
-.tag-menu li a {
-    color: #BDBDBD;
-    padding: 6px 0 6px 0;
+.tag-menu li a,
+.label {
+    color: #fff;
+    font-weight: 400;
+}
+
+.navmenu-inverse .navmenu-nav li {
+    padding: 6px 15px 6px 15px;
+    cursor: pointer;
+}
+
+.navmenu-inverse .navmenu-nav li:hover {
+    background-color: #26A69A;
+
+}
+
+.navmenu-inverse .navmenu-nav li .tag-selected {
+    background-color: #26A69A;
 }
 
 .offcanvas-btn {
@@ -68,13 +92,13 @@ a:hover {
 
 /*Header settings*/
 
-@media(max-width: 1220px) {
+@media(max-width: 1160px) {
     .navbar-header {
         float: none;
     }
 
     .navbar-left {
-        float: none !important;
+        float: none!important;
     }
 
     .navbar-toggle {
@@ -185,10 +209,15 @@ a:hover {
     border: 0;
 }
 
-.navbar-nav li a{
+.navbar-default .navbar-nav>li>a {
     padding-top: 20px;
     padding-bottom: 21px;
-    font-weight: 400;
+    font-size: 0.875em;
+    color: #757575;
+}
+
+.navbar-default .navbar-nav>li>a:hover {
+    color: #26A69A;
 }
 
 /*Search form*/
@@ -444,14 +473,14 @@ a:hover {
     display: inline-block;
     font-size: 0.875em;
     font-weight: 400;
-    background-color: #26A69A;
+    background-color: #607D8B;
     margin-right: 15px;
     margin-top: 15px;
     color: #fff;
 }
 
 .main-tag:hover {
-    background-color: #009688;
+    background-color: #26A69A;
     text-decoration-line: none;
 }
 
@@ -489,9 +518,9 @@ a:hover {
     height: auto;
     margin: 0 auto;
     font-size: 1em;
-    line-height: 1.6;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
+    line-height: 1.5;
+    /*-webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;*/
     overflow: hidden;
     text-overflow: ellipsis;
     margin-top: 30px;
@@ -762,11 +791,14 @@ a:hover {
     font-weight: 600;
     color: #424242;
     margin-bottom: 15px;
+    text-align: left;
 }
 
-.article-text {
+.article-text,
+.article-text p {
     font-size: 1.25em;
     line-height: 1.5;
+    text-align: left;
 }
 
 .article-main-img {

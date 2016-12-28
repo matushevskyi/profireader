@@ -46,11 +46,11 @@
                                     <span class="company-ink link {% if not article.social_activity.favorite %}hide{% endif %}"><i class="fa fa-bookmark" style="margin-right: 5px"></i>
                                     {{ _('Remove from bookmark') }}<bookmarked_count>{{ article.social_activity.favorite_count }}</bookmarked_count></span>
                                 </span>
-                                <div class="tags-at-right nw">
-                                    {% for tag in article.tags %}
-                                        {{ frontmacros.tag(tag, tags, 'main-tag label') }}
-                                    {% endfor %}
-                                </div>
+                            </div>
+                            <div class="tags-at-right nw">
+                                {% for tag in article.tags %}
+                                    {{ frontmacros.tag(tag, tags, 'main-tag label') }}
+                                {% endfor %}
                             </div>
                             <hr>
                         </header>
@@ -59,8 +59,6 @@
                             <!--Article text-->
                             <p class="article-text">
                                 {{ article['short'] |safe }}
-                            </p>
-                            <p class="article-text">
                                 {% if article_visibility %}
                                     {{ article['long'] |safe }}
                                 {% else %}
