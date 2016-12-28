@@ -340,6 +340,19 @@ def portal_memberees_load(json, company_id):
             'grid_filters_except': list(MembershipRights.INITIALLY_FILTERED_OUT_STATUSES),
             'total': count}
 
+
+@company_bp.route('/membership/<string:membership_id>/change_status/', methods=['OK'])
+# @check_right(RequireMembereeAtPortalsRight, ['company_id'])
+def membership_change_status(json, membership_id):
+    membership = MemberCompanyPortal.get(membership_id)
+    employee = UserCompany.get_by_user_and_company_ids(company_id=membership.company_id)
+
+    if MembershipRights(company=membership.company_id, member_company=membership).action_is_allowed(json.get('action'),
+                                                                                                     employee) == True:
+        membership.set_memberee_status(MembershipRights.STATUS_FOR_ACTION[json.get('action')])
+    return membership.portal_memberee_grid_row()
+
+
 @company_bp.route('/<string:company_id>/join_to_portal/', methods=['OK'])
 @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def join_to_portal(json, company_id):

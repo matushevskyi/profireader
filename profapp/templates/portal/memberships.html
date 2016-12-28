@@ -45,7 +45,7 @@
                         window.location.href = $scope.url_membership_update({membership_id: row.id});
                     } else {
                         return $ok($scope.url_change_status({membership_id: row.id}),
-                                {action: action, who: row.who, partner_id: row.membership.company.id}, function (resp) {
+                                {action: action}, function (resp) {
                                     $scope.gridApi.grid.grid_change_row(resp);
                                 }).finally(function () {
                         })

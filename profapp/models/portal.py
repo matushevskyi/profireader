@@ -593,8 +593,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,'
                    'requested_membership_plan_issued,request_membership_plan_issued_immediately'),
             {'publications': self.get_publication_count()},
-            {'actions': MembershipRights(company=self.company_id, member_company=self).actions()},
-            {'who': MembershipRights.MEMBERSHIP})
+            {'actions': MembershipRights(company=self.company_id, member_company=self).actions()})
 
     def company_member_grid_row(self):
         from ..models.rights import MembersRights

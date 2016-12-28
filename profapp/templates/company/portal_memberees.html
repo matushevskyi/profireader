@@ -23,7 +23,7 @@
             $scope.url_search_for_portal = function () {
                 return ( '/portal/search_for_portal_to_join/' );
             };
-            $scope.url_change_status = {{ raw_url_for('portal.portals_memberee_change_status')|safe }};
+            $scope.url_change_status = {{ raw_url_for('company.membership_change_status')|safe }};
             $scope.url_join = {{ raw_url_for('company.join_to_portal')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.selectedPortal_name = '';
@@ -67,9 +67,8 @@
 
             $scope.grid_action = function (id, action, row, column_name) {
                 return $ok($scope.url_change_status({
-                    company_id: $scope.company_id,
-                    portal_id: row.portal.id
-                }), {action: action, who: row.who, partner_id: $scope.company_id}, function (resp) {
+                    membership_id: row.id
+                }), {action: action}, function (resp) {
                     $scope.gridApi.grid.grid_change_row(resp)
                 }).finally(function () {
                 })

@@ -248,7 +248,7 @@ def plans_load(json, portal_id):
     return client_side()
 
 
-@portal_bp.route('/request_membership_plan/<string:membership_id>/', methods=['OK'])
+@portal_bp.route('/membership/<string:membership_id>/request_membership_plan/', methods=['OK'])
 def request_membership_plan(json, membership_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
     membership = MemberCompanyPortal.get(membership_id)
@@ -270,7 +270,7 @@ def request_membership_plan(json, membership_id):
             return membership.requested_new_plan_issued(requested_plan_id, immediately).portal_memberee_grid_row()
 
 
-@portal_bp.route('/set_membership_plan/<string:membership_id>/', methods=['OK'])
+@portal_bp.route('/membership/<string:membership_id>/set_membership_plan/', methods=['OK'])
 def set_membership_plan(json, membership_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
     membership = MemberCompanyPortal.get(membership_id)
@@ -333,17 +333,6 @@ def save_portal_banner(json, portal_id):
     advertisment.save()
     return advertisment.get_client_side_dict()
 
-
-@portal_bp.route('/company/<string:company_id>/portal/<string:portal_id>/memberee_change_status/', methods=['OK'])
-@check_right(RequireMembereeAtPortalsRight, ['company_id'])
-def portals_memberee_change_status(json, company_id, portal_id):
-    membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
-    employee = UserCompany.get_by_user_and_company_ids(company_id=company_id)
-
-    if MembershipRights(company=json.get('partner_id'), member_company=membership).action_is_allowed(json.get('action'),
-                                                                                                     employee) == True:
-        membership.set_memberee_status(MembershipRights.STATUS_FOR_ACTION[json.get('action')])
-    return membership.portal_memberee_grid_row()
 
 
 @portal_bp.route('/membership/<string:membership_id>/set_tags/', methods=['OK'])
