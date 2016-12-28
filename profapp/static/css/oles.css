@@ -408,12 +408,12 @@
 }
 
 .pr-grid-cell-field-type-icons-icon-PUBLICATION_UNPUBLISH:before {
-    content: "\f1f7";
+    content: "\f070";
     color: dodgerblue;
 }
 
 .pr-grid-cell-field-type-icons-icon-PUBLICATION_PUBLISH:before {
-    content: "\f0a2";
+    content: "\f06e";
     color: dodgerblue;
 }
 

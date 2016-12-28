@@ -42,10 +42,9 @@
         $scope.get_tags_for_selected_division = function (search_text) {
             var division = $scope.get_selected_division();
             return _.filter($scope.data.portal.tags, function (tag) {
-                var ret = $scope.tag_is_allowed_for_division(division, tag) &&
+                return $scope.tag_is_allowed_for_division(division, tag) &&
                         ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
                         (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
-                return ret;
             })
         };
 
@@ -226,16 +225,11 @@
 
             var catalog_division = $scope.data.membership.portal ?
                     _.findWhere($scope.data.membership.portal.divisions, {'portal_division_type_id': 'catalog'}) : {'tags': []};
-            var tags = _.filter(catalog_division.tags, function (tag) {
-                if (_.findWhere($scope.data.membership.tags, {'text': tag['text']})) {
-                    return false;
-                }
-                var ret = ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
-                (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
-                return ret;
+            return _.filter(catalog_division.tags, function (tag) {
+                return (!_.findWhere($scope.data.membership.tags, {'text': tag['text']})) &&
+                        ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
+                        (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
             });
-
-            return tags;
         };
 
         $scope.action_cancel = $uibModalInstance.dismiss;
@@ -263,8 +257,9 @@
             <h3 class="modal-title">{{ _('select tags') }}</h3>
         </div>
         <div class="modal-body">
-            {{ _('You are going to select tags for company `%(data.company.name)s` at portal
-            `%(data.portal.name)s`')}}<br/>
+            <h4>{{ _('You are going to select tags for company `%(data.membership.company.name)s` at portal
+            `%(data.membership.portal.name)s`')}}</h4>
+            <hr/>
             <div class="selected_tags">
                 <ui-select ng-model="data.membership.tags" class="form-control" sortable="true"
                            multiple>
