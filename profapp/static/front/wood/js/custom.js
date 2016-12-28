@@ -1,17 +1,16 @@
-/*Responsive text settings*/
-/*
-jQuery(".featured-article-header").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-jQuery(".article-thumbnail-header").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-jQuery(".div-link").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-jQuery(".article-thumbnail-text").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-jQuery(".article-headling").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-jQuery(".article-description").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-jQuery(".article-text").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-jQuery(".company-name").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-jQuery(".article-comments").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-jQuery(".post-date").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-jQuery(".view-count").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
-*/
+//Responsive text settings
+
+//jQuery(".featured-article-header").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
+//jQuery(".article-thumbnail-header").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
+//$(".div-link").fitText(0.3);
+//jQuery(".article-thumbnail-text").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
+//$(".article-headling").fitText(2.1);
+//jQuery(".article-description").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
+//jQuery(".article-text").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
+//jQuery(".company-name").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
+//jQuery(".article-comments").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
+//jQuery(".post-date").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
+//jQuery(".view-count").fitText(2, {minFontSize: '0.875em', maxFontSize: '2.375em'});
 
 function $ok(url, data, success, fail) {
     $.ajax({

@@ -1,21 +1,15 @@
 {% set url_join = _URL_JOIN() %}
 {% set p_main_domain = '//' + MAIN_DOMAIN %}
 <div>
-
     <!--If user is logged in-->
-    <a style="{% if not g.user %}display: none;{% endif %}"
-       class="userpic" href="{% if g.user %}{{ p_main_domain }}/users/profile/{{ g.user.id }}{% endif %}"
-       id="profireader_user_link"><img
-            src="{{ g.user.avatar.url if g.user else '' }}" alt="" class="img-circle"></a>
-
+    <a style="{% if not g.user %}display: none;{% endif %}" class="userpic" href="{% if g.user %}{{ p_main_domain }}/users/profile/{{ g.user.id }}{% endif %}" id="profireader_user_link">
+        <img src="{{ g.user.avatar.url if g.user else '' }}" alt="" class="img-circle bg-contain">
+    </a>
     <!--If user is not logged in-->
-    <a style="{% if g.user %}display: none;{% endif %}"
-       class="pr-btn" href="{{ url_join }}" id="profireader_link" target="profireader_subscribe">
+    <a style="{% if g.user %}display: none;{% endif %}" class="pr-btn" href="{{ url_join }}" id="profireader_link" target="profireader_subscribe">
         <img src="{{ static_address('images/profireader-logo.svg') }}">
     </a>
-
 </div>
-
 <script>
     _USER = {% if g.user %}{{ g.user.get_client_side_dict()|tojson }}{% else %}{}{% endif %};
 

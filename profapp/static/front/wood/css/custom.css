@@ -58,6 +58,12 @@ p {
     line-height: 1.5;
 }
 
+.bg-contain {
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
 /*Offcanvas menu settings*/
 
 .tag-menu {
@@ -519,8 +525,8 @@ p {
     margin: 0 auto;
     font-size: 1em;
     line-height: 1.5;
-    /*-webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;*/
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
     margin-top: 30px;
