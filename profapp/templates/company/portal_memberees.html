@@ -83,9 +83,9 @@
                 if (row['status'] !== 'ACTIVE') {
                     return false;
                 }
+                console.log(row);
                 var modalInstance = $membership_tags({
-                    company_id: $scope.company_id,
-                    portal_id: row['portal']['id']
+                    membership_id: row['id']
                 });
 
                 modalInstance.result.then(function (updated_row) {
@@ -112,16 +112,13 @@
                 columnDefs: [
                     {
                         name: 'portal.name', type: 'link',
-                        href: 'portal_link(row.entity.portal.host)', img_url: 'portal.logo.url', link: true
-                    },
-                    {
-                        name: 'portal.own_company.name',
-                        type: 'link',
-                        href: 'url_company_profile({company_id: row.entity.portal.own_company.id})',
-                        img_url: "portal.own_company.logo.url"
+                        width: '200',
+                        href: 'portal_link(row.entity.portal.host)', img_url: 'portal.logo.url',
+                        link: true
                     },
                     {
                         name: 'membership_plan',
+                        width: '150',
                         onclick: 'request_membership_plan',
                         classes: function (id, row, field) {
                             return row['status'] === 'ACTIVE' ? '' : 'disabled';
@@ -137,12 +134,12 @@
                             return row['status'] === 'ACTIVE' ? '' : 'disabled';
                         },
                     },
-                        publication_column(),
+                    publication_column(),
                     {
-                        name: 'status', width: '20%', afilter: {type: 'multi_select', default_selected: true}
+                        name: 'status', width: '100', afilter: {type: 'multi_select', default_selected: true}
                         //we can default select all and deselect that we need, 'exception' can be string or array of string
                     },
-                    {name: 'rights', width: '200', type: 'icons', afilter: {type: 'input'}},
+                    {name: 'rights', width: '50', type: 'icons', afilter: {type: 'input'}},
                     {name: 'actions', type: 'actions', onclick: 'grid_action'}
                 ]
             });

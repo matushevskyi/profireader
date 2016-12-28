@@ -21,9 +21,8 @@
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_members');
             $scope.$$translate = {{translates('company_partners') | safe}};
             $scope.url_load = '{{ url_for('portal.companies_members_load', portal_id=portal.id)}}';
-            $scope.url_company_partner_details = {{ raw_url_for('portal.company_partner_update')| safe}};
-            $scope.url_change_status = {{ raw_url_for('portal.company_member_change_status')|safe }};
-            $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
+            $scope.url_membership_update = {{ raw_url_for('portal.membership_update')| safe}};
+            $scope.url_change_status = {{ raw_url_for('portal.membership_change_status')|safe }};
 
             {% raw %}
 
@@ -43,17 +42,12 @@
             $scope.grid_action = function (id, action, row, column_name) {
                 if (column_name == 'actions') {
                     if (action === 'ALLOW') {
-                        window.location.href = $scope.url_company_partner_details({
-                            company_id: row.company_id, member_id: row.membership.company.id
-                        });
-                        return;
+                        window.location.href = $scope.url_membership_update({membership_id: row.id});
                     } else {
-                        return $ok($scope.url_change_status({
-                            company_id: row.company_id,
-                            portal_id: row.portal_id
-                        }), {action: action, who: row.who, partner_id: row.membership.company.id}, function (resp) {
-                            $scope.gridApi.grid.grid_change_row(resp);
-                        }).finally(function () {
+                        return $ok($scope.url_change_status({membership_id: row.id}),
+                                {action: action, who: row.who, partner_id: row.membership.company.id}, function (resp) {
+                                    $scope.gridApi.grid.grid_change_row(resp);
+                                }).finally(function () {
                         })
                     }
                 }

@@ -139,7 +139,6 @@
                 </div>
                 <hr/>
                 <div class="selected_tags">
-                    Tags:
                     <ui-select ng-model="$parent.$parent.data.publication.tags" class="form-control" sortable="true"
                                multiple>
                         <ui-select-match placeholder="Select tag...">{{$item.text}}</ui-select-match>
@@ -203,15 +202,14 @@
 
 
 <script>
-    module.controller('membership_tags', function ($scope, $ok, $uibModalInstance, company_id, portal_id) {
+    module.controller('membership_tags', function ($scope, $ok, $uibModalInstance, membership_id) {
 
         $scope.$$translate = {{ translates('membership_tags')|safe }};
         $scope.set_membership_tags = {{ raw_url_for('portal.membership_set_tags')|safe }};
         {% raw %}
 
         $scope.data = {
-            portal: {id: portal_id},
-            company: {id: company_id},
+            membership: {id: membership_id},
             all_tags: [],
             selected_tags: []
         };
@@ -222,7 +220,8 @@
         };
 
         $scope.get_tags = function (search_text) {
-            var catalog_division = _.findWhere($scope.data.portal.divisions, {'portal_division_type_id': 'catalog'}) || {'tags': []};
+            var catalog_division = $scope.data.membership.portal ?
+                    _.findWhere($scope.data.membership.portal.divisions, {'portal_division_type_id': 'catalog'}) : {'tags': []};
             return _.filter(catalog_division.tags, function (tag) {
                 var ret = ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
                 (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
@@ -248,7 +247,7 @@
 {% raw %}
 <script type="text/ng-template" id="membership_tags.html">
     <div af ng-model="data"
-         af-url="{{ set_membership_tags({company_id: data.company.id, portal_id: data.portal.id }) }}"
+         af-url="{{ set_membership_tags({membership_id: data.membership.id }) }}"
          af-after-save="afterSave"
          af-watch="data.tags" ng-cloak>
         <div class="modal-header">
@@ -258,7 +257,6 @@
             {{ _('You are going to select tags for company `%(data.company.name)s` at portal
             `%(data.portal.name)s`')}}<br/>
             <div class="selected_tags">
-                Tags:
                 <ui-select ng-model="data.tags" class="form-control" sortable="true"
                            multiple>
                     <ui-select-match placeholder="Select tag...">{{$item.text}}</ui-select-match>
@@ -353,8 +351,9 @@
                     <th ng-if="request_set_t_f" class="border-none" colspan="6"><h5
                             ng-if="request_set_t_f && !data.membership.requested_membership_plan_issued.confirmed"
                     >{{ ::_('requested plan awaiting for confirmation') }}</h5>
-                        <h5 ng-if="request_set_t_f && data.membership.requested_membership_plan_issued.confirmed">{{ ::_('requested plan awaiting for current plan expiration') }}</h5>
-                    </h5>
+                        <h5 ng-if="request_set_t_f && data.membership.requested_membership_plan_issued.confirmed">{{
+                            ::_('requested plan awaiting for current plan expiration') }}</h5>
+                        </h5>
                     </th>
                     <th ng-if="!request_set_t_f" class="border-none" colspan="6"><h5>{{ _('requested plan at
                         %(request_date)s by

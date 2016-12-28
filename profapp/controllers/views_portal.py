@@ -285,7 +285,7 @@ def set_membership_plan(json, membership_id):
                 ret['errors']['general'] = 'pls select membership plan'
             return ret
         else:
-            return membership.set_client_side_dict(requested_plan_id, immediately).company_member_grid_row()
+            return membership.set_new_plan_issued(requested_plan_id, immediately).company_member_grid_row()
 
 
 @portal_bp.route('/<string:portal_id>/banners/', methods=['GET'])
@@ -346,15 +346,15 @@ def portals_memberee_change_status(json, company_id, portal_id):
     return membership.portal_memberee_grid_row()
 
 
-@portal_bp.route('/company/<string:company_id>/portal/<string:portal_id>/memberee_change_status/', methods=['OK'])
+@portal_bp.route('/membership/<string:membership_id>/set_tags/', methods=['OK'])
 # @check_right(RequireMembereeAtPortalsRight, ['company_id'])
-def membership_set_tags(json, company_id, portal_id):
-    membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=company_id)
+def membership_set_tags(json, membership_id):
+    membership = MemberCompanyPortal.get(membership_id)
     action = g.req('action', allowed=['load', 'validate', 'save'])
     if action == 'load':
         # catalog_division = g.db.query(PortalDivision).filter(and_(PortalDivision.portal_id == portal_id,
         #                                                     PortalDivision.portal_division_type_id == 'catalog')).first()
-        return membership.get_client_side_dict(fields='id,portal,company,tags')
+        return membership.get_client_side_dict(fields='id,portal,company,tags,portal.divisions')
     else:
         membership.tags = [Tag.get(t['id']) for t in json['tags']]
 
@@ -366,42 +366,42 @@ def membership_set_tags(json, company_id, portal_id):
             return {'membership': membership.portal_memberee_grid_row()}
 
 
-@portal_bp.route('/<string:company_id>/company_partner_update/<string:member_id>/', methods=['GET'])
-@check_right(PortalManageMembersCompaniesRight, ['company_id', 'member_id'])
-def company_partner_update(company_id, member_id):
-    return render_template('company/company_partner_update.html',
-                           company=Company.get(company_id),
-                           member=MemberCompanyPortal.get_by_portal_id_company_id(Company.get(company_id).own_portal.id,
-                                                                                  company_id=member_id).company.get_client_side_dict(
-                               'id, status'))
+@portal_bp.route('/membership/<string:membership_id>/update/', methods=['GET'])
+# @check_right(PortalManageMembersCompaniesRight, ['company_id', 'member_id'])
+def membership_update(membership_id):
+    membership = MemberCompanyPortal.get(membership_id)
+    return render_template('portal/membership_update.html',
+                           portal=membership.portal,
+                           company_member=membership.company.get_client_side_dict('id, status'))
 
 
-@portal_bp.route('/<string:company_id>/company_partner_update/<string:member_id>/', methods=['OK'])
-@check_right(PortalManageMembersCompaniesRight, ['company_id', 'member_id'])
-def company_update_load(json, company_id, member_id):
+@portal_bp.route('/membership/<string:membership_id>/update/', methods=['OK'])
+# @check_right(PortalManageMembersCompaniesRight, ['company_id', 'member_id'])
+def membership_update_load(json, membership_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
-    member = MemberCompanyPortal.get_by_portal_id_company_id(Company.get(company_id).own_portal.id, member_id)
+    membership = MemberCompanyPortal.get(membership_id)
     if action == 'load':
-        return {'member': member.get_client_side_dict(more_fields='company'),
+        return {'membership': membership.get_client_side_dict(more_fields='company'),
                 'statuses_available': MembersRights.get_avaliable_statuses(),
-                'employeer': Company.get(company_id).get_client_side_dict()}
+                'employeer': membership.company.get_client_side_dict()}
     else:
-        member.set_client_side_dict(status=json['member']['status'], rights=json['member']['rights'])
+        membership.set_client_side_dict(status=json['membership']['status'], rights=json['membership']['rights'])
         if action == 'validate':
-            member.detach()
-            validate = member.validate(False)
+            membership.detach()
+            validate = membership.validate(False)
             return validate
         else:
-            member.save()
-    return member.get_client_side_dict()
+            membership.save()
+    return membership.get_client_side_dict()
 
 
-@portal_bp.route('/company/<string:company_id>/portal/<string:portal_id>/member_change_status/', methods=['OK'])
-@check_right(PortalManageMembersCompaniesRight, ['company_id'])
-def company_member_change_status(json, company_id, portal_id):
-    membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=json.get('partner_id'))
-    employee = UserCompany.get_by_user_and_company_ids(company_id=company_id)
-    if MembersRights(company=json.get('partner_id'),
+@portal_bp.route('/membership/<string:membership_id>/change_status/', methods=['OK'])
+# @check_right(PortalManageMembersCompaniesRight, ['company_id', 'member_id'])
+# @check_right(PortalManageMembersCompaniesRight, ['membership_id'])
+def membership_change_status(json, membership_id):
+    membership = MemberCompanyPortal.get(membership_id)
+    employee = UserCompany.get_by_user_and_company_ids(company_id=membership.portal.company_owner_id)
+    if MembersRights(company=membership.company_id,
                      member_company=membership).action_is_allowed(json.get('action'), employee):
 
         old_status = membership.status
@@ -424,12 +424,10 @@ def company_member_change_status(json, company_id, portal_id):
 @check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
 def companies_members(portal_id):
     portal = Portal.get(portal_id)
-    return render_template('company/companies_members.html',
+    return render_template('portal/memberships.html',
                            portal=portal,
-                           company=portal.own_company,
-                           rights_user_in=UserCompany.get_by_user_and_company_ids(
-                               company_id=portal.company_owner_id).has_rights(
-                               UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES))
+                           rights_user_in=UserCompany.get_by_user_and_company_ids(company_id=portal.company_owner_id).
+                           has_rights(UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES))
 
 
 @portal_bp.route('/<string:portal_id>/companies_members/', methods=['OK'])

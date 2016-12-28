@@ -408,12 +408,12 @@
 }
 
 .pr-grid-cell-field-type-icons-icon-PUBLICATION_UNPUBLISH:before {
-    content: "\f05e";
+    content: "\f1f7";
     color: dodgerblue;
 }
 
 .pr-grid-cell-field-type-icons-icon-PUBLICATION_PUBLISH:before {
-    content: "\f0a1";
+    content: "\f0a2";
     color: dodgerblue;
 }
 
@@ -467,7 +467,7 @@
 .pr-grid-cell-img-prefix {
     height: 100%;
     width: 50px;
-    margin-right: 2px;
+    margin-right: 0.5em;
 }
 
 .p4px {
