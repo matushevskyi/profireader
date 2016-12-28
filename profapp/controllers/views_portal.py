@@ -354,9 +354,11 @@ def membership_set_tags(json, membership_id):
     if action == 'load':
         # catalog_division = g.db.query(PortalDivision).filter(and_(PortalDivision.portal_id == portal_id,
         #                                                     PortalDivision.portal_division_type_id == 'catalog')).first()
-        return membership.get_client_side_dict(fields='id,portal,company,tags,portal.divisions')
+        return {
+            'membership': membership.get_client_side_dict(fields='id,portal,company,tags,portal.divisions'),
+        }
     else:
-        membership.tags = [Tag.get(t['id']) for t in json['tags']]
+        membership.tags = [Tag.get(t['id']) for t in json['membership']['tags']]
 
         if action == 'validate':
             membership.detach()

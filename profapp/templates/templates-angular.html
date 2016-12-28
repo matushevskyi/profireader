@@ -211,8 +211,11 @@
         $scope.data = {
             membership: {id: membership_id},
             all_tags: [],
+            tags: [],
             selected_tags: []
         };
+
+        console.log($scope.data);
 
 
         $scope.afterSave = function (resp, defcallback) {
@@ -220,13 +223,19 @@
         };
 
         $scope.get_tags = function (search_text) {
+
             var catalog_division = $scope.data.membership.portal ?
                     _.findWhere($scope.data.membership.portal.divisions, {'portal_division_type_id': 'catalog'}) : {'tags': []};
-            return _.filter(catalog_division.tags, function (tag) {
+            var tags = _.filter(catalog_division.tags, function (tag) {
+                if (_.findWhere($scope.data.membership.tags, {'text': tag['text']})) {
+                    return false;
+                }
                 var ret = ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
                 (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
                 return ret;
-            })
+            });
+
+            return tags;
         };
 
         $scope.action_cancel = $uibModalInstance.dismiss;
@@ -257,7 +266,7 @@
             {{ _('You are going to select tags for company `%(data.company.name)s` at portal
             `%(data.portal.name)s`')}}<br/>
             <div class="selected_tags">
-                <ui-select ng-model="data.tags" class="form-control" sortable="true"
+                <ui-select ng-model="data.membership.tags" class="form-control" sortable="true"
                            multiple>
                     <ui-select-match placeholder="Select tag...">{{$item.text}}</ui-select-match>
                     <ui-select-choices repeat="tag in get_tags($select.search)">
