@@ -1,6 +1,4 @@
-from flask import Blueprint, g
-from tools.db_utils import db
-from functools import wraps
+from flask import Blueprint
 
 
 class PrBlueprint(Blueprint):
@@ -10,7 +8,7 @@ class PrBlueprint(Blueprint):
         raise Exception('You have no permission')
 
     def route(self, rule, **options):
-        from .request_wrapers import ok, function_profiler
+        from .request_wrapers import ok
         def decorator(f):
 
             f.__endpoint__ = self.name

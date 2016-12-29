@@ -1,10 +1,12 @@
-from functools import wraps
-from flask import jsonify, request, g, abort, redirect, url_for, flash
-from functools import reduce
-from ..controllers import errors
 import time
-from tools.db_utils import db
+from functools import reduce
+from functools import wraps
+
+from flask import jsonify, request, g, abort, redirect
+
+from profapp import utils
 from ..controllers import errors
+
 
 def ok(func):
     @wraps(func)
@@ -44,7 +46,7 @@ def function_profiler(func):
                 return "Unexpected error:", sys.exc_info()[0]
                 # return redirect(url_for('index.index'))
             end = time.clock()
-            profiler = db(Profiler, name=func.__name__, blueprint_name=func.__dict__['__endpoint__']).first()
+            profiler = utils.db.query_filter(Profiler, name=func.__name__, blueprint_name=func.__dict__['__endpoint__']).first()
             method = ','.join([method for method in func.__dict__['__method__']]) if func.__dict__['__method__'] else None
             if profiler:
                 profiler.update_profile(end-start, method)

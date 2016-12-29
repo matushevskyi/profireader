@@ -1,13 +1,15 @@
-from .pr_base import PRBase, Base, Grid
-from ..constants.TABLE_TYPES import TABLE_TYPES
-from sqlalchemy import Column, ForeignKey, text
-from tools.db_utils import db
 import datetime
 import re
+
 from flask import g, request, current_app
-from sqlalchemy.sql import expression
-from .portal import Portal
+from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import expression
+
+from profapp import utils
+from .portal import Portal
+from .pr_base import PRBase, Base, Grid
+from ..constants.TABLE_TYPES import TABLE_TYPES
 
 
 class TranslateTemplate(Base, PRBase):
@@ -58,16 +60,16 @@ class TranslateTemplate(Base, PRBase):
                             ", :".join(TranslateTemplate.languages)),
                            params=utils.dict_merge(a_filter, {'allow_html': allow_html, 'url': url, 'comment': comment},
                                                    {l: phrase for l in TranslateTemplate.languages}, values))
-            return db(TranslateTemplate, **a_filter).first()
+            return utils.db.query_filter(TranslateTemplate, **a_filter).first()
 
-        exist = db(TranslateTemplate, **a_filter).first()
+        exist = utils.db.query_filter(TranslateTemplate, **a_filter).first()
 
         if portal_id and not exist:
-            exist_for_another = db(TranslateTemplate, template=template, name=phrase,
-                                   portal_id=TranslateTemplate.exemplary_portal_id).first()
+            exist_for_another = utils.db.query_filter(TranslateTemplate, template=template, name=phrase,
+                                             portal_id=TranslateTemplate.exemplary_portal_id).first()
             # TODO: OZ by OZ: how to select template portal? now we grab phrases from most recent portal, and there can be some unappropriate values
             if not exist_for_another:
-                exist_for_another = db(TranslateTemplate, template=template, name=phrase).filter(
+                exist_for_another = utils.db.query_filter(TranslateTemplate, template=template, name=phrase).filter(
                     TranslateTemplate.portal != None).order_by(expression.asc(TranslateTemplate.cr_tm)).first()
             if exist_for_another:
                 return insert_record(**{l: getattr(exist_for_another, l) for l in TranslateTemplate.languages})
@@ -109,7 +111,7 @@ class TranslateTemplate(Base, PRBase):
     @staticmethod
     def getTranslate(template, phrase, url=None, allow_html='', language=None):
 
-        match = re.match("(^.*)//(.*)$", phrase)
+        match = re.match("(^.*)//##(.*)$", phrase)
         phrase, comment = (match.group(1), match.group(2)) if match else (phrase, '')
 
         url = TranslateTemplate.try_to_guess_url(url)
@@ -120,20 +122,26 @@ class TranslateTemplate(Base, PRBase):
                                                           portal_id=getattr(g, "portal_id", None),
                                                           allow_html=allow_html, comment=comment)
 
+
+
         if translation:
+            save_translation = False
             if translation.allow_html != allow_html:
                 translation.attr({'allow_html': allow_html})
+                save_translation = True
+            if translation.comment != comment:
+                translation.attr({'comment': comment})
+                save_translation = True
             if current_app.config['DEBUG']:
-
                 # TODO: OZ by OZ change ac without changing md (md changed by trigger)
                 # ac updated without changing md
-
                 i = datetime.datetime.now()
-                if translation.ac_tm:
-                    if i.timestamp() - translation.ac_tm.timestamp() > 86400:
-                        translation.attr({'ac_tm': i})
-                else:
+                if not translation.ac_tm or i.timestamp() - translation.ac_tm.timestamp() > 86400:
                     translation.attr({'ac_tm': i})
+                    save_translation = True
+            if save_translation:
+                translation.save()
+
             return TranslateTemplate.try_to_guess_lang(translation, language)
         else:
             return phrase
@@ -162,36 +170,36 @@ class TranslateTemplate(Base, PRBase):
     @staticmethod
     def update_last_accessed(template, phrase):
         i = datetime.datetime.now()
-        obj = db(TranslateTemplate, template=template, name=phrase).first()
+        obj = utils.db.query_filter(TranslateTemplate, template=template, name=phrase).first()
         if obj:
             obj.attr({'ac_tm': i})
         return True
 
     @staticmethod
     def change_allowed_html(template, phrase, allow_html):
-        obj = db(TranslateTemplate, template=template, name=phrase).first()
+        obj = utils.db.query_filter(TranslateTemplate, template=template, name=phrase).first()
         obj.attr({'allow_html': allow_html})
         return 'True'
 
     @staticmethod
     def delete_translates(objects):
         for obj in objects:
-            f = db(TranslateTemplate, template=obj['template'], name=obj['name']).first()
+            f = utils.db.query_filter(TranslateTemplate, template=obj['template'], name=obj['name']).first()
             f.delete()
         return 'True'
 
     @staticmethod
     def isExist(template, phrase):
-        list = [f for f in db(TranslateTemplate, template=template, name=phrase)]
+        list = [f for f in utils.db.query_filter(TranslateTemplate, template=template, name=phrase)]
         return True if list else False
 
     @staticmethod
     def subquery_search(filters=None, sorts=None, edit=None):
-        sub_query = db(TranslateTemplate)
+        sub_query = utils.db.query_filter(TranslateTemplate)
         list_filters = []
         list_sorts = []
         if edit:
-            exist = db(TranslateTemplate, template=edit['template'], name=edit['name']).first()
+            exist = utils.db.query_filter(TranslateTemplate, template=edit['template'], name=edit['name']).first()
             i = datetime.datetime.now()
             TranslateTemplate.get(exist.id).attr(
                 {edit['col']: edit['newValue'], 'md_tm': i}).save().get_client_side_dict()

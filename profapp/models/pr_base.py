@@ -1,29 +1,26 @@
-from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..constants.TABLE_TYPES import TABLE_TYPES
-from sqlalchemy import Table, Column, Integer, Text, ForeignKey, String, Boolean, or_, and_, text, desc, asc, join
-from sqlalchemy.orm import relationship, backref, make_transient, class_mapper, aliased
-from sqlalchemy.sql import func
+import collections
+import datetime
+import operator
 import re
 import sys
-import traceback
-from flask import g
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import event
-from ..controllers import errors
-from tools.db_utils import db
-from ..constants.SEARCH import RELEVANCE
-from config import Config
-import collections
-from sqlalchemy.sql import expression, functions, update
-from sqlalchemy import and_
-import datetime
 import time
-import operator
+import traceback
 from collections import OrderedDict
-from sqlalchemy import event
 
+from flask import g
+from sqlalchemy import Column, or_, desc, asc
+from sqlalchemy import and_
+from sqlalchemy.ext.associationproxy import AssociationProxy
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import make_transient, class_mapper
+from sqlalchemy.sql import expression
+from sqlalchemy.sql import func
+
+from config import Config
 from .. import utils
-from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
+from ..constants.SEARCH import RELEVANCE
+from ..constants.TABLE_TYPES import TABLE_TYPES
+from ..controllers import errors
 
 Base = declarative_base()
 
@@ -197,15 +194,15 @@ class Search(Base):
         join_search = []
         for arg in args:
             join_params = arg.get('join') or arg['class']
-            join_search.append(db(subquery_search).join(join_params,
-                                                        arg['class'].id == subquery_search.c.index).subquery())
+            join_search.append(utils.db.query_filter(subquery_search).join(join_params,
+                                                                  arg['class'].id == subquery_search.c.index).subquery())
         objects = collections.OrderedDict()
         to_order = {}
         _order_by = kwargs.get('order_by') or Search.ORDER_MD_TM
         ord_by = 'text' if type(_order_by) in (str, list, tuple) \
             else self.__order_by_to_str[_order_by]
         for search in join_search:
-            for cls in db(search).all():
+            for cls in utils.db.query_filter(search).all():
                 objects[cls.index] = {'id': cls.index, 'table_name': cls.table_name,
                                       'order': getattr(cls, ord_by), 'md_tm': cls.md_tm}
                 to_order[cls.index] = (getattr(cls, ord_by), getattr(cls, 'md_tm'))
@@ -232,18 +229,18 @@ class Search(Base):
 
     def __get_subquery(self, *args, ord_by=None):
         def add_joined_search(field_name):
-            joined = db(Search.index, func.min(Search.text).label('text'),
-                        func.min(Search.table_name).label('table_name'),
-                        index=subquery_search.subquery().c.index).filter(
+            joined = utils.db.query_filter(Search.index, func.min(Search.text).label('text'),
+                                  func.min(Search.table_name).label('table_name'),
+                                  index=subquery_search.subquery().c.index).filter(
                 Search.kind.in_(tuple(field_name))).group_by(Search.index)
             return joined
 
-        subquery_search = db(Search.index.label('index'),
-                             func.sum(Search.relevance).label('relevance'),
-                             func.min(Search.table_name).label('table_name'),
-                             func.min(Search.md_tm).label('md_tm'),
-                             func.max(Search.position).label('position'),
-                             func.max(Search.text).label('text')).filter(
+        subquery_search = utils.db.query_filter(Search.index.label('index'),
+                                       func.sum(Search.relevance).label('relevance'),
+                                       func.min(Search.table_name).label('table_name'),
+                                       func.min(Search.md_tm).label('md_tm'),
+                                       func.max(Search.position).label('position'),
+                                       func.max(Search.text).label('text')).filter(
             or_(*self.__get_search_params(*args))).group_by('index')
         if type(ord_by) in (str, list, tuple):
             order = self.__get_order('text', 'text')
@@ -287,7 +284,7 @@ class Search(Base):
             tags = cls.get('tags')
             assert type(fields) is str, \
                 'Arg parameter return_fields must be string but %s given' % fields
-            for a in db(cls['class']).filter(cls['class'].id.in_(
+            for a in utils.db.query_filter(cls['class']).filter(cls['class'].id.in_(
                     list(map(lambda x: x[0], ordered_objects_list)))).all():
                 if fields != 'default_dict' and not tags:
                     items[a.id] = a.get_client_side_dict(fields=fields)
@@ -309,9 +306,9 @@ class Search(Base):
             assert type(fields) is list or tuple, \
                 'Arg parameter fields should be list or tuple but %s given' % type(fields)
             if filter_params is None:
-                filter_array = [Search.index == db(arg['class'].id).subquery().c.id]
+                filter_array = [Search.index == utils.db.query_filter(arg['class'].id).subquery().c.id]
             else:
-                filter_array = [Search.index == db(arg['class'].id).filter(filter_params).subquery().c.id]
+                filter_array = [Search.index == utils.db.query_filter(arg['class'].id).filter(filter_params).subquery().c.id]
             filter_array.append(Search.table_name == arg['class'].__tablename__)
             filter_array.append(Search.kind.in_(fields))
             search_text = self.__search_text
@@ -426,7 +423,7 @@ class PRBase:
     @classmethod
     def get_all_active_ordered_by_position(classname, **kwargs):
         return [e.get_client_side_dict(**kwargs) for e in
-                db(classname).filter_by(active=True).order_by(classname.position).all()]
+                utils.db.query_filter(classname).filter_by(active=True).order_by(classname.position).all()]
 
     @staticmethod
     def str2float(str, onfail=None):
@@ -472,7 +469,7 @@ class PRBase:
     # if else - insert after given id
     def insert_after(self, insert_after_id, filter=None):
 
-        tochange = db(self.__class__)
+        tochange = utils.db.query_filter(self.__class__)
 
         if filter is not None:
             tochange = tochange.filter(filter)
@@ -784,8 +781,8 @@ class PRBase:
 
     @staticmethod
     def delete_from_search(mapper, connection, target):
-        if hasattr(target, 'search_fields') and db(Search, index=target.id).count():
-            db(Search, index=target.id).delete()
+        if hasattr(target, 'search_fields') and utils.db.query_filter(Search, index=target.id).count():
+            utils.db.query_filter(Search, index=target.id).delete()
             return True
         return False
 

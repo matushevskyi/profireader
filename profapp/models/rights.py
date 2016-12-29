@@ -1,16 +1,17 @@
-from functools import reduce
 import inspect
-from flask import g
-from tools import db_utils
-from ..models.company import Company, UserCompany, MemberCompanyPortal
-from ..models.portal import Portal, PortalDivision
-# from ..models.bak_articles import ArticlePortalDivision, ArticleCompany
-from ..models.materials import Material, Publication
-from ..models.users import User
-from .pr_base import PRBase
 import re
+from functools import reduce
+
 import werkzeug
+from flask import g
 from sqlalchemy import text, and_
+
+from profapp.utils import db
+from .pr_base import PRBase
+from ..models.company import Company, UserCompany, MemberCompanyPortal
+from ..models.materials import Material, Publication
+from ..models.portal import Portal, PortalDivision
+from ..models.users import User
 
 
 class BaseRightsInProfireader:
@@ -131,12 +132,14 @@ class BaseRightsInProfireader:
 
 
 class PublishUnpublishInPortal(BaseRightsInProfireader):
-    def __init__(self, publication=None, division=None, company=None):
+    def __init__(self, publication=None, division=None, company=None, portal = None):
         self.publication = publication if isinstance(publication, Publication) else Publication.get(
             publication) if publication else None
         self.division = division if isinstance(division, PortalDivision) else PortalDivision.get(
             division) if division else None
         self.company = company if isinstance(company, Company) else Company.get(company) if company else None
+
+        self.portal = portal if isinstance(portal, Portal) else self.division.portal if self.division else None
 
     def get_allowed_attributes(self, key, value):
         if key == 'publication_id':
@@ -205,7 +208,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
         companies_with_rights = {c.id: c for c in g.db.query(Company).outerjoin(MemberCompanyPortal, and_(
             text("(0 <> (rights & %s))" % (
                 MemberCompanyPortal.RIGHT_AT_PORTAL._tobin({r: True for r in rights['membership']}),)),
-            MemberCompanyPortal.portal_id == self.division.portal.id,
+            MemberCompanyPortal.portal_id == self.portal.id,
             Company.id == MemberCompanyPortal.company_id)). \
             filter(MemberCompanyPortal.id != None).all()}
 
@@ -253,7 +256,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
     @staticmethod
     def get_portals_where_company_is_member(company):
         """This method return all portals-partners current company"""
-        return [memcomport.portal for memcomport in db_utils.db(MemberCompanyPortal, company_id=company.id).all()]
+        return [memcomport.portal for memcomport in db.utils.db.query_filter(MemberCompanyPortal, company_id=company.id).all()]
 
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
@@ -484,7 +487,7 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
             value = Company.get(value)
         if key == 'employment_id':
             key = 'employment'
-            value = db_utils.db(UserCompany, id=value).first()
+            value = db.utils.db.query_filter(UserCompany, id=value).first()
         return key, value
 
     STATUSES = UserCompany.STATUSES

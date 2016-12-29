@@ -1,19 +1,20 @@
+import json as jsonmodule
 import os
 import re
-from flask import render_template, g, make_response
+import urllib.parse
+from functools import wraps
+
+from flask import jsonify, json
+from flask import render_template, g
+from flask import request
+from flask.ext.login import login_required
+
 from profapp.models.files import File, YoutubeApi
+from profapp import utils
 from .blueprints_declaration import filemanager_bp
 from .request_wrapers import check_right
-from functools import wraps
-from flask import jsonify, json
-import json as jsonmodule
-from flask.ext.login import login_required
-from flask import session, redirect, request, url_for
-from tools.db_utils import db
 from ..models.company import Company, UserCompany, MemberCompanyPortal
-import urllib.parse
 from ..models.rights import FilemanagerRights, UserIsActive
-import time
 
 
 def parent_folder(func):
@@ -53,7 +54,7 @@ def filemanager():
                                                                                          'UPLOAD'])})
     for user_company in g.user.employments:
         if user_company.company.own_portal:
-            company_membership_in_portal = db(MemberCompanyPortal, portal_id=user_company.company.own_portal.id). \
+            company_membership_in_portal = utils.db.query_filter(MemberCompanyPortal, portal_id=user_company.company.own_portal.id). \
                 filter(
                 MemberCompanyPortal.company_id != user_company.company.id and MemberCompanyPortal.status == 'ACTIVE') \
                 .join(Company).filter(Company.status == 'ACTIVE').all()
@@ -101,7 +102,7 @@ def filemanager():
 @check_right(UserIsActive)
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
-    company = db(Company, journalist_folder_file_id=ancestors[0]).first()
+    company = utils.db.query_filter(Company, journalist_folder_file_id=ancestors[0]).first()
     if len(json['params'].get('search_text')) > 0:
         list = File.list(json['params']['folder_id'], json['params']['file_manager_called_for'],
                          json['params']['search_text'], company_id=company.id)
@@ -161,7 +162,7 @@ def auto_remove(json):
 
 def get_company_from_folder(file_id):
     ancestors = File.ancestors(file_id)
-    return db(Company, journalist_folder_file_id=ancestors[0]).first()
+    return utils.db.query_filter(Company, journalist_folder_file_id=ancestors[0]).first()
 
 
 @filemanager_bp.route('/remove/<string:file_id>', methods=['OK'])
@@ -170,7 +171,7 @@ def remove(json, file_id):
     file = File.get(file_id)
     ancestors = File.ancestors(file.parent_id)
     if not file or FilemanagerRights(
-            company=db(Company, journalist_folder_file_id=ancestors[0]).first()).action_is_allowed(
+            company=utils.db.query_filter(Company, journalist_folder_file_id=ancestors[0]).first()).action_is_allowed(
         FilemanagerRights.ACTIONS['REMOVE'], file) != True:
         return False
     return file.remove()
@@ -183,7 +184,7 @@ def send(parent_id):
     root = parent.root_folder_id
     if parent.mime == 'root':
         root = parent.id
-    company = db(Company, journalist_folder_file_id=root).one()
+    company = utils.db.query_filter(Company, journalist_folder_file_id=root).one()
     if FilemanagerRights(company=company).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
         return jsonify({'error': True})
     data = request.form

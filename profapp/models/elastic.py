@@ -1,11 +1,12 @@
 import json
 import math
-from .. import utils
-from tools.db_utils import db
+
 import requests
-import inspect
-from sqlalchemy import event
 from flask import g
+from sqlalchemy import event
+
+from profapp import utils
+
 
 
 # engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
@@ -253,7 +254,7 @@ class PRElasticDocument:
 
     @classmethod
     def elastic_get_all_documents(cls):
-        return db(cls).all()
+        return utils.db.query_filter(cls).all()
 
     @classmethod
     def elastic_reindex_all(cls):

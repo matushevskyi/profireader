@@ -1,33 +1,24 @@
-from .blueprints_declaration import portal_bp
-from flask import render_template, g, flash, redirect, url_for
-from ..models.company import Company
-from flask.ext.login import login_required
-from profapp.controllers.errors import BadDataProvided
-from ..models.portal import PortalDivisionType
-from ..models.dictionary import Currency
-from ..models.translate import TranslateTemplate
-from tools.db_utils import db
-from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
-    PortalDivisionSettingsCompanySubportal, PortalAdvertisment, PortalAdvertismentPlace, MembershipPlanIssued, \
-    MembershipPlan
-from .request_wrapers import ok, check_right
-# from ..models.bak_articles import Publication, ArticleCompany, Article
-from ..models.company import UserCompany
-from ..models.materials import Publication, Material
-from ..models.tag import Tag, TagPortalDivision
-from profapp.models.rights import RIGHTS
-from ..controllers import errors
-from sqlalchemy.sql import expression
-from ..models.pr_base import PRBase, Grid
-import copy
-from .. import utils
-import re
-from sqlalchemy.sql import text, and_
+from flask import render_template, g, redirect, url_for
 from sqlalchemy import desc
-from .pagination import pagination
+
 from config import Config
-from ..models.rights import PublishUnpublishInPortal, MembersRights, MembershipRights, RequireMembereeAtPortalsRight, \
-    PortalManageMembersCompaniesRight, UserIsEmployee, EditPortalRight, UserIsActive, UserIsEmployeeAtPortalOwner
+from profapp.controllers.errors import BadDataProvided
+from .blueprints_declaration import portal_bp
+from .pagination import pagination
+from .request_wrapers import check_right
+from .. import utils
+from ..models.company import Company
+from ..models.company import UserCompany
+from ..models.dictionary import Currency
+from ..models.materials import Publication
+from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
+    PortalAdvertisment, PortalAdvertismentPlace, MembershipPlan
+from ..models.portal import PortalDivisionType
+from ..models.pr_base import PRBase, Grid
+from ..models.rights import PublishUnpublishInPortal, MembersRights, RequireMembereeAtPortalsRight, \
+    UserIsEmployee, UserIsActive, UserIsEmployeeAtPortalOwner
+from ..models.tag import Tag
+from ..models.translate import TranslateTemplate
 
 
 @portal_bp.route('/create/company/<string:company_id>/', methods=['GET'])
@@ -49,7 +40,7 @@ def profile(company_id=None, portal_id=None):
 # @check_right(EditPortalRight, ['company_id'])
 def profile_load(json, company_id=None, portal_id=None):
     action = g.req('action', allowed=['load', 'save', 'validate'])
-    layouts = db(PortalLayout).all()
+    layouts = utils.db.query_filter(PortalLayout).all()
     division_types = PortalDivisionType.get_division_types()
     portal = Portal.get(portal_id) if portal_id else Portal.launch_new_portal(Company.get(company_id))
 
@@ -127,11 +118,11 @@ def profile_load(json, company_id=None, portal_id=None):
             portal.logo = jp['logo']
             portal.favicon = jp['favicon']
             for del_div in deleted_divisions:
-                del_div.notify_about_deleted_publications('division deleted')
+                del_div.notify_company_about_deleted_publications('division deleted')
 
             for div in portal.divisions:
                 if div.id in changed_division_types:
-                    div.notify_about_deleted_publications('division type changed')
+                    div.notify_company_about_deleted_publications('division type changed')
                     div.publications = []
 
             portal.save()
@@ -302,8 +293,8 @@ def banners_load(json, portal_id):
     company = portal.own_company
     if 'action_name' in json:
         if json['action_name'] == 'create':
-            place = db(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id,
-                       place=json['row']['place']).one()
+            place = utils.db.query_filter(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id,
+                                 place=json['row']['place']).one()
             newrow = PortalAdvertisment(portal_id=portal.id, html=place.default_value if place.default_value else '',
                                         place=json['row']['place']).save()
             return {'grid_action': 'refresh_row', 'row': newrow.get_client_side_dict()}
@@ -313,7 +304,7 @@ def banners_load(json, portal_id):
             return {'grid_action': 'delete_row'}
         elif json['action_name'] == 'set_default':
             adv = PortalAdvertisment.get(json['id'])
-            place = db(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id, place=adv.place).one()
+            place = utils.db.query_filter(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id, place=adv.place).one()
             adv.html = place.default_value
             adv.save()
             return {}
@@ -403,7 +394,7 @@ def membership_change_status(json, membership_id):
                 not membership.current_membership_plan_issued.started_tm:
             membership.current_membership_plan_issued.start()
 
-        membership.save().notify_company_portal_memberee(
+        membership.save().notify_company_about_portal_memberee(
             "Administrator of portal %s changed status of your company %s membership to %s" %
             (utils.jinja.link_external(), utils.jinja.link_company_profile(),
              utils.jinja.link('url_company_portal_memberees', membership.status, True),))
@@ -477,7 +468,7 @@ def publications_load(json, portal_id):
     portal = Portal.get(portal_id)
     company = portal.own_company
 
-    publications = db(Publication).join(PortalDivision, PortalDivision.id == Publication.portal_division_id). \
+    publications = utils.db.query_filter(Publication).join(PortalDivision, PortalDivision.id == Publication.portal_division_id). \
         filter(PortalDivision.portal_id == portal.id).order_by(desc(Publication.publishing_tm)).all()
 
     # subquery = Company.subquery_portal_articles(portal.id, json.get('filter'), json.get('sort'))

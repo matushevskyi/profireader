@@ -24,7 +24,7 @@
                 return ( '/portal/search_for_portal_to_join/' );
             };
             $scope.url_change_status = {{ raw_url_for('company.membership_change_status')|safe }};
-            $scope.url_join = {{ raw_url_for('company.join_to_portal')|safe }};
+            $scope.url_join_to_portal = {{ raw_url_for('company.join_to_portal')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.selectedPortal_name = '';
             $scope.selectedPortal = null;
@@ -53,7 +53,7 @@
             };
 
             $scope.joinToPortal = function () {
-                return $ok($scope.url_join({company_id: $scope.company_id}), {
+                return $ok($scope.url_join_to_portal({company_id: $scope.company_id}), {
                     portal_id: $scope.selectedPortal.id
                 }, function () {
                     $scope.gridApi.grid.setGridData();

@@ -1,7 +1,9 @@
-from ..models.pr_base import Base, PRBase
-from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Column
-from tools.db_utils import db
+
+from profapp import utils
+from ..constants.TABLE_TYPES import TABLE_TYPES
+from ..models.pr_base import Base, PRBase
+
 
 class Country(Base, PRBase):
     __tablename__ = 'country'
@@ -12,7 +14,7 @@ class Country(Base, PRBase):
 
     @staticmethod
     def get_countries():
-        return [{'id': country.id, 'name': country.name} for country in db(Country).all()]
+        return [{'id': country.id, 'name': country.name} for country in utils.db.query_filter(Country).all()]
 
 class Currency(Base, PRBase):
     __tablename__ = 'currency'
