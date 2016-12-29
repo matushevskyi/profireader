@@ -30,7 +30,7 @@ client_secret.*
 # database
 db/database_full.*
 db/database.*.bak
-db/*.sql
+
 
 *.bak
 *.js.map
