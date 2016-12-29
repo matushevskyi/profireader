@@ -1,0 +1,142 @@
+<script src="{{ static_address('js/pr-membership-plan-angular.js') }}"></script>
+<style>
+
+    .pr-grid-cell-field-name-publications {
+        padding: 0px;
+    }
+
+    span.pr-grid-publications-vs {
+        min-width: 2.5em;
+        height: 100%;
+        padding: 4px 2px;
+        margin: 1px;
+        display: inline-block;
+    }
+
+</style>
+<script>
+    pr_angular_modules.push();
+
+    publication_column = function () {
+        var spanf = function (status, visibility, cnt, classes) {
+            return '<span class="tar ' + (classes ? classes : '') + ' pr-grid-publications-vs publication-fg-STATUS-' + status + ' publication-bg-VISIBILITY-' + visibility + '">' + cnt + '</span>';
+        };
+
+        var all_statuses = ['PUBLISHED', 'HOLDED', 'SUBMITTED', 'UNPUBLISHED', 'DELETED'];
+        var all_visibilities = ['OPEN', 'REGISTERED', 'PAYED'];
+
+        return {
+            name: 'publications',
+            width: '185',
+            'uib-tooltip-html': function (row, value) {
+                var ret = [];
+
+                $.each(all_statuses, function (ind, status) {
+                    var by_visibility = value['by_status_visibility'][status];
+                    var ret_v = [];
+                    $.each(all_visibilities, function (ind1, visibility) {
+                        ret_v.push(spanf(status, visibility, by_visibility[visibility]));
+                    });
+                    ret.push('<span class="publication-fg-STATUS-' + status + '">' + status + ': ' + spanf(status, '', value['by_status'][status], 'bold') + '</span> = ' + ret_v.join('+'));
+                });
+                var ret_v = [];
+
+                $.each(all_visibilities, function (ind, visibility) {
+                    ret_v.push(spanf('', visibility, value['by_visibility'][visibility], 'italic black'));
+                });
+
+                ret.push('<span class="italic black">ALL: ' + spanf('', '', value['all'], 'bold') + '</span> = ' + ret_v.join('+'));
+                return '<div class="tar nowrap">' + ret.join('</div><div class="tar nowrap">') + '</div>';
+
+            },
+            render: function (row, value) {
+                var ret = [];
+                $.each(all_visibilities,
+                        function (ind, visibility) {
+                            ret.push(spanf('PUBLISHED', visibility, value['by_status_visibility']['PUBLISHED'][visibility]));
+                        });
+                return spanf('PUBLISHED', '', value['by_status']['PUBLISHED'], 'bold') + '</span> = ' + ret.join('+');
+
+            }
+        };
+    }
+</script>
+
+
+<script>
+
+    module.factory('$membership_plan', ['$http', '$uibModal', function ($http, $uibModal) {
+        return function (dict) {
+            return $uibModal.open({
+                templateUrl: 'request_set_membership_plan.html',
+                controller: 'RequestSetMembershipPlanController',
+                backdrop: 'static',
+                keyboard: true,
+                resolve: resolveDictForAngularController(dict)
+            });
+        };
+    }]).controller('RequestSetMembershipPlanController', function ($scope, $ok, $uibModalInstance, membership_id, request_or_set) {
+
+        $scope.request_set_t_f = request_or_set !== 'set';
+
+        $scope.$$translate = {{ translates('RequestSetMembershipPlanController') | safe }};
+
+        $scope.url_request_membership_plan = {{ raw_url_for('portal.request_membership_plan') | safe }};
+        $scope.url_set_membership_plan = {{ raw_url_for('portal.set_membership_plan') | safe }};
+
+        $scope.membership_id = membership_id;
+        {#        $scope.$membership_plan = $membership_plan;#}
+
+        $scope.afterSave = function (resp) {
+            $uibModalInstance.close(resp)
+        };
+
+        $scope.cancel = $uibModalInstance.dismiss;
+
+        $scope.publication_count = function (plan, pub_type, planed) {
+            function get_count(pub_type, planed_count) {
+                var holded =
+                        $scope.data.select['publications']['by_status_visibility']['HOLDED'][pub_type.toUpperCase()];
+                var published =
+                        $scope.data.select['publications']['by_status_visibility']['PUBLISHED'][pub_type.toUpperCase()];
+                if (planed_count !== false) {
+                    holded = published + holded - planed_count;
+                    holded = holded < 0 ? 0 : holded;
+                    holded = planed_count < 0 ? 0 : holded;
+                    published = published - holded;
+                }
+                return '&nbsp;(<nothing class="publication-fg-STATUS-PUBLISHED">' + published + ',</nothing><nothing class="publication-fg-STATUS-HOLDED">' + holded + '</nothing>)';
+            }
+
+            if (!$scope.data) {
+                return ''
+            }
+            var ret = plan['publication_count_' + pub_type];
+            return (ret < 0 ? ('&infin;') : (ret ? ret : '0')) + get_count(pub_type, planed ? ret : false);
+        };
+
+        $scope.immediately_cant_be_selected = function (immediatly) {
+            if (!$scope.data) {
+                return true;
+            }
+
+            return $scope.data.selected_by_user_plan_id === false ||
+                    (immediatly ? false : parseInt($scope.data.membership.current_membership_plan_issued.duration) < 0)
+        }
+
+        $scope.duration = function (plan) {
+            if (!$scope.data) {
+                return ''
+            }
+            return ((parseInt(plan.duration) <= 0 || plan.id == $scope.data.membership.portal.default_membership_plan_id) ? '&infin;' : plan.duration);
+        };
+
+        $scope.price = function (plan) {
+            if (!$scope.data) {
+                return ''
+            }
+            return ((plan.price <= 0 || plan.id == $scope.data.membership.portal.default_membership_plan_id) ? 'free' : ('' + plan.price + ' ' + plan.currency_id));
+        };
+    });
+</script>
+

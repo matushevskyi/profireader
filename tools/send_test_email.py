@@ -3,7 +3,7 @@ import sys
 sys.path.append('..')
 
 from profapp import create_app, load_database
-from profapp.utils import email_utils
+from profapp import utils
 import argparse
 
 if __name__ == '__main__':
@@ -14,5 +14,5 @@ if __name__ == '__main__':
     app = create_app(apptype='profi')
     with app.app_context():
         load_database(app.config['SQLALCHEMY_DATABASE_URI'])()
-        email_utils.send_email(subject='test', html='Go to <a href="http://ntaxa.com/">ntaxa</a>!<br/>Bye!',
+        utils.email.send_email(subject='test', html='Go to <a href="http://ntaxa.com/">ntaxa</a>!<br/>Bye!',
                                send_to=[args.email])

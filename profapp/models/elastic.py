@@ -1,11 +1,12 @@
 import json
 import math
-from .. import utils
-from tools.db_utils import db
+
 import requests
-import inspect
-from sqlalchemy import event
 from flask import g
+from sqlalchemy import event
+
+from profapp import utils
+
 
 
 # engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
@@ -28,12 +29,13 @@ class PRElasticConnection:
         return (self.host + '/' + '/'.join(args)) + '?' + \
                ('&'.join(["%s=%s" % (k, v) for k, v in params.items()]) if params else '')
 
-    def rq(self, path='', req={}, method='GET', returnstatusonly=False, notjson=False, do_not_raise_exception = False):
+    def rq(self, path='', req={}, method='GET', returnstatusonly=False, notjson=False, do_not_raise_exception=False):
         import sys
         do_not_raise_exception = do_not_raise_exception if do_not_raise_exception else (method == 'DELETE')
 
-        print(method + ' - ' + path + ' called from ' + sys._getframe(1).f_code.co_name)
-        print('------ request = `' + req.__str__() + '`')
+        g.log('elastic',
+              {'method': method, 'path': path, 'called_from': sys._getframe(1).f_code.co_name, 'request': req})
+
         if method == 'POST':
             response = requests.post(path, data=json.dumps(req))
         elif method == 'PUT':
@@ -47,14 +49,15 @@ class PRElasticConnection:
         else:
             raise Exception("unknown method `" + method + '`')
         if returnstatusonly:
-            print('++++++ response(header only) =`' + response.status_code.__str__() + '`')
+            g.log('elastic', {'header': response.status_code.__str__()})
             return True if response.status_code == 200 else False
         else:
-            print('++++++ response(header) =`' + response.status_code.__str__() + '`')
+            g.log('elastic', {'header': response.status_code.__str__()})
+
             if response.status_code > 299 and not do_not_raise_exception:
                 ret = json.loads(response.text)
                 raise PRElasticException(ret, response)
-            print('++++++ response(text) =`' + response.text + '`')
+            g.log('elastic', {'response': response.text})
             return response.text if notjson else json.loads(response.text)
 
     def index_exists(self, index_name):
@@ -146,7 +149,8 @@ class PRElasticConnection:
             highlight = {
                 "pre_tags": ['<span class="search_highlighted">'],
                 "post_tags": ["</span>"],
-                'fields': {f: {'fragment_size': 200, 'number_of_fragments': get_param(pm, 'number_of_fragments')} for f, pm in fields.items()}
+                'fields': {f: {'fragment_size': 200, 'number_of_fragments': get_param(pm, 'number_of_fragments')} for
+                           f, pm in fields.items()}
             }
 
         req = {}
@@ -195,7 +199,6 @@ class PRElasticDocument:
         return None
 
     def elastic_get_document(self):
-        print(self)
         ret = {}
         for k, v in self.elastic_get_fields().items():
             ret[k] = v.setter()
@@ -224,7 +227,7 @@ class PRElasticDocument:
                 }
             }}, method='PUT')
             if ret:
-                print('created index:', index_name)
+                g.log('elastic', {'created_index': index_name})
                 self.elastic_cached_index_doctype[index_name] = {}
             return True if ret else False
 
@@ -242,7 +245,7 @@ class PRElasticDocument:
             ret = elasticsearch.rq(path=elasticsearch.path(index_name, '_mapping', doctype_name),
                                    req=self.elastic_doctype_mappintg(), method='PUT')
             if ret:
-                print('created doctype:', index_name, doctype_name)
+                g.log('elastic', {'created_doctype': doctype_name, 'index': index_name})
                 self.elastic_cached_index_doctype[index_name][doctype_name] = True
             return True if ret else False
 
@@ -251,7 +254,7 @@ class PRElasticDocument:
 
     @classmethod
     def elastic_get_all_documents(cls):
-        return db(cls).all()
+        return utils.db.query_filter(cls).all()
 
     @classmethod
     def elastic_reindex_all(cls):

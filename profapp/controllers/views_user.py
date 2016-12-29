@@ -1,15 +1,15 @@
+from flask import render_template, abort, g
+from flask import session
+
+from config import Config
+
 from .blueprints_declaration import user_bp
-from flask import url_for, render_template, abort, request, flash, redirect, \
-    request, g
-from ..models.users import User
-from tools.db_utils import db
+from .. import utils
 from ..constants.UNCATEGORIZED import AVATAR_SIZE
 from ..controllers.request_wrapers import check_right
-from config import Config
-from ..models.country import Country
-from flask import session
+from ..models.dictionary import Country
 from ..models.rights import UserIsActive, UserEditProfieRight, AllowAll
-from .. import utils
+from ..models.users import User
 
 
 @user_bp.route('/<user_id>/profile/')
@@ -26,7 +26,7 @@ def profile(user_id):
 @user_bp.route('/<user_id>/edit-profile/', methods=['GET'])
 @check_right(UserEditProfieRight, ['user_id'])
 def edit_profile(user_id):
-    user_query = db(User, id=user_id)
+    user_query = utils.db.query_filter(User, id=user_id)
     user = user_query.first()
     return render_template('general/user_edit_profile.html', user=user)
 

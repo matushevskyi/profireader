@@ -96,7 +96,7 @@
                             class="fa fa-newspaper-o"></i><span>{{ _('Стрічкa читача') }}</span></a></li>
                     <!-- @formatter:off  -->
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_messenger }}"
-                        title="{{ _('Всі повідомлення') }}"
+                        title="{{ ::_('All messages') }}"
                         class="pr" ng-class="{'selected': selected_user_menu == 'messages'}"><i
                         class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span><div
                         ng-if="unread_message_count || unread_notification_count || contact_request_count"
@@ -105,7 +105,7 @@
                     <!-- @formatter:on  -->
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %}
                             href="{{ url_company_companies() }}"
-                            title="{{ _('Компанії') }}"
+                            title="{{ ::_('Companies') }}"
                             ng-class="{'selected': selected_user_menu == 'companies'}"><i
                             class="fa fa-building-o"></i><span>{{ _('Компанії') }}</span></a></li>
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %} href=""

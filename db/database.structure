@@ -9,20 +9,6 @@ SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
---
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
 SET search_path = public, pg_catalog;
 
 --
@@ -138,7 +124,8 @@ CREATE TYPE pr_enum_publication_status AS ENUM (
     'PUBLISHED',
     'DELETED',
     'SUBMITTED',
-    'UNPUBLISHED'
+    'UNPUBLISHED',
+    'HOLDED'
 );
 
 
@@ -174,6 +161,32 @@ CREATE TYPE pr_enum_user_company_status AS ENUM (
 ALTER TYPE pr_enum_user_company_status OWNER TO postgres;
 
 --
+-- Name: pr_membership_plan_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_membership_plan_status AS ENUM (
+    'ACTIVE',
+    'DELETED'
+);
+
+
+ALTER TYPE pr_membership_plan_status OWNER TO postgres;
+
+--
+-- Name: pr_membership_plan_used_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE pr_membership_plan_used_status AS ENUM (
+    'REQUESTED',
+    'ACTIVE',
+    'REFUSED',
+    'USED'
+);
+
+
+ALTER TYPE pr_membership_plan_used_status OWNER TO postgres;
+
+--
 -- Name: status_name_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -188,6 +201,48 @@ CREATE TYPE status_name_type AS ENUM (
 
 
 ALTER TYPE status_name_type OWNER TO postgres;
+
+--
+-- Name: __change_enum_type(character varying, character varying[]); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __change_enum_type(enum_name character varying, enum_values character varying[]) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$DECLARE
+
+tcs record;
+cnt integer;
+
+BEGIN
+
+CREATE TEMP TABLE cnts AS SELECT table_name as tab, column_name as col, column_default as cd FROM information_schema.columns WHERE data_type = 'USER-DEFINED' AND udt_name = enum_name;
+
+cnt = 0;
+FOR tcs IN SELECT * FROM cnts LOOP
+  EXECUTE 'ALTER TABLE "' || tcs.tab || '" ALTER COLUMN "' || tcs.col || '" TYPE character varying(1000)';
+  EXECUTE 'ALTER TABLE "' || tcs.tab || '" ALTER "' || tcs.col || '" DROP DEFAULT';
+  cnt = cnt +1;
+END LOOP;
+
+
+EXECUTE 'DROP TYPE "' || enum_name || '"';
+EXECUTE 'CREATE TYPE ' || enum_name || ' AS ENUM (''' || array_to_string(enum_values, ''', ''') || ''')';
+
+FOR tcs IN SELECT * FROM cnts LOOP
+  EXECUTE 'ALTER TABLE "' || tcs.tab || '" ALTER COLUMN "' || tcs.col || '" TYPE "' || enum_name || '" USING "'|| tcs.col || '"::"' || enum_name || '"';
+  IF tcs.cd IS NULL THEN
+    EXECUTE 'ALTER TABLE "' || tcs.tab || '" ALTER COLUMN "' || tcs.col || '" SET DEFAULT(NULL)';
+  ELSE
+    EXECUTE 'ALTER TABLE "' || tcs.tab || '" ALTER COLUMN "' || tcs.col || '" SET DEFAULT(' || tcs.cd || ')';
+  END IF;
+END LOOP;
+
+RETURN cnt;
+
+END$$;
+
+
+ALTER FUNCTION public.__change_enum_type(enum_name character varying, enum_values character varying[]) OWNER TO postgres;
 
 --
 -- Name: __disfigure_email(character varying); Type: FUNCTION; Schema: public; Owner: postgres
@@ -229,6 +284,51 @@ $$;
 ALTER FUNCTION public.__get_all_referring_columns(a_table character varying, a_column character varying) OWNER TO postgres;
 
 --
+-- Name: __has_rights(bigint, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __has_rights(check_in bigint, right_bit integer) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+RETURN __has_rights(check_in, ARRAY[right_bit]);
+
+END$$;
+
+
+ALTER FUNCTION public.__has_rights(check_in bigint, right_bit integer) OWNER TO postgres;
+
+--
+-- Name: __has_rights(bigint, integer[]); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __has_rights(check_in bigint, right_bits integer[]) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$DECLARE
+
+expon smallint;
+binary_rights bigint;
+
+BEGIN
+
+binary_rights = 0;
+
+FOREACH expon IN ARRAY right_bits LOOP
+  IF expon<0  OR expon>127 THEN
+    RAISE EXCEPTION 'right bits have to be >=0 and <=127 --> % given', expon;
+  ELSE
+    binary_rights = binary_rights | (1 << expon);
+  END IF;
+END LOOP;
+
+RETURN (check_in & binary_rights)!=0;
+
+END$$;
+
+
+ALTER FUNCTION public.__has_rights(check_in bigint, right_bits integer[]) OWNER TO postgres;
+
+--
 -- Name: __localize_emails(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -257,17 +357,111 @@ END$$;
 ALTER FUNCTION public.__localize_hosts(a_local_host character varying) OWNER TO postgres;
 
 --
+-- Name: __show_enum_types(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __show_enum_types() RETURNS TABLE(schema_name character varying, type_name character varying, type_values character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+
+return query select n.nspname::character varying as schema_name, t.typname::character varying as type_name, string_agg(e.enumlabel, ', ')::character varying FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace GROUP BY schema_name, type_name;
+
+END
+$$;
+
+
+ALTER FUNCTION public.__show_enum_types() OWNER TO postgres;
+
+--
+-- Name: __show_enum_types(character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION __show_enum_types(enum_schema character varying) RETURNS SETOF record
+    LANGUAGE plpgsql
+    AS $$BEGIN
+
+return query select n.nspname::character varying, t.typname::character varying, string_agg(e.enumlabel, '', '')::character varying FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace GROUP BY e_schema, enum_name;
+
+END$$;
+
+
+ALTER FUNCTION public.__show_enum_types(enum_schema character varying) OWNER TO postgres;
+
+--
 -- Name: __strip_tags(text); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
 CREATE FUNCTION __strip_tags(text) RETURNS text
     LANGUAGE sql
     AS $_$     SELECT replace(regexp_replace(
-        regexp_replace($1, E'(?x)<[^>]*?(\s alt \s* = \s* ([\'"]) ([^>]*?) \2) [^>]*? >', E'\3'), 
+        regexp_replace($1, E'(?x)<[^>]*?(\s alt \s* = \s* ([\'"]) ([^>]*?) \2) [^>]*? >', E'\3'),
        E'(?x)(< [^>]*? >)', '', 'g'), '&nbsp;',' ')$_$;
 
 
 ALTER FUNCTION public.__strip_tags(text) OWNER TO postgres;
+
+--
+-- Name: aa_membership_hold_unhold_publications(character varying, pr_enum_publication_visibility, character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION aa_membership_hold_unhold_publications(membership_id character varying, visibility pr_enum_publication_visibility, current_membership_plan_issued_id character varying, default_membership_plan_id character varying) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$DECLARE
+  issued_plan_id character varying;
+  lim integer;
+  port_id integer;
+  comp_id integer;
+  cnt_hold integer;
+  cnt_pub integer;
+BEGIN
+
+  SELECT portal_id, company_id, current_membership_plan_issued_id INTO port_id, comp_id, issued_plan_id  FROM member_company_portal WHERE member_company_portal.id = membership_id;
+
+  EXECUTE 'SELECT INTO lim publication_count_' || lower(visibility) || ' FROM membership_plan_issued WHERE membership_plan_issued.id = ''' || issued_plan_id || '''';
+
+  SELECT INTO cnt_pub COUNT(*) FROM publication
+        LEFT JOIN portal_division ON portal_division.id = publication.portal_division_id
+        WHERE publication.visibility = vis AND publication.status = 'PUBLISHED' AND portal_division.portal_id = port_id;
+
+  SELECT INTO cnt_hold COUNT(*) FROM publication
+        LEFT JOIN portal_division ON portal_division.id = publication.portal_division_id
+        WHERE publication.visibility = vis AND publication.status = 'HOLDED' AND portal_division.portal_id = port_id;
+
+  IF lim>0 AND cnt_pub>lim THEN
+
+    UPDATE publication SET publication.status = 'HOLDED' WHERE id IN
+          (SELECT id FROM publication as ps LEFT JOIN portal_division ON portal_division.id = ps.portal_division_id
+           WHERE ps.visibility = vis AND ps.status = 'PUBLISHED' AND portal_division.portal_id = port_id
+           ORDER BY ps.publishing_tm ASC
+           LIMIT cnt_pub - lim);
+
+  END IF;
+
+  IF lim>0 AND cnt_pub<lim AND cnt_hold>0 THEN
+
+    UPDATE publication SET publication.status = 'PUBLISHED' WHERE id IN
+          (SELECT id FROM publication as ps LEFT JOIN portal_division ON portal_division.id = ps.portal_division_id
+           WHERE ps.visibility = vis AND ps.status = 'HOLDED' AND portal_division.portal_id = port_id
+           ORDER BY ps.publishing_tm DESC
+           LIMIT lim - cnt_pub);
+
+  END IF;
+
+
+  IF lim<=0 AND cnt_hold>0 THEN
+
+    UPDATE publication SET publication.status = 'PUBLISHED' WHERE id IN
+          (SELECT id FROM publication as ps LEFT JOIN portal_division ON portal_division.id = ps.portal_division_id
+           WHERE ps.visibility = vis AND ps.status = 'HOLDED' AND portal_division.portal_id = port_id);
+  END IF;
+
+  RETURN 0;
+
+END$$;
+
+
+ALTER FUNCTION public.aa_membership_hold_unhold_publications(membership_id character varying, visibility pr_enum_publication_visibility, current_membership_plan_issued_id character varying, default_membership_plan_id character varying) OWNER TO postgres;
 
 --
 -- Name: average_usage_func(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -291,7 +485,7 @@ ALTER FUNCTION public.average_usage_func() OWNER TO postgres;
 
 CREATE FUNCTION contact_request_count(a_user_id character varying) RETURNS integer
     LANGUAGE plpgsql
-    AS $$DECLARE 
+    AS $$DECLARE
 cnt INTEGER;
 BEGIN
 
@@ -347,22 +541,20 @@ END$$;
 ALTER FUNCTION public.create_personal_folder_for_user() OWNER TO postgres;
 
 --
--- Name: create_uuid(); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: create_uuid(character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION create_uuid() RETURNS character varying
+CREATE FUNCTION create_uuid(existing_id character varying) RETURNS character varying
     LANGUAGE plpgsql
     AS $$DECLARE
 BEGIN
    -- f47ac10b-58cc-4372-a567-0e02b2c3d479
 
-   return create_uuid_from_timestamp_and_server_id(localtimestamp, '001');
-
-END
-$$;
+   return (case when existing_id IS NULL then create_uuid_from_timestamp_and_server_id(localtimestamp, '001') else existing_id end);
+END$$;
 
 
-ALTER FUNCTION public.create_uuid() OWNER TO postgres;
+ALTER FUNCTION public.create_uuid(existing_id character varying) OWNER TO postgres;
 
 --
 -- Name: create_uuid_from_timestamp_and_server_id(timestamp without time zone, character varying); Type: FUNCTION; Schema: public; Owner: postgres
@@ -386,6 +578,76 @@ END$$;
 
 
 ALTER FUNCTION public.create_uuid_from_timestamp_and_server_id(tmstmp timestamp without time zone, server_id character varying) OWNER TO postgres;
+
+--
+-- Name: membership_hold_unhold_publications(character varying, pr_enum_publication_visibility); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION membership_hold_unhold_publications(membership_id character varying, a_visibility pr_enum_publication_visibility) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$DECLARE
+  issued_plan_id character varying;
+  lim integer;
+  port_id character varying;
+  comp_id character varying;
+  cnt_hold integer;
+  cnt_pub integer;
+  ret integer;
+BEGIN
+
+  SELECT portal_id, company_id, current_membership_plan_issued_id INTO port_id, comp_id, issued_plan_id FROM member_company_portal WHERE member_company_portal.id = membership_id;
+
+  EXECUTE 'SELECT publication_count_' || lower(a_visibility::character varying) || ' FROM membership_plan_issued WHERE membership_plan_issued.id = ''' || issued_plan_id || '''' INTO lim;
+
+  SELECT INTO cnt_pub COUNT(*) FROM publication
+        LEFT JOIN portal_division ON portal_division.id = publication.portal_division_id
+        WHERE publication.visibility = a_visibility AND publication.status = 'PUBLISHED' AND portal_division.portal_id = port_id;
+
+  SELECT INTO cnt_hold COUNT(*) FROM publication
+        LEFT JOIN portal_division ON portal_division.id = publication.portal_division_id
+        WHERE publication.visibility = a_visibility AND publication.status = 'HOLDED' AND portal_division.portal_id = port_id;
+
+  IF lim>=0 AND cnt_pub>lim THEN
+
+      WITH updated_rows AS (UPDATE publication SET status = 'HOLDED' WHERE publication.id IN
+          (SELECT ps.id FROM publication as ps LEFT JOIN portal_division ON portal_division.id = ps.portal_division_id
+           WHERE ps.visibility = a_visibility AND ps.status = 'PUBLISHED' AND portal_division.portal_id = port_id
+           ORDER BY ps.publishing_tm ASC
+           LIMIT cnt_pub - lim) RETURNING 1) SELECT count(*) INTO ret;
+
+    RETURN -ret;
+
+  END IF;
+
+  IF lim>=0 AND cnt_pub<lim AND cnt_hold>0 THEN
+
+    WITH updated_rows AS (UPDATE publication SET status = 'PUBLISHED' WHERE id IN
+          (SELECT ps.id FROM publication as ps LEFT JOIN portal_division ON portal_division.id = ps.portal_division_id
+           WHERE ps.visibility = a_visibility AND ps.status = 'HOLDED' AND portal_division.portal_id = port_id
+           ORDER BY ps.publishing_tm DESC
+           LIMIT lim - cnt_pub) RETURNING 1) SELECT count(*) INTO ret;
+
+    RETURN ret;
+
+  END IF;
+
+
+  IF lim<0 AND cnt_hold>0 THEN
+
+    WITH updated_rows AS (UPDATE publication SET status = 'PUBLISHED' WHERE id IN
+          (SELECT ps.id FROM publication as ps LEFT JOIN portal_division ON portal_division.id = ps.portal_division_id
+           WHERE ps.visibility = a_visibility AND ps.status = 'HOLDED' AND portal_division.portal_id = port_id) RETURNING 1) SELECT count(*) INTO ret;
+
+    RETURN ret;
+
+  END IF;
+
+  RETURN 0;
+
+END$$;
+
+
+ALTER FUNCTION public.membership_hold_unhold_publications(membership_id character varying, a_visibility pr_enum_publication_visibility) OWNER TO postgres;
 
 --
 -- Name: message_set_last_message_tm_in_contact(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -421,17 +683,17 @@ ALTER FUNCTION public.message_set_read(a_contact_id character varying, a_message
 
 CREATE FUNCTION message_unread_count(a_to_user_id character varying, a_contact_id character varying) RETURNS integer
     LANGUAGE plpgsql
-    AS $$DECLARE 
+    AS $$DECLARE
 cnt INTEGER;
 BEGIN
 IF a_contact_id is NULL THEN
-  SELECT INTO cnt COUNT(*) FROM message LEFT JOIN contact ON (message.contact_id = contact.id) 
+  SELECT INTO cnt COUNT(*) FROM message LEFT JOIN contact ON (message.contact_id = contact.id)
   WHERE message.read_tm IS NULL AND message.from_user_id != a_to_user_id AND (contact.user1_id = a_to_user_id OR contact.user2_id = a_to_user_id);
 ELSE
   IF a_contact_id = 'notification' THEN
     SELECT INTO cnt COUNT(*) FROM notification WHERE notification.read_tm IS NULL AND notification.to_user_id = a_to_user_id;
   ELSE
-    SELECT INTO cnt COUNT(*) FROM message LEFT JOIN contact ON (message.contact_id = contact.id) 
+    SELECT INTO cnt COUNT(*) FROM message LEFT JOIN contact ON (message.contact_id = contact.id)
     WHERE message.read_tm IS NULL AND message.from_user_id != a_to_user_id AND (contact.user1_id = a_to_user_id OR contact.user2_id = a_to_user_id) AND contact.id = a_contact_id;
   END IF;
 END IF;
@@ -461,7 +723,7 @@ ALTER FUNCTION public.notification_set_read(a_notification_ids character varying
 
 CREATE FUNCTION notification_unread_count(a_to_user_id character varying) RETURNS integer
     LANGUAGE plpgsql
-    AS $$DECLARE 
+    AS $$DECLARE
 cnt INTEGER;
 BEGIN
 
@@ -536,7 +798,7 @@ CREATE FUNCTION row_id() RETURNS trigger
 BEGIN
    -- f47ac10b-58cc-4372-a567-0e02b2c3d479
 
-   NEW.id = create_uuid();
+   NEW.id = create_uuid(NEW.id);
 
 --   lpad(to_hex(floor(local_time)::int), 8, '0') || '-' ||
 --             lpad(to_hex(floor((local_time - floor(local_time))*100000)::int), 4, '0') || '-' ||
@@ -562,7 +824,7 @@ ALTER FUNCTION public.row_id() OWNER TO postgres;
 CREATE FUNCTION row_id_cr() RETURNS trigger
     LANGUAGE plpgsql
     AS $$BEGIN
-   NEW.id = create_uuid();
+   NEW.id = create_uuid(NEW.id);
 
    NEW.cr_tm = clock_timestamp();
 
@@ -579,9 +841,9 @@ ALTER FUNCTION public.row_id_cr() OWNER TO postgres;
 
 CREATE FUNCTION row_id_cr_md() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$    
+    AS $$
 BEGIN
-   NEW.id = create_uuid();
+   NEW.id = create_uuid(NEW.id);
 
    NEW.cr_tm = clock_timestamp();
    NEW.md_tm = NEW.cr_tm;
@@ -600,7 +862,7 @@ ALTER FUNCTION public.row_id_cr_md() OWNER TO postgres;
 CREATE FUNCTION row_id_cr_md_ac() RETURNS trigger
     LANGUAGE plpgsql
     AS $$BEGIN
-NEW.id = create_uuid();
+NEW.id = create_uuid(NEW.id);
 NEW.cr_tm = clock_timestamp();
 NEW.md_tm = NEW.cr_tm;
 NEW.ac_tm = NEW.cr_tm;
@@ -693,23 +955,6 @@ END$$;
 ALTER FUNCTION public.seconds_ago(a_time timestamp without time zone) OWNER TO postgres;
 
 --
--- Name: show_enum_types(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION show_enum_types() RETURNS TABLE(enum_schema text, enum_name text, enum_values text)
-    LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-   RETURN QUERY EXECUTE 'SELECT n.nspname::text as enum_schema, t.typname::text as enum_name, string_agg(e.enumlabel, '', '')::text AS enum_values FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace GROUP BY enum_schema, enum_name';
-
-END
-$$;
-
-
-ALTER FUNCTION public.show_enum_types() OWNER TO postgres;
-
---
 -- Name: tag_membersgip_set_portal_division_to_catalog(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -788,7 +1033,7 @@ ALTER FUNCTION public.thumbnails_delete_from_files() OWNER TO postgres;
 
 CREATE FUNCTION to_tmstp(a_time timestamp without time zone) RETURNS double precision
     LANGUAGE plpgsql
-    AS $$DECLARE 
+    AS $$DECLARE
   cnt double precision;
 BEGIN
 IF a_time is NULL THEN
@@ -832,7 +1077,7 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- Name: _del_article; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: _del_article; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE _del_article (
@@ -844,7 +1089,7 @@ CREATE TABLE _del_article (
 ALTER TABLE _del_article OWNER TO pfuser;
 
 --
--- Name: _del_article_company; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: _del_article_company; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE _del_article_company (
@@ -882,7 +1127,7 @@ CREATE SEQUENCE article_company_history_id_seq
 ALTER TABLE article_company_history_id_seq OWNER TO pfuser;
 
 --
--- Name: _del_article_company_history; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: _del_article_company_history; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE _del_article_company_history (
@@ -900,7 +1145,7 @@ CREATE TABLE _del_article_company_history (
 ALTER TABLE _del_article_company_history OWNER TO pfuser;
 
 --
--- Name: _del_article_portal_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: _del_article_portal_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE _del_article_portal_division (
@@ -945,7 +1190,7 @@ COMMENT ON COLUMN _del_article_portal_division.portal_division_id IS 'this field
 
 
 --
--- Name: company; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: company; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE company (
@@ -979,7 +1224,7 @@ CREATE TABLE company (
 ALTER TABLE company OWNER TO pfuser;
 
 --
--- Name: config; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: config; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE config (
@@ -995,7 +1240,7 @@ CREATE TABLE config (
 ALTER TABLE config OWNER TO pfuser;
 
 --
--- Name: contact; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: contact; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE contact (
@@ -1013,7 +1258,7 @@ CREATE TABLE contact (
 ALTER TABLE contact OWNER TO pfuser;
 
 --
--- Name: country; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: country; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE country (
@@ -1027,7 +1272,21 @@ CREATE TABLE country (
 ALTER TABLE country OWNER TO pfuser;
 
 --
--- Name: employee; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: currency; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
+--
+
+CREATE TABLE currency (
+    id character varying(10) NOT NULL,
+    name character varying(100),
+    "position" integer DEFAULT 0 NOT NULL,
+    active boolean DEFAULT true NOT NULL
+);
+
+
+ALTER TABLE currency OWNER TO pfuser;
+
+--
+-- Name: employee; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE employee (
@@ -1061,7 +1320,7 @@ ALTER SEQUENCE employee_id_seq OWNED BY employee.id;
 
 
 --
--- Name: file; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: file; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE file (
@@ -1089,7 +1348,7 @@ CREATE TABLE file (
 ALTER TABLE file OWNER TO pfuser;
 
 --
--- Name: file_content; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: file_content; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE file_content (
@@ -1101,7 +1360,7 @@ CREATE TABLE file_content (
 ALTER TABLE file_content OWNER TO pfuser;
 
 --
--- Name: file_img; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: file_img; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE file_img (
@@ -1126,7 +1385,7 @@ CREATE TABLE file_img (
 ALTER TABLE file_img OWNER TO pfuser;
 
 --
--- Name: func_profiler; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: func_profiler; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE func_profiler (
@@ -1145,7 +1404,7 @@ CREATE TABLE func_profiler (
 ALTER TABLE func_profiler OWNER TO pfuser;
 
 --
--- Name: google_token; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: google_token; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE google_token (
@@ -1157,7 +1416,7 @@ CREATE TABLE google_token (
 ALTER TABLE google_token OWNER TO pfuser;
 
 --
--- Name: group; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: group; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE "group" (
@@ -1175,7 +1434,7 @@ COMMENT ON TABLE "group" IS 'persistent';
 
 
 --
--- Name: ip; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: ip; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE ip (
@@ -1187,7 +1446,7 @@ CREATE TABLE ip (
 ALTER TABLE ip OWNER TO pfuser;
 
 --
--- Name: material; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: material; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE material (
@@ -1211,43 +1470,93 @@ CREATE TABLE material (
 ALTER TABLE material OWNER TO pfuser;
 
 --
--- Name: member_company_portal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: member_company_portal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE member_company_portal (
     id character varying(36) NOT NULL,
     company_id character varying(36) NOT NULL,
     portal_id character varying(36) NOT NULL,
-    member_company_portal_plan_id character varying(36),
     rights bigint DEFAULT 0 NOT NULL,
     status pr_enum_member_company_portal_status DEFAULT 'APPLICANT'::pr_enum_member_company_portal_status NOT NULL,
-    cr_tm timestamp without time zone NOT NULL
+    cr_tm timestamp without time zone NOT NULL,
+    current_membership_plan_issued_id character varying(36) NOT NULL,
+    requested_membership_plan_issued_id character varying(36),
+    md_tm timestamp without time zone NOT NULL,
+    request_membership_plan_issued_immediately boolean DEFAULT false NOT NULL
 );
 
 
 ALTER TABLE member_company_portal OWNER TO pfuser;
 
 --
--- Name: member_company_portal_plan; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: membership_plan; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
-CREATE TABLE member_company_portal_plan (
+CREATE TABLE membership_plan (
     id character varying(36) NOT NULL,
-    name character varying(100) NOT NULL
+    name character varying(100) NOT NULL,
+    portal_id character varying(36) NOT NULL,
+    duration character varying(50) DEFAULT '666 years'::character varying NOT NULL,
+    publication_count_open integer DEFAULT (-1) NOT NULL,
+    publication_count_registered integer DEFAULT 14 NOT NULL,
+    publication_count_payed integer DEFAULT 88 NOT NULL,
+    publication_count_confidential integer DEFAULT 0,
+    price numeric(20,2) DEFAULT 13 NOT NULL,
+    cr_tm timestamp without time zone DEFAULT ('now'::text)::timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone DEFAULT ('now'::text)::timestamp without time zone NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    status pr_membership_plan_status DEFAULT 'ACTIVE'::pr_membership_plan_status NOT NULL,
+    currency_id character varying(5) DEFAULT 'UAH'::character varying NOT NULL,
+    auto_apply boolean DEFAULT false NOT NULL
 );
 
 
-ALTER TABLE member_company_portal_plan OWNER TO pfuser;
+ALTER TABLE membership_plan OWNER TO pfuser;
 
 --
--- Name: TABLE member_company_portal_plan; Type: COMMENT; Schema: public; Owner: pfuser
+-- Name: TABLE membership_plan; Type: COMMENT; Schema: public; Owner: pfuser
 --
 
-COMMENT ON TABLE member_company_portal_plan IS 'persistent';
+COMMENT ON TABLE membership_plan IS 'persistent';
 
 
 --
--- Name: message; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: membership_plan_issued; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
+--
+
+CREATE TABLE membership_plan_issued (
+    id character varying(36) NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone NOT NULL,
+    stopped_tm timestamp without time zone,
+    price numeric(20,2) NOT NULL,
+    duration character varying(50) NOT NULL,
+    publication_count_open integer NOT NULL,
+    publication_count_registered integer NOT NULL,
+    publication_count_payed integer NOT NULL,
+    publication_count_confidential integer DEFAULT 0,
+    started_by_user_id character varying(36),
+    stopped_by_user_id character varying(36),
+    membership_plan_id character varying(36) NOT NULL,
+    member_company_portal_id character varying(36) NOT NULL,
+    started_tm timestamp without time zone,
+    name character varying(100) NOT NULL,
+    currency_id character varying(5) DEFAULT 'UAH'::character varying NOT NULL,
+    portal_id character varying(36) NOT NULL,
+    company_id character varying(36) NOT NULL,
+    requested_by_user_id character varying(36) NOT NULL,
+    auto_renew boolean DEFAULT true NOT NULL,
+    calculated_stopping_tm timestamp without time zone,
+    auto_apply boolean DEFAULT false NOT NULL,
+    confirmed boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE membership_plan_issued OWNER TO pfuser;
+
+--
+-- Name: message; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE message (
@@ -1264,7 +1573,7 @@ CREATE TABLE message (
 ALTER TABLE message OWNER TO pfuser;
 
 --
--- Name: notification; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: notification; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE notification (
@@ -1283,7 +1592,7 @@ CREATE TABLE notification (
 ALTER TABLE notification OWNER TO pfuser;
 
 --
--- Name: portal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE portal (
@@ -1293,21 +1602,24 @@ CREATE TABLE portal (
     portal_layout_id character varying(36) DEFAULT '579944f0-82a0-4001-b175-e97255232d1c'::character varying NOT NULL,
     host character varying(200),
     lang character varying(2) DEFAULT 'uk'::character varying NOT NULL,
+    favicon_file_img_id character varying(36),
     url_facebook character varying(1000),
     url_google character varying(1000),
+    url_twitter character varying(1000),
     url_linkedin character varying(1000),
     logo_file_img_id character varying(36),
     aliases text DEFAULT ''::text,
     status character varying(50) DEFAULT 'ACTIVE'::character varying NOT NULL,
-    favicon_file_img_id character varying(36),
-    url_twitter character varying(1000)
+    default_membership_plan_id character varying(36) NOT NULL,
+    cr_tm timestamp without time zone NOT NULL,
+    md_tm timestamp without time zone NOT NULL
 );
 
 
 ALTER TABLE portal OWNER TO pfuser;
 
 --
--- Name: portal_adv; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_adv; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE portal_adv (
@@ -1321,7 +1633,7 @@ CREATE TABLE portal_adv (
 ALTER TABLE portal_adv OWNER TO pfuser;
 
 --
--- Name: portal_config; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_config; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE portal_config (
@@ -1333,7 +1645,7 @@ CREATE TABLE portal_config (
 ALTER TABLE portal_config OWNER TO pfuser;
 
 --
--- Name: portal_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE portal_division (
@@ -1360,7 +1672,7 @@ COMMENT ON COLUMN portal_division.portal_id IS 'this field added to primary key 
 
 
 --
--- Name: portal_division_settings_company_subportal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_division_settings_company_subportal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE portal_division_settings_company_subportal (
@@ -1375,7 +1687,7 @@ CREATE TABLE portal_division_settings_company_subportal (
 ALTER TABLE portal_division_settings_company_subportal OWNER TO pfuser;
 
 --
--- Name: portal_division_type; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_division_type; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE portal_division_type (
@@ -1395,7 +1707,7 @@ COMMENT ON TABLE portal_division_type IS 'persistent';
 
 
 --
--- Name: portal_layout; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_layout; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE portal_layout (
@@ -1415,7 +1727,7 @@ COMMENT ON TABLE portal_layout IS 'persistent';
 
 
 --
--- Name: portal_layout_adv_places; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_layout_adv_places; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE portal_layout_adv_places (
@@ -1430,7 +1742,7 @@ CREATE TABLE portal_layout_adv_places (
 ALTER TABLE portal_layout_adv_places OWNER TO pfuser;
 
 --
--- Name: publication; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: publication; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE publication (
@@ -1453,7 +1765,7 @@ CREATE TABLE publication (
 ALTER TABLE publication OWNER TO pfuser;
 
 --
--- Name: reader_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: reader_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE reader_division (
@@ -1467,7 +1779,7 @@ CREATE TABLE reader_division (
 ALTER TABLE reader_division OWNER TO pfuser;
 
 --
--- Name: reader_portal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: reader_portal; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE reader_portal (
@@ -1485,7 +1797,7 @@ CREATE TABLE reader_portal (
 ALTER TABLE reader_portal OWNER TO pfuser;
 
 --
--- Name: reader_publication; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: reader_publication; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE reader_publication (
@@ -1500,7 +1812,7 @@ CREATE TABLE reader_publication (
 ALTER TABLE reader_publication OWNER TO pfuser;
 
 --
--- Name: reader_user_portal_plan; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: reader_user_portal_plan; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE reader_user_portal_plan (
@@ -1522,7 +1834,7 @@ COMMENT ON TABLE reader_user_portal_plan IS 'persistent';
 
 
 --
--- Name: search; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: search; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE search (
@@ -1540,7 +1852,7 @@ CREATE TABLE search (
 ALTER TABLE search OWNER TO pfuser;
 
 --
--- Name: tag; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: tag; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE tag (
@@ -1563,7 +1875,7 @@ COMMENT ON COLUMN tag.portal_id IS 'this field added to primary key only for _te
 
 
 --
--- Name: tag_membership; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: tag_membership; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE tag_membership (
@@ -1579,7 +1891,7 @@ CREATE TABLE tag_membership (
 ALTER TABLE tag_membership OWNER TO pfuser;
 
 --
--- Name: tag_portal_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: tag_portal_division; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE tag_portal_division (
@@ -1599,7 +1911,7 @@ COMMENT ON COLUMN tag_portal_division.portal_id IS 'this column contain superflu
 
 
 --
--- Name: tag_publication; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: tag_publication; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE tag_publication (
@@ -1621,7 +1933,7 @@ COMMENT ON COLUMN tag_publication.portal_division_id IS 'this column contain sup
 
 
 --
--- Name: translate; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: translate; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE translate (
@@ -1635,14 +1947,15 @@ CREATE TABLE translate (
     ac_tm timestamp without time zone DEFAULT clock_timestamp(),
     url character varying(10000) DEFAULT ''::character varying NOT NULL,
     portal_id character varying(36),
-    allow_html character varying(1000) DEFAULT ''::character varying NOT NULL
+    allow_html character varying(1000) DEFAULT ''::character varying NOT NULL,
+    comment text DEFAULT ''::text NOT NULL
 );
 
 
 ALTER TABLE translate OWNER TO pfuser;
 
 --
--- Name: user; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: user; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE "user" (
@@ -1689,7 +2002,7 @@ CREATE TABLE "user" (
 ALTER TABLE "user" OWNER TO pfuser;
 
 --
--- Name: user_company; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: user_company; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE user_company (
@@ -1710,7 +2023,7 @@ CREATE TABLE user_company (
 ALTER TABLE user_company OWNER TO pfuser;
 
 --
--- Name: youtube_playlist; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: youtube_playlist; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE youtube_playlist (
@@ -1725,7 +2038,7 @@ CREATE TABLE youtube_playlist (
 ALTER TABLE youtube_playlist OWNER TO pfuser;
 
 --
--- Name: youtube_video; Type: TABLE; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: youtube_video; Type: TABLE; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE TABLE youtube_video (
@@ -1750,7 +2063,7 @@ ALTER TABLE ONLY employee ALTER COLUMN id SET DEFAULT nextval('employee_id_seq':
 
 
 --
--- Name: article_bulk_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: article_bulk_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY _del_article
@@ -1758,7 +2071,7 @@ ALTER TABLE ONLY _del_article
 
 
 --
--- Name: article_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: article_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY _del_article_company
@@ -1766,7 +2079,7 @@ ALTER TABLE ONLY _del_article_company
 
 
 --
--- Name: article_portal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: article_portal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY _del_article_portal_division
@@ -1774,7 +2087,7 @@ ALTER TABLE ONLY _del_article_portal_division
 
 
 --
--- Name: company_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: company_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY company
@@ -1782,7 +2095,7 @@ ALTER TABLE ONLY company
 
 
 --
--- Name: company_portal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: company_portal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY member_company_portal
@@ -1790,7 +2103,7 @@ ALTER TABLE ONLY member_company_portal
 
 
 --
--- Name: config_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: config_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY config
@@ -1798,7 +2111,7 @@ ALTER TABLE ONLY config
 
 
 --
--- Name: contact_unique_frendship; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: contact_unique_frendship; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY contact
@@ -1806,7 +2119,7 @@ ALTER TABLE ONLY contact
 
 
 --
--- Name: contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY contact
@@ -1814,7 +2127,15 @@ ALTER TABLE ONLY contact
 
 
 --
--- Name: employee_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: currency_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
+--
+
+ALTER TABLE ONLY currency
+    ADD CONSTRAINT currency_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: employee_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY employee
@@ -1822,7 +2143,7 @@ ALTER TABLE ONLY employee
 
 
 --
--- Name: favorite_reader_article_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: favorite_reader_article_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY reader_publication
@@ -1830,7 +2151,7 @@ ALTER TABLE ONLY reader_publication
 
 
 --
--- Name: file_content_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: file_content_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY file_content
@@ -1838,7 +2159,7 @@ ALTER TABLE ONLY file_content
 
 
 --
--- Name: file_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: file_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY file
@@ -1846,7 +2167,7 @@ ALTER TABLE ONLY file
 
 
 --
--- Name: for_one_company_one_version; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: for_one_company_one_version; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY _del_article_company
@@ -1854,7 +2175,7 @@ ALTER TABLE ONLY _del_article_company
 
 
 --
--- Name: func_profiler_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: func_profiler_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY func_profiler
@@ -1862,7 +2183,7 @@ ALTER TABLE ONLY func_profiler
 
 
 --
--- Name: google_token_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: google_token_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY google_token
@@ -1870,7 +2191,7 @@ ALTER TABLE ONLY google_token
 
 
 --
--- Name: image_croped_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: image_croped_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY file_img
@@ -1878,7 +2199,7 @@ ALTER TABLE ONLY file_img
 
 
 --
--- Name: ip_ip_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: ip_ip_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY ip
@@ -1886,7 +2207,7 @@ ALTER TABLE ONLY ip
 
 
 --
--- Name: ip_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: ip_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY ip
@@ -1894,7 +2215,7 @@ ALTER TABLE ONLY ip
 
 
 --
--- Name: membership_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: membership_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY tag_membership
@@ -1902,7 +2223,15 @@ ALTER TABLE ONLY tag_membership
 
 
 --
--- Name: membership_uk_id_portal_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: membership_plan_usage_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
+--
+
+ALTER TABLE ONLY membership_plan_issued
+    ADD CONSTRAINT membership_plan_usage_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: membership_uk_id_portal_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY member_company_portal
@@ -1910,7 +2239,7 @@ ALTER TABLE ONLY member_company_portal
 
 
 --
--- Name: pk_material_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: pk_material_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY material
@@ -1918,7 +2247,7 @@ ALTER TABLE ONLY material
 
 
 --
--- Name: pk_message; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: pk_message; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY message
@@ -1926,7 +2255,7 @@ ALTER TABLE ONLY message
 
 
 --
--- Name: pk_notification; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: pk_notification; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY notification
@@ -1934,7 +2263,7 @@ ALTER TABLE ONLY notification
 
 
 --
--- Name: pk_portal_layout_adv_places; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: pk_portal_layout_adv_places; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_layout_adv_places
@@ -1942,7 +2271,7 @@ ALTER TABLE ONLY portal_layout_adv_places
 
 
 --
--- Name: pk_publication; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: pk_publication; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY publication
@@ -1950,7 +2279,7 @@ ALTER TABLE ONLY publication
 
 
 --
--- Name: pkey_country; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: pkey_country; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY country
@@ -1958,7 +2287,7 @@ ALTER TABLE ONLY country
 
 
 --
--- Name: portal_adv_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_adv_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_adv
@@ -1966,7 +2295,7 @@ ALTER TABLE ONLY portal_adv
 
 
 --
--- Name: portal_company_owner_id_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_company_owner_id_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal
@@ -1974,7 +2303,7 @@ ALTER TABLE ONLY portal
 
 
 --
--- Name: portal_config_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_config_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_config
@@ -1982,7 +2311,7 @@ ALTER TABLE ONLY portal_config
 
 
 --
--- Name: portal_division_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_division_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_division
@@ -1990,7 +2319,7 @@ ALTER TABLE ONLY portal_division
 
 
 --
--- Name: portal_division_settings_company_subportal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_division_settings_company_subportal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_division_settings_company_subportal
@@ -1998,7 +2327,7 @@ ALTER TABLE ONLY portal_division_settings_company_subportal
 
 
 --
--- Name: portal_division_type_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_division_type_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_division_type
@@ -2006,7 +2335,7 @@ ALTER TABLE ONLY portal_division_type
 
 
 --
--- Name: portal_layout_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_layout_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_layout
@@ -2014,7 +2343,7 @@ ALTER TABLE ONLY portal_layout
 
 
 --
--- Name: portal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal
@@ -2022,15 +2351,15 @@ ALTER TABLE ONLY portal
 
 
 --
--- Name: portal_plan_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_plan_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
-ALTER TABLE ONLY member_company_portal_plan
+ALTER TABLE ONLY membership_plan
     ADD CONSTRAINT portal_plan_pkey PRIMARY KEY (id);
 
 
 --
--- Name: portal_uk_host; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: portal_uk_host; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal
@@ -2038,7 +2367,7 @@ ALTER TABLE ONLY portal
 
 
 --
--- Name: reader_division_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: reader_division_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY reader_division
@@ -2046,7 +2375,7 @@ ALTER TABLE ONLY reader_division
 
 
 --
--- Name: reader_user_portal_plan_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: reader_user_portal_plan_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY reader_user_portal_plan
@@ -2054,7 +2383,7 @@ ALTER TABLE ONLY reader_user_portal_plan
 
 
 --
--- Name: search_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: search_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY search
@@ -2062,7 +2391,7 @@ ALTER TABLE ONLY search
 
 
 --
--- Name: tag_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: tag_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY tag
@@ -2070,7 +2399,7 @@ ALTER TABLE ONLY tag
 
 
 --
--- Name: tag_portal_division_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: tag_portal_division_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY tag_portal_division
@@ -2078,7 +2407,7 @@ ALTER TABLE ONLY tag_portal_division
 
 
 --
--- Name: tag_portal_uk_portal_id_tag; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: tag_portal_uk_portal_id_tag; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY tag
@@ -2086,7 +2415,7 @@ ALTER TABLE ONLY tag
 
 
 --
--- Name: tag_publication_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: tag_publication_pk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY tag_publication
@@ -2094,7 +2423,7 @@ ALTER TABLE ONLY tag_publication
 
 
 --
--- Name: translate_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: translate_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY translate
@@ -2102,7 +2431,15 @@ ALTER TABLE ONLY translate
 
 
 --
--- Name: uk_member_company_portal_company_portal; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: uk_for_membership_plan_issued_fk; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
+--
+
+ALTER TABLE ONLY membership_plan
+    ADD CONSTRAINT uk_for_membership_plan_issued_fk UNIQUE (id, portal_id);
+
+
+--
+-- Name: uk_member_company_portal_company_portal; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY member_company_portal
@@ -2110,7 +2447,15 @@ ALTER TABLE ONLY member_company_portal
 
 
 --
--- Name: uk_portal_adv_portal_place; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: uk_membership_id_company_portal; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
+--
+
+ALTER TABLE ONLY member_company_portal
+    ADD CONSTRAINT uk_membership_id_company_portal UNIQUE (id, company_id, portal_id);
+
+
+--
+-- Name: uk_portal_adv_portal_place; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_adv
@@ -2118,7 +2463,7 @@ ALTER TABLE ONLY portal_adv
 
 
 --
--- Name: uk_portal_division_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: uk_portal_division_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_division
@@ -2126,7 +2471,7 @@ ALTER TABLE ONLY portal_division
 
 
 --
--- Name: uk_portal_division_name; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: uk_portal_division_name; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_division
@@ -2134,7 +2479,7 @@ ALTER TABLE ONLY portal_division
 
 
 --
--- Name: uk_portal_layout_adv_places_layout_place; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: uk_portal_layout_adv_places_layout_place; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY portal_layout_adv_places
@@ -2142,7 +2487,7 @@ ALTER TABLE ONLY portal_layout_adv_places
 
 
 --
--- Name: uk_publication_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: uk_publication_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY publication
@@ -2150,7 +2495,7 @@ ALTER TABLE ONLY publication
 
 
 --
--- Name: uk_user_company_user_id_company_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: uk_user_company_user_id_company_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY user_company
@@ -2158,7 +2503,7 @@ ALTER TABLE ONLY user_company
 
 
 --
--- Name: user_company_pk_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: user_company_pk_id; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY user_company
@@ -2166,7 +2511,7 @@ ALTER TABLE ONLY user_company
 
 
 --
--- Name: user_group_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: user_group_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY "group"
@@ -2174,7 +2519,7 @@ ALTER TABLE ONLY "group"
 
 
 --
--- Name: user_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: user_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY "user"
@@ -2182,7 +2527,7 @@ ALTER TABLE ONLY "user"
 
 
 --
--- Name: user_portal_reader_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: user_portal_reader_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY reader_portal
@@ -2190,7 +2535,7 @@ ALTER TABLE ONLY reader_portal
 
 
 --
--- Name: user_profireader_email_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: user_profireader_email_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY "user"
@@ -2198,7 +2543,7 @@ ALTER TABLE ONLY "user"
 
 
 --
--- Name: youtube_playlist_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: youtube_playlist_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY youtube_playlist
@@ -2206,7 +2551,7 @@ ALTER TABLE ONLY youtube_playlist
 
 
 --
--- Name: youtube_playlist_playlist_id_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: youtube_playlist_playlist_id_key; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY youtube_playlist
@@ -2214,7 +2559,7 @@ ALTER TABLE ONLY youtube_playlist
 
 
 --
--- Name: youtube_video_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: youtube_video_pkey; Type: CONSTRAINT; Schema: public; Owner: pfuser; Tablespace:
 --
 
 ALTER TABLE ONLY youtube_video
@@ -2222,28 +2567,28 @@ ALTER TABLE ONLY youtube_video
 
 
 --
--- Name: ind_notification_user_read; Type: INDEX; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: ind_notification_user_read; Type: INDEX; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE INDEX ind_notification_user_read ON notification USING btree (to_user_id, read_tm);
 
 
 --
--- Name: message_index_id_read; Type: INDEX; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: message_index_id_read; Type: INDEX; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE INDEX message_index_id_read ON message USING btree (contact_id, read_tm);
 
 
 --
--- Name: uk_translate_template_name_portal; Type: INDEX; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: uk_translate_template_name_portal; Type: INDEX; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE UNIQUE INDEX uk_translate_template_name_portal ON translate USING btree (template, name, portal_id) WHERE (portal_id IS NOT NULL);
 
 
 --
--- Name: uk_translate_template_name_portal_null; Type: INDEX; Schema: public; Owner: pfuser; Tablespace: 
+-- Name: uk_translate_template_name_portal_null; Type: INDEX; Schema: public; Owner: pfuser; Tablespace:
 --
 
 CREATE UNIQUE INDEX uk_translate_template_name_portal_null ON translate USING btree (template, name) WHERE (portal_id IS NULL);
@@ -2316,14 +2661,14 @@ CREATE TRIGGER id BEFORE INSERT ON _del_article_company FOR EACH ROW EXECUTE PRO
 -- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
 --
 
-CREATE TRIGGER id BEFORE INSERT ON portal FOR EACH ROW EXECUTE PROCEDURE row_id();
+CREATE TRIGGER id BEFORE INSERT ON portal_layout FOR EACH ROW EXECUTE PROCEDURE row_id();
 
 
 --
 -- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
 --
 
-CREATE TRIGGER id BEFORE INSERT ON portal_layout FOR EACH ROW EXECUTE PROCEDURE row_id();
+CREATE TRIGGER id BEFORE INSERT ON translate FOR EACH ROW EXECUTE PROCEDURE row_id();
 
 
 --
@@ -2338,13 +2683,6 @@ CREATE TRIGGER id BEFORE INSERT ON country FOR EACH ROW EXECUTE PROCEDURE row_id
 --
 
 CREATE TRIGGER id BEFORE INSERT ON func_profiler FOR EACH ROW EXECUTE PROCEDURE row_id();
-
-
---
--- Name: id; Type: TRIGGER; Schema: public; Owner: pfuser
---
-
-CREATE TRIGGER id BEFORE INSERT ON translate FOR EACH ROW EXECUTE PROCEDURE row_id();
 
 
 --
@@ -2516,10 +2854,31 @@ CREATE TRIGGER tr_material_row BEFORE INSERT ON material FOR EACH ROW EXECUTE PR
 
 
 --
--- Name: tr_member_company_portal_id_cr; Type: TRIGGER; Schema: public; Owner: pfuser
+-- Name: tr_member_company_portal_insert; Type: TRIGGER; Schema: public; Owner: pfuser
 --
 
-CREATE TRIGGER tr_member_company_portal_id_cr BEFORE INSERT ON member_company_portal FOR EACH ROW EXECUTE PROCEDURE row_id_cr();
+CREATE TRIGGER tr_member_company_portal_insert BEFORE INSERT ON member_company_portal FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_member_company_portal_updae; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_member_company_portal_updae BEFORE UPDATE ON member_company_portal FOR EACH ROW EXECUTE PROCEDURE row_md();
+
+
+--
+-- Name: tr_membership_plan_id_cr_md; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_membership_plan_id_cr_md BEFORE INSERT ON membership_plan FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_membership_plan_usage; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_membership_plan_usage BEFORE INSERT ON membership_plan_issued FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
 
 
 --
@@ -2541,6 +2900,20 @@ CREATE TRIGGER tr_message_id_cr_tm BEFORE INSERT ON notification FOR EACH ROW EX
 --
 
 CREATE TRIGGER tr_message_set_last_message_in_contact AFTER INSERT ON message FOR EACH ROW EXECUTE PROCEDURE message_set_last_message_tm_in_contact();
+
+
+--
+-- Name: tr_plan_id_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_plan_id_tm BEFORE INSERT ON portal FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
+
+
+--
+-- Name: tr_plan_md_tm; Type: TRIGGER; Schema: public; Owner: pfuser
+--
+
+CREATE TRIGGER tr_plan_md_tm BEFORE UPDATE ON portal FOR EACH ROW EXECUTE PROCEDURE row_md();
 
 
 --
@@ -2625,13 +2998,6 @@ CREATE TRIGGER tr_user_md BEFORE UPDATE ON "user" FOR EACH ROW EXECUTE PROCEDURE
 --
 
 CREATE TRIGGER tr_user_row BEFORE INSERT ON "user" FOR EACH ROW EXECUTE PROCEDURE row_id_cr_md();
-
-
---
--- Name: uid; Type: TRIGGER; Schema: public; Owner: pfuser
---
-
-CREATE TRIGGER uid BEFORE INSERT ON member_company_portal_plan FOR EACH ROW EXECUTE PROCEDURE row_id();
 
 
 --
@@ -2836,11 +3202,43 @@ ALTER TABLE ONLY publication
 
 
 --
--- Name: fk_member_company_portal_plan_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+-- Name: fk_mcp_current_membership_plan_issued; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
 --
 
 ALTER TABLE ONLY member_company_portal
-    ADD CONSTRAINT fk_member_company_portal_plan_id FOREIGN KEY (member_company_portal_plan_id) REFERENCES member_company_portal_plan(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+    ADD CONSTRAINT fk_mcp_current_membership_plan_issued FOREIGN KEY (current_membership_plan_issued_id) REFERENCES membership_plan_issued(id) ON UPDATE RESTRICT ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: fk_mcp_requested_membership_plan_issued; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY member_company_portal
+    ADD CONSTRAINT fk_mcp_requested_membership_plan_issued FOREIGN KEY (requested_membership_plan_issued_id) REFERENCES membership_plan_issued(id) ON UPDATE RESTRICT ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: fk_membership_plan_issued_membership_company_portal; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY membership_plan_issued
+    ADD CONSTRAINT fk_membership_plan_issued_membership_company_portal FOREIGN KEY (member_company_portal_id, company_id, portal_id) REFERENCES member_company_portal(id, company_id, portal_id) ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: fk_membership_plan_issued_membership_plan; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY membership_plan_issued
+    ADD CONSTRAINT fk_membership_plan_issued_membership_plan FOREIGN KEY (membership_plan_id, portal_id) REFERENCES membership_plan(id, portal_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_membership_plan_portal_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY membership_plan
+    ADD CONSTRAINT fk_membership_plan_portal_id FOREIGN KEY (portal_id) REFERENCES portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -2929,6 +3327,14 @@ ALTER TABLE ONLY reader_division
 
 ALTER TABLE ONLY reader_division
     ADD CONSTRAINT fk_reader_division_reader_portal_id FOREIGN KEY (reader_portal_id) REFERENCES reader_portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: fk_reader_portal_portal_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY reader_portal
+    ADD CONSTRAINT fk_reader_portal_portal_id FOREIGN KEY (portal_id) REFERENCES portal(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -3052,6 +3458,14 @@ ALTER TABLE ONLY portal_config
 
 
 --
+-- Name: portal_default_membership_plan; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
+--
+
+ALTER TABLE ONLY portal
+    ADD CONSTRAINT portal_default_membership_plan FOREIGN KEY (default_membership_plan_id) REFERENCES membership_plan(id) ON UPDATE RESTRICT ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: portal_division_portal_division_type_id; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
 --
 
@@ -3156,14 +3570,6 @@ ALTER TABLE ONLY user_company
 
 
 --
--- Name: user_portal_reader_portal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
---
-
-ALTER TABLE ONLY reader_portal
-    ADD CONSTRAINT user_portal_reader_portal_id_fkey FOREIGN KEY (portal_id) REFERENCES portal(id);
-
-
---
 -- Name: user_portal_reader_portal_plan_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: pfuser
 --
 
@@ -3217,4 +3623,3 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 --
 -- PostgreSQL database dump complete
 --
-

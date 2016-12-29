@@ -1,24 +1,20 @@
-from .blueprints_declaration import auth_bp
-from flask import g, request, url_for, render_template, flash, current_app, session
-from ..constants.SOCIAL_NETWORKS import DB_FIELDS, SOC_NET_FIELDS, \
-    SOC_NET_FIELDS_SHORT
-from flask.ext.login import current_user, login_required
-from urllib.parse import quote
-from ..models.users import User
-from tools.db_utils import db
 import re
-from .request_wrapers import check_right
+
 from authomatic.adapters import WerkzeugAdapter
+from flask import g, request, url_for, render_template, session
 from flask import redirect, make_response
-from flask.ext.login import login_user
-from ..constants.SOCIAL_NETWORKS import SOC_NET_NONE
-from ..constants.UNCATEGORIZED import AVATAR_SIZE, AVATAR_SMALL_SIZE
+from flask.ext.login import current_user, login_required
+
+
+from .blueprints_declaration import auth_bp
+from .request_wrapers import check_right
 from .. import utils
-from ..models.rights import AllowAll
-from ..models.portal import Portal
 from ..models.messenger import Socket
-import sys
-import string
+from ..models.portal import Portal
+from ..models.rights import AllowAll
+from ..models.users import User
+
+
 #
 
 
@@ -115,7 +111,7 @@ def email_confirmation(token=None):
     if not token:
         return render_template("auth/confirm_email.html", email='')
 
-    user = db(User, email_conf_token=token).first()
+    user = utils.db.query_filter(User, email_conf_token=token).first()
 
     if not user:
         return render_template("auth/confirm_email.html", email='',
@@ -141,7 +137,7 @@ def request_new_email_confirmation_token(json_data):
     if not re.match(REGEXP.EMAIL, email):
         return {'error': 'Please enter correct email'}
     else:
-        user = db(User, address_email=email).first()
+        user = utils.db.query_filter(User, address_email=email).first()
         if user:
             if user.email_confirmed:
                 return {'error': 'You email is already confirmed'}
@@ -244,7 +240,7 @@ def request_new_reset_password_token_load(json_data):
     if not re.match(REGEXP.EMAIL, email):
         return {'error': 'Please enter correct email'}
     else:
-        user = db(User, address_email=email).first()
+        user = utils.db.query_filter(User, address_email=email).first()
         if user:
             user.generate_pass_reset_token().save()
             return {}
@@ -256,13 +252,13 @@ def request_new_reset_password_token_load(json_data):
 @check_right(AllowAll)
 def reset_password(token):
     return render_template("auth/reset_password.html",
-                           reset_pass_user=db(User, pass_reset_token=token).first())
+                           reset_pass_user=utils.db.query_filter(User, pass_reset_token=token).first())
 
 
 @auth_bp.route('/reset_password/<string:token>/', methods=['OK'])
 @check_right(AllowAll)
 def reset_password_load(json_data, token):
-    user = db(User, pass_reset_token=token).first()
+    user = utils.db.query_filter(User, pass_reset_token=token).first()
     if user:
         user.password = json_data['password']
         user.password_confirmation = json_data['password_confirmation']

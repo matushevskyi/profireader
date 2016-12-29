@@ -2,7 +2,7 @@ import sys
 
 sys.path.append('..')
 
-from profapp.utils import email_utils
+from profapp import utils
 from profapp.models.users import User
 from flask import g, url_for
 
@@ -47,7 +47,7 @@ if __name__ == '__main__':
                 print('sending email to', u.id, u.full_name, u.address_email)
                 try:
                     g.lang = u.lang
-                    email_utils.send_email_from_template(
+                    utils.email.send_email_from_template(
                         fromname='Profireader notifications',
                         send_to_email=[u.address_email], subject='Unread communication exists',
                         template='messenger/email_unread_communication_exists.html',

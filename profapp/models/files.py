@@ -1,30 +1,27 @@
-from sqlalchemy import Column, Integer, ForeignKey, String, Binary, UniqueConstraint
-import re
-from ..constants.TABLE_TYPES import TABLE_TYPES
-from tools.db_utils import db
-from sqlalchemy.orm import relationship, backref
-from flask import g
-from .pr_base import PRBase, Base
-from ..controllers.errors import VideoAlreadyExistInPlaylist
-import json
-from config import Config
-from urllib import request as req
-from flask import session
-from urllib.error import HTTPError as response_code
-from urllib import parse
-from sqlalchemy import desc
-from io import BytesIO
-from .google import GoogleAuthorize, GoogleToken
-import sys
-import os, urllib
-from time import gmtime, strftime, clock
-from .. import utils
-from PIL import Image
-from io import BytesIO
 import base64
+import json
+import re
 import sys
-from sqlalchemy.ext.associationproxy import association_proxy
-from ..constants.RECORD_IDS import FOLDER_AND_FILE
+import urllib
+from io import BytesIO
+from time import gmtime, strftime
+from urllib import parse
+from urllib import request as req
+from urllib.error import HTTPError as response_code
+
+from PIL import Image
+from flask import g
+from flask import session
+from sqlalchemy import Column, Integer, ForeignKey, String, Binary, UniqueConstraint
+from sqlalchemy import desc
+from sqlalchemy.orm import relationship, backref
+
+from config import Config
+from .google import GoogleAuthorize, GoogleToken
+from .pr_base import PRBase, Base
+from .. import utils
+from ..constants.TABLE_TYPES import TABLE_TYPES
+from ..controllers.errors import VideoAlreadyExistInPlaylist
 
 
 class FileContent(Base, PRBase):
@@ -84,7 +81,7 @@ class File(Base, PRBase):
 
     @staticmethod
     def is_directory(file_id):
-        return db(File, id=file_id)[0].mime == 'directory'
+        return utils.db.query_filter(File, id=file_id)[0].mime == 'directory'
 
     @staticmethod
     def is_cropable(file):
@@ -106,7 +103,7 @@ class File(Base, PRBase):
 
     @staticmethod
     def is_name(name, mime, parent_id):
-        if [file for file in db(File, parent_id=parent_id, mime=mime, name=name)]:
+        if [file for file in utils.db.query_filter(File, parent_id=parent_id, mime=mime, name=name)]:
             return True
         else:
             return False
@@ -115,9 +112,9 @@ class File(Base, PRBase):
     def can_paste_in_dir(id_file, id_folder):
         if id_file == id_folder:
             return False
-        dirs_in_dir = [file for file in db(File, parent_id=id_file, mime='directory')]
+        dirs_in_dir = [file for file in utils.db.query_filter(File, parent_id=id_file, mime='directory')]
         for dir in dirs_in_dir:
-            [dirs_in_dir.append(f) for f in db(File, parent_id=dir.id, mime='directory')]
+            [dirs_in_dir.append(f) for f in utils.db.query_filter(File, parent_id=dir.id, mime='directory')]
             if dir.id == id_folder:
                 return False
         return True
@@ -199,7 +196,7 @@ class File(Base, PRBase):
                     'author_name': file.copyright_author_name,
                     'description': file.description,
                     'actions': rights_object.actions(file, file_manager_called_for),
-                    } for file in db(File, parent_id=parent_id)
+                    } for file in utils.db.query_filter(File, parent_id=parent_id)
                    if rights_object.action_is_allowed(rights_object.ACTIONS['SHOW'])
                    and file.mime != 'image/thumbnail']
             ret.append({'id': folder.id, 'parent_id': folder.parent_id,
@@ -303,20 +300,20 @@ class File(Base, PRBase):
 
     @staticmethod
     def get_all_in_dir_rev(id):
-        files_in_parent = [file for file in db(File, parent_id=id) if file.mime != 'image/thumbnail']
+        files_in_parent = [file for file in utils.db.query_filter(File, parent_id=id) if file.mime != 'image/thumbnail']
         for file in files_in_parent:
             if file.mime == 'directory':
                 [files_in_parent.append(nfile) for nfile in
-                 db(File, parent_id=file.id).filter(File.mime != 'image/thumbnail')]
+                 utils.db.query_filter(File, parent_id=file.id).filter(File.mime != 'image/thumbnail')]
         files_in_parent = files_in_parent[::-1]
         return files_in_parent
 
     @staticmethod
     def get_all_dir(f_id, copy_id=None):
-        files_in_parent = [file for file in db(File, parent_id=f_id) if file.mime == 'directory' and file.id != copy_id]
+        files_in_parent = [file for file in utils.db.query_filter(File, parent_id=f_id) if file.mime == 'directory' and file.id != copy_id]
         for file in files_in_parent:
             if file.mime == 'directory':
-                [files_in_parent.append(fil) for fil in db(File, parent_id=file.id, mime='directory') if
+                [files_in_parent.append(fil) for fil in utils.db.query_filter(File, parent_id=file.id, mime='directory') if
                  fil.id != copy_id]
         return files_in_parent
 
@@ -334,7 +331,7 @@ class File(Base, PRBase):
             ext = File.ext(name)
             fromname = name[:-(len(ext) + 3)] if File.is_copy(name) else name[:-len(ext) if ext else -1]
             list = []
-            for file in db(File, parent_id=parent_id, mime=mime):
+            for file in utils.db.query_filter(File, parent_id=parent_id, mime=mime):
                 clearName = file.name[:-(len(ext) + 3)] if File.is_copy(file.name) else file.name[:-len(ext)]
                 if fromname == clearName:
                     pos = (len(file.name) - 2) - len(ext) if File.is_copy(file.name) else None
@@ -399,7 +396,7 @@ class File(Base, PRBase):
     @staticmethod
     def auto_remove(list):
         list.append(session['f_id'])
-        [file.delete() for file in [db(File, id=id).first() for id in list]]
+        [file.delete() for file in [utils.db.query_filter(File, id=id).first() for id in list]]
 
     def remove(self):
         if self == None:
@@ -428,13 +425,13 @@ class File(Base, PRBase):
     @staticmethod
     def save_all(id_f, attr, new_id):
         dirs = File.get_all_dir(id_f, new_id)
-        files = [file for file in db(File, parent_id=id_f) if file.mime != 'directory']
+        files = [file for file in utils.db.query_filter(File, parent_id=id_f) if file.mime != 'directory']
         File.save_files(files, new_id, attr)
         new_list = []
         old_list = []
         for dir in dirs:
             old_list.append(dir.id)
-            files = [file for file in db(File, parent_id=dir.id) if file.mime != 'directory']
+            files = [file for file in utils.db.query_filter(File, parent_id=dir.id) if file.mime != 'directory']
             if dir.parent_id == id_f:
                 attr['parent_id'] = new_id
             else:
@@ -472,7 +469,7 @@ class File(Base, PRBase):
         from PIL import Image
         from config import Config
         from io import BytesIO
-        file_ = db(File, id=file_id).first()
+        file_ = utils.db.query_filter(File, id=file_id).first()
         file_mime = re.findall(r'/(\w+)', file_.mime)[0].upper()
         if file_mime in Config.ALLOWED_IMAGE_FORMATS:
             try:
@@ -510,15 +507,15 @@ class File(Base, PRBase):
 
     @staticmethod
     def update_all_in_dir(id, attr):
-        dirs = [file for file in db(File, parent_id=id) if file.mime == 'directory']
-        files = [file for file in db(File, parent_id=id) if file.mime != 'directory']
+        dirs = [file for file in utils.db.query_filter(File, parent_id=id) if file.mime == 'directory']
+        files = [file for file in utils.db.query_filter(File, parent_id=id) if file.mime != 'directory']
         len_dirs = len(dirs)
         increment = 1
         [file.attr(attr) for file in files]
         for dir in dirs:
             if increment <= len_dirs:
                 dir.attr(attr)
-            for file in db(File, parent_id=dir.id):
+            for file in utils.db.query_filter(File, parent_id=dir.id):
                 if file.mime == 'directory':
                     dirs.append(file)
                     file.attr(attr)
@@ -529,7 +526,7 @@ class File(Base, PRBase):
 
     @staticmethod
     def update_all(id, attr):
-        files_in_parent = [file for file in db(File, parent_id=id)]
+        files_in_parent = [file for file in utils.db.query_filter(File, parent_id=id)]
         for file in files_in_parent:
             if file.mime == 'directory':
                 file.attr(attr)
@@ -599,7 +596,7 @@ class File(Base, PRBase):
         return croped
 
     def copy_from_cropped_file(self):
-        image_cropped = db(FileImg, croped_image_id=self.id).first()
+        image_cropped = utils.db.query_filter(FileImg, croped_image_id=self.id).first()
         if not image_cropped:
             # if article have no record in Illustration table we
             # create one with copied file as `original file for croping`
@@ -953,7 +950,7 @@ class YoutubeApi(GoogleAuthorize):
 
     def make_headers_for_resumable_upload(self):
         """ This method make headers for resumable upload videos. Thirst step to start upload """
-        video = db(YoutubeVideo, id=session['id']).one()
+        video = utils.db.query_filter(YoutubeVideo, id=session['id']).one()
         last_byte = self.chunk_info.get('chunk_size') + video.size - 1
         last_byte = self.chunk_info.get('total_size') - 1 if (self.chunk_info.get(
             'chunk_size') + video.size - 1) > self.chunk_info.get('total_size') else last_byte
@@ -1042,12 +1039,12 @@ class YoutubeApi(GoogleAuthorize):
         try:
             response = req.urlopen(r, data=self.video_file)
             if response.code == 200 or response.code == 201:
-                video = db(YoutubeVideo, id=session['id'])
+                video = utils.db.query_filter(YoutubeVideo, id=session['id'])
                 video.update({'size': self.chunk_info.get('total_size'), 'status': 'uploaded'})
                 return 'success'
         except response_code as e:
             if e.code == 308:
-                db(YoutubeVideo, id=session['id']).update(
+                utils.db.query_filter(YoutubeVideo, id=session['id']).update(
                     {'size': int(e.headers.get('Range').split('-')[-1]) + 1})
             return 'uploading'
 
@@ -1183,7 +1180,7 @@ class YoutubePlaylist(Base, PRBase):
     @staticmethod
     def get_not_full_company_playlist(company_id):
         """ Return not full company playlist. Pass company id. """
-        playlist = db(YoutubePlaylist, company_id=company_id).order_by(
+        playlist = utils.db.query_filter(YoutubePlaylist, company_id=company_id).order_by(
             desc(YoutubePlaylist.md_tm)).first()
         return playlist
 

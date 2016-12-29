@@ -1,25 +1,16 @@
-from flask import render_template, redirect, url_for, request, g, make_response, json, jsonify, session
-# from profapp.models.bak_articles import Article, Material, Publication, ReaderPublication
-from profapp.models.portal import PortalDivision, UserPortalReader, Portal, MemberCompanyPortal
-from ..models.pr_base import Search, PRBase, Grid
-from .blueprints_declaration import article_bp
-from .request_wrapers import ok, check_right
-from .pagination import pagination
-from config import Config
-from .views_file import crop_image
-from ..models.company import Company, UserCompany
-from ..models.tag import Tag, TagPublication
-from ..models.materials import Material, Publication
+from flask import render_template, g
 
-from tools.db_utils import db
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql import expression, and_
-from sqlalchemy import text
-import time
+from profapp.models.portal import PortalDivision, Portal
+
+from .blueprints_declaration import article_bp
+from .request_wrapers import check_right
 from .. import utils
-import datetime
+from ..models.company import Company
+from ..models.materials import Material, Publication
+from ..models.pr_base import PRBase, Grid
 from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPortal, EditMaterialRight, \
     EditPublicationRight, UserIsEmployee, UserIsActive, BaseRightsEmployeeInCompany
+from ..models.tag import Tag
 
 
 @article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['GET'])
@@ -81,7 +72,7 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
         d['portal_division_type_id'] == 'events' or d['portal_division_type_id'] == 'news')])
     ret['company_id'] = company.id
     if material:
-        publication_in_portal = db(Publication).filter_by(material_id=material.id).filter(
+        publication_in_portal = utils.db.query_filter(Publication).filter_by(material_id=material.id).filter(
             Publication.portal_division_id.in_(
                 [div_id for div_id, div in ret['divisions'].items()])).first()
     else:

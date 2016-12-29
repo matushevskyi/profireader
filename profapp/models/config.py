@@ -1,7 +1,9 @@
 from sqlalchemy import Column
-from ..constants.TABLE_TYPES import TABLE_TYPES
+
+from profapp import utils
 from .pr_base import PRBase, Base
-from tools.db_utils import db
+from ..constants.TABLE_TYPES import TABLE_TYPES
+
 
 class Config(Base, PRBase):
     __tablename__ = 'config'
@@ -23,7 +25,7 @@ class Config(Base, PRBase):
 
     @staticmethod
     def subquery_search(template=None, url=None, **kwargs):
-        sub_query = db(Config)
+        sub_query = utils.db.query_filter(Config)
         if 'filter' in kwargs:
             if 'url' in kwargs['filter']:
                 sub_query = sub_query.filter_by(url=kwargs['filter']['url'])

@@ -16,7 +16,7 @@ import os.path
 from profapp import utils
 from flask.sessions import SessionInterface
 from beaker.middleware import SessionMiddleware
-from .utils.jinja_utils import update_jinja_engine, get_url_adapter
+from .utils.jinja import update_jinja_engine, get_url_adapter
 import json
 from functools import wraps
 from sqlalchemy import event
@@ -111,6 +111,14 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
     # from sqlalchemy.orm import Session
     # strong_reference_session(Session())
     return db_session
+
+
+def setup_logger(apptype, host='fluid.profi', port=24224):
+    g.log = lambda *args: print(args)
+    return
+    # from fluent import sender
+    g.logger = sender.FluentSender(apptype, host=host, port=port)
+    g.log = lambda *args: g.logger.emit(*args)
 
 
 def load_database(db_config, echo=False):
@@ -269,6 +277,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))
     app.before_request(lambda: load_user(apptype))
+    app.before_request(lambda: setup_logger(apptype, host='fluid.profi', port=24224))
     app.before_request(setup_authomatic(app))
 
     def add_map_headers_to_less_files(response):

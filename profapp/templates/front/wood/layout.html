@@ -14,7 +14,9 @@
             <meta property="og:site_name" content="{% block og_name %}{{ portal.name }}{% endblock %}"/>
             <meta property="og:title" content="{% block og_title %}{{ self.title()|trim }}{% endblock %}"/>
             <meta property="og:description" content="{% block og_description %}{{ self.description()|trim }}{% endblock %}"/>
-            <meta property="og:image" content="{% block og_img_url %}{{ portal.logo.url }}{% endblock %}"/>
+            <meta property="og:image:width" content="300"/>
+            <meta property="og:image:height" content="300"/>
+            <meta property="og:image" content="{{ g.protocol }}{% block og_img_url %}{{ seo.image_url if seo.image_url else portal.logo.url }}{% endblock %}"/>
         {%- endblock %}
         <link href="{{ static_address('front/' + portal.layout.name + '/css/bootstrap.min.css') }}" rel="stylesheet">
         <link href="{{ static_address('front/' + portal.layout.name + '/css/jasny-bootstrap.min.css') }}" rel="stylesheet">
@@ -41,7 +43,6 @@
     {% include 'footer.html' %}
     <script src="{{ static_address('front/' + portal.layout.name + '/js/bootstrap.min.js') }}"></script>
     <script src="{{ static_address('front/' + portal.layout.name + '/js/jasny-bootstrap.min.js') }}"></script>
-    <script src="{{ static_address('front/' + portal.layout.name + '/js/jquery.fittext.js') }}"></script>
     <script src="{{ static_address('front/' + portal.layout.name + '/js/custom.js') }}"></script>
 </body>
 </html>

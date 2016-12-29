@@ -1,26 +1,17 @@
-from sqlalchemy import Column, ForeignKey, text
-from sqlalchemy.orm import relationship, aliased, backref
-from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..models.users import User
-from ..models.files import File
-from ..models.translate import TranslateTemplate
-from ..models.tag import Tag, TagPortalDivision, TagPublication
-from .pr_base import PRBase, Base, Grid
-from tools.db_utils import db
-from flask import g, session, app, current_app, url_for
-from sqlalchemy.sql import or_, and_
-import re
+from flask import g, url_for
+from sqlalchemy import Column, ForeignKey
 from sqlalchemy import event
-from ..constants.SEARCH import RELEVANCE
-from datetime import datetime
-from .files import FileImg, FileImgDescriptor
-from .. import utils
-from .elastic import PRElasticField, PRElasticDocument
-from config import Config
-import simplejson
-from ..controllers.errors import BadDataProvided
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import and_
 from sqlalchemy.sql import expression
+
 from profapp import on_value_changed
+from .pr_base import PRBase, Base
+from .. import utils
+from ..constants.TABLE_TYPES import TABLE_TYPES
+from ..controllers.errors import BadDataProvided
+from ..models.translate import TranslateTemplate
+from ..models.users import User
 
 
 class Socket:
@@ -49,18 +40,25 @@ class Socket:
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
-    def prepare_notifications(to_users, notification_type, phrase, dict_main={}, except_to_user=[]):
+    def prepare_notifications(to_users, notification_type, phrases, dict_main={}, except_to_user=[]):
         from_user_dict = {'from_user': g.user.get_client_side_dict(fields='full_name'),
-                          'url_profile_from_user': url_for('user.profile', user_id=g.user.id)} if getattr(g,'user',None) else {}
+                          'url_profile_from_user': url_for('user.profile', user_id=g.user.id)} if getattr(g, 'user',
+                                                                                                          None) else {}
+
+        if isinstance(phrases, str):
+            phrases = [phrases]
+        if isinstance(dict_main, dict):
+            dict_main = [dict_main for k in phrases]
 
         datas = [{'to_user_id': u.id,
-                  'content': TranslateTemplate.translate_and_substitute(
+                  'content': '<br/>'.join([TranslateTemplate.translate_and_substitute(
                       template='_NOTIFICATIONS', url='', language=u.lang, allow_html='*', phrase=phrase,
-                      dictionary=utils.dict_merge(dict_main, from_user_dict,
+                      dictionary=utils.dict_merge(dict_main[ind], from_user_dict,
                                                   {'to_user': u.get_client_side_dict(fields='full_name'),
-                                                   'url_profile_to_user': url_for('user.profile', user_id=u.id)})),
+                                                   'url_profile_to_user': url_for('user.profile', user_id=u.id)}))
+                                           for ind, phrase in enumerate(phrases)]),
                   'notification_type': notification_type
-                  } for u in to_users if u not in except_to_user] if phrase else []
+                  } for u in to_users if u not in except_to_user] if phrases else []
 
         def ret():
             for d in datas:
@@ -72,8 +70,10 @@ class Socket:
     def send_greeting(to_users):
         # possible notification - 1
         return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['GREETING'],
-                                            "Welcome to profireader. You can change <a href=\"%(url_profile_to_user)s\">your profile </a> or get a look at <a href=\"%(url_tutorial)s\">tutorial</a>", dict_main = {'url_tutorial': url_for('tutorial.index')})()
-
+                                            "Welcome to profireader. You can change %s or get a look at %s" % \
+                                            (utils.jinja.link('url_profile_to_user', 'your profile', True),
+                                             utils.jinja.link('url_tutorial', 'tutorial', True)),
+                                            dict_main={'url_tutorial': url_for('tutorial.index')})()
 
 
 class Contact(Base, PRBase):
@@ -180,9 +180,9 @@ def contact_status_changed_2(target, new_value, old_value, action):
     old_status = target.get_status_for_user(to_user.id, old_value) if old_value else None
 
     if new_status == Contact.STATUSES['ACTIVE_ACTIVE'] and old_status == Contact.STATUSES['REQUESTED_UNCONFIRMED']:
-        phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> accepted your friendship request :)"
+        phrase = "User %s accepted your friendship request :)" % (utils.jinja.link_user_profile(),)
     elif new_status == Contact.STATUSES['ANY_REVOKED'] and old_status == Contact.STATUSES['ACTIVE_ACTIVE']:
-        phrase = "User <a href=\"%(url_profile_from_user)s\">%(from_user.full_name)s</a> revoked your friendship :("
+        phrase = "User %s revoked your friendship :(" % (utils.jinja.link_user_profile(),)
     else:
         phrase = None
 
@@ -231,7 +231,9 @@ class Notification(Base, PRBase):
         'GREETING': 'GREETING', 'CUSTOM': 'CUSTOM',
         'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY',
         'COMPANY_EMPLOYERS_ACTIVITY': 'COMPANY_EMPLOYERS_ACTIVITY',
-        'PUBLICATION_ACTIVITY': 'PUBLICATION_ACTIVITY'
+        'COMPANY_PORTAL_MEMBEREE_ACTIVITY': 'COMPANY_PORTAL_MEMBEREE_ACTIVITY',
+        'PUBLICATION_ACTIVITY': 'PUBLICATION_ACTIVITY',
+        'PORTAL_COMPANIES_MEMBERS_ACTIVITY': 'PORTAL_COMPANIES_MEMBERS_ACTIVITY'
     }
 
     @staticmethod

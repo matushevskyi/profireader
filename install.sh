@@ -174,7 +174,12 @@ function menu_elastic {
     conf_comm "apt-get install openjdk-7-jre 
 wget https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/"$elastic_version"/elasticsearch-"$elastic_version".deb
 dpkg -i ./elasticsearch-"$elastic_version".deb
-rm ./elasticsearch-"$elastic_version".deb" sudo deb
+rm ./elasticsearch-"$elastic_version".deb" sudo fluent
+}
+
+function menu_fluent {
+#    elastic_version=$(rr 'elasticsearch version' 2.3.3)
+    conf_comm "curl -L https://toolbelt.treasuredata.com/sh/install-debian-jessie-td-agent2.sh | sh" sudo deb
 }
 
 function menu_deb {
@@ -217,7 +222,7 @@ function menu_hosts {
     conf_comm "sed -i '/\(db\|web\|mail\|memcached\|elastic\).profi/d' /etc/hosts
 sed -i '/\\.profi/d' /etc/hosts
 echo '' >> /etc/hosts
-echo '127.0.0.1 db.profi mail.profi memcached.profi elastic.profi' >> /etc/hosts
+echo '127.0.0.1 db.profi mail.profi memcached.profi elastic.profi fluent.profi' >> /etc/hosts
 echo '127.0.0.1 web.profi static.web.profi file001.web.profi socket.web.profi portal.web.profi' >> /etc/hosts
 cat /etc/hosts" sudo cron_files
     }
@@ -505,6 +510,7 @@ if [[ "$1" == "" ]]; then
       "origin" "change git origin and add new remote repo" \
       "postgres_9_4" "install postgres 9.4" \
       "elastic" "install elastic search" \
+      "fluent" "install fluent" \
       "deb" "install deb packages" \
       "cron_files" "update cron files" \
       "haproxy_config" "copy haproxy config to /etc/haproxy" \

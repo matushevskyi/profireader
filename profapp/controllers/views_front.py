@@ -1,22 +1,20 @@
-from .blueprints_declaration import front_bp
-from flask import render_template, request, url_for, redirect, g, current_app
-from ..models.materials import Publication, ReaderPublication, Material
-from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
-    PortalDivisionSettingsCompanySubportal, UserPortalReader
-from ..models.company import Company
-from ..models.users import User
-from ..models.messenger import Socket, Notification
-from ..utils.session_utils import back_to_url
-from ..utils import email_utils
-from config import Config
-from .request_wrapers import check_right, get_portal
-from ..models.rights import AllowAll
-from ..models.elastic import elasticsearch
 from collections import OrderedDict
-from .. import utils
-from tools.db_utils import db
-from functools import wraps
+
+from flask import render_template, request, url_for, redirect, g
 from sqlalchemy.sql import expression
+
+from config import Config
+from .blueprints_declaration import front_bp
+from .request_wrapers import check_right, get_portal
+from .. import utils
+from ..models.company import Company
+from ..models.elastic import elasticsearch
+from ..models.materials import Publication
+from ..models.messenger import Socket, Notification
+from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
+    PortalDivisionSettingsCompanySubportal
+from ..models.rights import AllowAll
+from ..models.users import User
 
 
 def all_tags(portal):
@@ -65,7 +63,7 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
     portal_dict = portal_and_settings(portal)
     # TODO: OZ by OZ: heck company is member
     member_company = Company.get(company_id)
-    membership = db(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one()
+    membership = utils.db.query_filter(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one()
     di = None
     for d_id, d in portal_dict['divisions'].items():
         if 'subportal_company' in d and d['subportal_company'].id == company_id:
@@ -90,7 +88,11 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
 
 
 def elastic_article_to_orm_article(item):
-    ret = Publication.get(item['id']).create_article()
+    try:
+        ret = Publication.get(item['id']).create_article()
+    except:
+        raise AssertionError("Can't convert elastic article to orm one. maybe elastic db should be reindexed")
+
     if '_highlight' in item:
         for k in ['short', 'title', 'subtitle', 'keywords', 'author']:
             if k in item['_highlight']:
@@ -298,8 +300,8 @@ subportal_prefix = '_c/<string:member_company_id>/<string:member_company_name>/'
 
 
 def url_catalog_toggle_tag(portal, tag_text):
-    catalog_division = db(PortalDivision, portal_id=portal.id,
-                          portal_division_type_id=PortalDivision.TYPES['catalog']).one()
+    catalog_division = utils.db.query_filter(PortalDivision, portal_id=portal.id,
+                                    portal_division_type_id=PortalDivision.TYPES['catalog']).one()
     return url_for('front.division', division_name=catalog_division.name, tags=tag_text)
 
 
@@ -313,7 +315,6 @@ def company_page(portal, member_company_id, member_company_name, member_company_
     # TODO: OZ by OZ: redirect if company name is wrong. 404 if id is wrong
     membership, member_company, dvsn = \
         get_company_member_and_division(portal, member_company_id, member_company_name)
-
 
     return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
                            portal=portal_and_settings(portal),
@@ -384,8 +385,8 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                    division=dvsn.get_client_side_dict(),
                                    tags=all_tags(portal),
                                    seo=membership.seo_dict(),
-                                   membership=db(MemberCompanyPortal, company_id=member_company.id,
-                                                 portal_id=portal.id).one(),
+                                   membership=utils.db.query_filter(MemberCompanyPortal, company_id=member_company.id,
+                                                           portal_id=portal.id).one(),
                                    url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
                                    member_company=member_company.get_client_side_dict(
                                        more_fields='employments,employments.user,employments.user.avatar.url'),
@@ -405,7 +406,6 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                                        company_publisher=member_company)
         if 'redirect' in articles_data:
             return articles_data['redirect']
-
 
         return render_template('front/' + g.portal_layout_path + 'division_company.html',
                                portal=portal_and_settings(portal),
@@ -431,7 +431,7 @@ def article_details(portal, publication_id, publication_title):
     if article_visibility is True:
         publication.add_to_read()
     else:
-        back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
+        utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
 
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.name)
@@ -483,9 +483,11 @@ def send_message(json, member_company_id):
     import html
 
     if g.user and g.user.id:
-        phrase = 'User <a href="%(url_profile_from_user)s">%(from_user.full_name)s</a> sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
+        phrase = "User %s sent you email as member of company %s" % (utils.jinja.link_user_profile(),
+                                                                     utils.jinja.link_company_profile())
     else:
-        phrase = 'Anonymous sent you email as member of company <a href="%(url_company_profile)s">%(company.name)s</a>'
+        phrase = "Anonymous sent you email as member of company %s" % (
+            utils.jinja.link_company_profile(),)
 
     Socket.prepare_notifications([send_to], Notification.NOTIFICATION_TYPES['CUSTOM'],
                                  phrase + '<hr/>%(message)s',
