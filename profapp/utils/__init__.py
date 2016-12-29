@@ -203,3 +203,17 @@ def strip_tags(html, allowed_tags=[]):
     html_parser = MLStripper()
     html_parser.feed(html)
     return html_parser.get_data()
+
+
+import cProfile
+def profile(func):
+    def profiled_func(*args, **kwargs):
+        profile = cProfile.Profile()
+        try:
+            profile.enable()
+            result = func(*args, **kwargs)
+            profile.disable()
+            return result
+        finally:
+            profile.print_stats(sort='time')
+    return profiled_func

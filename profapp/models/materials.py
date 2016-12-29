@@ -1,26 +1,23 @@
-from sqlalchemy import Column, ForeignKey, text
-from sqlalchemy.orm import relationship, aliased, backref
+from datetime import datetime
+
+import simplejson
+from flask import g, session, url_for
+from sqlalchemy import Column, ForeignKey
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import and_, expression
+
+from config import Config
+from profapp import on_value_changed
+from .elastic import PRElasticField, PRElasticDocument
+from .files import FileImg, FileImgDescriptor
+from .pr_base import PRBase, Base, Grid
+from .. import utils
+from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..models.company import Company, UserCompany
 from ..models.portal import PortalDivision, Portal
+from ..models.tag import Tag, TagPublication
 from ..models.users import User
-from ..models.files import File
-from ..models.tag import Tag, TagPortalDivision, TagPublication
-from .pr_base import PRBase, Base, Grid
-from tools.db_utils import db
-from flask import g, session, app, current_app, url_for
-from sqlalchemy.sql import or_, and_, expression
-import re
-from sqlalchemy import event
-from ..constants.SEARCH import RELEVANCE
-from datetime import datetime
-from .files import FileImg, FileImgDescriptor
-from .. import utils
-from ..constants.RECORD_IDS import FOLDER_AND_FILE
-from .elastic import PRElasticField, PRElasticDocument
-from config import Config
-import simplejson
-from profapp import on_value_changed
 
 
 class Material(Base, PRBase, PRElasticDocument):
@@ -98,12 +95,11 @@ class Material(Base, PRBase, PRElasticDocument):
 
     @staticmethod
     def subquery_company_materials(company_id=None, filters=None, sorts=None):
-        sub_query = db(Material, company_id=company_id)
+        sub_query = utils.db.query_filter(Material, company_id=company_id)
         return sub_query
 
     @staticmethod
     def get_material_grid_data(material):
-        from ..models.rights import PublishUnpublishInPortal
         dict = material.get_client_side_dict(fields='cr_tm,md_tm,title,editor.full_name,id,illustration.url')
         dict.update({'portal.name': None if len(material.publications) == 0 else '', 'level': True})
         dict.update({'actions': None if len(material.publications) == 0 else '', 'level': True})
@@ -125,7 +121,7 @@ class Material(Base, PRBase, PRElasticDocument):
     def get_portals_where_company_send_article(company_id):
         portals = {}
 
-        for m in db(Material, company_id=company_id).all():
+        for m in utils.db.query_filter(Material, company_id=company_id).all():
             for pub in m.publications:
                 portals[pub.portal_division.portal.id] = pub.portal_division.portal.name
         return portals
@@ -206,7 +202,8 @@ class Publication(Base, PRBase, PRElasticDocument):
                 'HOLDED': 'HOLDED'}
 
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
-    VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED', 'CONFIDENTIAL': 'CONFIDENTIAL'}
+    VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED'}
+    # , 'CONFIDENTIAL': 'CONFIDENTIAL'
 
     portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
     portal_division = relationship('PortalDivision', uselist=False)
@@ -305,14 +302,14 @@ class Publication(Base, PRBase, PRElasticDocument):
                    optional company_id: string with id from table company. If provided
                    , this function will check if ArticleCompany has relation with our class.
             :return: dict with prepared filter parameters for search method """
-        division = db(PortalDivision, id=division_id).one()
+        division = utils.db.query_filter(PortalDivision, id=division_id).one()
         division_type = division.portal_division_type.id
         visibility = Publication.visibility.in_(Publication.articles_visibility_for_user(
             portal_id=division.portal_id)[0])
         filter = None
         if division_type == 'index':
             filter = {'class': Publication,
-                      'filter': and_(Publication.portal_division_id.in_(db(
+                      'filter': and_(Publication.portal_division_id.in_(utils.db.query_filter(
                           PortalDivision.id, portal_id=division.portal_id).filter(
                           PortalDivision.portal_division_type_id != 'events'
                       )), Publication.status == Publication.STATUSES['PUBLISHED'], visibility),
@@ -329,8 +326,8 @@ class Publication(Base, PRBase, PRElasticDocument):
                           'filter': and_(Publication.portal_division_id == division_id,
                                          Publication.status ==
                                          Publication.STATUSES['PUBLISHED'],
-                                         db(ArticleCompany, company_id=company_id,
-                                            id=Publication.article_company_id).exists(), visibility),
+                                         utils.db.query_filter(ArticleCompany, company_id=company_id,
+                                                      id=Publication.article_company_id).exists(), visibility),
                           'return_fields': 'default_dict', 'tags': True}
         elif division_type == 'events':
             if not company_id:
@@ -344,8 +341,8 @@ class Publication(Base, PRBase, PRElasticDocument):
                           'filter': and_(Publication.portal_division_id == division_id,
                                          Publication.status ==
                                          Publication.STATUSES['PUBLISHED'],
-                                         db(ArticleCompany, company_id=company_id,
-                                            id=Publication.article_company_id).exists(), visibility),
+                                         utils.db.query_filter(ArticleCompany, company_id=company_id,
+                                                      id=Publication.article_company_id).exists(), visibility),
                           'return_fields': 'default_dict', 'tags': True}
         return filter
 
@@ -353,9 +350,9 @@ class Publication(Base, PRBase, PRElasticDocument):
     def articles_visibility_for_user(portal_id):
         employer = True
         visibilities = Publication.VISIBILITIES.copy()
-        if not db(UserCompany, user_id=getattr(g.user, 'id', None),
-                  status=UserCompany.STATUSES['ACTIVE']).filter(
-                    UserCompany.company_id == db(Portal.company_owner_id, id=portal_id)).count():
+        if not utils.db.query_filter(UserCompany, user_id=getattr(g.user, 'id', None),
+                            status=UserCompany.STATUSES['ACTIVE']).filter(
+                    UserCompany.company_id == utils.db.query_filter(Portal.company_owner_id, id=portal_id)).count():
             visibilities.pop(Publication.VISIBILITIES['CONFIDENTIAL'])
             employer = False
         return visibilities.keys(), employer
@@ -389,11 +386,11 @@ class Publication(Base, PRBase, PRElasticDocument):
 
     @staticmethod
     def update_article_portal(publication_id, **kwargs):
-        db(Publication, id=publication_id).update(kwargs)
+        utils.db.query_filter(Publication, id=publication_id).update(kwargs)
 
     @staticmethod
     def subquery_portal_articles(portal_id, filters, sorts):
-        sub_query = db(Publication)
+        sub_query = utils.db.query_filter(Publication)
         list_filters = []
         list_sorts = []
         if 'publication_status' in filters:
@@ -470,12 +467,12 @@ class Publication(Base, PRBase, PRElasticDocument):
         return g.db().query(Publication).filter(
             and_(Publication.id != self.id,
                  Publication.portal_division_id.in_(
-                     db(PortalDivision.id).filter(PortalDivision.portal_id == self.portal_division.portal_id))
+                     utils.db.query_filter(PortalDivision.id).filter(PortalDivision.portal_id == self.portal_division.portal_id))
                  )).order_by(func.random()).limit(count).all()
 
     def add_to_read(self):
         if g.user and g.user.id:
-            was_readed = db(ReaderPublication, user_id=g.user.id, publication_id=self.id).first()
+            was_readed = utils.db.query_filter(ReaderPublication, user_id=g.user.id, publication_id=self.id).first()
             if not was_readed:
                 was_readed = ReaderPublication(user_id=g.user.id, publication_id=self.id).save()
             return was_readed
@@ -500,18 +497,18 @@ class Publication(Base, PRBase, PRElasticDocument):
         return self
 
     def is_favorite(self, user_id=None):
-        return True if db(ReaderPublication, user_id=user_id if user_id else g.user.id if g.user else None,
-                          publication_id=self.id, favorite=True).first() else False
+        return True if utils.db.query_filter(ReaderPublication, user_id=user_id if user_id else g.user.id if g.user else None,
+                                    publication_id=self.id, favorite=True).first() else False
 
     def is_liked(self, user_id=None):
-        return True if db(ReaderPublication, user_id=user_id if user_id else g.user.id if g.user else None,
-                          publication_id=self.id, liked=True).first() else False
+        return True if utils.db.query_filter(ReaderPublication, user_id=user_id if user_id else g.user.id if g.user else None,
+                                    publication_id=self.id, liked=True).first() else False
 
     def liked_count(self):
-        return db(ReaderPublication, publication_id=self.id, liked=True).count()
+        return utils.db.query_filter(ReaderPublication, publication_id=self.id, liked=True).count()
 
     def favorite_count(self):
-        return db(ReaderPublication, publication_id=self.id, favorite=True).count()
+        return utils.db.query_filter(ReaderPublication, publication_id=self.id, favorite=True).count()
 
     def social_activity_dict(self):
         return {

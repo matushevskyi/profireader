@@ -1,26 +1,22 @@
-from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
-from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relationship
-from flask import g, url_for
-from tools import db_utils
-from .pr_base import PRBase, Base
-import re
-from ..constants.SEARCH import RELEVANCE
-from sqlalchemy import orm
-from config import Config
-import simplejson
-from .files import File, FileImg, FileImgDescriptor
-from ..constants.RECORD_IDS import FOLDER_AND_FILE
-from .. import utils
-from ..models.tag import Tag, TagMembership
-from profapp.controllers.errors import BadDataProvided
 import datetime
 import json
+import re
 from functools import reduce
-from sqlalchemy.sql import and_
+
+import simplejson
+from flask import g, url_for
+from sqlalchemy import Column, ForeignKey
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import and_, expression
+
+from config import Config
 from .elastic import PRElasticField, PRElasticDocument
-from sqlalchemy.sql import or_, and_, expression
-from tools.db_utils import db
+from .files import FileImg, FileImgDescriptor
+from .pr_base import PRBase, Base
+from .. import utils
+from ..constants.RECORD_IDS import FOLDER_AND_FILE
+from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
+from ..models.tag import Tag, TagMembership
 
 
 class Portal(Base, PRBase):
@@ -125,7 +121,7 @@ class Portal(Base, PRBase):
     def __init__(self, **kwargs):
         super(Portal, self).__init__(**kwargs)
         if not self.portal_layout_id:
-            self.portal_layout_id = db(PortalLayout).first().id
+            self.portal_layout_id = utils.db.query_filter(PortalLayout).first().id
 
     @staticmethod
     def launch_new_portal(company):
@@ -223,10 +219,10 @@ class Portal(Base, PRBase):
         errors = ret['errors']
         warnings = ret['warnings']
 
-        if db(Portal, company_owner_id=self.own_company.id).filter(Portal.id != self.id).count():
+        if utils.db.query_filter(Portal, company_owner_id=self.own_company.id).filter(Portal.id != self.id).count():
             errors['form'] = 'portal for company already exists'
 
-        if db(Portal, host=self.host).filter(Portal.id != self.id).count():
+        if utils.db.query_filter(Portal, host=self.host).filter(Portal.id != self.id).count():
             errors['host'] = 'host already taken by another portal'
 
         import socket
@@ -251,7 +247,7 @@ class Portal(Base, PRBase):
             if div.portal_division_type.id == PortalDivision.TYPES['company_subportal']:
                 utils.dict_deep_inc(grouped_by_company_member, div.settings['company_id'])
 
-        for check_division_type in db(PortalDivisionType).all():
+        for check_division_type in utils.db.query_filter(PortalDivisionType).all():
             utils.dict_deep_replace(0, grouped_by_division_type, check_division_type.id, add_only_if_not_exists=True)
 
             if check_division_type.min > grouped_by_division_type[check_division_type.id]:
@@ -301,8 +297,8 @@ class Portal(Base, PRBase):
     def search_for_portal_to_join(company_id, searchtext):
         """This method return all portals which are not partners current company"""
         portals = []
-        for portal in db(Portal).filter(Portal.name.ilike("%" + searchtext + "%")).all():
-            member = db(MemberCompanyPortal, company_id=company_id, portal_id=portal.id).first()
+        for portal in utils.db.query_filter(Portal).filter(Portal.name.ilike("%" + searchtext + "%")).all():
+            member = utils.db.query_filter(MemberCompanyPortal, company_id=company_id, portal_id=portal.id).first()
             if member and member.status in Portal.ALLOWED_STATUSES_TO_JOIN:
                 portals.append(portal.get_client_side_dict())
             elif not member:
@@ -312,7 +308,7 @@ class Portal(Base, PRBase):
     def subscribe_user(self, user=None):
         user = user if user else g.user
 
-        if db(UserPortalReader, portal_id=self.id, user_id=user.id).first():
+        if utils.db.query_filter(UserPortalReader, portal_id=self.id, user_id=user.id).first():
             return
 
         free_plan = g.db.query(ReaderUserPortalPlan.id, ReaderUserPortalPlan.time,
@@ -388,8 +384,9 @@ class PortalAdvertisment(Base, PRBase):
     @staticmethod
     def get_portal_advertisments(portal):
         places = {p.place: p.get_client_side_dict('help,default_value') for p in
-                  db(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id).all()}
-        banners = db(PortalAdvertisment, portal_id=portal.id).order_by(PortalAdvertisment.place).all()
+                  utils.db.query_filter(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id).all()}
+        banners = utils.db.query_filter(PortalAdvertisment, portal_id=portal.id).order_by(
+            PortalAdvertisment.place).all()
         ret = []
         for b in banners:
             if b.place in places:
@@ -534,10 +531,49 @@ class MembershipPlanIssued(Base, PRBase):
         if user:
             self.started_by_user = user
 
+        # self.publish_or_hold_publications_on_plan_start()
+        return self
+
     def stop(self, user=None):
         self.stopped_tm = datetime.datetime.utcnow()
         if user:
             self.stopped_by_user = user
+
+        return self
+
+    def publish_or_hold_publications_on_plan_start(self):
+
+        utils.db.execute_function("membership_hold_unhold_publications('%s')" % (self.member_company_portal_id,))
+
+        # from ..models.materials import Publication
+        # count = self.member_company_portal.get_publication_count()
+        # changes = {vis: {'holded': 0, 'unholded': 0, 'remain_holded': 0} for vis in Publication.VISIBILITIES}
+        #
+        # for vis in Publication.VISIBILITIES:
+        #     count_vis = count['by_visibility_status'][vis]
+        #     limit = getattr(self, 'publication_count_' + vis.lower())
+        #     if count_vis['PUBLISHED'] > limit > 0:
+        #         changes[vis]['holded'] = count_vis['PUBLISHED'] - limit
+        #         g.db.query(Publication).filter(Publication.status == Publication.STATUSES['PUBLISHED']). \
+        #             limit(changes[vis]['holded']).update({'status': Publication.STATUSES['HOLDED']})
+        #     elif limit <= 0 or (count_vis['PUBLISHED'] < limit and count_vis['HOLDED'] > 0):
+        #         changes[vis]['unholded'] = count_vis['HOLDED'] if limit <= 0 else min(count_vis['HOLDED'],
+        #                                                                               limit - count_vis['PUBLISHED'])
+        #         changes[vis]['remain_holded'] = count_vis['HOLDED'] - changes[vis]['unholded']
+        #         g.db.query(Publication).filter(Publication.status == Publication.STATUSES['HOLDED']). \
+        #             limit(changes[vis]['unholded']).update({'status': Publication.STATUSES['PUBLISHED']})
+        #     else:
+        #         changes[vis]['remain_holded'] = count_vis['HOLDED']
+        #
+        # self.member_company_portal.notify_company_about_holded_or_published_publication(changes)
+
+        return self
+
+
+def stop(self, user=None):
+    self.stopped_tm = datetime.datetime.utcnow()
+    if user:
+        self.stopped_by_user = user
 
 
 class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
@@ -592,15 +628,15 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         return utils.dict_merge(self.get_client_side_dict(
             fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,'
                    'requested_membership_plan_issued,request_membership_plan_issued_immediately'),
-            {'actions': MembershipRights(company=self.company_id, member_company=self).actions()},
-            {'who': MembershipRights.MEMBERSHIP})
+            {'publications': self.get_publication_count()},
+            {'actions': MembershipRights(company=self.company_id, member_company=self).actions()})
 
     def company_member_grid_row(self):
         from ..models.rights import MembersRights
         return utils.dict_merge({'membership': self.get_client_side_dict(
-            more_fields='company,current_membership_plan_issued,requested_membership_plan_issued'),
-            'company_id': self.portal.company_owner_id,
-            'portal_id': self.portal_id},
+            more_fields='company,current_membership_plan_issued,requested_membership_plan_issued,portal.company_owner_id')
+        },
+            {'publications': self.get_publication_count()},
             {'actions': MembersRights(company=self.portal.company_owner_id, member_company=self).actions()},
             {'id': self.id})
 
@@ -646,8 +682,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             'portal_id': PRElasticField(analyzed=False, setter=lambda: self.portal.id),
             'portal_name': PRElasticField(setter=lambda: self.portal.name),
 
-            'division_id': PRElasticField(analyzed=False, setter=lambda: db(PortalDivision, portal_id=self.portal.id,
-                                                                            portal_division_type_id='catalog').one().id),
+            'division_id': PRElasticField(analyzed=False,
+                                          setter=lambda: utils.db.query_filter(PortalDivision, portal_id=self.portal.id,
+                                                                               portal_division_type_id='catalog').one().id),
             'division_type': PRElasticField(analyzed=False, setter=lambda: 'catalog'),
             'division_name': PRElasticField(setter=lambda: self.portal.name),
 
@@ -700,18 +737,33 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         from ..models.company import Company
 
         """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
-        membership = db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
+        membership = utils.db.query_filter(MemberCompanyPortal).filter_by(portal_id=portal_id,
+                                                                          company_id=company_id).first()
         if membership:
             membership.set_client_side_dict(MemberCompanyPortal.STATUSES['APPLICANT'])
         else:
-            membership = MemberCompanyPortal(id=db_utils.create_uuid(),
+            membership = MemberCompanyPortal(id=utils.db.create_uuid(),
                                              company=Company.get(company_id),
-                                             portal=db(Portal, id=portal_id).one())
+                                             portal=utils.db.query_filter(Portal, id=portal_id).one())
 
         membership.current_membership_plan_issued = membership.create_issued_plan()
-        membership.save().notify_portal_company_member("Company %s %s of membership at portal %s" % (
-            utils.jinja.link_company_profile(), utils.jinja.link('url_portal_companies_members', 'aspire', True),
-            utils.jinja.link_external()))
+        membership.save().notify_portal_about_company_member("Company %s %s of membership at portal %s//##"
+                                                             "this message is sent when company want to join to portal" % (
+                                                                 utils.jinja.link_company_profile(),
+                                                                 utils.jinja.link('url_portal_companies_members',
+                                                                                  'aspire',
+                                                                                  True),
+                                                                 utils.jinja.link_external()))
+        return membership
+
+    def set_memberee_status(self, status):
+        self.set_client_side_dict(status=status)
+        self.save().notify_portal_about_company_member("Company %s changed status of membership to %s at portal %s" %
+                                                       (utils.jinja.link_company_profile(),
+                                                        utils.jinja.link('url_portal_companies_members', self.status,
+                                                                         True),
+                                                        utils.jinja.link_external()))
+        return self
 
     def create_issued_plan(self, membership_plan: MembershipPlan = None, user=None):
         from ..constants.RECORD_IDS import SYSTEM_USERS
@@ -774,14 +826,14 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         if to_delete:
             to_delete.delete()
         if what_is_done:
-            self.notify_portal_company_member(
+            self.notify_portal_about_company_member(
                 "Company %s just %s plan %s of membership at portal %s" %
                 (utils.jinja.link_company_profile(),
                  utils.jinja.link('url_portal_companies_members', what_is_done, True),
                  self.requested_membership_plan_issued.name if
                  self.requested_membership_plan_issued else self.current_membership_plan_issued.name,
                  utils.jinja.link_external(),
-                ))
+                 ))
         return self
 
     def set_new_plan_issued(self, requested_plan_id, immediately):
@@ -815,12 +867,13 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
     @staticmethod
     def get_by_portal_id_company_id(portal_id=None, company_id=None):
-        return db(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
+        return utils.db.query_filter(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
 
     @staticmethod
     def get_members(company_id, *args):
-        subquery = db(MemberCompanyPortal).filter(
-            MemberCompanyPortal.portal_id == db(Portal, company_owner_id=company_id).subquery().c.id).filter(
+        subquery = utils.db.query_filter(MemberCompanyPortal).filter(
+            MemberCompanyPortal.portal_id == utils.db.query_filter(Portal,
+                                                                   company_owner_id=company_id).subquery().c.id).filter(
             MemberCompanyPortal.status != MemberCompanyPortal.STATUSES['REJECTED'])
         return subquery
 
@@ -845,28 +898,38 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         tag_position = 0
         for tag in self.tags:
             tag_position += 1
-            tag_pub = db(TagMembership).filter(and_(TagMembership.tag_id == tag.id,
-                                                    TagMembership.member_company_portal_id == self.id)).one()
+            tag_pub = utils.db.query_filter(TagMembership).filter(and_(TagMembership.tag_id == tag.id,
+                                                                       TagMembership.member_company_portal_id == self.id)).one()
             tag_pub.position = tag_position
             tag_pub.save()
         return self
 
     def get_publication_count(self):
         from ..models.materials import Publication, Material
-        ret = {}
-        for status in Publication.STATUSES:
-            for visibility in Publication.VISIBILITIES:
-                cnt = db(Publication).outerjoin(Material).outerjoin(PortalDivision).filter(and_(
-                    Material.company_id == self.company_id,
-                    PortalDivision.portal_id == self.portal_id,
-                    Publication.status == status,
-                    Publication.visibility == visibility
-                )).count()
-                utils.dict_deep_replace(cnt, ret, 'by_status_visibility', status, visibility)
-                utils.dict_deep_replace(cnt, ret, 'by_visibility_status', visibility, status)
+        from sqlalchemy.sql import functions
+        ret = {'by_status_visibility': {s: {v: 0 for v in Publication.VISIBILITIES} for s in Publication.STATUSES},
+               'by_visibility_status': {v: {s: 0 for s in Publication.STATUSES} for v in Publication.VISIBILITIES},
+               'by_status': {s: 0 for s in Publication.STATUSES},
+               'by_visibility': {s: 0 for s in Publication.VISIBILITIES},
+               'all': 0,
+               }
+
+        cnt = g.db.query(Publication.status, Publication.visibility, functions.count(Publication.id).label('cnt')). \
+            join(Material, Publication.material_id == Material.id). \
+            join(PortalDivision, Publication.portal_division_id == PortalDivision.id).filter(and_(
+            Material.company_id == self.company_id,
+            PortalDivision.portal_id == self.portal_id)).group_by(Publication.status, Publication.visibility).all()
+
+        for c in cnt:
+            ret['by_status_visibility'][c.status][c.visibility] = c.cnt
+            ret['by_status'][c.status] += c.cnt
+            ret['by_visibility_status'][c.visibility][c.status] = c.cnt
+            ret['by_visibility'][c.visibility] += c.cnt
+            ret['all'] += c.cnt
+
         return ret
 
-    def notify_portal_company_member(self, phrase, rights=None):
+    def notify_portal_about_company_member(self, phrase, rights=None):
         from ..models.messenger import Notification, Socket
         from ..models.rights import BaseRightsEmployeeInCompany
         from ..models.company import UserCompany
@@ -886,7 +949,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             },
             except_to_user=[g.user])()
 
-    def notify_company_portal_memberee(self, phrase, rights=None):
+    def notify_company_about_portal_memberee(self, phrase, rights=None):
         from ..models.messenger import Notification, Socket
         from ..models.rights import BaseRightsEmployeeInCompany
         from ..models.company import UserCompany
@@ -904,6 +967,49 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
                                                                      company_id=self.company.id)
             },
             except_to_user=[g.user])()
+
+    def notify_company_about_holded_or_published_publication(self, changes):
+        from ..models.materials import Publication
+        from ..models.messenger import Socket, Notification
+        from ..models.rights import PublishUnpublishInPortal
+
+        d = None
+        phrases = []
+        dictionaries = []
+
+        for vis in Publication.VISIBILITIES:
+            phrase = None
+            if changes[vis]['holded']:
+                phrase = "%s was holded"
+                d = {'cnt': changes[vis]['holded']}
+            elif changes[vis]['unholded']:
+                phrase = "%s was unholded"
+                d = {'cnt': changes[vis]['unholded']}
+            elif changes[vis]['remain_holded']:
+                phrase = "%s still remain holded"
+                d = {'cnt': changes[vis]['remain_holded']}
+            if phrase:
+                phrase = phrase % (vis,)
+                if not len(phrases):
+                    phrases.append(
+                        "Due to new plan was applied for company %s at portal %s some changes with your publication was made" %
+                        (utils.jinja.link_company_profile(), utils.jinja.link_external()))
+                    dictionaries.append({
+                        'portal': self.portal,
+                        'company': self.company,
+                        'url_company_profile': url_for('company.profile', company_id=self.company.id)
+                    })
+
+                phrases.append("%(count)s" + phrase)
+                dictionaries.append(d)
+
+        if len(phrases):
+            to_users = PublishUnpublishInPortal(None, None, self.portal.own_company, self.portal).get_user_with_rights(
+                PublishUnpublishInPortal.publish_rights)
+            Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases,
+                                         dictionaries)()
+
+        return self
 
 
 class ReaderUserPortalPlan(Base, PRBase):
@@ -985,7 +1091,7 @@ class PortalDivision(Base, PRBase):
             'description': self.html_description
         }
 
-    def notify_about_deleted_publications(self, because_of):
+    def notify_company_about_deleted_publications(self, because_of):
         from ..models.messenger import Socket, Notification
         from ..models.rights import PublishUnpublishInPortal
         dict_main = {
@@ -1043,7 +1149,7 @@ class PortalDivisionType(Base, PRBase):
     @staticmethod
     def get_division_types():
         """Return all divisions on profireader"""
-        return db(PortalDivisionType).all()
+        return utils.db.query_filter(PortalDivisionType).all()
 
 
 class UserPortalReader(Base, PRBase):
@@ -1074,31 +1180,34 @@ class UserPortalReader(Base, PRBase):
 
     def get_portal_divisions_json(self):
         return json.dumps({division[0]: {'name': division[1], 'show_division': True, 'comments': True}
-                           for division in db(PortalDivision.id, PortalDivision.name, portal_id=self.portal_id).all()},
+                           for division in utils.db.query_filter(PortalDivision.id, PortalDivision.name,
+                                                                 portal_id=self.portal_id).all()},
                           ensure_ascii=False)
 
     @staticmethod
     def get_portals_for_user():
-        portals = db(Portal).filter(~(Portal.id.in_(db(UserPortalReader.portal_id, user_id=g.user.id)))).all()
+        portals = utils.db.query_filter(Portal).filter(
+            ~(Portal.id.in_(utils.db.query_filter(UserPortalReader.portal_id, user_id=g.user.id)))).all()
         for portal in portals:
             yield (portal.id, portal.name,)
 
     @staticmethod
     def get(user_id=None, portal_id=None):
-        return db(UserPortalReader).filter_by(user_id=user_id, portal_id=portal_id).first()
+        return utils.db.query_filter(UserPortalReader).filter_by(user_id=user_id, portal_id=portal_id).first()
 
     @staticmethod
     def get_portals_and_plan_info_for_user(user_id, page, items_per_page, filter_params):
         from ..controllers.pagination import pagination
-        query, pages, page, count = pagination(db(UserPortalReader, user_id=user_id).filter(filter_params),
-                                               page=int(page), items_per_page=int(items_per_page))
+        query, pages, page, count = pagination(
+            utils.db.query_filter(UserPortalReader, user_id=user_id).filter(filter_params),
+            page=int(page), items_per_page=int(items_per_page))
 
         for upr in query:
             yield dict(id=upr.id, portal_id=upr.portal_id, status=upr.status, start_tm=upr.start_tm,
                        portal_logo=upr.portal.logo['url'],
                        end_tm=upr.end_tm if upr.end_tm > datetime.datetime.utcnow() else 'Expired at ' + upr.end_tm,
                        plan_id=upr.portal_plan_id,
-                       plan_name=db(ReaderUserPortalPlan.name, id=upr.portal_plan_id).one()[0],
+                       plan_name=utils.db.query_filter(ReaderUserPortalPlan.name, id=upr.portal_plan_id).one()[0],
                        portal_name=upr.portal.name, portal_host=upr.portal.host, amount=upr.amount,
                        portal_divisions=[{division.name: division.id}
                                          for division in upr.portal.divisions])
@@ -1107,7 +1216,7 @@ class UserPortalReader(Base, PRBase):
     def get_filter_for_portals_and_plans(portal_name=None, start_end_tm=None, package_name=None):
         filter_params = []
         if portal_name:
-            filter_params.append(UserPortalReader.portal_id.in_(db(Portal.id).filter(
+            filter_params.append(UserPortalReader.portal_id.in_(utils.db.query_filter(Portal.id).filter(
                 Portal.name.ilike('%' + portal_name + '%'))))
         if start_end_tm:
             from_tm = datetime.datetime.utcfromtimestamp(int(start_end_tm['from'] + 1) / 1000)
@@ -1115,8 +1224,9 @@ class UserPortalReader(Base, PRBase):
             filter_params.extend([UserPortalReader.start_tm >= from_tm,
                                   UserPortalReader.start_tm <= to_tm])
         if package_name:
-            filter_params.append(UserPortalReader.portal_plan_id == db(ReaderUserPortalPlan.id).filter(
-                ReaderUserPortalPlan.name.ilike('%' + package_name + '%')))
+            filter_params.append(
+                UserPortalReader.portal_plan_id == utils.db.query_filter(ReaderUserPortalPlan.id).filter(
+                    ReaderUserPortalPlan.name.ilike('%' + package_name + '%')))
         return filter_params
 
 

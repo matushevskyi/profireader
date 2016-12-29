@@ -457,7 +457,11 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
         return function (text) {
             return $sce.trustAsHtml(text);
         };
-    }]);
+    }]).filter('strip_html', function () {
+        return function (text) {
+            return $("<div>"+text+"</div>").text();
+        };
+    });
 
 
 areAllEmpty = function () {
@@ -682,6 +686,9 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             }
             return $sce.trustAsHtml(full_text);
         },
+        strip_html: function () {
+
+        },
         __: function () {
             var args = [].slice.call(arguments);
             return $sce.trustAsHtml(pr_dictionary(args.shift(), args, '*', this, $ok));
@@ -857,39 +864,39 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 });
 
 
-function cleanup_html(html) {
-    normaltags = '^(span|a|br|div|table)$';
-    common_attributes = {
-        whattr: {'^(width|height)$': '^([\d]+(.[\d]*)?)(em|px|%)$'}
-    };
-
-    allowed_tags = {
-        '^table$': {allow: '^(tr)$', attributes: {whattr: true}},
-        '^tr$': {allow: '^(td|th)$', attributes: {}},
-        '^td$': {allow: normaltags, attributes: {whattr: true}},
-        '^a$': {allow: '^(span)$', attrсibutes: {'^href$': '.*'}},
-        '^img$': {allow: false, attributes: {'^src$': '.*'}},
-        '^br$': {allow: false, attributes: {}},
-        '^div$': {allow: normaltags, attributes: {}}
-    };
-
-    $.each(allowed_tags, function (tag, properties) {
-        var attributes = properties.attributes ? properties.attributes : {}
-        $.each(attributes, function (attrname, allowedvalus) {
-            if (allowedvalus === true) {
-                allowed_tags[tag].attributes[attrname] = common_attributes[attrname] ? common_attributes[attrname] : '.*';
-            }
-        });
-    });
-
-    var tags = html.split(/<[^>]*>/);
-
-    $.each(tags, function (tagindex, tag) {
-        console.log(tagindex, tag);
-    });
-
-    return html;
-}
+// function cleanup_html(html) {
+//     normaltags = '^(span|a|br|div|table)$';
+//     common_attributes = {
+//         whattr: {'^(width|height)$': '^([\d]+(.[\d]*)?)(em|px|%)$'}
+//     };
+//
+//     allowed_tags = {
+//         '^table$': {allow: '^(tr)$', attributes: {whattr: true}},
+//         '^tr$': {allow: '^(td|th)$', attributes: {}},
+//         '^td$': {allow: normaltags, attributes: {whattr: true}},
+//         '^a$': {allow: '^(span)$', attrсibutes: {'^href$': '.*'}},
+//         '^img$': {allow: false, attributes: {'^src$': '.*'}},
+//         '^br$': {allow: false, attributes: {}},
+//         '^div$': {allow: normaltags, attributes: {}}
+//     };
+//
+//     $.each(allowed_tags, function (tag, properties) {
+//         var attributes = properties.attributes ? properties.attributes : {}
+//         $.each(attributes, function (attrname, allowedvalus) {
+//             if (allowedvalus === true) {
+//                 allowed_tags[tag].attributes[attrname] = common_attributes[attrname] ? common_attributes[attrname] : '.*';
+//             }
+//         });
+//     });
+//
+//     var tags = html.split(/<[^>]*>/);
+//
+//     $.each(tags, function (tagindex, tag) {
+//         console.log(tagindex, tag);
+//     });
+//
+//     return html;
+// }
 
 
 None = null;

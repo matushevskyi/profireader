@@ -1,21 +1,22 @@
-from .blueprints_declaration import file_bp
-from flask import request, g, abort
-from ..models.files import File, FileContent
-from io import BytesIO
-from .request_wrapers import check_right
-import re
-from sqlalchemy import or_
-from tools.db_utils import db
-from flask import current_app
-from werkzeug.datastructures import Headers
 import mimetypes
 import os
+import re
+import urllib.parse
+from io import BytesIO
 from time import time
 from zlib import adler32
+
+from flask import current_app
+from flask import request, g, abort
 from flask._compat import string_types, text_type
-import urllib.parse
-from ..models.rights import UserIsActive, AllowAll
-from .. import Config
+from sqlalchemy import or_
+from werkzeug.datastructures import Headers
+
+from profapp import utils
+from .blueprints_declaration import file_bp
+from .request_wrapers import check_right
+from ..models.files import File, FileContent
+from ..models.rights import AllowAll
 
 try:
     from werkzeug.wsgi import wrap_file
@@ -233,8 +234,8 @@ def allowed_referrers(domain):
 
 def crop_image(image_id, coordinates, zoom, params):
     from ..models.company import Company
-    image_query = db(File, id=image_id).one()  # get file object
-    company_owner = db(Company).filter(or_(
+    image_query = utils.db.query_filter(File, id=image_id).one()  # get file object
+    company_owner = utils.db.query_filter(Company).filter(or_(
                 Company.system_folder_file_id == image_query.root_folder_id,
                 Company.journalist_folder_file_id == image_query.root_folder_id)).one()  # get company file owner
     return File.crop(image_query, coordinates, zoom, company_owner, params)

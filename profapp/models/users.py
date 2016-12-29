@@ -1,35 +1,27 @@
-from flask import request, current_app, g, flash, url_for
-from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relationship, backref
-from flask import session, json
-from urllib import request as req
-from config import Config
-from ..controllers import errors
-import re
-from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..constants import REGEXP
-from ..constants.SOCIAL_NETWORKS import SOCIAL_NETWORKS, SOC_NET_NONE
-from ..constants.USER_REGISTERED import REGISTERED_WITH_FLIPPED, REGISTERED_WITH
-from ..constants import RECORD_IDS
 import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from tools.db_utils import db
-from sqlalchemy import String
-from . import dictionary
 import hashlib
-from flask.ext.login import UserMixin
-from .pr_base import PRBase, Base
-from ..constants.SEARCH import RELEVANCE
-from .. import utils
-from flask import url_for, render_template
-from tools import db_utils
-
 import random
+import re
 import time
+
+from flask import request, current_app, g
+from flask import url_for, render_template
+from flask.ext.login import UserMixin
+from flask.ext.login import logout_user, login_user
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from sqlalchemy import Column, ForeignKey
+from sqlalchemy import String
+from sqlalchemy.orm import relationship
+from werkzeug.security import generate_password_hash, check_password_hash
+
+from config import Config
 from .files import FileImg, FileImgDescriptor
-from flask.ext.login import logout_user, current_user, login_user
-from sqlalchemy import func
+from .pr_base import PRBase, Base
+from .. import utils
+from ..constants import RECORD_IDS
+from ..constants import REGEXP
+from ..constants.TABLE_TYPES import TABLE_TYPES
+from ..controllers import errors
 
 
 class User(Base, UserMixin, PRBase):
@@ -179,7 +171,7 @@ class User(Base, UserMixin, PRBase):
 
         if not re.match(REGEXP.EMAIL, self.address_email):
             ret['errors']['email'] = 'Please enter correct email'
-        elif is_new and db(User, address_email=self.address_email).first():
+        elif is_new and utils.db.query_filter(User, address_email=self.address_email).first():
             ret['errors']['email'] = 'Sorry. this email is taken'
 
         if is_new and (self.password is None or self.password == ''):
@@ -198,7 +190,7 @@ class User(Base, UserMixin, PRBase):
 
     @staticmethod
     def user_query(user_id):
-        ret = db(User, id=user_id).one()
+        ret = utils.db.query_filter(User, id=user_id).one()
         return ret
 
     def set_password_hash(self):
@@ -214,16 +206,16 @@ class User(Base, UserMixin, PRBase):
 
     @staticmethod
     def get_unread_message_count(user_id, contact_id=None):
-        return db_utils.execute_function("message_unread_count('%s', %s)" % (
+        return utils.db.execute_function("message_unread_count('%s', %s)" % (
             user_id, 'NULL' if contact_id is None else ("'" + contact_id + "'")))
 
     @staticmethod
     def get_unread_notification_count(user_id):
-        return db_utils.execute_function("notification_unread_count('%s')" % (user_id,))
+        return utils.db.execute_function("notification_unread_count('%s')" % (user_id,))
 
     @staticmethod
     def get_contact_request_count(user_id):
-        return db_utils.execute_function("contact_request_count('%s')" % (user_id,))
+        return utils.db.execute_function("contact_request_count('%s')" % (user_id,))
 
     def gravatar(self, size=100, default='identicon', rating='g'):
         if request.is_secure:

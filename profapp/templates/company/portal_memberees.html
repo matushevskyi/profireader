@@ -23,8 +23,8 @@
             $scope.url_search_for_portal = function () {
                 return ( '/portal/search_for_portal_to_join/' );
             };
-            $scope.url_change_status = {{ raw_url_for('portal.portals_memberee_change_status')|safe }};
-            $scope.url_join = {{ raw_url_for('company.join_to_portal')|safe }};
+            $scope.url_change_status = {{ raw_url_for('company.membership_change_status')|safe }};
+            $scope.url_join_to_portal = {{ raw_url_for('company.join_to_portal')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.selectedPortal_name = '';
             $scope.selectedPortal = null;
@@ -53,7 +53,7 @@
             };
 
             $scope.joinToPortal = function () {
-                return $ok($scope.url_join({company_id: $scope.company_id}), {
+                return $ok($scope.url_join_to_portal({company_id: $scope.company_id}), {
                     portal_id: $scope.selectedPortal.id
                 }, function () {
                     $scope.gridApi.grid.setGridData();
@@ -67,9 +67,8 @@
 
             $scope.grid_action = function (id, action, row, column_name) {
                 return $ok($scope.url_change_status({
-                    company_id: $scope.company_id,
-                    portal_id: row.portal.id
-                }), {action: action, who: row.who, partner_id: $scope.company_id}, function (resp) {
+                    membership_id: row.id
+                }), {action: action}, function (resp) {
                     $scope.gridApi.grid.grid_change_row(resp)
                 }).finally(function () {
                 })
@@ -84,8 +83,7 @@
                     return false;
                 }
                 var modalInstance = $membership_tags({
-                    company_id: $scope.company_id,
-                    portal_id: row['portal']['id']
+                    membership_id: row['id']
                 });
 
                 modalInstance.result.then(function (updated_row) {
@@ -112,16 +110,13 @@
                 columnDefs: [
                     {
                         name: 'portal.name', type: 'link',
-                        href: 'portal_link(row.entity.portal.host)', img_url: 'portal.logo.url', link: true
-                    },
-                    {
-                        name: 'portal.own_company.name',
-                        type: 'link',
-                        href: 'url_company_profile({company_id: row.entity.portal.own_company.id})',
-                        img_url: "portal.own_company.logo.url"
+                        width: '200',
+                        href: 'portal_link(row.entity.portal.host)', img_url: 'portal.logo.url',
+                        link: true
                     },
                     {
                         name: 'membership_plan',
+                        width: '150',
                         onclick: 'request_membership_plan',
                         classes: function (id, row, field) {
                             return row['status'] === 'ACTIVE' ? '' : 'disabled';
@@ -137,11 +132,12 @@
                             return row['status'] === 'ACTIVE' ? '' : 'disabled';
                         },
                     },
+                    publication_column(),
                     {
-                        name: 'status', width: '20%', afilter: {type: 'multi_select', default_selected: true}
+                        name: 'status', width: '100', afilter: {type: 'multi_select', default_selected: true}
                         //we can default select all and deselect that we need, 'exception' can be string or array of string
                     },
-                    {name: 'rights', width: '200', type: 'icons', afilter: {type: 'input'}},
+                    {name: 'rights', width: '50', type: 'icons', afilter: {type: 'input'}},
                     {name: 'actions', type: 'actions', onclick: 'grid_action'}
                 ]
             });

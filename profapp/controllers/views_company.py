@@ -1,24 +1,19 @@
-from .blueprints_declaration import company_bp
-from flask.ext.login import current_user
 from flask import render_template, request, url_for, g, redirect, abort
-from ..models.company import Company, UserCompany
-from ..models.translate import TranslateTemplate
-from ..models.messenger import Notification
-from .request_wrapers import check_right
-from ..models.materials import Material, Publication
-from ..models.portal import PortalDivision, Portal
+from sqlalchemy import and_
 from sqlalchemy.sql import expression
-from sqlalchemy import and_, or_
 
-# from ..models.bak_articles import ArticleCompany, ArticlePortalDivision
-from tools.db_utils import db
+
+from .blueprints_declaration import company_bp
 from .pagination import pagination, load_for_infinite_scroll
-from config import Config
+from .request_wrapers import check_right
 from .. import utils
-from ..models.pr_base import PRBase, Grid
+from ..models.company import Company, UserCompany
+from ..models.materials import Material, Publication
+from ..models.pr_base import Grid
 from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, UserIsEmployee, EmployeeAllowRight, \
     CanCreateCompanyRight, UserIsActive, BaseRightsEmployeeInCompany, MembersRights, MemberCompanyPortal, \
     MembershipRights, RequireMembereeAtPortalsRight
+from ..models.translate import TranslateTemplate
 
 
 @company_bp.route('/search_to_submit_article/', methods=['POST'])
@@ -37,7 +32,7 @@ def companies():
 @company_bp.route('/', methods=['OK'])
 @check_right(UserIsActive)
 def companies_load(json):
-    employments_query = db(UserCompany). \
+    employments_query = utils.db.query_filter(UserCompany). \
         outerjoin(Company, and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE')). \
         filter(and_(UserCompany.user_id == g.user.id, Company.id != None, ~ UserCompany.id.in_(json['loaded']))). \
         order_by(expression.desc(UserCompany.md_tm))
@@ -59,7 +54,7 @@ def join_to_company(json):
 @company_bp.route('/<string:company_id>/materials/', methods=['GET'])
 @check_right(UserIsEmployee, ['company_id'])
 def materials(company_id):
-    return render_template('company/materials.html', company=db(Company, id=company_id).one(),
+    return render_template('company/materials.html', company=utils.db.query_filter(Company, id=company_id).one(),
                            actions={
                                'create_material': BaseRightsEmployeeInCompany(company=company_id).action_is_allowed(
                                    BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])})
@@ -161,7 +156,7 @@ def employee_update_load(json, company_id, user_id):
 @company_bp.route('/<string:company_id>/employment/<string:employment_id>/action/<string:action>/', methods=['OK'])
 @check_right(EmployeesRight, ['company_id', 'employment_id'], action='action')
 def employment_action(json, company_id, employment_id, action):
-    employment = db(UserCompany).filter_by(id=employment_id).one()
+    employment = utils.db.query_filter(UserCompany).filter_by(id=employment_id).one()
 
     if action == EmployeesRight.ACTIONS['REJECT']:
         employment.status = EmployeesRight.STATUSES['REJECTED']
@@ -179,7 +174,7 @@ def employment_action(json, company_id, employment_id, action):
 @company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_position/', methods=['OK'])
 @check_right(EmployeesRight, ['company_id', 'employment_id'], action=EmployeesRight.ACTIONS['ALLOW'])
 def employment_change_position(json, company_id, employment_id):
-    employment = db(UserCompany).filter_by(id=employment_id).one()
+    employment = utils.db.query_filter(UserCompany).filter_by(id=employment_id).one()
 
     employment.position = json['position']
     employment.save()
@@ -201,7 +196,7 @@ def update():
 @company_bp.route('/<string:company_id>/profile/', methods=['GET'])
 @check_right(UserIsActive)
 def profile(company_id=None):
-    company = db(Company, id=company_id).first()
+    company = utils.db.query_filter(Company, id=company_id).first()
     user_company = UserCompany.get_by_user_and_company_ids(company_id=company_id)
     user_company.md_tm = None
     user_company.save()
@@ -250,7 +245,7 @@ def profile_load_validate_save(json, company_id=None):
 @check_right(UserIsActive)
 def search_for_company_to_join(json):
     companies, there_is_more = load_for_infinite_scroll(
-        db(Company).filter(~db(UserCompany, user_id=g.user.id, company_id=Company.id).exists()). \
+        utils.db.query_filter(Company).filter(~utils.db.query_filter(UserCompany, user_id=g.user.id, company_id=Company.id).exists()). \
             filter(and_(
             Company.status == 'ACTIVE', Company.name.ilike("%" + json['text'] + "%")), ~Company.id.in_(json['loaded'])). \
             order_by(Company.name), items=3)
@@ -283,40 +278,6 @@ def confirm_subscriber():
     return redirect(url_for('company.profile', company_id=data['company_id']))
 
 
-# TODO: VK by OZ: following 3 functions would have to be joined into one
-# @company_bp.route('/suspend_employee/', methods=['POST'])
-# @login_required
-# # @check_rights(simple_permissions([RIGHTS.SUSPEND_EMPLOYEE()]))
-# def suspend_employee():
-#     data = request.form
-#     UserCompany.change_status_employee(user_id=data['user_id'],
-#                                        company_id=data['company_id'])
-#     return redirect(url_for('company.employees',
-#                             company_id=data['company_id']))
-#
-#
-# @company_bp.route('/fire_employee/', methods=['POST'])
-# @login_required
-# def fire_employee():
-#     data = request.form
-#     UserCompany.change_status_employee(company_id=data.get('company_id'),
-#                                        user_id=data.get('user_id'),
-#                                        status=UserCompany.STATUSES['FIRED'])
-#     return redirect(url_for('company.employees', company_id=data.get('company_id')))
-#
-#
-# @company_bp.route('/unsuspend/<string:user_id>,<string:company_id>')
-# @login_required
-# def unsuspend(user_id, company_id):
-#     UserCompany.change_status_employee(user_id=user_id,
-#                                        company_id=company_id,
-#                                        status=UserCompany.STATUSES['ACTIVE'])
-#     return redirect(url_for('company.employees', company_id=company_id))
-#
-#
-#
-
-
 @company_bp.route('/<string:company_id>/portal_memberees/', methods=['GET'])
 @check_right(UserIsEmployee, ['company_id'])
 def portal_memberees(company_id):
@@ -340,12 +301,22 @@ def portal_memberees_load(json, company_id):
             'grid_filters_except': list(MembershipRights.INITIALLY_FILTERED_OUT_STATUSES),
             'total': count}
 
+
+@company_bp.route('/membership/<string:membership_id>/change_status/', methods=['OK'])
+# @check_right(RequireMembereeAtPortalsRight, ['company_id'])
+def membership_change_status(json, membership_id):
+    membership = MemberCompanyPortal.get(membership_id)
+    employee = UserCompany.get_by_user_and_company_ids(company_id=membership.company_id)
+
+    if MembershipRights(company=membership.company_id, member_company=membership).action_is_allowed(json.get('action'),
+                                                                                                     employee) == True:
+        membership.set_memberee_status(MembershipRights.STATUS_FOR_ACTION[json.get('action')])
+    return membership.portal_memberee_grid_row()
+
+
 @company_bp.route('/<string:company_id>/join_to_portal/', methods=['OK'])
 @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def join_to_portal(json, company_id):
-    from ..models.rights import PublishUnpublishInPortal
+    return MemberCompanyPortal.apply_company_to_portal(company_id=company_id, portal_id=json['portal_id'])\
+        .portal_memberee_grid_row()
 
-    MemberCompanyPortal.apply_company_to_portal(company_id=company_id, portal_id=json['portal_id'])
-    return {'portals_partners': [portal.get_client_side_dict(fields='name, company_owner_id,id')
-                                 for portal in PublishUnpublishInPortal.get_portals_where_company_is_member(
-            Company.get(company_id))], 'company_id': company_id}

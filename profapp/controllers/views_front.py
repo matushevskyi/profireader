@@ -1,20 +1,20 @@
-from .blueprints_declaration import front_bp
-from flask import render_template, request, url_for, redirect, g, current_app
-from ..models.materials import Publication, ReaderPublication, Material
-from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
-    PortalDivisionSettingsCompanySubportal, UserPortalReader
-from ..models.company import Company
-from ..models.users import User
-from ..models.messenger import Socket, Notification
-from config import Config
-from .request_wrapers import check_right, get_portal
-from ..models.rights import AllowAll
-from ..models.elastic import elasticsearch
 from collections import OrderedDict
-from .. import utils
-from tools.db_utils import db
-from functools import wraps
+
+from flask import render_template, request, url_for, redirect, g
 from sqlalchemy.sql import expression
+
+from config import Config
+from .blueprints_declaration import front_bp
+from .request_wrapers import check_right, get_portal
+from .. import utils
+from ..models.company import Company
+from ..models.elastic import elasticsearch
+from ..models.materials import Publication
+from ..models.messenger import Socket, Notification
+from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
+    PortalDivisionSettingsCompanySubportal
+from ..models.rights import AllowAll
+from ..models.users import User
 
 
 def all_tags(portal):
@@ -63,7 +63,7 @@ def get_company_member_and_division(portal: Portal, company_id, company_name):
     portal_dict = portal_and_settings(portal)
     # TODO: OZ by OZ: heck company is member
     member_company = Company.get(company_id)
-    membership = db(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one()
+    membership = utils.db.query_filter(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one()
     di = None
     for d_id, d in portal_dict['divisions'].items():
         if 'subportal_company' in d and d['subportal_company'].id == company_id:
@@ -300,8 +300,8 @@ subportal_prefix = '_c/<string:member_company_id>/<string:member_company_name>/'
 
 
 def url_catalog_toggle_tag(portal, tag_text):
-    catalog_division = db(PortalDivision, portal_id=portal.id,
-                          portal_division_type_id=PortalDivision.TYPES['catalog']).one()
+    catalog_division = utils.db.query_filter(PortalDivision, portal_id=portal.id,
+                                    portal_division_type_id=PortalDivision.TYPES['catalog']).one()
     return url_for('front.division', division_name=catalog_division.name, tags=tag_text)
 
 
@@ -385,8 +385,8 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                    division=dvsn.get_client_side_dict(),
                                    tags=all_tags(portal),
                                    seo=membership.seo_dict(),
-                                   membership=db(MemberCompanyPortal, company_id=member_company.id,
-                                                 portal_id=portal.id).one(),
+                                   membership=utils.db.query_filter(MemberCompanyPortal, company_id=member_company.id,
+                                                           portal_id=portal.id).one(),
                                    url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
                                    member_company=member_company.get_client_side_dict(
                                        more_fields='employments,employments.user,employments.user.avatar.url'),

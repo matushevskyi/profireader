@@ -1,29 +1,22 @@
-from sqlalchemy import Column, String, ForeignKey, UniqueConstraint, Enum  # , update
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy import event
-from ..constants.RECORD_IDS import FOLDER_AND_FILE
-from flask.ext.login import current_user
-from sqlalchemy import Column, String, ForeignKey, update, and_, text, desc
-from sqlalchemy.orm import relationship
-from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
-from flask import g
-from config import Config
-from tools.db_utils import db
-from sqlalchemy import CheckConstraint
-from flask import abort, url_for
-from .pr_base import PRBase, Base, Search, Grid
-from ..controllers import errors
-from functools import wraps
-from .files import YoutubePlaylist
-from ..constants.SEARCH import RELEVANCE
-from .users import User
-from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
-from .. import utils
 import re
-from .files import FileImg, FileImgDescriptor
-from .elastic import PRElasticDocument
+
+from flask import g
+from flask import url_for
+from flask.ext.login import current_user
+from sqlalchemy import Column, ForeignKey, and_, desc
+from sqlalchemy.orm import relationship
+
 from profapp import on_value_changed
+from .elastic import PRElasticDocument
+from .files import FileImg, FileImgDescriptor
+from .files import YoutubePlaylist
+from .pr_base import PRBase, Base, Grid
+from .users import User
+from .. import utils
+from ..constants.RECORD_IDS import FOLDER_AND_FILE
+from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from ..models.messenger import Notification, Socket
+from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 
 
 class Company(Base, PRBase, PRElasticDocument):
@@ -190,13 +183,13 @@ class Company(Base, PRBase, PRElasticDocument):
     @staticmethod
     def query_company(company_id):
         """Method return one company"""
-        ret = db(Company, id=company_id).one()
+        ret = utils.db.query_filter(Company, id=company_id).one()
         return ret
 
     @staticmethod
     def search_for_company(user_id, searchtext):
         """Return all companies which are not current user employers yet"""
-        query_companies = db(Company).filter(
+        query_companies = utils.db.query_filter(Company).filter(
             Company.name.ilike("%" + searchtext + "%")).filter.all()
         ret = []
         for x in query_companies:
@@ -214,19 +207,19 @@ class Company(Base, PRBase, PRElasticDocument):
     @staticmethod
     def get_allowed_statuses(company_id=None, portal_id=None):
         if company_id:
-            sub_query = db(MemberCompanyPortal, company_id=company_id).filter(
+            sub_query = utils.db.query_filter(MemberCompanyPortal, company_id=company_id).filter(
                 MemberCompanyPortal.status != "DELETED").all()
         else:
-            sub_query = db(MemberCompanyPortal, portal_id=portal_id)
+            sub_query = utils.db.query_filter(MemberCompanyPortal, portal_id=portal_id)
         return sorted(list({partner.status for partner in sub_query}))
 
     @staticmethod
     def subquery_portal_banners(company_id, filters):
-        sub_query = db(MemberCompanyPortal, company_id=company_id)
+        sub_query = utils.db.query_filter(MemberCompanyPortal, company_id=company_id)
 
     @staticmethod
     def subquery_portal_partners(company_id, filters, filters_exсept=None):
-        sub_query = db(MemberCompanyPortal, company_id=company_id)
+        sub_query = utils.db.query_filter(MemberCompanyPortal, company_id=company_id)
         list_filters = []
         if filters_exсept:
             if 'status' in filters:
@@ -249,7 +242,7 @@ class Company(Base, PRBase, PRElasticDocument):
 
     @staticmethod
     def subquery_company_partners(company_id, filters, filters_exсept=None):
-        sub_query = db(MemberCompanyPortal, portal_id=db(Portal, company_owner_id=company_id).subquery().c.id).order_by(
+        sub_query = utils.db.query_filter(MemberCompanyPortal, portal_id=utils.db.query_filter(Portal, company_owner_id=company_id).subquery().c.id).order_by(
             desc(MemberCompanyPortal.id))
         list_filters = [];
         list_sorts = []
@@ -371,7 +364,7 @@ class UserCompany(Base, PRBase):
 
     @staticmethod
     def get_by_user_and_company_ids(user_id=None, company_id=None):
-        return db(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
+        return utils.db.query_filter(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
 
     @staticmethod
     def apply_request(company_id, user_id, bool):
@@ -384,8 +377,8 @@ class UserCompany(Base, PRBase):
         else:
             stat = UserCompany.STATUSES['REJECTED']
 
-        db(UserCompany, company_id=company_id, user_id=user_id,
-           status=UserCompany.STATUSES['APPLICANT']).update({'status': stat})
+        utils.db.query_filter(UserCompany, company_id=company_id, user_id=user_id,
+                     status=UserCompany.STATUSES['APPLICANT']).update({'status': stat})
 
     def has_rights(self, rightname):
         if self.company.user_owner.id == self.user_id:
@@ -403,7 +396,7 @@ class UserCompany(Base, PRBase):
         """Return all users in current company which have characters
         in their name like searchtext"""
         return [user.get_client_side_dict(fields='full_name|id') for user in
-                db(User).filter(~db(UserCompany, user_id=User.id, company_id=company_id).exists()).
+                utils.db.query_filter(User).filter(~utils.db.query_filter(UserCompany, user_id=User.id, company_id=company_id).exists()).
                     filter(User.full_name.ilike("%" + searchtext + "%")).all()]
 
 
