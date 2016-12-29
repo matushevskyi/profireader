@@ -1,19 +1,14 @@
 /*Common settings*/
 
-@media (max-width: 480px){
+@media (max-width: 1200px){
     .company-name,
     .article-comments,
-    .post-date {
-        display: block;
-    }
-    .company-name,
-    .article-comments,
-    .post-date {
-        margin-bottom: 6px;
-    }
-
-    .company-name {
-        margin-top: 12px;
+    .post-date,
+    .article-read-count,
+    .like,
+    .bookmark {
+        display: inline-block;
+        margin-bottom: 10px;
     }
 }
 
@@ -258,7 +253,7 @@ p {
 }
 
 .search-btn:active {
-    background-color: #009688;
+    background-color: #26A69A;
 }
 
 /*Profireader button*/
@@ -416,6 +411,20 @@ p {
     -moz-box-shadow: 0px 2px 4px 0px #BDBDBD;
 }
 
+@media (max-width: 768px) {
+    .article-thumbnail-header {
+        font-size: 1.5em;
+    }
+
+    .article-thumbnail-subtitle {
+        font-size: 1em;
+    }
+
+    .article-thumbnail-text {
+        font-size: 0.875em!important;
+    }
+}
+
 .img {
     padding-top: 15px;
 }
@@ -460,7 +469,7 @@ p {
     font-size: 1.2em;
     margin-top: 0;
     margin-bottom: 15px;
-    color: #009688;
+    color: #26A69A;
 }
 
 .div-link:hover {
@@ -468,11 +477,11 @@ p {
 }
 
 .company-link:hover {
-    color: #009688;
+    color: #26A69A;
 }
 
 .comment:hover {
-    color: #009688;
+    color: #26A69A;
 }
 
 .main-tag {
@@ -514,7 +523,7 @@ p {
 }
 
 .company-location {
-    color: #009688;
+    color: #26A69A;
 }
 
 .article-thumbnail-text {
@@ -529,7 +538,7 @@ p {
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-top: 30px;
+    margin-top: 15px;
     margin-bottom: 15px;
 }
 
@@ -543,7 +552,7 @@ p {
 }
 
 .event-date, .event-location {
-    color: #009688;
+    color: #26A69A;
     font-size: 0.875em;
 }
 
@@ -584,8 +593,8 @@ p {
 .pagination li a:hover {
     background-color: transparent;
     border-radius: 4px;
-    border: 1px solid #009688;
-    color: #009688;
+    border: 1px solid #26A69A;
+    color: #26A69A;
 }
 
 .pagination .active a,
@@ -595,11 +604,11 @@ p {
 .pagination .active span:focus,
 .pagination .active span:hover {
     z-index: 3;
-    color: #009688;
+    color: #26A69A;
     cursor: default;
     background-color: transparent;
     border-radius: 4px;
-    border: 1px solid #009688;
+    border: 1px solid #26A69A;
 }
 
 /*Footer settings*/
@@ -711,7 +720,7 @@ p {
     margin-bottom: 30px;
     font-weight: 600;
     font-size: 1em;
-    color: #009688;
+    color: #26A69A;
 }
 
 .contact {
@@ -755,7 +764,7 @@ p {
 
 .message:hover,
 .address a:hover {
-    color: #009688;
+    color: #26A69A;
 }
 
 .address{
@@ -764,6 +773,8 @@ p {
 
 #map {
     margin-bottom: 30px;
+    width: 100%;
+    height: 427px;
 }
 
 /*Article settings*/
@@ -801,8 +812,8 @@ p {
 }
 
 .article-text,
-.article-text p {
-    font-size: 1.25em;
+.article-body p {
+    font-size: 1em;
     line-height: 1.5;
     text-align: left;
 }
@@ -816,6 +827,38 @@ p {
 .article-img {
     margin-top: 15px;
     margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+    .article-full,
+    .about-bg {
+        padding: 30px 30px 60px 30px;
+    }
+
+    .div-link {
+        font-size: 1em;
+    }
+
+    .article-headling {
+        font-size: 1.8em;
+    }
+
+    .company-name,
+    .post-date,
+    .article-comments,
+    .article-read-count,
+    .article-author,
+    .bookmark,
+    .like,
+    .article-text,
+    .article-body p,
+    .main-tag a {
+        font-size: 0.875em;
+    }
+
+    .article-description {
+        font-size: 1em;
+    }
 }
 
 /*Pager settings*/
@@ -834,8 +877,8 @@ p {
 .pager li a:hover {
     background-color: transparent;
     border-radius: 100%;
-    border: 1px solid #009688;
-    color: #009688;
+    border: 1px solid #26A69A;
+    color: #26A69A;
     padding: 5px 5px 5px 5px;
     width: 36px;
     height: 36px;
