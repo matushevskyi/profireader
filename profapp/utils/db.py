@@ -1,6 +1,5 @@
 from flask import g
 
-
 # TODO: YG by OZ: remove this file
 def query_filter(*args, **kwargs):
     return g.db.query(*args).filter_by(**kwargs)
@@ -18,3 +17,4 @@ def create_uuid():
 
 def compile(q):
     print(q.statement.compile(compile_kwargs={"literal_binds": True}))
+

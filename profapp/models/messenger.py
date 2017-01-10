@@ -50,6 +50,7 @@ class Socket:
         if isinstance(dict_main, dict):
             dict_main = [dict_main for k in phrases]
 
+
         datas = [{'to_user_id': u.id,
                   'content': '<br/>'.join([TranslateTemplate.translate_and_substitute(
                       template='_NOTIFICATIONS', url='', language=u.lang, allow_html='*', phrase=phrase,
@@ -58,7 +59,7 @@ class Socket:
                                                    'url_profile_to_user': url_for('user.profile', user_id=u.id)}))
                                            for ind, phrase in enumerate(phrases)]),
                   'notification_type': notification_type
-                  } for u in to_users if u not in except_to_user] if phrases else []
+                  } for u in list(set(to_users) - set(except_to_user))] if phrases else []
 
         def ret():
             for d in datas:

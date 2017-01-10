@@ -4,7 +4,7 @@ from profapp.models.materials import Publication
 from profapp.models.portal import MemberCompanyPortal
 from profapp.models.elastic import elasticsearch
 
-from profapp import create_app, load_database
+from profapp import create_app, prepare_connections
 import argparse
 
 def recreate_documents():
@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     app = create_app(apptype='profi')
     with app.app_context():
-        load_database(app.config['SQLALCHEMY_DATABASE_URI'])()
+        prepare_connections(app)()
 
         if args.whattodo == 'delete_elastic_indexes':
             delete_indexes()

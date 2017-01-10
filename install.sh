@@ -228,10 +228,11 @@ cat /etc/hosts" sudo cron_files
     }
 
 function menu_cron_files {
+    files=$(/bin/ls ./conf/cron | tr '\n' ' ')
     conf_comm "mkdir /var/log/profi
 mkdir /run/profi
 rm /etc/cron.d/profi_*
-for file in `ls conf/cron/`
+for file in $files
 do
   cat conf/cron/\$file | sed 's#/var/www/#$PWD/#g' > /etc/cron.d/profi_\$file
 done

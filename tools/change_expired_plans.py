@@ -7,7 +7,7 @@ from flask import g, url_for
 
 from sqlalchemy.sql import text, and_
 
-from profapp import create_app, load_database
+from profapp import create_app, prepare_connections
 import argparse
 import datetime
 
@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     with app.app_context():
 
-        load_database(app.config['SQLALCHEMY_DATABASE_URI'])()
+        prepare_connections(app)()
 
         memberships = g.db.query(MemberCompanyPortal) \
             .join(MembershipPlanIssued,
@@ -29,36 +29,42 @@ if __name__ == '__main__':
                         MembershipPlanIssued.calculated_stopping_tm <= datetime.datetime.utcnow())).all()
 
         if len(memberships):
-            print("%s memberships with expired plans found" % (len(memberships),))
+            g.log('change_expired_plan', "%s memberships with expired plans found" % (len(memberships),))
             for membership in memberships:
-                print('getting new plan for (id, company, portal)',
+                g.log('change_expired_plan', 'getting new plan for (id, company, portal)',
                       membership.id, membership.company_id, membership.portal_id)
 
                 try:
                     membership.current_membership_plan_issued.stop()
 
                     if membership.requested_membership_plan_issued and membership.requested_membership_plan_issued.confirmed:
-                        print('starting requested plan', membership.requested_membership_plan_issued.id)
+                        g.log('change_expired_plan',
+                              ['starting requested plan', membership.requested_membership_plan_issued.id])
                         membership.current_membership_plan_issued = membership.requested_membership_plan_issued
-                        membership.current_membership_plan_issued.start()
+                        membership.current_membership_plan_issued.start(inform_portal='launched',
+                                                                        inform_company='launched')
                         membership.requested_membership_plan_issued = None
                         membership.request_membership_plan_issued_immediately = False
                     else:
                         if membership.requested_membership_plan_issued:
-                            print('requested plan is still not confirmed. starting instead default plan')
+                            g.log('change_expired_plan',
+                                  'requested plan is still not confirmed. starting instead default plan')
                             membership.request_membership_plan_issued_immediately = True
                             membership.current_membership_plan_issued = membership.create_issued_plan()
-                            membership.current_membership_plan_issued.start()
+                            membership.current_membership_plan_issued.start(inform_portal='launched',
+                                                                            inform_company='launched')
                         else:
-                            print('no new plan requested. starting default plan')
+                            g.log('change_expired_plan', 'no new plan requested. starting default plan')
                             membership.current_membership_plan_issued = membership.create_issued_plan()
-                            membership.current_membership_plan_issued.start()
+                            membership.current_membership_plan_issued.start(inform_portal='launched',
+                                                                            inform_company='launched')
                             membership.requested_membership_plan_issued = None
                             membership.request_membership_plan_issued_immediately = False
 
                     membership.save()
                     g.db.commit()
+
                 except Exception as e:
                     print(e)
         else:
-            print("no memberships with expired plans found")
+            g.log('change_expired_plan', "no memberships with expired plans found")

@@ -6,7 +6,7 @@ import werkzeug
 from flask import g
 from sqlalchemy import text, and_
 
-from profapp.utils import db
+from profapp import utils
 from .pr_base import PRBase
 from ..models.company import Company, UserCompany, MemberCompanyPortal
 from ..models.materials import Material, Publication
@@ -256,7 +256,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
     @staticmethod
     def get_portals_where_company_is_member(company):
         """This method return all portals-partners current company"""
-        return [memcomport.portal for memcomport in db.utils.db.query_filter(MemberCompanyPortal, company_id=company.id).all()]
+        return [memcomport.portal for memcomport in utils.db.query_filter(MemberCompanyPortal, company_id=company.id).all()]
 
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
@@ -487,7 +487,7 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
             value = Company.get(value)
         if key == 'employment_id':
             key = 'employment'
-            value = db.utils.db.query_filter(UserCompany, id=value).first()
+            value = utils.db.query_filter(UserCompany, id=value).first()
         return key, value
 
     STATUSES = UserCompany.STATUSES

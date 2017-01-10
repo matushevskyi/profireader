@@ -1,6 +1,5 @@
 import re
 
-
 def fileUrl(id, down=False, if_no_file=None):
     from config import Config
     if not id:
@@ -217,3 +216,7 @@ def profile(func):
         finally:
             profile.print_stats(sort='time')
     return profiled_func
+
+
+def do_nothing(*args, **kwargs):
+    pass

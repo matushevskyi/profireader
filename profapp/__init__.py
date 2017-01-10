@@ -16,7 +16,11 @@ import os.path
 from profapp import utils
 from flask.sessions import SessionInterface
 from beaker.middleware import SessionMiddleware
-from .utils.jinja import update_jinja_engine, get_url_adapter
+from .utils.jinja import *
+from .utils.db import *
+from .utils.email import *
+from .utils.session import *
+from .utils.redirect_url import *
 import json
 from functools import wraps
 from sqlalchemy import event
@@ -112,23 +116,26 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
     # strong_reference_session(Session())
     return db_session
 
-
-def setup_logger(apptype, host='fluid.profi', port=24224):
-    from fluent import sender
-    g.logger = sender.FluentSender(apptype, host=host, port=port)
-    g.log = lambda *args: g.logger.emit(*args)
+#
+# def setup_logger(apptype, host='fluid.profi', port=24224):
 
 
-def load_database(db_config, echo=False):
+
+def prepare_connections(app, echo=False):
+    # ['SQLALCHEMY_DATABASE_URI']
     def load_db(autocommit=False, autoflush=False, echo=echo):
         from sqlalchemy import event
-        db_session = db_session_func(db_config, autocommit, autoflush, echo)
+        db_session = db_session_func(app.config['SQLALCHEMY_DATABASE_URI'], autocommit, autoflush, echo)
         g.db = db_session
         g.req = req
         g.get_url_adapter = get_url_adapter
         g.fileUrl = utils.fileUrl
         g.after_commit_models = []
         g.functions_to_call_after_commit = {}
+
+        from fluent import sender
+        g.logger = sender.FluentSender(app.apptype, host=app.config['FLUENT_LOGGER_HOST'], port=app.config['FLUENT_LOGGER_PORT'])
+        g.log = lambda *args: g.logger.emit(*args) and (print(*args) if echo else utils.do_nothing())
 
         event.listen(db_session, 'after_flush', on_after_flush)
 
@@ -272,10 +279,11 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.debug = app.config['DEBUG'] if 'DEBUG' in app.config else False
     app.testing = app.config['TESTING'] if 'TESTING' in app.config else False
+    app.apptype = apptype
 
-    app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))
+    app.before_request(prepare_connections(app))
     app.before_request(lambda: load_user(apptype))
-    app.before_request(lambda: setup_logger(apptype, host='fluid.profi', port=24224))
+    # app.before_request(lambda: setup_logger(apptype, host='fluid.profi', port=24224))
     app.before_request(setup_authomatic(app))
 
     def add_map_headers_to_less_files(response):

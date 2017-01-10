@@ -81,7 +81,7 @@
 
         $scope.$$translate = {{ translates('RequestSetMembershipPlanController') | safe }};
 
-        $scope.url_request_membership_plan = {{ raw_url_for('portal.request_membership_plan') | safe }};
+        $scope.url_request_membership_plan = {{ raw_url_for('company.request_membership_plan') | safe }};
         $scope.url_set_membership_plan = {{ raw_url_for('portal.set_membership_plan') | safe }};
 
         $scope.membership_id = membership_id;
@@ -100,10 +100,20 @@
                 var published =
                         $scope.data.select['publications']['by_status_visibility']['PUBLISHED'][pub_type.toUpperCase()];
                 if (planed_count !== false) {
-                    holded = published + holded - planed_count;
-                    holded = holded < 0 ? 0 : holded;
-                    holded = planed_count < 0 ? 0 : holded;
-                    published = published - holded;
+                    if (planed_count < 0) {
+                        published = published + holded;
+                        holded = 0;
+                    }
+                    else if (planed_count == 0) {
+                        holded = published + holded;
+                        published = 0;
+                    }
+                    else {
+                        var total = published + holded;
+                        holded = total - planed_count;
+                        holded = holded < 0 ? 0 : holded;
+                        published = total - holded;
+                    }
                 }
                 return '&nbsp;(<nothing class="publication-fg-STATUS-PUBLISHED">' + published + ',</nothing><nothing class="publication-fg-STATUS-HOLDED">' + holded + '</nothing>)';
             }

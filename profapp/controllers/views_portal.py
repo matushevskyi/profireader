@@ -25,7 +25,6 @@ from ..models.translate import TranslateTemplate
 @portal_bp.route('/<string:portal_id>/profile/', methods=['GET'])
 # @check_right(EditPortalRight, ['company_id'])
 def profile(company_id=None, portal_id=None):
-
     if portal_id:
         portal = Portal.get(portal_id)
         company = portal.own_company
@@ -239,28 +238,6 @@ def plans_load(json, portal_id):
     return client_side()
 
 
-@portal_bp.route('/membership/<string:membership_id>/request_membership_plan/', methods=['OK'])
-def request_membership_plan(json, membership_id):
-    action = g.req('action', allowed=['load', 'save', 'validate'])
-    membership = MemberCompanyPortal.get(membership_id)
-    if action == 'load':
-        return membership.get_client_side_dict_for_plan()
-    else:
-        immediately = True if json['membership']['request_membership_plan_issued_immediately'] else False
-        requested_plan_id = json.get('selected_by_user_plan_id', None)
-        if action == 'validate':
-            ret = PRBase.DEFAULT_VALIDATION_ANSWER()
-            # if we can apply it immediately and it have to be confirmed by portal company owner
-            if (requested_plan_id is True and not membership.requested_membership_plan_issued.auto_apply) \
-                    or (requested_plan_id is not False and requested_plan_id is not True and
-                            not MembershipPlan.get(requested_plan_id).auto_apply and
-                                requested_plan_id != membership.portal.default_membership_plan_id):
-                ret['warnings']['general'] = 'plan must be confirmed by company owner before activation'
-            return ret
-        else:
-            return membership.requested_new_plan_issued(requested_plan_id, immediately).portal_memberee_grid_row()
-
-
 @portal_bp.route('/membership/<string:membership_id>/set_membership_plan/', methods=['OK'])
 def set_membership_plan(json, membership_id):
     action = g.req('action', allowed=['load', 'save', 'validate'])
@@ -294,7 +271,7 @@ def banners_load(json, portal_id):
     if 'action_name' in json:
         if json['action_name'] == 'create':
             place = utils.db.query_filter(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id,
-                                 place=json['row']['place']).one()
+                                          place=json['row']['place']).one()
             newrow = PortalAdvertisment(portal_id=portal.id, html=place.default_value if place.default_value else '',
                                         place=json['row']['place']).save()
             return {'grid_action': 'refresh_row', 'row': newrow.get_client_side_dict()}
@@ -304,7 +281,8 @@ def banners_load(json, portal_id):
             return {'grid_action': 'delete_row'}
         elif json['action_name'] == 'set_default':
             adv = PortalAdvertisment.get(json['id'])
-            place = utils.db.query_filter(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id, place=adv.place).one()
+            place = utils.db.query_filter(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id,
+                                          place=adv.place).one()
             adv.html = place.default_value
             adv.save()
             return {}
@@ -323,7 +301,6 @@ def save_portal_banner(json, portal_id):
     advertisment.html = json.get('editBanners')['html']
     advertisment.save()
     return advertisment.get_client_side_dict()
-
 
 
 @portal_bp.route('/membership/<string:membership_id>/set_tags/', methods=['OK'])
@@ -394,10 +371,12 @@ def membership_change_status(json, membership_id):
                 not membership.current_membership_plan_issued.started_tm:
             membership.current_membership_plan_issued.start()
 
-        membership.save().notify_company_about_portal_memberee(
+        membership.save()
+
+        membership.notifications_for_company_about_portal_memberee(
             "Administrator of portal %s changed status of your company %s membership to %s" %
             (utils.jinja.link_external(), utils.jinja.link_company_profile(),
-             utils.jinja.link('url_company_portal_memberees', membership.status, True),))
+             utils.jinja.link('url_company_portal_memberees', membership.status, True),))()
 
     return membership.company_member_grid_row()
 
@@ -468,7 +447,8 @@ def publications_load(json, portal_id):
     portal = Portal.get(portal_id)
     company = portal.own_company
 
-    publications = utils.db.query_filter(Publication).join(PortalDivision, PortalDivision.id == Publication.portal_division_id). \
+    publications = utils.db.query_filter(Publication).join(PortalDivision,
+                                                           PortalDivision.id == Publication.portal_division_id). \
         filter(PortalDivision.portal_id == portal.id).order_by(desc(Publication.publishing_tm)).all()
 
     # subquery = Company.subquery_portal_articles(portal.id, json.get('filter'), json.get('sort'))

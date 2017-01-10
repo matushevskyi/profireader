@@ -1,7 +1,7 @@
 import sys
 sys.path.append('..')
 
-from profapp import create_app, load_database
+from profapp import create_app, prepare_connections
 import socketio, eventlet
 import re
 from profapp.models.messenger import Contact, Message, Notification
@@ -28,7 +28,7 @@ ctx = app.app_context()
 
 with controlled_execution():
     print('connecting to database')
-    load_database(app.config['SQLALCHEMY_DATABASE_URI'])(echo=True)
+    prepare_connections(app)(echo=True)
 
 sio = socketio.Server(cookie='prsio')
 
