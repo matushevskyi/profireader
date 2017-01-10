@@ -258,7 +258,7 @@
         </div>
         <div class="modal-body">
             <h4>{{ _('You are going to select tags for company `%(data.membership.company.name)s` at portal
-            `%(data.membership.portal.name)s`')}}</h4>
+                `%(data.membership.portal.name)s`')}}</h4>
             <hr/>
             <div class="selected_tags">
                 <ui-select ng-model="data.membership.tags" class="form-control" sortable="true"
@@ -430,13 +430,16 @@
         </div>
 
         <div class="modal-footer">
-            <button class="btn btn-primary" type="button"
-                    popover-placement="left"
-                    popover-append-to-body="true"
-                    pr-validation-answer="data_validation:general"
-                    ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">
-                {{ ::_(request_set_t_f?'Request plan':'Set plan') }}
-            </button>
+            <div class="pr-validation-button-wrapper"
+                 pr-validation-answer="data_validation:general"
+                 popover-placement="left"
+                 popover-append-to-body="true">
+                <button class="btn btn-primary" type="button"
+                        ng-click="$af.save(data)"
+                        ng-disabled="!$af.isActionAllowed(data, 'save') ">
+                    {{ ::_(request_set_t_f?'Request plan':'Set plan') }}
+                </button>
+            </div>
             <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>
         </div>
     </div>
