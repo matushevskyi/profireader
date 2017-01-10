@@ -206,16 +206,16 @@ class User(Base, UserMixin, PRBase):
 
     @staticmethod
     def get_unread_message_count(user_id, contact_id=None):
-        return utils.db.execute_function("message_unread_count('%s', %s)" % (
+        return utils.db.execute_function_0("message_unread_count('%s', %s)" % (
             user_id, 'NULL' if contact_id is None else ("'" + contact_id + "'")))
 
     @staticmethod
     def get_unread_notification_count(user_id):
-        return utils.db.execute_function("notification_unread_count('%s')" % (user_id,))
+        return utils.db.execute_function_0("notification_unread_count('%s')" % (user_id,))
 
     @staticmethod
     def get_contact_request_count(user_id):
-        return utils.db.execute_function("contact_request_count('%s')" % (user_id,))
+        return utils.db.execute_function_0("contact_request_count('%s')" % (user_id,))
 
     def gravatar(self, size=100, default='identicon', rating='g'):
         if request.is_secure:

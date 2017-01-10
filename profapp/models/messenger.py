@@ -41,6 +41,10 @@ class Socket:
 
     @staticmethod
     def prepare_notifications(to_users, notification_type, phrases, dict_main={}, except_to_user=[]):
+
+        if not phrases:
+            return utils.do_nothing
+
         from_user_dict = {'from_user': g.user.get_client_side_dict(fields='full_name'),
                           'url_profile_from_user': url_for('user.profile', user_id=g.user.id)} if getattr(g, 'user',
                                                                                                           None) else {}

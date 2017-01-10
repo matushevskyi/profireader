@@ -560,8 +560,12 @@ class MembershipPlanIssued(Base, PRBase):
 
         old_count = self.member_company_portal.get_publication_count()
         for vis in Publication.VISIBILITIES:
-            utils.db.execute_function("membership_hold_unhold_publications('%s', '%s')" %
-                                      (self.member_company_portal_id, vis))
+            for p_id in utils.db.execute_function("membership_hold_unhold_publications('%s', '%s')" %
+                                      (self.member_company_portal_id, vis)):
+                p = Publication.get(p_id)
+                p.md_tm = None
+                p.save()
+
         new_count = self.member_company_portal.get_publication_count()
 
         phrases = []

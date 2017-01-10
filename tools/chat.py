@@ -66,16 +66,16 @@ def check_user_id(environ):
 
 def get_unread(user_id, chatroom_ids=[]):
     to_send = {
-        'messages': int(float(db.execute_function("message_unread_count('%s', NULL)" % (user_id,)))),
+        'messages': int(float(db.execute_function_0("message_unread_count('%s', NULL)" % (user_id,)))),
         'messages_per_chat_room': {},
-        'contacts': int(float(db.execute_function("contact_request_count('%s')" % (user_id,)))),
-        'notifications': int(float(db.execute_function("notification_unread_count('%s')" % (user_id,))))
+        'contacts': int(float(db.execute_function_0("contact_request_count('%s')" % (user_id,)))),
+        'notifications': int(float(db.execute_function_0("notification_unread_count('%s')" % (user_id,))))
 
     }
 
     for chatroom_id in chatroom_ids:
         to_send['messages_per_chat_room'][chatroom_id] = int(float(
-            db.execute_function("message_unread_count('%s', '%s')" % (user_id, chatroom_id))))
+            db.execute_function_0("message_unread_count('%s', '%s')" % (user_id, chatroom_id))))
     return to_send
 
 

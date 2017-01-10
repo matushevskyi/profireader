@@ -85,20 +85,20 @@ def materials_load(json, company_id):
             }
 
 
-@company_bp.route('/update_material_status/<string:company_id>/<string:article_id>', methods=['OK'])
-@check_right(UserIsEmployee, ['company_id'])
-def update_material_status(json, company_id, article_id):
-    allowed_statuses = ArticleCompany.STATUSES.keys()
-    # ARTICLE_STATUS_IN_COMPANY.can_user_change_status_to(json['new_status'])
-
-    ArticleCompany.update_article(
-        company_id=company_id,
-        article_id=article_id,
-        **{'status': json['new_status']})
-
-    return {'article_new_status': json['new_status'],
-            'allowed_statuses': allowed_statuses,
-            'status': 'ok'}
+# @company_bp.route('/update_material_status/<string:company_id>/<string:article_id>', methods=['OK'])
+# @check_right(UserIsEmployee, ['company_id'])
+# def update_material_status(json, company_id, article_id):
+#     allowed_statuses = ArticleCompany.STATUSES.keys()
+#     # ARTICLE_STATUS_IN_COMPANY.can_user_change_status_to(json['new_status'])
+#
+#     ArticleCompany.update_article(
+#         company_id=company_id,
+#         article_id=article_id,
+#         **{'status': json['new_status']})
+#
+#     return {'article_new_status': json['new_status'],
+#             'allowed_statuses': allowed_statuses,
+#             'status': 'ok'}
 
 
 @company_bp.route('/<string:company_id>/employees/', methods=['GET'])

@@ -184,6 +184,12 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
             ACTIONS['DELETE']: delete_rights,
             # ACTIONS['EDIT']: edit_rights,
         },
+        STATUSES['HOLDED']: {
+            # ACTIONS['PUBLISH']: publish_rights,
+            ACTIONS['UNPUBLISH']: unpublish_rights,
+            ACTIONS['DELETE']: delete_rights,
+            # ACTIONS['EDIT']: edit_rights,
+        },
         STATUSES['PUBLISHED']: {
             ACTIONS['REPUBLISH']: republish_rights,
             ACTIONS['UNPUBLISH']: unpublish_rights,
