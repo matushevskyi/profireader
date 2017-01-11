@@ -1,6 +1,6 @@
 from flask import render_template, g
 
-from profapp.models.portal import PortalDivision, Portal
+from profapp.models.portal import PortalDivision, Portal, MemberCompanyPortal
 
 from .blueprints_declaration import article_bp
 from .request_wrapers import check_right
@@ -146,10 +146,13 @@ def submit_publish(json, article_action):
 
     if action == 'load':
         portal = Portal.get(json['portal']['id'])
+        membership = MemberCompanyPortal.get_by_portal_id_company_id(portal.id, company.id)
         ret = {
             'publication': publication.get_client_side_dict(),
             'company': company.get_client_side_dict(),
-            'portal': portal.get_client_side_dict()
+            'membership': membership.get_client_side_dict(fields = 'current_membership_plan_issued'),
+            'publication_count': membership.get_publication_count(),
+            'portal': portal.get_client_side_dict(fields = 'id,name,tags')
         }
         ret['portal']['divisions'] = PRBase.get_ordered_dict(
             PublishUnpublishInPortal().get_active_division(portal.divisions))
@@ -159,6 +162,7 @@ def submit_publish(json, article_action):
 
         # publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
         publication.portal_division = PortalDivision.get(json['publication']['portal_division_id'], returnNoneIfNotExists=True)
+        publication.visibility = json['publication']['visibility']
         # publication.division = PortalDivision.get(json['publication']['portal_division_id'])
         publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
         publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))

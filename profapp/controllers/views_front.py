@@ -431,7 +431,7 @@ def article_details(portal, publication_id, publication_title):
     if article_visibility is True:
         publication.add_to_read()
     else:
-        utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id)
+        utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id, publication_title=publication_title)
 
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.name)

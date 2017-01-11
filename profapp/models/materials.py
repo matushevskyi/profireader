@@ -353,7 +353,7 @@ class Publication(Base, PRBase, PRElasticDocument):
         if not utils.db.query_filter(UserCompany, user_id=getattr(g.user, 'id', None),
                             status=UserCompany.STATUSES['ACTIVE']).filter(
                     UserCompany.company_id == utils.db.query_filter(Portal.company_owner_id, id=portal_id)).count():
-            visibilities.pop(Publication.VISIBILITIES['CONFIDENTIAL'])
+            # visibilities.pop(Publication.VISIBILITIES['CONFIDENTIAL'])
             employer = False
         return visibilities.keys(), employer
 
@@ -369,12 +369,12 @@ class Publication(Base, PRBase, PRElasticDocument):
                    dict(redirect_url='//' + Config.MAIN_DOMAIN + '/reader/buy_subscription',
                         message='This article can read only by users which bought subscription on this portal.',
                         context='buy subscription'),
-                   Publication.VISIBILITIES['CONFIDENTIAL']:
-                       lambda portal_id=self.portal_division.portal.id: True if
-                       Publication.articles_visibility_for_user(portal_id)[1] else
-                       dict(redirect_url='//' + Config.MAIN_DOMAIN + '/auth/login_signup',
-                            message='This article can read only employees of this company.',
-                            context='login as employee')
+                   # Publication.VISIBILITIES['CONFIDENTIAL']:
+                   #     lambda portal_id=self.portal_division.portal.id: True if
+                   #     Publication.articles_visibility_for_user(portal_id)[1] else
+                   #     dict(redirect_url='//' + Config.MAIN_DOMAIN + '/auth/login_signup',
+                   #          message='This article can read only employees of this company.',
+                   #          context='login as employee')
                    }
         return actions[self.visibility]()
 
@@ -426,6 +426,9 @@ class Publication(Base, PRBase, PRElasticDocument):
 
         if not self.publishing_tm:
             ret['errors']['publishing_tm'] = 'Please select publication date'
+
+        if not self.visibility in self.VISIBILITIES:
+            ret['errors']['visibility'] = 'Please select publication visibility'
 
         if not self.portal_division_id and not self.portal_division:
             ret['errors']['portal_division_id'] = 'Please select portal division'
