@@ -1,19 +1,14 @@
 /*Common settings*/
 
-@media (max-width: 480px){
+@media (max-width: 1200px){
     .company-name,
     .article-comments,
-    .post-date {
-        display: block;
-    }
-    .company-name,
-    .article-comments,
-    .post-date {
-        margin-bottom: 6px;
-    }
-
-    .company-name {
-        margin-top: 12px;
+    .post-date,
+    .article-read-count,
+    .like,
+    .bookmark {
+        display: inline-block;
+        margin-bottom: 10px;
     }
 }
 
@@ -29,12 +24,67 @@ a:hover {
     text-decoration: none;
 }
 
+.tag-selected a{
+    color: #fff;
+}
+
+.search_highlighted {
+    color: #26A69A;
+}
+
+.tag-selected {
+    background-color: #26A69A!important;
+    display: inline-block;
+    font-size: 0.875em;
+    font-weight: 400;
+    color: #fff;
+}
+
+.tag-selected:hover {
+    background-color: #26A69A;
+}
+
+.tag-not-selected {
+    font-size: 0.875em;
+}
+
+p {
+    text-align: left!important;
+    line-height: 1.5;
+}
+
+.bg-contain {
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
 /*Offcanvas menu settings*/
 
 .tag-menu {
     width: 300px;
-    background-color: #263238;
+    background-color: #37474F;
     border: 0;
+}
+
+.tag-menu li a,
+.label {
+    color: #fff;
+    font-weight: 400;
+}
+
+.navmenu-inverse .navmenu-nav li {
+    padding: 6px 15px 6px 15px;
+    cursor: pointer;
+}
+
+.navmenu-inverse .navmenu-nav li:hover {
+    background-color: #26A69A;
+
+}
+
+.navmenu-inverse .navmenu-nav li .tag-selected {
+    background-color: #26A69A;
 }
 
 .offcanvas-btn {
@@ -43,13 +93,13 @@ a:hover {
 
 /*Header settings*/
 
-@media(max-width: 1220px) {
+@media(max-width: 1160px) {
     .navbar-header {
         float: none;
     }
 
     .navbar-left {
-        float: none !important;
+        float: none!important;
     }
 
     .navbar-toggle {
@@ -160,10 +210,15 @@ a:hover {
     border: 0;
 }
 
-.navbar-nav li a{
+.navbar-default .navbar-nav>li>a {
     padding-top: 20px;
     padding-bottom: 21px;
-    font-weight: 400;
+    font-size: 0.875em;
+    color: #757575;
+}
+
+.navbar-default .navbar-nav>li>a:hover {
+    color: #26A69A;
 }
 
 /*Search form*/
@@ -198,7 +253,7 @@ a:hover {
 }
 
 .search-btn:active {
-    background-color: #009688;
+    background-color: #26A69A;
 }
 
 /*Profireader button*/
@@ -356,6 +411,20 @@ a:hover {
     -moz-box-shadow: 0px 2px 4px 0px #BDBDBD;
 }
 
+@media (max-width: 768px) {
+    .article-thumbnail-header {
+        font-size: 1.5em;
+    }
+
+    .article-thumbnail-subtitle {
+        font-size: 1em;
+    }
+
+    .article-thumbnail-text {
+        font-size: 0.875em!important;
+    }
+}
+
 .img {
     padding-top: 15px;
 }
@@ -400,7 +469,7 @@ a:hover {
     font-size: 1.2em;
     margin-top: 0;
     margin-bottom: 15px;
-    color: #009688;
+    color: #26A69A;
 }
 
 .div-link:hover {
@@ -408,41 +477,29 @@ a:hover {
 }
 
 .company-link:hover {
-    color: #009688;
+    color: #26A69A;
 }
 
 .comment:hover {
-    color: #009688;
+    color: #26A69A;
 }
 
 .main-tag {
     display: inline-block;
     font-size: 0.875em;
     font-weight: 400;
-    background-color: #26A69A;
+    background-color: #607D8B;
     margin-right: 15px;
     margin-top: 15px;
     color: #fff;
 }
 
 .main-tag:hover {
-    background-color: #009688;
+    background-color: #26A69A;
     text-decoration-line: none;
 }
 
 .main-tag a {
-    color: #fff;
-}
-
-.tag-selected {
-    background-color: #E53935;
-}
-
-.tag-selected:hover {
-    background-color: #C62828;
-}
-
-.tag-selected a {
     color: #fff;
 }
 
@@ -466,7 +523,7 @@ a:hover {
 }
 
 .company-location {
-    color: #009688;
+    color: #26A69A;
 }
 
 .article-thumbnail-text {
@@ -476,12 +533,12 @@ a:hover {
     height: auto;
     margin: 0 auto;
     font-size: 1em;
-    line-height: 1.6;
+    line-height: 1.5;
     -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-top: 30px;
+    margin-top: 15px;
     margin-bottom: 15px;
 }
 
@@ -495,7 +552,7 @@ a:hover {
 }
 
 .event-date, .event-location {
-    color: #009688;
+    color: #26A69A;
     font-size: 0.875em;
 }
 
@@ -536,8 +593,8 @@ a:hover {
 .pagination li a:hover {
     background-color: transparent;
     border-radius: 4px;
-    border: 1px solid #009688;
-    color: #009688;
+    border: 1px solid #26A69A;
+    color: #26A69A;
 }
 
 .pagination .active a,
@@ -547,11 +604,11 @@ a:hover {
 .pagination .active span:focus,
 .pagination .active span:hover {
     z-index: 3;
-    color: #009688;
+    color: #26A69A;
     cursor: default;
     background-color: transparent;
     border-radius: 4px;
-    border: 1px solid #009688;
+    border: 1px solid #26A69A;
 }
 
 /*Footer settings*/
@@ -663,7 +720,7 @@ a:hover {
     margin-bottom: 30px;
     font-weight: 600;
     font-size: 1em;
-    color: #009688;
+    color: #26A69A;
 }
 
 .contact {
@@ -707,7 +764,7 @@ a:hover {
 
 .message:hover,
 .address a:hover {
-    color: #009688;
+    color: #26A69A;
 }
 
 .address{
@@ -716,6 +773,8 @@ a:hover {
 
 #map {
     margin-bottom: 30px;
+    width: 100%;
+    height: 427px;
 }
 
 /*Article settings*/
@@ -749,11 +808,14 @@ a:hover {
     font-weight: 600;
     color: #424242;
     margin-bottom: 15px;
+    text-align: left;
 }
 
-.article-text {
-    font-size: 1.25em;
+.article-text,
+.article-body p {
+    font-size: 1em;
     line-height: 1.5;
+    text-align: left;
 }
 
 .article-main-img {
@@ -765,6 +827,38 @@ a:hover {
 .article-img {
     margin-top: 15px;
     margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+    .article-full,
+    .about-bg {
+        padding: 30px 30px 60px 30px;
+    }
+
+    .div-link {
+        font-size: 1em;
+    }
+
+    .article-headling {
+        font-size: 1.8em;
+    }
+
+    .company-name,
+    .post-date,
+    .article-comments,
+    .article-read-count,
+    .article-author,
+    .bookmark,
+    .like,
+    .article-text,
+    .article-body p,
+    .main-tag a {
+        font-size: 0.875em;
+    }
+
+    .article-description {
+        font-size: 1em;
+    }
 }
 
 /*Pager settings*/
@@ -783,8 +877,8 @@ a:hover {
 .pager li a:hover {
     background-color: transparent;
     border-radius: 100%;
-    border: 1px solid #009688;
-    color: #009688;
+    border: 1px solid #26A69A;
+    color: #26A69A;
     padding: 5px 5px 5px 5px;
     width: 36px;
     height: 36px;

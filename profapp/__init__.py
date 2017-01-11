@@ -114,7 +114,9 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
 
 
 def setup_logger(apptype, host='fluid.profi', port=24224):
-    from fluent import sender
+    g.log = lambda *args: print(args)
+    return
+    # from fluent import sender
     g.logger = sender.FluentSender(apptype, host=host, port=port)
     g.log = lambda *args: g.logger.emit(*args)
 
