@@ -120,7 +120,6 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
 # def setup_logger(apptype, host='fluid.profi', port=24224):
 
 
-
 def prepare_connections(app, echo=False):
     # ['SQLALCHEMY_DATABASE_URI']
     def load_db(autocommit=False, autoflush=False, echo=echo):
