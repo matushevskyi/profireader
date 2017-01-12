@@ -314,13 +314,11 @@ def membership_change_status(json, membership_id):
         membership.set_memberee_status(MembershipRights.STATUS_FOR_ACTION[json.get('action')])
     return membership.portal_memberee_grid_row()
 
-
 @company_bp.route('/<string:company_id>/join_to_portal/', methods=['OK'])
 @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def join_to_portal(json, company_id):
     return MemberCompanyPortal.apply_company_to_portal(company_id=company_id, portal_id=json['portal_id'])\
         .portal_memberee_grid_row()
-
 
 
 @company_bp.route('/membership/<string:membership_id>/request_membership_plan/', methods=['OK'])

@@ -99,9 +99,13 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         if (col.type === 'actions') {
                             col.onclick = 'grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')';
                         }
+                        else if (col.type === 'icons') {
+                            attributes_for_cell += ' ng-click="grid.onclick_without_bubbling($event, grid.appScope.' + col.onclick + ', row.entity.id, undefined, row.entity, \'' + col['name'] + '\')"';
+                        }
                         else if (col.type !== 'editable') {
                             attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\')"';
                         }
+
                     }
 
 
@@ -131,7 +135,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                                 ' title="{{ grid.appScope._((enabled === true)?(action_name + \' grid action\'):enabled) }}">{{ grid.appScope._(action_name + \' grid action\') }}</button></div>';
                         case 'icons':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<i ng-class="{disabled: !icon_enabled}" ' +
-                                'class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ icon_name }}" ng-repeat="(icon_name, icon_enabled) in ' + cell_raw_value + '" ng-click="grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ icon_name }}\', row.entity, \'' + col['name'] + '\')" title="{{ grid.appScope._(\'grid icon \' + icon_name) }}"></i></div>';
+                                'class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ icon_name }}" ng-repeat="(icon_name, icon_enabled) in ' + cell_raw_value + '" ng-click="grid.onclick_without_bubbling($event, grid.appScope.' + col.onclick + ', row.entity.id, \'{{ icon_name }}\', row.entity, \'' + col['name'] + '\')" title="{{ grid.appScope._(\'grid icon \' + icon_name) }}"></i></div>';
                         case 'editable':
                             if (col.multiple === true && col.rule) {
                                 return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ng-if="grid.appScope.' + col.rule + '=== false" ' + cell_title + '">' + prefix_img + '' + cell_value + '</div><div ng-if="grid.appScope.' + col.rule + '"><div ng-click="' + col.modal + '" ' + cell_title + '" id=\'grid_{{row.entity.id}}\'>' + cell_value + '</div></div>';
@@ -171,6 +175,17 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 return Object.keys(array).length
             };
 
+            gridApi.grid['onclick_without_bubbling'] = function () {
+                var args = Array.prototype.slice.call(arguments);
+                var $event = args.shift();
+                var func = args.shift();
+                if ($event.stopPropagation) $event.stopPropagation();
+                if ($event.preventDefault) $event.preventDefault();
+                $event.cancelBubble = true;
+                $event.returnValue = false;
+                return func.apply(this, args);
+            };
+
             gridApi.grid['searchItemGrid'] = function (col) {
                 //highLightSubstring(col.filter.text, 'ui-grid-canvas',col.field)
                 gridApi.grid.all_grid_data.paginationOptions.pageNumber = 1;
@@ -179,7 +194,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             };
 
             gridApi.grid['grid_change_row'] = function (new_row) {
-                console.log(new_row);
                 $.each(gridApi.grid.options.data, function (index, old_row) {
                     if (old_row['id'] === new_row['id']) {
                         if (new_row.hasOwnProperty('replace_id')) {

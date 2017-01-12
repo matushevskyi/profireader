@@ -571,8 +571,7 @@ class MembersOrMembershipBase(BaseRightsInProfireader):
         'RESTORE': 'RESTORE',
         'REJECT': 'REJECT',
         'SUSPEND': 'SUSPEND',
-        'ENLIST': 'ENLIST',
-        'ALLOW': 'ALLOW'
+        'ENLIST': 'ENLIST'
     }
 
     STATUS_FOR_ACTION = {
@@ -605,10 +604,10 @@ class MembersOrMembershipBase(BaseRightsInProfireader):
 class MembersRights(MembersOrMembershipBase):
     ACTIONS_FOR_STATUSES = {
         MembersOrMembershipBase.STATUSES['ACTIVE']: {
-            MembersOrMembershipBase.ACTIONS['ALLOW']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
-                'member': lambda kwargs: 'You can`t allow portal of your own company!' if
-                kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
+            # MembersOrMembershipBase.ACTIONS['ALLOW']: {
+            #     'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
+            #     'member': lambda kwargs: 'You can`t allow portal of your own company!' if
+            #     kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
             MembersOrMembershipBase.ACTIONS['REJECT']: {
                 'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
                 'member': lambda kwargs: 'You can`t reject portal of your own company!' if

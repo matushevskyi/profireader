@@ -916,6 +916,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         if rights:
             self.rights = rights
 
+        return self
+
     def has_rights(self, rightname):
         if self.portal.own_company.id == self.company_id:
             return True

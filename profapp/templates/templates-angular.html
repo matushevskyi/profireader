@@ -189,9 +189,9 @@
 
             var available = $scope.data.publication_count['by_status_visibility']['PUBLISHED'][visibility_type.toUpperCase()];
             var current = $scope.data.membership.current_membership_plan_issued['publication_count_' + visibility_type.toLowerCase()];
-            if (available<0) return true;
-            if ($scope.original_article && $scope.original_article.visibility ===  visibility_type) return true;
-            return available>current?true:false;
+            if (available < 0) return true;
+            if ($scope.original_article && $scope.original_article.visibility === visibility_type) return true;
+            return available > current ? true : false;
         };
 
 
@@ -555,4 +555,70 @@
         </div>
     </div>
 </script>
+{% endraw %}
+
+
+<script>
+    module.factory('$rights', ['$http', '$uibModal', function ($http, $uibModal) {
+        return function (dict) {
+            return $uibModal.open({
+                templateUrl: 'rights_dialog.html',
+                controller: 'rights_dialog_controller',
+                backdrop: 'static',
+                keyboard: true,
+                resolve: resolveDictForAngularController(dict)
+            });
+        };
+    }]).controller('rights_dialog_controller', function ($scope, $ok, $uibModalInstance, rights, set_url,
+                                                         subject_type, subject_name, object_type, object_name) {
+
+        $scope.$$translate = {{ translates('rights_dialog')|safe }};
+        $scope.rights = cloneObject(rights);
+        $scope.subject_type = subject_type;
+        $scope.subject_name = subject_name;
+        $scope.object_type = object_type;
+        $scope.object_name = object_name;
+
+        {% raw %}
+
+        $scope.cancel = $uibModalInstance.dismiss;
+
+        $scope.save = function () {
+            $ok(set_url, $scope.rights, $uibModalInstance.close);
+        };
+
+        {% endraw %}
+
+    });
+</script>
+
+{% raw %}
+<script type="text/ng-template" id="rights_dialog.html">
+    <div ng-cloak>
+        <div class="modal-header">
+            <h3 class="modal-title">{{ ::_('select allowed rights') }}</h3>
+        </div>
+        <div class="modal-body">
+            {{ _('You are going to select allowed rights for ' + subject_type + ' `%(subject_type)s` at ' +
+            object_type + ' `%(object_type)s`', {object_type: object_name, subject_type: subject_name}) }}<br/>
+
+            <hr/>
+            <div ng-repeat="(rightname, is_allowed) in rights">
+                <i ng-class="{'disabled': !rights[rightname]}"
+                   class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ rightname }}"></i>
+                <label>
+                    <input class="dn" type="checkbox" ng-model="rights[rightname]"/>
+                    {{ ::_(subject_type + ' can ' + rightname + ' at ' + object_type) }}
+                </label>
+            </div>
+        </div>
+
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" type="button" ng-click="save()">{{ ::_('Set rights') }}</button>
+            <button class="btn btn-warning" type="button" ng-click="cancel()">{{ ::_('Cancel') }}</button>
+        </div>
+    </div>
+</script>
+
 {% endraw %}
