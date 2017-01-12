@@ -6,7 +6,7 @@ from profapp.models.messenger import Socket, Notification
 from flask import g
 from sqlalchemy import and_, or_
 
-from profapp import create_app, load_database
+from profapp import create_app, prepare_connections
 import argparse
 
 if __name__ == '__main__':
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     app = create_app(apptype='profi', config='config.CommandLineConfig')
     with app.app_context():
 
-        load_database(app.config['SQLALCHEMY_DATABASE_URI'])(echo=True)
+        prepare_connections(app)(echo=True)
         if args.user_id:
             users = [g.db.query(User).filter(User.id == args.user_id).one()]
         else:

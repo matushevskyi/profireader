@@ -12,14 +12,15 @@ from .files import FileImg, FileImgDescriptor
 from .files import YoutubePlaylist
 from .pr_base import PRBase, Base, Grid
 from .users import User
-from .. import utils
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from ..models.messenger import Notification, Socket
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
+from profapp import utils
 
 
 class Company(Base, PRBase, PRElasticDocument):
+
     __tablename__ = 'company'
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)

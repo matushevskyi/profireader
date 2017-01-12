@@ -458,10 +458,10 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             return $sce.trustAsHtml(text);
         };
     }]).filter('strip_html', function () {
-        return function (text) {
-            return $("<div>"+text+"</div>").text();
-        };
-    });
+    return function (text) {
+        return $("<div>" + text + "</div>").text();
+    };
+});
 
 
 areAllEmpty = function () {
@@ -698,6 +698,43 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             var args = [].slice.call(arguments);
             return pr_dictionary(args.shift(), args, '', this, $ok);
         },
+
+        publication_count: function (plan, pub_type, already_published_counts, show_planed_counts) {
+            var pub_type_upper = pub_type.toUpperCase();
+            var pub_type_lower = pub_type.toLowerCase();
+
+            function get_count(planed_count) {
+                var holded = already_published_counts['by_status_visibility']['HOLDED'][pub_type_upper];
+                var published = already_published_counts['by_status_visibility']['PUBLISHED'][pub_type_upper];
+                if (planed_count !== false) {
+                    if (planed_count < 0) {
+                        published = published + holded;
+                        holded = 0;
+                    }
+                    else if (planed_count == 0) {
+                        holded = published + holded;
+                        published = 0;
+                    }
+                    else {
+                        var total = published + holded;
+                        holded = total - planed_count;
+                        holded = holded < 0 ? 0 : holded;
+                        published = total - holded;
+                    }
+                }
+                return '&nbsp;(<nothing class="publication-fg-STATUS-PUBLISHED">' + published + ',</nothing><nothing class="publication-fg-STATUS-HOLDED">' + holded + '</nothing>)';
+            }
+
+            if (!plan || !already_published_counts) {
+                return '';
+            }
+
+            var ret = plan['publication_count_' + pub_type_lower];
+
+            return (ret < 0 ? '&infin;' : (ret ? ret : '0')) + get_count(show_planed_counts ? ret : false);
+
+        },
+
         moment: function (value, out_format) {
             return value ? moment.utc(value).local().format(out_format ? out_format : 'dddd, LL (HH:mm)', value) : ''
         },

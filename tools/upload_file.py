@@ -3,7 +3,7 @@ import sys
 sys.path.append('..')
 from profapp.models.files import File, FileContent
 from flask import g
-from profapp import create_app, load_database
+from profapp import create_app, prepare_connections
 import argparse, os
 
 if __name__ == '__main__':
@@ -18,8 +18,7 @@ if __name__ == '__main__':
 
     app = create_app(apptype='profi', config='config.CommandLineConfig')
     with app.app_context():
-
-        load_database(app.config['SQLALCHEMY_DATABASE_URI'])(echo=True)
+        prepare_connections(app)(echo=True)
 
         f = open(args.file, 'rb')
         file = File(parent_id=args.parent_id,

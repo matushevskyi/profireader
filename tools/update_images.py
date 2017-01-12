@@ -19,7 +19,7 @@ from profapp.models.portal import MemberCompanyPortal
 
 engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
 
-from profapp import create_app, load_database
+from profapp import create_app, prepare_connections
 import argparse
 
 db_session_select = scoped_session(sessionmaker(autocommit=False,
@@ -102,7 +102,7 @@ args = parser.parse_args()
 app = create_app(apptype='profi')
 
 with app.app_context():
-    load_database(app.config['SQLALCHEMY_DATABASE_URI'])()
+    prepare_connections(app)()
     #update_article_illustrations()
     #update_companies_logo()
     update_portals_logo()

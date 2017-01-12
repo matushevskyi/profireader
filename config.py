@@ -112,6 +112,9 @@ class Config(object):
     LANGUAGES = [{'name': 'uk', 'display': 'Ukrainian'},
                  {'name': 'en', 'display': 'English'}]
 
+    FLUENT_LOGGER_HOST = 'fluid.profi'
+    FLUENT_LOGGER_PORT = 24224
+
 
 class ProductionDevelopmentConfig(Config):
     # Define database connection parameters

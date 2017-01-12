@@ -81,7 +81,7 @@
 
         $scope.$$translate = {{ translates('RequestSetMembershipPlanController') | safe }};
 
-        $scope.url_request_membership_plan = {{ raw_url_for('portal.request_membership_plan') | safe }};
+        $scope.url_request_membership_plan = {{ raw_url_for('company.request_membership_plan') | safe }};
         $scope.url_set_membership_plan = {{ raw_url_for('portal.set_membership_plan') | safe }};
 
         $scope.membership_id = membership_id;
@@ -93,27 +93,6 @@
 
         $scope.cancel = $uibModalInstance.dismiss;
 
-        $scope.publication_count = function (plan, pub_type, planed) {
-            function get_count(pub_type, planed_count) {
-                var holded =
-                        $scope.data.select['publications']['by_status_visibility']['HOLDED'][pub_type.toUpperCase()];
-                var published =
-                        $scope.data.select['publications']['by_status_visibility']['PUBLISHED'][pub_type.toUpperCase()];
-                if (planed_count !== false) {
-                    holded = published + holded - planed_count;
-                    holded = holded < 0 ? 0 : holded;
-                    holded = planed_count < 0 ? 0 : holded;
-                    published = published - holded;
-                }
-                return '&nbsp;(<nothing class="publication-fg-STATUS-PUBLISHED">' + published + ',</nothing><nothing class="publication-fg-STATUS-HOLDED">' + holded + '</nothing>)';
-            }
-
-            if (!$scope.data) {
-                return ''
-            }
-            var ret = plan['publication_count_' + pub_type];
-            return (ret < 0 ? ('&infin;') : (ret ? ret : '0')) + get_count(pub_type, planed ? ret : false);
-        };
 
         $scope.immediately_cant_be_selected = function (immediatly) {
             if (!$scope.data) {

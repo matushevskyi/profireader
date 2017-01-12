@@ -14,7 +14,8 @@ from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, U
     CanCreateCompanyRight, UserIsActive, BaseRightsEmployeeInCompany, MembersRights, MemberCompanyPortal, \
     MembershipRights, RequireMembereeAtPortalsRight
 from ..models.translate import TranslateTemplate
-
+from ..models.pr_base import PRBase
+from ..models.portal import MemberCompanyPortal, MembershipPlan
 
 @company_bp.route('/search_to_submit_article/', methods=['POST'])
 @check_right(UserIsActive)
@@ -84,20 +85,20 @@ def materials_load(json, company_id):
             }
 
 
-@company_bp.route('/update_material_status/<string:company_id>/<string:article_id>', methods=['OK'])
-@check_right(UserIsEmployee, ['company_id'])
-def update_material_status(json, company_id, article_id):
-    allowed_statuses = ArticleCompany.STATUSES.keys()
-    # ARTICLE_STATUS_IN_COMPANY.can_user_change_status_to(json['new_status'])
-
-    ArticleCompany.update_article(
-        company_id=company_id,
-        article_id=article_id,
-        **{'status': json['new_status']})
-
-    return {'article_new_status': json['new_status'],
-            'allowed_statuses': allowed_statuses,
-            'status': 'ok'}
+# @company_bp.route('/update_material_status/<string:company_id>/<string:article_id>', methods=['OK'])
+# @check_right(UserIsEmployee, ['company_id'])
+# def update_material_status(json, company_id, article_id):
+#     allowed_statuses = ArticleCompany.STATUSES.keys()
+#     # ARTICLE_STATUS_IN_COMPANY.can_user_change_status_to(json['new_status'])
+#
+#     ArticleCompany.update_article(
+#         company_id=company_id,
+#         article_id=article_id,
+#         **{'status': json['new_status']})
+#
+#     return {'article_new_status': json['new_status'],
+#             'allowed_statuses': allowed_statuses,
+#             'status': 'ok'}
 
 
 @company_bp.route('/<string:company_id>/employees/', methods=['GET'])
@@ -320,3 +321,25 @@ def join_to_portal(json, company_id):
     return MemberCompanyPortal.apply_company_to_portal(company_id=company_id, portal_id=json['portal_id'])\
         .portal_memberee_grid_row()
 
+
+
+@company_bp.route('/membership/<string:membership_id>/request_membership_plan/', methods=['OK'])
+def request_membership_plan(json, membership_id):
+    action = g.req('action', allowed=['load', 'save', 'validate'])
+    membership = MemberCompanyPortal.get(membership_id)
+    if action == 'load':
+        return membership.get_client_side_dict_for_plan()
+    else:
+        immediately = True if json['membership']['request_membership_plan_issued_immediately'] else False
+        requested_plan_id = json.get('selected_by_user_plan_id', None)
+        if action == 'validate':
+            ret = PRBase.DEFAULT_VALIDATION_ANSWER()
+            # if we can apply it immediately and it have to be confirmed by portal company owner
+            if (requested_plan_id is True and not membership.requested_membership_plan_issued.auto_apply) \
+                    or (requested_plan_id is not False and requested_plan_id is not True and
+                            not MembershipPlan.get(requested_plan_id).auto_apply and
+                                requested_plan_id != membership.portal.default_membership_plan_id):
+                ret['warnings']['general'] = 'plan must be confirmed by company owner before activation'
+            return ret
+        else:
+            return membership.requested_new_plan_issued(requested_plan_id, immediately).portal_memberee_grid_row()

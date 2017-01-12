@@ -278,8 +278,8 @@
     opacity: .25;
 }
 
-.popover-content {
-    width: 250px;
+*:disabled {
+    pointer-events:none !important;
 }
 
 .fr {
@@ -891,3 +891,4 @@ div.pr-row:last-child div.pr-cell {
 .pr-grid-tooltip-class .tooltip-inner {
     max-width: 500px;
 }
+

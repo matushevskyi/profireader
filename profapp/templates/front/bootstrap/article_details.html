@@ -29,11 +29,10 @@
                 <img class="article-illustration" {{ prImageUrl(article['illustration']['url']) }}/>{% endif %}
             <div class="short-text"><h5>{{ article.short|safe }}</h5></div>
         </div>
-
-        {% if article_visibility %}
+        {% if article_visibility == True %}
             <div>{{ article['long'] |safe }}</div>
         {% else %}
-            {% include 'article_unavailable.html' %}
+            <div class="error">{{ article_visibility['message'] }}</div>
         {% endif %}
         <div class="article-company-and-date pr">
             <div class="article-company nw">

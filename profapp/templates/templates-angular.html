@@ -1,6 +1,78 @@
 <!-- TODO: OZ by OZ: move this templates to separate .js file with cached templates -->
 
-{% include 'pager.html' %}
+<script type="text/ng-template" id="pagination.html">
+    <uib-pagination boundary-links="true" total-items="data.pages.total" items-per-page="1"
+                    ng-model="data.pages.current_page" ng-change="page_changed()"
+                    class="pagination-sm"
+                    previous-text="&lsaquo;" next-text="&rsaquo;"
+                    first-text="&laquo;"
+                    last-text="&raquo;"></uib-pagination>
+</script>
+
+<script type="text/ng-template" id="pr-crop-buttons.html">
+    {% raw %}
+    <div class="pr tar">
+        <div class="btn-group">
+        <span ng-if="zoomable" ng-disabled="!zoom_by(1.1, true)" ng-click="zoom_by(1.1)" class="btn
+        btn-primary"
+              type="button" title="Zoom In">
+                  <span class="docs-tooltip" data-toggle="tooltip"><span
+                          class="fa fa-search-plus"></span></span>
+        </span>
+
+            <span ng-if="zoomable" ng-disabled="!zoom_by(0.9, true)" ng-click="zoom_by(0.9)" class="btn
+        btn-primary"
+                  type="button"
+                  title="Zoom Out">
+                 <span class="fa fa-search-minus"></span>
+        </span>
+
+            <span ng-disabled="!select_all(true)" ng-click="select_all()" class="btn btn-primary"
+                  type="button"
+                  title="Select all">
+                 <span class="fa fa-arrows-alt"></span>
+        </span>
+
+            <span ng-if="browsable" ng-click="chooseImage(true)" class="btn btn-danger"
+                  ng-class="{'active': prCrop['selected_by_user']['type'] == 'browse' || prCrop['selected_by_user']['type'] == 'provenance'}"
+                  title="Choose image"><span class="fa fa-folder-open-o"></span></span>
+
+
+            <label ng-if="uploadable" class="btn btn-danger"
+                   ng-class="{'active': prCrop['selected_by_user']['type'] == 'upload'}"
+                   title="Upload image file">
+                <input pr-file-change="fileUploaded" type="file" class="sr-only pr-cropper-input-image" name="file"
+                       accept="image/*">
+                <span class="fa fa-upload"></span>
+            </label>
+            <span ng-repeat="(preset_id, preset_url) in preset_urls" class="btn btn-danger" type="button"
+                  ng-class="{'active': prCrop['selected_by_user']['type'] == 'preset' &&
+              prCrop['selected_by_user']['preset_id'] == preset_id}"
+                  ng-click="selectPresetUrl(preset_id)">
+                <span title="{{ url_class_name }}" class="fa {{ preset_button_classes[preset_id] }}"></span>
+        </span>
+
+            <span ng-if="noneurl" class="btn btn-danger" type="button"
+                  ng-class="{'active': prCrop['selected_by_user']['type'] == 'none'}" ng-click="selectNone()">
+                <span title="none" class="fa fa-times-circle-o"></span>
+        </span>
+
+            <span ng-if="resetable"
+                  ng-click="resetModel()" class="btn btn-warning" title="Reset image"><span
+                    class="fa fa-refresh"></span></span>
+
+            {% endraw %}
+            {#            TODO OZ by OZ: we need that?#}
+            {#            <input type="hidden" ng-model="data.article.image_file_id">#}
+            {% raw %}
+
+        </div>
+    </div>
+
+    {% endraw %}
+
+</script>
+
 {% raw %}
 <script type="text/ng-template" id="typeaheadTemplate.html">
     <a class="typeahead-item" href="#">
@@ -38,6 +110,7 @@
 
         $scope.object_name = (action === 'SUBMIT') ? 'material' : 'publication';
         $scope.action = action;
+        $scope.original_article = null;
 
         $scope.get_tags_for_selected_division = function (search_text) {
             var division = $scope.get_selected_division();
@@ -67,6 +140,7 @@
                 resp.publication.event_begin_tm = new Date(resp.publication.event_begin_tm);
             if (resp.publication.event_end_tm)
                 resp.publication.event_end_tm = new Date(resp.publication.event_end_tm);
+            $scope.original_article = cloneObject(resp.publication);
             return resp;
         };
 
@@ -77,7 +151,7 @@
             return (!$scope.data || !$scope.data.publication || !$scope.data.publication.portal_division_id || !$scope
                     .data.portal.divisions[$scope.data.publication.portal_division_id]) ? null : $scope.data.portal.divisions[$scope.data.publication.portal_division_id];
 
-        }
+        };
 
         $scope.is_selection_division_event = function () {
             var division = $scope.get_selected_division();
@@ -106,6 +180,20 @@
                 $scope.$apply();
             }
         });
+
+        $scope.visibility_available = function (visibility_type) {
+
+            if (!$scope.data || !$scope.data.membership || !$scope.data.publication_count) {
+                return false;
+            }
+
+            var available = $scope.data.publication_count['by_status_visibility']['PUBLISHED'][visibility_type.toUpperCase()];
+            var current = $scope.data.membership.current_membership_plan_issued['publication_count_' + visibility_type.toLowerCase()];
+            if (available<0) return true;
+            if ($scope.original_article && $scope.original_article.visibility ===  visibility_type) return true;
+            return available>current?true:false;
+        };
+
 
         {% endraw %}
 
@@ -138,15 +226,35 @@
                 </div>
                 <hr/>
                 <div class="selected_tags">
-                    <ui-select ng-model="$parent.$parent.data.publication.tags" class="form-control" sortable="true"
+                    <ui-select ng-disabled="!data.publication.portal_division_id"
+                               ng-model="$parent.$parent.data.publication.tags" class="form-control" sortable="true"
                                multiple>
-                        <ui-select-match placeholder="Select tag...">{{$item.text}}</ui-select-match>
+                        <ui-select-match placeholder="{{ ::_('Select tag...') }}">{{$item.text}}</ui-select-match>
                         <ui-select-choices repeat="tag in get_tags_for_selected_division($select.search)">
                             <div ng-bind-html="(tag.text | highlight: $select.search)"></div>
                             <small ng-bind-html="tag.description | highlight: $select.search"></small>
                         </ui-select-choices>
+                        <ui-select-no-choice>
+                            <em class="error">{{ ::_('there is no tags for this division') }}</em>
+                        </ui-select-no-choice>
+
                     </ui-select>
                 </div>
+                <hr/>
+                {{ _('Select publication visibility') }}<span
+                    af-validation-answer="data_validation:visibility"></span><br/>
+                <label
+                        ng-class="{'disabled': !visibility_available(visibility_type)}"
+                        class="db p025em {{ 'publication-bg-VISIBILITY-' + visibility_type }}"
+                        ng-repeat="visibility_type in ['OPEN', 'PAYED', 'REGISTERED']">
+                    <input name="material_details_publish_dialog_visibility"
+                           ng-disabled="!visibility_available(visibility_type)"
+                           ng-value="visibility_type" ng-model="data.publication.visibility"
+                           type="radio"/>
+                    {{ visibility_type }}
+                    <span class="fr"
+                          ng-bind-html="publication_count(data.membership.current_membership_plan_issued, visibility_type, data.publication_count)|html"></span>
+                </label>
                 <hr/>
                 {{ _('Select publication date') }}<span
                     af-validation-answer="data_validation:publishing_tm"></span><br/>
@@ -258,16 +366,19 @@
         </div>
         <div class="modal-body">
             <h4>{{ _('You are going to select tags for company `%(data.membership.company.name)s` at portal
-            `%(data.membership.portal.name)s`')}}</h4>
+                `%(data.membership.portal.name)s`')}}</h4>
             <hr/>
             <div class="selected_tags">
                 <ui-select ng-model="data.membership.tags" class="form-control" sortable="true"
                            multiple>
-                    <ui-select-match placeholder="Select tag...">{{$item.text}}</ui-select-match>
+                    <ui-select-match placeholder="{{ ::_('Select tag...') }}">{{$item.text}}</ui-select-match>
                     <ui-select-choices repeat="tag in get_tags($select.search)">
                         <div ng-bind-html="(tag.text | highlight: $select.search)"></div>
                         <small ng-bind-html="tag.description | highlight: $select.search"></small>
                     </ui-select-choices>
+                    <ui-select-no-choice>
+                        <em class="error">{{ ::_('there is no tags available for this portal') }}</em>
+                    </ui-select-no-choice>
                 </ui-select>
             </div>
         </div>
@@ -340,11 +451,11 @@
                     <td ng-bind-html="price(data.membership.current_membership_plan_issued)|html"></td>
                     <td ng-bind-html="duration(data.membership.current_membership_plan_issued)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-OPEN"
-                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'open')|html"></td>
+                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'open', data.select.publications)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-REGISTERED"
-                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'registered')|html"></td>
+                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'registered', data.select.publications)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-PAYED"
-                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'payed')|html"></td>
+                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'payed', data.select.publications)|html"></td>
                 </tr>
 
 
@@ -374,11 +485,11 @@
                     <td ng-bind-html="price(data.membership.requested_membership_plan_issued)|html"></td>
                     <td ng-bind-html="duration(data.membership.requested_membership_plan_issued)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-OPEN"
-                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'open')|html"></td>
+                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'open', data.select.publications)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-REGISTERED"
-                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'registered')|html"></td>
+                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'registered', data.select.publications)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-PAYED"
-                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'payed')|html"></td>
+                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'payed', data.select.publications)|html"></td>
                 </tr>
 
                 </tbody>
@@ -399,11 +510,11 @@
                     <td ng-bind-html="price(plan)|html"></td>
                     <td ng-bind-html="duration(plan)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-OPEN"
-                        ng-bind-html="publication_count(plan, 'open', true)|html"></td>
+                        ng-bind-html="publication_count(plan, 'open', data.select.publications, true)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-REGISTERED"
-                        ng-bind-html="publication_count(plan, 'registered', true)|html"></td>
+                        ng-bind-html="publication_count(plan, 'registered', data.select.publications, true)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-PAYED"
-                        ng-bind-html="publication_count(plan, 'payed', true)|html"></td>
+                        ng-bind-html="publication_count(plan, 'payed', data.select.publications, true)|html"></td>
                 </tr>
 
                 <tr>
@@ -430,13 +541,16 @@
         </div>
 
         <div class="modal-footer">
-            <button class="btn btn-primary" type="button"
-                    popover-placement="left"
-                    popover-append-to-body="true"
-                    pr-validation-answer="data_validation:general"
-                    ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">
-                {{ ::_(request_set_t_f?'Request plan':'Set plan') }}
-            </button>
+            <div class="pr-validation-button-wrapper"
+                 pr-validation-answer="data_validation:general"
+                 popover-placement="left"
+                 popover-append-to-body="true">
+                <button class="btn btn-primary" type="button"
+                        ng-click="$af.save(data)"
+                        ng-disabled="!$af.isActionAllowed(data, 'save') ">
+                    {{ ::_(request_set_t_f?'Request plan':'Set plan') }}
+                </button>
+            </div>
             <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>
         </div>
     </div>

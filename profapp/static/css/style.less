@@ -861,6 +861,21 @@ body {
   box-shadow: 0 2px 5px 0 rgba(255, 0, 0, 0.75), 0 2px 10px 0 rgba(255, 0, 0, 0.12);
 }
 
+.pr-validation-button-wrapper {
+  border-radius: 4px;
+  display: inline-block;
+  margin: 8px;
+  cursor: not-allowed;
+}
+
+*[pr-validation-answer] *:disabled,  *[pr-validation-answer]:disabled {
+    pointer-events:none !important;
+}
+
+.popover-content {
+    width: 250px;
+}
+
 .error-input {
   color: @color-red-hover;
 }
