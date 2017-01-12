@@ -501,8 +501,7 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
     ACTIONS = {
         'ENLIST': 'ENLIST',
         'REJECT': 'REJECT',
-        'FIRE': 'FIRE',
-        'ALLOW': 'ALLOW'
+        'FIRE': 'FIRE'
     }
 
     ACTIONS_FOR_STATUSES = {
@@ -522,11 +521,11 @@ class EmployeesRight(BaseRightsEmployeeInCompany):
                 {'employee': [lambda kwargs: 'You can`t fire company owner'
                 if kwargs['employment'].user_id == kwargs['employee'].company.author_user_id else True,
                               UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
-                 },
-            ACTIONS['ALLOW']:
-                {'employee': [lambda kwargs: 'Company owner have all permissions and you can do nothing with that'
-                if kwargs['employment'].user_id == kwargs['employee'].company.author_user_id else True,
-                              UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
+                 }
+            # ACTIONS['SET_PERMISSIONS']:
+            #     {'employee': [lambda kwargs: 'Company owner have all permissions and you can do nothing with that'
+            #     if kwargs['employment'].user_id == kwargs['employee'].company.author_user_id else True,
+            #                   UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
         }
     }
 

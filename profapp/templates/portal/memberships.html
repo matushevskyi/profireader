@@ -49,10 +49,10 @@
             };
 
             $scope.grid_rights = function (id, right_name, row, column_name) {
-                var ret = $rights({
+                $rights({
                     'rights': row['membership']['rights'],
-                    'subject_type': 'company',
                     'set_url': $scope.url_set_rights({'membership_id': row['membership']['id']}),
+                    'subject_type': 'company',
                     'subject_name': row['membership']['company']['name'],
                     'object_type': 'portal',
                     'object_name': '{% endraw %}{{ portal.name }}{% raw %}'

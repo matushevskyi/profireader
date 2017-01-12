@@ -20,7 +20,6 @@ from profapp import utils
 
 
 class Company(Base, PRBase, PRElasticDocument):
-
     __tablename__ = 'company'
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
@@ -243,7 +242,8 @@ class Company(Base, PRBase, PRElasticDocument):
 
     @staticmethod
     def subquery_company_partners(company_id, filters, filters_exсept=None):
-        sub_query = utils.db.query_filter(MemberCompanyPortal, portal_id=utils.db.query_filter(Portal, company_owner_id=company_id).subquery().c.id).order_by(
+        sub_query = utils.db.query_filter(MemberCompanyPortal, portal_id=utils.db.query_filter(Portal,
+                                                                                               company_owner_id=company_id).subquery().c.id).order_by(
             desc(MemberCompanyPortal.id))
         list_filters = [];
         list_sorts = []
@@ -363,9 +363,18 @@ class UserCompany(Base, PRBase):
     def set_client_side_dict(self, json):
         self.attr(utils.filter_json(json, 'status|position|rights'))
 
+    def employees_grid_row(self):
+        from ..models.rights import EmployeesRight
+        return utils.dict_merge(
+            {
+                'id': self.id,
+                'employment': self.get_client_side_dict(more_fields='user.full_name|address_email|address_phone')},
+            {'actions': EmployeesRight(company=self.company, employment=self).actions()})
+
     @staticmethod
     def get_by_user_and_company_ids(user_id=None, company_id=None):
-        return utils.db.query_filter(UserCompany).filter_by(user_id=user_id if user_id else g.user.id, company_id=company_id).first()
+        return utils.db.query_filter(UserCompany).filter_by(user_id=user_id if user_id else g.user.id,
+                                                            company_id=company_id).first()
 
     @staticmethod
     def apply_request(company_id, user_id, bool):
@@ -379,7 +388,7 @@ class UserCompany(Base, PRBase):
             stat = UserCompany.STATUSES['REJECTED']
 
         utils.db.query_filter(UserCompany, company_id=company_id, user_id=user_id,
-                     status=UserCompany.STATUSES['APPLICANT']).update({'status': stat})
+                              status=UserCompany.STATUSES['APPLICANT']).update({'status': stat})
 
     def has_rights(self, rightname):
         if self.company.user_owner.id == self.user_id:
@@ -397,7 +406,8 @@ class UserCompany(Base, PRBase):
         """Return all users in current company which have characters
         in their name like searchtext"""
         return [user.get_client_side_dict(fields='full_name|id') for user in
-                utils.db.query_filter(User).filter(~utils.db.query_filter(UserCompany, user_id=User.id, company_id=company_id).exists()).
+                utils.db.query_filter(User).filter(
+                    ~utils.db.query_filter(UserCompany, user_id=User.id, company_id=company_id).exists()).
                     filter(User.full_name.ilike("%" + searchtext + "%")).all()]
 
 
@@ -427,7 +437,8 @@ def user_company_status_changed(target, new_value, old_value, action):
             and g.user.id != target.user_id:
         phrase = "You are now enlisted to %s company" % (utils.jinja.link_company_profile(),)
     elif new_value == UserCompany.STATUSES['REJECTED'] and g.user.id != target.user_id:
-        phrase = "Sorry, but your request to join company company %s was rejected" % (utils.jinja.link_company_profile(),)
+        phrase = "Sorry, but your request to join company company %s was rejected" % (
+            utils.jinja.link_company_profile(),)
     elif new_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
         phrase = "Sorry, your was fired from company %s" % (utils.jinja.link_company_profile(),)
     else:

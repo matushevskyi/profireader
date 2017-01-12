@@ -183,7 +183,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 if ($event.preventDefault) $event.preventDefault();
                 $event.cancelBubble = true;
                 $event.returnValue = false;
-                return func.apply(this, args);
+                return func ? func.apply(this, args) : null;
             };
 
             gridApi.grid['searchItemGrid'] = function (col) {
@@ -195,7 +195,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
             gridApi.grid['grid_change_row'] = function (new_row) {
                 $.each(gridApi.grid.options.data, function (index, old_row) {
-                    if (old_row['id'] === new_row['id']) {
+                    if (old_row['id'] && old_row['id'] === new_row['id']) {
                         if (new_row.hasOwnProperty('replace_id')) {
                             new_row['id'] = new_row['replace_id']
                         }
