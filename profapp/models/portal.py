@@ -561,7 +561,7 @@ class MembershipPlanIssued(Base, PRBase):
         old_count = self.member_company_portal.get_publication_count()
         for vis in Publication.VISIBILITIES:
             for p_id in utils.db.execute_function("membership_hold_unhold_publications('%s', '%s')" %
-                                      (self.member_company_portal_id, vis)):
+                                                          (self.member_company_portal_id, vis)):
                 p = Publication.get(p_id)
                 p.md_tm = None
                 p.save()
@@ -604,9 +604,8 @@ class MembershipPlanIssued(Base, PRBase):
                     PublishUnpublishInPortal.publish_rights)
 
             Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'],
-                                                [p[0] for p in phrases],
-                                                [p[1] for p in phrases])()
-
+                                         [p[0] for p in phrases],
+                                         [p[1] for p in phrases])()
 
     def stop(self, user=None):
         self.stopped_tm = datetime.datetime.utcnow()
@@ -628,6 +627,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     class RIGHT_AT_PORTAL(BinaryRights):
         PUBLICATION_PUBLISH = 1
         PUBLICATION_UNPUBLISH = 2
+
+        def _nice_order(self):
+            return [self.PUBLICATION_PUBLISH, self.PUBLICATION_UNPUBLISH]
 
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     cr_tm = Column(TABLE_TYPES['timestamp'])

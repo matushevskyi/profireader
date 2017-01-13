@@ -43,6 +43,8 @@ class Config(object):
     PROFIREADER_ADMINS = secret_data.PROFIREADER_ADMINS
     WTF_CSRF_ENABLED = False
 
+    JSON_SORT_KEYS = False
+
     # Application threads. A common general assumption is
     # using 2 per available processor cores - to handle
     # incoming requests using one and performing background

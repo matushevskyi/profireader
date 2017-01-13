@@ -300,21 +300,32 @@ class UserCompany(Base, PRBase):
         FILES_DELETE_OTHERS = 14
 
         ARTICLES_SUBMIT_OR_PUBLISH = 8
+        ARTICLES_UNPUBLISH = 17  # reset!
         ARTICLES_EDIT_OTHERS = 12
         ARTICLES_DELETE = 19  # reset!
-        ARTICLES_UNPUBLISH = 17  # reset!
+
+        COMPANY_EDIT_PROFILE = 1
+        COMPANY_MANAGE_PARTICIPATION = 2
+        COMPANY_REQUIRE_MEMBEREE_AT_PORTALS = 15
 
         EMPLOYEE_ENLIST_OR_FIRE = 6
         EMPLOYEE_ALLOW_RIGHTS = 9
-
-        COMPANY_REQUIRE_MEMBEREE_AT_PORTALS = 15
-        COMPANY_EDIT_PROFILE = 1
-        COMPANY_MANAGE_PARTICIPATION = 2
 
         PORTAL_EDIT_PROFILE = 10
         PORTAL_MANAGE_READERS = 16
         PORTAL_MANAGE_COMMENTS = 18
         PORTAL_MANAGE_MEMBERS_COMPANIES = 13
+
+        def _nice_order(self):
+            return [
+                self.COMPANY_EDIT_PROFILE, self.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS, self.COMPANY_MANAGE_PARTICIPATION,
+                self.EMPLOYEE_ENLIST_OR_FIRE, self.EMPLOYEE_ALLOW_RIGHTS,
+                self.ARTICLES_SUBMIT_OR_PUBLISH, self.ARTICLES_UNPUBLISH, self.ARTICLES_EDIT_OTHERS,
+                self.ARTICLES_DELETE,
+                self.FILES_BROWSE, self.FILES_UPLOAD, self.FILES_DELETE_OTHERS,
+                self.PORTAL_EDIT_PROFILE, self.PORTAL_MANAGE_READERS, self.PORTAL_MANAGE_COMMENTS,
+                self.PORTAL_MANAGE_MEMBERS_COMPANIES,
+            ]
 
     position = Column(TABLE_TYPES['short_name'], default='')
 
@@ -364,6 +375,7 @@ class UserCompany(Base, PRBase):
         self.attr(utils.filter_json(json, 'status|position|rights'))
 
     def employees_grid_row(self):
+        from flask import jsonify
         from ..models.rights import EmployeesRight
         return utils.dict_merge(
             {
