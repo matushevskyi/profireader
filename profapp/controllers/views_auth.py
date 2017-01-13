@@ -34,8 +34,8 @@ def check_after_logination_params(user):
             portal.subscribe_user(user)
             session.pop('portal_id')
     if session.get('back_to'):
-        session.pop('back_to')
-        return session['back_to']
+        aa = session.pop('back_to')
+        return aa
     else:
         return False
 
