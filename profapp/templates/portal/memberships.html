@@ -16,14 +16,15 @@
 
     <script>
 
-        module.controller('company_partners', function ($scope, $ok, $membership_plan) {
+        module.controller('company_partners', function ($scope, $ok, $membership_plan, $rights) {
 
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_members');
             $scope.$$translate = {{translates('company_partners') | safe}};
             $scope.url_load = '{{ url_for('portal.companies_members_load', portal_id=portal.id)}}';
-            $scope.url_membership_update = {{ raw_url_for('portal.membership_update')| safe}};
             $scope.url_change_status = {{ raw_url_for('portal.membership_change_status')|safe }};
+            $scope.url_set_rights = {{ raw_url_for('portal.membership_set_rights')|safe }};
 
+            $scope.all_available_rights = {{ all_available_rights|tojson|safe }};
             {% raw %}
 
             $scope.portal_link = function (link) {
@@ -40,17 +41,24 @@
             };
 
             $scope.grid_action = function (id, action, row, column_name) {
-                if (column_name == 'actions') {
-                    if (action === 'ALLOW') {
-                        window.location.href = $scope.url_membership_update({membership_id: row.id});
-                    } else {
-                        return $ok($scope.url_change_status({membership_id: row.id}),
-                                {action: action}, function (resp) {
-                                    $scope.gridApi.grid.grid_change_row(resp);
-                                }).finally(function () {
-                        })
-                    }
-                }
+                return $ok($scope.url_change_status({membership_id: row.id}),
+                        {action: action}, function (resp) {
+                            $scope.gridApi.grid.grid_change_row(resp);
+                        }).finally(function () {
+                })
+            };
+
+            $scope.grid_rights = function (id, right_name, row, column_name) {
+                $rights({
+                    'rights': row['membership']['rights'],
+                    'set_url': $scope.url_set_rights({'membership_id': row['membership']['id']}),
+                    'subject_type': 'company',
+                    'subject_name': row['membership']['company']['name'],
+                    'object_type': 'portal',
+                    'object_name': '{% endraw %}{{ portal.name }}{% raw %}'
+                }).result.then(function (updated_row) {
+                    $scope.gridApi.grid.grid_change_row(updated_row);
+                });
             };
 
             $scope.set_membership_plan = function (id, row, column_name) {
@@ -81,7 +89,10 @@
                     },
                     {name: 'membership.status', afilter: {type: 'multi_select', default_selected: true}},
                     publication_column(),
-                    {name: 'membership.rights', width: '200', type: 'icons', afilter: {type: 'input'}},
+                    {
+                        name: 'membership.rights', width: '50', type: 'icons', afilter: {type: 'input'},
+                        onclick: 'grid_rights'
+                    },
                     {
                         name: 'actions', width: '*', type: 'actions', onclick: 'grid_action', classes: function (id,
                                                                                                                  entity, field) {

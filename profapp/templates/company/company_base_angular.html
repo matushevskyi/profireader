@@ -2,7 +2,7 @@
     module.controller('CompanyMenuController', ['$scope', '$timeout', function ($scope, $timeout) {
         angularControllerFunction('user_controller', 'set_selected_user_menu')('companies');
 
-        $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
+        $scope.user = {{ g.user.get_client_side_dict()|tojson|safe }};
         $scope.company = {{ (company.get_client_side_dict() if company else portal.own_company.get_client_side_dict())|tojson|safe }};
         $scope.user_active = {{ user_company_active|safe}}
         $scope.$$translate = {{ translates('CompanyMenuController')|safe }};

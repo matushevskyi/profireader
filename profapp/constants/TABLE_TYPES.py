@@ -6,11 +6,22 @@ from sqlalchemy.dialects.postgresql import BIGINT, INTEGER, JSON, NUMERIC, INTER
 class BinaryRightsMetaClass1(type):
     def _allrights(self):
         return {name: type.__getattribute__(self, name) for (name, val) in
-                self.__dict__.items() if name not in ['__doc__', '__module__']}
+                self.__dict__.items() if name not in ['__doc__', '__module__', '_nice_order']}
 
     def _todict(self, bin):
-        return {name: (True if ((1 << type.__getattribute__(self, name)) & bin) else False) for (name, val) in
+        from collections import OrderedDict
+        ret = OrderedDict()
+
+        rights = {name: (True if ((1 << type.__getattribute__(self, name)) & bin) else False) for (name, val) in
                 self._allrights().items()}
+        n_order = self._nice_order(self)
+
+        for key in n_order:
+            ret[key] = rights[key]
+        for key in rights:
+            if key not in ret:
+                ret[key] = rights[key]
+        return ret
 
     def _tobin(self, dict):
         ret = 0
@@ -29,8 +40,9 @@ class BinaryRightsMetaClass1(type):
 
         return ret
 
+
     def __getattribute__(self, key):
-        if key in ['_todict', '_tobin', '_allrights'] or (key[:2] == '__' and key[-2:] == '__'):
+        if key in ['_todict', '_tobin', '_allrights', '_nice_order'] or (key[:2] == '__' and key[-2:] == '__'):
             return type.__getattribute__(self, key)
         elif key in type.__getattribute__(self, '_allrights')():
             return key
@@ -45,6 +57,9 @@ class BinaryRightsMetaClass1(type):
 class BinaryRights(metaclass=BinaryRightsMetaClass1):
     _OWNER = -1
     _ANY = -2
+
+    def _nice_order(self):
+        return []
 
 
 class RIGHTS(BIGINT):
@@ -61,7 +76,8 @@ class RIGHTS(BIGINT):
 
     def result_processor(self, dialect, coltype):
         def process(value):
-            return self._rights_class._todict(value)
+            ret = self._rights_class._todict(value)
+            return ret
 
         return process
 

@@ -304,26 +304,38 @@
 
 .pr-grid-cell-field-type-icons-icon:before {
     content: "\f00c";
-    color: dodgerblue;
+    color: gray;
 }
 
-.pr-grid-cell-field-type-icons-icon-FILES_BROWSE:before {
+
+/*employment icons*/
+
+
+.pr-grid-cell-field-type-icons-icon-COMPANY_EDIT_PROFILE:before {
+    content: "\f022";
+    color: green;
+    /*color: #790B79;*/
+}
+
+.pr-grid-cell-field-type-icons-icon-COMPANY_MANAGE_PARTICIPATION:before {
+    content: "\f03a";
+    color: green;
+}
+
+.pr-grid-cell-field-type-icons-icon-COMPANY_REQUIRE_MEMBEREE_AT_PORTALS:before {
+    content: "\f196";
+    color: green;
+}
+
+
+
+.pr-grid-cell-field-type-icons-icon-ARTICLES_SUBMIT_OR_PUBLISH:before {
     content: "\f06e";
     color: dodgerblue;
 }
 
-.pr-grid-cell-field-type-icons-icon-FILES_UPLOAD:before {
-    content: "\f093";
-    color: dodgerblue;
-}
-
-.pr-grid-cell-field-type-icons-icon-FILES_DELETE_OTHERS:before {
-    content: "\f1f8";
-    color: dodgerblue;
-}
-
-.pr-grid-cell-field-type-icons-icon-MATERIALS_SUBMIT_TO_PORTAL:before {
-    content: "\f055";
+.pr-grid-cell-field-type-icons-icon-ARTICLES_UNPUBLISH:before {
+    content: "\f070";
     color: dodgerblue;
 }
 
@@ -332,81 +344,65 @@
     color: dodgerblue;
 }
 
-.pr-grid-cell-field-type-icons-icon-PUBLICATION_PUBLISH_AT_OWN_PORTAL:before {
-    content: "\f046";
-    color: green;
-}
-
-.pr-grid-cell-field-type-icons-icon-PUBLICATION_UNPUBLISH_AT_OWN_PORTAL:before {
-    content: "\f05e";
-    color: green;
-}
-
-.pr-grid-cell-field-type-icons-icon-PUBLICATION_SET_PRIORITY:before {
-    content: "\f091";
-    color: green;
-}
-
-.pr-grid-cell-field-type-icons-icon-EMPLOYEE_ENLIST_OR_FIRE:before {
-    content: "\f234";
+.pr-grid-cell-field-type-icons-icon-ARTICLES_DELETE:before {
+    content: "\f1f8";
     color: dodgerblue;
 }
 
-.pr-grid-cell-field-type-icons-icon-COMPANY_MANAGE_PARTICIPATION:before {
-    content: "\f196";
-    color: #790B79;
+
+
+.pr-grid-cell-field-type-icons-icon-FILES_BROWSE:before {
+    content: "\f115";
+    color: blueviolet;
 }
 
-.pr-grid-cell-field-type-icons-icon-COMPANY_REQUIRE_MEMBEREE_AT_PORTALS:before {
-    content: "\f196";
-    color: #790B79;
+.pr-grid-cell-field-type-icons-icon-FILES_UPLOAD:before {
+    content: "\f093";
+    color: blueviolet;
+}
+
+.pr-grid-cell-field-type-icons-icon-FILES_DELETE_OTHERS:before {
+    content: "\f1f8";
+    color: blueviolet;
+}
+
+
+.pr-grid-cell-field-type-icons-icon-EMPLOYEE_ENLIST_OR_FIRE:before {
+    content: "\f0c0";
+    color: #FF4103;
 }
 
 .pr-grid-cell-field-type-icons-icon-EMPLOYEE_ALLOW_RIGHTS:before {
-    content: "\f0a1";
-    color: #790B79;
+    content: "\f029";
+    color: #FF4103;
 }
 
-.pr-grid-cell-field-type-icons-icon-COMPANY_EDIT_PROFILE:before {
-    content: "\f14b";
-    color: #790B79;
-}
 
-.pr-grid-cell-field-type-icons-icon-EDIT_PORTAL_PROFILE:before {
-    content: "\f21b";
-    color: green;
+
+.pr-grid-cell-field-type-icons-icon-PORTAL_EDIT_PROFILE:before {
+    content: "\f022";
+    color: #550000;
 }
 
 .pr-grid-cell-field-type-icons-icon-PORTAL_MANAGE_READERS:before {
-    content: "\f02d";
-    color: #FF4103;
+    content: "\f1ea";
+    color: #550000;
 }
 
 .pr-grid-cell-field-type-icons-icon-PORTAL_MANAGE_COMMENTS:before {
     content: "\f086";
-    color: #FF4103;
-}
-
-.pr-grid-cell-field-type-icons-icon-PORTAL_EDIT_PROFILE:before {
-    content: "\f087";
-    color: #FF4103;
+    color: #550000;
 }
 
 .pr-grid-cell-field-type-icons-icon-PORTAL_MANAGE_MEMBERS_COMPANIES:before {
-    content: "\f183";
-    color: #FF4103;
+    content: "\f03a";
+    color: #550000;
 }
 
-.pr-grid-cell-field-type-icons-icon-MATERIAL_SUBMIT:before {
-    content: "\f00c";
-    color: dodgerblue;
-}
+/*employment icons*/
 
-.pr-grid-cell-field-type-icons-icon-PUBLICATION_EDIT:before {
-    content: "\f044";
-    color: dodgerblue;
-}
 
+/*membership icons*/
 .pr-grid-cell-field-type-icons-icon-PUBLICATION_UNPUBLISH:before {
     content: "\f070";
     color: dodgerblue;
@@ -416,11 +412,8 @@
     content: "\f06e";
     color: dodgerblue;
 }
+/*membership icons*/
 
-.pr-grid-cell-field-type-icons-icon-PUBLICATION_DELETE_UNDELETE:before {
-    content: "\f0a2";
-    color: dodgerblue;
-}
 
 .pr-grid-cell-field-type-actions {
     padding: 2px;
