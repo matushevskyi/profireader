@@ -42,7 +42,6 @@ def register_profi(app):
     app.register_blueprint(portal_bp, url_prefix='/portal')
     app.register_blueprint(exception_bp, url_prefix='/exception')
     app.register_blueprint(messenger_bp, url_prefix='/messenger')
-    app.register_blueprint(new_bp, url_prefix='/blablabla')
     app.register_blueprint(tutorial_bp, url_prefix='/tutorial')
 
     app.register_blueprint(front_bp, url_prefix='/')

@@ -20,7 +20,8 @@ class UnconfirmedEmailUser(Exception):
         super(UnconfirmedEmailUser, self).__init__(message)
 
 
-class UnauthorizedAddress(Exception):
-    def __init__(self, message='This address is unauthorized for any user. You should not see that message'):
-        super(UnauthorizedAddress, self).__init__(message)
+class RouteWithoutPermissions(Exception):
+    def __init__(self, message='This is defined without permissions. You should not see that message'):
+        super(RouteWithoutPermissions, self).__init__(message)
+
 

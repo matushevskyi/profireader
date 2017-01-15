@@ -125,13 +125,13 @@ def check_right(classCheck, params=None, action=None):
         return decorated_view
     return wrapped
 
-def check_permission(classCheck):
-    def wrapped(func):
-        @wraps(func)
-        def decorated_view(*args, **kwargs):
-            classCheck().check_permissions()
-            return func(*args, **kwargs)
-        decorated_view.__check_permissions__ = True
-        return decorated_view
-    return wrapped
-
+# def check_permission(classCheck):
+#     def wrapped(func):
+#         @wraps(func)
+#         def decorated_view(*args, **kwargs):
+#             classCheck().check_permissions()
+#             return func(*args, **kwargs)
+#         decorated_view.__check_permissions__ = True
+#         return decorated_view
+#     return wrapped
+#
