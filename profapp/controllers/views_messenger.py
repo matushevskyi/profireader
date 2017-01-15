@@ -4,28 +4,24 @@ from sqlalchemy.sql import expression
 
 from .blueprints_declaration import messenger_bp
 from .errors import BadDataProvided
-from .request_wrapers import check_right
 from ..models.company import Company, UserCompany
 from ..models.messenger import Contact
 from ..models.portal import Portal, UserPortalReader
-from ..models.rights import UserIsActive
+from ..models.permissions import IsUserActive
 from ..models.users import User
 
 
-@messenger_bp.route('/', methods=['GET'])
-@check_right(UserIsActive)
+@messenger_bp.route('/', methods=['GET'], permissions=IsUserActive)
 def messenger():
     return render_template('messenger/messenger.html')
 
 
-@messenger_bp.route('/', methods=['OK'])
-@check_right(UserIsActive)
+@messenger_bp.route('/', methods=['OK'], permissions=IsUserActive)
 def messenger_load(json):
     return {}
 
 
-@messenger_bp.route('/community_search/', methods=['OK'])
-@check_right(UserIsActive)
+@messenger_bp.route('/community_search/', methods=['OK'], permissions=IsUserActive)
 def community_search(json):
     PER_PAGE = 20
     portals_ids = []
@@ -109,8 +105,7 @@ def community_search(json):
     }
 
 
-@messenger_bp.route('/contacts_search/', methods=['OK'])
-@check_right(UserIsActive)
+@messenger_bp.route('/contacts_search/', methods=['OK'], permissions=IsUserActive)
 def contacts_search(json):
     page_size = 100
     query = g.db.query(Contact.id, Contact.status, User). \
@@ -140,8 +135,7 @@ def contacts_search(json):
     }
 
 
-@messenger_bp.route('/contact_action/', methods=['OK'])
-@check_right(UserIsActive)
+@messenger_bp.route('/contact_action/', methods=['OK'], permissions=IsUserActive)
 def contact_action(json):
     action = json['action']
 
