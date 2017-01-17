@@ -46,7 +46,8 @@ class TranslateTemplate(Base, PRBase):
         self.portal_id = portal_id
 
     @staticmethod
-    def try_to_get_phrase(template, phrase, url, portal_id=None, allow_html='', comment=''):
+    def try_to_get_phrase(template, phrase, url, portal_id=None, allow_html='', phrase_comment=None,
+                          phrase_default=None):
 
         a_filter = dict(template=template, name=phrase, portal_id=portal_id)
 
@@ -58,8 +59,10 @@ class TranslateTemplate(Base, PRBase):
                             'VALUES           (:template, :name, :portal_id, :allow_html, :comment, :url,  :%s)') %
                            (TranslateTemplate.__tablename__, ', '.join(TranslateTemplate.languages),
                             ", :".join(TranslateTemplate.languages)),
-                           params=utils.dict_merge(a_filter, {'allow_html': allow_html, 'url': url, 'comment': comment},
-                                                   {l: phrase for l in TranslateTemplate.languages}, values))
+                           params=utils.dict_merge(a_filter, {'allow_html': allow_html, 'url': url,
+                                                              'comment': '' if phrase_comment is None else ''},
+                                                   {l: phrase if phrase_default is None else phrase_default for l in
+                                                    TranslateTemplate.languages}, values))
             return utils.db.query_filter(TranslateTemplate, **a_filter).first()
 
         exist = utils.db.query_filter(TranslateTemplate, **a_filter).first()
@@ -109,47 +112,52 @@ class TranslateTemplate(Base, PRBase):
         return url
 
     @staticmethod
-    def getTranslate(template, phrase, url=None, allow_html='', language=None):
+    def getTranslate(template, phrase, url=None, allow_html='', language=None,
+                     phrase_comment=None, phrase_default=None):
 
-        match = re.match("(^.*)//##(.*)$", phrase)
-        phrase, comment = (match.group(1), match.group(2)) if match else (phrase, '')
-
+        from config import Config
         url = TranslateTemplate.try_to_guess_url(url)
 
         (phrase, template) = (phrase[2:], '__GLOBAL') if phrase[:2] == '__' else (phrase, template)
 
         translation = TranslateTemplate.try_to_get_phrase(template, phrase, url,
+                                                          phrase_comment=phrase_comment, phrase_default=phrase_default,
                                                           portal_id=getattr(g, "portal_id", None),
-                                                          allow_html=allow_html, comment=comment)
+                                                          allow_html=allow_html)
 
         if translation:
-            save_translation = False
-            if translation.allow_html != allow_html:
-                translation.attr({'allow_html': allow_html})
-                save_translation = True
-            if translation.comment != comment:
-                translation.attr({'comment': comment})
-                save_translation = True
-            if current_app.config['DEBUG']:
+            phrase_comment = '' if phrase_comment is None else phrase_comment
+            if translation.allow_html != allow_html or \
+                            translation.comment != phrase_comment or \
+                    (phrase_default is not None and [lng for lng in Config.LANGUAGES if
+                                                     getattr(translation, lng) == phrase]) or \
+                    (current_app.config['DEBUG'] and (
+                                not translation.ac_tm or datetime.datetime.now().timestamp() - translation.ac_tm.timestamp() > 86400)):
                 # TODO: OZ by OZ change ac without changing md (md changed by trigger)
                 # ac updated without changing md
-                i = datetime.datetime.now()
-                if not translation.ac_tm or i.timestamp() - translation.ac_tm.timestamp() > 86400:
-                    translation.attr({'ac_tm': i})
-                    save_translation = True
-            if save_translation:
-                pass
-                g.db().execute('UPDATE "%s" SET "allow_html" = :allow_html, "comment" = :comment, "ac_tm" = :ac_tm  WHERE id = :id' % (translation.__tablename__,),
-                               params={'allow_html': allow_html, 'comment': comment, 'ac_tm': i, 'id': translation.id})
+                params = utils.dict_merge({'allow_html': allow_html, 'comment': phrase_comment,
+                                           'ac_tm': datetime.datetime.now(), 'id': translation.id},
+                                          {} if phrase_default is None else
+                                          {lng['name']: phrase_default for lng in Config.LANGUAGES if
+                                           getattr(translation, lng) == phrase})
+                sql = 'UPDATE "%s" SET "allow_html" = :allow_html, "comment" = :comment, "ac_tm" = :ac_tm ' % (
+                    translation.__tablename__,)
+
+                for lng in Config.LANGUAGES:
+                    if getattr(translation, lng['name']) == phrase and phrase_default is not None:
+                        sql = sql + ', "' + lng['name'] + '" = :' + lng['name']
+                g.db().execute(sql + ' WHERE id = :id', params=params)
 
             return TranslateTemplate.try_to_guess_lang(translation, language)
         else:
             return phrase
 
     @staticmethod
-    def translate_and_substitute(template, phrase, dictionary={}, language=None, url=None, allow_html=''):
+    def translate_and_substitute(template, phrase, dictionary={}, language=None, url=None, allow_html='',
+                                 phrase_comment=None, phrase_default=None):
 
-        translated = TranslateTemplate.getTranslate(template, phrase, url, allow_html, language)
+        translated = TranslateTemplate.getTranslate(template, phrase, url, allow_html, language,
+                                                    phrase_comment=phrase_comment, phrase_default=phrase_default)
         r = re.compile("%\\(([^)]*)\\)s")
 
         def getFromDict(context, indexes, default):
@@ -168,18 +176,19 @@ class TranslateTemplate(Base, PRBase):
         return r.sub(replaceinphrase, translated)
 
     @staticmethod
-    def update_last_accessed(template, phrase):
+    def update_translation(template, phrase, allow_html=None, phrase_comment=None, phrase_default=None):
+        from config import Config
         i = datetime.datetime.now()
         obj = utils.db.query_filter(TranslateTemplate, template=template, name=phrase).first()
         if obj:
-            obj.attr({'ac_tm': i})
+            obj.ac_tm = i
+            obj.comment = obj.comment if phrase_comment is None else phrase_comment
+            obj.allow_html = obj.allow_html if allow_html is None else allow_html
+            if phrase_default is not None:
+                for lng in Config.LANGUAGES:
+                    if getattr(obj, lng['name']) == phrase:
+                        setattr(obj, lng['name'], phrase_default)
         return True
-
-    @staticmethod
-    def change_allowed_html(template, phrase, allow_html):
-        obj = utils.db.query_filter(TranslateTemplate, template=template, name=phrase).first()
-        obj.attr({'allow_html': allow_html})
-        return 'True'
 
     @staticmethod
     def delete_translates(objects):

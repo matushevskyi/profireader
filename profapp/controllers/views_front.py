@@ -493,7 +493,8 @@ def send_message(json, member_company_id):
                                  phrase + '<hr/>%(message)s',
                                  {'company': company,
                                   'url_company_profile': url_for('company.profile', company_id=company.id),
-                                  'message': html.escape(json['message'])})()
+                                  'message': html.escape(json['message'])},
+                                 phrases_comment="this message is sent by portal visitor to some company employee")()
 
     return {}
 

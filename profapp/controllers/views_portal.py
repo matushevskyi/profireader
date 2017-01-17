@@ -376,7 +376,8 @@ def membership_change_status(json, membership_id):
         membership.notifications_for_company_about_portal_memberee(
             "Administrator of portal %s changed status of your company %s membership to %s" %
             (utils.jinja.link_external(), utils.jinja.link_company_profile(),
-             utils.jinja.link('url_company_portal_memberees', membership.status, True),))()
+             utils.jinja.link('url_company_portal_memberees', membership.status, True),),
+            phrase_comment="portals company employee changes status to " + membership.status)()
 
     return membership.company_member_grid_row()
 
@@ -387,7 +388,7 @@ def companies_members(portal_id):
     portal = Portal.get(portal_id)
     return render_template('portal/memberships.html',
                            portal=portal,
-                           all_available_rights = {
+                           all_available_rights={
                                MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: 'publish publication',
                                MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH: 'unpublish publication'
                            })
@@ -407,7 +408,6 @@ def companies_members_load(json, portal_id):
             'grid_filters_except': list(MembersRights.INITIALLY_FILTERED_OUT_STATUSES),
             'total': count,
             'page': current_page}
-
 
 
 @portal_bp.route('/company/<string:company_id>/publications/', methods=['GET'])
@@ -533,4 +533,3 @@ def translations_load(json, company_id):
 # @check_right(RequireMembereeAtPortalsRight, ['company_id'])
 def membership_set_rights(json, membership_id):
     return MemberCompanyPortal.get(membership_id).set_client_side_dict(rights=json).company_member_grid_row()
-

@@ -9,6 +9,7 @@
 
     <script>
         module.controller('companies_list', ['$scope', '$ok', '$timeout', function ($scope, $ok, $timeout) {
+
             angularControllerFunction('user_controller', 'set_selected_user_menu')('companies');
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
             $scope.url_create_company = '{{ url_for('company.update')|safe }}';

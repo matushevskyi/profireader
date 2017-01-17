@@ -568,4 +568,6 @@ def publication_status_changed(target, new_value, old_value, action):
     # possible notification - 3
     return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'],
                                         rights_phrase,
-                                        dict_main, except_to_user=[g.user])
+                                        dict_main, except_to_user=[g.user],
+                                        phrases_comment='This message is sent to publisher company employees when publication status is changed from `%s` to `%s`' % (old_value, new_value)
+                                        )

@@ -468,4 +468,5 @@ def user_company_status_changed(target, new_value, old_value, action):
 
     # possible notification - 5
     return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'], phrase,
-                                        dict_main)
+                                        dict_main, phrases_comment='This message is sent to employee when employment status are changed from `%s` to `%s`' %
+                                                       (old_value, new_value))

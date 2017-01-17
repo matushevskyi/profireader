@@ -40,7 +40,9 @@ class Socket:
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
-    def prepare_notifications(to_users, notification_type, phrases, dict_main={}, except_to_user=[]):
+    def prepare_notifications(to_users, notification_type, phrases, dict_main={}, except_to_user=[],
+                              phrases_comment=None,
+                              phrases_default=None):
 
         if not phrases:
             return utils.do_nothing
@@ -51,13 +53,23 @@ class Socket:
 
         if isinstance(phrases, str):
             phrases = [phrases]
-        if isinstance(dict_main, dict):
+        if not isinstance(dict_main, dict):
             dict_main = [dict_main for k in phrases]
 
+        if isinstance(phrases_comment, str):
+            phrases_comment = [phrases_comment for k in phrases]
+        if not isinstance(phrases_comment, dict):
+            phrases_comment = ['' for k in phrases]
+
+        if isinstance(phrases_default, str):
+            phrases_default = [phrases_default for k in phrases]
+        if not isinstance(phrases_default, dict):
+            phrases_default = [None for k in phrases]
 
         datas = [{'to_user_id': u.id,
                   'content': '<br/>'.join([TranslateTemplate.translate_and_substitute(
-                      template='_NOTIFICATIONS', url='', language=u.lang, allow_html='*', phrase=phrase,
+                      template='_NOTIFICATIONS', url='', language=u.lang, allow_html='*',
+                      phrase=phrase, phrase_comment=phrases_comment[ind], phrase_default=phrases_default[ind],
                       dictionary=utils.dict_merge(dict_main[ind], from_user_dict,
                                                   {'to_user': u.get_client_side_dict(fields='full_name'),
                                                    'url_profile_to_user': url_for('user.profile', user_id=u.id)}))
@@ -192,7 +204,9 @@ def contact_status_changed_2(target, new_value, old_value, action):
         phrase = None
 
     # possible notification - 2
-    return Socket.prepare_notifications([to_user], Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'], phrase)
+    return Socket.prepare_notifications([to_user], Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'], phrase,
+                                        phrases_comment='This message is sent to user when friendship request status is changed from `%s` to `%s`' % (
+                                            old_value, new_value))
 
 
 class Message(Base, PRBase):

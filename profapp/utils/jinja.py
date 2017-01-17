@@ -37,11 +37,12 @@ def grid_url(id, endpoint, **kwargs):
     return url_for(endpoint, **kwargs) + '#guuid=' + id
 
 
-def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):
+def translate_phrase_or_html(context, phrase, dictionary=None, allow_html='', phrase_comment=None, phrase_default=None):
     return TranslateTemplate.translate_and_substitute(context.name, phrase,
                                                       context if dictionary is None else dictionary,
                                                       language=None,
-                                                      url=None, allow_html=allow_html)
+                                                      url=None, allow_html=allow_html,
+                                                      phrase_comment=phrase_comment, phrase_default=phrase_default)
 
 
 def get_url_adapter():
@@ -134,13 +135,15 @@ def config_variables():
 
 
 @jinja2.contextfunction
-def translate_phrase(context, phrase, dictionary=None):
-    return utils.strip_tags(translate_phrase_or_html(context, phrase, dictionary, ''))
+def translate_phrase(context, phrase, dictionary=None, phrase_default=None, phrase_comment=None):
+    return utils.strip_tags(translate_phrase_or_html(context, phrase, dictionary, '', phrase_default=phrase_default,
+                                                     phrase_comment=phrase_comment))
 
 
 @jinja2.contextfunction
-def translate_html(context, phrase, dictionary=None):
-    return Markup(translate_phrase_or_html(context, phrase, dictionary, '*'))
+def translate_html(context, phrase, dictionary=None, phrase_default=None, phrase_comment=None):
+    return Markup(translate_phrase_or_html(context, phrase, dictionary, '*', phrase_default=phrase_default,
+                                           phrase_comment=phrase_comment))
 
 
 def static_address_html(relative_file_name):

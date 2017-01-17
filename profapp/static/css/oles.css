@@ -417,9 +417,15 @@
 
 .pr-grid-cell-field-type-actions {
     padding: 2px;
+    padding: 0px 2px;
+    margin: 0px 2px;
+    width: 5em;
+    overflow: hidden;
+    letter-spacing: -1px;
 }
 
-.pr-grid-cell-field-type-actions-action {
+.pr-grid-cell-field-type-change_status {
+    padding: 2px;
     padding: 0px 2px;
     margin: 0px 2px;
     width: 5em;

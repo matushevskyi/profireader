@@ -1,4 +1,5 @@
 from flask import render_template, request, url_for, g, redirect, abort
+from flask import render_template, request, url_for, g, redirect, abort
 from sqlalchemy import and_
 from sqlalchemy.sql import expression
 
@@ -14,6 +15,7 @@ from ..models.translate import TranslateTemplate
 from ..models.pr_base import PRBase
 from ..models.portal import MemberCompanyPortal, MembershipPlan
 from ..models.permissions import user_is_active, company_is_active, employee_af, employee_have_right
+from ..models.exceptions import UnauthorizedUser
 
 
 @company_bp.route('/', methods=['GET'], permissions=user_is_active)
@@ -86,8 +88,8 @@ def profile_load_validate_save(json, company_id=None):
         user_company = UserCompany.get_by_user_and_company_ids(company_id=company_id)
         if user_company:
             company_dict['actions'] = {
-                'edit_company_profile': employee_have_right(UserCompany.RIGHT_AT_COMPANY.COMPANY_EDIT_PROFILE)(
-                    company_id=company.id),
+                'edit_company_profile': True if employee_have_right(UserCompany.RIGHT_AT_COMPANY.COMPANY_EDIT_PROFILE)(
+                    company_id=company.id) else False,
                 'edit_portal_profile': EditPortalRight(company=company_id).is_allowed()}
         return company_dict
     else:
@@ -122,7 +124,8 @@ def employees_load(json, company_id):
     }
 
 
-@company_bp.route('/<string:company_id>/employment/<string:employment_id>/action/<string:action>/', methods=['OK'],
+@company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_status/<string:action>/',
+                  methods=['OK'],
                   permissions=employee_have_right(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE))
 def employment_action(json, company_id, employment_id, action):
     employment = UserCompany.get(employment_id)
@@ -136,6 +139,8 @@ def employment_action(json, company_id, employment_id, action):
             employment.status = UserCompany.STATUSES['FIRED']
 
         return employment.save().employees_grid_row()
+    else:
+        raise UnauthorizedUser()
 
 
 @company_bp.route('/<string:company_id>/employment/<string:employment_id>/set_rights/', methods=['OK'],
@@ -222,21 +227,21 @@ def join_to_portal(json, company_id):
 
 
 def employee_have_right_at_membership(right):
-    return lambda membership_id: employee_have_right(right)(
+    return lambda json, membership_id, action: employee_have_right(right)(
         company_id=MemberCompanyPortal.get(membership_id).company_id)
 
 
-@company_bp.route('/membership/<string:membership_id>/change_status/', methods=['OK'],
+@company_bp.route('/membership/<string:membership_id>/change_status/<string:new_status>/', methods=['OK'],
                   permissions=employee_have_right_at_membership(
-                      UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION))
-def membership_change_status(json, membership_id):
+                      UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS))
+def membership_change_status(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
-    employee = UserCompany.get_by_user_and_company_ids(company_id=membership.company_id)
 
-    if MembershipRights(company=membership.company_id, member_company=membership).action_is_allowed(json.get('action'),
-                                                                                                    employee) == True:
-        membership.set_memberee_status(MembershipRights.STATUS_FOR_ACTION[json.get('action')])
-    return membership.portal_memberee_grid_row()
+    if membership.status_changes().get(new_status, False) is True:
+        membership.status = new_status
+        return membership.portal_memberee_grid_row()
+    else:
+        raise UnauthorizedUser()
 
 
 @company_bp.route('/membership/<string:membership_id>/request_membership_plan/', methods=['OK'],

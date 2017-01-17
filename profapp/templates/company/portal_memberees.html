@@ -63,12 +63,12 @@
                 })
             };
 
-            $scope.grid_action = function (id, action, row, column_name) {
+            $scope.set_new_status = function (id, action, row, column_name) {
                 return $ok($scope.url_change_status({
-                    membership_id: row.id
-                }), {action: action}, function (resp) {
+                    membership_id: row.id,
+                    action: action
+                }), {}, function (resp) {
                     $scope.gridApi.grid.grid_change_row(resp)
-                }).finally(function () {
                 })
             };
 
@@ -136,7 +136,7 @@
                         //we can default select all and deselect that we need, 'exception' can be string or array of string
                     },
                     {name: 'rights', width: '50', type: 'icons', afilter: {type: 'input'}},
-                    {name: 'actions', type: 'actions', onclick: 'grid_action'}
+                    {name: 'status_changes', type: 'change_status', old_status_column_name: 'status', onclick: 'set_new_status'}
                 ]
             });
             {% endraw %}
