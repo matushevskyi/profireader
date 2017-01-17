@@ -39,10 +39,12 @@ class PrOldBlueprint(Blueprint):
 
 
 class PrBlueprint(Blueprint):
+    registered_functions = {}
+
     def route(self, rule, **options):
-        from functools import wraps
-        from flask import request, render_template, session, redirect, url_for, g, jsonify
+        from flask import request, render_template, session, redirect, url_for, g, jsonify, current_app
         from ..models import exceptions
+        from functools import wraps
         import traceback
         if options and 'methods' in options and 'OK' in options['methods']:
             options['methods'][options['methods'].index('OK')] = 'POST'
@@ -52,6 +54,8 @@ class PrBlueprint(Blueprint):
 
         if options and 'permissions' in options:
             permissions = options['permissions']
+            if not isinstance(permissions, list):
+                permissions = [permissions]
             del options['permissions']
         else:
             # raise exceptions.RouteWithoutPermissions()
@@ -67,15 +71,25 @@ class PrBlueprint(Blueprint):
                 hide_error = not (g.debug or g.testing)
 
                 try:
-                    if not permissions:
-                        raise exceptions.RouteWithoutPermissions()
+
+                    if request.url_rule.rule not in self.registered_functions[f.__name__][1]:
+                        raise exceptions.RouteWithoutPermissions(self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
+
+                    ps = self.registered_functions[f.__name__][1][request.url_rule.rule]
+
+                    if not ps:
+                        raise exceptions.RouteWithoutPermissions(self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
 
                     if method == 'OK' or method == 'POST':
                         json = request.json
-                        permissions(json, *args, **kwargs)
+                        for p in ps:
+                            if not p(json, *args, **kwargs):
+                                raise exceptions.UnauthorizedUser()
                         ret = f(json, *args, **kwargs)
                     else:
-                        permissions(*args, **kwargs)
+                        for p in ps:
+                            if not p(*args, **kwargs):
+                                raise exceptions.UnauthorizedUser()
                         ret = f(*args, **kwargs)
 
 
@@ -89,14 +103,15 @@ class PrBlueprint(Blueprint):
                         return jsonify(
                             {'data': {}, 'ok': False, 'error_code': exceptions.NotLoggedInUser.__name__})
 
-                except Exception as e:
-                    if method == 'GET':
-                        return render_template('errors/general.html', message='Internal error' if hide_error else e)
-                    elif method == 'POST':
-                        return render_template('errors/general.html', message='Internal error' if hide_error else e)
-                    elif method == 'OK':
-                        return jsonify({'data': {} if hide_error else traceback.extract_stack(), 'ok': False,
-                                        'error_code': Exception.__name__ if hide_error  else type(e).__name__})
+
+                # except Exception as e:
+                #     if method == 'GET':
+                #         return render_template('errors/general.html', message='Internal error' if hide_error else e)
+                #     elif method == 'POST':
+                #         return render_template('errors/general.html', message='Internal error' if hide_error else e)
+                #     elif method == 'OK':
+                #         return jsonify({'data': {} if hide_error else traceback.extract_stack(), 'ok': False,
+                #                         'error_code': e if hide_error else type(e).__name__})
 
                 if method == 'GET':
                     return ret
@@ -105,10 +120,15 @@ class PrBlueprint(Blueprint):
                 elif method == 'OK':
                     return jsonify({'data': ret, 'ok': True, 'error_code': 'NO_ERROR'})
 
-            endpoint = options.pop("endpoint", wrapped_function.__name__)
-            self.add_url_rule(rule, endpoint, wrapped_function, **options)
+            if f.__name__ not in self.registered_functions:
+                self.registered_functions[f.__name__] = (wrapped_function, {}, current_app)
 
-            return wrapped_function
+            self.registered_functions[f.__name__][1][self.url_prefix + rule] = permissions
+
+            endpoint = options.pop("endpoint", f.__name__)
+            self.add_url_rule(rule, endpoint, self.registered_functions[f.__name__][0], **options)
+
+            return self.registered_functions[f.__name__][0]
 
         return decorator
 
@@ -121,7 +141,7 @@ user_bp = PrOldBlueprint('user', __name__)
 article_bp = PrOldBlueprint('article', __name__)
 filemanager_bp = PrOldBlueprint('filemanager', __name__)
 image_editor_bp = PrOldBlueprint('image_editor', __name__)
-company_bp = PrOldBlueprint('company', __name__)
+company_bp = PrBlueprint('company', __name__, url_prefix='/company')
 portal_bp = PrOldBlueprint('portal', __name__)
 front_bp = PrOldBlueprint('front', __name__)
 file_bp = PrOldBlueprint('file', __name__)
@@ -129,7 +149,7 @@ exception_bp = PrOldBlueprint('exception', __name__)
 tools_bp = PrOldBlueprint('tools', __name__)
 # help_bp = PrOldBlueprint('help', __name__)
 # reader_bp = PrOldBlueprint('reader', __name__)
-messenger_bp = PrBlueprint('messenger', __name__)
+messenger_bp = PrBlueprint('messenger', __name__, url_prefix='/messenger')
 socket_bp = PrOldBlueprint('socket', __name__)
 tutorial_bp = PrOldBlueprint('tutorial', __name__)
 # reader_bp = Blueprint('reader', __name__)

@@ -291,8 +291,6 @@ class UserCompany(Base, PRBase):
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), nullable=False)
 
     # TODO: OZ by OZ: remove `SUSPENDED` status from db type
-    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED'}
-    status = Column(TABLE_TYPES['status'], default=STATUSES['APPLICANT'], nullable=False)
 
     class RIGHT_AT_COMPANY(BinaryRights):
         FILES_BROWSE = 4
@@ -327,6 +325,31 @@ class UserCompany(Base, PRBase):
                 self.PORTAL_MANAGE_MEMBERS_COMPANIES,
             ]
 
+    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED'}
+    ACTIONS = {'ENLIST': 'ENLIST', 'REJECT': 'REJECT', 'FIRE': 'FIRE'}
+
+    def actions(self):
+        r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
+            UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
+
+        if self.status == UserCompany.STATUSES['APPLICANT']:
+            return {
+                UserCompany.ACTIONS['ENLIST']: r, UserCompany.ACTIONS['REJECT']: r,
+            }
+        elif self.status in [UserCompany.STATUSES['REJECTED'], UserCompany.STATUSES['FIRED']]:
+            return {
+                UserCompany.ACTIONS['ENLIST']: r,
+            }
+        elif self.status == UserCompany.STATUSES['ACTIVE']:
+            return {
+                UserCompany.ACTIONS['FIRE']: 'You can`t fire company owner' if
+                self.company.author_user_id == self.user_id else r
+            }
+        else:
+            return {}
+
+    status = Column(TABLE_TYPES['status'], default=STATUSES['APPLICANT'], nullable=False)
+
     position = Column(TABLE_TYPES['short_name'], default='')
 
     md_tm = Column(TABLE_TYPES['timestamp'])
@@ -356,18 +379,6 @@ class UserCompany(Base, PRBase):
             return False
         return True
 
-    @staticmethod
-    # TODO: OZ by OZ: rework this as in action-style
-    def get_statuses_avaible(company_id):
-        available_statuses = {s: True for s in UserCompany.STATUSES}
-        user_rights = UserCompany.get_by_user_and_company_ids(user_id=current_user.id, company_id=company_id).rights
-        if user_rights['EMPLOYEE_ENLIST_OR_FIRE'] == False:
-            available_statuses['ACTIVE'] = False
-        if user_rights['EMPLOYEE_ENLIST_OR_FIRE'] == False:
-            available_statuses['SUSPENDED'] = False
-            available_statuses['UNSUSPEND'] = False
-        return available_statuses
-
     def get_client_side_dict(self, fields='id,user_id,company_id,position,status,rights', more_fields=None):
         return self.to_dict(fields, more_fields)
 
@@ -375,18 +386,17 @@ class UserCompany(Base, PRBase):
         self.attr(utils.filter_json(json, 'status|position|rights'))
 
     def employees_grid_row(self):
-        from flask import jsonify
-        from ..models.rights import EmployeesRight
-        return utils.dict_merge(
-            {
-                'id': self.id,
-                'employment': self.get_client_side_dict(more_fields='user.full_name|address_email|address_phone')},
-            {'actions': EmployeesRight(company=self.company, employment=self).actions()})
+        return {
+            'id': self.id,
+            'actions': self.actions(),
+            'employment': self.get_client_side_dict(more_fields='user.full_name|address_email|address_phone'),
+        }
 
     @staticmethod
     def get_by_user_and_company_ids(user_id=None, company_id=None):
-        return utils.db.query_filter(UserCompany).filter_by(user_id=user_id if user_id else g.user.id,
-                                                            company_id=company_id).first()
+        return utils.db.query_filter(UserCompany).filter_by(
+            user_id=(g.user.id if g.user else '') if user_id is None else user_id,
+            company_id=company_id).first()
 
     @staticmethod
     def apply_request(company_id, user_id, bool):

@@ -56,7 +56,7 @@ def get_url_adapter():
 
 
 # TODO: OZ by OZ: add kwargs just like in url_for
-def raw_url_for(endpoint):
+def raw_url_for(endpoint, **kwargs):
     url_adapter = get_url_adapter()
 
     rules = url_adapter.map._rules_by_endpoint.get(endpoint, ())
@@ -64,7 +64,12 @@ def raw_url_for(endpoint):
     if len(rules) < 1:
         raise Exception('You requsted url for endpoint `%s` but no endpoint found' % (endpoint,))
 
-    rules_simplified = [re.compile('<[^:]*:').sub('<', rule.rule) for rule in rules]
+    rules_simplified = []
+    for rule in rules:
+        r = re.compile('<[^:]*:').sub('<', rule.rule)
+        for (k, v) in kwargs.items():
+            r = re.compile('<' + k + '>').sub(v, r)
+        rules_simplified.append(r)
 
     return "function (dict, host) { return find_and_build_url_for_endpoint(dict?dict:$scope, %s, host); }" % (
         json.dumps(rules_simplified))

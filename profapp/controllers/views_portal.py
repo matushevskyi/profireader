@@ -409,15 +409,6 @@ def companies_members_load(json, portal_id):
             'page': current_page}
 
 
-@portal_bp.route('/search_for_portal_to_join/', methods=['OK'])
-@check_right(UserIsActive)
-def search_for_portal_to_join(json):
-    if RequireMembereeAtPortalsRight(company=json['company_id']).is_allowed() != True:
-        return False
-    portals_partners = Portal.search_for_portal_to_join(
-        json['company_id'], json['search'])
-    return portals_partners
-
 
 @portal_bp.route('/company/<string:company_id>/publications/', methods=['GET'])
 def old_publications_url(company_id):

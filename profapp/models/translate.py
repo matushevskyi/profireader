@@ -66,7 +66,7 @@ class TranslateTemplate(Base, PRBase):
 
         if portal_id and not exist:
             exist_for_another = utils.db.query_filter(TranslateTemplate, template=template, name=phrase,
-                                             portal_id=TranslateTemplate.exemplary_portal_id).first()
+                                                      portal_id=TranslateTemplate.exemplary_portal_id).first()
             # TODO: OZ by OZ: how to select template portal? now we grab phrases from most recent portal, and there can be some unappropriate values
             if not exist_for_another:
                 exist_for_another = utils.db.query_filter(TranslateTemplate, template=template, name=phrase).filter(
@@ -122,8 +122,6 @@ class TranslateTemplate(Base, PRBase):
                                                           portal_id=getattr(g, "portal_id", None),
                                                           allow_html=allow_html, comment=comment)
 
-
-
         if translation:
             save_translation = False
             if translation.allow_html != allow_html:
@@ -140,7 +138,9 @@ class TranslateTemplate(Base, PRBase):
                     translation.attr({'ac_tm': i})
                     save_translation = True
             if save_translation:
-                translation.save()
+                pass
+                g.db().execute('UPDATE "%s" SET "allow_html" = :allow_html, "comment" = :comment, "ac_tm" = :ac_tm  WHERE id = :id' % (translation.__tablename__,),
+                               params={'allow_html': allow_html, 'comment': comment, 'ac_tm': i, 'id': translation.id})
 
             return TranslateTemplate.try_to_guess_lang(translation, language)
         else:

@@ -116,7 +116,7 @@
             $scope.$$translate = {{ translates('company_employees_controller')|safe }};
             $scope.company = {{ company.get_client_side_dict(fields = 'id,name')|tojson|safe }};
             $scope.get_link_user_profile = {{ raw_url_for('user.profile')|safe }};
-            $scope.url_set_rights = {{ raw_url_for('company.set_rights')|safe }};
+            $scope.url_set_rights = {{ raw_url_for('company.set_rights', company_id = company.id)|safe }};
             $scope.rights = {{ employment.rights|tojson|safe }};
             {% raw %}
 
@@ -196,7 +196,7 @@
                         width: '100', afilter: {type: 'input'}
                     }
                     ,
-                        {
+                    {
                         name: 'employment.user.address_email',
                         width: '150', afilter: {type: 'input'}
                     },
@@ -205,7 +205,8 @@
                         width: '100', afilter: {type: 'input'}
                     },
                     {
-                        name: 'employment.status', width: '100', afilter: {type: 'input'}},
+                        name: 'employment.status', width: '100', afilter: {type: 'input'}
+                    },
                     {
                         name: 'employment.rights',
                         width: '330',

@@ -19,10 +19,8 @@
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portal_memberees');
             $scope.$$translate = {{ translates('portals_partners')|safe }};
             $scope.url_portal_memberees = '{{ url_for('company.portal_memberees', company_id=company.id)}}';
+            $scope.url_search_for_portal = '{{ url_for('company.search_for_portal_to_join', company_id = company.id) }}';
             $scope.company_id = '{{ company.id|safe }}';
-            $scope.url_search_for_portal = function () {
-                return ( '/portal/search_for_portal_to_join/' );
-            };
             $scope.url_change_status = {{ raw_url_for('company.membership_change_status')|safe }};
             $scope.url_join_to_portal = {{ raw_url_for('company.join_to_portal')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
@@ -44,7 +42,7 @@
                     };
 
             $scope.searchForPortalToJoin = function (val) {
-                return $ok($scope.url_search_for_portal(), {
+                return $ok($scope.url_search_for_portal, {
                     company_id: $scope.company_id,
                     search: val
                 }, function (resp) {

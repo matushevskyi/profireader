@@ -1,5 +1,6 @@
 import re
 
+
 def fileUrl(id, down=False, if_no_file=None):
     from config import Config
     if not id:
@@ -188,15 +189,19 @@ def get_from_list_by_key(list, key):
 
 from html.parser import HTMLParser
 
+
 class MLStripper(HTMLParser):
     def __init__(self):
         super().__init__()
         self.reset()
         self.fed = []
+
     def handle_data(self, d):
         self.fed.append(d)
+
     def get_data(self):
         return ''.join(self.fed)
+
 
 def strip_tags(html, allowed_tags=[]):
     html_parser = MLStripper()
@@ -205,6 +210,8 @@ def strip_tags(html, allowed_tags=[]):
 
 
 import cProfile
+
+
 def profile(func):
     def profiled_func(*args, **kwargs):
         profile = cProfile.Profile()
@@ -215,8 +222,13 @@ def profile(func):
             return result
         finally:
             profile.print_stats(sort='time')
+
     return profiled_func
 
 
 def do_nothing(*args, **kwargs):
     pass
+
+
+def json2kwargs(f):
+    return lambda json: f(**json)

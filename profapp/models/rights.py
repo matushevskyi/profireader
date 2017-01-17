@@ -478,76 +478,76 @@ class FilemanagerRights(BaseRightsEmployeeInCompany):
         return True
 
 
-class EmployeesRight(BaseRightsEmployeeInCompany):
-    def __init__(self, company=None, employment=None):
-        super(EmployeesRight, self).__init__(company=company)
-        self.employment = employment if isinstance(employment, UserCompany) else \
-            UserCompany.get_by_user_and_company_ids(user_id=employment, company_id=self.company.id) if employment and company else None
-
-    def get_allowed_attributes(self, key, value):
-        if key == 'user_id':
-            key = 'user'
-            value = User.get(value)
-        if key == 'company_id':
-            key = 'company'
-            value = Company.get(value)
-        if key == 'employment_id':
-            key = 'employment'
-            value = utils.db.query_filter(UserCompany, id=value).first()
-        return key, value
-
-    STATUSES = UserCompany.STATUSES
-
-    ACTIONS = {
-        'ENLIST': 'ENLIST',
-        'REJECT': 'REJECT',
-        'FIRE': 'FIRE'
-    }
-
-    ACTIONS_FOR_STATUSES = {
-        STATUSES['APPLICANT']: {
-            ACTIONS['ENLIST']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-            ACTIONS['REJECT']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-        },
-        STATUSES['REJECTED']: {
-            ACTIONS['ENLIST']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-        },
-
-        STATUSES['FIRED']: {
-            ACTIONS['ENLIST']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
-        },
-        STATUSES['ACTIVE']: {
-            ACTIONS['FIRE']:
-                {'employee': [lambda kwargs: 'You can`t fire company owner'
-                if kwargs['employment'].user_id == kwargs['employee'].company.author_user_id else True,
-                              UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
-                 }
-            # ACTIONS['SET_PERMISSIONS']:
-            #     {'employee': [lambda kwargs: 'Company owner have all permissions and you can do nothing with that'
-            #     if kwargs['employment'].user_id == kwargs['employee'].company.author_user_id else True,
-            #                   UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
-        }
-    }
-
-    def action_is_allowed(self, action_name):
-        if not self.company:
-            raise Exception('Bad data!')
-        if not self.employment:
-            raise Exception('Bad data!')
-        employee = UserCompany.get_by_user_and_company_ids(company_id=self.company.id)
-        if not employee:
-            return "Sorry!You are not employee in this company!"
-        get_objects_for_check = {'employee': employee,
-                                 'employeer': self.company,
-                                 'user': self.employment.user}
-        return BaseRightsInProfireader._is_action_allowed(self.employment, action_name,
-                                                          get_objects_for_check,
-                                                          {'employee': employee, 'employment': self.employment},
-                                                          actions=self.ACTIONS,
-                                                          actions_for_statuses=self.ACTIONS_FOR_STATUSES)
-
-    def actions(self):
-        return BaseRightsInProfireader.base_actions(self, object=self.employment)
+# class EmployeesRight(BaseRightsEmployeeInCompany):
+#     def __init__(self, company=None, employment=None):
+#         super(EmployeesRight, self).__init__(company=company)
+#         self.employment = employment if isinstance(employment, UserCompany) else \
+#             UserCompany.get_by_user_and_company_ids(user_id=employment, company_id=self.company.id) if employment and company else None
+#
+#     def get_allowed_attributes(self, key, value):
+#         if key == 'user_id':
+#             key = 'user'
+#             value = User.get(value)
+#         if key == 'company_id':
+#             key = 'company'
+#             value = Company.get(value)
+#         if key == 'employment_id':
+#             key = 'employment'
+#             value = utils.db.query_filter(UserCompany, id=value).first()
+#         return key, value
+#
+#     STATUSES = UserCompany.STATUSES
+#
+#     ACTIONS = {
+#         'ENLIST': 'ENLIST',
+#         'REJECT': 'REJECT',
+#         'FIRE': 'FIRE'
+#     }
+#
+#     ACTIONS_FOR_STATUSES = {
+#         STATUSES['APPLICANT']: {
+#             ACTIONS['ENLIST']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
+#             ACTIONS['REJECT']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
+#         },
+#         STATUSES['REJECTED']: {
+#             ACTIONS['ENLIST']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
+#         },
+#
+#         STATUSES['FIRED']: {
+#             ACTIONS['ENLIST']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]},
+#         },
+#         STATUSES['ACTIVE']: {
+#             ACTIONS['FIRE']:
+#                 {'employee': [lambda kwargs: 'You can`t fire company owner'
+#                 if kwargs['employment'].user_id == kwargs['employee'].company.author_user_id else True,
+#                               UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
+#                  }
+#             # ACTIONS['SET_PERMISSIONS']:
+#             #     {'employee': [lambda kwargs: 'Company owner have all permissions and you can do nothing with that'
+#             #     if kwargs['employment'].user_id == kwargs['employee'].company.author_user_id else True,
+#             #                   UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
+#         }
+#     }
+#
+#     def action_is_allowed(self, action_name):
+#         if not self.company:
+#             raise Exception('Bad data!')
+#         if not self.employment:
+#             raise Exception('Bad data!')
+#         employee = UserCompany.get_by_user_and_company_ids(company_id=self.company.id)
+#         if not employee:
+#             return "Sorry!You are not employee in this company!"
+#         get_objects_for_check = {'employee': employee,
+#                                  'employeer': self.company,
+#                                  'user': self.employment.user}
+#         return BaseRightsInProfireader._is_action_allowed(self.employment, action_name,
+#                                                           get_objects_for_check,
+#                                                           {'employee': employee, 'employment': self.employment},
+#                                                           actions=self.ACTIONS,
+#                                                           actions_for_statuses=self.ACTIONS_FOR_STATUSES)
+#
+#     def actions(self):
+#         return BaseRightsInProfireader.base_actions(self, object=self.employment)
 
 
 class MembersOrMembershipBase(BaseRightsInProfireader):
@@ -773,9 +773,9 @@ class UserIsEmployeeAtPortalOwner(BaseRightsEmployeeInCompany):
         return True
 
 
-class EditCompanyRight(BaseRightsEmployeeInCompany):
-    def is_allowed(self, raise_exception_redirect_if_not=False):
-        return self.action_is_allowed(self.ACTIONS['EDIT_COMPANY'])
+# class EditCompanyRight(BaseRightsEmployeeInCompany):
+#     def is_allowed(self, raise_exception_redirect_if_not=False):
+#         return self.action_is_allowed(self.ACTIONS['EDIT_COMPANY'])
 
 
 class EditPortalRight(BaseRightsEmployeeInCompany):
@@ -800,14 +800,14 @@ class PortalManageMembersCompaniesRight(BaseRightsEmployeeInCompany):
         return self.action_is_allowed(self.ACTIONS['PORTAL_MANAGE_MEMBERS_COMPANIES'])
 
 
-class EmployeeAllowRight(EmployeesRight):
-    def __init__(self, company=None, user=None):
-        super(EmployeeAllowRight, self).__init__(company=company)
-        self.user = user
-
-    def is_allowed(self, raise_exception_redirect_if_not=False):
-        self.employment = UserCompany.get_by_user_and_company_ids(user_id=self.user.id, company_id=self.company.id)
-        return self.action_is_allowed(self.ACTIONS['ALLOW'])
+# class EmployeeAllowRight(EmployeesRight):
+#     def __init__(self, company=None, user=None):
+#         super(EmployeeAllowRight, self).__init__(company=company)
+#         self.user = user
+#
+#     def is_allowed(self, raise_exception_redirect_if_not=False):
+#         self.employment = UserCompany.get_by_user_and_company_ids(user_id=self.user.id, company_id=self.company.id)
+#         return self.action_is_allowed(self.ACTIONS['ALLOW'])
 
 
 # rights for work with articles
