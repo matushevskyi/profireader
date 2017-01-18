@@ -354,7 +354,7 @@ def membership_set_tags(json, membership_id):
 #     return membership.get_client_side_dict()
 
 
-@portal_bp.route('/membership/<string:membership_id>/change_status/', methods=['OK'])
+@portal_bp.route('/membership/<string:membership_id>/change_member_status/', methods=['OK'])
 # @check_right(PortalManageMembersCompaniesRight, ['company_id', 'member_id'])
 # @check_right(PortalManageMembersCompaniesRight, ['membership_id'])
 def membership_change_status(json, membership_id):

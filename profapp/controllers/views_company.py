@@ -127,7 +127,7 @@ def employees_load(json, company_id):
 @company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_status/<string:action>/',
                   methods=['OK'],
                   permissions=employee_have_right(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE))
-def employment_action(json, company_id, employment_id, action):
+def employee_change_status(json, company_id, employment_id, new_status):
     employment = UserCompany.get(employment_id)
 
     if employment.actions()[action] is True:
@@ -227,17 +227,17 @@ def join_to_portal(json, company_id):
 
 
 def employee_have_right_at_membership(right):
-    return lambda json, membership_id, action: employee_have_right(right)(
+    return lambda json, membership_id, *args, **kwargs: employee_have_right(right)(
         company_id=MemberCompanyPortal.get(membership_id).company_id)
 
 
 @company_bp.route('/membership/<string:membership_id>/change_status/<string:new_status>/', methods=['OK'],
                   permissions=employee_have_right_at_membership(
                       UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS))
-def membership_change_status(json, membership_id, new_status):
+def change_membership_status_by_company(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
 
-    if membership.status_changes().get(new_status, False) is True:
+    if utils.find_by_key(membership.status_changes(), 'status', new_status)['enabled'] is True:
         membership.status = new_status
         return membership.portal_memberee_grid_row()
     else:

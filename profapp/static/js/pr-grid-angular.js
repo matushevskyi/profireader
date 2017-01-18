@@ -101,7 +101,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                             col.onclick = 'grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')';
                         }
                         else if (col.type === 'change_status') {
-                            col.onclick = 'grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')';
+                            col.onclick = 'grid.appScope.' + col['onclick'] + '(row.entity.id, new_status_and_enabled[\'status\'], row.entity, \'' + col['name'] + '\')';
                         }
                         else if (col.type === 'icons') {
                             attributes_for_cell += ' ng-click="grid.onclick_without_bubbling($event, grid.appScope.' + col.onclick + ', row.entity.id, undefined, row.entity, \'' + col['name'] + '\')"';
@@ -140,9 +140,9 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         case 'change_status':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<button ' +
                                 ' class="btn pr-grid-cell-field-type-change_status pr-grid-cell-field-type-change_status-old-{{ row.entity[\''+col['old_status_column_name']+'\'] }} pr-grid-cell-field-type-change_status-new-{{ new_status }}" ' +
-                                ' ng-repeat="(new_status, enabled) in ' + cell_raw_value + '" ng-disabled="enabled !== true" ng-style="{width:grid.getLengthOfAssociativeArray(' + cell_value + ')>3?\'2.5em\':\'5em\'}"' +
+                                ' ng-repeat="new_status_and_enabled in ' + cell_raw_value + '" ng-disabled="new_status_and_enabled[\'enabled\'] !== true"' +
                                 ' ng-click="' + col.onclick + '" ' +
-                                ' title="{{ grid.appScope._((enabled === true)?(\'change \' + row.entity[\''+col['old_status_column_name']+'\'] + \' to \' + new_status):enabled) }}">{{ grid.appScope._(row.entity[\'' + col['old_status_column_name'] + '\'] + \'=>\' + new_status, null, new_status) }}</button></div>';
+                                ' title="{{ grid.appScope._((new_status_and_enabled[\'enabled\'] === true)?(\'change \' + row.entity[\''+col['old_status_column_name']+'\'] + \' to \' + new_status_and_enabled[\'status\']):new_status_and_enabled[\'enabled\']) }}">{{ grid.appScope._(row.entity[\'' + col['old_status_column_name'] + '\'] + \'=>\' + new_status_and_enabled[\'status\'], null, \'make \' + new_status_and_enabled[\'status\']) }}</button></div>';
                         case 'icons':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<i ng-class="{disabled: !icon_enabled}" ' +
                                 'class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ icon_name }}" ng-repeat="(icon_name, icon_enabled) in ' + cell_raw_value + '" ng-click="grid.onclick_without_bubbling($event, grid.appScope.' + col.onclick + ', row.entity.id, \'{{ icon_name }}\', row.entity, \'' + col['name'] + '\')" title="{{ grid.appScope._(\'grid icon \' + icon_name) }}"></i></div>';

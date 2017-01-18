@@ -419,8 +419,7 @@
     padding: 2px;
     padding: 0px 2px;
     margin: 0px 2px;
-    width: 5em;
-    overflow: hidden;
+    /*overflow: hidden;*/
     letter-spacing: -1px;
 }
 
@@ -428,10 +427,15 @@
     padding: 2px;
     padding: 0px 2px;
     margin: 0px 2px;
-    width: 5em;
-    overflow: hidden;
+    /*overflow: hidden;*/
     letter-spacing: -1px;
 }
+
+.pr-grid-cell-field-type-actions button, .pr-grid-cell-field-type-change_status button {
+    width: 7em;
+}
+
+
 
 .modal-filemanager-fullscreen {
     width: 95%;

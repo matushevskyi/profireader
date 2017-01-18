@@ -15,22 +15,21 @@
 
     <script>
 
-        module.controller('portals_partners', function ($scope, $ok, $sce, $membership_plan, $membership_tags) {
+        module.controller('portal_memberees', function ($scope, $ok, $sce, $membership_plan, $membership_tags, $confirm) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portal_memberees');
-            $scope.$$translate = {{ translates('portals_partners')|safe }};
+            $scope.$$translate = {{ translates('portal_memberees')|safe }};
             $scope.url_portal_memberees = '{{ url_for('company.portal_memberees', company_id=company.id)}}';
             $scope.url_search_for_portal = '{{ url_for('company.search_for_portal_to_join', company_id = company.id) }}';
             $scope.company_id = '{{ company.id|safe }}';
-            $scope.url_change_status = {{ raw_url_for('company.membership_change_status')|safe }};
             $scope.url_join_to_portal = {{ raw_url_for('company.join_to_portal')|safe }};
             $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
+            $scope.url_change_status = {{ raw_url_for('company.change_membership_status_by_company')|safe }};
             $scope.selectedPortal_name = '';
             $scope.selectedPortal = null;
             $scope.selectedPortal_sending = false;
             $scope.actions = {{ actions|safe }}
 
                     {% raw %}
-
                     $scope.onSelect = function ($item, $model, $label) {
                         if (!$item || !$item.id) {
                             $scope.selectedPortal_name = '';
@@ -63,13 +62,17 @@
                 })
             };
 
-            $scope.set_new_status = function (id, action, row, column_name) {
-                return $ok($scope.url_change_status({
-                    membership_id: row.id,
-                    action: action
-                }), {}, function (resp) {
-                    $scope.gridApi.grid.grid_change_row(resp)
-                })
+            $scope.set_new_status = function (id, new_status, row, column_name) {
+                $confirm(
+                        $scope._('change status of membership by company confirmation dialog title', null, 'change status of membership'),
+                        $scope._('You are going to change status of membership for company `%(company.name)s` at portal `%(portal.name)s` from ' + row.status + ' to ' + new_status, row),
+                        $scope._('change status from ' + row.status + ' to ' + new_status)
+                ).then(function () {
+                    $ok($scope.url_change_status({
+                        membership_id: row.id,
+                        new_status: new_status
+                    }), {}, $scope.gridApi.grid.grid_change_row);
+                });
             };
 
             $scope.portal_link = function (link) {
@@ -136,7 +139,12 @@
                         //we can default select all and deselect that we need, 'exception' can be string or array of string
                     },
                     {name: 'rights', width: '50', type: 'icons', afilter: {type: 'input'}},
-                    {name: 'status_changes', type: 'change_status', old_status_column_name: 'status', onclick: 'set_new_status'}
+                    {
+                        name: 'status_changes',
+                        type: 'change_status',
+                        old_status_column_name: 'status',
+                        onclick: 'set_new_status'
+                    }
                 ]
             });
             {% endraw %}
@@ -144,7 +152,7 @@
     </script>
 
     {% raw %}
-    <div ng-controller="portals_partners" ng-cloak>
+    <div ng-controller="portal_memberees" ng-cloak>
         <h5> {{ _('Join to portal') }} </h5>
         <input pr-user-can="actions.require_memberee" typeahead-on-select="onSelect($item, $model, $label)"
                uib-typeahead-template-url="typeaheadTemplate.html"

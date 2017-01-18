@@ -12,17 +12,17 @@
     {% endblock company_base %}
 
     <script>
-        module.controller('employment_action_dialog', function ($scope, $ok, $uibModalInstance, action, employment, company) {
+        module.controller('employee_change_status_dialog', function ($scope, $ok, $uibModalInstance, new_status, employment, company) {
 
-            $scope.$$translate = {{ translates('employment_action_dialog')|safe }};
-            $scope.employment_action = {{ raw_url_for('company.employment_action')|safe }};
+            $scope.$$translate = {{ translates('employee_action_dialog')|safe }};
+            $scope.employment_change_status = {{ raw_url_for('company.employee_change_status')|safe }};
             {% raw %}
 
-            $scope.action = action;
+            $scope.new_status = new_status;
             $scope.employment = employment;
             $scope.company = company;
 
-            $scope.do_action = function () {
+            $scope.change_status = function () {
                 $ok($scope.employment_action({
                     employment_id: $scope.employment.id,
                     company_id: $scope.company.id,

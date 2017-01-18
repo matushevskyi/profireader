@@ -147,8 +147,11 @@ def static_address(relative_file_name):
     return '//static.' + Config.MAIN_DOMAIN + '/static/' + relative_file_name
 
 
+def find_by_key(list, key, val):
+    return next((d for d in list if (d[key] if isinstance(d, dict) else getattr(d, key)) == val), None)
+
 def find_by_id(list, id):
-    return next((d for d in list if (d['id'] if isinstance(d, dict) else d.id) == id), None)
+    return find_by_key(list, 'id', id)
 
 
 def dict_deep_replace(what_to_append, dictionary, *args, add_only_if_not_exists=False):

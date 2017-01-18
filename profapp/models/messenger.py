@@ -53,7 +53,7 @@ class Socket:
 
         if isinstance(phrases, str):
             phrases = [phrases]
-        if not isinstance(dict_main, dict):
+        if isinstance(dict_main, dict):
             dict_main = [dict_main for k in phrases]
 
         if isinstance(phrases_comment, str):

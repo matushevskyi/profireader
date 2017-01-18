@@ -130,7 +130,7 @@ class TranslateTemplate(Base, PRBase):
             if translation.allow_html != allow_html or \
                             translation.comment != phrase_comment or \
                     (phrase_default is not None and [lng for lng in Config.LANGUAGES if
-                                                     getattr(translation, lng) == phrase]) or \
+                                                     getattr(translation, lng['name']) == phrase]) or \
                     (current_app.config['DEBUG'] and (
                                 not translation.ac_tm or datetime.datetime.now().timestamp() - translation.ac_tm.timestamp() > 86400)):
                 # TODO: OZ by OZ change ac without changing md (md changed by trigger)

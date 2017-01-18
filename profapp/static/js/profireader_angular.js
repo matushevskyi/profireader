@@ -176,14 +176,14 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
     })
     .factory('$confirm', ['$uibModal', function ($uibModal) {
-        return function (title, question, buttons) {
+        return function (title, question, yes_text, no_text) {
             var modalInstance = $uibModal.open({
                 templateUrl: 'confirm.html',
                 controller: 'confirm_dialog_controller',
                 resolve: {
                     'buttons': function () {
-                        return buttons ? buttons : [{'answer': true, 'text': 'Yes', 'class_name': 'btn-default'},
-                            {'answer': false, 'text': 'No', 'class_name': 'btn-danger'}];
+                        return [{'answer': true, 'text': yes_text?yes_text:'Ok', 'class_name': 'btn-default'},
+                            {'answer': false, 'text': no_text?no_text:'Cancel', 'class_name': 'btn-danger'}];
                     },
                     'title': function () {
                         return title;

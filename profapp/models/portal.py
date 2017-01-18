@@ -702,21 +702,26 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]
 
         if self.status == MemberCompanyPortal.STATUSES['ACTIVE']:
-            return {
-                MemberCompanyPortal.STATUSES[
-                    'DELETED']: 'You can`t delete membership at portal of own company' if
-                self.company_id == self.portal.company_owner_id else r,
-                MemberCompanyPortal.STATUSES[
-                    'FROZEN']: 'You can`t froze membership at portal of own company' if
-                self.company_id == self.portal.company_owner_id else r,
-            }
+            return [
+                {'status': MemberCompanyPortal.STATUSES['DELETED'],
+                 'enabled': 'You can`t delete membership at portal of own company' if
+                 self.company_id == self.portal.company_owner_id else r},
+                {'status': MemberCompanyPortal.STATUSES['FROZEN'],
+                 'enabled': 'You can`t froze membership at portal of own company' if
+                 self.company_id == self.portal.company_owner_id else r},
+            ]
         elif self.status in [MemberCompanyPortal.STATUSES['APPLICANT'], MemberCompanyPortal.STATUSES['REJECTED'],
-                             MemberCompanyPortal.STATUSES['SUSPENDED'], MemberCompanyPortal.STATUSES['FROZEN']]:
-            return {
-                MemberCompanyPortal.STATUSES['DELETED']: r,
-            }
+                             MemberCompanyPortal.STATUSES['SUSPENDED']]:
+            return [
+                {'status': MemberCompanyPortal.STATUSES['DELETED'], 'enabled': r}
+            ]
+        elif self.status in [MemberCompanyPortal.STATUSES['FROZEN']]:
+            return [
+                {'status': MemberCompanyPortal.STATUSES['ACTIVE'], 'enabled': r},
+                {'status': MemberCompanyPortal.STATUSES['DELETED'], 'enabled': r},
+            ]
         else:
-            return {}
+            return []
 
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
@@ -724,7 +729,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def portal_memberee_grid_row(self):
         return utils.dict_merge(self.get_client_side_dict(
             fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,'
-                   'requested_membership_plan_issued,request_membership_plan_issued_immediately'),
+                   'requested_membership_plan_issued,request_membership_plan_issued_immediately,company.id|name'),
             {'publications': self.get_publication_count(), 'status_changes': self.status_changes()})
 
     def company_member_grid_row(self):
@@ -1035,10 +1040,10 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
                 'url_portal_companies_members': utils.jinja.grid_url(self.id, 'portal.companies_members',
                                                                      portal_id=self.portal.id)
             }, additional_dict),
-            phrase_default=phrase_default,
-            phrase_comment=None if phrase_comment is None else (
-            "this message is sent to portal owner company employees when " +
-            phrase_comment),
+            phrases_default=phrase_default,
+            phrases_comment=None if phrase_comment is None else (
+                "this message is sent to portal owner company employees when " +
+                phrase_comment),
             except_to_user=[g.user])
 
     def notifications_for_company_about_portal_memberee(self, phrase, additional_dict={}, rights=None,
@@ -1062,8 +1067,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             }, additional_dict),
             phrase_default=phrase_default,
             phrase_comment=None if phrase_comment is None else (
-            "this message is sent to company employees when at portal " +
-            phrase_comment),
+                "this message is sent to company employees when at portal " +
+                phrase_comment),
             except_to_user=[g.user])
 
 
