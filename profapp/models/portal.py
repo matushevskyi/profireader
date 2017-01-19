@@ -17,6 +17,7 @@ from .. import utils
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
 from ..models.tag import Tag, TagMembership
+from profapp import on_value_changed
 
 
 class Portal(Base, PRBase):
@@ -693,10 +694,15 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     current_membership_plan_issued = relationship('MembershipPlanIssued',
                                                   foreign_keys=[current_membership_plan_issued_id])
 
-    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE',
-                'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN', 'DELETED': 'DELETED'}
+    STATUSES = {'MEMBERSHIP_REQUESTED_BY_COMPANY': 'MEMBERSHIP_REQUESTED_BY_COMPANY',
+                'MEMBERSHIP_REQUESTED_BY_PORTAL': 'MEMBERSHIP_REQUESTED_BY_PORTAL',
+                'MEMBERSHIP_ACTIVE': 'MEMBERSHIP_ACTIVE',
+                'MEMBERSHIP_SUSPENDED_BY_COMPANY': 'MEMBERSHIP_SUSPENDED_BY_COMPANY',
+                'MEMBERSHIP_SUSPENDED_BY_PORTAL': 'MEMBERSHIP_SUSPENDED_BY_PORTAL',
+                'MEMBERSHIP_CANCELED_BY_COMPANY': 'MEMBERSHIP_CANCELED_BY_COMPANY',
+                'MEMBERSHIP_CANCELED_BY_PORTAL': 'MEMBERSHIP_CANCELED_BY_PORTAL'}
 
-    def status_changes(self):
+    def status_changes_by_portal(self):
         from ..models.company import UserCompany
         r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
             UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]
@@ -723,6 +729,45 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         else:
             return []
 
+    def status_changes_by_company(self):
+        from ..models.company import UserCompany
+        r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
+            UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]
+
+        changes = {s: {'status': s, 'enabled': r} for s in MemberCompanyPortal.STATUSES}
+        if self.company_id == self.portal.company_owner_id:
+            changes[MemberCompanyPortal.STATUSES[
+                'MEMBERSHIP_CANCELED_BY_COMPANY']]['enabled'] = 'You can`t cancel membership at portal of own company'
+            changes[MemberCompanyPortal.STATUSES[
+                'MEMBERSHIP_SUSPENDED_BY_COMPANY']]['enabled'] = 'You can`t suspend membership at portal of own company'
+
+        if self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']:
+            return [
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY']],
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']],
+            ]
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']:
+            return [
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']],
+            ]
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']:
+            return [
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']],
+            ]
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY']:
+            return [
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']],
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']],
+            ]
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL']:
+            return [
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']]
+            ]
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']:
+            return []
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']:
+            return []
+
     def get_client_side_dict(self, fields='id,status,rights,portal_id,company_id,tags', more_fields=None):
         return self.to_dict(fields, more_fields)
 
@@ -730,7 +775,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         return utils.dict_merge(self.get_client_side_dict(
             fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,'
                    'requested_membership_plan_issued,request_membership_plan_issued_immediately,company.id|name'),
-            {'publications': self.get_publication_count(), 'status_changes': self.status_changes()})
+            {'publications': self.get_publication_count(), 'status_changes': self.status_changes_by_company()})
 
     def company_member_grid_row(self):
         from ..models.rights import MembersRights
@@ -738,7 +783,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             more_fields='company,current_membership_plan_issued,requested_membership_plan_issued,portal.company_owner_id')
         },
             {'publications': self.get_publication_count()},
-            {'actions': MembersRights(company=self.portal.company_owner_id, member_company=self).actions()},
+            {'status_changes': MembersRights(company=self.portal.company_owner_id,
+                                             member_company=self).status_changes_by_portal()},
             {'id': self.id})
 
     def get_client_side_dict_for_plan(self):
@@ -857,16 +903,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
                                                                            utils.jinja.link_external()),
                                                                         phrase_comment="company want to join")()
         return membership
-
-    def set_memberee_status(self, status):
-        self.set_client_side_dict(status=status)
-        self.save().notifications_for_portal_about_company_member(
-            "Company %s changed status of membership to %s at portal %s" %
-            (utils.jinja.link_company_profile(),
-             utils.jinja.link('url_portal_companies_members', self.status,
-                              True),
-             utils.jinja.link_external()), phrase_comment="change status of own membership")()
-        return self
 
     def create_issued_plan(self, membership_plan: MembershipPlan = None, user=None):
         from ..constants.RECORD_IDS import SYSTEM_USERS
@@ -1322,3 +1358,53 @@ class ReaderDivision(Base, PRBase):
         self._show_division_and_comments = self.show_division_and_comments_numeric_all & reduce(
             lambda x, y: int(x) + int(y), list(map(lambda item: self.show_division_and_comments_numeric[item[0]],
                                                    filter(lambda item: item[1], tuple_or_list))), 0)
+
+
+# def set_memberee_status(self, status):
+#     self.set_client_side_dict(status=status)
+#     self.save().notifications_for_portal_about_company_member(
+#         "Company %s changed status of membership to %s at portal %s" %
+#         (utils.jinja.link_company_profile(),
+#          utils.jinja.link('url_portal_companies_members', self.status,
+#                           True),
+#          utils.jinja.link_external()), phrase_comment="change status of own membership")()
+#     return self
+
+
+@on_value_changed(MemberCompanyPortal.status)
+def membership_status_changed(target, new_value, old_value, action):
+    from ..models.rights import BaseRightsEmployeeInCompany
+
+    dict_main = {
+        'company': company,
+        'url_company_profile': url_for('company.profile', company_id=company.id)
+    }
+
+    to_users = [User.get(target.user_id)]
+
+    if new_value == UserCompany.STATUSES['APPLICANT']:
+        phrase = "User %s want to join to company %s" \
+                 % (utils.jinja.link_user_profile(), utils.jinja.link('url_company_employees', 'company.name'))
+
+        dict_main['url_company_employees'] = utils.jinja.grid_url(target.id, 'company.employees', company_id=company.id)
+        to_users = BaseRightsEmployeeInCompany(company).get_user_with_rights(
+            UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
+    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES['FIRED'] and \
+                    g.user.id != target.user_id:
+        phrase = "Your request to join company company %s is accepted" % (utils.jinja.link_company_profile(),)
+    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value == UserCompany.STATUSES['FIRED'] \
+            and g.user.id != target.user_id:
+        phrase = "You are now enlisted to %s company" % (utils.jinja.link_company_profile(),)
+    elif new_value == UserCompany.STATUSES['REJECTED'] and g.user.id != target.user_id:
+        phrase = "Sorry, but your request to join company company %s was rejected" % (
+            utils.jinja.link_company_profile(),)
+    elif new_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
+        phrase = "Sorry, your was fired from company %s" % (utils.jinja.link_company_profile(),)
+    else:
+        phrase = None
+
+    # possible notification - 5
+    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'], phrase,
+                                        dict_main,
+                                        phrases_comment='This message is sent to employee when employment status are changed from `%s` to `%s`' %
+                                                        (old_value, new_value))

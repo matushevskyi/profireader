@@ -556,7 +556,7 @@ class MembersOrMembershipBase(BaseRightsInProfireader):
         self.member_company = member_company
 
     STATUSES = MemberCompanyPortal.STATUSES
-    INITIALLY_FILTERED_OUT_STATUSES = [STATUSES['DELETED'], STATUSES['REJECTED']]
+    INITIALLY_FILTERED_OUT_STATUSES = [MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY'], MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']]
     MEMBER = 'member'
     MEMBERSHIP = 'membership'
 
@@ -574,13 +574,7 @@ class MembersOrMembershipBase(BaseRightsInProfireader):
     }
 
     STATUS_FOR_ACTION = {
-        ACTIONS['UNSUBSCRIBE']: STATUSES['DELETED'],
-        ACTIONS['FREEZE']: STATUSES['FROZEN'],
-        ACTIONS['WITHDRAW']: STATUSES['DELETED'],
-        ACTIONS['REJECT']: STATUSES['REJECTED'],
-        ACTIONS['SUSPEND']: STATUSES['SUSPENDED'],
-        ACTIONS['ENLIST']: STATUSES['ACTIVE'],
-        ACTIONS['RESTORE']: STATUSES['ACTIVE']
+
     }
 
     def action_is_allowed_member_company(self, action_name, employee, add_to_check_statuses=None):
@@ -602,36 +596,36 @@ class MembersOrMembershipBase(BaseRightsInProfireader):
 
 class MembersRights(MembersOrMembershipBase):
     ACTIONS_FOR_STATUSES = {
-        MembersOrMembershipBase.STATUSES['ACTIVE']: {
-            # MembersOrMembershipBase.ACTIONS['ALLOW']: {
-            #     'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
-            #     'member': lambda kwargs: 'You can`t allow portal of your own company!' if
-            #     kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
-            MembersOrMembershipBase.ACTIONS['REJECT']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
-                'member': lambda kwargs: 'You can`t reject portal of your own company!' if
-                kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
-            MembersOrMembershipBase.ACTIONS['SUSPEND']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
-                'member': lambda kwargs: 'You can`t suspend portal of your own company!' if
-                kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True}},
-        MembersOrMembershipBase.STATUSES['APPLICANT']: {
-            MembersOrMembershipBase.ACTIONS['REJECT']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
-            MembersOrMembershipBase.ACTIONS['ENLIST']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
-        MembersOrMembershipBase.STATUSES['SUSPENDED']: {
-            MembersOrMembershipBase.ACTIONS['REJECT']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
-            MembersOrMembershipBase.ACTIONS['RESTORE']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
-        MembersOrMembershipBase.STATUSES['FROZEN']: {
-            MembersOrMembershipBase.ACTIONS['REJECT']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
-        MembersOrMembershipBase.STATUSES['REJECTED']: {
-            MembersOrMembershipBase.ACTIONS['RESTORE']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
-        MembersOrMembershipBase.STATUSES['DELETED']: {}
+        # MembersOrMembershipBase.STATUSES['ACTIVE']: {
+        #     # MembersOrMembershipBase.ACTIONS['ALLOW']: {
+        #     #     'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
+        #     #     'member': lambda kwargs: 'You can`t allow portal of your own company!' if
+        #     #     kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
+        #     MembersOrMembershipBase.ACTIONS['REJECT']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
+        #         'member': lambda kwargs: 'You can`t reject portal of your own company!' if
+        #         kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
+        #     MembersOrMembershipBase.ACTIONS['SUSPEND']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
+        #         'member': lambda kwargs: 'You can`t suspend portal of your own company!' if
+        #         kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True}},
+        # MembersOrMembershipBase.STATUSES['APPLICANT']: {
+        #     MembersOrMembershipBase.ACTIONS['REJECT']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
+        #     MembersOrMembershipBase.ACTIONS['ENLIST']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
+        # MembersOrMembershipBase.STATUSES['SUSPENDED']: {
+        #     MembersOrMembershipBase.ACTIONS['REJECT']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
+        #     MembersOrMembershipBase.ACTIONS['RESTORE']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
+        # MembersOrMembershipBase.STATUSES['FROZEN']: {
+        #     MembersOrMembershipBase.ACTIONS['REJECT']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
+        # MembersOrMembershipBase.STATUSES['REJECTED']: {
+        #     MembersOrMembershipBase.ACTIONS['RESTORE']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]}},
+        # MembersOrMembershipBase.STATUSES['DELETED']: {}
     }
 
     def actions(self):
@@ -646,31 +640,31 @@ class MembersRights(MembersOrMembershipBase):
 
 class MembershipRights(MembersOrMembershipBase):
     ACTIONS_FOR_STATUSES = {
-        MembersOrMembershipBase.STATUSES['ACTIVE']: {
-            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']:
-                {'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS],
-                 'member': lambda kwargs: 'You can`t unsubscribe portal of your own company!' if
-                 kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
-            MembersOrMembershipBase.ACTIONS['FREEZE']:
-                {'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS],
-                 'member': lambda kwargs: 'You can`t freeze portal of your own company!' if
-                 kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True}
-        },
-        MembersOrMembershipBase.STATUSES['APPLICANT']: {
-            MembersOrMembershipBase.ACTIONS['WITHDRAW']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
-        MembersOrMembershipBase.STATUSES['SUSPENDED']: {
-            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
-        MembersOrMembershipBase.STATUSES['FROZEN']: {
-            MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]},
-            MembersOrMembershipBase.ACTIONS['RESTORE']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
-        MembersOrMembershipBase.STATUSES['REJECTED']: {
-            MembersOrMembershipBase.ACTIONS['WITHDRAW']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
-        MembersOrMembershipBase.STATUSES['DELETED']: {}
+        # MembersOrMembershipBase.STATUSES['ACTIVE']: {
+        #     MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']:
+        #         {'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS],
+        #          'member': lambda kwargs: 'You can`t unsubscribe portal of your own company!' if
+        #          kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True},
+        #     MembersOrMembershipBase.ACTIONS['FREEZE']:
+        #         {'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS],
+        #          'member': lambda kwargs: 'You can`t freeze portal of your own company!' if
+        #          kwargs['member'].portal.company_owner_id == kwargs['member'].company_id else True}
+        # },
+        # MembersOrMembershipBase.STATUSES['APPLICANT']: {
+        #     MembersOrMembershipBase.ACTIONS['WITHDRAW']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
+        # MembersOrMembershipBase.STATUSES['SUSPENDED']: {
+        #     MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
+        # MembersOrMembershipBase.STATUSES['FROZEN']: {
+        #     MembersOrMembershipBase.ACTIONS['UNSUBSCRIBE']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]},
+        #     MembersOrMembershipBase.ACTIONS['RESTORE']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
+        # MembersOrMembershipBase.STATUSES['REJECTED']: {
+        #     MembersOrMembershipBase.ACTIONS['WITHDRAW']: {
+        #         'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]}},
+        # MembersOrMembershipBase.STATUSES['DELETED']: {}
     }
 
     def actions(self):

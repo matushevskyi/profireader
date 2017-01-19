@@ -1,6 +1,5 @@
 from flask import render_template, request, url_for, g, redirect, abort
-from flask import render_template, request, url_for, g, redirect, abort
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from sqlalchemy.sql import expression
 
 from .blueprints_declaration import company_bp
@@ -26,7 +25,9 @@ def companies():
 @company_bp.route('/', methods=['OK'], permissions=user_is_active)
 def companies_load(json):
     employments_query = utils.db.query_filter(UserCompany). \
-        outerjoin(Company, and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE')). \
+        outerjoin(Company, and_(UserCompany.company_id == Company.id,
+                                UserCompany.status != UserCompany.STATUSES['FIRED'],
+                                Company.status == 'ACTIVE')). \
         filter(and_(UserCompany.user_id == g.user.id, Company.id != None, ~ UserCompany.id.in_(json['loaded']))). \
         order_by(expression.desc(UserCompany.md_tm))
 
@@ -41,7 +42,11 @@ def companies_load(json):
 def search_for_company_to_join(json):
     companies, there_is_more = load_for_infinite_scroll(
         utils.db.query_filter(Company).filter(
-            ~utils.db.query_filter(UserCompany, user_id=g.user.id, company_id=Company.id).exists()). \
+            ~g.db.query(UserCompany).filter(and_(UserCompany.user_id == g.user.id, UserCompany.company_id == Company.id,
+                                                 or_(UserCompany.status == UserCompany.STATUSES['APPLICANT'],
+                                                     UserCompany.status == UserCompany.STATUSES['SUSPENDED'],
+                                                     UserCompany.status == UserCompany.STATUSES['ACTIVE'],
+                                                     UserCompany.status == UserCompany.STATUSES['FROZEN']))).exists()). \
             filter(and_(
             Company.status == 'ACTIVE', Company.name.ilike("%" + json['text'] + "%")), ~Company.id.in_(json['loaded'])). \
             order_by(Company.name), items=3)
@@ -53,9 +58,15 @@ def search_for_company_to_join(json):
 @company_bp.route('/join_to_company/', methods=['OK'],
                   permissions=[user_is_active, utils.json2kwargs(company_is_active)])
 def join_to_company(json):
-    new_employment = UserCompany(user_id=g.user.id, company_id=json['company_id'])
-    new_employment.save()
-    return {'employment': new_employment.get_client_side_dict(fields='id,status, company, rights')}
+    employment = UserCompany.get_by_user_and_company_ids(company_id=json['company_id'])
+    if employment.status not in [UserCompany.STATUSES['APPLICANT'], UserCompany.STATUSES['ACTIVE'],
+                                 UserCompany.STATUSES['SUSPENDED']]:
+        employment.status = UserCompany.STATUSES['APPLICANT']
+        employment.save()
+    elif not employment:
+        employment = UserCompany(user_id=g.user.id, company_id=json['company_id'])
+        employment.save()
+    return {'employment': employment.get_client_side_dict(fields='id,status, company, rights')}
 
 
 @company_bp.route('/create/', methods=['GET'], permissions=user_is_active)
@@ -120,25 +131,19 @@ def employees_load(json, company_id):
     company = Company.get(company_id)
     return {
         'company': company.get_client_side_dict(fields='id,name'),
-        'grid_data': [e.employees_grid_row() for e in company.employments]
+        'grid_data': [e.employees_grid_row() for e in company.employments_objectable_for_company]
     }
 
 
-@company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_status/<string:action>/',
+@company_bp.route('/<string:company_id>/employment/<string:employment_id>/change_status/<string:new_status>/',
                   methods=['OK'],
                   permissions=employee_have_right(UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE))
-def employee_change_status(json, company_id, employment_id, new_status):
+def change_employment_status_by_company(json, company_id, employment_id, new_status):
     employment = UserCompany.get(employment_id)
 
-    if employment.actions()[action] is True:
-        if action == UserCompany.ACTIONS['REJECT']:
-            employment.status = UserCompany.STATUSES['REJECTED']
-        elif action == UserCompany.ACTIONS['ENLIST']:
-            employment.status = UserCompany.STATUSES['ACTIVE']
-        elif action == UserCompany.ACTIONS['FIRE']:
-            employment.status = UserCompany.STATUSES['FIRED']
-
-        return employment.save().employees_grid_row()
+    if utils.find_by_key(employment.status_changes_by_company(), 'status', new_status)['enabled'] is True:
+        employment.status = new_status
+        return employment.employees_grid_row()
     else:
         raise UnauthorizedUser()
 
@@ -237,7 +242,7 @@ def employee_have_right_at_membership(right):
 def change_membership_status_by_company(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
 
-    if utils.find_by_key(membership.status_changes(), 'status', new_status)['enabled'] is True:
+    if utils.find_by_key(membership.status_changes_by_portal(), 'status', new_status)['enabled'] is True:
         membership.status = new_status
         return membership.portal_memberee_grid_row()
     else:

@@ -67,16 +67,24 @@ class Company(Base, PRBase, PRElasticDocument):
                               back_populates='own_company', uselist=False,
                               foreign_keys='Portal.company_owner_id')
 
-    # member_portal_plan = relationship('Portal',
-    #                           back_populates='own_company', uselist=False,
-    #                           foreign_keys='Portal.company_owner_id')
 
     author_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id), nullable=False)
     user_owner = relationship(User, back_populates='companies')
 
-    # TODO: AA by OZ: we need employees.position (from user_company table) (also search and fix #ERROR employees.position.2#)
-    # ERROR employees.position.1#
+
     employments = relationship('UserCompany', back_populates='company')
+
+    employments_objectable_for_company = relationship('UserCompany',
+                                      viewonly=True,
+                                      primaryjoin="and_(Company.id == UserCompany.company_id, or_(UserCompany.status == 'ACTIVE', UserCompany.status == 'APPLICANT', UserCompany.status == 'SUSPENDED'))")
+
+    active_users_employees = relationship('User',
+                                              viewonly=True,
+                                              primaryjoin="and_(Company.id == UserCompany.company_id, UserCompany.status == 'ACTIVE')",
+                                              secondary='user_company',
+                                              secondaryjoin="and_(UserCompany.user_id == User.id, User.status == 'ACTIVE')")
+
+
 
     def __init__(self, **kwargs):
         # TODO: OZ by OZ: check default value for all columns
@@ -325,28 +333,32 @@ class UserCompany(Base, PRBase):
                 self.PORTAL_MANAGE_MEMBERS_COMPANIES,
             ]
 
-    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED'}
-    ACTIONS = {'ENLIST': 'ENLIST', 'REJECT': 'REJECT', 'FIRE': 'FIRE'}
+    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED',
+                'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN'}
 
-    def actions(self):
+
+    def status_changes_by_company(self):
         r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
             UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
 
         if self.status == UserCompany.STATUSES['APPLICANT']:
-            return {
-                UserCompany.ACTIONS['ENLIST']: r, UserCompany.ACTIONS['REJECT']: r,
-            }
-        elif self.status in [UserCompany.STATUSES['REJECTED'], UserCompany.STATUSES['FIRED']]:
-            return {
-                UserCompany.ACTIONS['ENLIST']: r,
-            }
+            return [
+                {'status': UserCompany.STATUSES['ACTIVE'], 'enabled': r},
+                {'status': UserCompany.STATUSES['REJECTED'], 'enabled': r}
+            ]
+        elif self.status == UserCompany.STATUSES['SUSPENDED']:
+            return [
+                {'status': UserCompany.STATUSES['ACTIVE'], 'enabled': r}
+            ]
         elif self.status == UserCompany.STATUSES['ACTIVE']:
-            return {
-                UserCompany.ACTIONS['FIRE']: 'You can`t fire company owner' if
-                self.company.author_user_id == self.user_id else r
-            }
+            return [
+                {'status': UserCompany.STATUSES['FIRED'],
+                 'enabled': 'You can`t fire company owner' if self.company.author_user_id == self.user_id else r},
+                {'status': UserCompany.STATUSES['SUSPENDED'],
+                 'enabled': 'You can`t suspend company owner' if self.company.author_user_id == self.user_id else r}
+            ]
         else:
-            return {}
+            return []
 
     status = Column(TABLE_TYPES['status'], default=STATUSES['APPLICANT'], nullable=False)
 
@@ -388,8 +400,9 @@ class UserCompany(Base, PRBase):
     def employees_grid_row(self):
         return {
             'id': self.id,
-            'actions': self.actions(),
-            'employment': self.get_client_side_dict(more_fields='user.full_name|address_email|address_phone'),
+            'status_changes': self.status_changes_by_company(),
+            'employment': self.get_client_side_dict(
+                more_fields='company.name|id,user.full_name|address_email|address_phone'),
         }
 
     @staticmethod
@@ -468,5 +481,6 @@ def user_company_status_changed(target, new_value, old_value, action):
 
     # possible notification - 5
     return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'], phrase,
-                                        dict_main, phrases_comment='This message is sent to employee when employment status are changed from `%s` to `%s`' %
-                                                       (old_value, new_value))
+                                        dict_main,
+                                        phrases_comment='This message is sent to employee when employment status are changed from `%s` to `%s`' %
+                                                        (old_value, new_value))

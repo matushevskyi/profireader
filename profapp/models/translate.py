@@ -7,7 +7,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import expression
 
 from profapp import utils
-from .portal import Portal
 from .pr_base import PRBase, Base, Grid
 from ..constants.TABLE_TYPES import TABLE_TYPES
 
@@ -31,7 +30,7 @@ class TranslateTemplate(Base, PRBase):
 
     comment = Column(TABLE_TYPES['text'], default='')
 
-    portal = relationship(Portal, uselist=False)
+    portal = relationship('Portal', uselist=False)
 
     exemplary_portal_id = '5721ed5f-d35d-4001-ae46-cdfd372b322b'
 
@@ -204,6 +203,7 @@ class TranslateTemplate(Base, PRBase):
 
     @staticmethod
     def subquery_search(filters=None, sorts=None, edit=None):
+        from .portal import Portal
         sub_query = utils.db.query_filter(TranslateTemplate)
         list_filters = []
         list_sorts = []

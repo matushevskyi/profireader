@@ -12,60 +12,6 @@
     {% endblock company_base %}
 
     <script>
-        module.controller('employee_change_status_dialog', function ($scope, $ok, $uibModalInstance, new_status, employment, company) {
-
-            $scope.$$translate = {{ translates('employee_action_dialog')|safe }};
-            $scope.employment_change_status = {{ raw_url_for('company.employee_change_status')|safe }};
-            {% raw %}
-
-            $scope.new_status = new_status;
-            $scope.employment = employment;
-            $scope.company = company;
-
-            $scope.change_status = function () {
-                $ok($scope.employment_action({
-                    employment_id: $scope.employment.id,
-                    company_id: $scope.company.id,
-                    action: $scope.action
-                }), {}, $uibModalInstance.close);
-            }
-
-            $scope.action_cancel = $uibModalInstance.dismiss;
-
-            {% endraw %}
-
-        });
-    </script>
-
-    {% raw %}
-    <script type="text/ng-template" id="employment_action_dialog.html">
-        <div ng-cloak aaf ng-model="data" af-url="{{ url_submit_to_portal({'article_action': action}) }}"
-             af-after-save="afterSave"
-             af-amid-load="amidLoad"
-             af-watch="data.publication">
-            <div class="modal-header">
-                <h3 class="modal-title">{{ _(action + ' employee') }}</h3>
-            </div>
-            <div class="modal-body">
-                {{ _('You are going to ' + action + ' employee `%(user.full_name)s` at portal
-                `%(company.name)s`') }}<br/>
-            </div>
-
-
-            <div class="modal-footer">
-
-                <button class="btn btn-primary"
-                        ang-disabled="!$af.isActionAllowed(data, 'save')"
-                        type="button" ng-click="do_action()">{{ _('Do ' + action) }}
-                </button>
-
-                <button class="btn btn-warning" type="button" ng-click="action_cancel()">{{ _('Cancel ' + action) }}
-                </button>
-            </div>
-        </div>
-    </script>
-    {% endraw %}
-    <script>
         module.controller('employment_position_dialog', function ($scope, $ok, $uibModalInstance, employment, company) {
 
             $scope.$$translate = {{ translates('employment_position_dialog')|safe }};
@@ -110,13 +56,14 @@
 
 
     <script>
-        module.controller('company_employees_controller', function ($scope, $ok, $timeout, $uibModal, $rights) {
+        module.controller('company_employees_controller', function ($scope, $ok, $timeout, $uibModal, $rights, $confirm) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_employees');
 
             $scope.$$translate = {{ translates('company_employees_controller')|safe }};
             $scope.company = {{ company.get_client_side_dict(fields = 'id,name')|tojson|safe }};
             $scope.get_link_user_profile = {{ raw_url_for('user.profile')|safe }};
             $scope.url_set_rights = {{ raw_url_for('company.set_rights', company_id = company.id)|safe }};
+            $scope.url_change_status = {{ raw_url_for('company.change_employment_status_by_company', company_id = company.id)|safe }};
             $scope.rights = {{ employment.rights|tojson|safe }};
             {% raw %}
 
@@ -132,20 +79,21 @@
 
             $scope.grid_update_row = function (updated_row) {
                 $scope.gridApi.grid.grid_change_row(updated_row);
-            }
-
-            $scope.grid_action = function (id, action, row, column_name) {
-                'use strict'
-                $uibModal.open({
-                    templateUrl: 'employment_action_dialog.html',
-                    controller: 'employment_action_dialog',
-                    resolve: resolveDictForAngularController({
-                        action: action,
-                        company: $scope.company,
-                        employment: row.employment
-                    })
-                }).result.then($scope.grid_update_row);
             };
+
+            $scope.set_new_status = function (id, new_status, row, column_name) {
+                $confirm(
+                        $scope._('change status of employee by company confirmation dialog title'),
+                        $scope._('You are going to change status of employee `%(user.full_name)s` in company `%(company.name)s` from ' + row.status + ' to ' + new_status, row.employment),
+                        $scope._('change status from ' + row.employment.status + ' to ' + new_status)
+                ).then(function () {
+                    $ok($scope.url_change_status({
+                        employment_id: row.employment.id,
+                        new_status: new_status
+                    }), {}, $scope.gridApi.grid.grid_change_row);
+                });
+            };
+
 
             $scope.change_position = function (id, row, column_name) {
                 'use strict'
@@ -205,7 +153,7 @@
                         width: '100', afilter: {type: 'input'}
                     },
                     {
-                        name: 'employment.status', width: '100', afilter: {type: 'input'}
+                        name: 'employment.status', width: '70', afilter: {type: 'input'}
                     },
                     {
                         name: 'employment.rights',
@@ -218,8 +166,10 @@
                         }
                     },
                     {
-                        name: 'actions', width: '170', type: 'actions',
-                        onclick: 'grid_action',
+                        name: 'status_changes', width: '200',
+                        type: 'change_status',
+                        onclick: 'set_new_status',
+                        old_status_column_name: 'status',
                         afilter: {type: 'input'}, classes: function (id,
                                                                      entity, field) {
                         return entity.employment.status !== 'ACTIVE' ? 'non-active' : '';

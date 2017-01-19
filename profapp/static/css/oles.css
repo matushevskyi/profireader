@@ -432,10 +432,17 @@
 }
 
 .pr-grid-cell-field-type-actions button, .pr-grid-cell-field-type-change_status button {
-    width: 7em;
+    width: 8em;
+    overflow: hidden;
 }
 
-
+.pr-grid-cell-field-type-change_status {
+    padding: 2px;
+    padding: 0px 2px;
+    margin: 0px 2px;
+    /*overflow: hidden;*/
+    letter-spacing: -1px;
+}
 
 .modal-filemanager-fullscreen {
     width: 95%;

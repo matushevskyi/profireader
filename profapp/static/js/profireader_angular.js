@@ -182,7 +182,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                 controller: 'confirm_dialog_controller',
                 resolve: {
                     'buttons': function () {
-                        return [{'answer': true, 'text': yes_text?yes_text:'Ok', 'class_name': 'btn-default'},
+                        return [{'answer': true, 'text': yes_text?yes_text:'Ok', 'class_name': 'btn-success'},
                             {'answer': false, 'text': no_text?no_text:'Cancel', 'class_name': 'btn-danger'}];
                     },
                     'title': function () {

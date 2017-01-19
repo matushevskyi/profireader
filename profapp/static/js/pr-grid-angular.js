@@ -78,7 +78,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     var classes_for_row = ' ui-grid-cell-contents pr-grid-cell-field-type-' +
                         (col.type ? col.type : 'text') + ' pr-grid-cell-field-name-' + col.name.replace(/\./g, '-') + ' ' + (typeof col.classes === 'string' ? col.classes : '') + '';
                     if (typeof  col.classes === 'function') {
-                        classes_for_row += '{{ grid.options.columnDefs[' + columnindex + '].classes(row.entity.id, row.entity, col.field) }}';
+                        classes_for_row += '{{ grid.options.columnDefs[' + columnindex + '].classes(row.entity.id, row.entity, col.field) }} ';
                     }
 
                     var cell_raw_value = 'COL_FIELD';
@@ -96,7 +96,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     var action_button_before_click_b = '';
                     var action_button_before_click_e = '';
                     if (col.onclick) {
-
                         if (col.type === 'actions') {
                             col.onclick = 'grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')';
                         }
@@ -105,9 +104,11 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         }
                         else if (col.type === 'icons') {
                             attributes_for_cell += ' ng-click="grid.onclick_without_bubbling($event, grid.appScope.' + col.onclick + ', row.entity.id, undefined, row.entity, \'' + col['name'] + '\')"';
+                            classes_for_row += ' link '
                         }
                         else if (col.type !== 'editable') {
                             attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\')"';
+                            classes_for_row += ' link '
                         }
 
                     }
@@ -125,7 +126,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         case 'link':
                             return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" class="' + classes_for_row + '" ' + cell_title + '">' + prefix_img + '<a ng-style="grid.appScope.' + col.cellStyle + '"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}">' + cell_value + '<i ng-if="' + col.link + '" class="fa fa-external-link ml05em" style="font-size: 12px"></i></a></div>';
                         case 'img':
-                            return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="' + cell_value + '" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
+                            return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<img ng-src="' + cell_value + '" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
                         case 'tags':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<span ng-repeat="tag in ' + cell_raw_value + '"' +
                                 ' class="m025em label label-danger">{{ tag.text }}</span></div>';

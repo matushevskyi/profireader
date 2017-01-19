@@ -51,6 +51,9 @@ class User(Base, UserMixin, PRBase):
     birth_tm = Column(TABLE_TYPES['date'])
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
+
+    status = Column(TABLE_TYPES['status'])
+
     last_seen_tm = Column(TABLE_TYPES['timestamp'], default=datetime.datetime.utcnow)
     last_informed_about_unread_communication_tm = Column(TABLE_TYPES['timestamp'], default=datetime.datetime.utcnow)
 
