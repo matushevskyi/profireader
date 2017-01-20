@@ -178,12 +178,12 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
     .factory('$confirm', ['$uibModal', function ($uibModal) {
         return function (title, question, yes_text, no_text) {
             var modalInstance = $uibModal.open({
-                templateUrl: 'confirm.html',
+                templateUrl: 'confirm_dialog.html',
                 controller: 'confirm_dialog_controller',
                 resolve: {
                     'buttons': function () {
-                        return [{'answer': true, 'text': yes_text?yes_text:'Ok', 'class_name': 'btn-success'},
-                            {'answer': false, 'text': no_text?no_text:'Cancel', 'class_name': 'btn-danger'}];
+                        return [{'answer': true, 'text': yes_text ? yes_text : 'Ok', 'class_name': 'btn-success'},
+                            {'answer': false, 'text': no_text ? no_text : 'Cancel', 'class_name': 'btn-danger'}];
                     },
                     'title': function () {
                         return title;
@@ -192,6 +192,32 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                         return question;
                     }
                 }
+            });
+            return modalInstance.result;
+        }
+
+    }])
+    .controller('select_status_dialog_controller', function ($scope, $uibModalInstance, title,
+                                                             old_status, status_changes, question, $timeout) {
+
+        $scope.title = title;
+        $scope.question = question;
+        $scope.status_changes = status_changes;
+        $scope.old_status = old_status;
+        $scope.new_status = old_status;
+
+        $scope.ok = function () {
+            $uibModalInstance.close($scope.new_status)
+        };
+        $scope.cancel = $uibModalInstance.dismiss;
+    })
+    .factory('$selectStatus', ['$uibModal', function ($uibModal) {
+        return function (dict, scope) {
+            var modalInstance = $uibModal.open({
+                templateUrl: 'select_status_dialog.html',
+                controller: 'select_status_dialog_controller',
+                scope: scope,
+                resolve: resolveDictForAngularController(dict),
             });
             return modalInstance.result;
         }
@@ -598,7 +624,7 @@ function pr_dictionary(phrase, dictionary, allow_html, scope, $ok, phrase_defaul
     var phrase_dict;
 
     if (!scope.$$translate || !scope.$$translate[phrase]) {
-        phrase_dict = {'lang': phrase_default?phrase_default:phrase, 'time': t, allow_html: allow_html}
+        phrase_dict = {'lang': phrase_default ? phrase_default : phrase, 'time': t, allow_html: allow_html}
     }
 
     if (scope.$$translate) {

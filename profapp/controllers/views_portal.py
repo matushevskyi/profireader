@@ -19,6 +19,7 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, RequireMemb
     UserIsEmployee, UserIsActive, UserIsEmployeeAtPortalOwner
 from ..models.tag import Tag
 from ..models.translate import TranslateTemplate
+from ..models.exceptions import UnauthorizedUser
 
 
 @portal_bp.route('/create/company/<string:company_id>/', methods=['GET'])
@@ -354,39 +355,26 @@ def membership_set_tags(json, membership_id):
 #     return membership.get_client_side_dict()
 
 
-@portal_bp.route('/membership/<string:membership_id>/change_member_status/', methods=['OK'])
-# @check_right(PortalManageMembersCompaniesRight, ['company_id', 'member_id'])
-# @check_right(PortalManageMembersCompaniesRight, ['membership_id'])
-def membership_change_status(json, membership_id):
+@portal_bp.route('/membership/<string:membership_id>/change_status/<string:new_status>/', methods=['OK'])
+def membership_change_status(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
-    employee = UserCompany.get_by_user_and_company_ids(company_id=membership.portal.company_owner_id)
-    if MembersRights(company=membership.company_id,
-                     member_company=membership).action_is_allowed(json.get('action'), employee):
 
+    if utils.find_by_key(membership.status_changes_by_portal(), 'status', new_status)['enabled'] is True:
         old_status = membership.status
-        membership.set_client_side_dict(status=MembersRights.STATUS_FOR_ACTION[json.get('action')])
-
-        if old_status != MemberCompanyPortal.STATUSES['ACTIVE'] and \
-                        membership.status == MemberCompanyPortal.STATUSES['ACTIVE'] and \
+        membership.status = new_status
+        if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
                 not membership.current_membership_plan_issued.started_tm:
             membership.current_membership_plan_issued.start()
-
-        membership.save()
-
-        membership.notifications_for_company_about_portal_memberee(
-            "Administrator of portal %s changed status of your company %s membership to %s" %
-            (utils.jinja.link_external(), utils.jinja.link_company_profile(),
-             utils.jinja.link('url_company_portal_memberees', membership.status, True),),
-            phrase_comment="portals company employee changes status to " + membership.status)()
-
-    return membership.company_member_grid_row()
+        return membership.company_member_grid_row()
+    else:
+        raise UnauthorizedUser()
 
 
 @portal_bp.route('/<string:portal_id>/companies_members/', methods=['GET'])
 @check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
 def companies_members(portal_id):
     portal = Portal.get(portal_id)
-    return render_template('portal/memberships.html',
+    return render_template('portal/companies_members.html',
                            portal=portal,
                            all_available_rights={
                                MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: 'publish publication',
@@ -398,14 +386,16 @@ def companies_members(portal_id):
 @check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
 def companies_members_load(json, portal_id):
     portal = Portal.get(portal_id)
+    hide_statuses = [MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY'],
+                     MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']]
     subquery = Company.subquery_company_partners(portal.company_owner_id, json.get('filter'),
-                                                 filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
+                                                 filters_exсept=hide_statuses)
     memberships, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [membership.company_member_grid_row() for membership in memberships],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'member.status': [{'value': status, 'label': status} for status in
                                                           MembersRights.STATUSES]}.items()},
-            'grid_filters_except': list(MembersRights.INITIALLY_FILTERED_OUT_STATUSES),
+            'grid_filters_except': list(hide_statuses),
             'total': count,
             'page': current_page}
 

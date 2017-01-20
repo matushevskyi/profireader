@@ -194,24 +194,19 @@ def employment_change_position(json, company_id, employment_id):
 #     return companies
 
 
-@company_bp.route('/<string:company_id>/search_for_portal_to_join/', methods=['OK'],
-                  permissions=employee_have_right(UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS))
-def search_for_portal_to_join(json, company_id):
-    from ..models.portal import Portal
-    return Portal.search_for_portal_to_join(company_id, json['search'])
-
-
 @company_bp.route('/<string:company_id>/portal_memberees/', methods=['GET'], permissions=employee_have_right())
 def portal_memberees(company_id):
-    return render_template('company/portal_memberees.html',
+    return render_template('company/portals_memberees.html',
                            company=Company.get(company_id),
                            actions={'require_memberee': RequireMembereeAtPortalsRight(company=company_id).is_allowed()})
 
 
 @company_bp.route('/<string:company_id>/portal_memberees/', methods=['OK'], permissions=employee_have_right())
 def portal_memberees_load(json, company_id):
+    hide_statuses = [MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY'],
+                     MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']]
     subquery = Company.subquery_portal_partners(company_id, json.get('filter'),
-                                                filters_exсept=MembersRights.INITIALLY_FILTERED_OUT_STATUSES)
+                                                filters_exсept=hide_statuses)
     memberships, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
 
     return {'page': current_page,
@@ -219,8 +214,15 @@ def portal_memberees_load(json, company_id):
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'status': [{'value': status, 'label': status} for status in
                                                    MembershipRights.STATUSES]}.items()},
-            'grid_filters_except': list(MembershipRights.INITIALLY_FILTERED_OUT_STATUSES),
+            'grid_filters_except': list(hide_statuses),
             'total': count}
+
+
+@company_bp.route('/<string:company_id>/search_for_portal_to_join/', methods=['OK'],
+                  permissions=employee_have_right(UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS))
+def search_for_portal_to_join(json, company_id):
+    from ..models.portal import Portal
+    return Portal.search_for_portal_to_join(company_id, json['search'])
 
 
 @company_bp.route('/<string:company_id>/join_to_portal/', methods=['OK'],
@@ -242,7 +244,7 @@ def employee_have_right_at_membership(right):
 def change_membership_status_by_company(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
 
-    if utils.find_by_key(membership.status_changes_by_portal(), 'status', new_status)['enabled'] is True:
+    if utils.find_by_key(membership.status_changes_by_company(), 'status', new_status)['enabled'] is True:
         membership.status = new_status
         return membership.portal_memberee_grid_row()
     else:

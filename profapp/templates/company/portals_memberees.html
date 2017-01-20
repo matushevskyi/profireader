@@ -15,7 +15,7 @@
 
     <script>
 
-        module.controller('portal_memberees', function ($scope, $ok, $sce, $membership_plan, $membership_tags, $confirm) {
+        module.controller('portal_memberees', function ($scope, $ok, $sce, $membership_plan, $membership_tags, $confirm, $selectStatus) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portal_memberees');
             $scope.$$translate = {{ translates('portal_memberees')|safe }};
             $scope.url_portal_memberees = '{{ url_for('company.portal_memberees', company_id=company.id)}}';
@@ -62,14 +62,16 @@
                 })
             };
 
-            $scope.set_new_status = function (id, new_status, row, column_name) {
-                $confirm(
-                        $scope._('change status of membership by company confirmation dialog title', null, 'change status of membership'),
-                        $scope._('You are going to change status of membership for company `%(company.name)s` at portal `%(portal.name)s` from ' + row.status + ' to ' + new_status, row),
-                        $scope._('change status from ' + row.status + ' to ' + new_status)
-                ).then(function () {
+
+
+            $scope.set_new_status = function (id, row, column_name) {
+                $selectStatus({
+                        title: $scope._('change status of membership by company dialog title', null, 'change status of membership'),
+                        question: $scope._('You are going to change status of membership for company `%(company.name)s` at portal `%(portal.name)s`', row['membership']),
+                        old_status: row.membership.status,
+                        status_changes: row.status_changes}, $scope).then(function (new_status) {
                     $ok($scope.url_change_status({
-                        membership_id: row.id,
+                        membership_id: row['membership'].id,
                         new_status: new_status
                     }), {}, $scope.gridApi.grid.grid_change_row);
                 });
@@ -80,26 +82,26 @@
             };
 
             $scope.set_tags = function (id, row, column_name) {
-                if (row['status'] !== 'ACTIVE') {
+                if (row['membership']['status'] !== 'MEMBERSHIP_ACTIVE') {
                     return false;
                 }
                 var modalInstance = $membership_tags({
-                    membership_id: row['id']
+                    membership_id: row['membership']['id']
                 });
 
                 modalInstance.result.then(function (updated_row) {
                     // TODO: scope.data is not defined! loaded data exists ONLY in grid data. yes?
-                    $scope.gridApi.grid.grid_change_row(updated_row['membership']);
+                    $scope.gridApi.grid.grid_change_row(updated_row);
                 });
 
             };
 
             $scope.request_membership_plan = function (id, row, column_name) {
-                if (row['status'] !== 'ACTIVE') {
+                if (row['membership']['status'] !== 'MEMBERSHIP_ACTIVE') {
                     return false;
                 }
                 $membership_plan({
-                    membership_id: row['id'],
+                    membership_id: row['membership']['id'],
                     request_or_set: 'request'
                 }).result.then(function (resp) {
                     $scope.gridApi.grid.grid_change_row(resp);
@@ -108,41 +110,34 @@
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
                 urlLoadGridData: $scope.url_portal_memberees,
+                rowTemplate: '<div ng-class="{\'disabled\': row.entity[\'disabled\'] }"><div ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.colDef.name" class="ui-grid-cell" ng-class="{ \'ui-grid-row-header-cell\': col.isRowHeader }" ui-grid-cell></div></div>',
+                disableByField: 'disabled',
                 columnDefs: [
                     {
-                        name: 'portal.name', type: 'link',
+                        name: 'membership.portal.name', type: 'link',
                         width: '200',
-                        href: 'portal_link(row.entity.portal.host)', img_url: 'portal.logo.url',
+                        href: 'portal_link(entity.membership.portal.host)', img_url: 'membership.portal.logo.url',
                         link: true
                     },
                     {
                         name: 'membership_plan',
-                        width: '150',
+                        width: '200',
                         onclick: 'request_membership_plan',
-                        classes: function (id, row, field) {
-                            return row['status'] === 'ACTIVE' ? '' : 'disabled';
-                        },
                         render: function (row, value) {
-                            return row['current_membership_plan_issued']['name'] +
-                                    (row['requested_membership_plan_issued'] ? ('/<em>' + row['requested_membership_plan_issued']['name'] + '</em>') : '');
+                            return row['membership']['current_membership_plan_issued']['name'] +
+                                    (row['membership']['requested_membership_plan_issued'] ? ('/<em>' + row['membership']['requested_membership_plan_issued']['name'] + '</em>') : '');
                         }
                     },
                     {
-                        name: 'tags', type: 'tags', onclick: 'set_tags',
-                        classes: function (id, row, field) {
-                            return row['status'] === 'ACTIVE' ? '' : 'disabled';
-                        },
+                        width: '200',
+                        name: 'membership.tags', type: 'tags', onclick: 'set_tags',
                     },
                     publication_column(),
+
+                    {name: 'membership.rights', width: '50', type: 'icons', afilter: {type: 'input'}},
                     {
-                        name: 'status', width: '100', afilter: {type: 'multi_select', default_selected: true}
-                        //we can default select all and deselect that we need, 'exception' can be string or array of string
-                    },
-                    {name: 'rights', width: '50', type: 'icons', afilter: {type: 'input'}},
-                    {
-                        name: 'status_changes',
-                        type: 'change_status',
-                        old_status_column_name: 'status',
+                        width: '300',
+                        name: 'membership.status',
                         onclick: 'set_new_status'
                     }
                 ]

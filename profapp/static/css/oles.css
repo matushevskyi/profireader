@@ -504,8 +504,16 @@
     cursor: pointer;
 }
 
+.disabled .link {
+    cursor: inherit;
+}
+
 .link:hover span {
     text-decoration: underline;
+}
+
+.disabled .link:hover span {
+    text-decoration: inherit;
 }
 
 .button {

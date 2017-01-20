@@ -556,7 +556,7 @@ class MembersOrMembershipBase(BaseRightsInProfireader):
         self.member_company = member_company
 
     STATUSES = MemberCompanyPortal.STATUSES
-    INITIALLY_FILTERED_OUT_STATUSES = [MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY'], MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']]
+
     MEMBER = 'member'
     MEMBERSHIP = 'membership'
 

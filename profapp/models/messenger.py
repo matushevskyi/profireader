@@ -80,6 +80,7 @@ class Socket:
         def ret():
             for d in datas:
                 Socket.notification(d)
+            return True
 
         return ret
 
