@@ -478,9 +478,11 @@ def add_delete_liked(json, publication_id):
 @front_bp.route('_/<string:member_company_id>/send_message/', methods=['OK'])
 @check_right(AllowAll)
 def send_message(json, member_company_id):
+    import html
+    from profapp.models.translate import Phrase
+
     send_to = User.get(json['user_id'])
     company = Company.get(member_company_id)
-    import html
 
     if g.user and g.user.id:
         phrase = "User %s sent you email as member of company %s" % (utils.jinja.link_user_profile(),
@@ -490,11 +492,11 @@ def send_message(json, member_company_id):
             utils.jinja.link_company_profile(),)
 
     Socket.prepare_notifications([send_to], Notification.NOTIFICATION_TYPES['CUSTOM'],
-                                 phrase + '<hr/>%(message)s',
-                                 {'company': company,
+                                 Phrase(phrase + '<hr/>%(message)s',
+                                 dict = {'company': company,
                                   'url_company_profile': url_for('company.profile', company_id=company.id),
                                   'message': html.escape(json['message'])},
-                                 phrases_comment="this message is sent by portal visitor to some company employee")()
+                                 comment="this message is sent by portal visitor to some company employee"))()
 
     return {}
 

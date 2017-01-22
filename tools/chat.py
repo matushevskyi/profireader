@@ -233,6 +233,27 @@ def load_notifications(sid, event_data):
         ret['items'] = [n.client_message() for n in ret['items']]
         return ret
 
+@sio.on('insert_translation')
+def insert_translation(sid, tramslation_data):
+    with controlled_execution():
+        from profapp.models.translate import TranslateTemplate
+        translation = TranslateTemplate(**tramslation_data)
+        translation.save()
+
+
+@sio.on('update_translation')
+def update_translation(sid, tramslation_id_and_data):
+    # TODO: OZ by OZ change ac without changing md (md changed by trigger)
+    # ac updated without changing md
+    with controlled_execution():
+        from profapp.models.translate import TranslateTemplate
+        translation = TranslateTemplate.get(tramslation_id_and_data['id'])
+        for (k, v) in tramslation_id_and_data['data']:
+            setattr(translation, k, v)
+        translation.save()
+
+
+
 
 app = socketio.Middleware(sio, app)
 eventlet.wsgi.server(eventlet.listen(('', 5000)), app)

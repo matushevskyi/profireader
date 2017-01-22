@@ -189,7 +189,7 @@ def load_user(apptype):
                                    re.compile("\s*,\s*").split(request.headers.environ['HTTP_ACCEPT_LANGUAGE'])))
         agent_languages.sort(key=lambda x: float(x[1]) if len(x) > 1 else 1, reverse=True)
         for lng in agent_languages:
-            if lng[0][0:2] in [l['name'] for l in g.languages]:
+            if lng[0][0:2] in [l['name'] for l in Config.LANGUAGES]:
                 g.lang = lng[0][0:2]
                 break
     if g.user:
@@ -197,7 +197,7 @@ def load_user(apptype):
     if 'language' in session:
         g.lang = session['language']
 
-    if g.lang not in [l['name'] for l in g.languages]:
+    if g.lang not in [l['name'] for l in Config.LANGUAGES]:
         g.lang = 'en'
     # = g.user.lang if g.user else lang
 

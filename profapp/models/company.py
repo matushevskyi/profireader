@@ -67,24 +67,20 @@ class Company(Base, PRBase, PRElasticDocument):
                               back_populates='own_company', uselist=False,
                               foreign_keys='Portal.company_owner_id')
 
-
     author_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id), nullable=False)
     user_owner = relationship(User, back_populates='companies')
-
 
     employments = relationship('UserCompany', back_populates='company')
 
     employments_objectable_for_company = relationship('UserCompany',
-                                      viewonly=True,
-                                      primaryjoin="and_(Company.id == UserCompany.company_id, or_(UserCompany.status == 'ACTIVE', UserCompany.status == 'APPLICANT', UserCompany.status == 'SUSPENDED'))")
+                                                      viewonly=True,
+                                                      primaryjoin="and_(Company.id == UserCompany.company_id, or_(UserCompany.status == 'ACTIVE', UserCompany.status == 'APPLICANT', UserCompany.status == 'SUSPENDED'))")
 
     active_users_employees = relationship('User',
-                                              viewonly=True,
-                                              primaryjoin="and_(Company.id == UserCompany.company_id, UserCompany.status == 'ACTIVE')",
-                                              secondary='user_company',
-                                              secondaryjoin="and_(UserCompany.user_id == User.id, User.status == 'ACTIVE')")
-
-
+                                          viewonly=True,
+                                          primaryjoin="and_(Company.id == UserCompany.company_id, UserCompany.status == 'ACTIVE')",
+                                          secondary='user_company',
+                                          secondaryjoin="and_(UserCompany.user_id == User.id, User.status == 'ACTIVE')")
 
     def __init__(self, **kwargs):
         # TODO: OZ by OZ: check default value for all columns
@@ -336,7 +332,6 @@ class UserCompany(Base, PRBase):
     STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED',
                 'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN'}
 
-
     def status_changes_by_company(self):
         r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
             UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
@@ -394,8 +389,8 @@ class UserCompany(Base, PRBase):
     def get_client_side_dict(self, fields='id,user_id,company_id,position,status,rights', more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    def set_client_side_dict(self, json):
-        self.attr(utils.filter_json(json, 'status|position|rights'))
+    # def set_client_side_dict(self, json):
+    #     self.attr(utils.filter_json(json, 'status|position|rights'))
 
     def employees_grid_row(self):
         return {
@@ -451,6 +446,7 @@ class UserCompany(Base, PRBase):
 def user_company_status_changed(target, new_value, old_value, action):
     company = Company.get(target.company_id)
     from ..models.rights import BaseRightsEmployeeInCompany
+    from ..models.translate import Phrase
 
     dict_main = {
         'company': company,
@@ -464,7 +460,7 @@ def user_company_status_changed(target, new_value, old_value, action):
                  % (utils.jinja.link_user_profile(), utils.jinja.link('url_company_employees', 'company.name'))
 
         dict_main['url_company_employees'] = utils.jinja.grid_url(target.id, 'company.employees', company_id=company.id)
-        to_users = BaseRightsEmployeeInCompany(company).get_user_with_rights(
+        to_users = BaseRightsEmployeeInCompany(company).get_user_with_rights_and(
             UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
     elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES['FIRED'] and \
                     g.user.id != target.user_id:
@@ -481,7 +477,8 @@ def user_company_status_changed(target, new_value, old_value, action):
         phrase = None
 
     # possible notification - 5
-    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'], phrase,
-                                        dict_main,
-                                        phrases_comment='This message is sent to employee when employment status are changed from `%s` to `%s`' %
-                                                        (old_value, new_value))
+    change
+    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'],
+                                        Phrase(name=phrase,
+                                               comment='sent to employee when employment status are changed from `%s` to `%s`' %
+                                                       (old_value, new_value)))()

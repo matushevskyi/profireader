@@ -9,12 +9,11 @@ from sqlalchemy.sql import expression
 from profapp import utils
 from .pr_base import PRBase, Base, Grid
 from ..constants.TABLE_TYPES import TABLE_TYPES
+from config import Config
 
 
 class TranslateTemplate(Base, PRBase):
     __tablename__ = 'translate'
-
-    languages = ['uk', 'en']
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True, nullable=False)
     cr_tm = Column(TABLE_TYPES['timestamp'])
@@ -44,45 +43,81 @@ class TranslateTemplate(Base, PRBase):
         self.en = en
         self.portal_id = portal_id
 
+    def update_record(self, allow_html=None, phrase_comment=None, phrase_default=None, ac_tm=None):
+        from profapp.models.messenger import Socket
+
+        params = {}
+
+        if ac_tm is not None:
+            params['ac_tm'] = datetime.datetime.now()
+        if allow_html is not None and allow_html != self.allow_html:
+            params['allow_html'] = allow_html
+        if phrase_comment is not None and phrase_comment != self.comment:
+            params['comment'] = phrase_comment
+        if phrase_default is not None:
+            for lng in Config.LANGUAGES:
+                if getattr(self, lng['name']) == self.name:
+                    params[lng['name']] = phrase_default
+
+        if params:
+            Socket.update_translation(self.id, params)
+
     @staticmethod
     def try_to_get_phrase(template, phrase, url, portal_id=None, allow_html='', phrase_comment=None,
                           phrase_default=None):
 
-        a_filter = dict(template=template, name=phrase, portal_id=portal_id)
+        def insert_record(translations=None):
+            from profapp.models.messenger import Socket
 
-        # TODO: OZ by OZ: this functions exists because we sometemes inmsert recort in flashing process (see on_value_changed decorator)
-        # and we can`t use ORM
-        def insert_record(**values):
-            from profapp import utils
-            g.db().execute(('INSERT INTO "%s" (template,   name,  portal_id,  allow_html,  comment,  url,   %s) '
-                            'VALUES           (:template, :name, :portal_id, :allow_html, :comment, :url,  :%s)') %
-                           (TranslateTemplate.__tablename__, ', '.join(TranslateTemplate.languages),
-                            ", :".join(TranslateTemplate.languages)),
-                           params=utils.dict_merge(a_filter, {'allow_html': allow_html, 'url': url,
-                                                              'comment': '' if phrase_comment is None else ''},
-                                                   {l: phrase if phrase_default is None else phrase_default for l in
-                                                    TranslateTemplate.languages}, values))
-            return utils.db.query_filter(TranslateTemplate, **a_filter).first()
+            Socket.insert_translation(utils.dict_merge(
+                {l['name']: phrase for l in Config.LANGUAGES} if translations is None else translations, {
+                    'phrase': phrase,
+                    'template': template,
+                    'allow_html': allow_html,
+                    'url': url,
+                    'portal_id': portal_id,
+                    'phrase_comment': phrase_comment,
+                    'phrase_default': phrase_default}))
 
-        exist = utils.db.query_filter(TranslateTemplate, **a_filter).first()
+            # TODO: OZ by OZ: we save via sockets because sometimes insert recort in flashing process (see on_value_changed decorator)
+            # and we can`t use ORM nor raw sql in current database
 
-        if portal_id and not exist:
-            exist_for_another = utils.db.query_filter(TranslateTemplate, template=template, name=phrase,
-                                                      portal_id=TranslateTemplate.exemplary_portal_id).first()
-            # TODO: OZ by OZ: how to select template portal? now we grab phrases from most recent portal, and there can be some unappropriate values
-            if not exist_for_another:
-                exist_for_another = utils.db.query_filter(TranslateTemplate, template=template, name=phrase).filter(
-                    TranslateTemplate.portal != None).order_by(expression.asc(TranslateTemplate.cr_tm)).first()
-            if exist_for_another:
-                return insert_record(**{l: getattr(exist_for_another, l) for l in TranslateTemplate.languages})
+
+            # from profapp import utils
+            # g.db().execute(('INSERT INTO "%s" (template,   name,  portal_id,  allow_html,  comment,  url,   %s) '
+            #                 'VALUES           (:template, :name, :portal_id, :allow_html, :comment, :url,  :%s)') %
+            #                (TranslateTemplate.__tablename__, ', '.join(TranslateTemplate.languages),
+            #                 ", :".join(TranslateTemplate.languages)),
+            #                params=utils.dict_merge(a_filter, {'allow_html': allow_html, 'url': url,
+            #                                                   'comment': '' if phrase_comment is None else ''},
+            #                                        {l: phrase if phrase_default is None else phrase_default for l in
+            #                                         TranslateTemplate.languages}, values))
+            # return utils.db.query_filter(TranslateTemplate, **a_filter).first()
+
+        # a_filter = dict(template=template, name=phrase, portal_id=portal_id)
+        exist = utils.db.query_filter(TranslateTemplate, template=template, name=phrase, portal_id=portal_id).first()
+
+        # TODO: OZ by OZ: borrow translation from portal with same template. maybe add field copy_translation_from_portal_id to portal gtable
+        # if portal_id and not exist:
+        #     exist_for_another = utils.db.query_filter(TranslateTemplate, template=template, name=phrase,
+        #                                               portal_id=TranslateTemplate.exemplary_portal_id).first()
+        #     # TODO: OZ by OZ: how to select template portal? now we grab phrases from most recent portal, and there can be some unappropriate values
+        #     if not exist_for_another:
+        #         exist_for_another = utils.db.query_filter(TranslateTemplate, template=template, name=phrase).filter(
+        #             TranslateTemplate.portal != None).order_by(expression.asc(TranslateTemplate.cr_tm)).first()
+        #     if exist_for_another:
+        #         insert_record(**{l: getattr(exist_for_another, l) for l in TranslateTemplate.languages})
+        #         return None
+
+
         if not exist:
-            return insert_record()
-
-        return exist
+            insert_record()
+            return None
+        else:
+            return exist
 
     @staticmethod
     def try_to_guess_lang(translation, language=None):
-        from config import Config
         return getattr(translation,
                        language if (language and language in [lng['name'] for lng in Config.LANGUAGES]) else g.lang)
 
@@ -114,7 +149,6 @@ class TranslateTemplate(Base, PRBase):
     def getTranslate(template, phrase, url=None, allow_html='', language=None,
                      phrase_comment=None, phrase_default=None):
 
-        from config import Config
         url = TranslateTemplate.try_to_guess_url(url)
 
         (phrase, template) = (phrase[2:], '__GLOBAL') if phrase[:2] == '__' else (phrase, template)
@@ -125,27 +159,12 @@ class TranslateTemplate(Base, PRBase):
                                                           allow_html=allow_html)
 
         if translation:
-            phrase_comment = '' if phrase_comment is None else phrase_comment
-            if translation.allow_html != allow_html or \
-                            translation.comment != phrase_comment or \
-                    (phrase_default is not None and [lng for lng in Config.LANGUAGES if
-                                                     getattr(translation, lng['name']) == phrase]) or \
-                    (current_app.config['DEBUG'] and (
-                                not translation.ac_tm or datetime.datetime.now().timestamp() - translation.ac_tm.timestamp() > 86400)):
-                # TODO: OZ by OZ change ac without changing md (md changed by trigger)
-                # ac updated without changing md
-                params = utils.dict_merge({'allow_html': allow_html, 'comment': phrase_comment,
-                                           'ac_tm': datetime.datetime.now(), 'id': translation.id},
-                                          {} if phrase_default is None else
-                                          {lng['name']: phrase_default for lng in Config.LANGUAGES if
-                                           getattr(translation, lng) == phrase})
-                sql = 'UPDATE "%s" SET "allow_html" = :allow_html, "comment" = :comment, "ac_tm" = :ac_tm ' % (
-                    translation.__tablename__,)
-
-                for lng in Config.LANGUAGES:
-                    if getattr(translation, lng['name']) == phrase and phrase_default is not None:
-                        sql = sql + ', "' + lng['name'] + '" = :' + lng['name']
-                g.db().execute(sql + ' WHERE id = :id', params=params)
+            translation.update_record(allow_html=allow_html,
+                                      phrase_comment=phrase_comment,
+                                      phrase_default=phrase_default,
+                                      ac_tm=True if ((current_app.debug or current_app.testing) and
+                                                     (
+                                                         not translation.ac_tm or datetime.datetime.now().timestamp() - translation.ac_tm.timestamp() > 86400)) else None)
 
             return TranslateTemplate.try_to_guess_lang(translation, language)
         else:
@@ -159,7 +178,7 @@ class TranslateTemplate(Base, PRBase):
                                                     phrase_comment=phrase_comment, phrase_default=phrase_default)
         r = re.compile("%\\(([^)]*)\\)s")
 
-        def getFromDict(context, indexes, default):
+        def get_from_dict(context, indexes, default):
             d = context
             for i in indexes:
                 if isinstance(d, dict):
@@ -168,25 +187,18 @@ class TranslateTemplate(Base, PRBase):
                     d = getattr(d, i, default)
             return d
 
-        def replaceinphrase(match):
+        def replace_in_phrase(match):
             indexes = match.group(1).split('.')
-            return str(getFromDict(dictionary, indexes, match.group(1)))
+            return str(get_from_dict(dictionary, indexes, match.group(1)))
 
-        return r.sub(replaceinphrase, translated)
+        return r.sub(replace_in_phrase, translated)
 
     @staticmethod
     def update_translation(template, phrase, allow_html=None, phrase_comment=None, phrase_default=None):
-        from config import Config
-        i = datetime.datetime.now()
-        obj = utils.db.query_filter(TranslateTemplate, template=template, name=phrase).first()
-        if obj:
-            obj.ac_tm = i
-            obj.comment = obj.comment if phrase_comment is None else phrase_comment
-            obj.allow_html = obj.allow_html if allow_html is None else allow_html
-            if phrase_default is not None:
-                for lng in Config.LANGUAGES:
-                    if getattr(obj, lng['name']) == phrase:
-                        setattr(obj, lng['name'], phrase_default)
+        translation = utils.db.query_filter(TranslateTemplate, template=template, name=phrase).first()
+        if translation:
+            translation.update_record(allow_html=allow_html, phrase_comment=phrase_comment,
+                                      phrase_default=phrase_default, ac_tm=True)
         return True
 
     @staticmethod
@@ -195,11 +207,6 @@ class TranslateTemplate(Base, PRBase):
             f = utils.db.query_filter(TranslateTemplate, template=obj['template'], name=obj['name']).first()
             f.delete()
         return 'True'
-
-    @staticmethod
-    def isExist(template, phrase):
-        list = [f for f in utils.db.query_filter(TranslateTemplate, template=template, name=phrase)]
-        return True if list else False
 
     @staticmethod
     def subquery_search(filters=None, sorts=None, edit=None):
@@ -238,3 +245,23 @@ class TranslateTemplate(Base, PRBase):
     def get_client_side_dict(self, fields='id|name|uk|en|ac_tm|md_tm|cr_tm|template|url|allow_html, portal.id|name',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
+
+
+class Phrase:
+    name = None
+    dict = {}
+    comment = ''
+    default = None
+
+    def __init__(self, name, dict={}, comment='', default=None):
+        self.name = name
+        self.dict = dict
+        self.comment = comment
+        self.default = name if default is None else default
+
+    def translate(self, template='', allow_html='', language=None, more_dictionary={}):
+        return TranslateTemplate.translate_and_substitute(template, self.name,
+                                                          utils.dict_merge(self.dict, more_dictionary),
+                                                          language='en' if language is None else language,
+                                                          allow_html=allow_html,
+                                                          phrase_comment=self.comment, phrase_default=self.default)

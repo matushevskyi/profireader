@@ -157,6 +157,13 @@ class Portal(Base, PRBase):
         ret.company_memberships[0].portal = ret
         ret.company_memberships[0].current_membership_plan_issued = ret.company_memberships[0].create_issued_plan()
         ret.company_memberships[0].current_membership_plan_issued.start()
+        # what_happened='new portal %s for company %s was launched by %s' %
+        #              (utils.jinja.link_external(), utils.jinja.link_company_profile,
+        #               utils.jinja.link_user_profile()),
+        # dictionary={
+        #
+        # }
+
 
         return ret
 
@@ -490,7 +497,8 @@ class MembershipPlanIssued(Base, PRBase):
 
         # status = Column(TABLE_TYPES['string_100'])
 
-    def start(self, inform_portal=None, inform_company=None, user=None):
+    def start(self):
+
         self.started_tm = datetime.datetime.utcnow()
         duration, duration_unit = self.duration.split(' ')
         duration = int(float(duration))
@@ -512,38 +520,17 @@ class MembershipPlanIssued(Base, PRBase):
                 self.calculated_stopping_tm = datetime.datetime.fromtimestamp(
                     self.started_tm.timestamp() + duration * 24 * 3600)
 
-        if user:
-            self.started_by_user = user
+        if g.user:
+            self.started_by_user = g.user
 
-        self.save()
+        return self.save().publish_or_hold_publications_on_plan_start()
 
-        self.publish_or_hold_publications_on_plan_start(inform_portal=inform_portal, inform_company=inform_company)
+    def publish_or_hold_publications_on_plan_start(self):
 
-        return self
-
-    def publish_or_hold_publications_on_plan_start(self, inform_portal=None, inform_company=None):
-
-        from ..models.messenger import Socket, Notification
         from ..models.materials import Publication
-        from ..models.rights import PublishUnpublishInPortal
+        from ..models.translate import TranslateTemplate
+        from ..models.company import UserCompany
 
-        if inform_company:
-            self.member_company_portal.notifications_for_company_about_portal_memberee(
-                "Administrator of portal %s just %s plan of membership of your company %s membership to %s" %
-                (utils.jinja.link_external(),
-                 utils.jinja.link('url_company_portal_memberees', inform_company, True),
-                 utils.jinja.link_company_profile(),
-                 self.name),
-                phrase_comment="new plan it become active")()
-
-        if inform_portal:
-            self.member_company_portal.notifications_for_portal_about_company_member(
-                "Company %s just %s plan %s of membership at portal %s" %
-                (utils.jinja.link_company_profile(),
-                 utils.jinja.link('url_portal_companies_members', inform_portal, True),
-                 self.name,
-                 utils.jinja.link_external()),
-                phrase_comment="new plan for member become active")()
 
         old_count = self.member_company_portal.get_publication_count()
         for vis in Publication.VISIBILITIES:
@@ -557,68 +544,57 @@ class MembershipPlanIssued(Base, PRBase):
 
         phrases_changes = []
         phrases_remain = []
+        dictionary = {}
+
+        use Phrase class
+
+        def append_to_phrases(append_to, phrase, add_dict):
+            dictionary.update(add_dict)
+            return [phrase % tuple(add_dict.keys)]
+
+        def translate_dict(name, default=None, template=''):
+            return {name: TranslateTemplate.translate_and_substitute(template, name, phrase_default=default)}
+
         for vis in Publication.VISIBILITIES:
+            dictionary['visibility_' + vis]
             changes = new_count['by_visibility_status'][vis]['PUBLISHED'] - \
                       old_count['by_visibility_status'][vis]['PUBLISHED']
+
             if changes > 0:
-                phrases_changes.append({'phrase': "%(count)s publications of visibility %(visibility)s was unholded",
-                                        'dict': {'count': changes, 'visibility': vis},
-                                        'comment': " when publication become unholded "})
+                phrases_changes += append_to_phrases("%s publications of visibility %s was unholded",
+                                                     {'count_of_' + vis + '_unholded': changes},
+                                                     translate_dict('__PUBLICATION_VISIBILITY_' + vis, vis))
+
             elif changes < 0:
-                phrases_changes.append({'phrase': "%(count)s publications of visibility %(visibility)s was holded",
-                                        'dict': {'count': -changes, 'visibility': vis},
-                                        'comment': " when publication become holded "})
+                phrases_changes += append_to_phrases("%s publications of visibility %s was holded",
+                                                     {'count_of_' + vis + '_holded': -changes},
+                                                     translate_dict('__PUBLICATION_VISIBILITY_' + vis, vis))
+
             if new_count['by_visibility_status'][vis]['HOLDED'] > 0 and changes > 0:
-                phrases_remain.append({'phrase': "%(count)s publications of visibility %(visibility)s are still holded",
-                                       'dict': {'count': new_count['by_visibility_status'][vis]['HOLDED'],
-                                                'visibility': vis},
-                                       'comment': " when publication remain holded "})
+                phrases_remain += append_to_phrases("%s publications of visibility %s remain holded",
+                                                    {'count_of_' + vis + '_remain_holded':
+                                                         new_count['by_visibility_status'][vis]['HOLDED']},
+                                                    translate_dict('__PUBLICATION_VISIBILITY_' + vis, vis))
 
-        if len(phrases_changes) and (inform_company or inform_portal):
-            phrases_changes = [{'phrase':
-                                    "Due to new plan was applied for company %s at portal %s some changes publication was made"
-                                    % (utils.jinja.link_company_profile(), utils.jinja.link_external()),
-                                'dict': {
-                                    'portal': self.member_company_portal.portal,
-                                    'company': self.member_company_portal.company,
-                                    'url_company_profile': url_for('company.profile',
-                                                                   company_id=self.member_company_portal.company_id)
-                                },
-                                'comment': " when any publication status changes "
-                                }] + phrases_changes
+        if len(phrases_changes):
+            phrases_changes = append_to_phrases("new plan was applied for company and changes publication was made") + \
+                              phrases_changes
 
-        if len(phrases_remain) and (inform_company or inform_portal):
-            phrases_remain = [{'phrase':
-                                   "Despite new plan was applied for company %s at portal %s some publication are still holded"
-                                   % (utils.jinja.link_company_profile(), utils.jinja.link_external()),
-                               'dict': {
-                                   'portal': self.member_company_portal.portal,
-                                   'company': self.member_company_portal.company,
-                                   'url_company_profile': url_for('company.profile',
-                                                                  company_id=self.member_company_portal.company_id)
-                               },
-                               'comment': " when any publication remain holded "
-                               }] + phrases_remain
+        if len(phrases_remain):
+            phrases_remain = append_to_phrases(
+                "despite plan was applied for company some publication are still holded") + \
+                             phrases_remain
 
-        to_users = []
-        if inform_company:
-            comment = " to publisher company employee  "
-            to_users = PublishUnpublishInPortal(None, None, self.member_company_portal.company,
-                                                self.member_company_portal.portal).get_user_with_rights(
-                PublishUnpublishInPortal.publish_rights)
-        if inform_portal:
-            comment = " to portal owner employee "
-            to_users = to_users + PublishUnpublishInPortal(None, None,
-                                                           self.member_company_portal.portal.own_company,
-                                                           self.member_company_portal.portal).get_user_with_rights(
-                PublishUnpublishInPortal.publish_rights)
+        self.member_company_portal.notifications_about_membership_changes(
+            what_happened="due to the plan changes some publications change visibility",
+            rights_at_company=[UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                               UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH, UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION],
+            rights_at_portal=[UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                               UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH, UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
+            more_phrases_to_portal = phrases_changes + phrases_remain,
+            more_phrases_to_company = phrases_changes + phrases_remain,
+            phrase_comment = 'plan become active and some publication become holded/unholded or remain holded')
 
-        phrases = phrases_changes + phrases_remain
-        Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'],
-                                     [p['phrase'] for p in phrases],
-                                     dict_main=[p['dict'] for p in phrases],
-                                     phrases_comment=["This part of message is sent " + comment + p[
-                                         'comment'] + " at moment when new plan become active " for p in phrases])()
 
 
 def stop(self, user=None):
@@ -894,16 +870,13 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def apply_company_to_portal(company_id, portal_id):
         from ..models.company import Company
 
-        """Add company to MemberCompanyPortal table. Company will be partner of this portal"""
-        membership = utils.db.query_filter(MemberCompanyPortal).filter_by(portal_id=portal_id,
-                                                                          company_id=company_id).first()
-        if membership:
-            membership.set_client_side_dict(MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY'])
-        else:
-            membership = MemberCompanyPortal(id=utils.db.create_uuid(),
-                                             status=MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY'],
-                                             company=Company.get(company_id),
-                                             portal=utils.db.query_filter(Portal, id=portal_id).one())
+        membership = \
+            utils.db.query_filter(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first() or \
+            MemberCompanyPortal(id=utils.db.create_uuid(),
+                                company=Company.get(company_id),
+                                portal=utils.db.query_filter(Portal, id=portal_id).one())
+
+        membership.status = MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']
 
         membership.current_membership_plan_issued = membership.create_issued_plan()
         membership.save()
@@ -953,19 +926,23 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
             if immediately and (issued_plan.auto_apply or self.portal.default_membership_plan_id == requested_plan_id):
                 self.current_membership_plan_issued.stop()
+                old_plan_name = self.current_membership_plan_issued.name
                 self.current_membership_plan_issued = issued_plan
-                self.current_membership_plan_issued.start(inform_portal='started')
+                self.current_membership_plan_issued.start()
+                self.member_company_portal.notifications_about_membership_changes(
+                    what_happened='plan was changed from `%(old_plan_name)s` to `%(new_plan_name)s` by company administrator',
+                    additional_dict={'old_plan_name': old_plan_name,
+                                     'new_plan_name': self.current_membership_plan_issued.name})
                 self.requested_membership_plan_issued = None
                 self.request_membership_plan_issued_immediately = False
             else:
-                self.notifications_for_portal_about_company_member(
-                    "Company %s just %s plan %s of membership at portal %s" %
-                    (utils.jinja.link_company_profile(),
-                     utils.jinja.link('url_portal_companies_members',
-                                      'planed' if issued_plan.auto_apply else 'requested', True),
-                     issued_plan.name,
-                     utils.jinja.link_external()), phrase_comment='company ' + (
-                        'scheduled new plan that can start automatically' if issued_plan.auto_apply else 'requested new plan that can`t start automatically and must be confirmed'))()
+                self.notifications_about_membership_changes(
+                    "%s plan `%(plan_name)s`" % ('planed' if issued_plan.auto_apply else 'requested',),
+                    additional_dict={'plan_name': issued_plan.name},
+                    phrase_comment='company ' +
+                                   ('scheduled new plan that can start automatically' if
+                                    issued_plan.auto_apply else
+                                    'requested new plan that can`t start automatically and must be confirmed'))()
 
                 if requested_plan_id is not True:
                     to_delete = self.requested_membership_plan_issued
@@ -984,10 +961,15 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         to_delete = self.requested_membership_plan_issued if requested_plan_id is not True else None
 
         if immediately:
+            old_plan_name = self.current_membership_plan_issued.name
             self.current_membership_plan_issued.stop()
             self.current_membership_plan_issued = self.requested_membership_plan_issued if requested_plan_id is True \
                 else self.create_issued_plan(MembershipPlan.get(requested_plan_id), user=g.user)
-            self.current_membership_plan_issued.start(inform_company='started')
+            self.current_membership_plan_issued.start()
+            self.member_company_portal.notifications_about_membership_changes(
+                what_happened='plan was changed from `%(old_plan_name)s` to `%(new_plan_name)s` by portal administrator',
+                additional_dict={'old_plan_name': old_plan_name,
+                                 'new_plan_name': self.current_membership_plan_issued.name})
             self.requested_membership_plan_issued = None
             self.request_membership_plan_issued_immediately = False
         else:
@@ -1014,13 +996,13 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             MemberCompanyPortal.status != MemberCompanyPortal.STATUSES['REJECTED'])
         return subquery
 
-    def set_client_side_dict(self, status=None, rights=None):
-        if status:
-            self.status = status
-        if rights:
-            self.rights = rights
-
-        return self
+    # def set_client_side_dict(self, status=None, rights=None):
+    #     if status:
+    #         self.status = status
+    #     if rights:
+    #         self.rights = rights
+    #
+    #     return self
 
     def has_rights(self, rightname):
         if self.portal.own_company.id == self.company_id:
@@ -1068,80 +1050,93 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
 
         return ret
 
-    def notifications_about_membership_changes(self, what_happend, phrase_suffix=None,
-                                               additional_dict={}, rights_at_company=None, rights_at_portal=None,
-                                               phrase_comment=None, phrase_default=None, except_to_user=None):
-        from ..models.messenger import Notification, Socket
+    def notifications_about_membership_changes(self, what_happened, additional_dict={},
+                                               rights_at_company=None, rights_at_portal=None,
+                                               more_phrases_to_portal=[], more_phrases_to_company=[],
+                                               phrase_comment=None, except_to_user=None):
+
+        from ..models.messenger import Socket
         from ..models.company import Notification, UserCompany
         from ..models.rights import BaseRightsEmployeeInCompany
+        from ..models.translate import Phrase
 
         except_to_user = [g.user] if except_to_user is None else except_to_user
-
-        phrase = "membership of company %s at portal %s just %s%s" % (utils.jinja.link_company_profile(),
-                                                                      utils.jinja.link_external(),
-                                                                      utils.jinja.link('url_membership', what_happend,
-                                                                                       True),
-                                                                      '' if phrase_suffix is None else (
-                                                                          ' ' + phrase_suffix))
-        dict_main = {'company': self.company,
-                     'portal': self.portal,
-                     'url_company_profile': url_for('company.profile', company_id=self.company.id), }
+        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, dict) else [
+            more_phrases_to_company]
+        more_phrases_to_portal = more_phrases_to_portal if isinstance(more_phrases_to_portal, dict) else [
+            more_phrases_to_portal]
 
         grid_url = lambda endpoint, **kwargs: utils.jinja.grid_url(self.id, endpoint=endpoint, **kwargs)
 
+        dict_main = {
+            'company': self.company,
+            'portal': self.portal,
+            'url_company_profile': url_for('company.profile', company_id=self.company.id),
+            'url_company_portal_memberees': grid_url('company.portal_memberees', company_id=self.company.id),
+            'url_portal_companies_members': grid_url('portal.companies_members', portal_id=self.portal.id)
+        }
+
+        if g.user:
+            dict_main['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
+
         phrase_comment = '' if phrase_comment is None else (' when ' + phrase_comment)
 
-        rights_at_company = UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION if rights_at_company is None else rights_at_company
-        rights_at_company = rights_at_company if isinstance(rights_at_company, list) else [rights_at_company]
-        users_at_company = BaseRightsEmployeeInCompany(self.company).get_user_with_rights(*rights_at_company)
+        def get_users(company, rights):
+            # TODO: OZ by OZ: use operator overloading (&,|) instead of list(|),set(&)
+            return set(
+                BaseRightsEmployeeInCompany(company).get_user_with_rights_and(rights)
+                if isinstance(rights, set) else
+                BaseRightsEmployeeInCompany(company).get_user_with_rights_or(rights) )
 
-        messages_to_company_employee = Socket.prepare_notifications(
-            users_at_company, Notification.NOTIFICATION_TYPES['COMPANY_PORTAL_MEMBEREE_ACTIVITY'], phrase,
-            dict_main=utils.dict_merge(dict_main, {
-                'url_membership': grid_url('company.portal_memberees', company_id=self.company.id)}, additional_dict),
-            phrases_default=phrase_default,
-            phrases_comment="to member company employees with rights %s%s" % (
-                ','.join(rights_at_company), phrase_comment),
+        rights_at_company = UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION if rights_at_company is None else rights_at_company
+        rights_at_company = [rights_at_company] if isinstance(rights_at_company, int) else rights_at_company
+        employees_at_company = get_users(self.company, rights_at_company)
+
+        rights_at_portal = UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES if rights_at_portal is None else rights_at_portal
+        rights_at_portal = [rights_at_portal] if isinstance(rights_at_portal, int) else rights_at_portal
+        employees_at_portal = get_users(self.portal.own_company, rights_at_portal)
+
+        users_at_company_and_portal = employees_at_company & employees_at_portal
+        employees_at_company = employees_at_company - users_at_company_and_portal
+        employees_at_portal = employees_at_portal - users_at_company_and_portal
+
+        user_who_made_changes_phrase = "User %(url_user_profile)s at membership of " if g.user else 'at membership of '
+        dictionary = utils.dict_merge(dict_main, additional_dict)
+
+        phrase_to_employees_at_company = Phrase(
+            user_who_made_changes_phrase + "your company %s at portal %s just " % \
+            (utils.jinja.link('url_company_portal_memberees', 'company.name'),
+             utils.jinja.link_external()) + what_happened, dict=dictionary,
+            comment="to member company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
+
+        phrase_to_employees_at_portal = Phrase(
+            user_who_made_changes_phrase + "company %s at your portal %s just " % \
+            (utils.jinja.link_company_profile(), utils.jinja.link('url_portal_companies_members', 'portal.name')) +
+            what_happened, dict=dictionary,
+            comment="to portal owner company employees with rights %s%s" % (','.join(rights_at_portal), phrase_comment))
+
+        phrase_to_employees_at_both_comp_and_port = Phrase(
+            user_who_made_changes_phrase + "your company %s at your portal %s just " % \
+            (utils.jinja.link('url_company_portal_memberees', 'company.name'),
+             utils.jinja.link('url_portal_companies_members', 'portal.name')) + what_happened, dict=dictionary,
+            comment="to users that have both rights in company portal owner %s and in company member %s%s" %
+                    (','.join(rights_at_portal), ','.join(rights_at_company), phrase_comment))
+
+        messages_to_company = Socket.prepare_notifications(
+            employees_at_company, Notification.NOTIFICATION_TYPES['COMPANY_PORTAL_MEMBEREE_ACTIVITY'],
+            [phrase_to_employees_at_company] + more_phrases_to_company, except_to_user=except_to_user)
+
+        messages_to_portal = Socket.prepare_notifications(
+            employees_at_portal, Notification.NOTIFICATION_TYPES['PORTAL_COMPANIES_MEMBERS_ACTIVITY'],
+            [phrase_to_employees_at_portal] + more_phrases_to_portal, except_to_user=except_to_user)
+
+        messages_to_both = Socket.prepare_notifications(
+            users_at_company_and_portal, Notification.NOTIFICATION_TYPES['PORTAL_COMPANIES_MEMBERS_ACTIVITY'],
+            [phrase_to_employees_at_both_comp_and_port] + more_phrases_to_company + more_phrases_to_portal,
             except_to_user=except_to_user)
 
-        rights_at_portal = UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION if rights_at_portal is None else rights_at_portal
-        rights_at_portal = rights_at_company if isinstance(rights_at_company, list) else [rights_at_portal]
-        users_at_portal = BaseRightsEmployeeInCompany(self.portal.own_company).get_user_with_rights(*rights_at_portal)
+        return lambda: utils.do_nothing(messages_to_company(), messages_to_portal(), messages_to_both())
 
-        messages_to_portal_employee = Socket.prepare_notifications(
-            users_at_portal, Notification.NOTIFICATION_TYPES['PORTAL_COMPANIES_MEMBERS_ACTIVITY'], phrase,
-            dict_main=utils.dict_merge(dict_main, {
-                'url_membership': grid_url('portal.companies_members', portal_id=self.portal.id)},
-                                       additional_dict),
-            phrases_default=phrase_default,
-            phrases_comment="to portal owner company employees with rights %s%s" % (
-                ','.join(rights_at_portal), phrase_comment),
-            except_to_user=list(set(users_at_company).union(set(except_to_user))))
-
-        return lambda: utils.do_nothing(messages_to_company_employee(), messages_to_portal_employee())
-
-    def notifications_for_portal_about_company_member(self, what_happend, phrase_suffix=None, additional_dict={},
-                                                      rights=None,
-                                                      phrase_comment=None, phrase_default=None, except_to_user=None):
-        from ..models.company import UserCompany
-
-        return self.notifications_about_membership_changes(self.portal.own_company, what_happend,
-                                                           phrase_suffix=phrase_suffix,
-                                                           additional_dict=additional_dict,
-                                                           rights=rights or UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-                                                           phrase_comment=phrase_comment, phrase_default=phrase_default,
-                                                           except_to_user=except_to_user)
-
-    def notifications_for_company_about_portal_memberee(self, what_happend, phrase_suffix=None, additional_dict={},
-                                                        rights=None,
-                                                        phrase_comment=None, phrase_default=None,
-                                                        except_to_user=None):
-        from ..models.company import UserCompany
-        return self.notifications_about_membership_changes(self.company, what_happend, phrase_suffix=phrase_suffix,
-                                                           additional_dict=additional_dict,
-                                                           rights=rights or UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION,
-                                                           phrase_comment=phrase_comment, phrase_default=phrase_default,
-                                                           except_to_user=except_to_user)
 
 
 class ReaderUserPortalPlan(Base, PRBase):
@@ -1229,28 +1224,39 @@ class PortalDivision(Base, PRBase):
     def notify_company_about_deleted_publications(self, because_of):
         from ..models.messenger import Socket, Notification
         from ..models.rights import PublishUnpublishInPortal
-        dict_main = {
-            'portal_division': self,
-            'portal': self.portal
-        }
+        from ..models.translate import Phrase
+        from ..models.company import UserCompany, Company
+        from collections import OrderedDict
+        from ..models.rights import BaseRightsEmployeeInCompany
+
+        if not self.publications:
+            return
+
+        header_phrase = "Because of division %%(division_name)s at portal %s was %s by user %s some publications was deleted" % \
+                        (utils.jinja.link_external(), because_of, utils.jinja.link_user_profile())
+        phrases_to_portal = [Phrase(header_phrase, dict={'division_name': self.name})]
+        phrases_to_companies_editors = OrderedDict()
+
+        def get_user(company):
+            list(set(BaseRightsEmployeeInCompany(company=company).get_user_with_rights_or(
+                UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH)) + \
+                 set(BaseRightsEmployeeInCompany(company=company).get_user_with_rights_or(
+                     UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)))
 
         for p in self.publications:
-            dict_pub = utils.dict_merge(dict_main, {
-                'publication': p,
-                'material': p.material
-            })
-            phrase = "Because of %s user %s just complitelly deleted a material named `%%(material.title)s` from portal %s" % \
-                     (because_of, utils.jinja.link_user_profile(), utils.jinja.link_external())
+            if p.material.company_id not in phrases_to_companies_editors:
+                phrases_to_companies_editors[p.material.company_id] = [Phrase(header_phrase)]
 
-            to_users = PublishUnpublishInPortal(p, self, self.portal.own_company).get_user_with_rights(
-                PublishUnpublishInPortal.publish_rights)
-            if p.material.editor not in to_users:
-                to_users.append(p.material.editor)
+            publication_phrase = Phrase("deleted a publication named `%(title)s`", dict={'title': p.title})
+            phrases_to_portal.append(publication_phrase)
+            phrases_to_companies_editors[p.material.company_id].append(publication_phrase)
 
-            # possible notification - 2
-            Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrase,
-                                         dict_pub,
-                                         phrases_comment="This message is sent to company publisher employees when publication is deleted because_of " + because_of)()
+        Socket.prepare_notifications(get_user(self.portal.own_company),
+                                     Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
+
+        for company_id, phrases in phrases_to_companies_editors.items():
+            Socket.prepare_notifications(get_user(Company.get(company_id)),
+                                         Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
 
     def is_active(self):
         return True
@@ -1410,24 +1416,35 @@ class ReaderDivision(Base, PRBase):
 
 
 @on_value_changed(MemberCompanyPortal.status)
-def membership_status_changed(target: MemberCompanyPortal, new_value, old_value, action):
+def membership_status_changed(target: MemberCompanyPortal, new_status, old_status, action):
     changed_by = None
-    if new_value in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
-                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY'],
-                     MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']] or \
-            (new_value == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
-                     old_value in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
-                                   MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']]):
-        changed_by = 'company'
-    elif new_value in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
-                       MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL'],
-                       MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']] or \
-            (new_value == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
-                     old_value in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
-                                   MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']]):
-        changed_by = 'portal administrator'
+
+    if new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
+                      MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY'],
+                      MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']] or \
+            (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
+                     old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
+                                    MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']]):
+        changed_by = 'company administrator ' + utils.jinja.link_user_profile()
+    elif new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
+                        MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL'],
+                        MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']] or \
+            (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
+                     old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
+                                    MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']]):
+        changed_by = 'portal administrator '
 
     if changed_by:
-        target.notifications_about_membership_changes(what_happend="changed status",
-                                                      phrase_suffix="from %s to %s by %s" % (
-                                                          old_value, new_value, changed_by))()
+        target.notifications_about_membership_changes(
+            what_happened="changed status from %s to %s by %s"
+                          % (old_status, new_status, changed_by))()
+
+        if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
+                not target.current_membership_plan_issued.started_tm:
+            target.current_membership_plan_issued.start()
+            target.member_company_portal.notifications_about_membership_changes(
+                what_happened='new plan `%(new_plan_name)s` was started because membership activated by ' + changed_by,
+                dictionary={'new_plan_name': target.current_membership_plan_issued.name})
+
+    else:
+        raise Exception("status changed from %s to %s is not allowed" % (new_status, old_status))
