@@ -12,6 +12,7 @@ from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..controllers.errors import BadDataProvided
 from ..models.translate import TranslateTemplate
 from ..models.users import User
+from functools import partial
 
 
 class Socket:
@@ -40,45 +41,59 @@ class Socket:
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
-    def prepare_notifications(to_users, notification_type, phrases, dict_main={}, except_to_user=[]):
+    def insert_translation(data):
+        from socketIO_client import SocketIO
+        from config import MAIN_DOMAIN
+        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+            socketIO.emit('insert_translation', data, Socket.notification_delivered)
+            socketIO.wait_for_callbacks(seconds=1)
 
-        if not phrases:
+    @staticmethod
+    def update_translation(id, data):
+        from socketIO_client import SocketIO
+        from config import MAIN_DOMAIN
+        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+            socketIO.emit('update_translation', {'id': id, 'data': data}, Socket.notification_delivered)
+            socketIO.wait_for_callbacks(seconds=1)
+
+    @staticmethod
+    def prepare_notifications(to_users, notification_type, phrases, except_to_user=[]):
+
+        if not phrases or not to_users:
             return utils.do_nothing
 
         from_user_dict = {'from_user': g.user.get_client_side_dict(fields='full_name'),
                           'url_profile_from_user': url_for('user.profile', user_id=g.user.id)} if getattr(g, 'user',
                                                                                                           None) else {}
-
-        if isinstance(phrases, str):
+        if not isinstance(phrases, list):
             phrases = [phrases]
-        if isinstance(dict_main, dict):
-            dict_main = [dict_main for k in phrases]
-
 
         datas = [{'to_user_id': u.id,
-                  'content': '<br/>'.join([TranslateTemplate.translate_and_substitute(
-                      template='_NOTIFICATIONS', url='', language=u.lang, allow_html='*', phrase=phrase,
-                      dictionary=utils.dict_merge(dict_main[ind], from_user_dict,
-                                                  {'to_user': u.get_client_side_dict(fields='full_name'),
-                                                   'url_profile_to_user': url_for('user.profile', user_id=u.id)}))
+                  'content': '<br/>'.join([phrase.translate(
+                      template='_NOTIFICATIONS', allow_html='*', language=u.lang,
+                      more_dictionary=
+                      utils.dict_merge(from_user_dict, {
+                          'to_user': u.get_client_side_dict(fields='full_name'),
+                          'url_profile_to_user': url_for('user.profile', user_id=u.id)}))
                                            for ind, phrase in enumerate(phrases)]),
-                  'notification_type': notification_type
-                  } for u in list(set(to_users) - set(except_to_user))] if phrases else []
+                  'notification_type': notification_type}
+                 for u in list(set(to_users) - set(except_to_user))] if phrases else []
 
         def ret():
             for d in datas:
                 Socket.notification(d)
+            return True
 
         return ret
 
     @staticmethod
     def send_greeting(to_users):
-        # possible notification - 1
+        from profapp.models.translate import Phrase
         return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['GREETING'],
-                                            "Welcome to profireader. You can change %s or get a look at %s" % \
-                                            (utils.jinja.link('url_profile_to_user', 'your profile', True),
-                                             utils.jinja.link('url_tutorial', 'tutorial', True)),
-                                            dict_main={'url_tutorial': url_for('tutorial.index')})()
+                                            Phrase("Welcome to profireader. You can change %s or get a look at %s" % \
+                                                   (utils.jinja.link('url_profile_to_user', 'your profile', True),
+                                                    utils.jinja.link('url_tutorial', 'tutorial', True)),
+                                                   dict={'url_tutorial': url_for('tutorial.index')}))()
 
 
 class Contact(Base, PRBase):
@@ -178,6 +193,7 @@ def contact_status_changed(target, new_value, old_value, action):
 
 @on_value_changed(Contact.status)
 def contact_status_changed_2(target, new_value, old_value, action):
+    from profapp.models.translate import Phrase
     # send notifications
     to_user = User.get(target.get_another_user_id(g.user.id))
 
@@ -192,7 +208,13 @@ def contact_status_changed_2(target, new_value, old_value, action):
         phrase = None
 
     # possible notification - 2
-    return Socket.prepare_notifications([to_user], Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'], phrase)
+    if phrase:
+        return Socket.prepare_notifications([to_user], Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'],
+                                            Phrase(phrase, comment=
+                                            'sent to user when friendship request status is changed from `%s` to `%s`' %
+                                            (old_value, new_value)))
+    else:
+        return utils.do_nothing()
 
 
 class Message(Base, PRBase):

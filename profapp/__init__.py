@@ -109,6 +109,7 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
     from sqlalchemy.orm import scoped_session, sessionmaker
 
     engine = create_engine(db_config, echo=echo)
+    g.sql_engine = engine
     g.sql_connection = engine.connect()
 
     db_session = scoped_session(sessionmaker(autocommit=autocommit, autoflush=autoflush, bind=engine))
@@ -188,7 +189,7 @@ def load_user(apptype):
                                    re.compile("\s*,\s*").split(request.headers.environ['HTTP_ACCEPT_LANGUAGE'])))
         agent_languages.sort(key=lambda x: float(x[1]) if len(x) > 1 else 1, reverse=True)
         for lng in agent_languages:
-            if lng[0][0:2] in [l['name'] for l in g.languages]:
+            if lng[0][0:2] in [l['name'] for l in Config.LANGUAGES]:
                 g.lang = lng[0][0:2]
                 break
     if g.user:
@@ -196,7 +197,7 @@ def load_user(apptype):
     if 'language' in session:
         g.lang = session['language']
 
-    if g.lang not in [l['name'] for l in g.languages]:
+    if g.lang not in [l['name'] for l in Config.LANGUAGES]:
         g.lang = 'en'
     # = g.user.lang if g.user else lang
 

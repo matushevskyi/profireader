@@ -20,7 +20,7 @@
             $scope.$$translate = {{ translates('material_details')|safe }};
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
 
-            $scope.url_search_for_user = {{ raw_url_for('company.search_for_user')|safe }};
+{#            $scope.url_search_for_user = {{ raw_url_for('company.search_for_user')|safe }};#}
             $scope.url_update_material = {{ raw_url_for('article.article_show_form')|safe }};
             $scope.url_company = {{ raw_url_for('company.profile')|safe }};
             $scope.url_front_publication_details = {{ raw_url_for('front.article_details')|safe }};
@@ -137,11 +137,11 @@
     </script>
 
     <style>
-        .pr-grid-cell-field-type-actions-action-publish {
+        .pr-grid-cell-field-type-actions-publish {
             background-color: greenyellow;
         }
 
-        .pr-grid-cell-field-type-actions-action-unpublish {
+        .pr-grid-cell-field-type-actions-unpublish {
             background-color: #1ab7ea;
         }
     </style>

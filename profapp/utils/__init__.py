@@ -1,5 +1,6 @@
 import re
 
+
 def fileUrl(id, down=False, if_no_file=None):
     from config import Config
     if not id:
@@ -146,8 +147,11 @@ def static_address(relative_file_name):
     return '//static.' + Config.MAIN_DOMAIN + '/static/' + relative_file_name
 
 
+def find_by_key(list, key, val):
+    return next((d for d in list if (d[key] if isinstance(d, dict) else getattr(d, key)) == val), None)
+
 def find_by_id(list, id):
-    return next((d for d in list if (d['id'] if isinstance(d, dict) else d.id) == id), None)
+    return find_by_key(list, 'id', id)
 
 
 def dict_deep_replace(what_to_append, dictionary, *args, add_only_if_not_exists=False):
@@ -188,15 +192,19 @@ def get_from_list_by_key(list, key):
 
 from html.parser import HTMLParser
 
+
 class MLStripper(HTMLParser):
     def __init__(self):
         super().__init__()
         self.reset()
         self.fed = []
+
     def handle_data(self, d):
         self.fed.append(d)
+
     def get_data(self):
         return ''.join(self.fed)
+
 
 def strip_tags(html, allowed_tags=[]):
     html_parser = MLStripper()
@@ -205,6 +213,8 @@ def strip_tags(html, allowed_tags=[]):
 
 
 import cProfile
+
+
 def profile(func):
     def profiled_func(*args, **kwargs):
         profile = cProfile.Profile()
@@ -215,8 +225,13 @@ def profile(func):
             return result
         finally:
             profile.print_stats(sort='time')
+
     return profiled_func
 
 
 def do_nothing(*args, **kwargs):
     pass
+
+
+def json2kwargs(f):
+    return lambda json: f(**json)

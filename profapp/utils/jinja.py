@@ -37,11 +37,12 @@ def grid_url(id, endpoint, **kwargs):
     return url_for(endpoint, **kwargs) + '#guuid=' + id
 
 
-def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):
+def translate_phrase_or_html(context, phrase, dictionary=None, allow_html='', phrase_comment=None, phrase_default=None):
     return TranslateTemplate.translate_and_substitute(context.name, phrase,
                                                       context if dictionary is None else dictionary,
                                                       language=None,
-                                                      url=None, allow_html=allow_html)
+                                                      url=None, allow_html=allow_html,
+                                                      phrase_comment=phrase_comment, phrase_default=phrase_default)
 
 
 def get_url_adapter():
@@ -56,7 +57,7 @@ def get_url_adapter():
 
 
 # TODO: OZ by OZ: add kwargs just like in url_for
-def raw_url_for(endpoint):
+def raw_url_for(endpoint, **kwargs):
     url_adapter = get_url_adapter()
 
     rules = url_adapter.map._rules_by_endpoint.get(endpoint, ())
@@ -64,7 +65,12 @@ def raw_url_for(endpoint):
     if len(rules) < 1:
         raise Exception('You requsted url for endpoint `%s` but no endpoint found' % (endpoint,))
 
-    rules_simplified = [re.compile('<[^:]*:').sub('<', rule.rule) for rule in rules]
+    rules_simplified = []
+    for rule in rules:
+        r = re.compile('<[^:]*:').sub('<', rule.rule)
+        for (k, v) in kwargs.items():
+            r = re.compile('<' + k + '>').sub(v, r)
+        rules_simplified.append(r)
 
     return "function (dict, host) { return find_and_build_url_for_endpoint(dict?dict:$scope, %s, host); }" % (
         json.dumps(rules_simplified))
@@ -129,13 +135,15 @@ def config_variables():
 
 
 @jinja2.contextfunction
-def translate_phrase(context, phrase, dictionary=None):
-    return utils.strip_tags(translate_phrase_or_html(context, phrase, dictionary, ''))
+def translate_phrase(context, phrase, dictionary=None, phrase_default=None, phrase_comment=None):
+    return utils.strip_tags(translate_phrase_or_html(context, phrase, dictionary, '', phrase_default=phrase_default,
+                                                     phrase_comment=phrase_comment))
 
 
 @jinja2.contextfunction
-def translate_html(context, phrase, dictionary=None):
-    return Markup(translate_phrase_or_html(context, phrase, dictionary, '*'))
+def translate_html(context, phrase, dictionary=None, phrase_default=None, phrase_comment=None):
+    return Markup(translate_phrase_or_html(context, phrase, dictionary, '*', phrase_default=phrase_default,
+                                           phrase_comment=phrase_comment))
 
 
 def static_address_html(relative_file_name):

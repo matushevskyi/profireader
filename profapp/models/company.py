@@ -67,16 +67,20 @@ class Company(Base, PRBase, PRElasticDocument):
                               back_populates='own_company', uselist=False,
                               foreign_keys='Portal.company_owner_id')
 
-    # member_portal_plan = relationship('Portal',
-    #                           back_populates='own_company', uselist=False,
-    #                           foreign_keys='Portal.company_owner_id')
-
     author_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id), nullable=False)
     user_owner = relationship(User, back_populates='companies')
 
-    # TODO: AA by OZ: we need employees.position (from user_company table) (also search and fix #ERROR employees.position.2#)
-    # ERROR employees.position.1#
     employments = relationship('UserCompany', back_populates='company')
+
+    employments_objectable_for_company = relationship('UserCompany',
+                                                      viewonly=True,
+                                                      primaryjoin="and_(Company.id == UserCompany.company_id, or_(UserCompany.status == 'ACTIVE', UserCompany.status == 'APPLICANT', UserCompany.status == 'SUSPENDED'))")
+
+    active_users_employees = relationship('User',
+                                          viewonly=True,
+                                          primaryjoin="and_(Company.id == UserCompany.company_id, UserCompany.status == 'ACTIVE')",
+                                          secondary='user_company',
+                                          secondaryjoin="and_(UserCompany.user_id == User.id, User.status == 'ACTIVE')")
 
     def __init__(self, **kwargs):
         # TODO: OZ by OZ: check default value for all columns
@@ -291,8 +295,6 @@ class UserCompany(Base, PRBase):
     company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), nullable=False)
 
     # TODO: OZ by OZ: remove `SUSPENDED` status from db type
-    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED'}
-    status = Column(TABLE_TYPES['status'], default=STATUSES['APPLICANT'], nullable=False)
 
     class RIGHT_AT_COMPANY(BinaryRights):
         FILES_BROWSE = 4
@@ -327,6 +329,34 @@ class UserCompany(Base, PRBase):
                 self.PORTAL_MANAGE_MEMBERS_COMPANIES,
             ]
 
+    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED',
+                'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN'}
+
+    def status_changes_by_company(self):
+        r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
+            UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
+
+        if self.status == UserCompany.STATUSES['APPLICANT']:
+            return [
+                {'status': UserCompany.STATUSES['ACTIVE'], 'enabled': r},
+                {'status': UserCompany.STATUSES['REJECTED'], 'enabled': r}
+            ]
+        elif self.status == UserCompany.STATUSES['SUSPENDED']:
+            return [
+                {'status': UserCompany.STATUSES['ACTIVE'], 'enabled': r}
+            ]
+        elif self.status == UserCompany.STATUSES['ACTIVE']:
+            return [
+                {'status': UserCompany.STATUSES['FIRED'],
+                 'enabled': 'You can`t fire company owner' if self.company.author_user_id == self.user_id else r},
+                {'status': UserCompany.STATUSES['SUSPENDED'],
+                 'enabled': 'You can`t suspend company owner' if self.company.author_user_id == self.user_id else r}
+            ]
+        else:
+            return []
+
+    status = Column(TABLE_TYPES['status'], default=STATUSES['APPLICANT'], nullable=False)
+
     position = Column(TABLE_TYPES['short_name'], default='')
 
     md_tm = Column(TABLE_TYPES['timestamp'])
@@ -356,37 +386,26 @@ class UserCompany(Base, PRBase):
             return False
         return True
 
-    @staticmethod
-    # TODO: OZ by OZ: rework this as in action-style
-    def get_statuses_avaible(company_id):
-        available_statuses = {s: True for s in UserCompany.STATUSES}
-        user_rights = UserCompany.get_by_user_and_company_ids(user_id=current_user.id, company_id=company_id).rights
-        if user_rights['EMPLOYEE_ENLIST_OR_FIRE'] == False:
-            available_statuses['ACTIVE'] = False
-        if user_rights['EMPLOYEE_ENLIST_OR_FIRE'] == False:
-            available_statuses['SUSPENDED'] = False
-            available_statuses['UNSUSPEND'] = False
-        return available_statuses
-
     def get_client_side_dict(self, fields='id,user_id,company_id,position,status,rights', more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    def set_client_side_dict(self, json):
-        self.attr(utils.filter_json(json, 'status|position|rights'))
+    # def set_client_side_dict(self, json):
+    #     self.attr(utils.filter_json(json, 'status|position|rights'))
 
     def employees_grid_row(self):
-        from flask import jsonify
-        from ..models.rights import EmployeesRight
-        return utils.dict_merge(
-            {
-                'id': self.id,
-                'employment': self.get_client_side_dict(more_fields='user.full_name|address_email|address_phone')},
-            {'actions': EmployeesRight(company=self.company, employment=self).actions()})
+        return {
+            'id': self.id,
+            'disabled': not self.status_changes_by_company(),
+            'status_changes': self.status_changes_by_company(),
+            'employment': self.get_client_side_dict(
+                more_fields='company.name|id,user.full_name|address_email|address_phone'),
+        }
 
     @staticmethod
     def get_by_user_and_company_ids(user_id=None, company_id=None):
-        return utils.db.query_filter(UserCompany).filter_by(user_id=user_id if user_id else g.user.id,
-                                                            company_id=company_id).first()
+        return utils.db.query_filter(UserCompany).filter_by(
+            user_id=(g.user.id if g.user else '') if user_id is None else user_id,
+            company_id=company_id).first()
 
     @staticmethod
     def apply_request(company_id, user_id, bool):
@@ -427,6 +446,7 @@ class UserCompany(Base, PRBase):
 def user_company_status_changed(target, new_value, old_value, action):
     company = Company.get(target.company_id)
     from ..models.rights import BaseRightsEmployeeInCompany
+    from ..models.translate import Phrase
 
     dict_main = {
         'company': company,
@@ -440,7 +460,7 @@ def user_company_status_changed(target, new_value, old_value, action):
                  % (utils.jinja.link_user_profile(), utils.jinja.link('url_company_employees', 'company.name'))
 
         dict_main['url_company_employees'] = utils.jinja.grid_url(target.id, 'company.employees', company_id=company.id)
-        to_users = BaseRightsEmployeeInCompany(company).get_user_with_rights(
+        to_users = BaseRightsEmployeeInCompany(company).get_user_with_rights_and(
             UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
     elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES['FIRED'] and \
                     g.user.id != target.user_id:
@@ -457,5 +477,8 @@ def user_company_status_changed(target, new_value, old_value, action):
         phrase = None
 
     # possible notification - 5
-    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'], phrase,
-                                        dict_main)
+    change
+    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'],
+                                        Phrase(name=phrase,
+                                               comment='sent to employee when employment status are changed from `%s` to `%s`' %
+                                                       (old_value, new_value)))()

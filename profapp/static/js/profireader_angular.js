@@ -176,14 +176,14 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
     })
     .factory('$confirm', ['$uibModal', function ($uibModal) {
-        return function (title, question, buttons) {
+        return function (title, question, yes_text, no_text) {
             var modalInstance = $uibModal.open({
-                templateUrl: 'confirm.html',
+                templateUrl: 'confirm_dialog.html',
                 controller: 'confirm_dialog_controller',
                 resolve: {
                     'buttons': function () {
-                        return buttons ? buttons : [{'answer': true, 'text': 'Yes', 'class_name': 'btn-default'},
-                            {'answer': false, 'text': 'No', 'class_name': 'btn-danger'}];
+                        return [{'answer': true, 'text': yes_text ? yes_text : 'Ok', 'class_name': 'btn-success'},
+                            {'answer': false, 'text': no_text ? no_text : 'Cancel', 'class_name': 'btn-danger'}];
                     },
                     'title': function () {
                         return title;
@@ -192,6 +192,32 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                         return question;
                     }
                 }
+            });
+            return modalInstance.result;
+        }
+
+    }])
+    .controller('select_status_dialog_controller', function ($scope, $uibModalInstance, title,
+                                                             old_status, status_changes, question, $timeout) {
+
+        $scope.title = title;
+        $scope.question = question;
+        $scope.status_changes = status_changes;
+        $scope.old_status = old_status;
+        $scope.new_status = old_status;
+
+        $scope.ok = function () {
+            $uibModalInstance.close($scope.new_status)
+        };
+        $scope.cancel = $uibModalInstance.dismiss;
+    })
+    .factory('$selectStatus', ['$uibModal', function ($uibModal) {
+        return function (dict, scope) {
+            var modalInstance = $uibModal.open({
+                templateUrl: 'select_status_dialog.html',
+                controller: 'select_status_dialog_controller',
+                scope: scope,
+                resolve: resolveDictForAngularController(dict),
             });
             return modalInstance.result;
         }
@@ -577,7 +603,7 @@ function now() {
 var update_last_acessed_phrases = [];
 var update_last_acessed_phrases_timer = null;
 
-function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
+function pr_dictionary(phrase, dictionary, allow_html, scope, $ok, phrase_default, phrase_comment) {
 
     allow_html = allow_html ? allow_html : '';
     if (typeof phrase !== 'string') {
@@ -587,16 +613,18 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
     //     scope.$$translate = {};
     // }
     phrase = phrase.replace(/^(.*)\/\//g, '$1');
+    phrase_comment = phrase_comment ? phrase_comment : null;
+    phrase_default = phrase_default ? phrase_default : null;
 
     var t = now();
     //TODO OZ by OZ hasOwnProperty
     phrase = phrase.replace('\n', ' ').replace(/[\s]+/gi, ' ').trim();
 
-    var CtrlName = scope.controllerName ? scope.controllerName : ctrl;
+    var CtrlName = scope.controllerName ? scope.controllerName : '';
     var phrase_dict;
 
     if (!scope.$$translate || !scope.$$translate[phrase]) {
-        phrase_dict = {'lang': phrase, 'time': t, allow_html: allow_html}
+        phrase_dict = {'lang': phrase_default ? phrase_default : phrase, 'time': t, allow_html: allow_html}
     }
 
     if (scope.$$translate) {
@@ -605,6 +633,8 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
             $ok('/tools/save_translate/', {
                 template: CtrlName,
                 phrase: phrase,
+                phrase_comment: phrase_comment,
+                phrase_default: phrase_default,
                 allow_html: allow_html,
                 url: window.location.href
             }, function (resp) {
@@ -616,59 +646,60 @@ function pr_dictionary(phrase, dictionaries, allow_html, scope, $ok, ctrl) {
         }
     }
 
+
     if ((t - phrase_dict['time']) > 86400) {
         phrase_dict['time'] = t;
-        update_last_acessed_phrases.push({template: CtrlName, phrase: phrase});
-        if (update_last_acessed_phrases_timer) {
-            clearTimeout(update_last_acessed_phrases_timer);
-            update_last_acessed_phrases_timer = null;
-        }
-        update_last_acessed_phrases_timer = setTimeout(function () {
-            $ok('/tools/update_last_accessed/', {'to_update': update_last_acessed_phrases}, function (resp) {
-            });
-            update_last_acessed_phrases = [];
-        }, 5000);
-
-    }
-
-    if (phrase_dict['allow_html'] !== allow_html) {
-        phrase_dict['allow_html'] = allow_html;
-        $ok('/tools/change_allowed_html/', {
+        update_last_acessed_phrases.push({
             template: CtrlName,
             phrase: phrase,
-            allow_html: allow_html
-        }, function (resp) {
+            phrase_comment: phrase_comment,
+            phrase_default: phrase_default
         });
+        if (window.update_last_acessed_phrases_timer) {
+            clearTimeout(window.update_last_acessed_phrases_timer);
+            window.update_last_acessed_phrases_timer = null;
+        }
+        window.update_last_acessed_phrases_timer = setTimeout(function () {
+            $ok('/tools/update_translation_usage/', {'to_update': update_last_acessed_phrases}, function (resp) {
+            });
+            update_last_acessed_phrases = [];
+        }, 3000);
+
     }
 
+    // if (phrase_dict['allow_html'] !== allow_html  ) {
+    //     phrase_dict['allow_html'] = allow_html;
+    //     $ok('/tools/change_allowed_html/', {
+    //         template: CtrlName,
+    //         phrase: phrase,
+    //         phrase_comment: phrase_comment,
+    //         phrase_default: phrase_default,
+    //         allow_html: allow_html
+    //     }, function (resp) {
+    //     });
+    // }
 
-    if (!dictionaries.length) {
-        dictionaries = [true];
-    }
 
     var ret = phrase_dict['lang'];
     ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
         var indexes = g1.split('.');
-        var d = {};
-        try {
-            $.each(dictionaries, function (ind, dict) {
-                $.extend(d, dict === true ? scope : dict);
-            });
-
-            for (var i in indexes) {
-                if (typeof d[indexes[i]] !== 'undefined') {
-                    d = d[indexes[i]];
-                }
-                else {
-                    return g1;
-                }
+        var d = dictionary ? dictionary : scope;
+        // try {
+        for (var i in indexes) {
+            if (typeof d[indexes[i]] !== 'undefined') {
+                d = d[indexes[i]];
             }
-            return d;
+            else {
+                console.error('can`t find ' + g1 + ' in passed dict', dictionary ? dictionary : scope);
+                return g1;
+            }
         }
-        catch (a) {
-            console.log(g0, g1);
-            return g1
-        }
+        return d;
+        // }
+        // catch (a) {
+        //     console.log(g0, g1);
+        //     return g1
+        // }
     });
     return ret;
 }
@@ -689,14 +720,11 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
         strip_html: function () {
 
         },
-        __: function () {
-            var args = [].slice.call(arguments);
-            return $sce.trustAsHtml(pr_dictionary(args.shift(), args, '*', this, $ok));
+        __: function (phrase, dictionary, phrase_default, phrase_comment) {
+            return $sce.trustAsHtml(pr_dictionary(phrase, dictionary, '*', this, $ok, phrase_default, phrase_comment));
         },
-        _: function () {
-            // debugger;
-            var args = [].slice.call(arguments);
-            return pr_dictionary(args.shift(), args, '', this, $ok);
+        _: function (phrase, dictionary, phrase_default, phrase_comment) {
+            return pr_dictionary(phrase, dictionary, '', this, $ok, phrase_default, phrase_comment);
         },
 
         publication_count: function (plan, pub_type, already_published_counts, show_planed_counts) {

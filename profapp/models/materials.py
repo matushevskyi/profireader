@@ -327,7 +327,7 @@ class Publication(Base, PRBase, PRElasticDocument):
                                          Publication.status ==
                                          Publication.STATUSES['PUBLISHED'],
                                          utils.db.query_filter(ArticleCompany, company_id=company_id,
-                                                      id=Publication.article_company_id).exists(), visibility),
+                                                               id=Publication.article_company_id).exists(), visibility),
                           'return_fields': 'default_dict', 'tags': True}
         elif division_type == 'events':
             if not company_id:
@@ -342,7 +342,7 @@ class Publication(Base, PRBase, PRElasticDocument):
                                          Publication.status ==
                                          Publication.STATUSES['PUBLISHED'],
                                          utils.db.query_filter(ArticleCompany, company_id=company_id,
-                                                      id=Publication.article_company_id).exists(), visibility),
+                                                               id=Publication.article_company_id).exists(), visibility),
                           'return_fields': 'default_dict', 'tags': True}
         return filter
 
@@ -351,7 +351,7 @@ class Publication(Base, PRBase, PRElasticDocument):
         employer = True
         visibilities = Publication.VISIBILITIES.copy()
         if not utils.db.query_filter(UserCompany, user_id=getattr(g.user, 'id', None),
-                            status=UserCompany.STATUSES['ACTIVE']).filter(
+                                     status=UserCompany.STATUSES['ACTIVE']).filter(
                     UserCompany.company_id == utils.db.query_filter(Portal.company_owner_id, id=portal_id)).count():
             # visibilities.pop(Publication.VISIBILITIES['CONFIDENTIAL'])
             employer = False
@@ -470,7 +470,8 @@ class Publication(Base, PRBase, PRElasticDocument):
         return g.db().query(Publication).filter(
             and_(Publication.id != self.id,
                  Publication.portal_division_id.in_(
-                     utils.db.query_filter(PortalDivision.id).filter(PortalDivision.portal_id == self.portal_division.portal_id))
+                     utils.db.query_filter(PortalDivision.id).filter(
+                         PortalDivision.portal_id == self.portal_division.portal_id))
                  )).order_by(func.random()).limit(count).all()
 
     def add_to_read(self):
@@ -500,12 +501,14 @@ class Publication(Base, PRBase, PRElasticDocument):
         return self
 
     def is_favorite(self, user_id=None):
-        return True if utils.db.query_filter(ReaderPublication, user_id=user_id if user_id else g.user.id if g.user else None,
-                                    publication_id=self.id, favorite=True).first() else False
+        return True if utils.db.query_filter(ReaderPublication,
+                                             user_id=user_id if user_id else g.user.id if g.user else None,
+                                             publication_id=self.id, favorite=True).first() else False
 
     def is_liked(self, user_id=None):
-        return True if utils.db.query_filter(ReaderPublication, user_id=user_id if user_id else g.user.id if g.user else None,
-                                    publication_id=self.id, liked=True).first() else False
+        return True if utils.db.query_filter(ReaderPublication,
+                                             user_id=user_id if user_id else g.user.id if g.user else None,
+                                             publication_id=self.id, liked=True).first() else False
 
     def liked_count(self):
         return utils.db.query_filter(ReaderPublication, publication_id=self.id, liked=True).count()
@@ -523,49 +526,52 @@ class Publication(Base, PRBase, PRElasticDocument):
 
 
 @on_value_changed(Publication.status)
-def publication_status_changed(target, new_value, old_value, action):
-    from ..models.rights import PublishUnpublishInPortal
-    from ..models.messenger import Notification, Socket
+def publication_status_changed(target: Publication, new_value, old_value, action):
+    from ..models.translate import Phrase
+    from ..models.portal import MemberCompanyPortal
 
     portal_division = target.portal_division if target.portal_division else PortalDivision.get(
         target.portal_division_id)
     portal = portal_division.portal
     material = Material.get(target.material_id)
 
-    dict_main = {
-        'portal_division': portal_division,
-        'portal': portal,
-        'publication': target,
-        'material': material,
-        'url_publication': portal.host + url_for('front.article_details', publication_id=target.id,
-                                                 publication_title=material.title),
-        'url_portal_publications': utils.jinja.grid_url(target.id, 'portal.publications', portal_id=portal.id)
-    }
-
-    phrase = new_value
+    right_at_company = None
+    right_at_portal = None
     if new_value == Publication.STATUSES['SUBMITTED'] and not old_value:
-        r = PublishUnpublishInPortal.publish_rights
+        right_at_company = list(UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                               UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
+        right_at_portal = list(UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                              UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
     elif new_value == Publication.STATUSES['PUBLISHED']:
-        r = PublishUnpublishInPortal.unpublish_rights
+        right_at_company = list(UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                               UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
+        right_at_portal = list(UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                              UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
     elif old_value == Publication.STATUSES['PUBLISHED']:
-        r = PublishUnpublishInPortal.unpublish_rights
-        phrase = Publication.STATUSES['UNPUBLISHED']
-    else:
-        phrase = None
+        right_at_company = list(UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                               UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
+        right_at_portal = list(UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                              UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
 
-    if phrase:
-        rights_phrase = "User %s just %s a material named `%%(material.title)s` at portal %s" % \
-                        (utils.jinja.link_user_profile(),
-                         utils.jinja.link('url_portal_publications', phrase, True),
-                         utils.jinja.link_external('url_publication', 'portal.name'))
-        to_users = PublishUnpublishInPortal(target, portal_division, material.company).get_user_with_rights(r)
-        if material.editor not in to_users:
-            to_users.append(material.editor)
-    else:
-        to_users = []
-        rights_phrase = None
 
-    # possible notification - 3
-    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'],
-                                        rights_phrase,
-                                        dict_main, except_to_user=[g.user])
+    if right_at_company or right_at_portal:
+        membership = MemberCompanyPortal.get_by_portal_id_company_id(target.portal_division.portal_id,
+                                                                     target.material.company_id)
+        return membership.notifications_about_membership_changes(
+            "changed status of %%(url_external_publication)s from %s to %s at division `%%(division_name)s`" %
+            (old_value, new_value),
+            additional_dict={
+                'url_external_publication': portal.host + url_for('front.article_details', publication_id=target.id,
+                                                                  publication_title=material.title),
+                'division_name': portal_division.nameid_url(target.id, 'portal.publications', portal_id=portal.id)
+            },
+            rights_at_company=right_at_company,
+            more_phrases_to_company=Phrase("See company`s %(url_company_materials)s", dict={
+                'url_company_materials': utils.jinja.grid_url(material.id, 'company.materials',
+                                                              company_id=material.company_id)}),
+            right_at_portal=right_at_portal,
+            more_phrases_to_portal=Phrase("See portal`s %(url_portal_publications)s", dict={
+                'url_portal_publications': utils.jinja.grid_url(target.id, 'portal.publications', portal_id=portal.id)})
+        )
+    else:
+        return utils.do_nothing()

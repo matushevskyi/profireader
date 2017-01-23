@@ -417,13 +417,30 @@
 
 .pr-grid-cell-field-type-actions {
     padding: 2px;
-}
-
-.pr-grid-cell-field-type-actions-action {
     padding: 0px 2px;
     margin: 0px 2px;
-    width: 5em;
+    /*overflow: hidden;*/
+    letter-spacing: -1px;
+}
+
+.pr-grid-cell-field-type-change_status {
+    padding: 2px;
+    padding: 0px 2px;
+    margin: 0px 2px;
+    /*overflow: hidden;*/
+    letter-spacing: -1px;
+}
+
+.pr-grid-cell-field-type-actions button, .pr-grid-cell-field-type-change_status button {
+    width: 8em;
     overflow: hidden;
+}
+
+.pr-grid-cell-field-type-change_status {
+    padding: 2px;
+    padding: 0px 2px;
+    margin: 0px 2px;
+    /*overflow: hidden;*/
     letter-spacing: -1px;
 }
 
@@ -487,8 +504,16 @@
     cursor: pointer;
 }
 
+.disabled .link {
+    cursor: inherit;
+}
+
 .link:hover span {
     text-decoration: underline;
+}
+
+.disabled .link:hover span {
+    text-decoration: inherit;
 }
 
 .button {

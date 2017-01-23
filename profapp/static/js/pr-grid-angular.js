@@ -27,6 +27,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 }, c);
             });
 
+
             gridApi.grid.options.headerTemplate = '<div class="ui-grid-header" ><div class="ui-grid-top-panel"><div class="ui-grid-header-viewport"><div class="ui-grid-header"></div><div id="ui-grid-to-height" class="ui-grid-header-canvas">' +
                 '<div class="ui-grid-header-cell-wrapper" ng-style="colContainer.headerCellWrapperStyle()"><div role="row" class="ui-grid-header-cell-row">' +
                 '<div class="ui-grid-header-cell ui-grid-clearfix ui-grid-category" ng-repeat="cat in grid.options.category" ng-if="cat.visible && (colContainer.renderedColumns | filter:{ colDef:{category: cat.name} }).length > 0"> ' +
@@ -74,11 +75,12 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                 }
 
+
                 function generateCellTemplate(col, columnindex) {
                     var classes_for_row = ' ui-grid-cell-contents pr-grid-cell-field-type-' +
                         (col.type ? col.type : 'text') + ' pr-grid-cell-field-name-' + col.name.replace(/\./g, '-') + ' ' + (typeof col.classes === 'string' ? col.classes : '') + '';
                     if (typeof  col.classes === 'function') {
-                        classes_for_row += '{{ grid.options.columnDefs[' + columnindex + '].classes(row.entity.id, row.entity, col.field) }}';
+                        classes_for_row += '{{ grid.options.columnDefs[' + columnindex + '].classes(row.entity.id, row.entity, col.field) }} ';
                     }
 
                     var cell_raw_value = 'COL_FIELD';
@@ -87,23 +89,28 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
 
                     var attributes_for_cell = +col.name + '" pr-id="{{ row.entity.id }}" ';
-                    var cell_title = 'title = "{{ ::' + cell_raw_value + '|strip_html }}"';
+                    var cell_title = 'title = "{{ ' + cell_raw_value + '|strip_html }}"';
                     if (col['uib-tooltip-html']) {
                         attributes_for_cell += ' aatooltip-popup-close-delay="100000" tooltip-append-to-body="true" tooltip-class="pr-grid-tooltip-class" tooltip-animation="false" uib-tooltip-html="' + 'grid.options.columnDefs[' + i + '][\'uib-tooltip-html\'](row.entity, COL_FIELD)' + '" ';
                         cell_title = '';
                     }
 
-                    var action_button_before_click_b = '';
-                    var action_button_before_click_e = '';
+
+                    var onclickdisable = gridApi.grid.options['disableByField'] ? 'grid.onclick_is_disabled(row.entity[\'' + gridApi.grid.options['disableByField'] + '\']) && ' : '';
                     if (col.onclick) {
                         if (col.type === 'actions') {
-                            col.onclick = 'grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')';
+                            col.onclick = onclickdisable + 'grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')';
+                        }
+                        else if (col.type === 'change_status') {
+                            col.onclick = onclickdisable + 'grid.appScope.' + col['onclick'] + '(row.entity.id, new_status_and_enabled[\'status\'], row.entity, \'' + col['name'] + '\')';
                         }
                         else if (col.type === 'icons') {
-                            attributes_for_cell += ' ng-click="grid.onclick_without_bubbling($event, grid.appScope.' + col.onclick + ', row.entity.id, undefined, row.entity, \'' + col['name'] + '\')"';
+                            attributes_for_cell += ' ng-click="' + onclickdisable + 'grid.onclick_without_bubbling($event, grid.appScope.' + col.onclick + ', row.entity.id, undefined, row.entity, \'' + col['name'] + '\')"';
+                            classes_for_row += ' link '
                         }
                         else if (col.type !== 'editable') {
-                            attributes_for_cell += ' ng-click="grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\')"';
+                            attributes_for_cell += ' ng-click="' + onclickdisable + 'grid.appScope.' + col.onclick + '(row.entity.id, row.entity, \'' + col['name'] + '\')"';
+                            classes_for_row += ' link '
                         }
 
                     }
@@ -121,7 +128,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         case 'link':
                             return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" class="' + classes_for_row + '" ' + cell_title + '">' + prefix_img + '<a ng-style="grid.appScope.' + col.cellStyle + '"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}">' + cell_value + '<i ng-if="' + col.link + '" class="fa fa-external-link ml05em" style="font-size: 12px"></i></a></div>';
                         case 'img':
-                            return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" style="text-align:center;">' + prefix_img + '<img ng-src="' + cell_value + '" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
+                            return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<img ng-src="' + cell_value + '" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
                         case 'tags':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<span ng-repeat="tag in ' + cell_raw_value + '"' +
                                 ' class="m025em label label-danger">{{ tag.text }}</span></div>';
@@ -129,19 +136,25 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ' + cell_title + '">' + prefix_img + '<a ng-click="' + col.modal + '">' + cell_value + '</a></div>';
                         case 'actions':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<button ' +
-                                ' class="btn pr-grid-cell-field-type-actions-action pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
+                                ' class="btn pr-grid-cell-field-type-actions pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
                                 ' ng-repeat="(action_name, enabled) in ' + cell_raw_value + '" ng-disabled="enabled !== true" ng-style="{width:grid.getLengthOfAssociativeArray(' + cell_value + ')>3?\'2.5em\':\'5em\'}"' +
-                                ' ng-click="' + col.onclick + '" ' +
+                                ' ng-click="' + onclickdisable + col.onclick + '" ' +
                                 ' title="{{ grid.appScope._((enabled === true)?(action_name + \' grid action\'):enabled) }}">{{ grid.appScope._(action_name + \' grid action\') }}</button></div>';
+                        // case 'change_status':
+                        //     return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<button ' +
+                        //         ' class="btn pr-grid-cell-field-type-change_status pr-grid-cell-field-type-change_status-old-{{ row.entity[\''+col['old_status_column_name']+'\'] }} pr-grid-cell-field-type-change_status-new-{{ new_status }}" ' +
+                        //         ' ng-repeat="new_status_and_enabled in ' + cell_raw_value + '" ng-disabled="new_status_and_enabled[\'enabled\'] !== true"' +
+                        //         ' ng-click="' + col.onclick + '" ' +
+                        //         ' title="{{ grid.appScope._((new_status_and_enabled[\'enabled\'] === true)?(\'change \' + row.entity[\''+col['old_status_column_name']+'\'] + \' to \' + new_status_and_enabled[\'status\']):new_status_and_enabled[\'enabled\']) }}">{{ grid.appScope._(row.entity[\'' + col['old_status_column_name'] + '\'] + \'=>\' + new_status_and_enabled[\'status\'], null, \'make \' + new_status_and_enabled[\'status\']) }}</button></div>';
                         case 'icons':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<i ng-class="{disabled: !icon_enabled}" ' +
-                                'class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ icon_name }}" ng-repeat="(icon_name, icon_enabled) in ' + cell_raw_value + '" ng-click="grid.onclick_without_bubbling($event, grid.appScope.' + col.onclick + ', row.entity.id, \'{{ icon_name }}\', row.entity, \'' + col['name'] + '\')" title="{{ grid.appScope._(\'grid icon \' + icon_name) }}"></i></div>';
+                                'class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ icon_name }}" ng-repeat="(icon_name, icon_enabled) in ' + cell_raw_value + '" ng-click="' + onclickdisable + 'grid.onclick_without_bubbling($event, grid.appScope.' + col.onclick + ', row.entity.id, \'{{ icon_name }}\', row.entity, \'' + col['name'] + '\')" title="{{ grid.appScope._(\'grid icon \' + icon_name) }}"></i></div>';
                         case 'editable':
                             if (col.multiple === true && col.rule) {
-                                return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ng-if="grid.appScope.' + col.rule + '=== false" ' + cell_title + '">' + prefix_img + '' + cell_value + '</div><div ng-if="grid.appScope.' + col.rule + '"><div ng-click="' + col.modal + '" ' + cell_title + '" id=\'grid_{{row.entity.id}}\'>' + cell_value + '</div></div>';
+                                return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ng-if="grid.appScope.' + col.rule + '=== false" ' + cell_title + '">' + prefix_img + '' + cell_value + '</div><div ng-if="grid.appScope.' + col.rule + '"><div ng-click="' + onclickdisable + col.modal + '" ' + cell_title + '" id=\'grid_{{row.entity.id}}\'>' + cell_value + '</div></div>';
                             }
                             if (col.subtype && col.subtype === 'tinymce') {
-                                return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ng-click="' + col.modal + '" ' + cell_title + '" id=\'grid_{{row.entity.id}}\'>' + prefix_img + '' + cell_value + '</div>';
+                                return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ng-click="' + onclickdisable + col.modal + '" ' + cell_title + '" id=\'grid_{{row.entity.id}}\'>' + prefix_img + '' + cell_value + '</div>';
                             }
                         default:
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ' + cell_title + '">' + prefix_img + '' + cell_html_value + '</div>';
@@ -173,6 +186,11 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
 
             gridApi.grid['getLengthOfAssociativeArray'] = function (array) {
                 return Object.keys(array).length
+            };
+
+            gridApi.grid['onclick_is_disabled'] = function (disabled) {
+                console.log(disabled);
+                return disabled ? false : true;
             };
 
             gridApi.grid['onclick_without_bubbling'] = function () {
@@ -394,345 +412,3 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
     });
 });
 
-// module.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '$parse', '$timeout', '$ok',
-//     function ($filter, $document, $compile, $parse, $timeout, $ok) {
-//
-//         return {
-//             restrict: 'AE',
-//             scope: {
-//                 addData: '=',
-//                 data: '=',
-//                 send: '=',
-//                 parentScope: '=',
-//                 selectedModel: '=',
-//                 options: '=',
-//                 extraSettings: '=',
-//                 events: '=',
-//                 searchFilter: '=?',
-//                 translationTexts: '=',
-//                 groupBy: '@'
-//             },
-//             template: function (element, attrs) {
-//                 var checkboxes = attrs.checkboxes ? true : false;
-//                 var groups = attrs.groupBy ? true : false;
-//
-//                 var template = '<div class="multiselect-parent btn-group dropdown-multiselect" style="width:100%"><div class="kk"><div>';
-//                 template += '<button type="button" style="width:100%"  id="t1" class="dropdown-toggle" ng-class="settings.buttonClasses" ng-disabled="parentScope.loading" ng-click="toggleDropdown()">{{getButtonText()}}&nbsp;<span class="caret"></span></button>';
-//                 template += '<ul class="dropdown-menu dropdown-menu-form ng-dr-ms" ng-style="{display: open ? \'block\' : \'none\', height : settings.scrollable ? settings.scrollableHeight : \'auto\' }" style="position: fixed; top:auto; left: auto; width: 20%;cursor: pointer" >';
-//                 template += '<li ng-show="settings.selectionLimit === 0"><a data-ng-click="selectAll()"><span class="glyphicon glyphicon-ok"></span>  {{texts.checkAll}}</a>';
-//                 template += '<li ng-show="settings.showUncheckAll"><a data-ng-click="deselectAll(true);"><span class="glyphicon glyphicon-remove"></span>   {{texts.uncheckAll}}</a></li>';
-//                 template += '<li ng-show="(settings.showCheckAll || settings.selectionLimit < 0) && !settings.showUncheckAll" class="divider"></li>';
-//                 template += '<li ng-show="settings.enableSearch"><div class="dropdown-header"><input type="text" class="form-control" style="width: 100%;" ng-model="searchFilter" placeholder="{{texts.searchPlaceholder}}" /></li>';
-//                 template += '<li ng-show="settings.enableSearch" class="divider"></li>';
-//                 if (groups) {
-//                     template += '<li ng-repeat-start="option in orderedItems | filter: searchFilter" ng-show="getPropertyForObject(option, settings.groupBy) !== getPropertyForObject(orderedItems[$index - 1], settings.groupBy)" role="presentation" class="dropdown-header">{{ getGroupTitle(getPropertyForObject(option, settings.groupBy)) }}</li>';
-//                     template += '<li ng-repeat-end role="presentation">';
-//                 } else {
-//                     template += '<li role="presentation" ng-repeat="option in options | filter: searchFilter">';
-//                 }
-//                 template += '<a role="menuitem" tabindex="-1" ng-click="setSelectedItem(getPropertyForObject(option,settings.idProp) , getPropertyForObject(option,settings.displayProp))">';
-//                 if (checkboxes) {
-//                     template += '<div class="checkbox"><label><input class="checkboxInput" type="checkbox" ng-click="checkboxClick($event, getPropertyForObject(option,settings.idProp))" ng-checked="isChecked(getPropertyForObject(option,settings.idProp), getPropertyForObject(option,settings.displayProp))" /> {{getPropertyForObject(option, settings.displayProp)}}</label></div></a>';
-//                 } else {
-//                     template += '<span data-ng-class="{\'glyphicon glyphicon-check\': isChecked(getPropertyForObject(option,settings.idProp), getPropertyForObject(option,settings.displayProp)), \'glyphicon glyphicon-unchecked\': !isChecked(getPropertyForObject(option,settings.idProp), getPropertyForObject(option,settings.displayProp))}"></span> {{getPropertyForObject(option, settings.displayProp)}}</a>';
-//                 }
-//                 template += '</li>';
-//                 template += '<li role="presentation" ng-show="settings.selectionLimit > 1"><a role="menuitem">{{selectedModel.length}} {{texts.selectionOf}} {{settings.selectionLimit}} {{texts.selectionCount}}</a></li>';
-//                 template += '</ul>';
-//                 template += '</div>';
-//
-//                 element.html(template);
-//             },
-//             link: function ($scope, $element, $attrs) {
-//                 var $dropdownTrigger = $element.children()[0];
-//
-//                 $scope.toggleDropdown = function () {
-//                     $scope.open = !$scope.open;
-//                 };
-//
-//                 $scope.checkboxClick = function ($event, id) {
-//                     $scope.setSelectedItem(id);
-//                     $event.stopImmediatePropagation();
-//                 };
-//
-//                 $scope.externalEvents = {
-//                     onItemSelect: angular.noop,
-//                     onItemDeselect: angular.noop,
-//                     onSelectAll: angular.noop,
-//                     onDeselectAll: angular.noop,
-//                     onInitDone: angular.noop,
-//                     onMaxSelectionReached: angular.noop
-//                 };
-//
-//                 $scope.settings = {
-//                     dynamicTitle: true,
-//                     scrollable: false,
-//                     scrollableHeight: '300px',
-//                     closeOnBlur: true,
-//                     displayProp: 'label',
-//                     idProp: 'value',
-//                     externalIdProp: 'value',
-//                     enableSearch: false,
-//                     selectionLimit: $scope.addData.limit ? $scope.addData.limit : 0,
-//                     showCheckAll: true,
-//                     showUncheckAll: true,
-//                     closeOnSelect: false,
-//                     buttonClasses: 'btn btn-default ',
-//                     closeOnDeselect: false,
-//                     groupBy: $attrs.groupBy || undefined,
-//                     groupByTextProvider: null,
-//                     smartButtonMaxItems: 0,
-//                     smartButtonTextConverter: angular.noop
-//                 };
-//
-//                 $scope.translate_phrase = function () {
-//                     $scope.$$translate = $scope.parentScope.$$translate;
-//                     var args = [].slice.call(arguments);
-//                     return pr_dictionary(args.shift(), args, '', $scope, $ok, $scope.parentScope.controllerName)
-//                 };
-//
-//                 $scope.texts = {
-//                     checkAll: $scope.translate_phrase("Check All"),
-//                     uncheckAll: $scope.translate_phrase('Uncheck All'),
-//                     selectionCount: $scope.translate_phrase('checked'),
-//                     selectionOf: '/',
-//                     searchPlaceholder: $scope.translate_phrase('Search...'),
-//                     buttonDefaultText: $scope.translate_phrase('Select'),
-//                     dynamicButtonTextSuffix: $scope.translate_phrase('checked')
-//                 };
-//
-//                 $scope.searchFilter = $scope.searchFilter || '';
-//
-//                 if (angular.isDefined($scope.settings.groupBy)) {
-//                     $scope.$watch('options', function (newValue) {
-//                         if (angular.isDefined(newValue)) {
-//                             $scope.orderedItems = $filter('orderBy')(newValue, $scope.settings.groupBy);
-//                         }
-//                     });
-//                 }
-//
-//                 angular.extend($scope.settings, $scope.extraSettings || []);
-//                 angular.extend($scope.externalEvents, $scope.events || []);
-//                 angular.extend($scope.texts, $scope.translationTexts);
-//
-//                 $scope.singleSelection = $scope.settings.selectionLimit === 1;
-//
-//                 function getFindObj(id) {
-//                     var findObj = {};
-//
-//                     if ($scope.settings.externalIdProp === '') {
-//                         findObj[$scope.settings.idProp] = id;
-//                     } else {
-//                         findObj[$scope.settings.externalIdProp] = id;
-//                     }
-//
-//                     return findObj;
-//                 }
-//
-//                 function clearObject(object) {
-//                     for (var prop in object) {
-//                         delete object[prop];
-//                     }
-//                 }
-//
-//                 if ($scope.singleSelection) {
-//                     if (angular.isArray($scope.selectedModel) && $scope.selectedModel.length === 0) {
-//                         clearObject($scope.selectedModel);
-//                     }
-//                 }
-//
-//                 if ($scope.settings.closeOnBlur) {
-//                     $document.on('click', function (e) {
-//                         var target = e.target.parentElement;
-//                         var parentFound = false;
-//
-//                         while (angular.isDefined(target) && target !== null && !parentFound) {
-//                             if (_.contains(target.className.split(' '), 'multiselect-parent') && !parentFound) {
-//                                 if (target === $dropdownTrigger) {
-//                                     parentFound = true;
-//                                 }
-//                             }
-//                             target = target.parentElement;
-//                         }
-//
-//                         if (!parentFound) {
-//                             $scope.$apply(function () {
-//                                 $scope.open = false;
-//                             });
-//                         }
-//                     });
-//                 }
-//
-//                 $scope.getGroupTitle = function (groupValue) {
-//                     if ($scope.settings.groupByTextProvider !== null) {
-//                         return $scope.settings.groupByTextProvider(groupValue);
-//                     }
-//
-//                     return groupValue;
-//                 };
-//
-//                 $scope.get_default_selected = function (exeptions) {
-//                     if (exeptions) {
-//                         $scope.listElemens[$scope.addData.field] = [];
-//                         $timeout(function () {
-//                             for (var f = 0; f < $scope.options.length; f++) {
-//                                 if (exeptions instanceof Array) {
-//                                     if (exeptions.indexOf($scope.options[f]['label']) === -1) {
-//                                         $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
-//                                     }
-//                                 } else {
-//                                     if ($scope.options[f]['label'] !== exeptions) {
-//                                         $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
-//                                     }
-//                                 }
-//                             }
-//                         }, 500)
-//                     }
-//                 };
-//
-//                 $scope.getButtonText = function () {
-//                     if (!$scope.listElemens) {
-//                         $scope.listElemens = {};
-//                         $scope.listElemens[$scope.addData.field] = [];
-//                         $timeout(function () {
-//                             $scope.filters_exception = $scope.parentScope.gridApi.grid.filters_init_exception
-//                             if ($scope.filters_exception) {
-//                                 $scope.get_default_selected($scope.filters_exception)
-//                             }
-//                         }, 2000);
-//
-//                     }
-//                     if ($scope.settings.dynamicTitle && ($scope.selectedModel.length > 0 || (angular.isObject($scope.selectedModel) && _.keys($scope.selectedModel).length > 0))) {
-//                         if ($scope.settings.smartButtonMaxItems > 0) {
-//                             var itemsText = [];
-//                             angular.forEach($scope.options, function (optionItem) {
-//                                 if ($scope.isChecked($scope.getPropertyForObject(optionItem, $scope.settings.idProp))) {
-//                                     var displayText = $scope.getPropertyForObject(optionItem, $scope.settings.displayProp);
-//                                     var converterResponse = $scope.settings.smartButtonTextConverter(displayText, optionItem);
-//                                     itemsText.push(converterResponse ? converterResponse : displayText);
-//                                 }
-//                             });
-//
-//                             if ($scope.selectedModel.length > $scope.settings.smartButtonMaxItems) {
-//                                 itemsText = itemsText.slice(0, $scope.settings.smartButtonMaxItems);
-//                                 itemsText.push('...');
-//                             }
-//
-//                             return itemsText.join(', ');
-//                         } else {
-//                             var totalSelected;
-//                             if ($scope.singleSelection) {
-//                                 totalSelected = ($scope.selectedModel !== null && angular.isDefined($scope.selectedModel[$scope.settings.idProp])) ? 1 : 0;
-//                             } else {
-//                                 totalSelected = angular.isDefined($scope.selectedModel) ? $scope.listElemens[$scope.addData.field].length : 0;
-//                             }
-//
-//                             if (totalSelected === 0) {
-//                                 return $scope.texts.buttonDefaultText;
-//                             } else {
-//                                 return totalSelected + ' ' + $scope.texts.dynamicButtonTextSuffix;
-//                             }
-//                         }
-//                     } else {
-//                         return $scope.texts.buttonDefaultText;
-//                     }
-//                 };
-//
-//                 $scope.getPropertyForObject = function (object, property) {
-//                     if (angular.isDefined(object) && object.hasOwnProperty(property)) {
-//                         return object[property];
-//                     }
-//                     return '';
-//                 };
-//
-//                 $scope.selectAll = function () {
-//                     $scope.isSelectAll = true;
-//                     if ($scope.options.length !== $scope.listElemens[$scope.addData.field].length) {
-//                         $scope.externalEvents.onSelectAll();
-//                         $scope.listElemens[$scope.addData.field] = [];
-//                         angular.forEach($scope.options, function (value) {
-//                             $scope.setSelectedItem(value[$scope.settings.idProp], '', true);
-//                         });
-//                         for (var f = 0; f < $scope.options.length; f++) {
-//                             $scope.listElemens[$scope.addData.field].push($scope.options[f]['label'])
-//                         }
-//                         $scope.data.filter[$scope.addData.field] = $scope.listElemens[$scope.addData.field];
-//                         $scope.send($scope.data)
-//                     }
-//                 };
-//
-//                 $scope.deselectAll = function (sendEvent) {
-//                     if (sendEvent && $scope.listElemens[$scope.addData.field].length > 0) {
-//                         $scope.isSelectAll = false;
-//                         delete $scope.data.filter[$scope.addData.field];
-//                         $scope.listElemens[$scope.addData.field] = [];
-//                         if ($scope.filters_exception)
-//                             $scope.data.filter[$scope.addData.field] = []
-//                         $scope.send($scope.data);
-//                         if ($scope.singleSelection) {
-//                             clearObject($scope.selectedModel);
-//                         } else {
-//                             $scope.selectedModel.splice(0, $scope.selectedModel.length);
-//                         }
-//                     }
-//                 };
-//
-//                 $scope.setSelectedItem = function (id, label, dontRemove) {
-//                     var findObj = getFindObj(id);
-//                     var finalObj = null;
-//                     if ($scope.settings.externalIdProp === '') {
-//                         finalObj = _.find($scope.options, findObj);
-//                     } else {
-//                         finalObj = findObj;
-//                     }
-//                     if ($scope.singleSelection) {
-//                         clearObject($scope.selectedModel);
-//                         angular.extend($scope.selectedModel, finalObj);
-//                         $scope.externalEvents.onItemSelect(finalObj);
-//                         $scope.listElemens[$scope.addData.field].push(label);
-//                         $scope.data.filter[$scope.addData.field] = $scope.listElemens[$scope.addData.field];
-//                         $scope.send($scope.data);
-//                         if ($scope.settings.closeOnSelect) $scope.open = false;
-//
-//                         return;
-//                     }
-//
-//                     dontRemove = dontRemove || false;
-//                     var exists = $scope.listElemens[$scope.addData.field].indexOf(label) !== -1;
-//
-//                     if (!dontRemove && exists) {
-//                         $scope.externalEvents.onItemDeselect(findObj);
-//                         $scope.isSelectAll = false;
-//                         index = $scope.listElemens[$scope.addData.field].indexOf(label);
-//                         $scope.listElemens[$scope.addData.field].splice(index, 1);
-//                         if ($scope.listElemens[$scope.addData.field].length > 0) {
-//                             $scope.data.filter[$scope.addData.field] = $scope.listElemens[$scope.addData.field];
-//                         } else {
-//                             delete $scope.data.filter[$scope.addData.field];
-//                         }
-//                         $scope.send($scope.data)
-//                     } else if (!exists && ($scope.settings.selectionLimit === 0 || $scope.listElemens[$scope.addData.field].length < $scope.settings.selectionLimit)) {
-//                         $scope.externalEvents.onItemSelect(finalObj);
-//                         if (label.length > 0) {
-//                             $scope.listElemens[$scope.addData.field].push(label);
-//                             $scope.data.filter[$scope.addData.field] = $scope.listElemens[$scope.addData.field];
-//                             $scope.send($scope.data)
-//                         }
-//                     }
-//                     if ($scope.settings.closeOnSelect) $scope.open = false;
-//                 };
-//
-//                 $scope.isChecked = function (id, label) {
-//                     if ($scope.singleSelection) {
-//                         return $scope.selectedModel !== null && angular.isDefined($scope.selectedModel[$scope.settings.idProp]) && $scope.selectedModel[$scope.settings.idProp] === getFindObj(id)[$scope.settings.idProp];
-//                     }
-//                     if ($scope.isSelectAll) {
-//                         return true
-//                     }
-//                     return $scope.listElemens[$scope.addData.field].indexOf(label) !== -1;
-//                 };
-//
-//                 $scope.externalEvents.onInitDone();
-//             }
-//         };
-//     }]);
