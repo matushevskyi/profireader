@@ -40,15 +40,15 @@ gulp.task('install_angular', function () {
         .pipe(gulp.dest(dst + 'angular/'));
 });
 
-gulp.task('install_angular_translate', function () {
-    return gulp.src(src + 'angular-translate/angular-translate.min.js')
-        .pipe(gulp.dest(dst + 'angular/'));
-});
+// gulp.task('install_angular_translate', function () {
+//     return gulp.src(src + 'angular-translate/angular-translate.min.js')
+//         .pipe(gulp.dest(dst + 'angular/'));
+// });
 
-gulp.task('install_angular_cookies', function () {
-    return gulp.src(src + 'angular-cookies/angular-cookies.min.js')
-        .pipe(gulp.dest(dst + 'angular/'));
-});
+// gulp.task('install_angular_cookies', function () {
+//     return gulp.src(src + 'angular-cookies/angular-cookies.min.js')
+//         .pipe(gulp.dest(dst + 'angular/'));
+// });
 
 gulp.task('install_angular_animate', function () {
     return gulp.src(src + 'angular-animate/angular-animate.min.js')
@@ -229,8 +229,8 @@ gulp.task('default', taskListing);
 gulp.task('all', [
     'install_fileuploader',
     'install_angular',
-    'install_angular_translate',
-    'install_angular_cookies',
+    // 'install_angular_translate',
+    // 'install_angular_cookies',
     'install_angular_ui_select',
     'install_angular_crop',
     'install_angular-infinite-scroll',

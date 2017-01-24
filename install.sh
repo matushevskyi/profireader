@@ -197,10 +197,12 @@ npm install -g gulp" sudo bower
 
 function menu_bower {
     conf_comm "cd ./profapp/static
-bower install" nosudo menu_bower_dev
+bower install" nosudo bower_components_dev
     }
 
-function menu_bower_dev {
+
+
+function menu_bower_components_dev {
     conf_comm "cd ./profapp/static/bower_components_dev
 mkdir ./angular-db-filemanager
 cd ./angular-db-filemanager
@@ -215,7 +217,12 @@ git clone git@github.com:kakabomba/ng-crop.git .
 function menu_gulp {
      conf_comm "cd ./profapp/static
 npm install gulp del gulp-less-sourcemap gulp-watch run-sequence gulp-task-listing
-gulp" nosudo hosts
+gulp" nosudo gulp_install_all
+     }
+
+function menu_gulp_install_all {
+     conf_comm "cd ./profapp/static
+gulp all" nosudo hosts
      }
 
 function menu_hosts {
@@ -382,12 +389,6 @@ localaddress='localhost/profireader/5432'
 kupytyaddress='a.ntaxa.com/profireader/54143'
 artekaddress='a.ntaxa.com/profireader/54141'
 
-function menu_bower_components_dev {
-    conf_comm "cd profapp/static/bower_components_dev
-git clone git@github.com:kakabomba/angular-filemanager.git
-cd angular-filemanager
-git checkout ids" nosudo db_user_pass
-    }
 
 function menu_compare_local_makarony {
     conf_comm "cd ./db
@@ -517,8 +518,9 @@ if [[ "$1" == "" ]]; then
       "haproxy_config" "copy haproxy config to /etc/haproxy" \
       "npm" "install nodejs, npm, bower and gulp globally" \
       "bower" "download bower components in ./profapp/static/bower_components" \
-      "bower_dev" "download bower development components in ./profapp/static/bower_components_dev" \
+      "bower_components_dev" "download bower development components in ./profapp/static/bower_components_dev" \
       "gulp" "install gulp in ./profapp/static" \
+      "gulp_install_all" "install gulp modules from ./profapp/static/bower/ to project working directories" \
       "hosts" "create virtual domain zone in /etc/hosts" \
       "letsencrypt" "install letsencrypt" \
       "apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
@@ -530,7 +532,6 @@ if [[ "$1" == "" ]]; then
       "python_3" "install python 3" \
       "venv" "create virtual environment" \
       "modules" "install required python modules (via pip)" \
-      "bower_components_dev" "get bower components (development version)" \
       "db_user_pass" "create postgres user/password" \
       "db_rename" "rename database (create backup)" \
       "db_create" "create empty database" \
