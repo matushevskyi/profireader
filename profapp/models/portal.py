@@ -528,9 +528,8 @@ class MembershipPlanIssued(Base, PRBase):
     def publish_or_hold_publications_on_plan_start(self):
 
         from ..models.materials import Publication
-        from ..models.translate import TranslateTemplate
+        from ..models.translate import TranslateTemplate, Phrase
         from ..models.company import UserCompany
-
 
         old_count = self.member_company_portal.get_publication_count()
         for vis in Publication.VISIBILITIES:
@@ -546,55 +545,60 @@ class MembershipPlanIssued(Base, PRBase):
         phrases_remain = []
         dictionary = {}
 
-        use Phrase class
+        # use Phrase class
 
         def append_to_phrases(append_to, phrase, add_dict):
             dictionary.update(add_dict)
             return [phrase % tuple(add_dict.keys)]
 
-        def translate_dict(name, default=None, template=''):
-            return {name: TranslateTemplate.translate_and_substitute(template, name, phrase_default=default)}
+        # def translate_dict(name, default=None, template=''):
+        #     return {name: TranslateTemplate.translate_and_substitute(template, name, phrase_default=default)}
+
+        visibility_translation = {vis: TranslateTemplate.translate_and_substitute(
+            '', '__PUBLICATION_VISIBILITY_' + vis, phrase_default=vis) for vis in Publication.VISIBILITIES}
 
         for vis in Publication.VISIBILITIES:
-            dictionary['visibility_' + vis]
+
             changes = new_count['by_visibility_status'][vis]['PUBLISHED'] - \
                       old_count['by_visibility_status'][vis]['PUBLISHED']
 
             if changes > 0:
-                phrases_changes += append_to_phrases("%s publications of visibility %s was unholded",
-                                                     {'count_of_' + vis + '_unholded': changes},
-                                                     translate_dict('__PUBLICATION_VISIBILITY_' + vis, vis))
-
+                phrases_changes += Phrase(
+                    '%(count)s publications of visibility %(visibility)s was unholded',
+                    dict={'count': changes, 'visibility': visibility_translation[vis]})
             elif changes < 0:
-                phrases_changes += append_to_phrases("%s publications of visibility %s was holded",
-                                                     {'count_of_' + vis + '_holded': -changes},
-                                                     translate_dict('__PUBLICATION_VISIBILITY_' + vis, vis))
-
+                phrases_changes += Phrase(
+                    "%(count)s publications of visibility %(visibility)s was holded",
+                    dict={'count': -changes, 'visibility': visibility_translation[vis]})
             if new_count['by_visibility_status'][vis]['HOLDED'] > 0 and changes > 0:
-                phrases_remain += append_to_phrases("%s publications of visibility %s remain holded",
-                                                    {'count_of_' + vis + '_remain_holded':
-                                                         new_count['by_visibility_status'][vis]['HOLDED']},
-                                                    translate_dict('__PUBLICATION_VISIBILITY_' + vis, vis))
+                phrases_remain += Phrase(
+                    "%(count)s publications of visibility %(visibility)s remain holded",
+                    dict={'count': new_count['by_visibility_status'][vis]['HOLDED'],
+                          'visibility': visibility_translation[vis]})
 
-        if len(phrases_changes):
-            phrases_changes = append_to_phrases("new plan was applied for company and changes publication was made") + \
-                              phrases_changes
+        # if len(phrases_changes):
+        #     phrases_changes = Phrase("new plan was applied for membership and changes of publication visibility was made") + \
+        #                       phrases_changes
 
-        if len(phrases_remain):
-            phrases_remain = append_to_phrases(
-                "despite plan was applied for company some publication are still holded") + \
-                             phrases_remain
+        # if len(phrases_remain):
+        #     phrases_remain = Phrase("despite plan was applied for company some publication are still holded") + \
+        #                      phrases_remain
 
-        self.member_company_portal.notifications_about_membership_changes(
-            what_happened="due to the plan changes some publications change visibility",
-            rights_at_company=[UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH, UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION],
-            rights_at_portal=[UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH, UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
-            more_phrases_to_portal = phrases_changes + phrases_remain,
-            more_phrases_to_company = phrases_changes + phrases_remain,
-            phrase_comment = 'plan become active and some publication become holded/unholded or remain holded')
-
+        if phrases_changes or phrases_remain:
+            self.member_company_portal.notifications_about_membership_changes(
+                what_happened=
+                "New plan was applied for membership and changes of publication visibility was made"
+                if phrases_changes else
+                "New plan was applied for membership and some publication are still holded",
+                rights_at_company=[UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                                   UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
+                                   UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION],
+                rights_at_portal=[UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                                  UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
+                                  UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
+                more_phrases_to_portal=phrases_changes + phrases_remain,
+                more_phrases_to_company=phrases_changes + phrases_remain,
+                phrase_comment='plan become active and some publication become holded/unholded or remain holded')
 
 
 def stop(self, user=None):
@@ -1086,7 +1090,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             return set(
                 BaseRightsEmployeeInCompany(company).get_user_with_rights_and(rights)
                 if isinstance(rights, set) else
-                BaseRightsEmployeeInCompany(company).get_user_with_rights_or(rights) )
+                BaseRightsEmployeeInCompany(company).get_user_with_rights_or(rights))
 
         rights_at_company = UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION if rights_at_company is None else rights_at_company
         rights_at_company = [rights_at_company] if isinstance(rights_at_company, int) else rights_at_company
@@ -1136,7 +1140,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             except_to_user=except_to_user)
 
         return lambda: utils.do_nothing(messages_to_company(), messages_to_portal(), messages_to_both())
-
 
 
 class ReaderUserPortalPlan(Base, PRBase):
