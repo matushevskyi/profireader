@@ -342,7 +342,7 @@ cd 'Python-$pversion'
 make
 make install
 cd /tmp
-rm -rf 'Python-$pversion'" sudo venv
+rm -rf 'Python-$pversion'" nosudo venv
     fi
     }
 
@@ -353,7 +353,9 @@ function menu_venv {
 	echo "error: $destdir exists"
     else
 	conf_comm "$pythondir/bin/pyvenv $destdir
-cp ./activate_this.py $destdir/bin" nosudo modules
+cp ./activate_this.py $destdir/bin
+source $destdir/bin/activate
+pip install --upgrade pip==9.0.1" nosudo modules
     fi
     }
 
