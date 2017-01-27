@@ -56,7 +56,7 @@
 
 
     <script>
-        module.controller('company_employees_controller', function ($scope, $ok, $timeout, $uibModal, $rights, $confirm) {
+        module.controller('company_employees_controller', function ($scope, $ok, $timeout, $uibModal, $rights, $selectStatus) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_employees');
 
             $scope.$$translate = {{ translates('company_employees_controller')|safe }};
@@ -81,19 +81,18 @@
                 $scope.gridApi.grid.grid_change_row(updated_row);
             };
 
-            $scope.set_new_status = function (id, new_status, row, column_name) {
-                $confirm(
-                        $scope._('change status of employee by company confirmation dialog title'),
-                        $scope._('You are going to change status of employee `%(user.full_name)s` in company `%(company.name)s` from ' + row.status + ' to ' + new_status, row.employment),
-                        $scope._('change status from ' + row.employment.status + ' to ' + new_status)
-                ).then(function () {
+            $scope.set_new_status = function (id, row, column_name) {
+                $selectStatus({
+                        title: $scope._('change status of employee by company dialog title', null, 'change status of employee'),
+                        question: $scope._('You are going to change status of employee for company `%(user.full_name)s` in portal `%(company.name)s`', row.employment),
+                        old_status: row.employment.status,
+                        status_changes: row.status_changes}, $scope).then(function (new_status) {
                     $ok($scope.url_change_status({
-                        employment_id: row.employment.id,
+                        employment_id: row['employment'].id,
                         new_status: new_status
                     }), {}, $scope.gridApi.grid.grid_change_row);
                 });
             };
-
 
             $scope.change_position = function (id, row, column_name) {
                 'use strict'
@@ -153,9 +152,6 @@
                         width: '100', afilter: {type: 'input'}
                     },
                     {
-                        name: 'employment.status', width: '70', afilter: {type: 'input'}
-                    },
-                    {
                         name: 'employment.rights',
                         width: '330',
                         type: 'icons',
@@ -166,15 +162,10 @@
                         }
                     },
                     {
-                        name: 'status_changes', width: '200',
-                        type: 'change_status',
-                        onclick: 'set_new_status',
-                        old_status_column_name: 'status',
-                        afilter: {type: 'input'}, classes: function (id,
-                                                                     entity, field) {
-                        return entity.employment.status !== 'ACTIVE' ? 'non-active' : '';
-                    }
-                    }
+                        width: '250',
+                        name: 'employment.status',
+                        onclick: 'set_new_status'
+                    },
                 ]
             });
 

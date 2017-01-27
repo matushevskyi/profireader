@@ -143,7 +143,7 @@ class Portal(Base, PRBase):
                              id=utils.db.create_uuid(),
                              company=company,
                              rights={MemberCompanyPortal.RIGHT_AT_PORTAL._OWNER: True},
-                             status=MemberCompanyPortal.STATUSES['ACTIVE'])])
+                             status=MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'])])
 
         ret.default_membership_plan = MembershipPlan(name='default', position=0,
                                                      portal_id=ret.id,
@@ -155,15 +155,6 @@ class Portal(Base, PRBase):
                                                      price=1, currency_id='UAH')
 
         ret.company_memberships[0].portal = ret
-        ret.company_memberships[0].current_membership_plan_issued = ret.company_memberships[0].create_issued_plan()
-        ret.company_memberships[0].current_membership_plan_issued.start()
-        # what_happened='new portal %s for company %s was launched by %s' %
-        #              (utils.jinja.link_external(), utils.jinja.link_company_profile,
-        #               utils.jinja.link_user_profile()),
-        # dictionary={
-        #
-        # }
-
 
         return ret
 
@@ -1065,9 +1056,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         from ..models.translate import Phrase
 
         except_to_user = [g.user] if except_to_user is None else except_to_user
-        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, dict) else [
+        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [
             more_phrases_to_company]
-        more_phrases_to_portal = more_phrases_to_portal if isinstance(more_phrases_to_portal, dict) else [
+        more_phrases_to_portal = more_phrases_to_portal if isinstance(more_phrases_to_portal, list) else [
             more_phrases_to_portal]
 
         grid_url = lambda endpoint, **kwargs: utils.jinja.grid_url(self.id, endpoint=endpoint, **kwargs)
@@ -1429,9 +1420,11 @@ def membership_status_changed(target: MemberCompanyPortal, new_status, old_statu
                      old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
                                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']]):
         changed_by = 'company administrator ' + utils.jinja.link_user_profile()
-    elif new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
-                        MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL'],
-                        MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']] or \
+
+    elif (old_status is None and new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']) or \
+                    new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
+                                   MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL'],
+                                   MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']] or \
             (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
                      old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
                                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']]):
@@ -1450,4 +1443,4 @@ def membership_status_changed(target: MemberCompanyPortal, new_status, old_statu
                 dictionary={'new_plan_name': target.current_membership_plan_issued.name})
 
     else:
-        raise Exception("status changed from %s to %s is not allowed" % (new_status, old_status))
+        raise Exception("status changed from %s to %s is not allowed" % (old_status, new_status))

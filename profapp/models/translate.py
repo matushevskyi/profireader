@@ -60,6 +60,7 @@ class TranslateTemplate(Base, PRBase):
                     params[lng['name']] = phrase_default
 
         if params:
+            params['ac_tm'] = params['ac_tm'].timestamp()
             Socket.update_translation(self.id, params)
 
     @staticmethod

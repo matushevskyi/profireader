@@ -125,6 +125,11 @@ def profile_load(json, company_id=None, portal_id=None):
                     div.notify_company_about_deleted_publications('type changed')
                     div.publications = []
 
+            if not portal_id:
+                g.db.add(portal)
+                portal.company_memberships[0].current_membership_plan_issued = portal.company_memberships[0].create_issued_plan()
+                portal.company_memberships[0].current_membership_plan_issued.start()
+
             portal.save()
 
             g.db.commit()

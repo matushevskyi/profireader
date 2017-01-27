@@ -236,19 +236,25 @@ def load_notifications(sid, event_data):
 @sio.on('insert_translation')
 def insert_translation(sid, tramslation_data):
     with controlled_execution():
+        import datetime
         from profapp.models.translate import TranslateTemplate
+        if 'ac_tm' in tramslation_data:
+            tramslation_data['ac_tm'] = datetime.datetime.fromtimestamp(tramslation_data['ac_tm'])
         translation = TranslateTemplate(**tramslation_data)
         translation.save()
 
 
 @sio.on('update_translation')
 def update_translation(sid, tramslation_id_and_data):
+    import datetime
     # TODO: OZ by OZ change ac without changing md (md changed by trigger)
     # ac updated without changing md
     with controlled_execution():
         from profapp.models.translate import TranslateTemplate
         translation = TranslateTemplate.get(tramslation_id_and_data['id'])
-        for (k, v) in tramslation_id_and_data['data']:
+        for (k, v) in tramslation_id_and_data['data'].items():
+            if k == 'ac_tm':
+                v = datetime.datetime.fromtimestamp(v)
             setattr(translation, k, v)
         translation.save()
 

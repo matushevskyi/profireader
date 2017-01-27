@@ -114,6 +114,7 @@ class Company(Base, PRBase, PRElasticDocument):
         return query
 
     def validate(self, is_new):
+        print(self.phone)
         ret = super().validate(is_new)
         if not re.match(r'[^\s]{3}', str(self.country)):
             ret['errors']['country'] = 'Your Country name must be at least 3 characters long.'
@@ -129,9 +130,14 @@ class Company(Base, PRBase, PRElasticDocument):
             ret['errors']['email'] = 'Invalid email address'
         if not re.match('[^\s]{3,}', self.name):
             ret['errors']['name'] = 'Your Company name must be at least 3 characters long.'
-        # phone validation
-        if not re.match('^\+?[0-9]{3}-?[0-9]{6,12}$', self.phone):
-            ret['errors']['phone'] = 'pls enter a correct number'
+        self.phone = re.sub(r'[ ]*', '', self.phone)
+
+        if not re.match('^\+[0-9]{2}(([0-9]{3})|(\([0-9]{3}\)))(([\.\-])?[0-9]){7}$', self.phone):
+            ret['errors']['phone'] = 'pls enter a correct number in format +38 099 11 22 333'
+        else:
+            self.phone = re.sub(r'[()]*', '', self.phone)
+            self.phone = self.phone[0:3] + ' ' + self.phone[3:6] + ' ' + self.phone[6:9] + ' ' + \
+                         self.phone[10:11] + ' ' + self.phone[12:13]
 
         self.lon = PRBase.str2float(self.lon)
         self.lat = PRBase.str2float(self.lat)
@@ -477,8 +483,9 @@ def user_company_status_changed(target, new_value, old_value, action):
         phrase = None
 
     # possible notification - 5
-    change
-    return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'],
-                                        Phrase(name=phrase,
-                                               comment='sent to employee when employment status are changed from `%s` to `%s`' %
-                                                       (old_value, new_value)))()
+    # if phrase:
+    #     change
+    #     return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'],
+    #                                     Phrase(name=phrase,
+    #                                            comment='sent to employee when employment status are changed from `%s` to `%s`' %
+    #                                                    (old_value, new_value)))()

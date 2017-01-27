@@ -59,13 +59,14 @@ def search_for_company_to_join(json):
                   permissions=[user_is_active, utils.json2kwargs(company_is_active)])
 def join_to_company(json):
     employment = UserCompany.get_by_user_and_company_ids(company_id=json['company_id'])
-    if employment.status not in [UserCompany.STATUSES['APPLICANT'], UserCompany.STATUSES['ACTIVE'],
+    if not employment:
+        employment = UserCompany(user_id=g.user.id, company_id=json['company_id'])
+        employment.save()
+    elif employment.status not in [UserCompany.STATUSES['APPLICANT'], UserCompany.STATUSES['ACTIVE'],
                                  UserCompany.STATUSES['SUSPENDED']]:
         employment.status = UserCompany.STATUSES['APPLICANT']
         employment.save()
-    elif not employment:
-        employment = UserCompany(user_id=g.user.id, company_id=json['company_id'])
-        employment.save()
+
     return {'employment': employment.get_client_side_dict(fields='id,status, company, rights')}
 
 

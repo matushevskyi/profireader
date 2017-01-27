@@ -379,14 +379,14 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
                                                           actions=BaseRightsEmployeeInCompany.ACTIONS,
                                                           actions_for_statuses=BaseRightsEmployeeInCompany.ACTIONS_FOR_EMPLOYEE_IN_COMPANY)
 
-    def get_user_with_rights_and(self, rights):
+    def get_user_with_rights_and(self, *rights):
         usrc = g.db.query(UserCompany).filter(
             text("(company_id = '%s') AND (rights = (rights & %s))" % (
                 self.company.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in rights})))).all()
 
         return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
 
-    def get_user_with_rights_or(self, rights):
+    def get_user_with_rights_or(self, *rights):
         usrc = g.db.query(UserCompany).filter(
             text("(company_id = '%s') AND (0 <> (rights & %s))" % (
                 self.company.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in rights})))).all()
