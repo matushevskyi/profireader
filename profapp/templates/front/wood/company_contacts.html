@@ -27,7 +27,7 @@
         <section class="company-contacts col-md-12">
             <p class="contacts-header">{{ _('Contact persons') }}</p>
         <hr class="contacts-divider">
-            {% for employment in member_company.employments if employment['status'] == 'ACTIVE' %}
+            {% for employment in member_company.employments if employment['status'] == 'EMPLOYMENT_ACTIVE' %}
                 <div class="contact col-md-4">
                     <a class="contact-userpic" href="#"><img class="img-circle" src="{{ employment.user['avatar']['url'] }}"></a>
                     <a href="#"><h6 class="contact-name">{{ employment.user['full_name'] }}</h6></a>

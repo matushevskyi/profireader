@@ -13,7 +13,7 @@ from profapp.models.files import File, YoutubeApi
 from profapp import utils
 from .blueprints_declaration import filemanager_bp
 from .request_wrapers import check_right
-from ..models.company import Company, UserCompany, MemberCompanyPortal
+from ..models.company import Company, RIGHT_AT_COMPANY, MemberCompanyPortal
 from ..models.rights import FilemanagerRights, UserIsActive
 
 
@@ -46,7 +46,7 @@ def filemanager():
     filemanager_company_list = OrderedDict()
 
     for user_company in g.user.employments:
-        if user_company.has_rights(UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE) == True:
+        if user_company.has_rights(RIGHT_AT_COMPANY.FILES_BROWSE) == True:
             filemanager_company_list[user_company.company_id] = File.folder_dict(user_company.company,
                                                                                  {'can_upload': FilemanagerRights(
                                                                                      company=user_company.company_id).action_is_allowed(
@@ -56,8 +56,8 @@ def filemanager():
         if user_company.company.own_portal:
             company_membership_in_portal = utils.db.query_filter(MemberCompanyPortal, portal_id=user_company.company.own_portal.id). \
                 filter(
-                MemberCompanyPortal.company_id != user_company.company.id and MemberCompanyPortal.status == 'ACTIVE') \
-                .join(Company).filter(Company.status == 'ACTIVE').all()
+                MemberCompanyPortal.company_id != user_company.company.id and MemberCompanyPortal.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']) \
+                .join(Company).filter(Company.status == Company.STATUSES['COMPANY_ACTIVE']).all()
 
             for company_membership in company_membership_in_portal:
                 # YG: needed for check user rights in companies

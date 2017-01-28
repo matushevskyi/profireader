@@ -101,7 +101,7 @@
                     publication_count_payed: 0,
                     publication_count_confidential: 0,
                     price: 1.00,
-                    status: 'ACTIVE',
+                    status: 'MEMBERSHIP_PLAN_ACTIVE',
                     currency_id: $scope.data.select.currency[0]['id'],
                     duration: 1,
                     duration_unit: 'months'
@@ -131,13 +131,9 @@
                 });
             };
 
-            $scope.togglePlanStatus = function (index) {
-                $scope.data.plans[index]['status'] = ($scope.data.plans[index]['status'] === 'ACTIVE') ? 'INACTIVE' : 'ACTIVE';
-
-            };
 
             $scope.plan_is_not_active = function (plan) {
-                return plan['status'] !== 'ACTIVE';
+                return plan['status'] !== 'MEMBERSHIP_PLAN_ACTIVE';
             };
 
             $scope.sortableOptions = {

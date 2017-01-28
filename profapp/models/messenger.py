@@ -10,9 +10,8 @@ from .pr_base import PRBase, Base
 from .. import utils
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..controllers.errors import BadDataProvided
-from ..models.translate import TranslateTemplate
 from ..models.users import User
-from functools import partial
+
 
 
 class Socket:
@@ -89,7 +88,7 @@ class Socket:
     @staticmethod
     def send_greeting(to_users):
         from profapp.models.translate import Phrase
-        return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['GREETING'],
+        return Socket.prepare_notifications(to_users, NOTIFICATION_TYPES['CUSTOM'],
                                             Phrase("Welcome to profireader. You can change %s or get a look at %s" % \
                                                    (utils.jinja.link('url_profile_to_user', 'your profile', True),
                                                     utils.jinja.link('url_tutorial', 'tutorial', True)),
@@ -209,7 +208,7 @@ def contact_status_changed_2(target, new_value, old_value, action):
 
     # possible notification - 2
     if phrase:
-        return Socket.prepare_notifications([to_user], Notification.NOTIFICATION_TYPES['FRIEND_REQUEST_ACTIVITY'],
+        return Socket.prepare_notifications([to_user], NOTIFICATION_TYPES['FRIENDSHIP_ACTIVITY'],
                                             Phrase(phrase, comment=
                                             'sent to user when friendship request status is changed from `%s` to `%s`' %
                                             (old_value, new_value)))
@@ -237,6 +236,20 @@ class Message(Base, PRBase):
         return ret
 
 
+
+
+NOTIFICATION_TYPES = {
+    'CUSTOM': 'CUSTOM',
+    'FRIENDSHIP_ACTIVITY': 'FRIENDSHIP_ACTIVITY',
+    'COMPANY_ACTIVITY': 'COMPANY_ACTIVITY',
+    'ARTICLES_ACTIVITY': 'ARTICLES_ACTIVITY',
+    'PORTAL_ACTIVITY': 'PORTAL_ACTIVITY',
+    'EMPLOYEE_ACTIVITY': 'EMPLOYEE_ACTIVITY',
+    'MEMBER_COMPANY_ACTIVITY': 'MEMBER_COMPANY_ACTIVITY',
+    'MEMBEREE_PORTAL_ACTIVITY': 'MEMBEREE_PORTAL_ACTIVITY',
+}
+
+
 class Notification(Base, PRBase):
     __tablename__ = 'notification'
 
@@ -253,15 +266,6 @@ class Notification(Base, PRBase):
     # informed_by_email_about_unread = Column(TABLE_TYPES['timestamp'])
 
     to_user = relationship(User)
-
-    NOTIFICATION_TYPES = {
-        'GREETING': 'GREETING', 'CUSTOM': 'CUSTOM',
-        'FRIEND_REQUEST_ACTIVITY': 'FRIEND_REQUEST_ACTIVITY',
-        'COMPANY_EMPLOYERS_ACTIVITY': 'COMPANY_EMPLOYERS_ACTIVITY',
-        'COMPANY_PORTAL_MEMBEREE_ACTIVITY': 'COMPANY_PORTAL_MEMBEREE_ACTIVITY',
-        'PUBLICATION_ACTIVITY': 'PUBLICATION_ACTIVITY',
-        'PORTAL_COMPANIES_MEMBERS_ACTIVITY': 'PORTAL_COMPANIES_MEMBERS_ACTIVITY'
-    }
 
     @staticmethod
     def get_notifications(count, to_user_id, get_older=False, than_id=None):

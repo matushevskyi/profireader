@@ -46,13 +46,14 @@ class User(Base, UserMixin, PRBase):
     lang = Column(String(2), default='uk')
 
     email_confirmed = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
-    banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
+    # banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
 
     birth_tm = Column(TABLE_TYPES['date'])
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
 
-    status = Column(TABLE_TYPES['status'])
+    STATUSES = {'USER_ACTIVE': 'USER_ACTIVE', 'USER_BANNED': 'USER_BANNED'}
+    status = Column(TABLE_TYPES['status'], default=STATUSES['USER_ACTIVE'])
 
     last_seen_tm = Column(TABLE_TYPES['timestamp'], default=datetime.datetime.utcnow)
     last_informed_about_unread_communication_tm = Column(TABLE_TYPES['timestamp'], default=datetime.datetime.utcnow)
@@ -71,13 +72,13 @@ class User(Base, UserMixin, PRBase):
                                              viewonly=True,
                                              primaryjoin='User.id == UserPortalReader.user_id',
                                              secondary='reader_portal',
-                                             secondaryjoin="and_(UserPortalReader.portal_id == Portal.id, Portal.status == 'ACTIVE', UserPortalReader.status == 'active')")
+                                             secondaryjoin="and_(UserPortalReader.portal_id == Portal.id, Portal.status == 'PORTAL_ACTIVE', UserPortalReader.status == 'active')")
 
     active_companies_employers = relationship('Company',
                                               viewonly=True,
                                               primaryjoin='User.id == UserCompany.user_id',
                                               secondary='user_company',
-                                              secondaryjoin="and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE', UserCompany.status == 'ACTIVE')")
+                                              secondaryjoin="and_(UserCompany.company_id == Company.id, Company.status == 'COMPANY_ACTIVE', UserCompany.status == 'EMPLOYMENT_ACTIVE')")
 
     def set_avatar_preset(self, r, v):
         if v['selected_by_user']['type'] == 'preset':
@@ -109,7 +110,7 @@ class User(Base, UserMixin, PRBase):
                                no_selection_url=utils.fileUrl(RECORD_IDS.FOLDER_AND_FILE.no_user_avatar()))
 
     def login(self):
-        if self.email_confirmed and not self.banned:
+        if self.email_confirmed and self.status == User.STATUSES['USER_ACTIVE']:
             self.ping()
             login_user(self)
         return True
@@ -148,9 +149,8 @@ class User(Base, UserMixin, PRBase):
 
     tos = Column(TABLE_TYPES['boolean'], default=False)
 
-
     def is_active(self, check_only_banned=None, raise_exception_redirect_if_not=False):
-        if self.banned:
+        if self.status != User.STATUSES['USER_ACTIVE']:
             if raise_exception_redirect_if_not:
                 raise errors.NoRights(redirect_to=url_for('index.banned'))
             return "Sorry!You were baned! Please send a message to the administrator to know details!"
@@ -324,7 +324,6 @@ class User(Base, UserMixin, PRBase):
             return False
         self.address_email = new_email
         return True
-
 
     def get_client_side_dict(self,
                              fields='id|full_name'

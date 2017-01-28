@@ -158,7 +158,7 @@ def get_search_tags_pages_search(portal, page, tags, search_text):
 
         return url_for(request.endpoint, **url_args) + (('?search=' + search_text) if search_text else '')
 
-    afilter = [{'or': [{'term': {'status': 'ACTIVE'}}, {'term': {'status': 'PUBLISHED'}}]},
+    afilter = [{'or': [{'term': {'status': 'COMPANY_ACTIVE'}}, {'term': {'status': 'PUBLISHED'}}]},
                {'term': {'portal_id': portal.id}}]
 
     all_tags = portal.get_client_side_dict(fields='tags')['tags']
@@ -216,7 +216,7 @@ def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company
 
         return url_for(request.endpoint, **url_args) + (('?search=' + search_text) if search_text else '')
 
-    afilter = [{'term': {'status': MemberCompanyPortal.STATUSES['ACTIVE']}}, {'term': {'portal_id': portal.id}}]
+    afilter = [{'term': {'status': MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']}}, {'term': {'portal_id': portal.id}}]
 
     all_tags = portal.get_client_side_dict(fields='tags')['tags']
 
@@ -491,7 +491,7 @@ def send_message(json, member_company_id):
         phrase = "Anonymous sent you email as member of company %s" % (
             utils.jinja.link_company_profile(),)
 
-    Socket.prepare_notifications([send_to], Notification.NOTIFICATION_TYPES['CUSTOM'],
+    Socket.prepare_notifications([send_to], NOTIFICATION_TYPES['CUSTOM'],
                                  Phrase(phrase + '<hr/>%(message)s',
                                  dict = {'company': company,
                                   'url_company_profile': url_for('company.profile', company_id=company.id),
@@ -524,7 +524,7 @@ def sitemap(portal):
                                                          member_company_id=m.company.id),
                                           'lastmod': m.company.md_tm
                                       } for m in portal.company_memberships if
-                                      m.status == MemberCompanyPortal.STATUSES['ACTIVE']],
+                                      m.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']],
                            articles=[{
                                          'loc': url_for('front.article_details', publication_id=p.id,
                                                         publication_title=p.material.title),

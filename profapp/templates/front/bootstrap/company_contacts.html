@@ -1,7 +1,7 @@
 {% extends 'layout_company_page.html' %}
 
 {% block company_content %}
-    {% for employment in member_company.employments if employment['status'] == 'ACTIVE' %}
+    {% for employment in member_company.employments if employment['status'] == 'EMPLOYMENT_ACTIVE' %}
         <div class="company-contact-item">
             <table class="tablelist company_employees">
                 <tr>

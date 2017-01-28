@@ -10,7 +10,7 @@ def user_is_active(*args, **kwargs):
         if not getattr(g, 'user', False) or not getattr(g.user, 'id', False):
             raise exceptions.NotLoggedInUser()
         user = g.user
-    if user.banned:
+    if user.status != User.STATUSES['USER_ACTIVE']:
         raise exceptions.BannedUser()
     if not user.email_confirmed:
         raise exceptions.UnconfirmedEmailUser()
@@ -46,14 +46,14 @@ def employment_is_active(*args, **kwargs):
 
 
 def employee_have_right(right=None):
-    from ..models.company import UserCompany
+    from ..models.company import RIGHT_AT_COMPANY
 
     def allowed(*args, **kwargs):
         employment = employment_is_active(*args, **kwargs)
-        aright = UserCompany.RIGHT_AT_COMPANY._ANY if right is None else right
-        if aright == UserCompany.RIGHT_AT_COMPANY._ANY:
+        aright = RIGHT_AT_COMPANY._ANY if right is None else right
+        if aright == RIGHT_AT_COMPANY._ANY:
             return employment
-        elif aright == UserCompany.RIGHT_AT_COMPANY._OWNER and employment.company.user_owner.id == employment.user_id:
+        elif aright == RIGHT_AT_COMPANY._OWNER and employment.company.user_owner.id == employment.user_id:
             return employment
         elif employment.rights[aright]:
             return employment
@@ -64,11 +64,11 @@ def employee_have_right(right=None):
 
 
 def employee_af(load=None, validate=None, save=None):
-    from ..models.company import UserCompany
+    from ..models.company import RIGHT_AT_COMPANY
     perm_for_actions = {
-        'load': UserCompany.RIGHT_AT_COMPANY._ANY if load is None else load,
-        'validate': UserCompany.RIGHT_AT_COMPANY._ANY if validate is None else validate,
-        'save': UserCompany.RIGHT_AT_COMPANY._OWNER if save is None else save,
+        'load': RIGHT_AT_COMPANY._ANY if load is None else load,
+        'validate': RIGHT_AT_COMPANY._ANY if validate is None else validate,
+        'save': RIGHT_AT_COMPANY._OWNER if save is None else save,
     }
 
     def allowed(json, company_id, user_id=None):

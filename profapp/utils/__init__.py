@@ -235,3 +235,7 @@ def do_nothing(*args, **kwargs):
 
 def json2kwargs(f):
     return lambda json: f(**json)
+
+
+def set_default(val, default = None):
+    return default if val is None else val

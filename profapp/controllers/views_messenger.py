@@ -40,12 +40,12 @@ def community_search(json):
                   and_(UserPortalReader.user_id == User.id, UserPortalReader.status == 'active',
                        UserPortalReader.portal_id.in_(portals_ids))). \
         outerjoin(Portal,
-                  and_(UserPortalReader.portal_id == Portal.id, Portal.status == 'ACTIVE')). \
+                  and_(UserPortalReader.portal_id == Portal.id, Portal.status == Portal.STATUSES['PORTAL_ACTIVE'])). \
         outerjoin(UserCompany,
-                  and_(UserCompany.user_id == User.id, UserCompany.status == 'ACTIVE',
+                  and_(UserCompany.user_id == User.id, UserCompany.status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE'],
                        UserCompany.company_id.in_(companies_ids))). \
         outerjoin(Company,
-                  and_(UserCompany.company_id == Company.id, Company.status == 'ACTIVE')). \
+                  and_(UserCompany.company_id == Company.id, Company.status == Company.STATUSES['COMPANY_ACTIVE'])). \
         outerjoin(Contact,
                   or_(and_(Contact.user1_id == User.id, Contact.user2_id == g.user.id),
                       and_(Contact.user2_id == User.id, Contact.user1_id == g.user.id))). \

@@ -41,6 +41,24 @@ class BinaryRightsMetaClass1(type):
         return ret
 
 
+    def _totext(self, dict):
+        ret = 0
+        all_rights = self._allrights()
+        for (rightname, truefalse) in dict.items():
+            if rightname == self._OWNER and truefalse:  # any right
+                ret = 0x7fffffffffffffff
+            else:
+                bit_position = all_rights.get(rightname)
+                if bit_position is None:
+                    raise Exception(
+                        "right `{}` doesn't exists in allowed columns rights: {}".format(rightname,
+                                                                                         self._allrights()))
+                else:
+                    ret |= (1 << bit_position) if truefalse else 0
+
+        return ret
+
+
     def __getattribute__(self, key):
         if key in ['_todict', '_tobin', '_allrights', '_nice_order'] or (key[:2] == '__' and key[-2:] == '__'):
             return type.__getattribute__(self, key)
@@ -60,6 +78,7 @@ class BinaryRights(metaclass=BinaryRightsMetaClass1):
 
     def _nice_order(self):
         return []
+
 
 
 class RIGHTS(BIGINT):

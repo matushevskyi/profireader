@@ -67,18 +67,17 @@ class TranslateTemplate(Base, PRBase):
     def try_to_get_phrase(template, phrase, url, portal_id=None, allow_html='', phrase_comment=None,
                           phrase_default=None):
 
-        def insert_record(translations=None):
+        def insert_record():
             from profapp.models.messenger import Socket
 
             Socket.insert_translation(utils.dict_merge(
-                {l['name']: phrase for l in Config.LANGUAGES} if translations is None else translations, {
+                {l['name']: (phrase if phrase_default is None else phrase_default) for l in Config.LANGUAGES}, {
                     'phrase': phrase,
                     'template': template,
                     'allow_html': allow_html,
                     'url': url,
                     'portal_id': portal_id,
-                    'phrase_comment': phrase_comment,
-                    'phrase_default': phrase_default}))
+                    'comment': phrase_comment}))
 
             # TODO: OZ by OZ: we save via sockets because sometimes insert recort in flashing process (see on_value_changed decorator)
             # and we can`t use ORM nor raw sql in current database

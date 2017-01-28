@@ -1,11 +1,8 @@
 import re
-
 from flask import g
 from flask import url_for
-from flask.ext.login import current_user
-from sqlalchemy import Column, ForeignKey, and_, desc
+from sqlalchemy import Column, ForeignKey, and_, or_, desc, text
 from sqlalchemy.orm import relationship
-
 from profapp import on_value_changed
 from .elastic import PRElasticDocument
 from .files import FileImg, FileImgDescriptor
@@ -14,7 +11,6 @@ from .pr_base import PRBase, Base, Grid
 from .users import User
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
-from ..models.messenger import Notification, Socket
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from profapp import utils
 
@@ -55,8 +51,12 @@ class Company(Base, PRBase, PRElasticDocument):
     short_description = Column(TABLE_TYPES['text'], nullable=False, default='')
     about = Column(TABLE_TYPES['text'], nullable=False, default='')
 
-    STATUSES = {'ACTIVE': 'ACTIVE', 'SUSPENDED': 'SUSPENDED'}
-    status = Column(TABLE_TYPES['status'], nullable=False, default=STATUSES['ACTIVE'])
+    STATUSES = {
+        'COMPANY_ACTIVE': 'COMPANY_ACTIVE',
+        'COMPANY_SUSPENDED_BY_USER': 'COMPANY_SUSPENDED_BY_USER'
+    }
+
+    status = Column(TABLE_TYPES['status'], nullable=False, default=STATUSES['COMPANY_ACTIVE'])
 
     lat = Column(TABLE_TYPES['float'], nullable=True, default=49.8418907)
     lon = Column(TABLE_TYPES['float'], nullable=True, default=24.0316261)
@@ -74,13 +74,13 @@ class Company(Base, PRBase, PRElasticDocument):
 
     employments_objectable_for_company = relationship('UserCompany',
                                                       viewonly=True,
-                                                      primaryjoin="and_(Company.id == UserCompany.company_id, or_(UserCompany.status == 'ACTIVE', UserCompany.status == 'APPLICANT', UserCompany.status == 'SUSPENDED'))")
+                                                      primaryjoin="and_(Company.id == UserCompany.company_id, or_(UserCompany.status == 'EMPLOYMENT_ACTIVE', UserCompany.status == 'EMPLOYMENT_REQUESTED_BY_USER', UserCompany.status == 'EMPLOYMENT_SUSPENDED_BY_COMPANY'))")
 
     active_users_employees = relationship('User',
                                           viewonly=True,
-                                          primaryjoin="and_(Company.id == UserCompany.company_id, UserCompany.status == 'ACTIVE')",
+                                          primaryjoin="and_(Company.id == UserCompany.company_id, UserCompany.status == 'EMPLOYMENT_ACTIVE')",
                                           secondary='user_company',
-                                          secondaryjoin="and_(UserCompany.user_id == User.id, User.status == 'ACTIVE')")
+                                          secondaryjoin="and_(UserCompany.user_id == User.id, User.status == 'COMPANY_ACTIVE')")
 
     def __init__(self, **kwargs):
         # TODO: OZ by OZ: check default value for all columns
@@ -92,14 +92,8 @@ class Company(Base, PRBase, PRElasticDocument):
 
     youtube_playlists = relationship('YoutubePlaylist')
 
-    # # todo: add company time creation
-    # logo_file_relationship = relationship('File',
-    #                                       uselist=False,
-    #                                       backref='logo_owner_company',
-    #                                       foreign_keys='Company.logo_file_id')
-
     def is_active(self):
-        if self.status != Company.STATUSES['ACTIVE']:
+        if self.status != Company.STATUSES['COMPANY_ACTIVE']:
             return False
         return True
 
@@ -179,8 +173,8 @@ class Company(Base, PRBase, PRElasticDocument):
         #                'message': 'Company name %(name)s already exist. Please choose another name',
         #                'data': self.get_client_side_dict()})
 
-        user_company = UserCompany(status=UserCompany.STATUSES['ACTIVE'], rights={UserCompany.RIGHT_AT_COMPANY._OWNER:
-                                                                                      True})
+        user_company = UserCompany(status=UserCompany.STATUSES['EMPLOYMENT_ACTIVE'], rights={RIGHT_AT_COMPANY._OWNER:
+                                                                                                 True})
         user_company.user = g.user
         user_company.company = self
         g.user.employments.append(user_company)
@@ -191,21 +185,16 @@ class Company(Base, PRBase, PRElasticDocument):
         return self
 
     @staticmethod
-    def query_company(company_id):
-        """Method return one company"""
-        ret = utils.db.query_filter(Company, id=company_id).one()
-        return ret
-
-    @staticmethod
-    def search_for_company(user_id, searchtext):
-        """Return all companies which are not current user employers yet"""
-        query_companies = utils.db.query_filter(Company).filter(
-            Company.name.ilike("%" + searchtext + "%")).filter.all()
-        ret = []
-        for x in query_companies:
-            ret.append(x.dict())
-
-        return ret
+    def search_for_company_to_employ(searchtext, ignore_ids=[]):
+        return g.db.query(Company). \
+            outerjoin(UserCompany, and_(UserCompany.company_id == Company.id, UserCompany.user_id == g.user.id)). \
+            filter(Company.name.ilike("%" + searchtext + "%")). \
+            filter(or_(
+            UserCompany.status == UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY'],
+            UserCompany.status == UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER'],
+            UserCompany.status == None)). \
+            filter(Company.status.in_([Company.STATUSES['COMPANY_ACTIVE']])). \
+            filter(~Company.id.in_(ignore_ids)).order_by(Company.name)
 
     def get_client_side_dict(self,
                              fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
@@ -222,6 +211,23 @@ class Company(Base, PRBase, PRElasticDocument):
         else:
             sub_query = utils.db.query_filter(MemberCompanyPortal, portal_id=portal_id)
         return sorted(list({partner.status for partner in sub_query}))
+
+    def get_user_with_rights(self, *rights_sets, get_text_representation=False):
+        # TODO: OZ by OZ: use operator overloading (&,|) instead of list(|),set(&)
+        if not rights_sets:
+            return []
+
+        or_conditions = []
+        for rights_set in rights_sets:
+            if isinstance(rights_set, str):
+                rights_set = set([rights_set])
+            binary = RIGHT_AT_COMPANY._tobin({r: True for r in rights_set})
+            or_conditions.append("(%s = (rights & %s))" % (binary, binary))
+
+        usrc = g.db.query(UserCompany).filter(text("(company_id = '" + self.id
+                                                   + "') AND (" + " OR ".join(or_conditions) + ")")).all()
+
+        return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
 
     @staticmethod
     def subquery_portal_banners(company_id, filters):
@@ -292,6 +298,78 @@ class Company(Base, PRBase, PRElasticDocument):
         for m in self.portal_members:
             m.elastic_delete()
 
+    def notifications_company_changes(self, what_happened, additional_dict={},
+                                      rights_at_company=None,
+                                      more_phrases=[], notification_type=None,
+                                      phrase_comment=None, except_to_user=None):
+
+        from ..models.messenger import Socket, NOTIFICATION_TYPES
+        from ..models.translate import Phrase
+
+        notification_type = NOTIFICATION_TYPES['COMPANY_ACTIVITY'] if notification_type is None else notification_type
+
+        except_to_user = [g.user] if except_to_user is None else except_to_user
+        more_phrases = more_phrases if isinstance(more_phrases, list) else [more_phrases]
+
+        dict_main = {
+            'company': self.company,
+            'url_company_profile': url_for('company.profile', company_id=self.company_id),
+        }
+
+        if g.user:
+            dict_main['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
+
+        phrase_comment = '' if phrase_comment is None else (' when ' + phrase_comment)
+
+        user_who_made_changes_phrase = "User %(url_user_profile)s at " if g.user else 'At '
+        dictionary = utils.dict_merge(dict_main, additional_dict)
+
+        phrase_to_employees_at_company = Phrase(
+            user_who_made_changes_phrase + "your company %s just " % \
+            (utils.jinja.link_company_profile(),) + what_happened, dict=dictionary,
+            comment="to company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
+
+        messages_to_company = Socket.prepare_notifications(
+            self.company.get_user_with_rights(rights_at_company),
+            notification_type,
+            [phrase_to_employees_at_company] + more_phrases, except_to_user=except_to_user)
+
+        return lambda: messages_to_company
+
+
+class RIGHT_AT_COMPANY(BinaryRights):
+    FILES_BROWSE = 4
+    FILES_UPLOAD = 5
+    FILES_DELETE_OTHERS = 14
+
+    ARTICLES_SUBMIT_OR_PUBLISH = 8
+    ARTICLES_UNPUBLISH = 17  # reset!
+    ARTICLES_EDIT_OTHERS = 12
+    ARTICLES_DELETE = 19  # reset!
+
+    COMPANY_EDIT_PROFILE = 1
+    COMPANY_MANAGE_PARTICIPATION = 2
+    COMPANY_REQUIRE_MEMBEREE_AT_PORTALS = 15
+
+    EMPLOYEE_ENLIST_OR_FIRE = 6
+    EMPLOYEE_ALLOW_RIGHTS = 9
+
+    PORTAL_EDIT_PROFILE = 10
+    PORTAL_MANAGE_READERS = 16
+    PORTAL_MANAGE_COMMENTS = 18
+    PORTAL_MANAGE_MEMBERS_COMPANIES = 13
+
+    def _nice_order(self):
+        return [
+            self.COMPANY_EDIT_PROFILE, self.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS, self.COMPANY_MANAGE_PARTICIPATION,
+            self.EMPLOYEE_ENLIST_OR_FIRE, self.EMPLOYEE_ALLOW_RIGHTS,
+            self.ARTICLES_SUBMIT_OR_PUBLISH, self.ARTICLES_UNPUBLISH, self.ARTICLES_EDIT_OTHERS,
+            self.ARTICLES_DELETE,
+            self.FILES_BROWSE, self.FILES_UPLOAD, self.FILES_DELETE_OTHERS,
+            self.PORTAL_EDIT_PROFILE, self.PORTAL_MANAGE_READERS, self.PORTAL_MANAGE_COMMENTS,
+            self.PORTAL_MANAGE_MEMBERS_COMPANIES,
+        ]
+
 
 class UserCompany(Base, PRBase):
     __tablename__ = 'user_company'
@@ -302,73 +380,115 @@ class UserCompany(Base, PRBase):
 
     # TODO: OZ by OZ: remove `SUSPENDED` status from db type
 
-    class RIGHT_AT_COMPANY(BinaryRights):
-        FILES_BROWSE = 4
-        FILES_UPLOAD = 5
-        FILES_DELETE_OTHERS = 14
+    STATUSES = {'EMPLOYMENT_REQUESTED_BY_USER': 'EMPLOYMENT_REQUESTED_BY_USER',
+                'EMPLOYMENT_REQUESTED_BY_COMPANY': 'EMPLOYMENT_REQUESTED_BY_COMPANY',
+                'EMPLOYMENT_ACTIVE': 'EMPLOYMENT_ACTIVE',
+                'EMPLOYMENT_SUSPENDED_BY_USER': 'EMPLOYMENT_SUSPENDED_BY_USER',
+                'EMPLOYMENT_SUSPENDED_BY_COMPANY': 'EMPLOYMENT_SUSPENDED_BY_COMPANY',
+                'EMPLOYMENT_CANCELED_BY_USER': 'EMPLOYMENT_CANCELED_BY_USER',
+                'EMPLOYMENT_CANCELED_BY_COMPANY': 'EMPLOYMENT_CANCELED_BY_COMPANY',
+                }
 
-        ARTICLES_SUBMIT_OR_PUBLISH = 8
-        ARTICLES_UNPUBLISH = 17  # reset!
-        ARTICLES_EDIT_OTHERS = 12
-        ARTICLES_DELETE = 19  # reset!
+    # STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED',
+    #             'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN'}
 
-        COMPANY_EDIT_PROFILE = 1
-        COMPANY_MANAGE_PARTICIPATION = 2
-        COMPANY_REQUIRE_MEMBEREE_AT_PORTALS = 15
 
-        EMPLOYEE_ENLIST_OR_FIRE = 6
-        EMPLOYEE_ALLOW_RIGHTS = 9
+    def status_changes_by_company(self):
+        from ..models.company import UserCompany, RIGHT_AT_COMPANY
+        r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
+            RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]
 
-        PORTAL_EDIT_PROFILE = 10
-        PORTAL_MANAGE_READERS = 16
-        PORTAL_MANAGE_COMMENTS = 18
-        PORTAL_MANAGE_MEMBERS_COMPANIES = 13
+        changes = {s: {'status': s, 'enabled': r, 'message': ''} for s in MemberCompanyPortal.STATUSES}
 
-        def _nice_order(self):
+        if self.company_id == self.portal.company_owner_id:
+            changes[MemberCompanyPortal.STATUSES[
+                'MEMBERSHIP_CANCELED_BY_COMPANY']]['message'] = 'You can`t cancel membership at portal of own company'
+            changes[MemberCompanyPortal.STATUSES[
+                'MEMBERSHIP_CANCELED_BY_COMPANY']]['enabled'] = False
+            changes[MemberCompanyPortal.STATUSES[
+                'MEMBERSHIP_SUSPENDED_BY_COMPANY']]['message'] = 'You can`t suspend membership at portal of own company'
+            changes[MemberCompanyPortal.STATUSES[
+                'MEMBERSHIP_SUSPENDED_BY_COMPANY']]['enabled'] = False
+
+        if self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']:
             return [
-                self.COMPANY_EDIT_PROFILE, self.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS, self.COMPANY_MANAGE_PARTICIPATION,
-                self.EMPLOYEE_ENLIST_OR_FIRE, self.EMPLOYEE_ALLOW_RIGHTS,
-                self.ARTICLES_SUBMIT_OR_PUBLISH, self.ARTICLES_UNPUBLISH, self.ARTICLES_EDIT_OTHERS,
-                self.ARTICLES_DELETE,
-                self.FILES_BROWSE, self.FILES_UPLOAD, self.FILES_DELETE_OTHERS,
-                self.PORTAL_EDIT_PROFILE, self.PORTAL_MANAGE_READERS, self.PORTAL_MANAGE_COMMENTS,
-                self.PORTAL_MANAGE_MEMBERS_COMPANIES,
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY']],
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']],
             ]
-
-    STATUSES = {'APPLICANT': 'APPLICANT', 'REJECTED': 'REJECTED', 'ACTIVE': 'ACTIVE', 'FIRED': 'FIRED',
-                'SUSPENDED': 'SUSPENDED', 'FROZEN': 'FROZEN'}
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']:
+            return [
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']],
+            ]
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']:
+            return [
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']],
+            ]
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY']:
+            return [
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']],
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']],
+            ]
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL']:
+            return [
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']]
+            ]
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']:
+            return []
+        elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']:
+            return []
 
     def status_changes_by_company(self):
         r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
-            UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
+            RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
 
-        if self.status == UserCompany.STATUSES['APPLICANT']:
+        changes = {s: {'status': s, 'enabled': r, 'message': ''} for s in UserCompany.STATUSES}
+
+        if self.user_id == self.company.author_user_id:
+            changes[UserCompany.STATUSES[
+                'EMPLOYMENT_CANCELED_BY_COMPANY']]['message'] = 'You can`t cancel owner employment'
+            changes[UserCompany.STATUSES[
+                'EMPLOYMENT_CANCELED_BY_COMPANY']]['enabled'] = False
+            changes[UserCompany.STATUSES[
+                'EMPLOYMENT_SUSPENDED_BY_COMPANY']]['message'] = 'You can`t suspend owner employment'
+            changes[UserCompany.STATUSES[
+                'EMPLOYMENT_SUSPENDED_BY_COMPANY']]['enabled'] = False
+
+        if self.status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE']:
             return [
-                {'status': UserCompany.STATUSES['ACTIVE'], 'enabled': r},
-                {'status': UserCompany.STATUSES['REJECTED'], 'enabled': r}
+                changes[UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_COMPANY']],
+                changes[UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']],
             ]
-        elif self.status == UserCompany.STATUSES['SUSPENDED']:
+        elif self.status == UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_COMPANY']:
             return [
-                {'status': UserCompany.STATUSES['ACTIVE'], 'enabled': r}
+                changes[UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']],
             ]
-        elif self.status == UserCompany.STATUSES['ACTIVE']:
+        elif self.status == UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER']:
             return [
-                {'status': UserCompany.STATUSES['FIRED'],
-                 'enabled': 'You can`t fire company owner' if self.company.author_user_id == self.user_id else r},
-                {'status': UserCompany.STATUSES['SUSPENDED'],
-                 'enabled': 'You can`t suspend company owner' if self.company.author_user_id == self.user_id else r}
+                changes[UserCompany.STATUSES['EMPLOYMENT_ACTIVE']],
+                changes[UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']],
             ]
-        else:
+        elif self.status == UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_COMPANY']:
+            return [
+                changes[UserCompany.STATUSES['EMPLOYMENT_ACTIVE']],
+                changes[UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']],
+            ]
+        elif self.status == UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_USER']:
+            return [
+                changes[UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']]
+            ]
+        elif self.status == UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']:
+            return []
+        elif self.status == UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER']:
             return []
 
-    status = Column(TABLE_TYPES['status'], default=STATUSES['APPLICANT'], nullable=False)
+    status = Column(TABLE_TYPES['status'], default=STATUSES['EMPLOYMENT_REQUESTED_BY_USER'], nullable=False)
 
     position = Column(TABLE_TYPES['short_name'], default='')
 
     md_tm = Column(TABLE_TYPES['timestamp'])
     works_since_tm = Column(TABLE_TYPES['timestamp'])
 
-    banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
+    # banned = Column(TABLE_TYPES['boolean'], default=False, nullable=False)
 
     rights = Column(TABLE_TYPES['binary_rights'](RIGHT_AT_COMPANY),
                     default={RIGHT_AT_COMPANY.FILES_BROWSE: True, RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH: True},
@@ -377,18 +497,8 @@ class UserCompany(Base, PRBase):
     company = relationship(Company, back_populates='employments')
     user = relationship('User', back_populates='employments')
 
-    def __init__(self, user_id=None, company_id=None, status=STATUSES['APPLICANT'],
-                 rights=None):
-
-        super(UserCompany, self).__init__()
-        self.user_id = user_id
-        self.company_id = company_id
-        self.status = status
-        self.rights = {self.RIGHT_AT_COMPANY.FILES_BROWSE: True, self.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH:
-            True} if rights is None else rights
-
     def is_active(self):
-        if self.status != UserCompany.STATUSES['ACTIVE']:
+        if self.status != UserCompany.STATUSES['EMPLOYMENT_ACTIVE']:
             return False
         return True
 
@@ -413,19 +523,19 @@ class UserCompany(Base, PRBase):
             user_id=(g.user.id if g.user else '') if user_id is None else user_id,
             company_id=company_id).first()
 
-    @staticmethod
-    def apply_request(company_id, user_id, bool):
-        """Method which define when employer apply or reject request from some user to
-        subscribe to this company. If bool == True(Apply) - update rights to basic rights in company
-        and status to active, If bool == False(Reject) - just update status to rejected."""
-        if bool == 'True':
-            stat = UserCompany.STATUSES['ACTIVE']
-            UserCompany.update_rights(user_id, company_id, UserCompany.RIGHTS_AT_COMPANY_DEFAULT)
-        else:
-            stat = UserCompany.STATUSES['REJECTED']
-
-        utils.db.query_filter(UserCompany, company_id=company_id, user_id=user_id,
-                              status=UserCompany.STATUSES['APPLICANT']).update({'status': stat})
+    # @staticmethod
+    # def apply_request(company_id, user_id, bool):
+    #     """Method which define when employer apply or reject request from some user to
+    #     subscribe to this company. If bool == True(Apply) - update rights to basic rights in company
+    #     and status to active, If bool == False(Reject) - just update status to rejected."""
+    #     if bool == 'True':
+    #         stat = UserCompany.STATUSES['EMPLOYMENT_ACTIVE']
+    #         UserCompany.update_rights(user_id, company_id, UserCompany.RIGHTS_AT_COMPANY_DEFAULT)
+    #     else:
+    #         stat = UserCompany.STATUSES['REJECTED']
+    #
+    #     utils.db.query_filter(UserCompany, company_id=company_id, user_id=user_id,
+    #                           status=UserCompany.STATUSES['APPLICANT']).update({'status': stat})
 
     def has_rights(self, rightname):
         if self.company.user_owner.id == self.user_id:
@@ -434,9 +544,9 @@ class UserCompany(Base, PRBase):
         if rightname == '_OWNER':
             return rightname
         if rightname == '_ANY':
-            return True if self.status == self.STATUSES['ACTIVE'] else rightname
+            return True if self.status == self.STATUSES['EMPLOYMENT_ACTIVE'] else rightname
         else:
-            return True if (self.status == self.STATUSES['ACTIVE'] and self.rights[rightname]) else rightname
+            return True if (self.status == self.STATUSES['EMPLOYMENT_ACTIVE'] and self.rights[rightname]) else rightname
 
     @staticmethod
     def search_for_user_to_join(company_id, searchtext):
@@ -447,45 +557,71 @@ class UserCompany(Base, PRBase):
                     ~utils.db.query_filter(UserCompany, user_id=User.id, company_id=company_id).exists()).
                     filter(User.full_name.ilike("%" + searchtext + "%")).all()]
 
+    def notifications_employment_changes(self, what_happened, additional_dict={},
+                                         rights_at_company=None,
+                                         more_phrases=[], notification_type=None,
+                                         phrase_comment=None, except_to_user=None):
+
+        from ..models.messenger import Socket, NOTIFICATION_TYPES
+        from ..models.translate import Phrase
+
+        notification_type = NOTIFICATION_TYPES['COMPANY_ACTIVITY'] if notification_type is None else notification_type
+
+        except_to_user = [g.user] if except_to_user is None else except_to_user
+        more_phrases = more_phrases if isinstance(more_phrases, list) else [more_phrases]
+
+        dict_main = {
+            'company': self.company,
+            'url_company_profile': url_for('company.profile', company_id=self.company_id),
+        }
+
+        if g.user:
+            dict_main['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
+
+        phrase_comment = '' if phrase_comment is None else (' when ' + phrase_comment)
+
+        user_who_made_changes_phrase = ("User " + utils.jinja.link_user_profile() + " at ") if g.user else 'At '
+        dictionary = utils.dict_merge(dict_main, additional_dict)
+
+        phrase_to_employees_at_company = Phrase(
+            user_who_made_changes_phrase + "your employer company %s just " % \
+            (utils.jinja.link_company_profile(),) + what_happened, dict=dictionary,
+            comment="to company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
+
+        messages_to_company = Socket.prepare_notifications(
+            self.company.get_user_with_rights(rights_at_company),
+            notification_type,
+            [phrase_to_employees_at_company] + more_phrases, except_to_user=except_to_user)
+
+        return lambda: messages_to_company()
+
 
 @on_value_changed(UserCompany.status)
-def user_company_status_changed(target, new_value, old_value, action):
-    company = Company.get(target.company_id)
-    from ..models.rights import BaseRightsEmployeeInCompany
-    from ..models.translate import Phrase
+def user_company_status_changed(target: UserCompany, new_status, old_status, action):
+    if new_status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE'] and not old_status:
+        return
 
-    dict_main = {
-        'company': company,
-        'url_company_profile': url_for('company.profile', company_id=company.id)
-    }
+    if new_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_USER'],
+                      UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER'],
+                      UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER']] or \
+            (new_status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE'] and
+                     old_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_USER'],
+                                    UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_COMPANY']]):
+        changed_by = 'user'
 
-    to_users = [User.get(target.user_id)]
+    elif new_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_COMPANY'],
+                        UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_COMPANY'],
+                        UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']] or \
+            (new_status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE'] and
+                     old_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_COMPANY'],
+                                    UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER']]):
+        changed_by = 'company'
 
-    if new_value == UserCompany.STATUSES['APPLICANT']:
-        phrase = "User %s want to join to company %s" \
-                 % (utils.jinja.link_user_profile(), utils.jinja.link('url_company_employees', 'company.name'))
-
-        dict_main['url_company_employees'] = utils.jinja.grid_url(target.id, 'company.employees', company_id=company.id)
-        to_users = BaseRightsEmployeeInCompany(company).get_user_with_rights_and(
-            UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
-    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value != UserCompany.STATUSES['FIRED'] and \
-                    g.user.id != target.user_id:
-        phrase = "Your request to join company company %s is accepted" % (utils.jinja.link_company_profile(),)
-    elif new_value == UserCompany.STATUSES['ACTIVE'] and old_value == UserCompany.STATUSES['FIRED'] \
-            and g.user.id != target.user_id:
-        phrase = "You are now enlisted to %s company" % (utils.jinja.link_company_profile(),)
-    elif new_value == UserCompany.STATUSES['REJECTED'] and g.user.id != target.user_id:
-        phrase = "Sorry, but your request to join company company %s was rejected" % (
-            utils.jinja.link_company_profile(),)
-    elif new_value == UserCompany.STATUSES['FIRED'] and g.user.id != target.user_id:
-        phrase = "Sorry, your was fired from company %s" % (utils.jinja.link_company_profile(),)
+    if changed_by:
+        target.notifications_employment_changes(
+            what_happened="changed status from %s to %s by %s" % (old_status, new_status, changed_by),
+            rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)()
+        return
     else:
-        phrase = None
-
-    # possible notification - 5
-    # if phrase:
-    #     change
-    #     return Socket.prepare_notifications(to_users, Notification.NOTIFICATION_TYPES['COMPANY_EMPLOYERS_ACTIVITY'],
-    #                                     Phrase(name=phrase,
-    #                                            comment='sent to employee when employment status are changed from `%s` to `%s`' %
-    #                                                    (old_value, new_value)))()
+        raise Exception(action,
+                        "action %s: status changed from %s to %s is not allowed" % (action, old_status, new_status))

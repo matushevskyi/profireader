@@ -27,7 +27,10 @@ class Portal(Base, PRBase):
     host = Column(TABLE_TYPES['short_name'], default='')
     lang = Column(TABLE_TYPES['short_name'])
 
-    status = Column(TABLE_TYPES['status'], default='ACTIVE')
+    STATUSES = {'PORTAL_ACTIVE': 'PORTAL_ACTIVE'}
+
+    status = Column(TABLE_TYPES['status'], default='PORTAL_ACTIVE')
+
     aliases = Column(TABLE_TYPES['text'], default='')
 
     url_facebook = Column(TABLE_TYPES['url'])
@@ -76,12 +79,12 @@ class Portal(Base, PRBase):
     plans = relationship('MembershipPlan',
                          cascade="all, merge, delete-orphan",
                          order_by='asc(MembershipPlan.position)',
-                         primaryjoin='and_(Portal.id == MembershipPlan.portal_id, MembershipPlan.status != \'DELETED\')')
+                         primaryjoin='and_(Portal.id == MembershipPlan.portal_id, MembershipPlan.status != \'MEMBERSHIP_PLAN_DELETED\')')
 
     plans_active = relationship('MembershipPlan',
                                 cascade="all, merge, delete-orphan",
                                 order_by='asc(MembershipPlan.position)',
-                                primaryjoin='and_(Portal.id==MembershipPlan.portal_id, MembershipPlan.status == \'ACTIVE\')')
+                                primaryjoin='and_(Portal.id==MembershipPlan.portal_id, MembershipPlan.status == \'MEMBERSHIP_PLAN_ACTIVE\')')
 
     divisions = relationship('PortalDivision',
                              # backref='portal',
@@ -108,20 +111,13 @@ class Portal(Base, PRBase):
     default_membership_plan_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan.id'), nullable=False)
     default_membership_plan = relationship('MembershipPlan', uselist=False, post_update=True,
                                            foreign_keys=[default_membership_plan_id])
+
     # post_update parameter is for breaking Circular dependency error (which us because mutual dependency exists default_membership_plan <-> plans)
     # http://docs.sqlalchemy.org/en/rel_1_1/orm/relationship_api.html#sqlalchemy.orm.relationship.params.post_update
 
     # search_fields = {'name': {'relevance': lambda field='name': RELEVANCE.name},
     #                  'host': {'relevance': lambda field='host': RELEVANCE.host}}
 
-    ALLOWED_STATUSES_TO_JOIN = {
-        'DELETED': 'DELETED',
-        'REJECTED': 'REJECTED'
-    }
-
-    STATUSES = {
-        'ACTIVE': 'ACTIVE',
-    }
 
     def __init__(self, **kwargs):
         super(Portal, self).__init__(**kwargs)
@@ -147,7 +143,7 @@ class Portal(Base, PRBase):
 
         ret.default_membership_plan = MembershipPlan(name='default', position=0,
                                                      portal_id=ret.id,
-                                                     status=MembershipPlan.STATUSES['ACTIVE'],
+                                                     status=MembershipPlan.STATUSES['MEMBERSHIP_PLAN_ACTIVE'],
                                                      duration='1 years',
                                                      publication_count_open=-1,
                                                      publication_count_registered=10,
@@ -306,7 +302,7 @@ class Portal(Base, PRBase):
                     MemberCompanyPortal.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY'],
                     MemberCompanyPortal.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL'],
                     MemberCompanyPortal.status == None)).
-                    filter(Portal.status.in_([Portal.STATUSES['ACTIVE']])).
+                    filter(Portal.status.in_([Portal.STATUSES['PORTAL_ACTIVE']])).
                     all()]
 
     def subscribe_user(self, user=None):
@@ -418,7 +414,7 @@ class MembershipPlan(Base, PRBase):
 
     # default = Column(TABLE_TYPES['boolean'])
 
-    STATUSES = {'ACTIVE': 'ACTIVE', 'INACTIVE': 'INACTIVE', 'DELETED': 'DELETED'}
+    STATUSES = {'MEMBERSHIP_PLAN_ACTIVE': 'MEMBERSHIP_PLAN_ACTIVE', 'MEMBERSHIP_PLAN_DELETED': 'MEMBERSHIP_PLAN_DELETED'}
 
     DURATION_UNITS = [
         {'id': 'days', 'name': 'Days'},
@@ -520,7 +516,7 @@ class MembershipPlanIssued(Base, PRBase):
 
         from ..models.materials import Publication
         from ..models.translate import TranslateTemplate, Phrase
-        from ..models.company import UserCompany
+        from ..models.company import RIGHT_AT_COMPANY
 
         old_count = self.member_company_portal.get_publication_count()
         for vis in Publication.VISIBILITIES:
@@ -581,12 +577,12 @@ class MembershipPlanIssued(Base, PRBase):
                 "New plan was applied for membership and changes of publication visibility was made"
                 if phrases_changes else
                 "New plan was applied for membership and some publication are still holded",
-                rights_at_company=[UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                                   UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
-                                   UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION],
-                rights_at_portal=[UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                                  UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
-                                  UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
+                rights_at_company=[RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                                   RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
+                                   RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION],
+                rights_at_portal=[RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                                  RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
+                                  RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
                 more_phrases_to_portal=phrases_changes + phrases_remain,
                 more_phrases_to_company=phrases_changes + phrases_remain,
                 phrase_comment='plan become active and some publication become holded/unholded or remain holded')
@@ -658,9 +654,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
                 'MEMBERSHIP_CANCELED_BY_PORTAL': 'MEMBERSHIP_CANCELED_BY_PORTAL'}
 
     def status_changes_by_portal(self):
-        from ..models.company import UserCompany
+        from ..models.company import UserCompany, RIGHT_AT_COMPANY
         r = UserCompany.get_by_user_and_company_ids(company_id=self.portal.company_owner_id).rights[
-            UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]
+            RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]
 
         changes = {s: {'status': s, 'enabled': r, 'message': ''} for s in MemberCompanyPortal.STATUSES}
 
@@ -702,9 +698,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             return []
 
     def status_changes_by_company(self):
-        from ..models.company import UserCompany
+        from ..models.company import UserCompany, RIGHT_AT_COMPANY
         r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
-            UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]
+            RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]
 
         changes = {s: {'status': s, 'enabled': r, 'message': ''} for s in MemberCompanyPortal.STATUSES}
 
@@ -729,6 +725,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             ]
         elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']:
             return [
+                changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']],
                 changes[MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']],
             ]
         elif self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY']:
@@ -857,7 +854,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         pass
 
     def is_active(self):
-        if self.status != MemberCompanyPortal.STATUSES['ACTIVE']:
+        if self.status != MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']:
             return False
         return True
 
@@ -1007,8 +1004,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             return False
 
         if rightname == '_ANY':
-            return True if self.status == MemberCompanyPortal.STATUSES['ACTIVE'] else False
-        return True if (self.status == MemberCompanyPortal.STATUSES['ACTIVE'] and self.rights[rightname]) else False
+            return True if self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] else False
+        return True if (self.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and self.rights[rightname]) else False
 
     def set_tags_positions(self):
         tag_position = 0
@@ -1048,14 +1045,27 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def notifications_about_membership_changes(self, what_happened, additional_dict={},
                                                rights_at_company=None, rights_at_portal=None,
                                                more_phrases_to_portal=[], more_phrases_to_company=[],
+                                               notification_type_to_company_employees=None,
+                                               notification_type_to_portal_employees=None,
                                                phrase_comment=None, except_to_user=None):
 
-        from ..models.messenger import Socket
-        from ..models.company import Notification, UserCompany
-        from ..models.rights import BaseRightsEmployeeInCompany
+        from ..models.messenger import Socket, NOTIFICATION_TYPES
         from ..models.translate import Phrase
+        from ..models.company import RIGHT_AT_COMPANY
 
-        except_to_user = [g.user] if except_to_user is None else except_to_user
+        rights_at_company = utils.set_default(rights_at_company, RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION)
+        rights_at_portal = utils.set_default(rights_at_portal, RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES)
+
+        notification_type_to_company_employees = \
+            utils.set_default(notification_type_to_company_employees, NOTIFICATION_TYPES['MEMBER_COMPANY_ACTIVITY'])
+
+        notification_type_to_portal_employees = \
+            utils.set_default(notification_type_to_portal_employees, NOTIFICATION_TYPES['MEMBEREE_PORTAL_ACTIVITY'])
+
+        except_to_user = utils.set_default(except_to_user, [g.user])
+
+        phrase_comment = '' if phrase_comment is None else (' when ' + phrase_comment)
+
         more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [
             more_phrases_to_company]
         more_phrases_to_portal = more_phrases_to_portal if isinstance(more_phrases_to_portal, list) else [
@@ -1074,28 +1084,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         if g.user:
             dict_main['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
 
-        phrase_comment = '' if phrase_comment is None else (' when ' + phrase_comment)
-
-        def get_users(company, rights):
-            # TODO: OZ by OZ: use operator overloading (&,|) instead of list(|),set(&)
-            return set(
-                BaseRightsEmployeeInCompany(company).get_user_with_rights_and(rights)
-                if isinstance(rights, set) else
-                BaseRightsEmployeeInCompany(company).get_user_with_rights_or(rights))
-
-        rights_at_company = UserCompany.RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION if rights_at_company is None else rights_at_company
-        rights_at_company = [rights_at_company] if isinstance(rights_at_company, int) else rights_at_company
-        employees_at_company = get_users(self.company, rights_at_company)
-
-        rights_at_portal = UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES if rights_at_portal is None else rights_at_portal
-        rights_at_portal = [rights_at_portal] if isinstance(rights_at_portal, int) else rights_at_portal
-        employees_at_portal = get_users(self.portal.own_company, rights_at_portal)
-
-        users_at_company_and_portal = employees_at_company & employees_at_portal
-        employees_at_company = employees_at_company - users_at_company_and_portal
-        employees_at_portal = employees_at_portal - users_at_company_and_portal
-
-        user_who_made_changes_phrase = "User %(url_user_profile)s at membership of " if g.user else 'at membership of '
+        user_who_made_changes_phrase = "User %(url_user_profile)s at membership of " if g.user else 'At membership of '
         dictionary = utils.dict_merge(dict_main, additional_dict)
 
         phrase_to_employees_at_company = Phrase(
@@ -1110,27 +1099,17 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
             what_happened, dict=dictionary,
             comment="to portal owner company employees with rights %s%s" % (','.join(rights_at_portal), phrase_comment))
 
-        phrase_to_employees_at_both_comp_and_port = Phrase(
-            user_who_made_changes_phrase + "your company %s at your portal %s just " % \
-            (utils.jinja.link('url_company_portal_memberees', 'company.name'),
-             utils.jinja.link('url_portal_companies_members', 'portal.name')) + what_happened, dict=dictionary,
-            comment="to users that have both rights in company portal owner %s and in company member %s%s" %
-                    (','.join(rights_at_portal), ','.join(rights_at_company), phrase_comment))
-
         messages_to_company = Socket.prepare_notifications(
-            employees_at_company, Notification.NOTIFICATION_TYPES['COMPANY_PORTAL_MEMBEREE_ACTIVITY'],
+            self.company.get_user_with_rights(rights_at_company),
+            notification_type_to_company_employees,
             [phrase_to_employees_at_company] + more_phrases_to_company, except_to_user=except_to_user)
 
         messages_to_portal = Socket.prepare_notifications(
-            employees_at_portal, Notification.NOTIFICATION_TYPES['PORTAL_COMPANIES_MEMBERS_ACTIVITY'],
+            self.portal.own_company.get_user_with_rights(rights_at_portal),
+            notification_type_to_portal_employees,
             [phrase_to_employees_at_portal] + more_phrases_to_portal, except_to_user=except_to_user)
 
-        messages_to_both = Socket.prepare_notifications(
-            users_at_company_and_portal, Notification.NOTIFICATION_TYPES['PORTAL_COMPANIES_MEMBERS_ACTIVITY'],
-            [phrase_to_employees_at_both_comp_and_port] + more_phrases_to_company + more_phrases_to_portal,
-            except_to_user=except_to_user)
-
-        return lambda: utils.do_nothing(messages_to_company(), messages_to_portal(), messages_to_both())
+        return lambda: utils.do_nothing(messages_to_company(), messages_to_portal())
 
 
 class ReaderUserPortalPlan(Base, PRBase):
@@ -1216,10 +1195,9 @@ class PortalDivision(Base, PRBase):
         }
 
     def notify_company_about_deleted_publications(self, because_of):
-        from ..models.messenger import Socket, Notification
-        from ..models.rights import PublishUnpublishInPortal
+        from ..models.messenger import Socket, NOTIFICATION_TYPES
         from ..models.translate import Phrase
-        from ..models.company import UserCompany, Company
+        from ..models.company import Company
         from collections import OrderedDict
         from ..models.rights import BaseRightsEmployeeInCompany
 
@@ -1231,12 +1209,6 @@ class PortalDivision(Base, PRBase):
         phrases_to_portal = [Phrase(header_phrase, dict={'division_name': self.name})]
         phrases_to_companies_editors = OrderedDict()
 
-        def get_user(company):
-            list(set(BaseRightsEmployeeInCompany(company=company).get_user_with_rights_or(
-                UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH)) + \
-                 set(BaseRightsEmployeeInCompany(company=company).get_user_with_rights_or(
-                     UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)))
-
         for p in self.publications:
             if p.material.company_id not in phrases_to_companies_editors:
                 phrases_to_companies_editors[p.material.company_id] = [Phrase(header_phrase)]
@@ -1245,12 +1217,13 @@ class PortalDivision(Base, PRBase):
             phrases_to_portal.append(publication_phrase)
             phrases_to_companies_editors[p.material.company_id].append(publication_phrase)
 
-        Socket.prepare_notifications(get_user(self.portal.own_company),
-                                     Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
+        Socket.prepare_notifications(self.portal.own_company.get_users_with_rights(),
+                                     NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
 
         for company_id, phrases in phrases_to_companies_editors.items():
-            Socket.prepare_notifications(get_user(Company.get(company_id)),
-                                         Notification.NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
+            Socket.prepare_notifications(Company.get(company_id).get_users_with_rights(
+                RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH, RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH),
+                NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
 
     def is_active(self):
         return True
@@ -1398,20 +1371,37 @@ class ReaderDivision(Base, PRBase):
             lambda x, y: int(x) + int(y), list(map(lambda item: self.show_division_and_comments_numeric[item[0]],
                                                    filter(lambda item: item[1], tuple_or_list))), 0)
 
-        # def set_memberee_status(self, status):
-        #     self.set_client_side_dict(status=status)
-        #     self.save().notifications_for_portal_about_company_member(
-        #         "Company %s changed status of membership to %s at portal %s" %
-        #         (utils.jinja.link_company_profile(),
-        #          utils.jinja.link('url_portal_companies_members', self.status,
-        #                           True),
-        #          utils.jinja.link_external()), phrase_comment="change status of own membership")()
-        #     return self
+
+@on_value_changed(Portal.status)
+def portal_status_changed(target: Portal, new_status, old_status, action):
+    from ..models.company import RIGHT_AT_COMPANY
+    changed_by = None
+
+    if new_status == Portal.STATUSES['PORTAL_ACTIVE'] and not old_status:
+        return
+
+    if new_status in [Portal.STATUSES['PORTAL_ACTIVE']]:
+        changed_by = 'company employee'
+
+    if changed_by:
+        target.own_company.notifications_company_changes(
+            what_happened="portal %s changed status from %s to %s by %s" %
+                          (utils.jinja.link_external(), old_status, new_status, changed_by),
+            rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
+            additional_dict={'portal': target}
+        )()
+
+    raise Exception(action, "status changed from %s to %s is not allowed" % (action, old_status, new_status))
 
 
 @on_value_changed(MemberCompanyPortal.status)
 def membership_status_changed(target: MemberCompanyPortal, new_status, old_status, action):
     changed_by = None
+
+    if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and \
+                    target.company_id == target.portal.company_owner_id \
+            and not old_status:
+        return
 
     if new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
                       MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY'],
@@ -1419,28 +1409,29 @@ def membership_status_changed(target: MemberCompanyPortal, new_status, old_statu
             (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
                      old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
                                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']]):
-        changed_by = 'company administrator ' + utils.jinja.link_user_profile()
+        changed_by = 'company'
 
-    elif (old_status is None and new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']) or \
-                    new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
-                                   MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL'],
-                                   MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']] or \
+    elif new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
+                        MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL'],
+                        MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']] or \
             (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
                      old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
                                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']]):
-        changed_by = 'portal administrator '
+        changed_by = 'portal'
 
     if changed_by:
         target.notifications_about_membership_changes(
-            what_happened="changed status from %s to %s by %s"
-                          % (old_status, new_status, changed_by))()
+            what_happened="changed status from %s to %s by %s" % (old_status, new_status, changed_by),
+        )()
 
         if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
                 not target.current_membership_plan_issued.started_tm:
             target.current_membership_plan_issued.start()
+
             target.member_company_portal.notifications_about_membership_changes(
                 what_happened='new plan `%(new_plan_name)s` was started because membership activated by ' + changed_by,
                 dictionary={'new_plan_name': target.current_membership_plan_issued.name})
 
+        return
     else:
-        raise Exception("status changed from %s to %s is not allowed" % (old_status, new_status))
+        raise Exception(action, "action %s: status changed from %s to %s is not allowed" % (action, old_status, new_status))

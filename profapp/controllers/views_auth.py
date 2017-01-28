@@ -92,7 +92,7 @@ def login(json_data):
 
     user = g.db.query(User).filter(User.address_email == email).first()
 
-    if user and user.banned:
+    if user and user.status != User.STATUSES['USER_ACTIVE']:
         return {'error': 'You can not be logged in. Please contact the Profireader administration'}
     elif user and not user.email_confirmed:
         return {'error': 'You email is unconfirmed. Please confirm your email'}

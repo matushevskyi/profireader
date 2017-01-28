@@ -219,7 +219,7 @@ def plans_load(json, portal_id):
                 portal.plans.append(plan)
 
             if jp['id'] == json['select']['portal'].get('default_membership_plan_id', None) and plan.status == \
-                    MembershipPlan.STATUSES['ACTIVE']:
+                    MembershipPlan.STATUSES['MEMBERSHIP_PLAN_ACTIVE']:
                 default_plan += 1
                 portal.default_membership_plan = plan
 

@@ -8,7 +8,7 @@ from sqlalchemy import text, and_
 
 from profapp import utils
 from .pr_base import PRBase
-from ..models.company import Company, UserCompany, MemberCompanyPortal
+from ..models.company import Company, UserCompany, MemberCompanyPortal, RIGHT_AT_COMPANY
 from ..models.materials import Material, Publication
 from ..models.portal import Portal, PortalDivision
 from ..models.users import User
@@ -132,7 +132,7 @@ class BaseRightsInProfireader:
 
 
 class PublishUnpublishInPortal(BaseRightsInProfireader):
-    def __init__(self, publication=None, division=None, company=None, portal = None):
+    def __init__(self, publication=None, division=None, company=None, portal=None):
         self.publication = publication if isinstance(publication, Publication) else Publication.get(
             publication) if publication else None
         self.division = division if isinstance(division, PortalDivision) else PortalDivision.get(
@@ -162,21 +162,21 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
     }
 
     delete_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-                     'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_DELETE]}
+                     'employment': [RIGHT_AT_COMPANY.ARTICLES_DELETE]}
 
     publish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-                      'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_DELETE]}
+                      'employment': [RIGHT_AT_COMPANY.ARTICLES_DELETE]}
 
     unpublish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-                        'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]}
+                        'employment': [RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]}
 
     republish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH,
                                        MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH],
-                        'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
-                                       UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
+                        'employment': [RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
+                                       RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
 
     edit_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-                   'employment': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
+                   'employment': [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
 
     ACTIONS_FOR_STATUSES = {
         STATUSES['SUBMITTED']: {
@@ -220,7 +220,7 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
     #
     #     return [u for (u,c) in g.db.query(User, Company).outerjoin(UserCompany, and_(
     #         text("(0 <> (rights & %s))" % (
-    #             UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in rights['employment']}),)),
+    #             RIGHT_AT_COMPANY._tobin({r: True for r in rights['employment']}),)),
     #         UserCompany.company_id == self.company.id,
     #         UserCompany.user_id == User.id)).outerjoin(Company, Company.id == UserCompany.company_id). \
     #         filter(UserCompany.id != None).all() if c.id in companies_with_rights]
@@ -236,7 +236,6 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
         employee = UserCompany.get_by_user_and_company_ids(company_id=company.id)
         if not employee:
             return "Sorry!You are not employee in this company!"
-
 
         membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=membership_portal_id,
                                                                      company_id=company.id)
@@ -262,7 +261,8 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
     @staticmethod
     def get_portals_where_company_is_member(company):
         """This method return all portals-partners current company"""
-        return [memcomport.portal for memcomport in utils.db.query_filter(MemberCompanyPortal, company_id=company.id).all()]
+        return [memcomport.portal for memcomport in
+                utils.db.query_filter(MemberCompanyPortal, company_id=company.id).all()]
 
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
@@ -289,11 +289,11 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
     ACTIONS_FOR_STATUSES = {
         STATUSES['NORMAL']: {
             ACTIONS['SUBMIT']:
-                {'employee': [UserCompany.RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH],
+                {'employee': [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH],
                  'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH]},
             ACTIONS['EDIT']:
                 {'employee': (lambda kwargs: kwargs['material'].editor_user_id == kwargs['user'].id,
-                              UserCompany.RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS)}
+                              RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS)}
         }
     }
 
@@ -355,13 +355,13 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
 
     ACTIONS_FOR_EMPLOYEE_IN_COMPANY = {
         'ACTIVE': {
-            ACTIONS['EDIT_COMPANY']: {'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_EDIT_PROFILE]},
-            ACTIONS['EDIT_PORTAL']: {'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE]},
+            ACTIONS['EDIT_COMPANY']: {'employee': [RIGHT_AT_COMPANY.COMPANY_EDIT_PROFILE]},
+            ACTIONS['EDIT_PORTAL']: {'employee': [RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE]},
             ACTIONS['COMPANY_REQUIRE_MEMBEREE_AT_PORTALS']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]},
+                'employee': [RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]},
             ACTIONS['PORTAL_MANAGE_MEMBERS_COMPANIES']: {
-                'employee': [UserCompany.RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
-            ACTIONS['EMPLOYEE_ALLOW_RIGHTS']: {'employee': [UserCompany.RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
+                'employee': [RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES]},
+            ACTIONS['EMPLOYEE_ALLOW_RIGHTS']: {'employee': [RIGHT_AT_COMPANY.EMPLOYEE_ALLOW_RIGHTS]},
             ACTIONS['CREATE_MATERIAL']: {},
         }
     }
@@ -379,20 +379,38 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
                                                           actions=BaseRightsEmployeeInCompany.ACTIONS,
                                                           actions_for_statuses=BaseRightsEmployeeInCompany.ACTIONS_FOR_EMPLOYEE_IN_COMPANY)
 
-    def get_user_with_rights_and(self, *rights):
-        usrc = g.db.query(UserCompany).filter(
-            text("(company_id = '%s') AND (rights = (rights & %s))" % (
-                self.company.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in rights})))).all()
+    # def get_rights(rights, default):
+    #     if rights is False:
+    #         return []
+    #     ret = default if rights is None else rights
+    #     return [ret] if isinstance(ret, int) else ret
+    #
+    # def get_users(company, rights):
+    #
+    #     return set(
+    #         BaseRightsEmployeeInCompany(company).get_user_with_rights_and(rights)
+    #         if isinstance(rights, set) else
+    #         BaseRightsEmployeeInCompany(company).get_user_with_rights_or(rights))
 
-        return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
 
-    def get_user_with_rights_or(self, *rights):
-        usrc = g.db.query(UserCompany).filter(
-            text("(company_id = '%s') AND (0 <> (rights & %s))" % (
-                self.company.id, UserCompany.RIGHT_AT_COMPANY._tobin({r: True for r in rights})))).all()
-
-        return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
-
+        # def get_user_with_rights_and(self, *rights):
+        #     if not rights:
+        #         return[]
+        #     usrc = g.db.query(UserCompany).filter(
+        #         text("(company_id = '%s') AND (rights = (rights & %s))" % (
+        #             self.company.id, RIGHT_AT_COMPANY._tobin({r: True for r in rights})))).all()
+        #
+        #     return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
+        #
+        # def get_user_with_rights_or(self, *rights):
+        #     if not rights:
+        #         return[]
+        #     usrc = g.db.query(UserCompany).filter(
+        #         text("(company_id = '%s') AND (0 <> (rights & %s))" % (
+        #             self.company.id, RIGHT_AT_COMPANY._tobin({r: True for r in rights})))).all()
+        #
+        #     return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
+        #
 
 
 class FilemanagerRights(BaseRightsEmployeeInCompany):
@@ -415,15 +433,15 @@ class FilemanagerRights(BaseRightsEmployeeInCompany):
 
     ACTIONS_FOR_STATUSES = {
         'ACTIVE': {
-            ACTIONS['PROPERTIES']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD],
+            ACTIONS['PROPERTIES']: {'employee': [RIGHT_AT_COMPANY.FILES_UPLOAD],
                                     'file': lambda kwargs: None if kwargs['file'].mime == "root" else True},
-            ACTIONS['PASTE']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD],
+            ACTIONS['PASTE']: {'employee': [RIGHT_AT_COMPANY.FILES_UPLOAD],
                                'file': lambda kwargs: None if kwargs['file'] == None else True},
-            ACTIONS['COPY']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE],
+            ACTIONS['COPY']: {'employee': [RIGHT_AT_COMPANY.FILES_BROWSE],
                               'file': lambda kwargs: None if kwargs['file'].mime == "root" else True},
-            ACTIONS['REMOVE']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS],
+            ACTIONS['REMOVE']: {'employee': [RIGHT_AT_COMPANY.FILES_DELETE_OTHERS],
                                 'file': lambda kwargs: None if kwargs['file'].mime == "root" else True},
-            ACTIONS['CUT']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_DELETE_OTHERS],
+            ACTIONS['CUT']: {'employee': [RIGHT_AT_COMPANY.FILES_DELETE_OTHERS],
                              'file': lambda kwargs: None if kwargs['file'].mime == "root" else True},
         },
         'NONE': {
@@ -438,9 +456,9 @@ class FilemanagerRights(BaseRightsEmployeeInCompany):
 
     ACTIONS_FOR_FILEMANAGER = {
         'ACTIVE': {
-            ACTIONS['SHOW']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_BROWSE]},
-            ACTIONS['UPLOAD']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD]},
-            ACTIONS['CREATE_FOLDER']: {'employee': [UserCompany.RIGHT_AT_COMPANY.FILES_UPLOAD]}
+            ACTIONS['SHOW']: {'employee': [RIGHT_AT_COMPANY.FILES_BROWSE]},
+            ACTIONS['UPLOAD']: {'employee': [RIGHT_AT_COMPANY.FILES_UPLOAD]},
+            ACTIONS['CREATE_FOLDER']: {'employee': [RIGHT_AT_COMPANY.FILES_UPLOAD]}
         }
     }
 
@@ -483,7 +501,6 @@ class FilemanagerRights(BaseRightsEmployeeInCompany):
             'COPY']:
             return "You cannot menage files in joined company!"
         return True
-
 
 
 class MembersOrMembershipBase(BaseRightsInProfireader):
@@ -536,7 +553,8 @@ class MembersRights(MembersOrMembershipBase):
     }
 
     def actions(self):
-        return BaseRightsInProfireader.base_actions(self, UserCompany.get_by_user_and_company_ids(company_id=self.company.id),
+        return BaseRightsInProfireader.base_actions(self,
+                                                    UserCompany.get_by_user_and_company_ids(company_id=self.company.id),
                                                     object=self.member_company)
 
     def action_is_allowed(self, action_name, employee):
@@ -551,7 +569,8 @@ class MembershipRights(MembersOrMembershipBase):
     }
 
     def actions(self):
-        return BaseRightsInProfireader.base_actions(self, UserCompany.get_by_user_and_company_ids(company_id=self.company.id),
+        return BaseRightsInProfireader.base_actions(self,
+                                                    UserCompany.get_by_user_and_company_ids(company_id=self.company.id),
                                                     object=self.member_company)
 
     def action_is_allowed(self, action_name, employee):
@@ -641,10 +660,10 @@ class UserIsEmployeeAtPortalOwner(BaseRightsEmployeeInCompany):
         self.portal = portal if isinstance(portal, Portal) else Portal.get(portal) if portal else None
         super(UserIsEmployeeAtPortalOwner, self).__init__(company=self.portal.own_company if self.portal else None)
 
-
     def is_allowed(self, raise_exception_redirect_if_not=False):
         return True
-        employee = UserCompany.get_by_user_and_company_ids(company_id=self.portal.company_owner_id if self.portal else None)
+        employee = UserCompany.get_by_user_and_company_ids(
+            company_id=self.portal.company_owner_id if self.portal else None)
         if not employee:
             return "Sorry!You are not employee in this company!"
         return True
@@ -656,7 +675,6 @@ class UserIsEmployeeAtPortalOwner(BaseRightsEmployeeInCompany):
 
 
 class EditPortalRight(BaseRightsEmployeeInCompany):
-
     def is_allowed(self, raise_exception_redirect_if_not=False):
         return self.action_is_allowed(self.ACTIONS['EDIT_PORTAL'])
 

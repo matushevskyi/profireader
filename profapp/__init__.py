@@ -80,11 +80,11 @@ def on_after_flush(session, flush_context):
                 attribute_state = inspect(object_).attrs.get(key)
                 new_value = attribute_state.value
                 old_value = get_old_value(attribute_state)
-                if action == 'insert':
+                if action == 'INSERT':
                     old_value = None
-                if action == 'delete':
+                if action == 'DELETE':
                     new_value = None
-                if action == 'update':
+                if action == 'UPDATE':
                     if not attribute_state.history.has_changes():
                         new_value = ''
                         old_value = ''
