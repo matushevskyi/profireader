@@ -8,8 +8,8 @@ from .. import utils
 from ..models.company import Company, UserCompany, RIGHT_AT_COMPANY
 from ..models.materials import Material, Publication
 from ..models.pr_base import Grid
-from ..models.rights import EditPortalRight, \
-    CanCreateCompanyRight, BaseRightsEmployeeInCompany, MembershipRights, RequireMembereeAtPortalsRight
+from ..models.rights import CanCreateCompanyRight, BaseRightsEmployeeInCompany, \
+    MembershipRights, RequireMembereeAtPortalsRight
 from ..models.translate import TranslateTemplate
 from ..models.pr_base import PRBase
 from ..models.portal import MemberCompanyPortal, MembershipPlan
@@ -104,9 +104,10 @@ def profile_load_validate_save(json, company_id=None):
         user_company = UserCompany.get_by_user_and_company_ids(company_id=company_id)
         if user_company:
             company_dict['actions'] = {
-                'edit_company_profile': True if employee_have_right(RIGHT_AT_COMPANY.COMPANY_EDIT_PROFILE)(
-                    company_id=company.id) else False,
-                'edit_portal_profile': EditPortalRight(company=company_id).is_allowed()}
+                'edit_company_profile': employee_have_right(RIGHT_AT_COMPANY.COMPANY_EDIT_PROFILE)(
+                    company_id=company.id),
+                'edit_portal_profile': employee_have_right(RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE)(company_id=company.id)
+            }
         return company_dict
     else:
         company.attr(
@@ -284,8 +285,9 @@ def request_membership_plan(json, membership_id):
 def materials(company_id):
     return render_template('company/materials.html', company=utils.db.query_filter(Company, id=company_id).one(),
                            actions={
-                               'create_material': BaseRightsEmployeeInCompany(company=company_id).action_is_allowed(
-                                   BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])})
+                               'create_material': employee_have_right(RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH)(
+                                   company_id=company_id)
+                           })
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['OK'], permissions=employee_have_right())

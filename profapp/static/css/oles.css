@@ -504,8 +504,12 @@
     cursor: pointer;
 }
 
+.disabled.link {
+    cursor: default;
+}
+
 .disabled .link {
-    cursor: inherit;
+    cursor: default;
 }
 
 .link:hover span {
@@ -513,6 +517,10 @@
 }
 
 .disabled .link:hover span {
+    text-decoration: inherit;
+}
+
+.disabled.link:hover span {
     text-decoration: inherit;
 }
 

@@ -82,6 +82,7 @@
             };
 
             $scope.set_new_status = function (id, row, column_name) {
+                if (!row.status_changes) return false;
                 $selectStatus({
                         title: $scope._('change status of employee by company dialog title', null, 'change status of employee'),
                         question: $scope._('You are going to change status of employee for company `%(user.full_name)s` in portal `%(company.name)s`', row.employment),
@@ -158,13 +159,17 @@
                         onclick: 'grid_rights',
                         afilter: {type: 'input'},
                         classes: function (id, entity, field) {
-                            return entity.employment.status !== 'EMPLOYMENT_ACTIVE' ? 'non-active' : '';
+                            return $scope.rights['EMPLOYEE_ALLOW_RIGHTS'] ? '' : 'disabled';
                         }
                     },
                     {
                         width: '250',
                         name: 'employment.status',
-                        onclick: 'set_new_status'
+                        onclick: 'set_new_status',
+                        classes: function (id, entity, field) {
+                            console.log(entity.status_changes)
+                            return entity.status_changes ? '' : 'disabled';
+                        }
                     },
                 ]
             });

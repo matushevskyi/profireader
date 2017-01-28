@@ -414,7 +414,7 @@
     <div class="modal-body">
         {{ ::question }}
         <div ng-repeat="status_enabled_message in status_changes">
-            <label title="{{ status_enabled_message['message'] }}"
+            <label title="{{ (status_enabled_message['enabled'] || status_enabled_message['message'])?status_enabled_message['message']:_( 'You have no permissions to change status from ' + old_status + ' to ' + status_enabled_message['status'] ) }}"
                 ng-class="{'disabled': !status_enabled_message['enabled'], 'bold': $parent.new_status === status_enabled_message['status']}">
             <input type="radio"
                 ng-disabled="!status_enabled_message['enabled']"

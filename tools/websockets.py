@@ -240,6 +240,8 @@ def insert_translation(sid, tramslation_data):
         from profapp.models.translate import TranslateTemplate
         if 'ac_tm' in tramslation_data:
             tramslation_data['ac_tm'] = datetime.datetime.fromtimestamp(tramslation_data['ac_tm'])
+        tramslation_data['name'] = tramslation_data['phrase']
+        del tramslation_data['phrase']
         translation = TranslateTemplate(**tramslation_data)
         translation.save()
 
@@ -257,8 +259,6 @@ def update_translation(sid, tramslation_id_and_data):
                 v = datetime.datetime.fromtimestamp(v)
             setattr(translation, k, v)
         translation.save()
-
-
 
 
 app = socketio.Middleware(sio, app)

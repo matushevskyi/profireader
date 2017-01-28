@@ -52,11 +52,11 @@ def employee_have_right(right=None):
         employment = employment_is_active(*args, **kwargs)
         aright = RIGHT_AT_COMPANY._ANY if right is None else right
         if aright == RIGHT_AT_COMPANY._ANY:
-            return employment
+            return True
         elif aright == RIGHT_AT_COMPANY._OWNER and employment.company.user_owner.id == employment.user_id:
-            return employment
+            return True
         elif employment.rights[aright]:
-            return employment
+            return True
         else:
             return False
 

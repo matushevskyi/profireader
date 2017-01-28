@@ -1375,23 +1375,17 @@ class ReaderDivision(Base, PRBase):
 @on_value_changed(Portal.status)
 def portal_status_changed(target: Portal, new_status, old_status, action):
     from ..models.company import RIGHT_AT_COMPANY
-    changed_by = None
+    from ..models.messenger import NOTIFICATION_TYPES
 
-    if new_status == Portal.STATUSES['PORTAL_ACTIVE'] and not old_status:
-        return
+    target.own_company.notifications_company_changes(
+        notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'],
+        what_happened="portal %s changed status from %s to %s" %
+                      (utils.jinja.link_external(), old_status, new_status),
+        rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
+        additional_dict={'portal': target}
+    )()
 
-    if new_status in [Portal.STATUSES['PORTAL_ACTIVE']]:
-        changed_by = 'company employee'
 
-    if changed_by:
-        target.own_company.notifications_company_changes(
-            what_happened="portal %s changed status from %s to %s by %s" %
-                          (utils.jinja.link_external(), old_status, new_status, changed_by),
-            rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
-            additional_dict={'portal': target}
-        )()
-
-    raise Exception(action, "status changed from %s to %s is not allowed" % (action, old_status, new_status))
 
 
 @on_value_changed(MemberCompanyPortal.status)

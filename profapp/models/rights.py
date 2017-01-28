@@ -674,9 +674,9 @@ class UserIsEmployeeAtPortalOwner(BaseRightsEmployeeInCompany):
 #         return self.action_is_allowed(self.ACTIONS['EDIT_COMPANY'])
 
 
-class EditPortalRight(BaseRightsEmployeeInCompany):
-    def is_allowed(self, raise_exception_redirect_if_not=False):
-        return self.action_is_allowed(self.ACTIONS['EDIT_PORTAL'])
+# class EditPortalRight(BaseRightsEmployeeInCompany):
+#     def is_allowed(self, raise_exception_redirect_if_not=False):
+#         return self.action_is_allowed(self.ACTIONS['EDIT_PORTAL'])
 
 
 class RequireMembereeAtPortalsRight(BaseRightsEmployeeInCompany):

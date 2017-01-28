@@ -96,14 +96,14 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
 
 
-                    var onclickdisable = gridApi.grid.options['disableByField'] ? 'grid.onclick_is_disabled(row.entity[\'' + gridApi.grid.options['disableByField'] + '\']) && ' : '';
+                    var onclickdisable = 'grid.onclick_is_disabled(row.entity[\'disabled\']) && ';
                     if (col.onclick) {
                         if (col.type === 'actions') {
                             col.onclick = onclickdisable + 'grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')';
                         }
-                        else if (col.type === 'change_status') {
-                            col.onclick = onclickdisable + 'grid.appScope.' + col['onclick'] + '(row.entity.id, new_status_and_enabled[\'status\'], row.entity, \'' + col['name'] + '\')';
-                        }
+                        // else if (col.type === 'change_status') {
+                        //     col.onclick = onclickdisable + 'grid.appScope.' + col['onclick'] + '(row.entity.id, new_status_and_enabled[\'status\'], row.entity, \'' + col['name'] + '\')';
+                        // }
                         else if (col.type === 'icons') {
                             attributes_for_cell += ' ng-click="' + onclickdisable + 'grid.onclick_without_bubbling($event, grid.appScope.' + col.onclick + ', row.entity.id, undefined, row.entity, \'' + col['name'] + '\')"';
                             classes_for_row += ' link '
@@ -395,6 +395,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             onRegisterApi: function (gridApi) {
                 gridApi.grid.appScope.setGridExtarnals(gridApi)
             },
+            rowTemplate: '<div ng-class="{\'disabled\': row.entity[\'disabled\'] }"><div ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.colDef.name" class="ui-grid-cell" ng-class="{ \'ui-grid-row-header-cell\': col.isRowHeader }" ui-grid-cell></div></div>',
             paginationPageSizes: [1, 10, 25, 50, 75, 100, 1000],
             paginationPageSize: 50,
             enableColumnMenu: false,

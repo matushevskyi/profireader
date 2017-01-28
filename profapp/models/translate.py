@@ -33,10 +33,12 @@ class TranslateTemplate(Base, PRBase):
 
     exemplary_portal_id = '5721ed5f-d35d-4001-ae46-cdfd372b322b'
 
-    def __init__(self, id=None, template=None, portal_id=portal_id, url='', name=None, uk=None, en=None, allow_html=''):
+    def __init__(self, id=None, template=None, portal_id=portal_id, url='', name=None, uk=None, en=None, allow_html='',
+                 comment=''):
         self.id = id
         self.template = template
         self.name = name
+        self.comment = comment
         self.allow_html = allow_html
         self.url = url
         self.uk = uk
@@ -60,7 +62,8 @@ class TranslateTemplate(Base, PRBase):
                     params[lng['name']] = phrase_default
 
         if params:
-            params['ac_tm'] = params['ac_tm'].timestamp()
+            if 'ac_tm' in params:
+                params['ac_tm'] = params['ac_tm'].timestamp()
             Socket.update_translation(self.id, params)
 
     @staticmethod
