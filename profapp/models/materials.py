@@ -54,9 +54,9 @@ class Material(Base, PRBase, PRElasticDocument):
     keywords = Column(TABLE_TYPES['keywords'], nullable=False)
     author = Column(TABLE_TYPES['short_name'], nullable=False)
 
-    # status = Column(TABLE_TYPES['status'], default='NORMAL')
-    # STATUSES = {'NORMAL': 'NORMAL', 'EDITING': 'EDITING', 'FINISHED': 'FINISHED', 'DELETED': 'DELETED',
-    #             'APPROVED': 'APPROVED'}
+    status = Column(TABLE_TYPES['status'], default='NORMAL')
+    STATUSES = {'NORMAL': 'NORMAL', 'EDITING': 'EDITING', 'FINISHED': 'FINISHED', 'DELETED': 'DELETED',
+                 'APPROVED': 'APPROVED'}
 
     editor_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'), nullable=False)
     editor = relationship(User, uselist=False)
@@ -198,6 +198,7 @@ class Publication(Base, PRBase, PRElasticDocument):
                         order_by=lambda: expression.desc(TagPublication.position))
 
     status = Column(TABLE_TYPES['status'])
+
     STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED',
                 'HOLDED': 'HOLDED'}
 
@@ -526,10 +527,13 @@ class Publication(Base, PRBase, PRElasticDocument):
 
 
 @on_value_changed(Publication.status)
-def publication_status_changed(target: Publication, new_value, old_value, action):
+def publication_status_changed(target: Publication, old_status, new_status, action):
     from ..models.translate import Phrase
     from ..models.portal import MemberCompanyPortal
     from ..models.company import RIGHT_AT_COMPANY
+
+
+
 
     portal_division = target.portal_division if target.portal_division else PortalDivision.get(
         target.portal_division_id)
@@ -539,21 +543,24 @@ def publication_status_changed(target: Publication, new_value, old_value, action
     right_at_company = None
     right_at_portal = None
     if new_value == Publication.STATUSES['SUBMITTED'] and not old_value:
-        right_at_company = list(RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
-        right_at_portal = list(RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
+        right_at_company = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
+        right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
     elif new_value == Publication.STATUSES['PUBLISHED']:
-        right_at_company = list(RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
-        right_at_portal = list(RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
+        right_at_company = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
+        right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
     elif old_value == Publication.STATUSES['PUBLISHED']:
-        right_at_company = list(RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
-        right_at_portal = list(RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH)
+        right_at_company = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
+        right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
 
+    target.notifications_employment_changes(
+        what_happened="changed status of publication from %s to %s in behalf of %s" % (old_status, new_status, changed_by),
+        rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)()
 
     if right_at_company or right_at_portal:
         membership = MemberCompanyPortal.get_by_portal_id_company_id(target.portal_division.portal_id,
