@@ -130,7 +130,8 @@ def prepare_connections(app, echo=False):
         g.req = req
         g.get_url_adapter = get_url_adapter
         g.fileUrl = utils.fileUrl
-        g.after_commit_models = []
+        # g.after_commit_models = []
+        g.call_after_commit = []
         g.functions_to_call_after_commit = {}
 
         from fluent import sender
@@ -142,6 +143,13 @@ def prepare_connections(app, echo=False):
         @event.listens_for(g.db, 'after_commit')
         def after_commit(s):
             # TODO: OZ by OZ: change SQLAchemy => Flask-SQLAchemy, and use http://flask-sqlalchemy.pocoo.org/dev/signals/#models_committed
+            for f in g.call_after_commit:
+                if f:
+                    f()
+            g.call_after_commit = []
+
+
+
             for ind, functions in g.functions_to_call_after_commit.items():
                 for f in functions:
                     if f:

@@ -588,18 +588,14 @@ class MembershipPlanIssued(Base, PRBase):
                 phrase_comment='plan become active and some publication become holded/unholded or remain holded')
 
 
-def stop(self, user=None):
-    self.stopped_tm = datetime.datetime.utcnow()
-    if user:
-        self.stopped_by_user = user
+    def stop(self, user=None):
+        self.stopped_tm = datetime.datetime.utcnow()
+        if user:
+            self.stopped_by_user = user
 
-    return self
+        return self
 
 
-def stop(self, user=None):
-    self.stopped_tm = datetime.datetime.utcnow()
-    if user:
-        self.stopped_by_user = user
 
 
 class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
@@ -624,7 +620,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     tags = relationship(Tag, secondary='tag_membership', uselist=True,
                         order_by=lambda: expression.desc(TagMembership.position))
 
-    status = Column(TABLE_TYPES['status'], default='MEMBERSHIP_REQUESTED_BY_COMPANY', nullable=False)
+    status = Column(TABLE_TYPES['status'], nullable=False)
 
     portal = relationship(Portal)
 
@@ -867,23 +863,19 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         from ..models.company import Company
 
         membership = \
-            utils.db.query_filter(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first() or \
+            MemberCompanyPortal.get_by_portal_id_company_id(portal_id=portal_id, company_id=company_id) or \
             MemberCompanyPortal(id=utils.db.create_uuid(),
                                 company=Company.get(company_id),
                                 portal=utils.db.query_filter(Portal, id=portal_id).one())
 
-        membership.status = MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']
+        if not membership.status or membership.status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY'],
+                                                          MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']]:
+            membership.status = MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']
+            membership.notifications_about_membership_changes(what_happened="requested membership")
 
-        membership.current_membership_plan_issued = membership.create_issued_plan()
-        membership.save()
-        # membership.notifications_for_portal_about_company_member("Company %s %s of membership at portal %s"
-        #                                                                 % (utils.jinja.link_company_profile(),
-        #                                                                    utils.jinja.link(
-        #                                                                        'url_portal_companies_members',
-        #                                                                        'aspire',
-        #                                                                        True),
-        #                                                                    utils.jinja.link_external()),
-        #                                                                 phrase_comment="company want to join")()
+            membership.current_membership_plan_issued = membership.create_issued_plan()
+            membership.save()
+
         return membership
 
     def create_issued_plan(self, membership_plan: MembershipPlan = None, user=None):
@@ -938,7 +930,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
                     phrase_comment='company ' +
                                    ('scheduled new plan that can start automatically' if
                                     issued_plan.auto_apply else
-                                    'requested new plan that can`t start automatically and must be confirmed'))()
+                                    'requested new plan that can`t start automatically and must be confirmed'))
 
                 if requested_plan_id is not True:
                     to_delete = self.requested_membership_plan_issued
@@ -1088,33 +1080,36 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         if g.user:
             dict_main['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
 
-        user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at membership of " if \
-            g.user else 'At membership of '
+        user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at " if \
+            g.user else 'At '
         dictionary = utils.dict_merge(dict_main, additional_dict)
 
         phrase_to_employees_at_company = Phrase(
-            user_who_made_changes_phrase + "your company %s at portal %s just " % \
-            (utils.jinja.link('url_company_portal_memberees', 'company.name'),
+            user_who_made_changes_phrase + "%s of your company %s in portal %s just made following: " % \
+            (utils.jinja.link('url_company_portal_memberees', 'membershp', True),
+             utils.jinja.link_company_profile(),
              utils.jinja.link_external()) + what_happened, dict=dictionary,
             comment="to member company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
 
         phrase_to_employees_at_portal = Phrase(
-            user_who_made_changes_phrase + "company %s at your portal %s just " % \
-            (utils.jinja.link_company_profile(), utils.jinja.link('url_portal_companies_members', 'portal.name')) +
+            user_who_made_changes_phrase + "%s of company %s in your portal %s just made following: " % \
+            (utils.jinja.link('url_company_portal_memberees', 'membershp', True),
+            utils.jinja.link_company_profile(),
+             utils.jinja.link('url_portal_companies_members', 'portal.name')) +
             what_happened, dict=dictionary,
             comment="to portal owner company employees with rights %s%s" % (','.join(rights_at_portal), phrase_comment))
 
-        messages_to_company = Socket.prepare_notifications(
+        Socket.prepare_notifications(
             self.company.get_user_with_rights(rights_at_company),
             notification_type_to_company_employees,
             [phrase_to_employees_at_company] + more_phrases_to_company, except_to_user=except_to_user)
 
-        messages_to_portal = Socket.prepare_notifications(
+        Socket.prepare_notifications(
             self.portal.own_company.get_user_with_rights(rights_at_portal),
             notification_type_to_portal_employees,
             [phrase_to_employees_at_portal] + more_phrases_to_portal, except_to_user=except_to_user)
 
-        return lambda: utils.do_nothing(messages_to_company(), messages_to_portal())
+        return lambda: utils.do_nothing()
 
 
 class ReaderUserPortalPlan(Base, PRBase):
@@ -1377,60 +1372,45 @@ class ReaderDivision(Base, PRBase):
                                                    filter(lambda item: item[1], tuple_or_list))), 0)
 
 
-@on_value_changed(Portal.status)
-def portal_status_changed(target: Portal, new_status, old_status, action):
-    from ..models.company import RIGHT_AT_COMPANY
-    from ..models.messenger import NOTIFICATION_TYPES
 
-    target.own_company.notifications_company_changes(
-        notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'],
-        what_happened="portal %s changed status from %s to %s" %
-                      (utils.jinja.link_external(), old_status, new_status),
-        rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
-        additional_dict={'portal': target}
-    )()
-
-
-
-
-@on_value_changed(MemberCompanyPortal.status)
-def membership_status_changed(target: MemberCompanyPortal, new_status, old_status, action):
-    changed_by = None
-
-    if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and \
-                    target.company_id == target.portal.company_owner_id \
-            and not old_status:
-        return
-
-    if new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
-                      MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY'],
-                      MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']] or \
-            (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
-                     old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
-                                    MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']]):
-        changed_by = 'company'
-
-    elif new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
-                        MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL'],
-                        MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']] or \
-            (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
-                     old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
-                                    MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']]):
-        changed_by = 'portal'
-
-    if changed_by:
-        target.notifications_about_membership_changes(
-            what_happened="changed status from %s to %s by %s" % (old_status, new_status, changed_by),
-        )()
-
-        if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
-                not target.current_membership_plan_issued.started_tm:
-            target.current_membership_plan_issued.start()
-
-            target.member_company_portal.notifications_about_membership_changes(
-                what_happened='new plan `%(new_plan_name)s` was started because membership activated by ' + changed_by,
-                dictionary={'new_plan_name': target.current_membership_plan_issued.name})
-
-        return
-    else:
-        raise Exception(action, "action %s: status changed from %s to %s is not allowed" % (action, old_status, new_status))
+# @on_value_changed(MemberCompanyPortal.status)
+# def membership_status_changed(target: MemberCompanyPortal, new_status, old_status, action):
+#     changed_by = None
+#
+#     if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and \
+#                     target.company_id == target.portal.company_owner_id \
+#             and not old_status:
+#         return
+#
+#     if new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
+#                       MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY'],
+#                       MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']] or \
+#             (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
+#                      old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
+#                                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']]):
+#         changed_by = 'company'
+#
+#     elif new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
+#                         MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL'],
+#                         MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']] or \
+#             (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
+#                      old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
+#                                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']]):
+#         changed_by = 'portal'
+#
+#     if changed_by:
+#         target.notifications_about_membership_changes(
+#             what_happened="changed status from %s to %s by %s" % (old_status, new_status, changed_by),
+#         )()
+#
+#         if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
+#                 not target.current_membership_plan_issued.started_tm:
+#             target.current_membership_plan_issued.start()
+#
+#             target.member_company_portal.notifications_about_membership_changes(
+#                 what_happened='new plan `%(new_plan_name)s` was started because membership activated by ' + changed_by,
+#                 dictionary={'new_plan_name': target.current_membership_plan_issued.name})
+#
+#         return
+#     else:
+#         raise Exception(action, "action %s: status changed from %s to %s is not allowed" % (action, old_status, new_status))

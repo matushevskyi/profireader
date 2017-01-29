@@ -324,16 +324,16 @@ class Company(Base, PRBase, PRElasticDocument):
         dictionary = utils.dict_merge(dict_main, additional_dict)
 
         phrase_to_employees_at_company = Phrase(
-            user_who_made_changes_phrase + "your company %s just " % \
+            user_who_made_changes_phrase + "your company %s just made following:" % \
             (utils.jinja.link_company_profile(),) + what_happened, dict=dictionary,
             comment="to company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
 
-        messages_to_company = Socket.prepare_notifications(
+        Socket.prepare_notifications(
             self.get_user_with_rights(rights_at_company),
             notification_type,
             [phrase_to_employees_at_company] + more_phrases, except_to_user=except_to_user)
 
-        return lambda: messages_to_company()
+        return lambda: utils.do_nothing()
 
 
 class RIGHT_AT_COMPANY(BinaryRights):
@@ -435,7 +435,7 @@ class UserCompany(Base, PRBase):
         elif self.status == UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER']:
             return []
 
-    status = Column(TABLE_TYPES['status'], default=STATUSES['EMPLOYMENT_REQUESTED_BY_USER'], nullable=False)
+    status = Column(TABLE_TYPES['status'])
 
     position = Column(TABLE_TYPES['short_name'], default='')
 
@@ -450,6 +450,24 @@ class UserCompany(Base, PRBase):
 
     company = relationship(Company, back_populates='employments')
     user = relationship('User', back_populates='employments')
+
+    @staticmethod
+    def apply_user_to_company(company_id):
+        # TODO: OZ by OZ: reset rights after rejoining to company
+        employment = UserCompany.get_by_user_and_company_ids(company_id=company_id) or \
+                     UserCompany(user=g.user, company=Company.get(company_id))
+
+        if not employment.status or employment.status in \
+                [UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY'],
+                 UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER']]:
+
+            employment.notifications_about_employment_changes(what_happened="request employment",
+                                                              rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
+
+            employment.status = UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER']
+            employment.save()
+
+        return employment
 
     def is_active(self):
         if self.status != UserCompany.STATUSES['EMPLOYMENT_ACTIVE']:
@@ -510,25 +528,27 @@ class UserCompany(Base, PRBase):
                     ~utils.db.query_filter(UserCompany, user_id=User.id, company_id=company_id).exists()).
                     filter(User.full_name.ilike("%" + searchtext + "%")).all()]
 
-
-    def notifications_employment_changes(self, what_happened, additional_dict={},
-                                         rights_at_company=None,
-                                         more_phrases_to_company=[],
-                                         more_phrases_to_user=[],
-                                         notification_type_to_company=None,
-                                         notification_type_to_user=None,
-                                         phrase_comment=None, except_to_user=None):
+    def notifications_about_employment_changes(self, what_happened, additional_dict={},
+                                               rights_at_company=None,
+                                               more_phrases_to_company=[],
+                                               more_phrases_to_user=[],
+                                               notification_type_to_company=None,
+                                               notification_type_to_user=None,
+                                               phrase_comment=None, except_to_user=None):
 
         from ..models.messenger import Socket, NOTIFICATION_TYPES
         from ..models.translate import Phrase
 
-        notification_type_to_user = NOTIFICATION_TYPES['COMPANY_ACTIVITY'] if notification_type_to_user is None else notification_type_to_user
+        notification_type_to_user = NOTIFICATION_TYPES[
+            'COMPANY_ACTIVITY'] if notification_type_to_user is None else notification_type_to_user
         notification_type_to_company = NOTIFICATION_TYPES[
             'EMPLOYEE_ACTIVITY'] if notification_type_to_company is None else notification_type_to_company
 
         except_to_user = [g.user] if except_to_user is None else except_to_user
-        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [more_phrases_to_company]
-        more_phrases_to_user = more_phrases_to_user if isinstance(more_phrases_to_user, list) else [more_phrases_to_user]
+        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [
+            more_phrases_to_company]
+        more_phrases_to_user = more_phrases_to_user if isinstance(more_phrases_to_user, list) else [
+            more_phrases_to_user]
 
         dict_main = {
             'company': self.company,
@@ -547,58 +567,26 @@ class UserCompany(Base, PRBase):
         dictionary = utils.dict_merge(dict_main, additional_dict)
 
         phrase_to_user = Phrase(
-            user_who_made_changes_phrase + "your %s at company %s just " % \
+            user_who_made_changes_phrase + "your %s at company %s just made following: " % \
             (utils.jinja.link('url_company_employees', 'employment', True),
              utils.jinja.link_company_profile()) + what_happened, dict=dictionary,
-            comment="to employee user on employment changes%s" % (phrase_comment, ))
+            comment="to employee user on employment changes%s" % (phrase_comment,))
 
-        messages_to_user = Socket.prepare_notifications(
+        Socket.prepare_notifications(
             [self.user],
             notification_type_to_user,
             [phrase_to_user] + more_phrases_to_user, except_to_user=except_to_user)
 
         phrase_to_employees_at_company = Phrase(
-            user_who_made_changes_phrase + "%s of user %s at your company %s just " % \
+            user_who_made_changes_phrase + "%s of user %s at your company %s just made following: " % \
             (utils.jinja.link('url_company_employees', 'employment', True),
              utils.jinja.link('url_employee_user_profile', 'employee.full_name'),
              utils.jinja.link_company_profile()) + what_happened, dict=dictionary,
-            comment="to company employees with rights  on employment changes %s%s" % (','.join(rights_at_company), phrase_comment))
+            comment="to company employees with rights  on employment changes %s%s" % (
+                ','.join(rights_at_company), phrase_comment))
 
-        messages_to_company = Socket.prepare_notifications(
+        Socket.prepare_notifications(
             self.company.get_user_with_rights(rights_at_company),
             notification_type_to_company,
             [phrase_to_employees_at_company] + more_phrases_to_company,
             except_to_user=set([self.user]).union(set(except_to_user)))
-
-        return lambda: utils.do_nothing(messages_to_user(), messages_to_company())
-
-
-@on_value_changed(UserCompany.status)
-def user_company_status_changed(target: UserCompany, new_status, old_status, action):
-    if new_status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE'] and not old_status:
-        return
-
-    if new_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_USER'],
-                      UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER'],
-                      UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER']] or \
-            (new_status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE'] and
-                     old_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_USER'],
-                                    UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_COMPANY']]):
-        changed_by = 'employee'
-
-    elif new_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_COMPANY'],
-                        UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_COMPANY'],
-                        UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']] or \
-            (new_status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE'] and
-                     old_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_COMPANY'],
-                                    UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER']]):
-        changed_by = 'company administrator'
-
-    if changed_by:
-        target.notifications_employment_changes(
-            what_happened="changed status from %s to %s in behalf of %s" % (old_status, new_status, changed_by),
-            rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)()
-        return
-    else:
-        raise Exception(action,
-                        "action %s: status changed from %s to %s is not allowed" % (action, old_status, new_status))

@@ -13,7 +13,6 @@ from ..controllers.errors import BadDataProvided
 from ..models.users import User
 
 
-
 class Socket:
     @staticmethod
     def notification_delivered(*args, **kwargs):
@@ -78,12 +77,11 @@ class Socket:
                   'notification_type': notification_type}
                  for u in list(set(to_users) - set(except_to_user))] if phrases else []
 
-        def ret():
-            for d in datas:
-                Socket.notification(d)
-            return True
+        for d in datas:
+            g.call_after_commit.append(lambda: Socket.notification(d))
 
-        return ret
+        return utils.do_nothing()
+
 
     @staticmethod
     def send_greeting(to_users):
@@ -234,8 +232,6 @@ class Message(Base, PRBase):
                                {'cr_tm': self.cr_tm.strftime("%a, %d %b %Y %H:%M:%S GMT"),
                                 'chat_room_id': self.contact_id})
         return ret
-
-
 
 
 NOTIFICATION_TYPES = {

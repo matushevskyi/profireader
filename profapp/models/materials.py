@@ -558,7 +558,7 @@ def publication_status_changed(target: Publication, old_status, new_status, acti
         right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
 
-    target.notifications_employment_changes(
+    target.notifications_about_employment_changes(
         what_happened="changed status of publication from %s to %s in behalf of %s" % (old_status, new_status, changed_by),
         rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)()
 
