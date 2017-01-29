@@ -658,6 +658,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         r = UserCompany.get_by_user_and_company_ids(company_id=self.portal.company_owner_id).rights[
             RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]
 
+        if not r:
+            return False
+
         changes = {s: {'status': s, 'enabled': r, 'message': ''} for s in MemberCompanyPortal.STATUSES}
 
         if self.company_id == self.portal.company_owner_id:
@@ -701,6 +704,9 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         from ..models.company import UserCompany, RIGHT_AT_COMPANY
         r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
             RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS]
+
+        if not r:
+            return False
 
         changes = {s: {'status': s, 'enabled': r, 'message': ''} for s in MemberCompanyPortal.STATUSES}
 
@@ -748,7 +754,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def portal_memberee_grid_row(self):
         return {
             'id': self.id,
-            'disabled': not self.status_changes_by_company(),
             'membership': self.get_client_side_dict(
                 fields='id,status,portal.own_company,portal,rights,tags,current_membership_plan_issued,'
                        'requested_membership_plan_issued,request_membership_plan_issued_immediately,company.id|name'),
@@ -759,7 +764,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
     def company_member_grid_row(self):
         return {
             'id': self.id,
-            'disabled': not self.status_changes_by_portal(),
             'membership': self.get_client_side_dict(
                 more_fields='portal.name|host|id,company,current_membership_plan_issued,requested_membership_plan_issued,portal.company_owner_id'),
             'publications': self.get_publication_count(),
@@ -1084,7 +1088,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument):
         if g.user:
             dict_main['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
 
-        user_who_made_changes_phrase = "User %(url_user_profile)s at membership of " if g.user else 'At membership of '
+        user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at membership of " if \
+            g.user else 'At membership of '
         dictionary = utils.dict_merge(dict_main, additional_dict)
 
         phrase_to_employees_at_company = Phrase(

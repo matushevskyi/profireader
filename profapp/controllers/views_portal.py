@@ -127,7 +127,8 @@ def profile_load(json, company_id=None, portal_id=None):
 
             if not portal_id:
                 g.db.add(portal)
-                portal.company_memberships[0].current_membership_plan_issued = portal.company_memberships[0].create_issued_plan()
+                portal.company_memberships[0].current_membership_plan_issued = portal.company_memberships[
+                    0].create_issued_plan()
                 portal.company_memberships[0].current_membership_plan_issued.start()
 
             portal.save()
@@ -348,10 +349,9 @@ def companies_members(portal_id):
     portal = Portal.get(portal_id)
     return render_template('portal/companies_members.html',
                            portal=portal,
-                           all_available_rights={
-                               MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: 'publish publication',
-                               MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH: 'unpublish publication'
-                           })
+                           employment=UserCompany.get_by_user_and_company_ids(
+                               company_id=portal.company_owner_id).get_client_side_dict()
+                           )
 
 
 @portal_bp.route('/<string:portal_id>/companies_members/', methods=['OK'])

@@ -159,7 +159,7 @@
                         onclick: 'grid_rights',
                         afilter: {type: 'input'},
                         classes: function (id, entity, field) {
-                            return $scope.rights['EMPLOYEE_ALLOW_RIGHTS'] ? '' : 'disabled';
+                            return $scope.rights['EMPLOYEE_ALLOW_RIGHTS'] ? '' : 'inactive';
                         }
                     },
                     {
@@ -167,8 +167,7 @@
                         name: 'employment.status',
                         onclick: 'set_new_status',
                         classes: function (id, entity, field) {
-                            console.log(entity.status_changes)
-                            return entity.status_changes ? '' : 'disabled';
+                            return entity.status_changes ? '' : 'inactive';
                         }
                     },
                 ]

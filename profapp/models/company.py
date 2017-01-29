@@ -465,7 +465,6 @@ class UserCompany(Base, PRBase):
     def employees_grid_row(self):
         return {
             'id': self.id,
-            'disabled': not self.status_changes_by_company(),
             'status_changes': self.status_changes_by_company(),
             'employment': self.get_client_side_dict(
                 more_fields='company.name|id,user.full_name|address_email|address_phone'),

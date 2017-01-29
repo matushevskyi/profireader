@@ -204,7 +204,9 @@ def employment_change_position(json, company_id, employment_id):
 def portal_memberees(company_id):
     return render_template('company/portals_memberees.html',
                            company=Company.get(company_id),
-                           actions={'require_memberee': RequireMembereeAtPortalsRight(company=company_id).is_allowed()})
+                           actions={'require_memberee':
+                                        employee_have_right(RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS)(
+                                            company_id=company_id)})
 
 
 @company_bp.route('/<string:company_id>/portal_memberees/', methods=['OK'], permissions=employee_have_right())

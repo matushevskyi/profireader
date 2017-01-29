@@ -133,11 +133,15 @@
                     },
                     publication_column(),
 
-                    {name: 'membership.rights', width: '50', type: 'icons', afilter: {type: 'input'}},
+                    {name: 'membership.rights',
+                        width: '55', type: 'icons', afilter: {type: 'input'}},
                     {
                         width: '300',
                         name: 'membership.status',
-                        onclick: 'set_new_status'
+                        onclick: 'set_new_status',
+                        classes: function (id, entity, field) {
+                            return entity.status_changes ? '' : 'inactive';
+                        }
                     }
                 ]
             });

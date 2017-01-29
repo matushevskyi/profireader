@@ -189,7 +189,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             };
 
             gridApi.grid['onclick_is_disabled'] = function (disabled) {
-                console.log(disabled);
                 return disabled ? false : true;
             };
 
