@@ -690,7 +690,7 @@ function pr_dictionary(phrase, dictionary, allow_html, scope, $ok, phrase_defaul
                 d = d[indexes[i]];
             }
             else {
-                console.error('can`t find ' + g1 + ' in passed dict', dictionary ? dictionary : scope);
+                console.warn('can`t find ' + g1 + ' in passed dict', dictionary ? dictionary : scope);
                 return g1;
             }
         }
@@ -1291,6 +1291,22 @@ var noImageForImageName = function (image_name) {
         return static_address('images/no_image.png');
     }
 }
+
+var find_by_key = function (list, key, val) {
+    var found = null;
+    $.each(list, function (ind, dict) {
+        if (dict[key] === val) {
+            found = dict;
+            return false;
+        }
+    });
+    return found;
+};
+
+var find_by_id = function (list, id) {
+    return find_by_key(list, 'id', id);
+};
+
 
 window.lastUserActivity = now();
 window.onUserActivity = {};

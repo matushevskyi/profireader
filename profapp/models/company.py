@@ -10,9 +10,10 @@ from .files import YoutubePlaylist
 from .pr_base import PRBase, Base, Grid
 from .users import User
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
-from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
+from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from profapp import utils
+
 
 
 class Company(Base, PRBase, PRElasticDocument):
@@ -189,8 +190,7 @@ class Company(Base, PRBase, PRElasticDocument):
             outerjoin(UserCompany, and_(UserCompany.company_id == Company.id, UserCompany.user_id == g.user.id)). \
             filter(Company.name.ilike("%" + searchtext + "%")). \
             filter(or_(
-            UserCompany.status == UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY'],
-            UserCompany.status == UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER'],
+            UserCompany.status.in_(UserCompany.DELETED_STATUSES),
             UserCompany.status == None)). \
             filter(Company.status.in_([Company.STATUSES['COMPANY_ACTIVE']])). \
             filter(~Company.id.in_(ignore_ids)).order_by(Company.name)
@@ -212,6 +212,7 @@ class Company(Base, PRBase, PRElasticDocument):
         return sorted(list({partner.status for partner in sub_query}))
 
     def get_user_with_rights(self, *rights_sets, get_text_representation=False):
+        from ..models.permissions import RIGHT_AT_COMPANY
         # TODO: OZ by OZ: use operator overloading (&,|) instead of list(|),set(&)
         if not rights_sets:
             return []
@@ -223,8 +224,10 @@ class Company(Base, PRBase, PRElasticDocument):
             binary = RIGHT_AT_COMPANY._tobin({r: True for r in rights_set})
             or_conditions.append("(%s = (rights & %s))" % (binary, binary))
 
-        usrc = g.db.query(UserCompany).filter(text("(company_id = '" + self.id
-                                                   + "') AND (" + " OR ".join(or_conditions) + ")")).all()
+        usrc = g.db.query(UserCompany).\
+            filter(~UserCompany.status.in_(UserCompany.DELETED_STATUSES)).\
+            filter(UserCompany.company_id == self.id).\
+            filter(text("(" + " OR ".join(or_conditions) + ")")).all()
 
         return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
 
@@ -336,41 +339,9 @@ class Company(Base, PRBase, PRElasticDocument):
         return lambda: utils.do_nothing()
 
 
-class RIGHT_AT_COMPANY(BinaryRights):
-    FILES_BROWSE = 4
-    FILES_UPLOAD = 5
-    FILES_DELETE_OTHERS = 14
-
-    ARTICLES_SUBMIT_OR_PUBLISH = 8
-    ARTICLES_UNPUBLISH = 17  # reset!
-    ARTICLES_EDIT_OTHERS = 12
-    ARTICLES_DELETE = 19  # reset!
-
-    COMPANY_EDIT_PROFILE = 1
-    COMPANY_MANAGE_PARTICIPATION = 2
-    COMPANY_REQUIRE_MEMBEREE_AT_PORTALS = 15
-
-    EMPLOYEE_ENLIST_OR_FIRE = 6
-    EMPLOYEE_ALLOW_RIGHTS = 9
-
-    PORTAL_EDIT_PROFILE = 10
-    PORTAL_MANAGE_READERS = 16
-    PORTAL_MANAGE_COMMENTS = 18
-    PORTAL_MANAGE_MEMBERS_COMPANIES = 13
-
-    def _nice_order(self):
-        return [
-            self.COMPANY_EDIT_PROFILE, self.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS, self.COMPANY_MANAGE_PARTICIPATION,
-            self.EMPLOYEE_ENLIST_OR_FIRE, self.EMPLOYEE_ALLOW_RIGHTS,
-            self.ARTICLES_SUBMIT_OR_PUBLISH, self.ARTICLES_UNPUBLISH, self.ARTICLES_EDIT_OTHERS,
-            self.ARTICLES_DELETE,
-            self.FILES_BROWSE, self.FILES_UPLOAD, self.FILES_DELETE_OTHERS,
-            self.PORTAL_EDIT_PROFILE, self.PORTAL_MANAGE_READERS, self.PORTAL_MANAGE_COMMENTS,
-            self.PORTAL_MANAGE_MEMBERS_COMPANIES,
-        ]
-
-
 class UserCompany(Base, PRBase):
+    from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
+
     __tablename__ = 'user_company'
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
@@ -387,6 +358,8 @@ class UserCompany(Base, PRBase):
                 'EMPLOYMENT_CANCELED_BY_USER': 'EMPLOYMENT_CANCELED_BY_USER',
                 'EMPLOYMENT_CANCELED_BY_COMPANY': 'EMPLOYMENT_CANCELED_BY_COMPANY',
                 }
+
+    DELETED_STATUSES = [STATUSES['EMPLOYMENT_CANCELED_BY_USER'], STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']]
 
     def status_changes_by_company(self):
         r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
@@ -457,9 +430,7 @@ class UserCompany(Base, PRBase):
         employment = UserCompany.get_by_user_and_company_ids(company_id=company_id) or \
                      UserCompany(user=g.user, company=Company.get(company_id))
 
-        if not employment.status or employment.status in \
-                [UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY'],
-                 UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER']]:
+        if not employment.status or employment.status in UserCompany.DELETED_STATUSES:
 
             employment.notifications_about_employment_changes(what_happened="request employment",
                                                               rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)

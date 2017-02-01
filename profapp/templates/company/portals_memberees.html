@@ -103,7 +103,7 @@
                 }
                 $membership_plan({
                     membership_id: row['membership']['id'],
-                    request_or_set: 'request'
+                    bycompany_or_byportal: 'bycompany'
                 }).result.then(function (resp) {
                     $scope.gridApi.grid.grid_change_row(resp);
                 });

@@ -70,7 +70,7 @@
             $scope.set_membership_plan = function (id, row, column_name) {
                 $membership_plan({
                     membership_id: row['id'],
-                    request_or_set: 'set'
+                    bycompany_or_byportal: 'byportal'
                 }).result.then(function (resp) {
                     $scope.gridApi.grid.grid_change_row(resp);
                 });

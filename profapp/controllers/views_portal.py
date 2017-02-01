@@ -8,7 +8,7 @@ from .pagination import pagination
 from .request_wrapers import check_right
 from .. import utils
 from ..models.company import Company
-from ..models.company import UserCompany, RIGHT_AT_COMPANY
+from ..models.company import UserCompany
 from ..models.dictionary import Currency
 from ..models.materials import Publication
 from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDivision, \
@@ -21,6 +21,7 @@ from ..models.tag import Tag
 from ..models.translate import TranslateTemplate
 from ..models.messenger import NOTIFICATION_TYPES
 from ..models.exceptions import UnauthorizedUser
+from ..models.permissions import RIGHT_AT_COMPANY
 
 
 @portal_bp.route('/create/company/<string:company_id>/', methods=['GET'])
@@ -345,15 +346,17 @@ def membership_change_status(json, membership_id, new_status):
         old_status = membership.status
         membership.status = new_status
 
-        membership.notifications_about_membership_changes(
+        membership.send_notifications_about_employment_changes(
             what_happened="changed status from %s to %s by portal" % (old_status, new_status),)
 
-        if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']:
+        if new_status in MemberCompanyPortal.DELETED_STATUSES:
             membership.current_membership_plan_issued.stop()
+
         elif new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
                 not membership.current_membership_plan_issued.started_tm:
             membership.current_membership_plan_issued.start()
-            membership.notifications_about_membership_changes(
+
+            membership.send_notifications_about_employment_changes(
                 what_happened='new plan `%(new_plan_name)s` was started on membership activation by portal',
                 additional_dict={'new_plan_name': membership.current_membership_plan_issued.name})
 
@@ -378,16 +381,14 @@ def companies_members(portal_id):
 @check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
 def companies_members_load(json, portal_id):
     portal = Portal.get(portal_id)
-    hide_statuses = [MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY'],
-                     MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']]
     subquery = Company.subquery_company_partners(portal.company_owner_id, json.get('filter'),
-                                                 filters_exсept=hide_statuses)
+                                                 filters_exсept=MemberCompanyPortal.DELETED_STATUSES)
     memberships, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [membership.company_member_grid_row() for membership in memberships],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'member.status': [{'value': status, 'label': status} for status in
                                                           MembersRights.STATUSES]}.items()},
-            'grid_filters_except': list(hide_statuses),
+            'grid_filters_except': MemberCompanyPortal.DELETED_STATUSES,
             'total': count,
             'page': current_page}
 

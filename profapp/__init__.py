@@ -142,14 +142,11 @@ def prepare_connections(app, echo=False):
 
         @event.listens_for(g.db, 'after_commit')
         def after_commit(s):
-            # TODO: OZ by OZ: change SQLAchemy => Flask-SQLAchemy, and use http://flask-sqlalchemy.pocoo.org/dev/signals/#models_committed
-            for f in g.call_after_commit:
-                if f:
-                    f()
+
+            [f() for f in g.call_after_commit]
             g.call_after_commit = []
 
-
-
+            # TODO: OZ by OZ: change SQLAchemy => Flask-SQLAchemy, and use http://flask-sqlalchemy.pocoo.org/dev/signals/#models_committed
             for ind, functions in g.functions_to_call_after_commit.items():
                 for f in functions:
                     if f:

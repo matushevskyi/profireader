@@ -52,9 +52,9 @@
             render: function (row, value) {
                 var ret = [];
                 $.each(all_visibilities,
-                        function (ind, visibility) {
-                            ret.push(spanf('PUBLISHED', visibility, value['by_status_visibility']['PUBLISHED'][visibility]));
-                        });
+                    function (ind, visibility) {
+                        ret.push(spanf('PUBLISHED', visibility, value['by_status_visibility']['PUBLISHED'][visibility]));
+                    });
                 return spanf('PUBLISHED', '', value['by_status']['PUBLISHED'], 'bold') + '</span> = ' + ret.join('+');
 
             }
@@ -75,9 +75,9 @@
                 resolve: resolveDictForAngularController(dict)
             });
         };
-    }]).controller('RequestSetMembershipPlanController', function ($scope, $ok, $uibModalInstance, membership_id, request_or_set) {
+    }]).controller('RequestSetMembershipPlanController', function ($scope, $ok, $uibModalInstance, membership_id, bycompany_or_byportal) {
 
-        $scope.request_set_t_f = request_or_set !== 'set';
+        $scope.bycompany_byportal_t_f = bycompany_or_byportal !== 'byportal';
 
         $scope.$$translate = {{ translates('RequestSetMembershipPlanController') | safe }};
 
@@ -94,13 +94,13 @@
         $scope.cancel = $uibModalInstance.dismiss;
 
 
-        $scope.immediately_cant_be_selected = function (immediatly) {
+        $scope.immediately_cant_be_selected = function (immediately) {
             if (!$scope.data) {
                 return true;
             }
 
             return $scope.data.selected_by_user_plan_id === false ||
-                    (immediatly ? false : parseInt($scope.data.membership.current_membership_plan_issued.duration) < 0)
+                (immediately ? false : parseInt($scope.data.membership.current_membership_plan_issued.duration) < 0)
         }
 
         $scope.duration = function (plan) {
@@ -116,6 +116,24 @@
             }
             return ((plan.price <= 0 || plan.id == $scope.data.membership.portal.default_membership_plan_id) ? 'free' : ('' + plan.price + ' ' + plan.currency_id));
         };
+
+        $scope.start_or_request = function () {
+            console.log($scope.bycompany_byportal_t_f);
+            if (!$scope.bycompany_byportal_t_f) {
+                return true;
+            }
+
+
+            if (!$scope.data || $scope.data.selected_by_user_plan_id === false || $scope.data.selected_by_user_plan_id === true) {
+                return false;
+            }
+
+
+
+            var plan = find_by_id($scope.data.select.plans, $scope.data.selected_by_user_plan_id);
+            return (plan && plan.auto_apply) ? true : false;
+
+        }
     });
 </script>
 

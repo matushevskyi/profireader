@@ -8,10 +8,11 @@ from sqlalchemy import text, and_
 
 from profapp import utils
 from .pr_base import PRBase
-from ..models.company import Company, UserCompany, MemberCompanyPortal, RIGHT_AT_COMPANY
+from ..models.company import Company, UserCompany, MemberCompanyPortal
 from ..models.materials import Material, Publication
 from ..models.portal import Portal, PortalDivision
 from ..models.users import User
+
 
 
 class BaseRightsInProfireader:
@@ -132,6 +133,8 @@ class BaseRightsInProfireader:
 
 
 class PublishUnpublishInPortal(BaseRightsInProfireader):
+    from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
+
     def __init__(self, publication=None, division=None, company=None, portal=None):
         self.publication = publication if isinstance(publication, Publication) else Publication.get(
             publication) if publication else None
@@ -161,21 +164,21 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
         'UNDELETE': 'UNDELETE'
     }
 
-    delete_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
+    delete_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
                      'employment': [RIGHT_AT_COMPANY.ARTICLES_DELETE]}
 
-    publish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
+    publish_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
                       'employment': [RIGHT_AT_COMPANY.ARTICLES_DELETE]}
 
-    unpublish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
+    unpublish_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
                         'employment': [RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]}
 
-    republish_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH,
-                                       MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH],
+    republish_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH,
+                                       RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH],
                         'employment': [RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
                                        RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
 
-    edit_rights = {'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
+    edit_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
                    'employment': [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
 
     ACTIONS_FOR_STATUSES = {
@@ -266,6 +269,8 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
 
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
+    from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
+
     def __init__(self, material=None, portal=None, division=None):
         self.material = material if isinstance(material, Material) else Material.get(
             material) if material else None
@@ -290,7 +295,7 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
         STATUSES['NORMAL']: {
             ACTIONS['SUBMIT']:
                 {'employee': [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH],
-                 'membership': [MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH]},
+                 'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH]},
             ACTIONS['EDIT']:
                 {'employee': (lambda kwargs: kwargs['material'].editor_user_id == kwargs['user'].id,
                               RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS)}
@@ -329,6 +334,8 @@ class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
 
 
 class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
+    from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
+
     def __init__(self, company=None):
         self.company = company if isinstance(company, Company) else Company.get(company) if company else None
 
@@ -414,6 +421,7 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
 
 
 class FilemanagerRights(BaseRightsEmployeeInCompany):
+    from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
     def __init__(self, company=None):
         super(FilemanagerRights, self).__init__(company=company)
         self.employee = UserCompany.get_by_user_and_company_ids(company_id=self.company.id)
