@@ -5,7 +5,7 @@ from sqlalchemy.sql import expression
 from .blueprints_declaration import company_bp
 from .pagination import pagination, load_for_infinite_scroll
 from .. import utils
-from ..models.company import Company, UserCompany, RIGHT_AT_COMPANY
+from ..models.company import Company, UserCompany
 from ..models.materials import Material, Publication
 from ..models.pr_base import Grid
 from ..models.rights import CanCreateCompanyRight, BaseRightsEmployeeInCompany, \
@@ -13,7 +13,7 @@ from ..models.rights import CanCreateCompanyRight, BaseRightsEmployeeInCompany, 
 from ..models.translate import TranslateTemplate
 from ..models.pr_base import PRBase
 from ..models.portal import MemberCompanyPortal, MembershipPlan
-from ..models.permissions import user_is_active, company_is_active, employee_af, employee_have_right
+from ..models.permissions import user_is_active, company_is_active, employee_af, employee_have_right, RIGHT_AT_COMPANY
 from ..models.exceptions import UnauthorizedUser
 
 
@@ -26,8 +26,7 @@ def companies():
 def companies_load(json):
     employments_query = utils.db.query_filter(UserCompany). \
         outerjoin(Company, and_(UserCompany.company_id == Company.id,
-                                UserCompany.status != UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY'],
-                                UserCompany.status != UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER'],
+                                ~UserCompany.status.in_(UserCompany.DELETED_STATUSES),
                                 Company.status == Company.STATUSES['COMPANY_ACTIVE'])). \
         filter(and_(UserCompany.user_id == g.user.id, Company.id != None, ~ UserCompany.id.in_(json['loaded']))). \
         order_by(expression.desc(UserCompany.md_tm))
@@ -61,15 +60,8 @@ def search_for_company_to_join(json):
 @company_bp.route('/join_to_company/', methods=['OK'],
                   permissions=[user_is_active, utils.json2kwargs(company_is_active)])
 def join_to_company(json):
-    employment = UserCompany.get_by_user_and_company_ids(company_id=json['company_id'])
-    if not employment:
-        employment = UserCompany(user=g.user, company=Company.get(json['company_id']))
-        employment.save()
-    elif employment.status not in [UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER'],
-                                   UserCompany.STATUSES['EMPLOYMENT_ACTIVE'],
-                                   UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_COMPANY']]:
-        employment.status = UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER']
-        employment.save()
+    employment = \
+        UserCompany.apply_user_to_company(company_id=json['company_id'])
 
     return {'employment': employment.get_client_side_dict(fields='id,status, company, rights')}
 
@@ -148,6 +140,10 @@ def change_employment_status_by_company(json, company_id, employment_id, new_sta
     employment = UserCompany.get(employment_id)
 
     if utils.find_by_key(employment.status_changes_by_company(), 'status', new_status)['enabled'] is True:
+
+        employment.notifications_about_employment_changes(what_happened="changed status of employment from %s to %s"
+                                                                        % (employment.status, new_status),
+                                                          rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
         employment.status = new_status
         return employment.employees_grid_row()
     else:
@@ -204,15 +200,15 @@ def employment_change_position(json, company_id, employment_id):
 def portal_memberees(company_id):
     return render_template('company/portals_memberees.html',
                            company=Company.get(company_id),
-                           actions={'require_memberee': RequireMembereeAtPortalsRight(company=company_id).is_allowed()})
+                           actions={'require_memberee':
+                               employee_have_right(RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS)(
+                                   company_id=company_id)})
 
 
 @company_bp.route('/<string:company_id>/portal_memberees/', methods=['OK'], permissions=employee_have_right())
 def portal_memberees_load(json, company_id):
-    hide_statuses = [MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY'],
-                     MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']]
     subquery = Company.subquery_portal_partners(company_id, json.get('filter'),
-                                                filters_exсept=hide_statuses)
+                                                filters_exсept=MemberCompanyPortal.DELETED_STATUSES)
     memberships, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
 
     return {'page': current_page,
@@ -220,7 +216,7 @@ def portal_memberees_load(json, company_id):
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'status': [{'value': status, 'label': status} for status in
                                                    MembershipRights.STATUSES]}.items()},
-            'grid_filters_except': list(hide_statuses),
+            'grid_filters_except': MemberCompanyPortal.DELETED_STATUSES,
             'total': count}
 
 
@@ -251,7 +247,15 @@ def change_membership_status_by_company(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
 
     if utils.find_by_key(membership.status_changes_by_company(), 'status', new_status)['enabled'] is True:
+
+        membership.send_notifications_about_employment_changes(
+            what_happened="changed status from %s to %s by company" % (membership.status, new_status), )
+
+        if new_status in MemberCompanyPortal.DELETED_STATUSES:
+            membership.current_membership_plan_issued.stop()
+
         membership.status = new_status
+        membership.save()
         return membership.portal_memberee_grid_row()
     else:
         raise UnauthorizedUser()

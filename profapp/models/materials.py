@@ -525,12 +525,12 @@ class Publication(Base, PRBase, PRElasticDocument):
             'liked_count': self.liked_count()
         }
 
-
+# TODO: OZ by OZ: cjange it to explicity function call
 @on_value_changed(Publication.status)
 def publication_status_changed(target: Publication, old_status, new_status, action):
     from ..models.translate import Phrase
     from ..models.portal import MemberCompanyPortal
-    from ..models.company import RIGHT_AT_COMPANY
+    from ..models.permissions import RIGHT_AT_COMPANY
 
 
 
@@ -558,14 +558,14 @@ def publication_status_changed(target: Publication, old_status, new_status, acti
         right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
 
-    target.notifications_employment_changes(
+    target.notifications_about_employment_changes(
         what_happened="changed status of publication from %s to %s in behalf of %s" % (old_status, new_status, changed_by),
         rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)()
 
     if right_at_company or right_at_portal:
         membership = MemberCompanyPortal.get_by_portal_id_company_id(target.portal_division.portal_id,
                                                                      target.material.company_id)
-        return membership.notifications_about_membership_changes(
+        return membership.send_notifications_about_employment_changes(
             "changed status of %%(url_external_publication)s from %s to %s at division `%%(division_name)s`" %
             (old_value, new_value),
             additional_dict={

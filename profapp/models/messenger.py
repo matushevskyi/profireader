@@ -13,7 +13,6 @@ from ..controllers.errors import BadDataProvided
 from ..models.users import User
 
 
-
 class Socket:
     @staticmethod
     def notification_delivered(*args, **kwargs):
@@ -78,12 +77,10 @@ class Socket:
                   'notification_type': notification_type}
                  for u in list(set(to_users) - set(except_to_user))] if phrases else []
 
-        def ret():
-            for d in datas:
-                Socket.notification(d)
-            return True
+        for d in datas:
+            g.call_after_commit.append(lambda d=d: Socket.notification(d))
 
-        return ret
+        return utils.do_nothing()
 
     @staticmethod
     def send_greeting(to_users):
@@ -236,8 +233,6 @@ class Message(Base, PRBase):
         return ret
 
 
-
-
 NOTIFICATION_TYPES = {
     'CUSTOM': 'CUSTOM',
     'FRIENDSHIP_ACTIVITY': 'FRIENDSHIP_ACTIVITY',
@@ -248,6 +243,8 @@ NOTIFICATION_TYPES = {
     'MEMBER_COMPANY_ACTIVITY': 'MEMBER_COMPANY_ACTIVITY',
     'MEMBEREE_PORTAL_ACTIVITY': 'MEMBEREE_PORTAL_ACTIVITY',
 }
+
+
 
 
 class Notification(Base, PRBase):
@@ -299,7 +296,6 @@ class Notification(Base, PRBase):
         ret = utils.dict_merge(self.get_client_side_dict(fields='id,content,notification_type,to_user_id'),
                                {'cr_tm': self.cr_tm.strftime("%a, %d %b %Y %H:%M:%S GMT")})
         return ret
-
 
 @event.listens_for(Notification.content, "set")
 def set_notification_content(target, value, oldvalue, initiator):

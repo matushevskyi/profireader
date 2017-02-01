@@ -10,9 +10,10 @@ from .files import YoutubePlaylist
 from .pr_base import PRBase, Base, Grid
 from .users import User
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
-from ..constants.TABLE_TYPES import TABLE_TYPES, BinaryRights
+from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from profapp import utils
+
 
 
 class Company(Base, PRBase, PRElasticDocument):
@@ -189,8 +190,7 @@ class Company(Base, PRBase, PRElasticDocument):
             outerjoin(UserCompany, and_(UserCompany.company_id == Company.id, UserCompany.user_id == g.user.id)). \
             filter(Company.name.ilike("%" + searchtext + "%")). \
             filter(or_(
-            UserCompany.status == UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY'],
-            UserCompany.status == UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER'],
+            UserCompany.status.in_(UserCompany.DELETED_STATUSES),
             UserCompany.status == None)). \
             filter(Company.status.in_([Company.STATUSES['COMPANY_ACTIVE']])). \
             filter(~Company.id.in_(ignore_ids)).order_by(Company.name)
@@ -212,6 +212,7 @@ class Company(Base, PRBase, PRElasticDocument):
         return sorted(list({partner.status for partner in sub_query}))
 
     def get_user_with_rights(self, *rights_sets, get_text_representation=False):
+        from ..models.permissions import RIGHT_AT_COMPANY
         # TODO: OZ by OZ: use operator overloading (&,|) instead of list(|),set(&)
         if not rights_sets:
             return []
@@ -223,8 +224,10 @@ class Company(Base, PRBase, PRElasticDocument):
             binary = RIGHT_AT_COMPANY._tobin({r: True for r in rights_set})
             or_conditions.append("(%s = (rights & %s))" % (binary, binary))
 
-        usrc = g.db.query(UserCompany).filter(text("(company_id = '" + self.id
-                                                   + "') AND (" + " OR ".join(or_conditions) + ")")).all()
+        usrc = g.db.query(UserCompany).\
+            filter(~UserCompany.status.in_(UserCompany.DELETED_STATUSES)).\
+            filter(UserCompany.company_id == self.id).\
+            filter(text("(" + " OR ".join(or_conditions) + ")")).all()
 
         return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
 
@@ -324,53 +327,21 @@ class Company(Base, PRBase, PRElasticDocument):
         dictionary = utils.dict_merge(dict_main, additional_dict)
 
         phrase_to_employees_at_company = Phrase(
-            user_who_made_changes_phrase + "your company %s just " % \
+            user_who_made_changes_phrase + "your company %s just made following:" % \
             (utils.jinja.link_company_profile(),) + what_happened, dict=dictionary,
             comment="to company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
 
-        messages_to_company = Socket.prepare_notifications(
+        Socket.prepare_notifications(
             self.get_user_with_rights(rights_at_company),
             notification_type,
             [phrase_to_employees_at_company] + more_phrases, except_to_user=except_to_user)
 
-        return lambda: messages_to_company()
-
-
-class RIGHT_AT_COMPANY(BinaryRights):
-    FILES_BROWSE = 4
-    FILES_UPLOAD = 5
-    FILES_DELETE_OTHERS = 14
-
-    ARTICLES_SUBMIT_OR_PUBLISH = 8
-    ARTICLES_UNPUBLISH = 17  # reset!
-    ARTICLES_EDIT_OTHERS = 12
-    ARTICLES_DELETE = 19  # reset!
-
-    COMPANY_EDIT_PROFILE = 1
-    COMPANY_MANAGE_PARTICIPATION = 2
-    COMPANY_REQUIRE_MEMBEREE_AT_PORTALS = 15
-
-    EMPLOYEE_ENLIST_OR_FIRE = 6
-    EMPLOYEE_ALLOW_RIGHTS = 9
-
-    PORTAL_EDIT_PROFILE = 10
-    PORTAL_MANAGE_READERS = 16
-    PORTAL_MANAGE_COMMENTS = 18
-    PORTAL_MANAGE_MEMBERS_COMPANIES = 13
-
-    def _nice_order(self):
-        return [
-            self.COMPANY_EDIT_PROFILE, self.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS, self.COMPANY_MANAGE_PARTICIPATION,
-            self.EMPLOYEE_ENLIST_OR_FIRE, self.EMPLOYEE_ALLOW_RIGHTS,
-            self.ARTICLES_SUBMIT_OR_PUBLISH, self.ARTICLES_UNPUBLISH, self.ARTICLES_EDIT_OTHERS,
-            self.ARTICLES_DELETE,
-            self.FILES_BROWSE, self.FILES_UPLOAD, self.FILES_DELETE_OTHERS,
-            self.PORTAL_EDIT_PROFILE, self.PORTAL_MANAGE_READERS, self.PORTAL_MANAGE_COMMENTS,
-            self.PORTAL_MANAGE_MEMBERS_COMPANIES,
-        ]
+        return lambda: utils.do_nothing()
 
 
 class UserCompany(Base, PRBase):
+    from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
+
     __tablename__ = 'user_company'
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
@@ -387,6 +358,8 @@ class UserCompany(Base, PRBase):
                 'EMPLOYMENT_CANCELED_BY_USER': 'EMPLOYMENT_CANCELED_BY_USER',
                 'EMPLOYMENT_CANCELED_BY_COMPANY': 'EMPLOYMENT_CANCELED_BY_COMPANY',
                 }
+
+    DELETED_STATUSES = [STATUSES['EMPLOYMENT_CANCELED_BY_USER'], STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']]
 
     def status_changes_by_company(self):
         r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
@@ -435,7 +408,7 @@ class UserCompany(Base, PRBase):
         elif self.status == UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER']:
             return []
 
-    status = Column(TABLE_TYPES['status'], default=STATUSES['EMPLOYMENT_REQUESTED_BY_USER'], nullable=False)
+    status = Column(TABLE_TYPES['status'])
 
     position = Column(TABLE_TYPES['short_name'], default='')
 
@@ -451,6 +424,22 @@ class UserCompany(Base, PRBase):
     company = relationship(Company, back_populates='employments')
     user = relationship('User', back_populates='employments')
 
+    @staticmethod
+    def apply_user_to_company(company_id):
+        # TODO: OZ by OZ: reset rights after rejoining to company
+        employment = UserCompany.get_by_user_and_company_ids(company_id=company_id) or \
+                     UserCompany(user=g.user, company=Company.get(company_id))
+
+        if not employment.status or employment.status in UserCompany.DELETED_STATUSES:
+
+            employment.notifications_about_employment_changes(what_happened="request employment",
+                                                              rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
+
+            employment.status = UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER']
+            employment.save()
+
+        return employment
+
     def is_active(self):
         if self.status != UserCompany.STATUSES['EMPLOYMENT_ACTIVE']:
             return False
@@ -465,7 +454,6 @@ class UserCompany(Base, PRBase):
     def employees_grid_row(self):
         return {
             'id': self.id,
-            'disabled': not self.status_changes_by_company(),
             'status_changes': self.status_changes_by_company(),
             'employment': self.get_client_side_dict(
                 more_fields='company.name|id,user.full_name|address_email|address_phone'),
@@ -511,25 +499,27 @@ class UserCompany(Base, PRBase):
                     ~utils.db.query_filter(UserCompany, user_id=User.id, company_id=company_id).exists()).
                     filter(User.full_name.ilike("%" + searchtext + "%")).all()]
 
-
-    def notifications_employment_changes(self, what_happened, additional_dict={},
-                                         rights_at_company=None,
-                                         more_phrases_to_company=[],
-                                         more_phrases_to_user=[],
-                                         notification_type_to_company=None,
-                                         notification_type_to_user=None,
-                                         phrase_comment=None, except_to_user=None):
+    def notifications_about_employment_changes(self, what_happened, additional_dict={},
+                                               rights_at_company=None,
+                                               more_phrases_to_company=[],
+                                               more_phrases_to_user=[],
+                                               notification_type_to_company=None,
+                                               notification_type_to_user=None,
+                                               phrase_comment=None, except_to_user=None):
 
         from ..models.messenger import Socket, NOTIFICATION_TYPES
         from ..models.translate import Phrase
 
-        notification_type_to_user = NOTIFICATION_TYPES['COMPANY_ACTIVITY'] if notification_type_to_user is None else notification_type_to_user
+        notification_type_to_user = NOTIFICATION_TYPES[
+            'COMPANY_ACTIVITY'] if notification_type_to_user is None else notification_type_to_user
         notification_type_to_company = NOTIFICATION_TYPES[
             'EMPLOYEE_ACTIVITY'] if notification_type_to_company is None else notification_type_to_company
 
         except_to_user = [g.user] if except_to_user is None else except_to_user
-        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [more_phrases_to_company]
-        more_phrases_to_user = more_phrases_to_user if isinstance(more_phrases_to_user, list) else [more_phrases_to_user]
+        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [
+            more_phrases_to_company]
+        more_phrases_to_user = more_phrases_to_user if isinstance(more_phrases_to_user, list) else [
+            more_phrases_to_user]
 
         dict_main = {
             'company': self.company,
@@ -548,58 +538,26 @@ class UserCompany(Base, PRBase):
         dictionary = utils.dict_merge(dict_main, additional_dict)
 
         phrase_to_user = Phrase(
-            user_who_made_changes_phrase + "your %s at company %s just " % \
+            user_who_made_changes_phrase + "your %s at company %s just made following: " % \
             (utils.jinja.link('url_company_employees', 'employment', True),
              utils.jinja.link_company_profile()) + what_happened, dict=dictionary,
-            comment="to employee user on employment changes%s" % (phrase_comment, ))
+            comment="to employee user on employment changes%s" % (phrase_comment,))
 
-        messages_to_user = Socket.prepare_notifications(
+        Socket.prepare_notifications(
             [self.user],
             notification_type_to_user,
             [phrase_to_user] + more_phrases_to_user, except_to_user=except_to_user)
 
         phrase_to_employees_at_company = Phrase(
-            user_who_made_changes_phrase + "%s of user %s at your company %s just " % \
+            user_who_made_changes_phrase + "%s of user %s at your company %s just made following: " % \
             (utils.jinja.link('url_company_employees', 'employment', True),
              utils.jinja.link('url_employee_user_profile', 'employee.full_name'),
              utils.jinja.link_company_profile()) + what_happened, dict=dictionary,
-            comment="to company employees with rights  on employment changes %s%s" % (','.join(rights_at_company), phrase_comment))
+            comment="to company employees with rights  on employment changes %s%s" % (
+                ','.join(rights_at_company), phrase_comment))
 
-        messages_to_company = Socket.prepare_notifications(
+        Socket.prepare_notifications(
             self.company.get_user_with_rights(rights_at_company),
             notification_type_to_company,
             [phrase_to_employees_at_company] + more_phrases_to_company,
             except_to_user=set([self.user]).union(set(except_to_user)))
-
-        return lambda: utils.do_nothing(messages_to_user(), messages_to_company())
-
-
-@on_value_changed(UserCompany.status)
-def user_company_status_changed(target: UserCompany, new_status, old_status, action):
-    if new_status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE'] and not old_status:
-        return
-
-    if new_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_USER'],
-                      UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER'],
-                      UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_USER']] or \
-            (new_status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE'] and
-                     old_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_USER'],
-                                    UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_COMPANY']]):
-        changed_by = 'employee'
-
-    elif new_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_COMPANY'],
-                        UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_COMPANY'],
-                        UserCompany.STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']] or \
-            (new_status == UserCompany.STATUSES['EMPLOYMENT_ACTIVE'] and
-                     old_status in [UserCompany.STATUSES['EMPLOYMENT_SUSPENDED_BY_COMPANY'],
-                                    UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER']]):
-        changed_by = 'company administrator'
-
-    if changed_by:
-        target.notifications_employment_changes(
-            what_happened="changed status from %s to %s in behalf of %s" % (old_status, new_status, changed_by),
-            rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)()
-        return
-    else:
-        raise Exception(action,
-                        "action %s: status changed from %s to %s is not allowed" % (action, old_status, new_status))

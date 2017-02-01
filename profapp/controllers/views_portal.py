@@ -19,7 +19,9 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, RequireMemb
     UserIsEmployee, UserIsActive, UserIsEmployeeAtPortalOwner
 from ..models.tag import Tag
 from ..models.translate import TranslateTemplate
+from ..models.messenger import NOTIFICATION_TYPES
 from ..models.exceptions import UnauthorizedUser
+from ..models.permissions import RIGHT_AT_COMPANY
 
 
 @portal_bp.route('/create/company/<string:company_id>/', methods=['GET'])
@@ -37,7 +39,6 @@ def profile(company_id=None, portal_id=None):
 
 @portal_bp.route('/create/company/<string:company_id>/', methods=['OK'])
 @portal_bp.route('/<string:portal_id>/profile/', methods=['OK'])
-# @check_right(EditPortalRight, ['company_id'])
 def profile_load(json, company_id=None, portal_id=None):
     action = g.req('action', allowed=['load', 'save', 'validate'])
     layouts = utils.db.query_filter(PortalLayout).all()
@@ -127,8 +128,14 @@ def profile_load(json, company_id=None, portal_id=None):
 
             if not portal_id:
                 g.db.add(portal)
-                portal.company_memberships[0].current_membership_plan_issued = portal.company_memberships[0].create_issued_plan()
+                portal.company_memberships[0].current_membership_plan_issued = portal.company_memberships[
+                    0].create_issued_plan()
                 portal.company_memberships[0].current_membership_plan_issued.start()
+                portal.own_company.notifications_company_changes(
+                    notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'],
+                    what_happened="portal %s was created" % (utils.jinja.link_external()),
+                    rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
+                    additional_dict={'portal': portal})
 
             portal.save()
 
@@ -336,7 +343,25 @@ def membership_change_status(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
 
     if utils.find_by_key(membership.status_changes_by_portal(), 'status', new_status)['enabled'] is True:
+        old_status = membership.status
         membership.status = new_status
+
+        membership.send_notifications_about_employment_changes(
+            what_happened="changed status from %s to %s by portal" % (old_status, new_status),)
+
+        if new_status in MemberCompanyPortal.DELETED_STATUSES:
+            membership.current_membership_plan_issued.stop()
+
+        elif new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
+                not membership.current_membership_plan_issued.started_tm:
+            membership.current_membership_plan_issued.start()
+
+            membership.send_notifications_about_employment_changes(
+                what_happened='new plan `%(new_plan_name)s` was started on membership activation by portal',
+                additional_dict={'new_plan_name': membership.current_membership_plan_issued.name})
+
+
+
         return membership.company_member_grid_row()
     else:
         raise UnauthorizedUser()
@@ -348,26 +373,22 @@ def companies_members(portal_id):
     portal = Portal.get(portal_id)
     return render_template('portal/companies_members.html',
                            portal=portal,
-                           all_available_rights={
-                               MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_PUBLISH: 'publish publication',
-                               MemberCompanyPortal.RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH: 'unpublish publication'
-                           })
-
+                           employment=UserCompany.get_by_user_and_company_ids(
+                               company_id=portal.company_owner_id).get_client_side_dict()
+                           )
 
 @portal_bp.route('/<string:portal_id>/companies_members/', methods=['OK'])
 @check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
 def companies_members_load(json, portal_id):
     portal = Portal.get(portal_id)
-    hide_statuses = [MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY'],
-                     MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']]
     subquery = Company.subquery_company_partners(portal.company_owner_id, json.get('filter'),
-                                                 filters_exсept=hide_statuses)
+                                                 filters_exсept=MemberCompanyPortal.DELETED_STATUSES)
     memberships, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [membership.company_member_grid_row() for membership in memberships],
             'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
                              (k, v) in {'member.status': [{'value': status, 'label': status} for status in
                                                           MembersRights.STATUSES]}.items()},
-            'grid_filters_except': list(hide_statuses),
+            'grid_filters_except': MemberCompanyPortal.DELETED_STATUSES,
             'total': count,
             'page': current_page}
 

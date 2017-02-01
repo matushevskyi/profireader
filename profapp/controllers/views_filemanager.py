@@ -13,8 +13,9 @@ from profapp.models.files import File, YoutubeApi
 from profapp import utils
 from .blueprints_declaration import filemanager_bp
 from .request_wrapers import check_right
-from ..models.company import Company, RIGHT_AT_COMPANY, MemberCompanyPortal
+from ..models.company import Company, MemberCompanyPortal
 from ..models.rights import FilemanagerRights, UserIsActive
+from ..models.permissions import RIGHT_AT_COMPANY
 
 
 def parent_folder(func):

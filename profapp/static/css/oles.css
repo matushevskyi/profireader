@@ -508,7 +508,15 @@
     cursor: default;
 }
 
+.inactive.link {
+    cursor: default;
+}
+
 .disabled .link {
+    cursor: default;
+}
+
+.inactive .link {
     cursor: default;
 }
 
@@ -520,7 +528,11 @@
     text-decoration: inherit;
 }
 
-.disabled.link:hover span {
+.inactive .link:hover span {
+    text-decoration: inherit;
+}
+
+.inactive.link:hover span {
     text-decoration: inherit;
 }
 
