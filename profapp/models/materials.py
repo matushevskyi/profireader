@@ -139,17 +139,6 @@ class Material(Base, PRBase, PRElasticDocument):
             companies[article.company.id] = article.company.name
         return companies
 
-        # def set_image_client_side_dict(self, client_data):
-        #     if client_data['selected_by_user']['type'] == 'preset':
-        #         client_data['selected_by_user'] = {'type': 'none'}
-        #     if not self.company:
-        #         folder_id = Company.get(self.company_id).system_folder_file_id
-        #     else:
-        #         folder_id = self.company.system_folder_file_id
-        #
-        #     FileImg.set_image_cropped_file(self.illustration_image_cropped, self.image_cropping_properties(),
-        #                                    client_data, folder_id)
-        #     return self
 
     @classmethod
     def __declare_last__(cls):
@@ -525,61 +514,4 @@ class Publication(Base, PRBase, PRElasticDocument):
             'liked_count': self.liked_count()
         }
 
-# TODO: OZ by OZ: cjange it to explicity function call
-@on_value_changed(Publication.status)
-def publication_status_changed(target: Publication, old_status, new_status, action):
-    from ..models.translate import Phrase
-    from ..models.portal import MemberCompanyPortal
-    from ..models.permissions import RIGHT_AT_COMPANY
 
-
-
-
-    portal_division = target.portal_division if target.portal_division else PortalDivision.get(
-        target.portal_division_id)
-    portal = portal_division.portal
-    material = Material.get(target.material_id)
-
-    right_at_company = None
-    right_at_portal = None
-    if new_value == Publication.STATUSES['SUBMITTED'] and not old_value:
-        right_at_company = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-        right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-    elif new_value == Publication.STATUSES['PUBLISHED']:
-        right_at_company = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-        right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-    elif old_value == Publication.STATUSES['PUBLISHED']:
-        right_at_company = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-        right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-
-    target.notifications_about_employment_changes(
-        what_happened="changed status of publication from %s to %s in behalf of %s" % (old_status, new_status, changed_by),
-        rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)()
-
-    if right_at_company or right_at_portal:
-        membership = MemberCompanyPortal.get_by_portal_id_company_id(target.portal_division.portal_id,
-                                                                     target.material.company_id)
-        return membership.send_notifications_about_employment_changes(
-            "changed status of %%(url_external_publication)s from %s to %s at division `%%(division_name)s`" %
-            (old_value, new_value),
-            additional_dict={
-                'url_external_publication': portal.host + url_for('front.article_details', publication_id=target.id,
-                                                                  publication_title=material.title),
-                'division_name': portal_division.nameid_url(target.id, 'portal.publications', portal_id=portal.id)
-            },
-            rights_at_company=right_at_company,
-            more_phrases_to_company=Phrase("See company`s %(url_company_materials)s", dict={
-                'url_company_materials': utils.jinja.grid_url(material.id, 'company.materials',
-                                                              company_id=material.company_id)}),
-            right_at_portal=right_at_portal,
-            more_phrases_to_portal=Phrase("See portal`s %(url_portal_publications)s", dict={
-                'url_portal_publications': utils.jinja.grid_url(target.id, 'portal.publications', portal_id=portal.id)})
-        )
-    else:
-        return utils.do_nothing()

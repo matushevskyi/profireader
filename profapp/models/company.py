@@ -3,7 +3,6 @@ from flask import g
 from flask import url_for
 from sqlalchemy import Column, ForeignKey, and_, or_, desc, text
 from sqlalchemy.orm import relationship
-from profapp import on_value_changed
 from .elastic import PRElasticDocument
 from .files import FileImg, FileImgDescriptor
 from .files import YoutubePlaylist
@@ -11,6 +10,7 @@ from .pr_base import PRBase, Base, Grid
 from .users import User
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES
+from ..constants.NOTIFICATIONS import EmploymentChange
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from profapp import utils
 
@@ -166,6 +166,7 @@ class Company(Base, PRBase, PRElasticDocument):
 
     # TODO: VK by OZ I think this have to be moved to __init__ and duplication check to validation
     def setup_new_company(self):
+        from profapp.models.permissions import RIGHT_AT_COMPANY
         """Add new company to company table and make all necessary relationships,
         if company with this name already exist raise DublicateName"""
         #        if db(Company, name=self.name).count():
@@ -339,8 +340,8 @@ class Company(Base, PRBase, PRElasticDocument):
         return lambda: utils.do_nothing()
 
 
-class UserCompany(Base, PRBase):
-    from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
+class UserCompany(Base, PRBase, EmploymentChange):
+
 
     __tablename__ = 'user_company'
 
@@ -362,6 +363,8 @@ class UserCompany(Base, PRBase):
     DELETED_STATUSES = [STATUSES['EMPLOYMENT_CANCELED_BY_USER'], STATUSES['EMPLOYMENT_CANCELED_BY_COMPANY']]
 
     def status_changes_by_company(self):
+        from ..models.permissions import RIGHT_AT_COMPANY
+
         r = UserCompany.get_by_user_and_company_ids(company_id=self.company_id).rights[
             RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE]
 
@@ -426,15 +429,13 @@ class UserCompany(Base, PRBase):
 
     @staticmethod
     def apply_user_to_company(company_id):
+        from profapp.models.permissions import RIGHT_AT_COMPANY
         # TODO: OZ by OZ: reset rights after rejoining to company
         employment = UserCompany.get_by_user_and_company_ids(company_id=company_id) or \
                      UserCompany(user=g.user, company=Company.get(company_id))
 
         if not employment.status or employment.status in UserCompany.DELETED_STATUSES:
-
-            employment.notifications_about_employment_changes(what_happened="request employment",
-                                                              rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
-
+            employment.NOTIFY_USER_APPLIED()
             employment.status = UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER']
             employment.save()
 
@@ -499,65 +500,74 @@ class UserCompany(Base, PRBase):
                     ~utils.db.query_filter(UserCompany, user_id=User.id, company_id=company_id).exists()).
                     filter(User.full_name.ilike("%" + searchtext + "%")).all()]
 
-    def notifications_about_employment_changes(self, what_happened, additional_dict={},
-                                               rights_at_company=None,
+
+    from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
+
+    def _send_notification_about_employment_change(self, rights_at_company, text, dictionary={},
                                                more_phrases_to_company=[],
                                                more_phrases_to_user=[],
-                                               notification_type_to_company=None,
-                                               notification_type_to_user=None,
-                                               phrase_comment=None, except_to_user=None):
+                                               notification_type_to_company=NOTIFICATION_TYPES['EMPLOYMENT_COMPANY_ACTIVITY'],
+                                               notification_type_to_user=NOTIFICATION_TYPES['EMPLOYMENT_USER_ACTIVITY'],
+                                                   comment=None, except_to_user=None):
 
-        from ..models.messenger import Socket, NOTIFICATION_TYPES
         from ..models.translate import Phrase
 
-        notification_type_to_user = NOTIFICATION_TYPES[
-            'COMPANY_ACTIVITY'] if notification_type_to_user is None else notification_type_to_user
-        notification_type_to_company = NOTIFICATION_TYPES[
-            'EMPLOYEE_ACTIVITY'] if notification_type_to_company is None else notification_type_to_company
+        except_to_user = utils.set_default(except_to_user, [g.user])
+        phrase_comment = (' when ' + comment) if comment is None else ''
 
-        except_to_user = [g.user] if except_to_user is None else except_to_user
+
         more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [
             more_phrases_to_company]
+
         more_phrases_to_user = more_phrases_to_user if isinstance(more_phrases_to_user, list) else [
             more_phrases_to_user]
 
-        dict_main = {
+        grid_url = lambda endpoint, **kwargs: utils.jinja.grid_url(self.id, endpoint=endpoint, **kwargs)
+
+        default_dict = {
             'company': self.company,
             'employee': self.user,
             'url_company_profile': url_for('company.profile', company_id=self.company_id),
-            'url_company_employees': utils.jinja.grid_url(self.id, 'company.employees', company_id=self.company_id),
+            'url_company_employees': grid_url('company.employees', company_id=self.company_id),
+            # 'url_user_employers': grid_url('user.employers', user_id=self.user_id),
             'url_employee_user_profile': url_for('user.profile', user_id=self.user_id),
         }
 
         if g.user:
-            dict_main['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
+            default_dict['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
 
-        phrase_comment = '' if phrase_comment is None else (' when ' + phrase_comment)
+        user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at " if \
+            g.user else 'At '
 
-        user_who_made_changes_phrase = ("User " + utils.jinja.link_user_profile() + " at ") if g.user else 'At '
-        dictionary = utils.dict_merge(dict_main, additional_dict)
+        all_dictionary_data = utils.dict_merge(default_dict, dictionary)
+
+        phrase_to_employees_at_company = Phrase(
+            user_who_made_changes_phrase + "%s of user %s at your company %s just happened following: " % \
+            (utils.jinja.link('url_company_employees', 'employment', True),
+             utils.jinja.link('url_employee_user_profile', 'employee.full_name'),
+             utils.jinja.link_company_profile()) + text, dict=all_dictionary_data,
+            comment="to company employees with rights %s%s" % (
+                ','.join(rights_at_company), phrase_comment))
 
         phrase_to_user = Phrase(
             user_who_made_changes_phrase + "your %s at company %s just made following: " % \
             (utils.jinja.link('url_company_employees', 'employment', True),
-             utils.jinja.link_company_profile()) + what_happened, dict=dictionary,
+            utils.jinja.link_company_profile()) +
+            text, dict=all_dictionary_data,
             comment="to employee user on employment changes%s" % (phrase_comment,))
+
+        from ..models.messenger import Socket
+
+        Socket.prepare_notifications(
+            self.company.get_user_with_rights(rights_at_company),
+            notification_type_to_company,
+            [phrase_to_employees_at_company] + more_phrases_to_company, except_to_user=except_to_user)
 
         Socket.prepare_notifications(
             [self.user],
             notification_type_to_user,
             [phrase_to_user] + more_phrases_to_user, except_to_user=except_to_user)
 
-        phrase_to_employees_at_company = Phrase(
-            user_who_made_changes_phrase + "%s of user %s at your company %s just made following: " % \
-            (utils.jinja.link('url_company_employees', 'employment', True),
-             utils.jinja.link('url_employee_user_profile', 'employee.full_name'),
-             utils.jinja.link_company_profile()) + what_happened, dict=dictionary,
-            comment="to company employees with rights  on employment changes %s%s" % (
-                ','.join(rights_at_company), phrase_comment))
+        return lambda: utils.do_nothing()
 
-        Socket.prepare_notifications(
-            self.company.get_user_with_rights(rights_at_company),
-            notification_type_to_company,
-            [phrase_to_employees_at_company] + more_phrases_to_company,
-            except_to_user=set([self.user]).union(set(except_to_user)))
+

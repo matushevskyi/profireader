@@ -346,8 +346,7 @@ def membership_change_status(json, membership_id, new_status):
         old_status = membership.status
         membership.status = new_status
 
-        membership.send_notifications_about_employment_changes(
-            what_happened="changed status from %s to %s by portal" % (old_status, new_status),)
+        membership.NOTIFY_STATUS_CHANGED_BY_PORTAL(new_status=new_status, old_status=old_status)
 
         if new_status in MemberCompanyPortal.DELETED_STATUSES:
             membership.current_membership_plan_issued.stop()
@@ -356,11 +355,10 @@ def membership_change_status(json, membership_id, new_status):
                 not membership.current_membership_plan_issued.started_tm:
             membership.current_membership_plan_issued.start()
 
-            membership.send_notifications_about_employment_changes(
-                what_happened='new plan `%(new_plan_name)s` was started on membership activation by portal',
-                additional_dict={'new_plan_name': membership.current_membership_plan_issued.name})
+            membership.NOTIFY_PLAN_STARTED_BY_MEMBERSHIP_ACTIVATION_BY_PORTAL(
+                new_plan_name=membership.current_membership_plan_issued.name)
 
-
+        membership.save()
 
         return membership.company_member_grid_row()
     else:

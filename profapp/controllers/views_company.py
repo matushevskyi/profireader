@@ -138,12 +138,8 @@ def employees_load(json, company_id):
                   permissions=employee_have_right(RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE))
 def change_employment_status_by_company(json, company_id, employment_id, new_status):
     employment = UserCompany.get(employment_id)
-
     if utils.find_by_key(employment.status_changes_by_company(), 'status', new_status)['enabled'] is True:
-
-        employment.notifications_about_employment_changes(what_happened="changed status of employment from %s to %s"
-                                                                        % (employment.status, new_status),
-                                                          rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
+        employment.NOTIFY_STATUS_CHANGED_BY_COMPANY(new_status=new_status, old_status=employment.status)
         employment.status = new_status
         return employment.employees_grid_row()
     else:
@@ -249,12 +245,22 @@ def change_membership_status_by_company(json, membership_id, new_status):
     if utils.find_by_key(membership.status_changes_by_company(), 'status', new_status)['enabled'] is True:
 
         old_status = membership.status
+        membership.status = new_status
+
+        membership.NOTIFY_STATUS_CHANGED_BY_COMPANY(new_status=membership.status, old_status=old_status)
 
         if new_status in MemberCompanyPortal.DELETED_STATUSES:
             membership.current_membership_plan_issued.stop()
-        membership.status = new_status
+
+        elif new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
+                not membership.current_membership_plan_issued.started_tm:
+            membership.current_membership_plan_issued.start()
+
+            membership.NOTIFY_PLAN_STARTED_BY_MEMBERSHIP_ACTIVATION_BY_COMPANY(
+                new_plan_name=membership.current_membership_plan_issued.name)
+
         membership.save()
-        membership.NOTIFY_STATUS_CHANGED_BY_COMPANY(new_status=membership.status, old_status=old_status)
+
         return membership.portal_memberee_grid_row()
     else:
         raise UnauthorizedUser()

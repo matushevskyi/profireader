@@ -523,7 +523,6 @@ class MembershipPlanIssued(Base, PRBase):
 
         from ..models.materials import Publication
         from ..models.translate import TranslateTemplate, Phrase
-        from ..models.permissions import RIGHT_AT_COMPANY
 
         old_count = self.member_company_portal.get_publication_count()
         for vis in Publication.VISIBILITIES:
@@ -537,16 +536,6 @@ class MembershipPlanIssued(Base, PRBase):
 
         phrases_changes = []
         phrases_remain = []
-        dictionary = {}
-
-        # use Phrase class
-
-        def append_to_phrases(append_to, phrase, add_dict):
-            dictionary.update(add_dict)
-            return [phrase % tuple(add_dict.keys)]
-
-        # def translate_dict(name, default=None, template=''):
-        #     return {name: TranslateTemplate.translate_and_substitute(template, name, phrase_default=default)}
 
         visibility_translation = {vis: TranslateTemplate.translate_and_substitute(
             '', '__PUBLICATION_VISIBILITY_' + vis, phrase_default=vis) for vis in Publication.VISIBILITIES}
@@ -570,29 +559,15 @@ class MembershipPlanIssued(Base, PRBase):
                     dict={'count': new_count['by_visibility_status'][vis]['HOLDED'],
                           'visibility': visibility_translation[vis]})
 
-        # if len(phrases_changes):
-        #     phrases_changes = Phrase("new plan was applied for membership and changes of publication visibility was made") + \
-        #                       phrases_changes
-
-        # if len(phrases_remain):
-        #     phrases_remain = Phrase("despite plan was applied for company some publication are still holded") + \
-        #                      phrases_remain
-
         if phrases_changes or phrases_remain:
-            self.member_company_portal.send_notifications_about_employment_changes(
-                what_happened=
-                "New plan was applied for membership and changes of publication visibility was made"
-                if phrases_changes else
-                "New plan was applied for membership and some publication are still holded",
-                rights_at_company=[RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                                   RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
-                                   RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION],
-                rights_at_portal=[RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                                  RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
-                                  RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES],
-                more_phrases_to_portal=phrases_changes + phrases_remain,
-                more_phrases_to_company=phrases_changes + phrases_remain,
-                phrase_comment='plan become active and some publication become holded/unholded or remain holded')
+            if phrases_changes:
+                self.member_company_portal.NOTIFY_PUBLICATIN_VISIBILOITY_CHANGED_BY_PLAN_MEMBERSHIP_CHANGE(
+                    more_phrases_to_portal=phrases_changes + phrases_remain,
+                    more_phrases_to_company=phrases_changes + phrases_remain)
+            else:
+                self.member_company_portal.NOTIFY_PUBLICATIN_STILL_HOLDED_DESPITE_BY_PLAN_MEMBERSHIP_CHANGE(
+                    more_phrases_to_portal=phrases_changes + phrases_remain,
+                    more_phrases_to_company=phrases_changes + phrases_remain)
 
     def stop(self, user=None):
         self.stopped_tm = datetime.datetime.utcnow()
@@ -877,8 +852,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, MembershipChange):
 
         if not membership.status or membership.status in MemberCompanyPortal.DELETED_STATUSES:
             membership.status = MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']
-            membership.send_notifications_about_employment_changes(what_happened="requested membership")
-
+            membership.NOTIFY_MEMBERSHIP_REQUESTED_BY_COMPANY()
             membership.current_membership_plan_issued = membership.create_issued_plan()
             membership.save()
 
@@ -932,7 +906,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, MembershipChange):
                 self.requested_membership_plan_issued = None
                 self.request_membership_plan_issued_immediately = False
                 self.NOTIFY_PLAN_STARTED_BY_COMPANY(new_plan_name=self.current_membership_plan_issued.name,
-                                                          old_plan_name=old_plan_name)
+                                                    old_plan_name=old_plan_name)
             else:
                 if requested_plan_id is not True:
                     to_delete = self.requested_membership_plan_issued
@@ -969,7 +943,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, MembershipChange):
                     new_plan_name=self.current_membership_plan_issued.name, old_plan_name=old_plan_name)
             else:
                 self.NOTIFY_PLAN_STARTED_BY_PORTAL(new_plan_name=self.current_membership_plan_issued.name,
-                                                         old_plan_name=old_plan_name)
+                                                   old_plan_name=old_plan_name)
         else:
             if requested_plan_id is True:
                 self.NOTIFY_PLAN_CONFIRMED_BY_PORTAL(new_plan_name=self.requested_membership_plan_issued.name,
@@ -981,8 +955,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, MembershipChange):
                                                      date_to_start=self.current_membership_plan_issued.calculated_stopping_tm)
 
             self.requested_membership_plan_issued.confirmed = True
-
-
 
         self.save()
 
@@ -1050,14 +1022,14 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, MembershipChange):
 
         return ret
 
-    from profapp.models.messenger import NOTIFICATION_TYPES
+    from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
     def _send_notification_about_membership_change(
-            self, text, comment='', dictionary={},
-            right_at_company=RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION,
-            notification_type_to_company_employees=NOTIFICATION_TYPES['MEMBER_COMPANY_ACTIVITY'],
-            right_at_portal=RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-            notification_type_to_portal_employees=NOTIFICATION_TYPES['MEMBEREE_PORTAL_ACTIVITY'],
+            self, text, dictionary={}, comment='',
+            rights_at_company=RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION,
+            notification_type_to_company_employees=NOTIFICATION_TYPES['MEMBERSHIP_PORTAL_ACTIVITY'],
+            rights_at_portal=RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
+            notification_type_to_portal_employees=NOTIFICATION_TYPES['MEMBERSHIP_COMPANY_ACTIVITY'],
             more_phrases_to_company=[], more_phrases_to_portal=[], except_to_user=None):
 
         from ..models.messenger import Socket
@@ -1096,7 +1068,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, MembershipChange):
              utils.jinja.link_company_profile(),
              utils.jinja.link_external()) + text, dict=all_dictionary_data,
             comment="to member company employees with rights %s%s" % (
-                ','.join(right_at_company), phrase_comment))
+                ','.join(rights_at_company), phrase_comment))
 
         phrase_to_employees_at_portal = Phrase(
             user_who_made_changes_phrase + "%s of company %s in your portal %s just made following: " % \
@@ -1105,15 +1077,15 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, MembershipChange):
              utils.jinja.link_external()) +
             text, dict=all_dictionary_data,
             comment="to portal owner company employees with rights %s%s" % (
-                ','.join(right_at_portal), phrase_comment))
+                ','.join(rights_at_portal), phrase_comment))
 
         Socket.prepare_notifications(
-            self.company.get_user_with_rights(right_at_company),
+            self.company.get_user_with_rights(rights_at_company),
             notification_type_to_company_employees,
             [phrase_to_employees_at_company] + more_phrases_to_company, except_to_user=except_to_user)
 
         Socket.prepare_notifications(
-            self.portal.own_company.get_user_with_rights(right_at_portal),
+            self.portal.own_company.get_user_with_rights(rights_at_portal),
             notification_type_to_portal_employees,
             [phrase_to_employees_at_portal] + more_phrases_to_portal, except_to_user=except_to_user)
 

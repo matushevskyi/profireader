@@ -43,11 +43,9 @@ if __name__ == '__main__':
                               ['starting requested plan', membership.requested_membership_plan_issued.id])
                         membership.current_membership_plan_issued = membership.requested_membership_plan_issued
                         membership.current_membership_plan_issued.start()
-                        membership.member_company_portal.notifications_about_membership_changes(
-                            what_happened='old plan `%(old_plan_name)s` was expired and `%(new_plan_name)s` started',
-                            additional_dict={'old_plan_name': old_plan_name,
-                                             'new_plan_name': membership.current_membership_plan_issued.name})
-
+                        membership.member_company_portal.NOTIFY_PLAN_STARTED_BY_CRON(
+                            old_plan_name=old_plan_name,
+                            new_plan_name=membership.current_membership_plan_issued.name)
                         membership.requested_membership_plan_issued = None
                         membership.request_membership_plan_issued_immediately = False
                     else:
@@ -57,19 +55,18 @@ if __name__ == '__main__':
                             membership.request_membership_plan_issued_immediately = True
                             membership.current_membership_plan_issued = membership.create_issued_plan()
                             membership.current_membership_plan_issued.start()
-                            membership.member_company_portal.notifications_about_membership_changes(
-                                what_happened='old plan `%(old_plan_name)s` was expired but new requested `%(requested_plan_name)s` not confirmed so default plan `%(default_plan_name)s` was started',
-                                additional_dict={'old_plan_name': old_plan_name,
-                                                 'requested_plan_name': membership.requested_membership_plan_issued.name,
-                                                 'default_plan_name': membership.current_membership_plan_issued.name})
+                            membership.member_company_portal.NOTIFY_PLAN_EXPIRED_BUT_NEW_NOT_CONFIRMED(
+                                old_plan_name=old_plan_name,
+                                requested_plan_name=membership.requested_membership_plan_issued.name,
+                                default_plan_name=membership.current_membership_plan_issued.name)
                         else:
                             g.log('change_expired_plan', 'no new plan requested. starting default plan')
                             membership.current_membership_plan_issued = membership.create_issued_plan()
                             membership.current_membership_plan_issued.start()
-                            membership.member_company_portal.notifications_about_membership_changes(
-                                what_happened='old plan `%(old_plan_name)s` was expired and no new plan was requested, so default plan `%(default_plan_name)s` was started',
-                                additional_dict={'old_plan_name': old_plan_name,
-                                                 'default_plan_name': membership.current_membership_plan_issued.name})
+                            membership.member_company_portal.NOTIFY_PLAN_EXPIRED_BUT_NEW_NOT_REQUESTED(
+                                old_plan_name=old_plan_name,
+                                requested_plan_name=membership.requested_membership_plan_issued.name,
+                                default_plan_name=membership.current_membership_plan_issued.name)
                             membership.requested_membership_plan_issued = None
                             membership.request_membership_plan_issued_immediately = False
 
