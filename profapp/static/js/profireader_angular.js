@@ -604,7 +604,6 @@ var update_last_acessed_phrases = [];
 var update_last_acessed_phrases_timer = null;
 
 function pr_dictionary(phrase, dictionary, allow_html, scope, $ok, phrase_default, phrase_comment) {
-
     allow_html = allow_html ? allow_html : '';
     if (typeof phrase !== 'string') {
         return '';

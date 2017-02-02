@@ -26,11 +26,18 @@ app = create_app(apptype='profi', config='config.CommandLineConfig')
 
 ctx = app.app_context()
 
+def log(*args, **kwargs):
+    # print(args)
+    # print(kwargs)
+    pass
+
 with controlled_execution():
-    print('connecting to database')
-    prepare_connections(app)(echo=True)
+    log('connecting to database')
+    prepare_connections(app)(echo=False)
 
 sio = socketio.Server(cookie='prsio')
+
+
 
 
 def append_create(dict, index, value):
@@ -82,7 +89,8 @@ def get_unread(user_id, chatroom_ids=[]):
 @sio.on('connect')
 def connect(sid, environ):
     user_id = check_user_id(environ)
-    print('connect', user_id)
+    log('websocked CONNECT sid, user_id = %s, %s' % (sid, user_id))
+    log(connected_user_id_sids)
     if not user_id:
         return False
 
@@ -93,7 +101,8 @@ def connect(sid, environ):
 @sio.on('disconnect')
 def disconnect(sid):
     user_id = connected_sid_user_id[sid]
-    print('disconnect', sid)
+    log('websocked DISCONNECT sid, user_id = %s, %s' % (sid, user_id))
+    log(connected_user_id_sids)
     remove_delete(connected_user_id_sids, user_id, sid)
     # remove_delete(connected_chatroom_id_sids, chatroom_id, sid)
     del connected_sid_user_id[sid]
@@ -101,9 +110,10 @@ def disconnect(sid):
 
 @sio.on('send_message')
 def send_message(sid, event_data):
+    log('send_message', sid, event_data)
     with controlled_execution():
         user_id = connected_sid_user_id[sid]
-        print('send_message', user_id)
+        log('send_message', user_id)
         contact = Contact.get(event_data['chatroom_id'])
 
         message = Message(contact_id=contact.id, content=event_data['content'], from_user_id=user_id)
@@ -129,6 +139,7 @@ def send_message(sid, event_data):
 
 @sio.on('request_status_changed')
 def send_contact_requested(sid, mes_data):
+    log('send_contact_requested', sid, mes_data)
     with controlled_execution():
         from profapp.models.users import User
         usr = User.get(mes_data['to_user_id'])
@@ -142,6 +153,7 @@ def send_contact_requested(sid, mes_data):
 
 @sio.on('send_notification')
 def send_notification(sid, notification_data):
+    log('send_notification', sid, notification_data)
     with controlled_execution():
         from profapp.models.users import User
         usr = User.get(notification_data['to_user_id'])
@@ -162,12 +174,13 @@ def send_notification(sid, notification_data):
 
 @sio.on('read_message')
 def read_message(sid, message_id):
+    log('read_message', sid, message_id)
     with controlled_execution():
         message = Message.get(message_id)
         contact = Contact.get(message.contact_id)
         if message.read_tm is None:
             another_user_to_notify_unread = contact.user1_id if contact.user2_id == message.from_user_id else contact.user2_id
-            print("SELECT message_set_read('%s', ARRAY ['%s']);" % (message.contact_id, message.id))
+            log("SELECT message_set_read('%s', ARRAY ['%s']);" % (message.contact_id, message.id))
             g.db().execute("SELECT message_set_read('%s', ARRAY ['%s']);" % (message.contact_id, message.id))
             unread = get_unread(another_user_to_notify_unread, [contact.id])
             for sid_for_receiver in connected_user_id_sids[another_user_to_notify_unread]:
@@ -178,10 +191,11 @@ def read_message(sid, message_id):
 
 @sio.on('read_notification')
 def read_notification(sid, notification_id):
+    log('read_notification', sid, notification_id)
     with controlled_execution():
         notification = Notification.get(notification_id)
         if notification.read_tm is None:
-            print("SELECT notification_set_read(ARRAY ['%s']);" % (notification.id,))
+            log("SELECT notification_set_read(ARRAY ['%s']);" % (notification.id,))
             g.db().execute("SELECT notification_set_read(ARRAY ['%s']);" % (notification.id,))
             unread = get_unread(notification.to_user_id)
             for sid_for_receiver in connected_user_id_sids[notification.to_user_id]:
@@ -190,9 +204,9 @@ def read_notification(sid, notification_id):
 
 @sio.on('load_messages')
 def load_messages(sid, event_data):
+    log('load_messages', sid, event_data)
     with controlled_execution():
         # time.sleep(2)  # delays for 5 seconds
-        print('load_messages', event_data)
         user_id = connected_sid_user_id[sid]
         contact = Contact.get(event_data['chat_room_id'])
         older = event_data.get('older', False)
@@ -213,13 +227,13 @@ def load_messages(sid, event_data):
 
 @sio.on('load_notifications')
 def load_notifications(sid, event_data):
+    log('load_notifications', sid, event_data)
     with controlled_execution():
-        print('load_notifications', event_data)
         user_id = connected_sid_user_id[sid]
 
         older = event_data.get('older', False)
         ret = Notification.get_notifications(50, user_id, older, event_data.get('first_id' if older else 'last_id', None))
-        print(ret)
+        log(ret)
 
         read_ids = [n.id for n in ret['items'] if not n.read_tm]
         if len(read_ids):
@@ -235,6 +249,7 @@ def load_notifications(sid, event_data):
 
 @sio.on('insert_translation')
 def insert_translation(sid, tramslation_data):
+    log('insert_translation', sid, tramslation_data)
     with controlled_execution():
         import datetime
         from profapp.models.translate import TranslateTemplate
@@ -248,6 +263,7 @@ def insert_translation(sid, tramslation_data):
 
 @sio.on('update_translation')
 def update_translation(sid, tramslation_id_and_data):
+    log('update_translation', sid, tramslation_id_and_data)
     import datetime
     # TODO: OZ by OZ change ac without changing md (md changed by trigger)
     # ac updated without changing md

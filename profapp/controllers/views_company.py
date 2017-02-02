@@ -248,14 +248,13 @@ def change_membership_status_by_company(json, membership_id, new_status):
 
     if utils.find_by_key(membership.status_changes_by_company(), 'status', new_status)['enabled'] is True:
 
-        membership.send_notifications_about_employment_changes(
-            what_happened="changed status from %s to %s by company" % (membership.status, new_status), )
+        old_status = membership.status
 
         if new_status in MemberCompanyPortal.DELETED_STATUSES:
             membership.current_membership_plan_issued.stop()
-
         membership.status = new_status
         membership.save()
+        membership.NOTIFY_STATUS_CHANGED_BY_COMPANY(new_status=membership.status, old_status=old_status)
         return membership.portal_memberee_grid_row()
     else:
         raise UnauthorizedUser()

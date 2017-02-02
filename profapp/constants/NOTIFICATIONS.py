@@ -1,20 +1,20 @@
+class Notify:
+    def _call_send_notification_about_membership_change(self, substitute_now={}):
+        def getfunc():
+            import inspect, gc
+            referrers = inspect.currentframe().f_back.f_back
+            function = [f for f in gc.get_referrers(referrers.f_code) if type(f) is type(lambda: None)][0]
+            arguments = {k: v for k, v in referrers.f_locals.items() if k != 'self'}
 
-#
-#
-#
-# class MembershipChanged:
-#     from profapp.models.portal import MemberCompanyPortal
-#
-#
-#     def PLAN_REQUESTED_BY_COMPANY(selfm):
-#         """ requested new plan that can`t start automatically and must be confirmed
-#                     """
-#         return MemberCompanyPortal.send()NOTIFICATIONS.EmploymentChanged('requested new plan `%(new_plan_name)s` by company'). \
-#             _send({'new_plan_name': new_plan_name}, more_phrases_to_company, more_phrases_to_portal, except_to_user)
+            return function, arguments
+
+        f, kwargs = getfunc()
+        return self._send_notification_about_membership_change(text=f.__doc__ % substitute_now,
+                                                               dictionary={k: v for k, v in kwargs.items() if
+                                                                           k not in substitute_now})
 
 
-class MembershipChange:
-
+class MembershipChange(Notify):
     def NOTIFY_PLAN_REQUESTED_BY_COMPANY(self, new_plan_name):
         """requested new plan `%(new_plan_name)s` by company"""
         return self._call_send_notification_about_membership_change()
@@ -47,15 +47,7 @@ class MembershipChange:
         """scheduled plan `%(new_plan_name)s` was started instead of `%(old_plan_name)s` by cron"""
         return self._call_send_notification_about_membership_change()
 
-    def _call_send_notification_about_membership_change(self):
-        def getfunc():
-            import inspect, gc
-            referrers = inspect.currentframe().f_back.f_back
-            function = [f for f in gc.get_referrers(referrers.f_code) if type(f) is type(lambda: None)][0]
-            arguments = {k: v for k, v in referrers.f_locals.items() if k != 'self'}
-
-            return function, arguments
-
-        f, kwargs = getfunc()
-        return self._send_notification_about_membership_change(text=f.__doc__, dictionary=kwargs)
-
+    def NOTIFY_STATUS_CHANGED_BY_COMPANY(self, new_status, old_status):
+        """changed membership status from `%(new_status)s` was started instead of `%(old_status)s` by cron"""
+        return self._call_send_notification_about_membership_change(substitute_now={
+            'new_status': new_status, 'old_status': old_status})
