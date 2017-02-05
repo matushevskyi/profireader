@@ -19,7 +19,7 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, RequireMemb
     UserIsEmployee, UserIsActive, UserIsEmployeeAtPortalOwner
 from ..models.tag import Tag
 from ..models.translate import TranslateTemplate
-from ..models.messenger import NOTIFICATION_TYPES
+from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 from ..models.exceptions import UnauthorizedUser
 from ..models.permissions import RIGHT_AT_COMPANY
 
@@ -131,11 +131,13 @@ def profile_load(json, company_id=None, portal_id=None):
                 portal.company_memberships[0].current_membership_plan_issued = portal.company_memberships[
                     0].create_issued_plan()
                 portal.company_memberships[0].current_membership_plan_issued.start()
-                portal.own_company.notifications_company_changes(
-                    notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'],
-                    what_happened="portal %s was created" % (utils.jinja.link_external()),
-                    rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
-                    additional_dict={'portal': portal})
+                UserCompany.get_by_user_and_company_ids(company_id=company_id). \
+                    NOTIFY_PORTAL_CREATED(portal_host=portal.host, portal_name=portal.name)
+            #                portal.own_company.notifications_company_changes(
+            #                    notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'],
+            #                    what_happened="portal %s was created" % (utils.jinja.link_external()),
+            #                    rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
+            #                    additional_dict={'portal': portal})
 
             portal.save()
 
@@ -337,6 +339,7 @@ def membership_set_tags(json, membership_id):
             membership.save().set_tags_positions()
             return {'membership': membership.portal_memberee_grid_row()}
 
+from profapp.models.translate import Phrase
 
 @portal_bp.route('/membership/<string:membership_id>/change_status/<string:new_status>/', methods=['OK'])
 def membership_change_status(json, membership_id, new_status):
@@ -346,19 +349,21 @@ def membership_change_status(json, membership_id, new_status):
         old_status = membership.status
         membership.status = new_status
 
-        membership.NOTIFY_STATUS_CHANGED_BY_PORTAL(new_status=new_status, old_status=old_status)
-
+        more_phrases = []
         if new_status in MemberCompanyPortal.DELETED_STATUSES:
             membership.current_membership_plan_issued.stop()
 
         elif new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
                 not membership.current_membership_plan_issued.started_tm:
             membership.current_membership_plan_issued.start()
-
-            membership.NOTIFY_PLAN_STARTED_BY_MEMBERSHIP_ACTIVATION_BY_PORTAL(
-                new_plan_name=membership.current_membership_plan_issued.name)
+            more_phrases = Phrase("started new plan `%(new_plan_name)s` by membership activation by portal",
+                                  dict={'new_plan_name': membership.current_membership_plan_issued.name})
 
         membership.save()
+        membership.NOTIFY_STATUS_CHANGED_BY_PORTAL(new_status=new_status, old_status=old_status,
+                                                   more_phrases_to_portal=more_phrases,
+                                                   more_phrases_to_company=more_phrases
+                                                   )
 
         return membership.company_member_grid_row()
     else:
@@ -374,6 +379,7 @@ def companies_members(portal_id):
                            employment=UserCompany.get_by_user_and_company_ids(
                                company_id=portal.company_owner_id).get_client_side_dict()
                            )
+
 
 @portal_bp.route('/<string:portal_id>/companies_members/', methods=['OK'])
 @check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])

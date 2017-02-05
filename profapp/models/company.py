@@ -13,7 +13,7 @@ from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..constants.NOTIFICATIONS import EmploymentChange
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from profapp import utils
-
+from profapp.models.permissions import RIGHT_AT_COMPANY
 
 
 class Company(Base, PRBase, PRElasticDocument):
@@ -301,43 +301,43 @@ class Company(Base, PRBase, PRElasticDocument):
         for m in self.portal_members:
             m.elastic_delete()
 
-    def notifications_company_changes(self, what_happened, additional_dict={},
-                                      rights_at_company=None,
-                                      more_phrases=[], notification_type=None,
-                                      phrase_comment=None, except_to_user=None):
-
-        from ..models.messenger import Socket, NOTIFICATION_TYPES
-        from ..models.translate import Phrase
-
-        notification_type = NOTIFICATION_TYPES['COMPANY_ACTIVITY'] if notification_type is None else notification_type
-
-        except_to_user = [g.user] if except_to_user is None else except_to_user
-        more_phrases = more_phrases if isinstance(more_phrases, list) else [more_phrases]
-
-        dict_main = {
-            'company': self,
-            'url_company_profile': url_for('company.profile', company_id=self.id),
-        }
-
-        if g.user:
-            dict_main['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
-
-        phrase_comment = '' if phrase_comment is None else (' when ' + phrase_comment)
-
-        user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at " if g.user else 'At '
-        dictionary = utils.dict_merge(dict_main, additional_dict)
-
-        phrase_to_employees_at_company = Phrase(
-            user_who_made_changes_phrase + "your company %s just made following:" % \
-            (utils.jinja.link_company_profile(),) + what_happened, dict=dictionary,
-            comment="to company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
-
-        Socket.prepare_notifications(
-            self.get_user_with_rights(rights_at_company),
-            notification_type,
-            [phrase_to_employees_at_company] + more_phrases, except_to_user=except_to_user)
-
-        return lambda: utils.do_nothing()
+#    def notifications_company_changes(self, what_happened, additional_dict={},
+#                                      rights_at_company=None,
+#                                      more_phrases=[], notification_type=None,
+#                                      phrase_comment=None, except_to_user=None):
+#
+#        from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
+#        from ..models.translate import Phrase
+#
+#        notification_type = NOTIFICATION_TYPES['COMPANY_ACTIVITY'] if notification_type is None else notification_type
+#
+#        except_to_user = [g.user] if except_to_user is None else except_to_user
+#        more_phrases = more_phrases if isinstance(more_phrases, list) else [more_phrases]
+#
+#        dict_main = {
+#            'company': self,
+#            'url_company_profile': url_for('company.profile', company_id=self.id),
+#        }
+#
+#        if g.user:
+#            dict_main['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
+#
+#        phrase_comment = '' if phrase_comment is None else (' when ' + phrase_comment)
+#
+#        user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at " if g.user else 'At '
+#        dictionary = utils.dict_merge(dict_main, additional_dict)
+#
+#        phrase_to_employees_at_company = Phrase(
+#            user_who_made_changes_phrase + "your company %s just made following:" % \
+#            (utils.jinja.link_company_profile(),) + what_happened, dict=dictionary,
+#            comment="to company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
+#
+#        Socket.prepare_notifications(
+#            self.get_user_with_rights(rights_at_company),
+#            notification_type,
+#            [phrase_to_employees_at_company] + more_phrases, except_to_user=except_to_user)
+#
+#        return lambda: utils.do_nothing()
 
 
 class UserCompany(Base, PRBase, EmploymentChange):
@@ -435,9 +435,9 @@ class UserCompany(Base, PRBase, EmploymentChange):
                      UserCompany(user=g.user, company=Company.get(company_id))
 
         if not employment.status or employment.status in UserCompany.DELETED_STATUSES:
-            employment.NOTIFY_USER_APPLIED()
             employment.status = UserCompany.STATUSES['EMPLOYMENT_REQUESTED_BY_USER']
             employment.save()
+            employment.NOTIFY_USER_APPLIED()
 
         return employment
 
@@ -503,7 +503,8 @@ class UserCompany(Base, PRBase, EmploymentChange):
 
     from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
-    def _send_notification_about_employment_change(self, rights_at_company, text, dictionary={},
+    def _send_notification_about_employment_change(self, text, dictionary={},
+                                               rights_at_company = RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE,
                                                more_phrases_to_company=[],
                                                more_phrases_to_user=[],
                                                notification_type_to_company=NOTIFICATION_TYPES['EMPLOYMENT_COMPANY_ACTIVITY'],
@@ -513,7 +514,7 @@ class UserCompany(Base, PRBase, EmploymentChange):
         from ..models.translate import Phrase
 
         except_to_user = utils.set_default(except_to_user, [g.user])
-        phrase_comment = (' when ' + comment) if comment is None else ''
+        phrase_comment = (' when ' + comment) if comment else ''
 
 
         more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [

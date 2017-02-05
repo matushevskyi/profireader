@@ -236,6 +236,9 @@ def employee_have_right_at_membership(right):
         company_id=MemberCompanyPortal.get(membership_id).company_id)
 
 
+from profapp.models.translate import Phrase
+
+
 @company_bp.route('/membership/<string:membership_id>/change_status/<string:new_status>/', methods=['OK'],
                   permissions=employee_have_right_at_membership(
                       RIGHT_AT_COMPANY.COMPANY_REQUIRE_MEMBEREE_AT_PORTALS))
@@ -247,19 +250,20 @@ def change_membership_status_by_company(json, membership_id, new_status):
         old_status = membership.status
         membership.status = new_status
 
-        membership.NOTIFY_STATUS_CHANGED_BY_COMPANY(new_status=membership.status, old_status=old_status)
-
+        more_phrases = []
         if new_status in MemberCompanyPortal.DELETED_STATUSES:
             membership.current_membership_plan_issued.stop()
 
         elif new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
                 not membership.current_membership_plan_issued.started_tm:
             membership.current_membership_plan_issued.start()
-
-            membership.NOTIFY_PLAN_STARTED_BY_MEMBERSHIP_ACTIVATION_BY_COMPANY(
-                new_plan_name=membership.current_membership_plan_issued.name)
+            more_phrases = Phrase("started new plan `%(new_plan_name)s` by membership activation by portal",
+                                  dict={'new_plan_name': membership.current_membership_plan_issued.name})
 
         membership.save()
+        membership.NOTIFY_STATUS_CHANGED_BY_COMPANY(new_status=membership.status, old_status=old_status,
+                                                    more_phrases_to_portal=more_phrases,
+                                                    more_phrases_to_company=more_phrases)
 
         return membership.portal_memberee_grid_row()
     else:

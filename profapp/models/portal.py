@@ -577,10 +577,10 @@ class MembershipPlanIssued(Base, PRBase):
         return self
 
 
-from profapp.constants.NOTIFICATIONS import MembershipChange
+from profapp.constants.NOTIFICATIONS import NotifyMembership
 
 
-class MemberCompanyPortal(Base, PRBase, PRElasticDocument, MembershipChange):
+class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
     from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
     __tablename__ = 'member_company_portal'
 
@@ -1212,7 +1212,8 @@ class PortalDivision(Base, PRBase):
         }
 
     def notify_company_about_deleted_publications(self, because_of):
-        from ..models.messenger import Socket, NOTIFICATION_TYPES
+        from ..models.messenger import Socket
+        from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
         from ..models.translate import Phrase
         from ..models.company import Company
         from collections import OrderedDict
