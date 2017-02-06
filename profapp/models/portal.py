@@ -938,21 +938,21 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
             self.current_membership_plan_issued.start()
             self.requested_membership_plan_issued = None
             self.request_membership_plan_issued_immediately = False
-            if requested_plan_id is True:
-                self.NOTIFY_PLAN_CONFIRMED_AND_STARTED_BY_PORTAL(
-                    new_plan_name=self.current_membership_plan_issued.name, old_plan_name=old_plan_name)
-            else:
-                self.NOTIFY_PLAN_STARTED_BY_PORTAL(new_plan_name=self.current_membership_plan_issued.name,
-                                                   old_plan_name=old_plan_name)
+            self.NOTIFY_PLAN_STARTED_BY_PORTAL(new_plan_name=self.current_membership_plan_issued.name,
+                                               old_plan_name=old_plan_name)
         else:
             if requested_plan_id is True:
-                self.NOTIFY_PLAN_CONFIRMED_BY_PORTAL(new_plan_name=self.requested_membership_plan_issued.name,
-                                                     date_to_start=self.current_membership_plan_issued.calculated_stopping_tm)
+                if not self.requested_membership_plan_issued.confirmed:
+                    self.NOTIFY_PLAN_CONFIRMED_BY_PORTAL(
+                        new_plan_name=self.requested_membership_plan_issued.name,
+                        old_plan_name=old_plan_name,
+                        date_to_start=self.current_membership_plan_issued.calculated_stopping_tm)
             else:
                 self.requested_membership_plan_issued = self.create_issued_plan(MembershipPlan.get(requested_plan_id),
                                                                                 user=g.user)
-                self.NOTIFY_PLAN_SCHEDULED_BY_PORTAL(new_plan_name=self.requested_membership_plan_issued.name,
-                                                     date_to_start=self.current_membership_plan_issued.calculated_stopping_tm)
+                self.NOTIFY_PLAN_SCHEDULED_BY_PORTAL(
+                    new_plan_name=self.requested_membership_plan_issued.name,
+                    date_to_start=self.current_membership_plan_issued.calculated_stopping_tm)
 
             self.requested_membership_plan_issued.confirmed = True
 

@@ -15,7 +15,12 @@ NOTIFICATION_TYPES = {
 }
 
 
-class NotifyMembership:
+class Notify:
+    def _ftm(self, date_time):
+        return '{:%a, %d %b %Y %H:%M:%S GMT}'.format(date_time)
+
+
+class NotifyMembership(Notify):
     __publication_kwargs = {
         'rights_at_company': [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH],
@@ -37,32 +42,27 @@ class NotifyMembership:
     def NOTIFY_PLAN_SCHEDULED_BY_COMPANY(self, new_plan_name, date_to_start):
         return self._send_notification_about_membership_change(
             'scheduled new plan `%(new_plan_name)s` by company at `%(date_to_start)s`',
-            {'new_plan_name': new_plan_name, 'date_to_start': date_to_start})
+            {'new_plan_name': new_plan_name, 'date_to_start': self._ftm(date_to_start)})
 
     def NOTIFY_PLAN_STARTED_BY_COMPANY(self, new_plan_name, old_plan_name):
         return self._send_notification_about_membership_change(
             'started new plan `%(new_plan_name)s` instead of `%(old_plan_name)s` by company',
-            {'new_plan_name': new_plan_name, 'date_to_start': old_plan_name})
+            {'new_plan_name': new_plan_name, 'old_plan_name': old_plan_name})
 
     def NOTIFY_PLAN_CONFIRMED_BY_PORTAL(self, new_plan_name, old_plan_name, date_to_start):
         return self._send_notification_about_membership_change(
-            'requested by company plan `%(new_plan_name)s` was confirmed by portal `%(old_plan_name)s` and scheduled to start at `%(date_to_start)s`',
-            {'new_plan_name': new_plan_name, 'date_to_start': old_plan_name, 'date_to_start': date_to_start})
-
-    def NOTIFY_PLAN_CONFIRMED_AND_STARTED_BY_PORTAL(self, new_plan_name, old_plan_name):
-        return self._send_notification_about_membership_change(
-            'requested by company plan `%(new_plan_name)s` was confirmed and started by portal and started instead of `%(old_plan_name)s`',
-            {'new_plan_name': new_plan_name, 'date_to_start': old_plan_name})
+            'requested by company plan `%(new_plan_name)s` was confirmed by portal and scheduled to start at `%(date_to_start)s` instead of `%(old_plan_name)s`',
+            {'new_plan_name': new_plan_name, 'old_plan_name': old_plan_name, 'date_to_start': self._ftm(date_to_start)})
 
     def NOTIFY_PLAN_SCHEDULED_BY_PORTAL(self, new_plan_name, date_to_start):
         return self._send_notification_about_membership_change(
             'scheduled new plan `%(new_plan_name)s` by portal at `%(date_to_start)s`',
-            {'new_plan_name': new_plan_name, 'date_to_start': date_to_start})
+            {'new_plan_name': new_plan_name, 'date_to_start': self._ftm(date_to_start)})
 
     def NOTIFY_PLAN_STARTED_BY_PORTAL(self, new_plan_name, old_plan_name):
         return self._send_notification_about_membership_change(
             'started new plan `%(new_plan_name)s` instead of `%(old_plan_name)s` by portal',
-            {'new_plan_name': new_plan_name, 'date_to_start': old_plan_name})
+            {'new_plan_name': new_plan_name, 'old_plan_name': old_plan_name})
 
     # def NOTIFY_PLAN_STARTED_BY_MEMBERSHIP_ACTIVATION_BY_PORTAL(self, new_plan_name):
     #     return self._send_notification_about_membership_change(
@@ -77,7 +77,7 @@ class NotifyMembership:
     def NOTIFY_PLAN_STARTED_BY_CRON(self, new_plan_name, old_plan_name):
         return self._send_notification_about_membership_change(
             'scheduled plan `%(new_plan_name)s` was started instead of `%(old_plan_name)s` by cron',
-            {'new_plan_name': new_plan_name, 'date_to_start': old_plan_name})
+            {'new_plan_name': new_plan_name, 'old_plan_name': old_plan_name})
 
     def NOTIFY_PLAN_EXPIRED_BUT_NEW_NOT_CONFIRMED(self, new_plan_name, requested_plan_name, default_plan_name):
         return self._send_notification_about_membership_change(
@@ -144,7 +144,7 @@ class NotifyMembership:
 from profapp.models.permissions import RIGHT_AT_COMPANY
 
 
-class EmploymentChange:
+class EmploymentChange(Notify):
     def NOTIFY_STATUS_CHANGED_BY_COMPANY(self, old_status, new_status):
         return self._send_notification_about_employment_change(
             'status of employment changed from `%(old_status)s` to `%(new_status)s` by company' %

@@ -820,12 +820,12 @@ class PRBase:
         # event.listen(cls, 'after_update', cls.after_update)
         # event.listen(cls, 'after_delete', cls.after_delete)
 
-    @staticmethod
-    def datetime_from_utc_to_local(utc_datetime, format):
-        now_timestamp = time.time()
-        offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
-        utc_datetime = utc_datetime + offset
-        return datetime.datetime.strftime(utc_datetime, format)
+    # @staticmethod
+    # def datetime_from_utc_to_local(utc_datetime, format):
+    #     now_timestamp = time.time()
+    #     offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
+    #     utc_datetime = utc_datetime + offset
+    #     return datetime.datetime.strftime(utc_datetime, format)
 
 #
 #

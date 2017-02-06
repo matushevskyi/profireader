@@ -23,16 +23,14 @@
             $scope.url_load = '{{ url_for('portal.companies_members_load', portal_id=portal.id)}}';
             $scope.url_change_status = {{ raw_url_for('portal.membership_change_status')|safe }};
             $scope.url_set_rights = {{ raw_url_for('portal.membership_set_rights')|safe }};
+            $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
 
             $scope.employment = {{ employment|tojson|safe }};
             {% raw %}
 
-            $scope.portal_link = function (link) {
-                if (link) {
-                    return 'http://' + link;
-                } else {
-                    return null
-                }
+            $scope.company_link = function (company_id) {
+                return $scope.url_company_profile({'company_id': company_id});
+// {#                console.log('company_id', company_id);#}
             };
 
             $scope.set_new_status = function (id, row, column_name) {
@@ -83,7 +81,7 @@
                         name: 'membership.company.name',
                         type: 'link',
                         img_url: 'membership.company.logo.url',
-                        href: 'portal_link(row.entity.membership.company.own_portal.host)'
+                        href: 'company_link(row.entity.membership.company_id)'
                     },
                     {
                         name: 'membership_plan',
@@ -123,7 +121,7 @@
         <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
                 <i class="fa fa-spinner fa-spin"></i>
-                <div>{{ _('Data Loading...') }}</div>
+                <div>{{ ::_('Data Loading...') }}</div>
             </div>
         </div>
     </div>
