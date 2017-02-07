@@ -12,7 +12,7 @@ class BinaryRightsMetaClass(type):
         ret = OrderedDict()
 
         rights = {name: (True if ((1 << type.__getattribute__(self, name)) & bin) else False) for (name, val) in
-                self._allrights().items()}
+                  self._allrights().items()}
         n_order = self._nice_order(self)
 
         for key in n_order:
@@ -39,7 +39,6 @@ class BinaryRightsMetaClass(type):
 
         return ret
 
-
     def _totext(self, dict):
         ret = 0
         all_rights = self._allrights()
@@ -56,7 +55,6 @@ class BinaryRightsMetaClass(type):
                     ret |= (1 << bit_position) if truefalse else 0
 
         return ret
-
 
     def __getattribute__(self, key):
         if key in ['_todict', '_tobin', '_allrights', '_nice_order'] or (key[:2] == '__' and key[-2:] == '__'):
@@ -118,88 +116,160 @@ class RIGHT_AT_PORTAL(BinaryRights):
     PUBLICATION_UNPUBLISH = 2
 
     def _nice_order(self):
-            return [self.PUBLICATION_PUBLISH, self.PUBLICATION_UNPUBLISH]
+        return [self.PUBLICATION_PUBLISH, self.PUBLICATION_UNPUBLISH]
 
-def user_is_active(*args, **kwargs):
-    from ..models.users import User
-    if 'user_id' in kwargs:
-        user = User.get(kwargs['user_id'])
-    else:
-        if not getattr(g, 'user', False) or not getattr(g.user, 'id', False):
+
+class Permissions:
+    def __init__(self):
+        pass
+
+
+class user_is_active(Permissions):
+    user_id = None
+    user = None
+
+    def __init__(self, *args, **kwargs):
+        if 'user_id' in kwargs:
+            self.user_id = kwargs['user_id']
+
+
+    def check(self):
+        from ..models.users import User
+        self.user = User.get(self.user_id)  if self.user_id else g.user
+        if not self.user:
             raise exceptions.NotLoggedInUser()
-        user = g.user
-    if user.status != User.STATUSES['USER_ACTIVE']:
-        raise exceptions.BannedUser()
-    if not user.email_confirmed:
-        raise exceptions.UnconfirmedEmailUser()
-    return user
+        if self.user.status != User.STATUSES['USER_ACTIVE']:
+            raise exceptions.BannedUser()
+        if not self.user.email_confirmed:
+            raise exceptions.UnconfirmedEmailUser()
+        return self.user
 
 
-def company_is_active(*args, **kwargs):
-    from ..models.company import Company
+class company_is_active(Permissions):
+    company_id = None
+    company = None
 
-    company = Company.get(kwargs.get('company_id', ''), returnNoneIfNotExists=True)
-    if not company:
-        raise Exception("No company found `%s`" % kwargs.get('company_id', ''))
+    def __init__(self, *args, **kwargs):
+        if 'company_id' in kwargs:
+            self.company_id = kwargs['company_id']
 
-    if not company.is_active():
-        raise Exception("company `%s` is not active" % company.id)
+    def check(self):
+        from ..models.company import Company
+        self.company = Company.get(self.company_id)
 
-    return company
+        if not self.company:
+            raise Exception("No company found `%s`" % self.company_id)
 
-
-def employment_is_active(*args, **kwargs):
-    from ..models.company import UserCompany
-
-    user = user_is_active(kwargs)
-    employment = UserCompany.get_by_user_and_company_ids(user_id=user.id, company_id=kwargs.get('company_id', ''))
-
-    if not employment:
-        raise Exception("No employment found by company_id and user_id")
-
-    if not employment.is_active():
-        raise Exception("employment `%s` is not active" % employment.id)
-
-    return employment
+        if not self.company.is_active():
+            raise Exception("company `%s` is not active" % self.company_id)
 
 
-def employee_have_right(right=None):
+class employment_is_active(Permissions):
+    user_is_active = None
+    company_is_active = None
+    employment = None
 
-    def allowed(*args, **kwargs):
-        employment = employment_is_active(*args, **kwargs)
-        aright = RIGHT_AT_COMPANY._ANY if right is None else right
-        if aright == RIGHT_AT_COMPANY._ANY:
+    def __init__(self, *args, **kwargs):
+        self.user_is_active = user_is_active(*args, **kwargs)
+        self.company_is_active = company_is_active(*args, **kwargs)
+
+    def check(self):
+        from ..models.company import UserCompany
+        self.employment = UserCompany.get_by_user_and_company_ids(user_id=user_is_active.user_id,
+                                                                  company_id=company_is_active.company_id)
+
+        self.user_is_active.check()
+        self.company_is_active.check()
+
+        if not self.employment:
+            raise Exception("No employment found by user_id, company_id = {},{}".format(
+                user_is_active.user_id, company_is_active.company_id))
+
+        if not self.employment.is_active():
+            raise Exception("employment `%s` is not active" % self.employment.id)
+
+
+class employee_have_right(Permissions):
+    rights = None
+    employment_is_active = None
+
+    def __init__(self, right, **kwargs):
+        self.rights = right
+        self.employment_is_active = employment_is_active(**kwargs)
+
+    def check(self):
+
+        self.employment_is_active.check()
+
+        if RIGHT_AT_COMPANY._ANY == self.rights:
             return True
-        elif aright == RIGHT_AT_COMPANY._OWNER and employment.company.user_owner.id == employment.user_id:
-            return True
-        elif employment.rights[aright]:
-            return True
+
+        elif RIGHT_AT_COMPANY._OWNER == self.rights:
+            return self.employment_is_active.employment.company.user_owner.id == \
+                   self.employment_is_active.employment.user_id
+
         else:
-            return False
-
-    return allowed
+            return True if employment_is_active.employment.rights[self.rights] else False
 
 
-def employee_af(load=None, validate=None, save=None):
-    from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
-    perm_for_actions = {
-        'load': RIGHT_AT_COMPANY._ANY if load is None else load,
-        'validate': RIGHT_AT_COMPANY._ANY if validate is None else validate,
-        'save': RIGHT_AT_COMPANY._OWNER if save is None else save,
-    }
+class employee_af(Permissions):
+    load_right = None
+    validate_right = None
+    save_right = None
 
-    def allowed(json, company_id, user_id=None):
-        user_id = g.user.id if user_id is None else user_id
+    employee_have_right = None
+    __kwargs = None
+
+    def __init__(self, **kwargs):
+        self.__kwargs = kwargs
+        self.load_right = kwargs.get('load', RIGHT_AT_COMPANY._ANY)
+        self.validate_right = kwargs.get('validate', RIGHT_AT_COMPANY._ANY)
+        self.save_right = kwargs.get('save', RIGHT_AT_COMPANY._OWNER)
+
+    def check(self):
         action = g.req('action', allowed=['load', 'validate', 'save'])
-        if action not in perm_for_actions:
-            raise Exception('action should be one of `' + '`,`'.join(perm_for_actions.keys()) + "`")
 
-        if perm_for_actions[action] is True or perm_for_actions[action] is False:
-            return perm_for_actions[action]
+        right = getattr(self, action + '_right', None)
 
-        return employment_is_active(user_id=user_id, company_id=company_id)
+        if right is True or right is False:
+            return right
 
-    return allowed
+        employee_have_right(right, self.__kwargs).check()
 
+#
+# def employee_have_right(right=None):
+#     def allowed(*args, **kwargs):
+#         employment = employment_is_active(*args, **kwargs)
+#         # aright = RIGHT_AT_COMPANY._ANY if right is None else right
+#         if aright == RIGHT_AT_COMPANY._ANY:
+#             return True
+#         elif aright == RIGHT_AT_COMPANY._OWNER and employment.company.user_owner.id == employment.user_id:
+#             return True
+#         elif employment.rights[aright]:
+#             return True
+#         else:
+#             return False
+#
+#     return allowed
 
-
+#
+# def employee_af(load=None, validate=None, save=None):
+#     from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
+#     perm_for_actions = {
+#         'load': RIGHT_AT_COMPANY._ANY if load is None else load,
+#         'validate': RIGHT_AT_COMPANY._ANY if validate is None else validate,
+#         'save': RIGHT_AT_COMPANY._OWNER if save is None else save,
+#     }
+#
+#     def allowed(json, company_id, user_id=None):
+#         user_id = g.user.id if user_id is None else user_id
+#         action = g.req('action', allowed=['load', 'validate', 'save'])
+#         if action not in perm_for_actions:
+#             raise Exception('action should be one of `' + '`,`'.join(perm_for_actions.keys()) + "`")
+#
+#         if perm_for_actions[action] is True or perm_for_actions[action] is False:
+#             return perm_for_actions[action]
+#
+#         return employment_is_active(user_id=user_id, company_id=company_id)
+#
+#     return allowed

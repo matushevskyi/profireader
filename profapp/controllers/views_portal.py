@@ -19,9 +19,8 @@ from ..models.rights import PublishUnpublishInPortal, MembersRights, RequireMemb
     UserIsEmployee, UserIsActive, UserIsEmployeeAtPortalOwner
 from ..models.tag import Tag
 from ..models.translate import TranslateTemplate
-from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 from ..models.exceptions import UnauthorizedUser
-from ..models.permissions import RIGHT_AT_COMPANY
+# from ..models.permissions import user_is_active, company_is_active, employee_af, employee_have_right, RIGHT_AT_COMPANY
 
 
 @portal_bp.route('/create/company/<string:company_id>/', methods=['GET'])

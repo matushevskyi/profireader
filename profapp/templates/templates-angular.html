@@ -102,7 +102,7 @@
 
 <script>
     module.controller('submit_publish_dialog', function ($scope, $ok, $uibModalInstance, action,
-                                                         material_or_publication_id, company_id, portal_id) {
+                                                         material_or_publication_id, from_company_id, at_portal_id) {
 
         $scope.$$translate = {{ translates('submit_publish_dialog')|safe }};
         $scope.url_submit_to_portal = {{ raw_url_for('article.submit_publish')|safe }};
@@ -123,8 +123,8 @@
 
         $scope.data = {
             action: action,
-            portal: {id: portal_id},
-            company: {id: company_id}
+            at_portal_id: at_portal_id,
+            from_company_id: from_company_id
         };
 
         $scope.data[(action === 'SUBMIT') ? 'material' : 'publication'] = {id: material_or_publication_id};
@@ -186,12 +186,11 @@
             if (!$scope.data || !$scope.data.membership || !$scope.data.publication_count) {
                 return false;
             }
-
-            var available = $scope.data.publication_count['by_status_visibility']['PUBLISHED'][visibility_type.toUpperCase()];
-            var current = $scope.data.membership.current_membership_plan_issued['publication_count_' + visibility_type.toLowerCase()];
+            var current = $scope.data.publication_count['by_status_visibility']['PUBLISHED'][visibility_type.toUpperCase()];
+            var available = $scope.data.membership.current_membership_plan_issued['publication_count_' + visibility_type.toLowerCase()];
             if (available < 0) return true;
             if ($scope.original_article && $scope.original_article.visibility === visibility_type) return true;
-            return available > current ? true : false;
+            return available > current;
         };
 
 
@@ -241,12 +240,12 @@
                     </ui-select>
                 </div>
                 <hr/>
-                {{ _('Select publication visibility') }}<span
+                {{ ::_('Select publication visibility') }}<span
                     af-validation-answer="data_validation:visibility"></span><br/>
                 <label
                         ng-class="{'disabled': !visibility_available(visibility_type)}"
                         class="db p025em {{ 'publication-bg-VISIBILITY-' + visibility_type }}"
-                        ng-repeat="visibility_type in ['OPEN', 'PAYED', 'REGISTERED']">
+                        ng-repeat="visibility_type in ['OPEN', 'REGISTERED', 'PAYED']">
                     <input name="material_details_publish_dialog_visibility"
                            ng-disabled="!visibility_available(visibility_type)"
                            ng-value="visibility_type" ng-model="data.publication.visibility"

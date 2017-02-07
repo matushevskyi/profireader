@@ -34,10 +34,10 @@ class NotifyMembership(Notify):
     #        text, dictionary = self._getfunc(substitute_now)
     #        return self._send_notification_about_membership_change(text, dictionary, *args, **kwargs)
 
-    def NOTIFY_PLAN_REQUESTED_BY_COMPANY(self, new_plan_name):
+    def NOTIFY_PLAN_REQUESTED_BY_COMPANY(self, requested_plan_name):
         return self._send_notification_about_membership_change(
-            'requested new plan `%(new_plan_name)s` by company',
-            {'new_plan_name': new_plan_name})
+            'requested new plan `%(requested_plan_name)s` by company',
+            {'requested_plan_name': requested_plan_name})
 
     def NOTIFY_PLAN_SCHEDULED_BY_COMPANY(self, new_plan_name, date_to_start):
         return self._send_notification_about_membership_change(
@@ -79,17 +79,16 @@ class NotifyMembership(Notify):
             'scheduled plan `%(new_plan_name)s` was started instead of `%(old_plan_name)s` by cron',
             {'new_plan_name': new_plan_name, 'old_plan_name': old_plan_name})
 
-    def NOTIFY_PLAN_EXPIRED_BUT_NEW_NOT_CONFIRMED(self, new_plan_name, requested_plan_name, default_plan_name):
+    def NOTIFY_PLAN_EXPIRED_BUT_NEW_NOT_CONFIRMED(self, old_plan_name, requested_plan_name, default_plan_name):
         return self._send_notification_about_membership_change(
             'old plan `%(old_plan_name)s` was expired but new requested `%(requested_plan_name)s` not confirmed so default plan `%(default_plan_name)s` was started',
-            {'new_plan_name': new_plan_name, 'requested_plan_name': requested_plan_name,
+            {'old_plan_name': old_plan_name, 'requested_plan_name': requested_plan_name,
              'default_plan_name': default_plan_name})
 
-    def NOTIFY_PLAN_EXPIRED_BUT_NEW_NOT_REQUESTED(self, new_plan_name, requested_plan_name, default_plan_name):
+    def NOTIFY_PLAN_EXPIRED_BUT_NEW_NOT_REQUESTED(self, old_plan_name, default_plan_name):
         return self._send_notification_about_membership_change(
             'old plan `%(old_plan_name)s` was expired and no new plan was requested, so default plan `%(default_plan_name)s` was started',
-            {'new_plan_name': new_plan_name, 'requested_plan_name': requested_plan_name,
-             'default_plan_name': default_plan_name})
+            {'old_plan_name': old_plan_name, 'default_plan_name': default_plan_name})
 
     def NOTIFY_STATUS_CHANGED_BY_COMPANY(self, old_status, new_status,
                                          more_phrases_to_portal=[], more_phrases_to_company=[]):
@@ -108,23 +107,29 @@ class NotifyMembership(Notify):
             {'old_status': old_status, 'new_status': new_status},
             more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company)
 
-    # def NOTIFY_PUBLICATION_PUBLISHED_BY_COMPANY(self, old_status, new_status):
-    #     """publication %(name)s"""
-    #     return self._send_notification_about_membership_change(**self.__publication_kwargs)
-    #
-    # def NOTIFY_PUBLICATION_PUBLISHED_BY_PORTAL(self, old_status, new_status):
-    #     """publication %(name)s"""
-    #     return self._send_notification_about_membership_change(**self.__publication_kwargs)
-    #
-    # def NOTIFY_PUBLICATION_UNPUBLISHED_BY_COMPANY(self, old_status, new_status):
-    #     """publication %(name)s"""
-    #     return self._send_notification_about_membership_change(**self.__publication_kwargs)
-    #
-    # def NOTIFY_PUBLICATION_UNPUBLISHED_BY_PORTAL(self, old_status, new_status):
-    #     """publication %(name)s"""
-    #     return self._send_notification_about_membership_change(**self.__publication_kwargs)
+    def NOTIFY_ARTICLE_SUBMITED_BY_COMPANY(self, material_title, more_phrases_to_company, more_phrases_to_portal):
+        return self._send_notification_about_membership_change(
+            'material `%(material_title)s` was submitted by company' % {'material_title': material_title},
+            more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company
+            **self.__publication_kwargs)
 
-    def NOTIFY_PUBLICATION_VISIBILITY_CHANGED_BY_PLAN_MEMBERSHIP_CHANGE(
+    def NOTIFY_ARTICLE_PUBLISHED_BY_COMPANY(self, old_status, new_status):
+        """publication %(name)s"""
+        return self._send_notification_about_membership_change(**self.__publication_kwargs)
+
+    def NOTIFY_ARTICLE_PUBLISHED_BY_PORTAL(self, old_status, new_status):
+        """publication %(name)s"""
+        return self._send_notification_about_membership_change(**self.__publication_kwargs)
+
+    def NOTIFY_ARTICLE_UNPUBLISHED_BY_COMPANY(self, old_status, new_status):
+        """publication %(name)s"""
+        return self._send_notification_about_membership_change(**self.__publication_kwargs)
+
+    def NOTIFY_ARTICLE_UNPUBLISHED_BY_PORTAL(self, old_status, new_status):
+        """publication %(name)s"""
+        return self._send_notification_about_membership_change(**self.__publication_kwargs)
+
+    def NOTIFY_ARTICLE_VISIBILITY_CHANGED_BY_PLAN_MEMBERSHIP_CHANGE(
             self, more_phrases_to_company, more_phrases_to_portal):
         return self._call_send_notification_about_membership_change(
             'New plan was applied for membership and changes of publication visibility was made',
@@ -132,7 +137,7 @@ class NotifyMembership(Notify):
             more_phrases_to_portal=more_phrases_to_portal,
             **self.__publication_kwargs)
 
-    def NOTIFY_PUBLICATION_STILL_HOLDED_DESPITE_BY_PLAN_MEMBERSHIP_CHANGE(
+    def NOTIFY_ARTICLE_STILL_HOLDED_DESPITE_BY_PLAN_MEMBERSHIP_CHANGE(
             self, more_phrases_to_company, more_phrases_to_portal):
         return self._call_send_notification_about_membership_change(
             'New plan was applied for membership HOLDED message still remains',

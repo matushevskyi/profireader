@@ -513,7 +513,6 @@ class UserCompany(Base, PRBase, EmploymentChange):
 
         from ..models.translate import Phrase
 
-        except_to_user = utils.set_default(except_to_user, [g.user])
         phrase_comment = (' when ' + comment) if comment else ''
 
 
@@ -534,11 +533,14 @@ class UserCompany(Base, PRBase, EmploymentChange):
             'url_employee_user_profile': url_for('user.profile', user_id=self.user_id),
         }
 
-        if g.user:
+        if getattr(g, 'user', None):
+            user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at "
+            except_to_user = utils.set_default(except_to_user, [g.user])
             default_dict['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
+        else:
+            user_who_made_changes_phrase = 'At '
+            except_to_user = utils.set_default(except_to_user, [])
 
-        user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at " if \
-            g.user else 'At '
 
         all_dictionary_data = utils.dict_merge(default_dict, dictionary)
 

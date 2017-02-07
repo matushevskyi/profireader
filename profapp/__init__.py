@@ -136,7 +136,7 @@ def prepare_connections(app, echo=False):
 
         from fluent import sender
         g.logger = sender.FluentSender(app.apptype, host=app.config['FLUENT_LOGGER_HOST'], port=app.config['FLUENT_LOGGER_PORT'])
-        g.log = lambda *args: g.logger.emit(*args) and (print(*args) if echo else utils.do_nothing())
+        g.log = lambda *args: print(*args)
 
         event.listen(db_session, 'after_flush', on_after_flush)
 

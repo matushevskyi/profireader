@@ -212,22 +212,6 @@ class PublishUnpublishInPortal(BaseRightsInProfireader):
     def actions(self):
         return BaseRightsInProfireader.base_actions(self, object=self.publication)
 
-    # def get_user_with_rights(self, rights):
-    #
-    #     companies_with_rights = {c.id: c for c in g.db.query(Company).outerjoin(MemberCompanyPortal, and_(
-    #         text("(0 <> (rights & %s))" % (
-    #             MemberCompanyPortal.RIGHT_AT_PORTAL._tobin({r: True for r in rights['membership']}),)),
-    #         MemberCompanyPortal.portal_id == self.portal.id,
-    #         Company.id == MemberCompanyPortal.company_id)). \
-    #         filter(MemberCompanyPortal.id != None).all()}
-    #
-    #     return [u for (u,c) in g.db.query(User, Company).outerjoin(UserCompany, and_(
-    #         text("(0 <> (rights & %s))" % (
-    #             RIGHT_AT_COMPANY._tobin({r: True for r in rights['employment']}),)),
-    #         UserCompany.company_id == self.company.id,
-    #         UserCompany.user_id == User.id)).outerjoin(Company, Company.id == UserCompany.company_id). \
-    #         filter(UserCompany.id != None).all() if c.id in companies_with_rights]
-
 
 
     def action_is_allowed(self, action_name):
@@ -386,38 +370,6 @@ class BaseRightsEmployeeInCompany(BaseRightsInProfireader):
                                                           actions=BaseRightsEmployeeInCompany.ACTIONS,
                                                           actions_for_statuses=BaseRightsEmployeeInCompany.ACTIONS_FOR_EMPLOYEE_IN_COMPANY)
 
-    # def get_rights(rights, default):
-    #     if rights is False:
-    #         return []
-    #     ret = default if rights is None else rights
-    #     return [ret] if isinstance(ret, int) else ret
-    #
-    # def get_users(company, rights):
-    #
-    #     return set(
-    #         BaseRightsEmployeeInCompany(company).get_user_with_rights_and(rights)
-    #         if isinstance(rights, set) else
-    #         BaseRightsEmployeeInCompany(company).get_user_with_rights_or(rights))
-
-
-        # def get_user_with_rights_and(self, *rights):
-        #     if not rights:
-        #         return[]
-        #     usrc = g.db.query(UserCompany).filter(
-        #         text("(company_id = '%s') AND (rights = (rights & %s))" % (
-        #             self.company.id, RIGHT_AT_COMPANY._tobin({r: True for r in rights})))).all()
-        #
-        #     return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
-        #
-        # def get_user_with_rights_or(self, *rights):
-        #     if not rights:
-        #         return[]
-        #     usrc = g.db.query(UserCompany).filter(
-        #         text("(company_id = '%s') AND (0 <> (rights & %s))" % (
-        #             self.company.id, RIGHT_AT_COMPANY._tobin({r: True for r in rights})))).all()
-        #
-        #     return g.db.query(User).filter(User.id.in_([e.user_id for e in usrc])).all()
-        #
 
 
 class FilemanagerRights(BaseRightsEmployeeInCompany):
@@ -617,10 +569,6 @@ class UserNonBanned(UserIsActive):
 class AllowAll(BaseRightsInProfireader):
     def is_allowed(self, raise_exception_redirect_if_not=False):
         return True
-
-
-class CanCreateCompanyRight(UserIsActive):
-    pass
 
 
 class UserEditProfieRight(BaseRightsInProfireader):

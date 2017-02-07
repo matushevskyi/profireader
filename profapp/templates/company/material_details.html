@@ -74,8 +74,8 @@
                         material_or_publication_id: (action === 'SUBMIT') ? $scope.data['material']['id'] :
                                 row['publication']['id'],
                         action: action,
-                        portal_id: row['portal']['id'],
-                        company_id: row['company_id']
+                        at_portal_id: row['portal']['id'],
+                        from_company_id: row['company_id']
                     });
 
                     modalInstance.result.then(function (updated_row) {

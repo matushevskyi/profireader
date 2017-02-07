@@ -56,8 +56,7 @@
                     var modalInstance = $publish({
                         material_or_publication_id: row['id'],
                         action: action,
-                        portal_id: $scope.data.portal['id'],
-                        company_id: $scope.company['id']
+                        at_portal_id: $scope.data.portal['id']
                     });
 
                     modalInstance.result.then(function (updated_row) {

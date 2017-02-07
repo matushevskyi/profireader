@@ -514,7 +514,7 @@ class MembershipPlanIssued(Base, PRBase):
                 self.calculated_stopping_tm = datetime.datetime.fromtimestamp(
                     self.started_tm.timestamp() + duration * 24 * 3600)
 
-        if g.user:
+        if getattr(g, 'user', None):
             self.started_by_user = g.user
 
         return self.save().publish_or_hold_publications_on_plan_start()
@@ -918,7 +918,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
                         new_plan_name=self.requested_membership_plan_issued.name,
                         date_to_start=self.current_membership_plan_issued.calculated_stopping_tm)
                 else:
-                    self.NOTIFY_PLAN_REQUESTED_BY_COMPANY(new_plan_name=self.current_membership_plan_issued.name)
+                    self.NOTIFY_PLAN_REQUESTED_BY_COMPANY(
+                        requested_plan_name=self.requested_membership_plan_issued.name)
 
         self.save()
 
@@ -1035,14 +1036,12 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
         from ..models.messenger import Socket
         from ..models.translate import Phrase
 
-        except_to_user = utils.set_default(except_to_user, [g.user])
-
         phrase_comment = (' when ' + comment) if comment is None else ''
 
-        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [
-            more_phrases_to_company]
-        more_phrases_to_portal = more_phrases_to_portal if isinstance(more_phrases_to_portal, list) else [
-            more_phrases_to_portal]
+        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else \
+            [more_phrases_to_company]
+        more_phrases_to_portal = more_phrases_to_portal if isinstance(more_phrases_to_portal, list) else \
+            [more_phrases_to_portal]
 
         grid_url = lambda endpoint, **kwargs: utils.jinja.grid_url(self.id, endpoint=endpoint, **kwargs)
 
@@ -1054,11 +1053,13 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
             'url_portal_companies_members': grid_url('portal.companies_members', portal_id=self.portal.id)
         }
 
-        if g.user:
+        if getattr(g, 'user', None):
+            user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at "
+            except_to_user = utils.set_default(except_to_user, [g.user])
             default_dict['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
-
-        user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at " if \
-            g.user else 'At '
+        else:
+            user_who_made_changes_phrase = 'At '
+            except_to_user = utils.set_default(except_to_user, [])
 
         all_dictionary_data = utils.dict_merge(default_dict, dictionary)
 
