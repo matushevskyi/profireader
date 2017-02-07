@@ -120,22 +120,42 @@ class RIGHT_AT_PORTAL(BinaryRights):
 
 
 class Permissions:
-    def __init__(self):
-        pass
+    _operator = 'or'
+    _operands = []
+
+    def __init__(self, operator='hahaha', *args):
+        self._operands = args
+        self._operator = operator
+
+    def __and__(self, other):
+        return Permissions('and', self, other)
+
+    def __or__(self, other):
+        return Permissions('or', self, other)
+
+    def __neg__(self):
+        return Permissions('not', self)
+
+    def check(self, *args, **kwargs):
+        if self._operator == 'and':
+            return self._operands[0].check() and self._operands[1].check()
+        elif self._operator == 'or':
+            return self._operands[0].check() or self._operands[1].check()
+        elif self._operator == 'not':
+            return not self._operands[0].check()
+        else:
+            raise Exception('unknown operator')
 
 
-class user_is_active(Permissions):
+class UserIsActive(Permissions):
     user_id = None
     user = None
 
-    def __init__(self, *args, **kwargs):
+    def check(self, *args, **kwargs):
         if 'user_id' in kwargs:
             self.user_id = kwargs['user_id']
-
-
-    def check(self):
         from ..models.users import User
-        self.user = User.get(self.user_id)  if self.user_id else g.user
+        self.user = User.get(self.user_id) if self.user_id else g.user
         if not self.user:
             raise exceptions.NotLoggedInUser()
         if self.user.status != User.STATUSES['USER_ACTIVE']:
@@ -145,16 +165,14 @@ class user_is_active(Permissions):
         return self.user
 
 
-class company_is_active(Permissions):
+class CompanyIsActive(Permissions):
     company_id = None
     company = None
 
-    def __init__(self, *args, **kwargs):
+    def check(self, *args, **kwargs):
+        from ..models.company import Company
         if 'company_id' in kwargs:
             self.company_id = kwargs['company_id']
-
-    def check(self):
-        from ..models.company import Company
         self.company = Company.get(self.company_id)
 
         if not self.company:
@@ -164,42 +182,42 @@ class company_is_active(Permissions):
             raise Exception("company `%s` is not active" % self.company_id)
 
 
-class employment_is_active(Permissions):
+class EmploymentIsActive(Permissions):
     user_is_active = None
     company_is_active = None
     employment = None
 
-    def __init__(self, *args, **kwargs):
-        self.user_is_active = user_is_active(*args, **kwargs)
-        self.company_is_active = company_is_active(*args, **kwargs)
+    def check(self, *args, **kwargs):
+        self.company_is_active = CompanyIsActive()
+        self.user_is_active = UserIsActive()
 
-    def check(self):
+
+        self.user_is_active.check(*args, **kwargs)
+        self.company_is_active.check(*args, **kwargs)
+
         from ..models.company import UserCompany
-        self.employment = UserCompany.get_by_user_and_company_ids(user_id=user_is_active.user_id,
-                                                                  company_id=company_is_active.company_id)
-
-        self.user_is_active.check()
-        self.company_is_active.check()
+        self.employment = UserCompany.get_by_user_and_company_ids(user_id=self.user_is_active.user.id,
+                                                                  company_id=self.company_is_active.company.id)
 
         if not self.employment:
             raise Exception("No employment found by user_id, company_id = {},{}".format(
-                user_is_active.user_id, company_is_active.company_id))
+                self.user_is_active.user.id, self.company_is_active.company.id))
 
         if not self.employment.is_active():
             raise Exception("employment `%s` is not active" % self.employment.id)
 
 
-class employee_have_right(Permissions):
+class EmployeeHasRight(Permissions):
     rights = None
     employment_is_active = None
 
-    def __init__(self, right, **kwargs):
+    def __init__(self, right=RIGHT_AT_COMPANY._ANY):
         self.rights = right
-        self.employment_is_active = employment_is_active(**kwargs)
 
-    def check(self):
+    def check(self, *args, **kwargs):
 
-        self.employment_is_active.check()
+        self.employment_is_active = EmploymentIsActive()
+        self.employment_is_active.check(**kwargs)
 
         if RIGHT_AT_COMPANY._ANY == self.rights:
             return True
@@ -209,10 +227,10 @@ class employee_have_right(Permissions):
                    self.employment_is_active.employment.user_id
 
         else:
-            return True if employment_is_active.employment.rights[self.rights] else False
+            return True if self.employment_is_active.employment.rights[self.rights] else False
 
 
-class employee_af(Permissions):
+class EmployeeHasRightAF(Permissions):
     load_right = None
     validate_right = None
     save_right = None
@@ -226,7 +244,7 @@ class employee_af(Permissions):
         self.validate_right = kwargs.get('validate', RIGHT_AT_COMPANY._ANY)
         self.save_right = kwargs.get('save', RIGHT_AT_COMPANY._OWNER)
 
-    def check(self):
+    def check(self, json, *args, **kwargs):
         action = g.req('action', allowed=['load', 'validate', 'save'])
 
         right = getattr(self, action + '_right', None)
@@ -234,7 +252,23 @@ class employee_af(Permissions):
         if right is True or right is False:
             return right
 
-        employee_have_right(right, self.__kwargs).check()
+        print(json)
+        print(right)
+        print(args)
+        print(kwargs)
+
+        EmployeeHasRight(right).check(*args, **kwargs)
+        return True
+
+
+class CheckFunction(Permissions):
+    f = None
+
+    def __init__(self, f):
+        self.f = f
+
+    def check(self, *args, **kwargs):
+        return self.f()
 
 #
 # def employee_have_right(right=None):

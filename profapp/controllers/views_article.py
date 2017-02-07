@@ -11,27 +11,22 @@ from ..models.pr_base import PRBase, Grid
 from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPortal, EditMaterialRight, \
     EditPublicationRight, UserIsEmployee, UserIsActive, BaseRightsEmployeeInCompany
 from ..models.tag import Tag
-from ..models.permissions import user_is_active, company_is_active, employee_af, employee_have_right, RIGHT_AT_COMPANY
+from ..models.permissions import UserIsActive, CompanyIsActive, EmployeeHasRightAF, EmployeeHasRight, RIGHT_AT_COMPANY, \
+    CheckFunction
 
 
 @article_bp.route('/<string:company_id>/material_create/', methods=['GET'],
-                  permissions=employee_have_right(RIGHT_AT_COMPANY._ANY))
-@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['GET'], permissions={
-    employee_have_right(RIGHT_AT_COMPANY._ANY),
-    [employee_have_right(RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS),
-     lambda material_id, company_id: Material.get(material_id).editor_user_id == g.user_id
-     ]})
+                  permissions=EmployeeHasRight(RIGHT_AT_COMPANY._ANY))
+@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['GET'], permissions=
+EmployeeHasRight(RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS) |
+(EmployeeHasRight() & CheckFunction(lambda material_id, company_id: Material.get(material_id).editor_user_id == g.user_id)))
 def article_show_form(material_id, company_id):
     company = Company.get(company_id)
     return render_template('article/form.html', material_id=material_id, company_id=company_id, company=company)
 
 
-@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['OK'])
-# @article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['OK'])
-@article_bp.route('/<string:company_id>/material_create/', methods=['OK'])
-# @check_right(EditMaterialRight, ['material_id'])
-# @check_right(EditPublicationRight, ['publication_id', 'company_id'])
-# @check_right(BaseRightsEmployeeInCompany, ['company_id'], BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
+@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
+@article_bp.route('/<string:company_id>/material_create/', methods=['OK'], permissions=UserIsActive())
 def load_form_create(json_data, company_id=None, material_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
@@ -55,7 +50,7 @@ def load_form_create(json_data, company_id=None, material_id=None):
             return {'material': material.save().get_client_side_dict(more_fields='long|company|illustration')}
 
 
-@article_bp.route('/material_details/<string:material_id>/', methods=['GET'])
+@article_bp.route('/material_details/<string:material_id>/', methods=['GET'], permissions=UserIsActive())
 # @check_right(UserIsEmployee, ['material_id'])
 def material_details(material_id):
     company = Company.get(Material.get(material_id).company.id)
@@ -100,7 +95,7 @@ def get_portal_dict_for_material(portal, company, material=None, publication=Non
     return ret
 
 
-@article_bp.route('/material_details/<string:material_id>/', methods=['OK'])
+@article_bp.route('/material_details/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
 # @check_right(UserIsEmployee, ['material_id'])
 def material_details_load(json, material_id):
     material = Material.get(material_id)
@@ -122,7 +117,7 @@ def material_details_load(json, material_id):
     }
 
 
-@article_bp.route('/submit_publish/<string:article_action>/', methods=['OK'])
+@article_bp.route('/submit_publish/<string:article_action>/', methods=['OK'], permissions=UserIsActive())
 @check_right(UserIsActive)
 def submit_publish(json, article_action):
     action = g.req('action', allowed=['load', 'validate', 'save'])

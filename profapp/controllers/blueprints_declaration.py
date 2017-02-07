@@ -53,8 +53,6 @@ class PrBlueprint(Blueprint):
 
         if options and 'permissions' in options:
             permissions = options['permissions']
-            if not isinstance(permissions, list):
-                permissions = [permissions]
             del options['permissions']
         else:
             raise exceptions.RouteWithoutPermissions()
@@ -70,20 +68,6 @@ class PrBlueprint(Blueprint):
 
                 try:
 
-                    def check_permissiosn(ps, *args, **kwargs):
-                        if isinstance(ps, list):
-                            for p in ps:
-                                if check_permissiosn(p, *args, **kwargs):
-                                    return True
-                            return False
-                        elif isinstance(ps, set):
-                            for p in ps:
-                                if not check_permissiosn(p, *args, **kwargs):
-                                    return False
-                            return True
-                        else:
-                            return ps(*args, **kwargs)
-
                     if request.url_rule.rule not in self.registered_functions[f.__name__]['perm']:
                         raise exceptions.RouteWithoutPermissions(
                             self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
@@ -96,11 +80,11 @@ class PrBlueprint(Blueprint):
 
                     if method == 'OK' or method == 'POST':
                         json = request.json
-                        if not check_permissiosn(ps, json, *args, **kwargs):
+                        if not ps.check(json, *args, **kwargs):
                             raise exceptions.UnauthorizedUser()
                         ret = f(json, *args, **kwargs)
                     else:
-                        if not check_permissiosn(ps, *args, **kwargs):
+                        if not ps.check(*args, **kwargs):
                             raise exceptions.UnauthorizedUser()
                         ret = f(*args, **kwargs)
 
@@ -131,8 +115,20 @@ class PrBlueprint(Blueprint):
                 elif method == 'OK':
                     return jsonify({'data': ret, 'ok': True, 'error_code': 'NO_ERROR'})
 
+            # if f.__name__ not in self.registered_functions:
+            #     self.registered_functions[f.__name__] = (wrapped_function, {}, current_app)
+            #
+            # self.registered_functions[f.__name__][1][self.url_prefix + rule] = permissions
+            #
+            # endpoint = options.pop("endpoint", f.__name__)
+            # self.add_url_rule(rule, endpoint, self.registered_functions[f.__name__][0], **options)
+            #
+            # return self.registered_functions[f.__name__][0]
+            #
+            #
+
             if f.__name__ not in self.registered_functions:
-                self.registered_functions[f.__name__] = {'func': wrapped_function, 'perm': [], 'app': current_app}
+                self.registered_functions[f.__name__] = {'func': wrapped_function, 'perm': {}, 'app': current_app}
 
             self.registered_functions[f.__name__]['perm'][self.url_prefix + rule] = permissions
 
@@ -149,7 +145,7 @@ index_bp = PrOldBlueprint('index', __name__)
 auth_bp = PrOldBlueprint('auth', __name__)
 admin_bp = PrOldBlueprint('admin', __name__)
 user_bp = PrOldBlueprint('user', __name__)
-article_bp = PrBlueprint('article', __name__)
+article_bp = PrBlueprint('article', __name__, url_prefix='/article')
 filemanager_bp = PrOldBlueprint('filemanager', __name__)
 image_editor_bp = PrOldBlueprint('image_editor', __name__)
 company_bp = PrBlueprint('company', __name__, url_prefix='/company')
