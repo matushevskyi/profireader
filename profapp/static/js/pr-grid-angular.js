@@ -99,7 +99,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     var onclickdisable = 'grid.onclick_is_disabled(row.entity[\'disabled\']) && ';
                     if (col.onclick) {
                         if (col.type === 'actions') {
-                            col.onclick = onclickdisable + 'grid.appScope.' + col['onclick'] + '(row.entity.id, \'{{ action_name }}\', row.entity, \'' + col['name'] + '\')';
+                            col.onclick = onclickdisable + 'grid.appScope.' + col['onclick'] + '(row.entity.id, action.name, row.entity, \'' + col['name'] + '\')';
                         }
                         // else if (col.type === 'change_status') {
                         //     col.onclick = onclickdisable + 'grid.appScope.' + col['onclick'] + '(row.entity.id, new_status_and_enabled[\'status\'], row.entity, \'' + col['name'] + '\')';
@@ -136,10 +136,10 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '" ' + cell_title + '">' + prefix_img + '<a ng-click="' + col.modal + '">' + cell_value + '</a></div>';
                         case 'actions':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<button ' +
-                                ' class="btn pr-grid-cell-field-type-actions pr-grid-cell-field-type-actions-action-{{ action_name }}" ' +
-                                ' ng-repeat="(action_name, enabled) in ' + cell_raw_value + '" ng-disabled="enabled !== true" ng-style="{width:grid.getLengthOfAssociativeArray(' + cell_value + ')>3?\'2.5em\':\'5em\'}"' +
+                                ' class="btn pr-grid-cell-field-type-actions pr-grid-cell-field-type-actions-action-{{ action.name }}" ' +
+                                ' ng-repeat="action in ' + cell_raw_value + '" ng-disabled="action.enabled !== true" ' +
                                 ' ng-click="' + onclickdisable + col.onclick + '" ' +
-                                ' title="{{ grid.appScope._((enabled === true)?(action_name + \' grid action\'):enabled) }}">{{ grid.appScope._(action_name + \' grid action\') }}</button></div>';
+                                ' title="{{ grid.appScope._(action.message) }}">{{ grid.appScope._(action.name + \' grid action\') }}</button></div>';
                         // case 'change_status':
                         //     return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<button ' +
                         //         ' class="btn pr-grid-cell-field-type-change_status pr-grid-cell-field-type-change_status-old-{{ row.entity[\''+col['old_status_column_name']+'\'] }} pr-grid-cell-field-type-change_status-new-{{ new_status }}" ' +
@@ -412,3 +412,46 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
     });
 });
 
+publication_column = function () {
+        var spanf = function (status, visibility, cnt, classes) {
+            return '<span class="tar ' + (classes ? classes : '') + ' pr-grid-publications-vs publication-fg-STATUS-' + status + ' publication-bg-VISIBILITY-' + visibility + '">' + cnt + '</span>';
+        };
+
+        var all_statuses = ['PUBLISHED', 'HOLDED', 'SUBMITTED', 'UNPUBLISHED', 'DELETED'];
+        var all_visibilities = ['OPEN', 'REGISTERED', 'PAYED'];
+
+        return {
+            name: 'publications',
+            width: '185',
+            'uib-tooltip-html': function (row, value) {
+                var ret = [];
+
+                $.each(all_statuses, function (ind, status) {
+                    var by_visibility = value['by_status_visibility'][status];
+                    var ret_v = [];
+                    $.each(all_visibilities, function (ind1, visibility) {
+                        ret_v.push(spanf(status, visibility, by_visibility[visibility]));
+                    });
+                    ret.push('<span class="publication-fg-STATUS-' + status + '">' + status + ': ' + spanf(status, '', value['by_status'][status], 'bold') + '</span> = ' + ret_v.join('+'));
+                });
+                var ret_v = [];
+
+                $.each(all_visibilities, function (ind, visibility) {
+                    ret_v.push(spanf('', visibility, value['by_visibility'][visibility], 'italic black'));
+                });
+
+                ret.push('<span class="italic black">ALL: ' + spanf('', '', value['all'], 'bold') + '</span> = ' + ret_v.join('+'));
+                return '<div class="tar nowrap">' + ret.join('</div><div class="tar nowrap">') + '</div>';
+
+            },
+            render: function (row, value) {
+                var ret = [];
+                $.each(all_visibilities,
+                    function (ind, visibility) {
+                        ret.push(spanf('PUBLISHED', visibility, value['by_status_visibility']['PUBLISHED'][visibility]));
+                    });
+                return spanf('PUBLISHED', '', value['by_status']['PUBLISHED'], 'bold') + '</span> = ' + ret.join('+');
+
+            }
+        };
+    }

@@ -1,5 +1,5 @@
 from flask import Blueprint
-
+from profapp.models.permissions import Permissions
 
 class PrOldBlueprint(Blueprint):
     declared_endpoints = {}
@@ -53,10 +53,12 @@ class PrBlueprint(Blueprint):
 
         if options and 'permissions' in options:
             permissions = options['permissions']
+            if not isinstance(permissions, Permissions):
+                raise Exception('permission have to be Permission object for blueprint={}, rule={}'.format(
+                    self.name, rule))
             del options['permissions']
         else:
             raise exceptions.RouteWithoutPermissions()
-            permissions = None
 
         def decorator(f):
             @wraps(f)

@@ -77,11 +77,26 @@ class Company(Base, PRBase, PRElasticDocument):
                                                       viewonly=True,
                                                       primaryjoin="and_(Company.id == UserCompany.company_id, or_(UserCompany.status == 'EMPLOYMENT_ACTIVE', UserCompany.status == 'EMPLOYMENT_REQUESTED_BY_USER', UserCompany.status == 'EMPLOYMENT_SUSPENDED_BY_COMPANY'))")
 
-    active_users_employees = relationship('User',
+    users_employments_active = relationship('User',
                                           viewonly=True,
                                           primaryjoin="and_(Company.id == UserCompany.company_id, UserCompany.status == 'EMPLOYMENT_ACTIVE')",
                                           secondary='user_company',
                                           secondaryjoin="and_(UserCompany.user_id == User.id, User.status == 'COMPANY_ACTIVE')")
+
+    memberships_active = relationship('MemberCompanyPortal',
+                                          viewonly=True,
+                                          primaryjoin="and_(Company.id == MemberCompanyPortal.company_id, MemberCompanyPortal.status == 'MEMBERSHIP_ACTIVE')",
+                                          secondary='member_company_portal',
+                                          secondaryjoin="and_(MemberCompanyPortal.portal_id == Portal.id, Portal.status == 'PORTAL_ACTIVE')")
+
+
+
+    @staticmethod
+    def get_portals_for_company(company_id):
+        return g.db.query(Portal).outerjoin(MemberCompanyPortal, and_(MemberCompanyPortal.portal_id == Portal.id,
+                                                                      MemberCompanyPortal.company_id == company_id)). \
+            filter(MemberCompanyPortal.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']). \
+            filter(Portal.status.in_([Portal.STATUSES['PORTAL_ACTIVE']]))
 
     def __init__(self, **kwargs):
         # TODO: OZ by OZ: check default value for all columns
@@ -167,12 +182,6 @@ class Company(Base, PRBase, PRElasticDocument):
     # TODO: VK by OZ I think this have to be moved to __init__ and duplication check to validation
     def setup_new_company(self):
         from profapp.models.permissions import RIGHT_AT_COMPANY
-        """Add new company to company table and make all necessary relationships,
-        if company with this name already exist raise DublicateName"""
-        #        if db(Company, name=self.name).count():
-        #            raise errors.DublicateName({
-        #                'message': 'Company name %(name)s already exist. Please choose another name',
-        #                'data': self.get_client_side_dict()})
 
         user_company = UserCompany(status=UserCompany.STATUSES['EMPLOYMENT_ACTIVE'], rights={RIGHT_AT_COMPANY._OWNER:
                                                                                                  True})
@@ -301,43 +310,7 @@ class Company(Base, PRBase, PRElasticDocument):
         for m in self.portal_members:
             m.elastic_delete()
 
-#    def notifications_company_changes(self, what_happened, additional_dict={},
-#                                      rights_at_company=None,
-#                                      more_phrases=[], notification_type=None,
-#                                      phrase_comment=None, except_to_user=None):
-#
-#        from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
-#        from ..models.translate import Phrase
-#
-#        notification_type = NOTIFICATION_TYPES['COMPANY_ACTIVITY'] if notification_type is None else notification_type
-#
-#        except_to_user = [g.user] if except_to_user is None else except_to_user
-#        more_phrases = more_phrases if isinstance(more_phrases, list) else [more_phrases]
-#
-#        dict_main = {
-#            'company': self,
-#            'url_company_profile': url_for('company.profile', company_id=self.id),
-#        }
-#
-#        if g.user:
-#            dict_main['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
-#
-#        phrase_comment = '' if phrase_comment is None else (' when ' + phrase_comment)
-#
-#        user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at " if g.user else 'At '
-#        dictionary = utils.dict_merge(dict_main, additional_dict)
-#
-#        phrase_to_employees_at_company = Phrase(
-#            user_who_made_changes_phrase + "your company %s just made following:" % \
-#            (utils.jinja.link_company_profile(),) + what_happened, dict=dictionary,
-#            comment="to company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
-#
-#        Socket.prepare_notifications(
-#            self.get_user_with_rights(rights_at_company),
-#            notification_type,
-#            [phrase_to_employees_at_company] + more_phrases, except_to_user=except_to_user)
-#
-#        return lambda: utils.do_nothing()
+
 
 
 class UserCompany(Base, PRBase, EmploymentChange):

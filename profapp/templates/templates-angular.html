@@ -1,4 +1,5 @@
 <!-- TODO: OZ by OZ: move this templates to separate .js file with cached templates -->
+<!-- TODO: OZ by OZ: just like static/angular-templates/submit_publish_dialog.html -->
 
 <script type="text/ng-template" id="pagination.html">
     <uib-pagination boundary-links="true" total-items="data.pages.total" items-per-page="1"
@@ -101,213 +102,6 @@
 {% endraw %}
 
 <script>
-    module.controller('submit_publish_dialog', function ($scope, $ok, $uibModalInstance, action,
-                                                         material_or_publication_id, from_company_id, at_portal_id) {
-
-        $scope.$$translate = {{ translates('submit_publish_dialog')|safe }};
-        $scope.url_submit_to_portal = {{ raw_url_for('article.submit_publish')|safe }};
-        {% raw %}
-
-        $scope.object_name = (action === 'SUBMIT') ? 'material' : 'publication';
-        $scope.action = action;
-        $scope.original_article = null;
-
-        $scope.get_tags_for_selected_division = function (search_text) {
-            var division = $scope.get_selected_division();
-            return _.filter($scope.data.portal.tags, function (tag) {
-                return $scope.tag_is_allowed_for_division(division, tag) &&
-                        ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
-                        (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
-            })
-        };
-
-        $scope.data = {
-            action: action,
-            at_portal_id: at_portal_id,
-            from_company_id: from_company_id
-        };
-
-        $scope.data[(action === 'SUBMIT') ? 'material' : 'publication'] = {id: material_or_publication_id};
-
-        $scope.afterSave = function (resp, defcallback) {
-            $uibModalInstance.close(resp)
-        };
-
-        $scope.amidLoad = function (resp, defaultcallback) {
-            if (resp.publication.publishing_tm)
-                resp.publication.publishing_tm = new Date(resp.publication.publishing_tm);
-            if (resp.publication.event_begin_tm)
-                resp.publication.event_begin_tm = new Date(resp.publication.event_begin_tm);
-            if (resp.publication.event_end_tm)
-                resp.publication.event_end_tm = new Date(resp.publication.event_end_tm);
-            $scope.original_article = cloneObject(resp.publication);
-            return resp;
-        };
-
-        $scope.action_cancel = $uibModalInstance.dismiss;
-
-
-        $scope.get_selected_division = function () {
-            return (!$scope.data || !$scope.data.publication || !$scope.data.publication.portal_division_id || !$scope
-                    .data.portal.divisions[$scope.data.publication.portal_division_id]) ? null : $scope.data.portal.divisions[$scope.data.publication.portal_division_id];
-
-        };
-
-        $scope.is_selection_division_event = function () {
-            var division = $scope.get_selected_division();
-            return (division && division['portal_division_type_id'] === 'events');
-        };
-
-        $scope.tag_is_allowed_for_division = function (division, tag) {
-            var ret = division && division['tags'] && _.find(division['tags'], function (division_tag) {
-                        return division_tag.id === tag.id
-                    });
-            return ret;
-        };
-
-        $scope.$watch("data['publication']['portal_division_id']", function (newid, oldid) {
-            if ($scope.data.publication) {
-                $scope.data.publication.tags = (newid ? _.filter($scope.data.publication.tags, function (tag) {
-                    return $scope.tag_is_allowed_for_division($scope.get_selected_division(), tag);
-                }) : []);
-            }
-        });
-
-        //added listener per @homerjam per https://github.com/angular-ui/ui-select/issues/974
-        $scope.$on('uiSelectSort:change', function (event, args) {
-            $scope.data.publication.tags = args.array;
-            if (!$scope.$$phase) { //http://stackoverflow.com/questions/20263118/what-is-phase-in-angularjs
-                $scope.$apply();
-            }
-        });
-
-        $scope.visibility_available = function (visibility_type) {
-
-            if (!$scope.data || !$scope.data.membership || !$scope.data.publication_count) {
-                return false;
-            }
-            var current = $scope.data.publication_count['by_status_visibility']['PUBLISHED'][visibility_type.toUpperCase()];
-            var available = $scope.data.membership.current_membership_plan_issued['publication_count_' + visibility_type.toLowerCase()];
-            if (available < 0) return true;
-            if ($scope.original_article && $scope.original_article.visibility === visibility_type) return true;
-            return available > current;
-        };
-
-
-        {% endraw %}
-
-    });
-</script>
-
-{% raw %}
-<script type="text/ng-template" id="submit_publish_dialog.html">
-    <div af ng-model="data" af-url="{{ url_submit_to_portal({'article_action': action}) }}"
-         af-after-save="afterSave"
-         af-amid-load="amidLoad"
-         af-watch="data.publication" ng-cloak>
-        <div class="modal-header">
-            <h3 class="modal-title">{{ _(action + ' ' + object_name + ' at portal') }}</h3>
-        </div>
-        <div class="modal-body">
-            {{ _('You are going to ' + action + ' ' + object_name + ' `%(data.publication.material.title)s` at portal
-            `%(data.portal.name)s`') }}<br/>
-            <div ng-if="action !== 'UNPUBLISH' && action !== 'DELETE' && action !== 'UNDELETE'">
-                <br/>
-                {{ _('Select portal division') }}<span
-                    af-validation-answer="data_validation:portal_division_id"></span><br/>
-                <div ng-repeat="division in data.portal.divisions">
-                    <label>
-                        <input
-                                name="material_details_publish_dialog_division"
-                                ng-value="division.id" ng-model="data.publication.portal_division_id"
-                                type="radio"> {{ division.name }}
-                    </label>
-                </div>
-                <hr/>
-                <div class="selected_tags">
-                    <ui-select ng-disabled="!data.publication.portal_division_id"
-                               ng-model="$parent.$parent.data.publication.tags" class="form-control" sortable="true"
-                               multiple>
-                        <ui-select-match placeholder="{{ ::_('Select tag...') }}">{{$item.text}}</ui-select-match>
-                        <ui-select-choices repeat="tag in get_tags_for_selected_division($select.search)">
-                            <div ng-bind-html="(tag.text | highlight: $select.search)"></div>
-                            <small ng-bind-html="tag.description | highlight: $select.search"></small>
-                        </ui-select-choices>
-                        <ui-select-no-choice>
-                            <em class="error">{{ ::_('there is no tags for this division') }}</em>
-                        </ui-select-no-choice>
-
-                    </ui-select>
-                </div>
-                <hr/>
-                {{ ::_('Select publication visibility') }}<span
-                    af-validation-answer="data_validation:visibility"></span><br/>
-                <label
-                        ng-class="{'disabled': !visibility_available(visibility_type)}"
-                        class="db p025em {{ 'publication-bg-VISIBILITY-' + visibility_type }}"
-                        ng-repeat="visibility_type in ['OPEN', 'REGISTERED', 'PAYED']">
-                    <input name="material_details_publish_dialog_visibility"
-                           ng-disabled="!visibility_available(visibility_type)"
-                           ng-value="visibility_type" ng-model="data.publication.visibility"
-                           type="radio"/>
-                    {{ visibility_type }}
-                    <span class="fr"
-                          ng-bind-html="publication_count(data.membership.current_membership_plan_issued, visibility_type, data.publication_count)|html"></span>
-                </label>
-                <hr/>
-                {{ _('Select publication date') }}<span
-                    af-validation-answer="data_validation:publishing_tm"></span><br/>
-                <input pr-date-time-picker class="form-control" ng-model="data.publication.publishing_tm"/>
-                <div ng-if="is_selection_division_event()">
-                    {{ _('Select event begin date') }}<span
-                        af-validation-answer="data_validation:event_begin_tm"></span><br/>
-                    <input pr-date-time-picker class="form-control" ng-model="data.publication.event_begin_tm"/>
-                </div>
-                <div ng-if="is_selection_division_event()">
-                    {{ _('Select event end date') }}<span
-                        af-validation-answer="data_validation:event_end_tm"></span><br/>
-                    <input pr-date-time-picker class="form-control" ng-model="data.publication.event_end_tm"/>
-                </div>
-                <div ng-if="object_name === 'material'">
-                    <hr/>
-                    <label ng-class="{disabled: !data.can_material_also_be_published}"><input
-                            ng-disabled="!data.can_material_also_be_published"
-                            ng-model="$parent.$parent.data.also_publish"
-                            type="checkbox">&nbsp;{{
-                        _('also publish material') }}</label><br/>
-                    <div ng-if="!data.can_material_also_be_published">
-                        {{ _('Sorry, you company `%(data.company.name)s` have no permission to publish at portal
-                        %(data.portal.name)s') }}<br/>
-                    </div>
-                    {{ _('You can send message to company administration') }}<br/>
-                    <textarea disabled="disabled" style="width: 100%" ng-model="message"></textarea>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="modal-footer">
-            <button ng-if="action === 'SUBMIT'" class="btn btn-primary"
-                    ng-disabled="!$af.isActionAllowed(data, 'save')"
-                    type="button" ng-click="$af.save(data)"><span ng-if="!data.also_publish">{{ _('Do submit') }}</span>
-                <span ng-if="data.also_publish">{{ _('Do submit & publish') }}</span>
-            </button>
-
-            <button ng-if="action !== 'SUBMIT' " class="btn btn-primary"
-                    ng-disabled="!$af.isActionAllowed(data, 'save')"
-                    type="button" ng-click="$af.save(data)">{{ _('Do ' + action) }}
-            </button>
-
-            <button class="btn btn-warning" type="button" ng-click="action_cancel()">{{ _('Cancel ' + action) }}
-            </button>
-        </div>
-    </div>
-</script>
-
-{% endraw %}
-
-
-<script>
     module.controller('membership_tags', function ($scope, $ok, $uibModalInstance, membership_id) {
 
         $scope.$$translate = {{ translates('membership_tags')|safe }};
@@ -322,7 +116,6 @@
         };
 
 
-
         $scope.afterSave = function (resp, defcallback) {
             $uibModalInstance.close(resp)
         };
@@ -330,11 +123,11 @@
         $scope.get_tags = function (search_text) {
 
             var catalog_division = $scope.data.membership.portal ?
-                    _.findWhere($scope.data.membership.portal.divisions, {'portal_division_type_id': 'catalog'}) : {'tags': []};
+                _.findWhere($scope.data.membership.portal.divisions, {'portal_division_type_id': 'catalog'}) : {'tags': []};
             return _.filter(catalog_division.tags, function (tag) {
                 return (!_.findWhere($scope.data.membership.tags, {'text': tag['text']})) &&
-                        ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
-                        (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
+                    ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
+                    (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
             });
         };
 
@@ -413,15 +206,18 @@
         {{ ::question }}
         <div ng-repeat="status_enabled_message in status_changes">
             <label title="{{ (status_enabled_message['enabled'] || status_enabled_message['message'])?status_enabled_message['message']:_( 'You have no permissions to change status from ' + old_status + ' to ' + status_enabled_message['status'] ) }}"
-                ng-class="{'disabled': !status_enabled_message['enabled'], 'bold': $parent.new_status === status_enabled_message['status']}">
-            <input type="radio"
-                ng-disabled="!status_enabled_message['enabled']"
-                ng-model="$parent.new_status" ng-value="status_enabled_message['status']"/>&nbsp;
-            {{ ::$parent.$parent._('change status from ' + old_status + ' to ' + status_enabled_message['status']) }}</label></div>
+                   ng-class="{'disabled': !status_enabled_message['enabled'], 'bold': $parent.new_status === status_enabled_message['status']}">
+                <input type="radio"
+                       ng-disabled="!status_enabled_message['enabled']"
+                       ng-model="$parent.new_status" ng-value="status_enabled_message['status']"/>&nbsp;
+                {{ ::$parent.$parent._('change status from ' + old_status + ' to ' + status_enabled_message['status'])
+                }}</label></div>
     </div>
 
     <div class="modal-footer">
-        <button class="btn btn-success" ng-disabled="!new_status || new_status === old_status" ng-click="ok()">{{ ::_('Ok') }}</button>
+        <button class="btn btn-success" ng-disabled="!new_status || new_status === old_status" ng-click="ok()">{{
+            ::_('Ok') }}
+        </button>
         <button class="btn btn-danger" ng-click="cancel()">{{ ::_('Cancel') }}</button>
     </div>
 </script>
@@ -431,7 +227,8 @@
          af ng-model="data" af-after-save="afterSave"
          af-url="{{ bycompany_byportal_t_f?url_request_membership_plan():url_set_membership_plan() }}">
         <div class="modal-header">
-            <h3 class="modal-title">{{ ::_(bycompany_byportal_t_f?'please select desired plan':'please set plan') }}</h3>
+            <h3 class="modal-title">{{ ::_(bycompany_byportal_t_f?'please select desired plan':'please set plan')
+                }}</h3>
             <h4>{{ __('for company `%(data.membership.company.name)s` in portal `%(data.membership.portal.name)s`')
                 }}</h4>
         </div>
@@ -485,7 +282,8 @@
                     <th ng-if="bycompany_byportal_t_f" class="border-none" colspan="6"><h5
                             ng-if="bycompany_byportal_t_f && !data.membership.requested_membership_plan_issued.confirmed"
                     >{{ ::_('requested plan awaiting for confirmation') }}</h5>
-                        <h5 ng-if="bycompany_byportal_t_f && data.membership.requested_membership_plan_issued.confirmed">{{
+                        <h5 ng-if="bycompany_byportal_t_f && data.membership.requested_membership_plan_issued.confirmed">
+                            {{
                             ::_('requested plan awaiting for current plan expiration') }}</h5>
                         </h5>
                     </th>
@@ -515,7 +313,8 @@
 
                 <tr>
                     <th class="border-none"></th>
-                    <th class="border-none" colspan="6"><h5>{{ ::_(bycompany_byportal_t_f?'please select desired membership
+                    <th class="border-none" colspan="6"><h5>{{ ::_(bycompany_byportal_t_f?'please select desired
+                        membership
                         plan':'you can also select other available plan') }}</h5>
                 </tr>
 
@@ -548,7 +347,8 @@
                                ng-class="{'disabled': immediately_cant_be_selected(false)}"><input
                                 ng-disabled="immediately_cant_be_selected(false)" ng-value="false" type="radio"
                                 ng-model="data.membership.request_membership_plan_issued_immediately"/>&nbsp;{{
-                            _(start_or_request()?'schedule to start after the current plan will be finished':'request to start after the current plan will be finished') }}</label>
+                            _(start_or_request()?'schedule to start after the current plan will be finished':'request to
+                            start after the current plan will be finished') }}</label>
 
                     </td>
                 </tr>
@@ -566,7 +366,8 @@
                 <button class="btn btn-primary" type="button"
                         ng-click="$af.save(data)"
                         ng-disabled="!$af.isActionAllowed(data, 'save') ">
-                    {{ start_or_request()?(data.membership.request_membership_plan_issued_immediately?'start plan':'schedule plan'):'request plan' }}
+                    {{ start_or_request()?(data.membership.request_membership_plan_issued_immediately?'start
+                    plan':'schedule plan'):'request plan' }}
                 </button>
             </div>
             <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>

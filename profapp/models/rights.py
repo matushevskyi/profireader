@@ -132,125 +132,6 @@ class BaseRightsInProfireader:
                 in self.ACTIONS_FOR_STATUSES[object.status if not isinstance(object, str) else object]}
 
 
-class PublishUnpublishInPortal(BaseRightsInProfireader):
-    from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
-
-    def __init__(self, publication=None, division=None, company=None, portal=None):
-        self.publication = publication if isinstance(publication, Publication) else Publication.get(
-            publication) if publication else None
-        self.division = division if isinstance(division, PortalDivision) else PortalDivision.get(
-            division) if division else None
-        self.company = company if isinstance(company, Company) else Company.get(company) if company else None
-
-        self.portal = portal if isinstance(portal, Portal) else self.division.portal if self.division else None
-
-    def get_allowed_attributes(self, key, value):
-        if key == 'publication_id':
-            key = 'publication'
-            value = Publication.get(value)
-        elif key == 'company_id':
-            key = 'company'
-            value = Company.get(value)
-        return key, value
-
-    STATUSES = Publication.STATUSES
-
-    ACTIONS = {
-        'PUBLISH': 'PUBLISH',
-        'UNPUBLISH': 'UNPUBLISH',
-        # 'EDIT': 'EDIT',
-        'REPUBLISH': 'REPUBLISH',
-        'DELETE': 'DELETE',
-        'UNDELETE': 'UNDELETE'
-    }
-
-    delete_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-                     'employment': [RIGHT_AT_COMPANY.ARTICLES_DELETE]}
-
-    publish_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-                      'employment': [RIGHT_AT_COMPANY.ARTICLES_DELETE]}
-
-    unpublish_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-                        'employment': [RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]}
-
-    republish_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH,
-                                       RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH],
-                        'employment': [RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
-                                       RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
-
-    edit_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-                   'employment': [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
-
-    ACTIONS_FOR_STATUSES = {
-        STATUSES['SUBMITTED']: {
-            ACTIONS['PUBLISH']: publish_rights,
-            ACTIONS['DELETE']: delete_rights,
-            # ACTIONS['EDIT']: edit_rights,
-        },
-        STATUSES['HOLDED']: {
-            # ACTIONS['PUBLISH']: publish_rights,
-            ACTIONS['UNPUBLISH']: unpublish_rights,
-            ACTIONS['DELETE']: delete_rights,
-            # ACTIONS['EDIT']: edit_rights,
-        },
-        STATUSES['PUBLISHED']: {
-            ACTIONS['REPUBLISH']: republish_rights,
-            ACTIONS['UNPUBLISH']: unpublish_rights,
-            # ACTIONS['EDIT']: edit_rights,
-            ACTIONS['DELETE']: delete_rights
-        },
-        STATUSES['UNPUBLISHED']: {
-            ACTIONS['REPUBLISH']: publish_rights,
-            # ACTIONS['EDIT']: edit_rights,
-            ACTIONS['DELETE']: delete_rights
-        },
-        STATUSES['DELETED']: {
-            ACTIONS['UNDELETE']: delete_rights,
-        }
-    }
-
-    def actions(self):
-        return BaseRightsInProfireader.base_actions(self, object=self.publication)
-
-
-
-    def action_is_allowed(self, action_name):
-        company = self.company if self.company else self.division.portal.own_company \
-            if self.division else self.publication.company if self.publication else None
-        membership_portal_id = self.division.portal.id if self.division else ''
-        if not company:
-            raise Exception('Bad data!')
-        employee = UserCompany.get_by_user_and_company_ids(company_id=company.id)
-        if not employee:
-            return "Sorry!You are not employee in this company!"
-
-        membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=membership_portal_id,
-                                                                     company_id=company.id)
-        if not membership:
-            raise Exception('Bad data!')
-        company_object = self.division.portal.own_company
-        check_objects_status = {'employeer': company,
-                                'employee': employee,
-                                'membership': membership,
-                                'company where you want update publication': company_object,
-                                'division': self.division}
-
-        return BaseRightsInProfireader._is_action_allowed(self.publication, action_name,
-                                                          check_objects_status,
-                                                          {'employment': employee, 'membership': membership},
-                                                          actions=self.ACTIONS,
-                                                          actions_for_statuses=self.ACTIONS_FOR_STATUSES)
-
-    def get_active_division(self, divisions):
-        return [division.get_client_side_dict() for division in divisions
-                if (division.portal_division_type_id in ['events', 'news'] and division.is_active())]
-
-    @staticmethod
-    def get_portals_where_company_is_member(company):
-        """This method return all portals-partners current company"""
-        return [memcomport.portal for memcomport in
-                utils.db.query_filter(MemberCompanyPortal, company_id=company.id).all()]
-
 
 class EditOrSubmitMaterialInPortal(BaseRightsInProfireader):
     from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
@@ -663,8 +544,8 @@ class PortalManageMembersCompaniesRight(BaseRightsEmployeeInCompany):
 
 # rights for work with articles
 
-class CanMaterialBePublished(PublishUnpublishInPortal):
-    pass
+# class CanMaterialBePublished(PublishUnpublishInPortal):
+#     pass
 
 
 class EditMaterialRight(EditOrSubmitMaterialInPortal):
@@ -672,13 +553,13 @@ class EditMaterialRight(EditOrSubmitMaterialInPortal):
         return self.action_is_allowed(self.ACTIONS['EDIT'])
 
 
-class EditPublicationRight(PublishUnpublishInPortal):
-    def __init__(self, publication=None, company=None):
-        super(EditPublicationRight, self).__init__(publication=publication, company=company)
-
-    def is_allowed(self, raise_exception_redirect_if_not=False):
-        self.division = self.publication.division
-        return self.actions()[self.ACTIONS['EDIT']]
+# class EditPublicationRight(PublishUnpublishInPortal):
+#     def __init__(self, publication=None, company=None):
+#         super(EditPublicationRight, self).__init__(publication=publication, company=company)
+#
+#     def is_allowed(self, raise_exception_redirect_if_not=False):
+#         self.division = self.publication.division
+#         return self.actions()[self.ACTIONS['EDIT']]
 
 
 class RIGHTS:

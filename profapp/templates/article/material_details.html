@@ -1,0 +1,166 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block head %}
+    {{ super() }}
+    {% include '_ruslan/partials/_header_files_grid.html' %}
+    {% include '_ruslan/partials/_header_files_publish.html' %}
+{% endblock head %}
+
+
+
+{% block portal_content %}
+
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+    <script>
+
+
+        module.controller('material_details', function ($scope, $ok, $uibModal, $timeout, $publish) {
+            $scope.$$translate = {{ translates('material_details')|safe }};
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
+            $scope.company = {{ company.get_client_side_dict(fields = 'id,name')|tojson|safe }};
+
+            {#            $scope.url_search_for_user = {{ raw_url_for('company.search_for_user')|safe }};#}
+            $scope.url_company_portal_memberees = {{ grid_raw_url_for('company.portal_memberees')|safe }};
+            $scope.url_update_material = {{ raw_url_for('article.article_show_form')|safe }};
+            $scope.url_front_publication_details = {{ raw_url_for('front.article_details')|safe }};
+
+            $scope.url_company = function (row) {
+                return $scope.url_company_portal_memberees(row.id, {company_id: $scope.company.id})
+            };
+
+            $scope.url_front = function (row) {
+                var publication = row['publication'];
+                if (publication) {
+                    return '//' + row['portal']['host'] +
+                        $scope.url_front_publication_details({
+                            publication_id: publication['id'],
+                            publication_title: $scope.data['material']['title']
+                        });
+                }
+                else {
+                    return '//' + row['portal']['host'] + '/';
+                }
+            };
+
+
+            $scope.loadMaterialDetails = function (data, callback) {
+                $scope.loading = true;
+                $ok('', data, function (resp) {
+                    callback(resp.portals);
+                    $scope.data = resp
+                }).finally(function () {
+                    $scope.loading = false
+                });
+
+            };
+
+
+            $scope.updateMaterial = function (material_id) {
+                window.location.href = $scope.url_update_material(
+                    {'company_id': $scope.company['id'], 'material_id': material_id})
+            };
+
+
+            $scope.grid_action = function (id, action, row, column_name) {
+                var publication = row['publication'];
+                $publish({
+                    material_id: publication ? null : $scope.data['material']['id'],
+                    publication_id: publication ? publication['id'] : null,
+                    action: action,
+                    at_portal_id: row['portal']['id'],
+                    from_company_id: $scope.company['id']
+                }).result.then(function (updated_row) {
+                    $scope.gridApi.grid.grid_change_row(updated_row);
+                });
+            };
+
+            $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
+                loadGridData: $scope.loadMaterialDetails,
+                autoresizecolumns: True,
+                columnDefs: [
+                    {
+                        name: 'portal.name',
+                        type: 'link',
+                        target: 'front',
+                        href: 'url_front(row.entity)',
+                        link: true,
+                        width: '250',
+                        img_url: 'portal.logo.url'
+                    },
+                    {name: 'portal.own_company.name',
+                        type: 'link',
+                        href: 'url_company(row.entity)',
+                        img_url: 'portal.own_company.logo.url',
+                        width: '250'
+                    },
+                    {name: 'publication.tags', afilter: {type: 'multi_select'}, type: 'tags', width: '150'},
+                    {name: 'publication.publishing_tm', enableSorting: true, width: 150},
+                    {
+                        name: 'publication.visibility', width: '75',
+                        'classes': function (id, row, fieldname) {
+                            return row && row['publication'] ? 'publication-bg-VISIBILITY-' + row['publication']['visibility'] : '';
+                        }
+                    },
+                    {
+                        name: 'publication.status', width: '75',
+                        'classes': function (id, row, fieldname) {
+                            return row && row['publication'] ? 'publication-fg-STATUS-' + row['publication']['status'] : '';
+                        }
+                    },
+
+                    {
+                        name: 'actions', type: 'actions', onclick: 'grid_action', width: '200'
+
+                    }
+
+
+                ]
+            });
+
+        });
+    </script>
+
+    <style>
+        .pr-grid-cell-field-type-actions-publish {
+            background-color: greenyellow;
+        }
+
+        .pr-grid-cell-field-type-actions-unpublish {
+            background-color: #1ab7ea;
+        }
+    </style>
+
+    <div ng-controller="material_details" ng-cloak>
+        {% raw %}
+        <h2>{{ _('Material details `%(title)s`', {title: data.material.title}) }}</h2>
+        <h4>{{ _('Created at') }} {{ moment(data.material.cr_tm) }}</h4>
+        <h4>{{ _('Last modified at') }} {{ moment(data.material.md_tm) }}</h4>
+        <hr/>
+        <button pr-user-can="data.actions.EDIT" class="btn fr"
+                ng-click="updateMaterial(data.material.id)">{{ _('Update material') }}
+        </button>
+        <div class="material-details-article-preview">
+
+            {% endraw %}{% include 'partials/article_details.html' %}{% raw %}
+        </div>
+        <button pr-user-can="data.actions.EDIT" class="btn fr"
+                ng-click="updateMaterial(data.material.id)">{{ _('Update material') }}
+        </button>
+        <br/><br/>
+        <hr/>
+
+        <h2>{{ _('Material is published or can be published at portals') }}</h2>
+        <div class="grid" id="grid1" ui-grid-edit ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+                <i class="fa fa-spinner fa-spin"></i>
+                <div>{{ _('Data Loading...') }}</div>
+            </div>
+        </div>
+        {% endraw %}
+
+    </div>
+
+{% endblock portal_content %}

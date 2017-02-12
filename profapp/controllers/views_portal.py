@@ -1,11 +1,9 @@
 from flask import render_template, g, redirect, url_for
 from sqlalchemy import desc
-
 from config import Config
 from profapp.controllers.errors import BadDataProvided
 from .blueprints_declaration import portal_bp
 from .pagination import pagination
-from .request_wrapers import check_right
 from .. import utils
 from ..models.company import Company
 from ..models.company import UserCompany
@@ -15,11 +13,10 @@ from ..models.portal import MemberCompanyPortal, Portal, PortalLayout, PortalDiv
     PortalAdvertisment, PortalAdvertismentPlace, MembershipPlan
 from ..models.portal import PortalDivisionType
 from ..models.pr_base import PRBase, Grid
-from ..models.rights import PublishUnpublishInPortal, MembersRights, RequireMembereeAtPortalsRight, \
-    UserIsEmployee, UserIsActive, UserIsEmployeeAtPortalOwner
 from ..models.tag import Tag
 from ..models.translate import TranslateTemplate
 from ..models.exceptions import UnauthorizedUser
+from profapp.models.translate import Phrase
 # from ..models.permissions import user_is_active, company_is_active, employee_af, employee_have_right, RIGHT_AT_COMPANY
 
 
@@ -146,7 +143,6 @@ def profile_load(json, company_id=None, portal_id=None):
 
 @portal_bp.route('/<string:portal_id>/readers/', methods=['GET'])
 @portal_bp.route('/<string:portal_id>/readers/<int:page>/', methods=['GET'])
-# @check_right(UserIsEmployee, ['portal_id'])
 def readers(portal_id, page=1):
     portal = Portal.get(portal_id)
     company = portal.own_company
@@ -166,7 +162,7 @@ def readers(portal_id, page=1):
 
 
 @portal_bp.route('/<string:portal_id>/readers/', methods=['OK'])
-@check_right(UserIsEmployee, ['portal_id'])
+# @check_right(UserIsEmployee, ['portal_id'])
 def readers_load(json, portal_id):
     portal = Portal.get(portal_id)
     company = portal.own_company
@@ -281,7 +277,6 @@ def banners(portal_id):
 # @check_right(UserIsEmployee, 'portal_id')
 def banners_load(json, portal_id):
     portal = Portal.get(portal_id)
-    company = portal.own_company
     if 'action_name' in json:
         if json['action_name'] == 'create':
             place = utils.db.query_filter(PortalAdvertismentPlace, portal_layout_id=portal.portal_layout_id,
@@ -338,8 +333,6 @@ def membership_set_tags(json, membership_id):
             membership.save().set_tags_positions()
             return {'membership': membership.portal_memberee_grid_row()}
 
-from profapp.models.translate import Phrase
-
 @portal_bp.route('/membership/<string:membership_id>/change_status/<string:new_status>/', methods=['OK'])
 def membership_change_status(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
@@ -370,7 +363,7 @@ def membership_change_status(json, membership_id, new_status):
 
 
 @portal_bp.route('/<string:portal_id>/companies_members/', methods=['GET'])
-@check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
+# @check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
 def companies_members(portal_id):
     portal = Portal.get(portal_id)
     return render_template('portal/companies_members.html',
@@ -381,16 +374,14 @@ def companies_members(portal_id):
 
 
 @portal_bp.route('/<string:portal_id>/companies_members/', methods=['OK'])
-@check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
+# @check_right(UserIsEmployeeAtPortalOwner, ['portal_id'])
 def companies_members_load(json, portal_id):
     portal = Portal.get(portal_id)
     subquery = Company.subquery_company_partners(portal.company_owner_id, json.get('filter'),
                                                  filters_exсept=MemberCompanyPortal.DELETED_STATUSES)
     memberships, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
     return {'grid_data': [membership.company_member_grid_row() for membership in memberships],
-            'grid_filters': {k: [{'value': None, 'label': TranslateTemplate.getTranslate('', '__-- all --')}] + v for
-                             (k, v) in {'member.status': [{'value': status, 'label': status} for status in
-                                                          MembersRights.STATUSES]}.items()},
+            'grid_filters': {},
             'grid_filters_except': MemberCompanyPortal.DELETED_STATUSES,
             'total': count,
             'page': current_page}
@@ -477,7 +468,7 @@ def tags_load(json, portal_id):
 
 
 @portal_bp.route('/<string:company_id>/translations/', methods=['GET'])
-@check_right(UserIsActive)
+# @check_right(UserIsActive)
 def translations(company_id):
     company = Company.get(company_id)
     portal = company.own_portal
@@ -485,7 +476,7 @@ def translations(company_id):
 
 
 @portal_bp.route('/<string:company_id>/translations/', methods=['OK'])
-@check_right(UserIsActive)
+# @check_right(UserIsActive)
 def translations_load(json, company_id):
     company = Company.get(company_id)
     portal = company.own_portal

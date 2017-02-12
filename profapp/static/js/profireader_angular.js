@@ -137,18 +137,6 @@ var prDatePicker_and_DateTimePicker = function (name, $timeout) {
 }
 
 angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip', 'ui.select'])
-    .factory('$publish', ['$http', '$uibModal', function ($http, $uibModal) {
-        return function (dict) {
-            var modalInstance = $uibModal.open({
-                templateUrl: 'submit_publish_dialog.html',
-                controller: 'submit_publish_dialog',
-                backdrop: 'static',
-                keyboard: false,
-                resolve: resolveDictForAngularController(dict)
-            });
-            return modalInstance;
-        }
-    }])
     .factory('$membership_tags', ['$http', '$uibModal', function ($http, $uibModal) {
         return function (dict) {
             return modalInstance = $uibModal.open({
@@ -530,6 +518,11 @@ function file_choose(selectedfile) {
 
 module = angular.module('Profireader', pr_angular_modules);
 
+module.config(['$routeProvider', '$sceDelegateProvider',
+        function ($routeProvider, $sceDelegateProvider) {
+            $sceDelegateProvider.resourceUrlWhitelist(['self', new RegExp('^.*$')]);
+}]);
+
 module.config(function ($provide) {
     $provide.decorator('$controller', function ($delegate) {
         return function (constructor, locals, later, indent) {
@@ -683,9 +676,13 @@ function pr_dictionary(phrase, dictionary, allow_html, scope, $ok, phrase_defaul
     ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
         var indexes = g1.split('.');
         var d = dictionary ? dictionary : scope;
+        if (!d) {
+            console.warn('passed object is False', d);
+            return g1;
+            }
         // try {
         for (var i in indexes) {
-            if (typeof d[indexes[i]] !== 'undefined') {
+            if (typeof d === 'object' && d !== null && indexes[i] in d) {
                 d = d[indexes[i]];
             }
             else {

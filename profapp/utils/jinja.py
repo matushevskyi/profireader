@@ -56,8 +56,7 @@ def get_url_adapter():
     return url_adapter
 
 
-# TODO: OZ by OZ: add kwargs just like in url_for
-def raw_url_for(endpoint, **kwargs):
+def get_rules_simplified(endpoint, **kwargs):
     url_adapter = get_url_adapter()
 
     rules = url_adapter.map._rules_by_endpoint.get(endpoint, ())
@@ -72,11 +71,22 @@ def raw_url_for(endpoint, **kwargs):
             r = re.compile('<' + k + '>').sub(v, r)
         rules_simplified.append(r)
 
+    return rules_simplified
+
+
+# TODO: OZ by OZ: add kwargs just like in url_for
+def grid_raw_url_for(endpoint, **kwargs):
+    rules_simplified = get_rules_simplified(endpoint, **kwargs)
+
+    return "function (id, dict, host) { return find_and_build_url_for_endpoint(dict?dict:$scope, %s, host) + '#guuid=' + id; }" % (
+        json.dumps(rules_simplified, ))
+
+
+def raw_url_for(endpoint, **kwargs):
+    rules_simplified = get_rules_simplified(endpoint, **kwargs)
+
     return "function (dict, host) { return find_and_build_url_for_endpoint(dict?dict:$scope, %s, host); }" % (
         json.dumps(rules_simplified))
-    # \
-    #        " { var ret = '" + ret + "'; " \
-    #                                                " for (prop in dict) ret = ret.replace('<'+prop+'>',dict[prop]); return ret; }"
 
 
 def pre(value):
@@ -226,6 +236,7 @@ def update_jinja_engine(app):
         return ' target="_blank" ' if g.user and g.user.id in ['561e3eaf-2188-4001-b542-e607537567b2'] else ''
 
     app.jinja_env.globals.update(raw_url_for=raw_url_for)
+    app.jinja_env.globals.update(grid_raw_url_for=grid_raw_url_for)
     app.jinja_env.globals.update(pre=pre)
     app.jinja_env.globals.update(utils=utils)
     app.jinja_env.globals.update(translates=translates)

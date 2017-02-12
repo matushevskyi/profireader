@@ -382,12 +382,12 @@ class Grid:
                     sort['field'].desc())
         return query
 
-    @staticmethod
-    def grid_tuple_to_dict(tuple):
-        list = []
-        for t in tuple:
-            list.extend([t[0]] + t[1])
-        return list
+    # @staticmethod
+    # def grid_tuple_to_dict(tuple):
+    #     list = []
+    #     for t in tuple:
+    #         list.extend([t[0]] + t[1])
+    #     return list
 
 
 class PRBase:

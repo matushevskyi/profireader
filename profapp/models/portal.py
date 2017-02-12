@@ -93,6 +93,11 @@ class Portal(Base, PRBase):
                              order_by='asc(PortalDivision.position)',
                              primaryjoin='Portal.id==PortalDivision.portal_id')
 
+    divisions_publicable = relationship('PortalDivision',
+                                        viewonly=True,
+                                        order_by='asc(PortalDivision.position)',
+                                        primaryjoin="and_(Portal.id==PortalDivision.portal_id, PortalDivision.portal_division_type_id.in_(['events', 'news']))")
+
     own_company = relationship('Company',
                                # back_populates='own_portal',
                                uselist=False)
@@ -124,6 +129,9 @@ class Portal(Base, PRBase):
         super(Portal, self).__init__(**kwargs)
         if not self.portal_layout_id:
             self.portal_layout_id = utils.db.query_filter(PortalLayout).first().id
+
+    def is_active(self):
+        return True
 
     @staticmethod
     def launch_new_portal(company):
@@ -293,19 +301,6 @@ class Portal(Base, PRBase):
                 ret['host_profi'] = ''
         return ret
 
-    @staticmethod
-    def search_for_portal_to_join(company_id, searchtext):
-        """This method return all portals which are not partners current company"""
-        return [p.get_client_side_dict() for p in
-                g.db.query(Portal).outerjoin(MemberCompanyPortal, and_(MemberCompanyPortal.portal_id == Portal.id,
-                                                                       MemberCompanyPortal.company_id == company_id)).
-                    filter(Portal.name.ilike("%" + searchtext + "%")).
-                    filter(or_(
-                    MemberCompanyPortal.status.in_(MemberCompanyPortal.DELETED_STATUSES),
-                    MemberCompanyPortal.status == None)).
-                    filter(Portal.status.in_([Portal.STATUSES['PORTAL_ACTIVE']])).
-                    all()]
-
     def subscribe_user(self, user=None):
         user = user if user else g.user
 
@@ -380,6 +375,8 @@ class PortalAdvertisment(Base, PRBase):
                 ret.append(utils.dict_merge(
                     {'id': '', 'portal_id': portal.id, 'place': p_name, 'html': '', 'actions': {'create': True}},
                     places[p_name]))
+        for r in ret:
+            r['actions'] = [{'enabled': enabled, 'name': name, 'message': ''} for name, enabled in r['actions'].items()]
         return ret
 
     def get_client_side_dict(self, fields='id,portal_id,place,html', more_fields=None):
@@ -748,6 +745,27 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
             'status_changes': self.status_changes_by_portal(),
         }
 
+    def material_or_publication_grid_row(self, material):
+        from profapp.models.materials import Publication
+        from profapp.models.permissions import ArticleActionsForMembership
+        ret = self.get_client_side_dict(fields='id, portal.id|name|host, portal.logo.url, portal.own_company.name|id, '
+                                               'portal.own_company.logo.url')
+
+        publication = g.db.query(Publication).filter(and_(
+            Publication.material_id == material.id,
+            Publication.portal_division_id.in_([div.id for div in self.portal.divisions]))).first()
+        if publication:
+            ret['publication'] = publication.get_client_side_dict(
+                'id,status,visibility,publishing_tm,tags,portal_division.id|name,portal_division.portal.id|name|host')
+            ret['actions'] = ArticleActionsForMembership.article_actions_by_company(self, publication=publication)
+        else:
+            ret['publication'] = None
+            # we remove this action because we have button in $publish dialog
+            ret['actions'] = [a for a in ArticleActionsForMembership.article_actions_by_company(self, material=material)
+                              if a['name'] != ArticleActionsForMembership.MATERIAL_ACTIONS['PUBLISH']]
+
+        return ret
+
     def get_client_side_dict_for_plan(self):
         ret = {
             'membership': self.get_client_side_dict(
@@ -969,12 +987,16 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
         return utils.db.query_filter(MemberCompanyPortal).filter_by(portal_id=portal_id, company_id=company_id).first()
 
     @staticmethod
-    def get_members(company_id, *args):
-        subquery = utils.db.query_filter(MemberCompanyPortal).filter(
-            MemberCompanyPortal.portal_id == utils.db.query_filter(Portal,
-                                                                   company_owner_id=company_id).subquery().c.id).filter(
-            MemberCompanyPortal.status != MemberCompanyPortal.STATUSES['REJECTED'])
-        return subquery
+    def search_for_portal_to_join(company_id, searchtext):
+        return [p.get_client_side_dict() for p in
+                g.db.query(Portal).outerjoin(MemberCompanyPortal, and_(MemberCompanyPortal.portal_id == Portal.id,
+                                                                       MemberCompanyPortal.company_id == company_id)).
+                    filter(Portal.name.ilike("%" + searchtext + "%")).
+                    filter(or_(
+                    MemberCompanyPortal.status.in_(MemberCompanyPortal.DELETED_STATUSES),
+                    MemberCompanyPortal.status == None)).
+                    filter(Portal.status.in_([Portal.STATUSES['PORTAL_ACTIVE']])).
+                    all()]
 
     def has_rights(self, rightname):
         if self.portal.own_company.id == self.company_id:
@@ -999,14 +1021,8 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
         return self
 
     def get_publication_count(self):
-        from ..models.materials import Publication, Material
+        from profapp.models.materials import Publication, Material
         from sqlalchemy.sql import functions
-        ret = {'by_status_visibility': {s: {v: 0 for v in Publication.VISIBILITIES} for s in Publication.STATUSES},
-               'by_visibility_status': {v: {s: 0 for s in Publication.STATUSES} for v in Publication.VISIBILITIES},
-               'by_status': {s: 0 for s in Publication.STATUSES},
-               'by_visibility': {s: 0 for s in Publication.VISIBILITIES},
-               'all': 0,
-               }
 
         cnt = g.db.query(Publication.status, Publication.visibility, functions.count(Publication.id).label('cnt')). \
             join(Material, Publication.material_id == Material.id). \
@@ -1014,14 +1030,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
             Material.company_id == self.company_id,
             PortalDivision.portal_id == self.portal_id)).group_by(Publication.status, Publication.visibility).all()
 
-        for c in cnt:
-            ret['by_status_visibility'][c.status][c.visibility] = c.cnt
-            ret['by_status'][c.status] += c.cnt
-            ret['by_visibility_status'][c.visibility][c.status] = c.cnt
-            ret['by_visibility'][c.visibility] += c.cnt
-            ret['all'] += c.cnt
-
-        return ret
+        return Publication.group_by_status_and_visibility(cnt)
 
     from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
