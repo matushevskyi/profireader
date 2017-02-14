@@ -130,7 +130,7 @@ def employees_load(json, company_id):
                   permissions=EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE))
 def change_employment_status_by_company(json, company_id, employment_id, new_status):
     employment = UserCompany.get(employment_id)
-    if utils.find_by_key(employment.status_changes_by_company(), 'status', new_status)['enabled'] is True:
+    if utils.find_by_keys(employment.status_changes_by_company(), new_status, 'status')['enabled'] is True:
         employment.NOTIFY_STATUS_CHANGED_BY_COMPANY(new_status=new_status, old_status=employment.status)
         employment.status = new_status
         return employment.employees_grid_row()
@@ -200,7 +200,7 @@ from profapp.models.translate import Phrase
 def change_membership_status_by_company(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
 
-    if utils.find_by_key(membership.status_changes_by_company(), 'status', new_status)['enabled'] is True:
+    if utils.find_by_keys(membership.status_changes_by_company(), new_status, 'status')['enabled'] is True:
 
         old_status = membership.status
         membership.status = new_status

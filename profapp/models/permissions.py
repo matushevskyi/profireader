@@ -455,6 +455,12 @@ class ArticleActionsForMembership(Permissions):
     def __init__(self, action):
         self.action = action
 
+    # @staticmethod
+    # def reverse_statuses_from_actions(actions):
+    #     ret = []
+    #     for a in actions:
+    #         ret
+
     def check(self, membership_id, material_id=None, publication_id=None):
         from profapp.models.portal import MemberCompanyPortal
         from profapp.models.materials import Material, Publication
@@ -462,9 +468,9 @@ class ArticleActionsForMembership(Permissions):
 
         membership = MemberCompanyPortal.get(membership_id)
 
-        action = utils.find_by_key(self.article_actions_by_company(
+        action = utils.find_by_keys(self.article_actions_by_company(
             membership, material=Material.get(material_id, True), publication=Publication.get(publication_id, True)),
-            'name', self.action)
+            self.action, 'name')
 
         if not action:
             raise Exception("Unknown action {} for membership={}, material={}, publication={}".format(
@@ -525,6 +531,54 @@ class ArticleActionsForMembership(Permissions):
                 ]
             else:
                 ret = []
+
+        for change in ret:
+            change['message'] = ''
+        return ret
+
+    @classmethod
+    def article_actions_by_portal(cls, publication):
+        from profapp.models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
+        from ..models.company import UserCompany
+        from ..models.portal import MemberCompanyPortal
+        from ..models.materials import Publication
+
+        material = publication.material
+        portal = publication.portal_division.portal
+        employment = UserCompany.get_by_user_and_company_ids(company_id=portal.company_owner_id)
+        membership = MemberCompanyPortal.get_by_portal_id_company_id(
+            portal_id=portal.id, company_id=portal.company_owner_id)
+
+        publish_rights = employment.rights[RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH] and \
+                         membership.rights[RIGHT_AT_PORTAL.PUBLICATION_PUBLISH]
+
+        unpublish_rights = employment.rights[RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH] and \
+                           membership.rights[RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH]
+
+
+        if publication.status == Publication.STATUSES['SUBMITTED']:
+            ret = [
+                {'name': cls.PUBLICATION_ACTIONS['DELETE'],
+                 'enabled': employment.rights[RIGHT_AT_COMPANY.ARTICLES_DELETE]},
+                ]
+        elif publication.status == Publication.STATUSES['UNPUBLISHED']:
+            ret = [
+                {'name': cls.PUBLICATION_ACTIONS['DELETE'],
+                 'enabled': employment.rights[RIGHT_AT_COMPANY.ARTICLES_DELETE]},
+                {'name': cls.PUBLICATION_ACTIONS['PUBLISH'], 'enabled': publish_rights},
+            ]
+        elif publication.status == Publication.STATUSES['PUBLISHED']:
+            ret = [
+                {'name': cls.PUBLICATION_ACTIONS['UNPUBLISH'], 'enabled': unpublish_rights},
+                {'name': cls.PUBLICATION_ACTIONS['REPUBLISH'],
+                 'enabled': publish_rights and unpublish_rights},
+            ]
+        elif publication.status == Publication.STATUSES['DELETED']:
+            ret = [
+                {'name': cls.PUBLICATION_ACTIONS['UNDELETE'], 'enabled': unpublish_rights},
+            ]
+        else:
+            ret = []
 
         for change in ret:
             change['message'] = ''

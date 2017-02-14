@@ -28,7 +28,7 @@ module.controller('submit_publish_dialog', function ($scope, $ok, $uibModalInsta
 
         $scope.get_tags_for_selected_division = function (search_text) {
             var division = $scope.get_selected_division();
-            return _.filter($scope.data.portal.tags, function (tag) {
+            return _.filter($scope.data.at_portal.tags, function (tag) {
                 return $scope.tag_is_allowed_for_division(division, tag) &&
                     ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
                     (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
@@ -65,7 +65,7 @@ module.controller('submit_publish_dialog', function ($scope, $ok, $uibModalInsta
         $scope.get_selected_division = function () {
             console.log($scope.data)
             return (!$scope.data || !$scope.data.publication || !$scope.data.publication.portal_division_id || !$scope
-                .data.portal.divisions_publicable[$scope.data.publication.portal_division_id]) ? null : $scope.data.portal.divisions_publicable[$scope.data.publication.portal_division_id];
+                .data.at_portal.divisions_publicable[$scope.data.publication.portal_division_id]) ? null : $scope.data.at_portal.divisions_publicable[$scope.data.publication.portal_division_id];
 
         };
 
@@ -116,5 +116,5 @@ module.controller('submit_publish_dialog', function ($scope, $ok, $uibModalInsta
 </script>
 
 <script>
-    pr_angular_modules.push('ui.grid', 'ui.grid.pagination', 'ui.grid.edit', 'ui.grid.selection', 'ui.grid.grouping', 'ui.grid.treeView');
+{#    pr_angular_modules.push('ui.grid', 'ui.grid.pagination', 'ui.grid.edit', 'ui.grid.selection', 'ui.grid.grouping', 'ui.grid.treeView');#}
 </script>

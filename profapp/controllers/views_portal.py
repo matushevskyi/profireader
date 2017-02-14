@@ -337,7 +337,7 @@ def membership_set_tags(json, membership_id):
 def membership_change_status(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
 
-    if utils.find_by_key(membership.status_changes_by_portal(), 'status', new_status)['enabled'] is True:
+    if utils.find_by_keys(membership.status_changes_by_portal(), 'status', new_status)['enabled'] is True:
         old_status = membership.status
         membership.status = new_status
 

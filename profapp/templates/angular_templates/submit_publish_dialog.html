@@ -1,5 +1,3 @@
-{% raw %}
-
 <div af ng-model="data" af-url="{{ url_submit_to_portal({'article_action': action}) }}"
      af-after-save="afterSave"
      af-amid-load="amidLoad"
@@ -9,12 +7,12 @@
     </div>
     <div class="modal-body">
         {{ _('You are going to ' + action + ' ' + object_name + ' `%(data.publication.material.title)s` at portal
-        `%(data.portal.name)s`') }}<br/>
+        `%(data.at_portal.name)s`') }}<br/>
         <div ng-if="action !== 'UNPUBLISH' && action !== 'DELETE' && action !== 'UNDELETE'">
             <br/>
             {{ _('Select portal division') }}<span
                 af-validation-answer="data_validation:portal_division_id"></span><br/>
-            <div ng-repeat="division in data.portal.divisions_publicable">
+            <div ng-repeat="division in data.at_portal.divisions_publicable">
                 <label>
                     <input
                             name="material_details_publish_dialog_division"
@@ -75,8 +73,8 @@
                         type="checkbox">&nbsp;{{
                     _('also publish material') }}</label><br/>
                 <div ng-if="!data.can_material_also_be_published">
-                    {{ _('Sorry, you company `%(data.company.name)s` have no permission to publish at portal
-                    %(data.portal.name)s') }}<br/>
+                    {{ _('Sorry, you company `%(data.from_company.name)s` have no permission to publish at portal
+                    %(data.at_portal.name)s') }}<br/>
                 </div>
                 {{ _('You can send message to company administration') }}<br/>
                 <textarea disabled="disabled" style="width: 100%" ng-model="message"></textarea>
@@ -101,5 +99,3 @@
         </button>
     </div>
 </div>
-
-{% endraw %}
