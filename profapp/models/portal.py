@@ -761,8 +761,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
         else:
             ret['publication'] = None
             # we remove this action because we have button in $publish dialog
-            ret['actions'] = [a for a in ActionsForMaterialAtMembership.actions(self, material)
-                              if a['name'] != ActionsForMaterialAtMembership.ACTIONS['PUBLISH'] ]
+            ret['actions'] = [a for a in ActionsForMaterialAtMembership.actions(self, material)]
 
         return ret
 

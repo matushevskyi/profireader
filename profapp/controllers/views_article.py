@@ -4,11 +4,12 @@ from profapp.models.portal import PortalDivision, Portal, MemberCompanyPortal
 
 from .blueprints_declaration import article_bp
 from .. import utils
-from ..models.company import Company
+from ..models.company import Company, UserCompany
 from ..models.materials import Material, Publication
 from ..models.pr_base import PRBase, Grid
 from ..models.tag import Tag
-from ..models.permissions import UserIsActive, EmployeeHasRightAtCompany, RIGHT_AT_COMPANY, CheckFunction
+from ..models.permissions import UserIsActive, EmployeeHasRightAtCompany, RIGHT_AT_COMPANY, RIGHT_AT_PORTAL, \
+    CheckFunction
 from profapp.models.permissions import ActionsForMaterialAtMembership, ActionsForPublicationAtMembership
 
 
@@ -94,20 +95,38 @@ def publish_dialog_save(publication, jpublication, status):
         publication.status = status
 
 
-@article_bp.route('/submit_or_publish_material/<string:material_id>/', methods=['OK'],
-                  permissions=UserIsActive())
+@article_bp.route(
+    '/publication_change_status/<string:publication_id>/actor_membership_id/<string:membership_id>/action/<string:action>/',
+    methods=['OK'], permissions=UserIsActive())
+def publication_change_status(json, publication_id, membership_id, action):
+    actor_membership = MemberCompanyPortal.get(membership_id)
+    publication = Publication.get(publication_id)
+
+    if action == ActionsForPublicationAtMembership.ACTIONS['UNPUBLISH']:
+        publication.status = Publication.STATUSES['UNPUBLISHED']
+    elif action == ActionsForPublicationAtMembership.ACTIONS['UNDELETE']:
+        publication.status = Publication.STATUSES['UNPUBLISHED']
+    elif action == ActionsForPublicationAtMembership.ACTIONS['DELETE']:
+        publication.status = Publication.STATUSES['DELETED']
+    publication.save()
+    return actor_membership.material_or_publication_grid_row(publication.material)
+
+
+@article_bp.route('/submit_or_publish_material/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
 def submit_or_publish_material(json, material_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
     publication = Publication(material=Material.get(material_id))
     publisher_membership = MemberCompanyPortal.get(json['publisher_membership']['id'])
+    employment = UserCompany.get_by_user_and_company_ids(company_id=publication.material.company_id)
 
     if action == 'load':
         return utils.dict_merge(
             publish_dialog_load(publication, publisher_membership),
-            {'can_material_also_be_published': ActionsForMaterialAtMembership.actions(
-                publisher_membership, publication.material,
-                check_only_for_action=ActionsForMaterialAtMembership.ACTIONS['PUBLISH'])})
+            {'can_material_also_be_published':
+                 employment.rights[RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH] and \
+                 publisher_membership.rights[RIGHT_AT_PORTAL.PUBLICATION_PUBLISH]
+             })
     else:
         publish_dialog_save(publication, json['publication'],
                             status=Publication.STATUSES['PUBLISHED'] if

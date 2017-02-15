@@ -17,7 +17,7 @@
     <script>
 
 
-        module.controller('material_details', function ($scope, $ok, $uibModal, $timeout, $publish) {
+        module.controller('material_details', function ($scope, $ok, $uibModal, $timeout, $publish, $confirm) {
             $scope.$$translate = {{ translates('material_details')|safe }};
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
             $scope.company = {{ company.get_client_side_dict(fields = 'id,name')|tojson|safe }};
@@ -25,6 +25,7 @@
             {#            $scope.url_search_for_user = {{ raw_url_for('company.search_for_user')|safe }};#}
             $scope.url_company_portal_memberees = {{ grid_raw_url_for('company.portal_memberees')|safe }};
             $scope.url_update_material = {{ raw_url_for('article.article_show_form')|safe }};
+            $scope.url_publication_change_status = {{ raw_url_for('article.publication_change_status')|safe }};
             $scope.url_front_publication_details = {{ raw_url_for('front.article_details')|safe }};
 
             $scope.url_company = function (row) {
@@ -66,14 +67,28 @@
 
             $scope.grid_action = function (id, action, row, column_name) {
                 var publication = row['publication'];
-                $publish({
-                    material_id: publication ? null : $scope.data['material']['id'],
-                    publication_id: publication ? publication['id'] : null,
-                    action: action,
-                    publication_membership_id: row['id']
-                }).result.then(function (updated_row) {
-                    $scope.gridApi.grid.grid_change_row(updated_row);
-                });
+                if (action === 'SUBMIT' || action === 'PUBLISH') {
+                    $publish({
+                        material_id: publication ? null : $scope.data['material']['id'],
+                        publication_id: publication ? publication['id'] : null,
+                        action: action,
+                        publication_membership_id: row['id']
+                    }).result.then($scope.gridApi.grid.grid_change_row);
+                }
+                else {
+                    $confirm($scope._('are you sure you want ' + action + ' material'),
+                        $scope._('Material named `%(material.title)s` of company `%(material.company.name)s` at portal `%(portal.name)s`', {
+                            material: $scope.data.material,
+                            portal: row.portal
+                        }))
+                        .then(function (resp) {
+                            $ok($scope.url_publication_change_status({
+                                membership_id: row.id,
+                                action: action,
+                                publication_id: row.publication.id
+                            }), {}, $scope.gridApi.grid.grid_change_row);
+                        });
+                }
             };
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
@@ -89,7 +104,8 @@
                         width: '250',
                         img_url: 'portal.logo.url'
                     },
-                    {name: 'portal.own_company.name',
+                    {
+                        name: 'portal.own_company.name',
                         type: 'link',
                         href: 'url_company(row.entity)',
                         img_url: 'portal.own_company.logo.url',

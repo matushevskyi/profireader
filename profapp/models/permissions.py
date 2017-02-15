@@ -2,6 +2,7 @@ from ..models import exceptions
 from flask import g
 from profapp import utils
 
+
 class BinaryRightsMetaClass(type):
     def _allrights(self):
         return {name: type.__getattribute__(self, name) for (name, val) in
@@ -446,7 +447,7 @@ class CheckFunction(Permissions):
 class ActionsForMaterialAtMembership(Permissions):
     _action = None
 
-    ACTIONS = {'DELETE': 'DELETE', 'PUBLISH': 'PUBLISH', 'SUBMIT': 'SUBMIT', 'UNDELETE': 'UNDELETE'}
+    ACTIONS = {'DELETE': 'DELETE', 'SUBMIT': 'SUBMIT', 'UNDELETE': 'UNDELETE'}
 
     def __init__(self, action):
         self._action = action
@@ -473,12 +474,8 @@ class ActionsForMaterialAtMembership(Permissions):
 
         employment = UserCompany.get_by_user_and_company_ids(company_id=material.company_id)
 
-        publish_rights = employment.rights[RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH] and \
-                         membership.rights[RIGHT_AT_PORTAL.PUBLICATION_PUBLISH]
-
         ret = [
-            {'name': cls.ACTIONS['SUBMIT'], 'enabled': employment.rights[RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]},
-            {'name': cls.ACTIONS['PUBLISH'], 'enabled': publish_rights}
+            {'name': cls.ACTIONS['SUBMIT'], 'enabled': employment.rights[RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
         ]
 
         for change in ret:
@@ -493,8 +490,8 @@ class ActionsForMaterialAtMembership(Permissions):
 class ActionsForPublicationAtMembership(Permissions):
     _action = None
 
-    PUBLICATION_ACTIONS = {
-        'DELETE': 'DELETE', 'UNPUBLISH': 'UNPUBLISH', 'REPUBLISH': 'REPUBLISH', 'UNDELETE': 'UNDELETE'}
+    ACTIONS = {
+        'DELETE': 'DELETE', 'UNPUBLISH': 'UNPUBLISH', 'UNDELETE': 'UNDELETE', 'PUBLISH': 'PUBLISH'}
 
     def __init__(self, action):
         self._action = action
@@ -545,24 +542,24 @@ class ActionsForPublicationAtMembership(Permissions):
         if publication:
             if publication.status == Publication.STATUSES['SUBMITTED']:
                 ret = [
-                    {'name': cls.PUBLICATION_ACTIONS['DELETE'],
+                    {'name': cls.ACTIONS['DELETE'],
                      'enabled': employment.rights[RIGHT_AT_COMPANY.ARTICLES_DELETE]},
                 ]
             elif publication.status == Publication.STATUSES['UNPUBLISHED']:
                 ret = [
-                    {'name': cls.PUBLICATION_ACTIONS['DELETE'],
+                    {'name': cls.ACTIONS['DELETE'],
                      'enabled': employment.rights[RIGHT_AT_COMPANY.ARTICLES_DELETE]},
-                    {'name': cls.PUBLICATION_ACTIONS['PUBLISH'], 'enabled': publish_rights},
+                    {'name': cls.ACTIONS['PUBLISH'], 'enabled': publish_rights},
                 ]
             elif publication.status == Publication.STATUSES['PUBLISHED']:
                 ret = [
-                    {'name': cls.PUBLICATION_ACTIONS['UNPUBLISH'], 'enabled': unpublish_rights},
-                    {'name': cls.PUBLICATION_ACTIONS['REPUBLISH'],
+                    {'name': cls.ACTIONS['UNPUBLISH'], 'enabled': unpublish_rights},
+                    {'name': cls.ACTIONS['PUBLISH'],
                      'enabled': publish_rights and unpublish_rights},
                 ]
             elif publication.status == Publication.STATUSES['DELETED']:
                 ret = [
-                    {'name': cls.PUBLICATION_ACTIONS['UNDELETE'], 'enabled': unpublish_rights},
+                    {'name': cls.ACTIONS['UNDELETE'], 'enabled': unpublish_rights},
                 ]
             else:
                 ret = []
@@ -588,7 +585,6 @@ class ActionsForPublicationAtMembership(Permissions):
         from ..models.portal import MemberCompanyPortal
         from ..models.materials import Publication
 
-        material = publication.material
         portal = publication.portal_division.portal
         employment = UserCompany.get_by_user_and_company_ids(company_id=portal.company_owner_id)
         membership = MemberCompanyPortal.get_by_portal_id_company_id(
@@ -602,24 +598,21 @@ class ActionsForPublicationAtMembership(Permissions):
 
         if publication.status == Publication.STATUSES['SUBMITTED']:
             ret = [
-                {'name': cls.PUBLICATION_ACTIONS['DELETE'],
-                 'enabled': employment.rights[RIGHT_AT_COMPANY.ARTICLES_DELETE]},
+                {'name': cls.ACTIONS['DELETE'], 'enabled': employment.rights[RIGHT_AT_COMPANY.ARTICLES_DELETE]},
             ]
         elif publication.status == Publication.STATUSES['UNPUBLISHED']:
             ret = [
-                {'name': cls.PUBLICATION_ACTIONS['DELETE'],
-                 'enabled': employment.rights[RIGHT_AT_COMPANY.ARTICLES_DELETE]},
-                {'name': cls.PUBLICATION_ACTIONS['PUBLISH'], 'enabled': publish_rights},
+                {'name': cls.ACTIONS['DELETE'], 'enabled': employment.rights[RIGHT_AT_COMPANY.ARTICLES_DELETE]},
+                {'name': cls.ACTIONS['PUBLISH'], 'enabled': publish_rights},
             ]
         elif publication.status == Publication.STATUSES['PUBLISHED']:
             ret = [
-                {'name': cls.PUBLICATION_ACTIONS['UNPUBLISH'], 'enabled': unpublish_rights},
-                {'name': cls.PUBLICATION_ACTIONS['REPUBLISH'],
-                 'enabled': publish_rights and unpublish_rights},
+                {'name': cls.ACTIONS['UNPUBLISH'], 'enabled': unpublish_rights},
+                {'name': cls.ACTIONS['PUBLISH'], 'enabled': publish_rights and unpublish_rights},
             ]
         elif publication.status == Publication.STATUSES['DELETED']:
             ret = [
-                {'name': cls.PUBLICATION_ACTIONS['UNDELETE'], 'enabled': unpublish_rights},
+                {'name': cls.ACTIONS['UNDELETE'], 'enabled': unpublish_rights},
             ]
         else:
             ret = []
