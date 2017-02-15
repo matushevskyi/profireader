@@ -1,6 +1,6 @@
 from ..models import exceptions
 from flask import g
-
+from profapp import utils
 
 class BinaryRightsMetaClass(type):
     def _allrights(self):
@@ -467,7 +467,7 @@ class ActionsForMaterialAtMembership(Permissions):
         return action['enabled'] is True
 
     @classmethod
-    def actions(cls, membership, material):
+    def actions(cls, membership, material, check_only_for_action=None):
         from profapp.models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
         from ..models.company import UserCompany
 
@@ -483,7 +483,11 @@ class ActionsForMaterialAtMembership(Permissions):
 
         for change in ret:
             change['message'] = ''
-        return ret
+
+        if check_only_for_action:
+            return True if utils.find_by_keys(ret, check_only_for_action, 'name') else False
+        else:
+            return ret
 
 
 class ActionsForPublicationAtMembership(Permissions):

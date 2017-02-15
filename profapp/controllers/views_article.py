@@ -9,7 +9,7 @@ from ..models.materials import Material, Publication
 from ..models.pr_base import PRBase, Grid
 from ..models.tag import Tag
 from ..models.permissions import UserIsActive, EmployeeHasRightAtCompany, RIGHT_AT_COMPANY, CheckFunction
-from profapp.models.permissions import ActionsForMaterialAtMembership
+from profapp.models.permissions import ActionsForMaterialAtMembership, ActionsForPublicationAtMembership
 
 
 def material_can_be_edited():
@@ -75,45 +75,50 @@ def material_details_load(json, material_id):
     }
 
 
-@article_bp.route('/submit_or_publish_material/<string:material_id>/<string:SUBMIT_OR_PUBLISH>/', methods=['OK'],
+def publish_dialog_load(publication, publisher_membership):
+    return {
+        'publication': publication.get_client_side_dict(),
+        'publisher_membership': publisher_membership.get_client_side_dict(
+            fields='id, company, portal, portal.divisions_publicable, current_membership_plan_issued'),
+        'publication_count': publisher_membership.get_publication_count()
+    }
+
+
+def publish_dialog_save(publication, jpublication, status):
+    publication.portal_division = PortalDivision.get(jpublication['portal_division_id'], returnNoneIfNotExists=True)
+    publication.visibility = jpublication['visibility']
+    publication.tags = [Tag.get(t['id']) for t in jpublication['tags']]
+    for d in ['publishing_tm', 'event_begin_tm', 'event_end_tm']:
+        setattr(publication, d, PRBase.parse_timestamp(jpublication.get(d)))
+    if status:
+        publication.status = status
+
+
+@article_bp.route('/submit_or_publish_material/<string:material_id>/', methods=['OK'],
                   permissions=UserIsActive())
-def submit_or_publish_material(json, material_id, SUBMIT_OR_PUBLISH):
+def submit_or_publish_material(json, material_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
-    material = Material.get(material_id)
+    publication = Publication(material=Material.get(material_id))
     publisher_membership = MemberCompanyPortal.get(json['publisher_membership']['id'])
 
-    action_allowed = ActionsForMaterialAtMembership.actions(publisher_membership, material)
-    publication = Publication(material=Material.get(json['publication']['material']['id']))
-
     if action == 'load':
-        return {
-            'publication': publication.get_client_side_dict(),
-            'publisher_membership': publisher_membership.get_client_side_dict(
-                fields='id, company, portal, portal.divisions_publicable, current_membership_plan_issued'),
-            'publication_count': publisher_membership.get_publication_count(),
-            'can_material_also_be_published': True if utils.find_by_keys(
-                action_allowed, ActionsForMaterialAtMembership.ACTIONS['PUBLISH'], 'name') else False
-        }
+        return utils.dict_merge(
+            publish_dialog_load(publication, publisher_membership),
+            {'can_material_also_be_published': ActionsForMaterialAtMembership.actions(
+                publisher_membership, publication.material,
+                check_only_for_action=ActionsForMaterialAtMembership.ACTIONS['PUBLISH'])})
     else:
-        jpublication = json['publication']
-        publication.portal_division = PortalDivision.get(jpublication['portal_division_id'], returnNoneIfNotExists=True)
-        publication.visibility = jpublication['visibility']
-        publication.tags = [Tag.get(t['id']) for t in jpublication['tags']]
-        for d in ['publishing_tm', 'event_begin_tm', 'event_end_tm']:
-            setattr(publication, d, PRBase.parse_timestamp(jpublication.get(d)))
-
-        if SUBMIT_OR_PUBLISH == ActionsForMaterialAtMembership.ACTIONS['PUBLISH']:
-            publication.status = Publication.STATUSES['PUBLISHED']
-        else:
-            publication.status = Publication.STATUSES['SUBMITTED']
+        publish_dialog_save(publication, json['publication'],
+                            status=Publication.STATUSES['PUBLISHED'] if
+                            json.get('also_publish', None) else Publication.STATUSES['SUBMITTED'])
 
     if action == 'validate':
         publication.detach()
         return publication.validate(True)
     else:
         publication.save()
-        return publisher_membership.material_or_publication_grid_row(material)
+        return publisher_membership.material_or_publication_grid_row(publication.material)
         # membership.NOTIFY_ARTICLE_SUBMITED_BY_COMPANY(material_title=publication.material.title)
 
         # g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
@@ -122,8 +127,7 @@ def submit_or_publish_material(json, material_id, SUBMIT_OR_PUBLISH):
 
 @article_bp.route('/republish_publication/', methods=['OK'], permissions=UserIsActive())
 # @check_right(UserIsActive)
-def republish_publication(json, publication_id, SUBMIT_OR_PUBLISH):
-    from profapp.models.permissions import ActionsForPublicationAtMembership
+def republish_publication(json, publication_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
     publication = Material.get(publication_id)

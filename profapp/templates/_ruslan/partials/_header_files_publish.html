@@ -22,12 +22,10 @@
         $scope.url_submit_or_publish = function () {
 
             if (material_id) {
-                return $scope.url_submit_or_publish_material({'material_id': material_id,
-                    'SUBMIT_OR_PUBLISH': $scope.also_publish?'PUBLISH':'SUBMIT'});
+                return $scope.url_submit_or_publish_material({'material_id': material_id});
             }
             else {
-                return $scope.url_submit_or_publish_material({'material_id': material_id,
-                    'SUBMIT_OR_PUBLISH': $scope.also_publish?'PUBLISH':'SUBMIT'});
+                return $scope.url_submit_or_publish_material({'material_id': material_id});
             }
         }
         {#        $scope.url_submit_to_portal = {{ raw_url_for('article.submit_or_publish_material')|safe }};#}
@@ -38,6 +36,9 @@
 
         $scope.get_tags_for_selected_division = function (search_text) {
             var division = $scope.get_selected_division();
+            if (!division) {
+                return []
+            }
             return _.filter($scope.data.publisher_membership.portal.tags, function (tag) {
                 return $scope.tag_is_allowed_for_division(division, tag) &&
                     ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
@@ -48,7 +49,7 @@
         $scope.data = {
             action: action,
             publisher_membership: {'id': publication_membership_id},
-            publication: publication_id ? {'id': publication_id} : {'material': {'id': material_id}},
+            publication: publication_id ? {'id': publication_id} : null
         };
 
 
