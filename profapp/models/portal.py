@@ -747,7 +747,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
 
     def material_or_publication_grid_row(self, material):
         from profapp.models.materials import Publication
-        from profapp.models.permissions import ArticleActionsForMembership
+        from profapp.models.permissions import ActionsForMaterialAtMembership, ActionsForPublicationAtMembership
         ret = self.get_client_side_dict(fields='id, portal.id|name|host, portal.logo.url, portal.own_company.name|id, '
                                                'portal.own_company.logo.url')
 
@@ -757,12 +757,12 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
         if publication:
             ret['publication'] = publication.get_client_side_dict(
                 'id,status,visibility,publishing_tm,tags,portal_division.id|name,portal_division.portal.id|name|host')
-            ret['actions'] = ArticleActionsForMembership.article_actions_by_company(self, publication=publication)
+            ret['actions'] = ActionsForPublicationAtMembership.actions(self, publication=publication)
         else:
             ret['publication'] = None
             # we remove this action because we have button in $publish dialog
-            ret['actions'] = [a for a in ArticleActionsForMembership.article_actions_by_company(self, material=material)
-                              if a['name'] != ArticleActionsForMembership.MATERIAL_ACTIONS['PUBLISH']]
+            ret['actions'] = [a for a in ActionsForMaterialAtMembership.actions(self, material)
+                              if a['name'] != ActionsForMaterialAtMembership.ACTIONS['PUBLISH'] ]
 
         return ret
 

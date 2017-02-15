@@ -70,8 +70,7 @@
                     material_id: publication ? null : $scope.data['material']['id'],
                     publication_id: publication ? publication['id'] : null,
                     action: action,
-                    at_portal_id: row['portal']['id'],
-                    from_company_id: $scope.company['id']
+                    publication_membership_id: row['id']
                 }).result.then(function (updated_row) {
                     $scope.gridApi.grid.grid_change_row(updated_row);
                 });

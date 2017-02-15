@@ -1,18 +1,18 @@
-<div af ng-model="data" af-url="{{ url_submit_to_portal({'article_action': action}) }}"
+<div af ng-model="data" af-url="{{ url_submit_or_publish() }}"
      af-after-save="afterSave"
      af-amid-load="amidLoad"
      af-watch="data.publication" ng-cloak>
     <div class="modal-header">
-        <h3 class="modal-title">{{ _(action + ' ' + object_name + ' at portal') }}</h3>
+        <h3 class="modal-title">{{ _(action + ' material at portal') }}</h3>
     </div>
     <div class="modal-body">
-        {{ _('You are going to ' + action + ' ' + object_name + ' `%(data.publication.material.title)s` at portal
-        `%(data.at_portal.name)s`') }}<br/>
+        {{ _('You are going to ' + action + ' material `%(data.publication.material.title)s` of company `%(data.publication.material.company.name)s` at portal
+        `%(data.publisher_membership.portal.name)s`') }}<br/>
         <div ng-if="action !== 'UNPUBLISH' && action !== 'DELETE' && action !== 'UNDELETE'">
             <br/>
             {{ _('Select portal division') }}<span
                 af-validation-answer="data_validation:portal_division_id"></span><br/>
-            <div ng-repeat="division in data.at_portal.divisions_publicable">
+            <div ng-repeat="division in data.publisher_membership.portal.divisions_publicable">
                 <label>
                     <input
                             name="material_details_publish_dialog_division"
@@ -22,6 +22,7 @@
             </div>
             <hr/>
             <div class="selected_tags">
+
                 <ui-select ng-disabled="!data.publication.portal_division_id"
                            ng-model="$parent.$parent.data.publication.tags" class="form-control" sortable="true"
                            multiple>
@@ -31,7 +32,10 @@
                         <small ng-bind-html="tag.description | highlight: $select.search"></small>
                     </ui-select-choices>
                     <ui-select-no-choice>
-                        <em class="error">{{ ::_('there is no tags for this division') }}</em>
+                        <em ng-if="!$parent.$parent.data.publication.tags.length"
+                            class="error">{{ ::_('there is no tags for this division') }}</em>
+                        <em ng-if="$parent.$parent.data.publication.tags.length"
+                            class="notice">{{ ::_('there is no more tags for this division') }}</em>
                     </ui-select-no-choice>
 
                 </ui-select>
@@ -49,7 +53,7 @@
                        type="radio"/>
                 {{ visibility_type }}
                 <span class="fr"
-                      ng-bind-html="publication_count(data.membership.current_membership_plan_issued, visibility_type, data.publication_count)|html"></span>
+                      ng-bind-html="publication_count(data.publisher_membership.current_membership_plan_issued, visibility_type, data.publication_count)|html"></span>
             </label>
             <hr/>
             {{ _('Select publication date') }}<span
@@ -65,16 +69,15 @@
                     af-validation-answer="data_validation:event_end_tm"></span><br/>
                 <input pr-date-time-picker class="form-control" ng-model="data.publication.event_end_tm"/>
             </div>
-            <div ng-if="object_name === 'material'">
+            <div ng-if="data.can_material_also_be_published === false || data.can_material_also_be_published === true">
                 <hr/>
                 <label ng-class="{disabled: !data.can_material_also_be_published}"><input
                         ng-disabled="!data.can_material_also_be_published"
-                        ng-model="$parent.$parent.data.also_publish"
-                        type="checkbox">&nbsp;{{
-                    _('also publish material') }}</label><br/>
+                        ng-model="$parent.$parent.also_publish"
+                        type="checkbox">&nbsp;{{ _('also publish material') }}</label><br/>
                 <div ng-if="!data.can_material_also_be_published">
-                    {{ _('Sorry, you company `%(data.from_company.name)s` have no permission to publish at portal
-                    %(data.at_portal.name)s') }}<br/>
+                    {{ _('Sorry, you company `%(data.publisher_membership.company.name)s` have no permission to publish at portal
+                    %(data.publisher_membership.portal.name)s') }}<br/>
                 </div>
                 {{ _('You can send message to company administration') }}<br/>
                 <textarea disabled="disabled" style="width: 100%" ng-model="message"></textarea>
@@ -87,7 +90,7 @@
         <button ng-if="action === 'SUBMIT'" class="btn btn-primary"
                 ng-disabled="!$af.isActionAllowed(data, 'save')"
                 type="button" ng-click="$af.save(data)"><span ng-if="!data.also_publish">{{ _('Do submit') }}</span>
-            <span ng-if="data.also_publish">{{ _('Do submit & publish') }}</span>
+            <span ng-if="also_publish">{{ _('Do submit & publish') }}</span>
         </button>
 
         <button ng-if="action !== 'SUBMIT' " class="btn btn-primary"

@@ -9,6 +9,7 @@ from ..models.materials import Material, Publication
 from ..models.pr_base import PRBase, Grid
 from ..models.tag import Tag
 from ..models.permissions import UserIsActive, EmployeeHasRightAtCompany, RIGHT_AT_COMPANY, CheckFunction
+from profapp.models.permissions import ActionsForMaterialAtMembership
 
 
 def material_can_be_edited():
@@ -74,12 +75,70 @@ def material_details_load(json, material_id):
     }
 
 
-@article_bp.route('/submit_publish/<string:article_action>/', methods=['OK'],
+@article_bp.route('/submit_or_publish_material/<string:material_id>/<string:SUBMIT_OR_PUBLISH>/', methods=['OK'],
                   permissions=UserIsActive())
-# @check_right(UserIsActive)
-def submit_publish(json, article_action):
-    from profapp.models.permissions import ArticleActionsForMembership
+def submit_or_publish_material(json, material_id, SUBMIT_OR_PUBLISH):
     action = g.req('action', allowed=['load', 'validate', 'save'])
+
+    material = Material.get(material_id)
+    publisher_membership = MemberCompanyPortal.get(json['publisher_membership']['id'])
+
+    action_allowed = ActionsForMaterialAtMembership.actions(publisher_membership, material)
+    publication = Publication(material=Material.get(json['publication']['material']['id']))
+
+    if action == 'load':
+        return {
+            'publication': publication.get_client_side_dict(),
+            'publisher_membership': publisher_membership.get_client_side_dict(
+                fields='id, company, portal, portal.divisions_publicable, current_membership_plan_issued'),
+            'publication_count': publisher_membership.get_publication_count(),
+            'can_material_also_be_published': True if utils.find_by_keys(
+                action_allowed, ActionsForMaterialAtMembership.ACTIONS['PUBLISH'], 'name') else False
+        }
+    else:
+        jpublication = json['publication']
+        publication.portal_division = PortalDivision.get(jpublication['portal_division_id'], returnNoneIfNotExists=True)
+        publication.visibility = jpublication['visibility']
+        publication.tags = [Tag.get(t['id']) for t in jpublication['tags']]
+        for d in ['publishing_tm', 'event_begin_tm', 'event_end_tm']:
+            setattr(publication, d, PRBase.parse_timestamp(jpublication.get(d)))
+
+        if SUBMIT_OR_PUBLISH == ActionsForMaterialAtMembership.ACTIONS['PUBLISH']:
+            publication.status = Publication.STATUSES['PUBLISHED']
+        else:
+            publication.status = Publication.STATUSES['SUBMITTED']
+
+    if action == 'validate':
+        publication.detach()
+        return publication.validate(True)
+    else:
+        publication.save()
+        return publisher_membership.material_or_publication_grid_row(material)
+        # membership.NOTIFY_ARTICLE_SUBMITED_BY_COMPANY(material_title=publication.material.title)
+
+        # g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
+        #                (publication.id, "', '".join([t.id for t in publication.tags])))
+
+
+@article_bp.route('/republish_publication/', methods=['OK'], permissions=UserIsActive())
+# @check_right(UserIsActive)
+def republish_publication(json, publication_id, SUBMIT_OR_PUBLISH):
+    from profapp.models.permissions import ActionsForPublicationAtMembership
+    action = g.req('action', allowed=['load', 'validate', 'save'])
+
+    publication = Material.get(publication_id)
+    portal = publication.portal_division.portal
+    membership = MemberCompanyPortal.get(json['membership_id'])
+
+    action_allowed = ActionsForMaterialAtMembership.actions(membership, material)
+    publication = Publication(material=Material.get(json['material']['id']))
+
+    if 1:
+        action_allowed = utils.find_by_keys(ActionsForPublicationAtMembership.article_actions_by_portal(publication),
+                                            action, 'name')
+    else:
+        action_allowed = utils.find_by_keys(ArticleActionsForMembership.article_actions_by_company(
+            membership, publication=publication), action, 'name')
 
     portal = Portal.get(json['at_portal']['id'])
 
@@ -111,7 +170,7 @@ def submit_publish(json, article_action):
             'from_company': membership.company.get_client_side_dict(),
             'membership': membership.get_client_side_dict(fields='current_membership_plan_issued'),
             'publication_count': membership.get_publication_count(),
-            'at_portal': portal.get_client_side_dict(fields='id,name,tags,divisions_publicable')
+            # 'at_portal': portal.get_client_side_dict(fields='id,name,tags,divisions_publicable')
         }
 
         return utils.dict_merge(ret, more_data_to_ret)
@@ -133,25 +192,22 @@ def submit_publish(json, article_action):
             #     pass
             # membership.NOTIFY_ARTICLE_PUBLISHED_BY_PORTAL()
         if by_company_by_portal_t_f:
-            action = utils.find_by_keys(ArticleActionsForMembership.article_actions_by_portal(publication),
-                                        action, 'name')
+            action_allowed = utils.find_by_keys(ArticleActionsForMembership.article_actions_by_portal(publication),
+                                                action, 'name')
         else:
-            action = utils.find_by_keys(ArticleActionsForMembership.article_actions_by_company(
+            action_allowed = utils.find_by_keys(ArticleActionsForMembership.article_actions_by_company(
                 membership, publication=publication), action, 'name')
 
         if action['enabled']:
 
-
-
-        else:
-        if article_action in [PublishUnpublishInPortal.ACTIONS['PUBLISH'],
-                              PublishUnpublishInPortal.ACTIONS['REPUBLISH']]:
-            publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
-        elif article_action in [PublishUnpublishInPortal.ACTIONS['UNPUBLISH'],
-                                PublishUnpublishInPortal.ACTIONS['UNDELETE']]:
-            publication.status = PublishUnpublishInPortal.STATUSES['UNPUBLISHED']
-        elif article_action in [PublishUnpublishInPortal.ACTIONS['DELETE']]:
-            publication.status = PublishUnpublishInPortal.STATUSES['DELETED']
+            if article_action in [PublishUnpublishInPortal.ACTIONS['PUBLISH'],
+                                  PublishUnpublishInPortal.ACTIONS['REPUBLISH']]:
+                publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
+            elif article_action in [PublishUnpublishInPortal.ACTIONS['UNPUBLISH'],
+                                    PublishUnpublishInPortal.ACTIONS['UNDELETE']]:
+                publication.status = PublishUnpublishInPortal.STATUSES['UNPUBLISHED']
+            elif article_action in [PublishUnpublishInPortal.ACTIONS['DELETE']]:
+                publication.status = PublishUnpublishInPortal.STATUSES['DELETED']
 
     if action == 'validate':
         publication.detach()

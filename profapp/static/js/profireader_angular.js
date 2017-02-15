@@ -1302,12 +1302,14 @@ var find_by_keys = function () {
     var args = Array.prototype.slice.call(arguments);
     var list = args.shift();
     var val = args.shift();
-    return dict_deep_get.call([dict] + args);
+    var ret = null;
     $.each(list, function (ind, dict) {
-        dict_deep_get.call([dict] + args) == val;
-        return dict;
+        if (dict_deep_get.apply(this, [dict].concat(args)) == val) {
+            ret = dict;
+            return false;
+        }
     });
-    return null;
+    return ret;
 };
 
 var find_by_id = function (list, id) {
