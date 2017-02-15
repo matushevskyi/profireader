@@ -15,21 +15,17 @@
     module.controller('submit_publish_dialog', function ($scope, $ok, $uibModalInstance, action,
                                                          material_id, publication_id, publication_membership_id) {
 
-
         $scope.$$translate = {{ translates('submit_publish_dialog')|safe }};
         $scope.url_submit_or_publish_material = {{ raw_url_for('article.submit_or_publish_material')|safe }};
-        $scope.url_submit_or_publish_material = {{ raw_url_for('article.submit_or_publish_material')|safe }};
-        $scope.url_submit_or_publish = function () {
+        $scope.url_publish = {{ raw_url_for('article.publish')|safe }};
 
-            if (material_id) {
-                return $scope.url_submit_or_publish_material({'material_id': material_id});
-            }
-            else {
-                return $scope.url_submit_or_publish_material({'material_id': material_id});
-            }
-        }
-        {#        $scope.url_submit_to_portal = {{ raw_url_for('article.submit_or_publish_material')|safe }};#}
         {% raw %}
+
+        $scope.url_submit_or_publish = function () {
+            return material_id ?
+                $scope.url_submit_or_publish_material({'material_id': material_id}) :
+                $scope.url_publish({'publication_id': publication_id, 'membership_id': publication_membership_id});
+        };
 
         $scope.action = action;
         $scope.original_article = null;
