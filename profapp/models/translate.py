@@ -122,7 +122,8 @@ class TranslateTemplate(Base, PRBase):
     @staticmethod
     def try_to_guess_lang(translation, language=None):
         return getattr(translation,
-                       language if (language and language in [lng['name'] for lng in Config.LANGUAGES]) else g.lang)
+                       language if (language and language in [lng['name'] for lng in Config.LANGUAGES]) else
+                            getattr(g, 'lang', 'en'))
 
     @staticmethod
     def try_to_guess_url(url):

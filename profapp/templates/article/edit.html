@@ -21,8 +21,6 @@
             $scope.data = {};
 
             $scope.title = '{{ 'Update material' if material_id else 'Create new material' }}';
-            document.title = document.title;
-
 
             $scope.amidSave = function (resp) {
                 if (!$scope.data.material.id && resp.material.id) {
@@ -43,10 +41,10 @@
                 url = {{ raw_url_for('article.material_details')|safe }}({
                     company_id: material.company_id,
                     material_id: material.id
-                })
+                });
                 var win = window.open(url, '_blank');
                 win.focus();
-            }
+            };
 
             $scope.getData = function (model, deff) {
                 return deff(model);

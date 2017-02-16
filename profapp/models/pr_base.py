@@ -382,12 +382,12 @@ class Grid:
                     sort['field'].desc())
         return query
 
-    @staticmethod
-    def grid_tuple_to_dict(tuple):
-        list = []
-        for t in tuple:
-            list.extend([t[0]] + t[1])
-        return list
+    # @staticmethod
+    # def grid_tuple_to_dict(tuple):
+    #     list = []
+    #     for t in tuple:
+    #         list.extend([t[0]] + t[1])
+    #     return list
 
 
 class PRBase:
@@ -820,12 +820,12 @@ class PRBase:
         # event.listen(cls, 'after_update', cls.after_update)
         # event.listen(cls, 'after_delete', cls.after_delete)
 
-    @staticmethod
-    def datetime_from_utc_to_local(utc_datetime, format):
-        now_timestamp = time.time()
-        offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
-        utc_datetime = utc_datetime + offset
-        return datetime.datetime.strftime(utc_datetime, format)
+    # @staticmethod
+    # def datetime_from_utc_to_local(utc_datetime, format):
+    #     now_timestamp = time.time()
+    #     offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
+    #     utc_datetime = utc_datetime + offset
+    #     return datetime.datetime.strftime(utc_datetime, format)
 
 #
 #

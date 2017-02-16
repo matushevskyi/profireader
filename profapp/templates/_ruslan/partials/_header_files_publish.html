@@ -1,0 +1,128 @@
+<script>
+    module.factory('$publish', ['$http', '$uibModal', function ($http, $uibModal) {
+        return function (dict) {
+            var modalInstance = $uibModal.open({
+                templateUrl: '{{ static_address('angular_templates/submit_publish_dialog.html') }}',
+                controller: 'submit_publish_dialog',
+                backdrop: 'static',
+                keyboard: false,
+                resolve: resolveDictForAngularController(dict)
+            });
+            return modalInstance;
+        }
+    }]);
+
+    module.controller('submit_publish_dialog', function ($scope, $ok, $uibModalInstance, action,
+                                                         request_from,
+                                                         material_id, publication_id,
+                                                         actor_membership_id, publisher_membership_id) {
+{#        TODO: OZ by OZ: publisher_membership_id is obsolete. we can get it from publication or material#}
+
+        $scope.$$translate = {{ translates('submit_publish_dialog')|safe }};
+        $scope.url_submit_or_publish_material = {{ raw_url_for('article.submit_or_publish_material')|safe }};
+        $scope.url_publish = {{ raw_url_for('article.publish')|safe }};
+
+        {% raw %}
+
+        $scope.url_submit_or_publish = function () {
+            return material_id ?
+                $scope.url_submit_or_publish_material({'material_id': material_id}) :
+                $scope.url_publish({'publication_id': publication_id,
+                    'actor_membership_id': actor_membership_id,
+                    'request_from': request_from});
+        };
+
+        $scope.action = action;
+        $scope.original_article = null;
+
+        $scope.get_tags_for_selected_division = function (search_text) {
+            var division = $scope.get_selected_division();
+            if (!division) {
+                return []
+            }
+            return _.filter($scope.data.publisher_membership.portal.tags, function (tag) {
+                return $scope.tag_is_allowed_for_division(division, tag) &&
+                    ( (tag['text'].toString().toLowerCase().indexOf(search_text) !== -1) ||
+                    (tag['description'].toString().toLowerCase().indexOf(search_text) !== -1) );
+            })
+        };
+
+        $scope.data = {
+            action: action,
+            publisher_membership: {'id': publisher_membership_id},
+            publication: publication_id ? {'id': publication_id} : null
+        };
+
+
+        $scope.afterSave = function (resp, defcallback) {
+            $uibModalInstance.close(resp)
+        };
+
+        $scope.amidLoad = function (resp, defaultcallback) {
+            if (resp.publication.publishing_tm)
+                resp.publication.publishing_tm = new Date(resp.publication.publishing_tm);
+            if (resp.publication.event_begin_tm)
+                resp.publication.event_begin_tm = new Date(resp.publication.event_begin_tm);
+            if (resp.publication.event_end_tm)
+                resp.publication.event_end_tm = new Date(resp.publication.event_end_tm);
+            $scope.original_article = cloneObject(resp.publication);
+            return resp;
+        };
+
+        $scope.action_cancel = $uibModalInstance.dismiss;
+
+
+        $scope.get_selected_division = function () {
+            if ($scope.data && $scope.data.publisher_membership.portal && $scope.data.publication) {
+                return find_by_id($scope.data.publisher_membership.portal.divisions_publicable, $scope.data.publication.portal_division_id);
+            }
+            else {
+                return null;
+            }
+        };
+
+        $scope.is_selection_division_event = function () {
+            var division = $scope.get_selected_division();
+            return (division && division['portal_division_type_id'] === 'events');
+        };
+
+        $scope.tag_is_allowed_for_division = function (division, tag) {
+            var ret = division && division['tags'] && _.find(division['tags'], function (division_tag) {
+                    return division_tag.id === tag.id
+                });
+            return ret;
+        };
+
+        $scope.$watch("data['publication']['portal_division_id']", function (newid, oldid) {
+            if ($scope.data.publication) {
+                $scope.data.publication.tags = (newid ? _.filter($scope.data.publication.tags, function (tag) {
+                        return $scope.tag_is_allowed_for_division($scope.get_selected_division(), tag);
+                    }) : []);
+            }
+        });
+
+        //added listener per @homerjam per https://github.com/angular-ui/ui-select/issues/974
+        $scope.$on('uiSelectSort:change', function (event, args) {
+            $scope.data.publication.tags = args.array;
+            if (!$scope.$$phase) { //http://stackoverflow.com/questions/20263118/what-is-phase-in-angularjs
+                $scope.$apply();
+            }
+        });
+
+        $scope.visibility_available = function (visibility_type) {
+
+            if (!$scope.data || !$scope.data.publisher_membership || !$scope.data.publication_count) {
+                return false;
+            }
+            var current = $scope.data.publication_count['by_status_visibility']['PUBLISHED'][visibility_type.toUpperCase()];
+            var available = $scope.data.publisher_membership.current_membership_plan_issued['publication_count_' + visibility_type.toLowerCase()];
+            if (available < 0) return true;
+            if ($scope.original_article && $scope.original_article.visibility === visibility_type) return true;
+            return available > current;
+        };
+
+
+        {% endraw %}
+
+    });
+</script>

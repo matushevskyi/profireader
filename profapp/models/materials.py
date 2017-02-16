@@ -56,7 +56,7 @@ class Material(Base, PRBase, PRElasticDocument):
 
     status = Column(TABLE_TYPES['status'], default='NORMAL')
     STATUSES = {'NORMAL': 'NORMAL', 'EDITING': 'EDITING', 'FINISHED': 'FINISHED', 'DELETED': 'DELETED',
-                 'APPROVED': 'APPROVED'}
+                'APPROVED': 'APPROVED'}
 
     editor_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'), nullable=False)
     editor = relationship(User, uselist=False)
@@ -98,58 +98,59 @@ class Material(Base, PRBase, PRElasticDocument):
         sub_query = utils.db.query_filter(Material, company_id=company_id)
         return sub_query
 
-    @staticmethod
-    def get_material_grid_data(material):
-        dict = material.get_client_side_dict(fields='cr_tm,md_tm,title,editor.full_name,id,illustration.url')
-        dict.update({'portal.name': None if len(material.publications) == 0 else '', 'level': True})
-        dict.update({'actions': None if len(material.publications) == 0 else '', 'level': True})
-        list = [utils.dict_merge(
-            publication.get_client_side_dict(fields='portal_division.portal.name|host,status, id, portal_division_id'),
-            {
-                #    'actions':
-                #     {'edit': PublishUnpublishInPortal(publication=publication,
-                #                                       division=publication.division, company=material.company)
-                #         .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]
-                #      } if publication.status != 'SUBMITTED' and publication.status != "DELETED" else {}
-            },
-            material.get_client_side_dict(fields='title')
-        )
-                for publication in material.publications]
-        return dict, list
+    def material_grid_row(self):
+        ret = self.get_client_side_dict(fields='title,md_tm,editor.full_name,id,illustration.url')
 
-    @staticmethod
-    def get_portals_where_company_send_article(company_id):
-        portals = {}
+        from sqlalchemy.sql import functions
 
-        for m in utils.db.query_filter(Material, company_id=company_id).all():
-            for pub in m.publications:
-                portals[pub.portal_division.portal.id] = pub.portal_division.portal.name
-        return portals
+        cnt = g.db.query(Publication.status, Publication.visibility,
+                         functions.count(Publication.id).label('cnt')). \
+            join(Material, and_(Publication.material_id == Material.id, Material.id == self.id)). \
+            group_by(Publication.status, Publication.visibility).all()
 
-    @staticmethod
-    def get_companies_which_send_article_to_portal(portal_id):
-        # all = {'name': 'All', 'id': 0}
-        companies = {}
-        # companies.append(all)
-        articles = g.db.query(Publication). \
-            join(Publication.portal). \
-            filter(Portal.id == portal_id).all()
-        # for article in db(Publication, portal_id=portal_id).all():
-        for article in articles:
-            companies[article.company.id] = article.company.name
-        return companies
+        ret['publications'] = Publication.group_by_status_and_visibility(cnt)
+        return ret
 
-        # def set_image_client_side_dict(self, client_data):
-        #     if client_data['selected_by_user']['type'] == 'preset':
-        #         client_data['selected_by_user'] = {'type': 'none'}
-        #     if not self.company:
-        #         folder_id = Company.get(self.company_id).system_folder_file_id
-        #     else:
-        #         folder_id = self.company.system_folder_file_id
-        #
-        #     FileImg.set_image_cropped_file(self.illustration_image_cropped, self.image_cropping_properties(),
-        #                                    client_data, folder_id)
-        #     return self
+    # @staticmethod
+    # def get_material_grid_data(material):
+    #     dict = material.get_client_side_dict(fields='cr_tm,md_tm,title,editor.full_name,id,illustration.url')
+    #     dict.update({'portal.name': None if len(material.publications) == 0 else '', 'level': True})
+    #     dict.update({'actions': None if len(material.publications) == 0 else '', 'level': True})
+    #     list = [utils.dict_merge(
+    #         publication.get_client_side_dict(fields='portal_division.portal.name|host,status, id, portal_division_id'),
+    #         {
+    #             #    'actions':
+    #             #     {'edit': PublishUnpublishInPortal(publication=publication,
+    #             #                                       division=publication.division, company=material.company)
+    #             #         .actions()[PublishUnpublishInPortal.ACTIONS['EDIT']]
+    #             #      } if publication.status != 'SUBMITTED' and publication.status != "DELETED" else {}
+    #         },
+    #         material.get_client_side_dict(fields='title')
+    #     )
+    #             for publication in material.publications]
+    #     return dict, list
+
+    # @staticmethod
+    # def get_portals_where_company_send_article(company_id):
+    #     portals = {}
+    #
+    #     for m in utils.db.query_filter(Material, company_id=company_id).all():
+    #         for pub in m.publications:
+    #             portals[pub.portal_division.portal.id] = pub.portal_division.portal.name
+    #     return portals
+
+    # @staticmethod
+    # def get_companies_which_send_article_to_portal(portal_id):
+    #     # all = {'name': 'All', 'id': 0}
+    #     companies = {}
+    #     # companies.append(all)
+    #     articles = g.db.query(Publication). \
+    #         join(Publication.portal). \
+    #         filter(Portal.id == portal_id).all()
+    #     # for article in db(Publication, portal_id=portal_id).all():
+    #     for article in articles:
+    #         companies[article.company.id] = article.company.name
+    #     return companies
 
     @classmethod
     def __declare_last__(cls):
@@ -202,19 +203,14 @@ class Publication(Base, PRBase, PRElasticDocument):
     STATUSES = {'SUBMITTED': 'SUBMITTED', 'UNPUBLISHED': 'UNPUBLISHED', 'PUBLISHED': 'PUBLISHED', 'DELETED': 'DELETED',
                 'HOLDED': 'HOLDED'}
 
+    def actions_by_portal(self):
+        return []
+
     visibility = Column(TABLE_TYPES['status'], default='OPEN')
     VISIBILITIES = {'OPEN': 'OPEN', 'REGISTERED': 'REGISTERED', 'PAYED': 'PAYED'}
-    # , 'CONFIDENTIAL': 'CONFIDENTIAL'
 
     portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
     portal_division = relationship('PortalDivision', uselist=False)
-
-    # portal = relationship('Portal',
-    #                       secondary='portal_division',
-    #                       primaryjoin="Publication.portal_division_id == PortalDivision.id",
-    #                       secondaryjoin="PortalDivision.portal_id == Portal.id",
-    #                       back_populates='publications',
-    #                       uselist=False)
 
     company = relationship(Company, secondary='material',
                            primaryjoin="Publication.material_id == Material.id",
@@ -379,11 +375,42 @@ class Publication(Base, PRBase, PRElasticDocument):
                    }
         return actions[self.visibility]()
 
+    def portal_publication_grid_row(self, actor_membership):
+        from profapp.models.permissions import ActionsForPublicationAtMembership
+        from profapp.models.portal import MemberCompanyPortal
+        publisher_membership = MemberCompanyPortal.get_by_portal_id_company_id(
+            company_id=self.material.company_id, portal_id=self.portal_division.portal_id)
+
+        return {
+            'id': self.id,
+            'publication': self.get_client_side_dict(
+                'id,status,visibility,publishing_tm,tags,portal_division.id|name,portal_division.portal.id|name|host,material.id|title'),
+            'publisher_membership': publisher_membership.get_client_side_dict(fields='id,company.id|name|logo,portal.id|host|name|logo'),
+            'actions': ActionsForPublicationAtMembership.actions(membership=actor_membership, publication=self)}
+
     def get_client_side_dict(self, fields='id|read_count|tags|portal_division_id|cr_tm|md_tm|status|material_id|'
                                           'visibility|publishing_tm|event_begin_tm,event_end_tm,company.id|name, '
                                           'portal_division.id|name|portal_id, portal_division.portal.id|name|host, material',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    @staticmethod
+    def group_by_status_and_visibility(cnt):
+        ret = {'by_status_visibility': {s: {v: 0 for v in Publication.VISIBILITIES} for s in Publication.STATUSES},
+               'by_visibility_status': {v: {s: 0 for s in Publication.STATUSES} for v in Publication.VISIBILITIES},
+               'by_status': {s: 0 for s in Publication.STATUSES},
+               'by_visibility': {s: 0 for s in Publication.VISIBILITIES},
+               'all': 0,
+               }
+
+        for c in cnt:
+            ret['by_status_visibility'][c.status][c.visibility] = c.cnt
+            ret['by_status'][c.status] += c.cnt
+            ret['by_visibility_status'][c.visibility][c.status] = c.cnt
+            ret['by_visibility'][c.visibility] += c.cnt
+            ret['all'] += c.cnt
+
+        return ret
 
     @staticmethod
     def update_article_portal(publication_id, **kwargs):
@@ -524,62 +551,3 @@ class Publication(Base, PRBase, PRElasticDocument):
             'liked': self.is_liked(),
             'liked_count': self.liked_count()
         }
-
-# TODO: OZ by OZ: cjange it to explicity function call
-@on_value_changed(Publication.status)
-def publication_status_changed(target: Publication, old_status, new_status, action):
-    from ..models.translate import Phrase
-    from ..models.portal import MemberCompanyPortal
-    from ..models.permissions import RIGHT_AT_COMPANY
-
-
-
-
-    portal_division = target.portal_division if target.portal_division else PortalDivision.get(
-        target.portal_division_id)
-    portal = portal_division.portal
-    material = Material.get(target.material_id)
-
-    right_at_company = None
-    right_at_portal = None
-    if new_value == Publication.STATUSES['SUBMITTED'] and not old_value:
-        right_at_company = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-        right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-    elif new_value == Publication.STATUSES['PUBLISHED']:
-        right_at_company = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-        right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-    elif old_value == Publication.STATUSES['PUBLISHED']:
-        right_at_company = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-        right_at_portal = [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
-                              RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]
-
-    target.notifications_about_employment_changes(
-        what_happened="changed status of publication from %s to %s in behalf of %s" % (old_status, new_status, changed_by),
-        rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)()
-
-    if right_at_company or right_at_portal:
-        membership = MemberCompanyPortal.get_by_portal_id_company_id(target.portal_division.portal_id,
-                                                                     target.material.company_id)
-        return membership.send_notifications_about_employment_changes(
-            "changed status of %%(url_external_publication)s from %s to %s at division `%%(division_name)s`" %
-            (old_value, new_value),
-            additional_dict={
-                'url_external_publication': portal.host + url_for('front.article_details', publication_id=target.id,
-                                                                  publication_title=material.title),
-                'division_name': portal_division.nameid_url(target.id, 'portal.publications', portal_id=portal.id)
-            },
-            rights_at_company=right_at_company,
-            more_phrases_to_company=Phrase("See company`s %(url_company_materials)s", dict={
-                'url_company_materials': utils.jinja.grid_url(material.id, 'company.materials',
-                                                              company_id=material.company_id)}),
-            right_at_portal=right_at_portal,
-            more_phrases_to_portal=Phrase("See portal`s %(url_portal_publications)s", dict={
-                'url_portal_publications': utils.jinja.grid_url(target.id, 'portal.publications', portal_id=portal.id)})
-        )
-    else:
-        return utils.do_nothing()

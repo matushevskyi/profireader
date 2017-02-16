@@ -55,6 +55,11 @@ gulp.task('install_angular_animate', function () {
         .pipe(gulp.dest(dst + 'angular-animate/'));
 });
 
+gulp.task('install_angular_route', function () {
+    return gulp.src(src + 'angular-route/angular-route.js')
+        .pipe(gulp.dest(dst + 'angular-route/'));
+});
+
 gulp.task('install_angular_bootstrap', function () {
     return gulp.src([src + 'angular-bootstrap/ui-bootstrap.min.js', src + 'angular-bootstrap/ui-bootstrap-tpls.min.js'])
         .pipe(gulp.dest(dst + 'angular-bootstrap/'));
@@ -229,6 +234,7 @@ gulp.task('default', taskListing);
 gulp.task('all', [
     'install_fileuploader',
     'install_angular',
+    'install_angular_route',
     // 'install_angular_translate',
     // 'install_angular_cookies',
     'install_angular_ui_select',

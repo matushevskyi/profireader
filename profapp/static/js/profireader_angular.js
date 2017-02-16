@@ -137,18 +137,6 @@ var prDatePicker_and_DateTimePicker = function (name, $timeout) {
 }
 
 angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip', 'ui.select'])
-    .factory('$publish', ['$http', '$uibModal', function ($http, $uibModal) {
-        return function (dict) {
-            var modalInstance = $uibModal.open({
-                templateUrl: 'submit_publish_dialog.html',
-                controller: 'submit_publish_dialog',
-                backdrop: 'static',
-                keyboard: false,
-                resolve: resolveDictForAngularController(dict)
-            });
-            return modalInstance;
-        }
-    }])
     .factory('$membership_tags', ['$http', '$uibModal', function ($http, $uibModal) {
         return function (dict) {
             return modalInstance = $uibModal.open({
@@ -530,6 +518,11 @@ function file_choose(selectedfile) {
 
 module = angular.module('Profireader', pr_angular_modules);
 
+module.config(['$routeProvider', '$sceDelegateProvider',
+    function ($routeProvider, $sceDelegateProvider) {
+        $sceDelegateProvider.resourceUrlWhitelist(['self', new RegExp('^.*$')]);
+    }]);
+
 module.config(function ($provide) {
     $provide.decorator('$controller', function ($delegate) {
         return function (constructor, locals, later, indent) {
@@ -683,9 +676,13 @@ function pr_dictionary(phrase, dictionary, allow_html, scope, $ok, phrase_defaul
     ret = ret.replace(/%\(([^)]*)\)(s|d|f|m|i)/g, function (g0, g1) {
         var indexes = g1.split('.');
         var d = dictionary ? dictionary : scope;
+        if (!d) {
+            console.warn('passed object is False', d);
+            return g1;
+        }
         // try {
         for (var i in indexes) {
-            if (typeof d[indexes[i]] !== 'undefined') {
+            if (typeof d === 'object' && d !== null && indexes[i] in d) {
                 d = d[indexes[i]];
             }
             else {
@@ -1224,7 +1221,7 @@ var extract_formats_items_from_group = function (formats_in_group) {
             {title: format_name.replace(/.*_(\w+)$/, '$1'), format: format_name});
     });
     return ret;
-}
+};
 
 
 var get_complex_menu = function (formats, name, subformats) {
@@ -1236,7 +1233,7 @@ var get_complex_menu = function (formats, name, subformats) {
         });
     });
     return ret;
-}
+};
 
 var get_array_for_menu_build = function (formats) {
     var menu = {};
@@ -1289,21 +1286,34 @@ var noImageForImageName = function (image_name) {
     else {
         return static_address('images/no_image.png');
     }
-}
+};
 
-var find_by_key = function (list, key, val) {
-    var found = null;
+var dict_deep_get = function () {
+    var args = Array.prototype.slice.call(arguments);
+    var dict = args.shift();
+    $.each(args, function (ind, k) {
+        dict = dict[k];
+    });
+    return dict;
+};
+
+
+var find_by_keys = function () {
+    var args = Array.prototype.slice.call(arguments);
+    var list = args.shift();
+    var val = args.shift();
+    var ret = null;
     $.each(list, function (ind, dict) {
-        if (dict[key] === val) {
-            found = dict;
+        if (dict_deep_get.apply(this, [dict].concat(args)) == val) {
+            ret = dict;
             return false;
         }
     });
-    return found;
+    return ret;
 };
 
 var find_by_id = function (list, id) {
-    return find_by_key(list, 'id', id);
+    return find_by_keys(list, id, 'id');
 };
 
 

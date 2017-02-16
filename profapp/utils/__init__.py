@@ -147,11 +147,25 @@ def static_address(relative_file_name):
     return '//static.' + Config.MAIN_DOMAIN + '/static/' + relative_file_name
 
 
-def find_by_key(list, key, val):
-    return next((d for d in list if (d[key] if isinstance(d, dict) else getattr(d, key)) == val), None)
+def dict_deep_get(dictionary, *keys, on_error=Exception):
+    ret = dictionary
+    for k in keys:
+        if isinstance(ret, dict):
+            ret = ret[k]
+        elif hasattr(ret, k):
+            ret = getattr(ret, k)
+        elif on_error is Exception:
+            raise Exception('can`t get {} from {}'.format(keys, dict))
+        else:
+            return on_error
+    return ret
+
+
+def find_by_keys(list, val, *keys, on_error=None):
+    return next((d for d in list if dict_deep_get(d, *keys, on_error=on_error) == val), on_error)
 
 def find_by_id(list, id):
-    return find_by_key(list, 'id', id)
+    return find_by_keys(list, id, 'id')
 
 
 def dict_deep_replace(what_to_append, dictionary, *args, add_only_if_not_exists=False):
@@ -215,18 +229,18 @@ def strip_tags(html, allowed_tags=[]):
 import cProfile
 
 
-def profile(func):
-    def profiled_func(*args, **kwargs):
-        profile = cProfile.Profile()
-        try:
-            profile.enable()
-            result = func(*args, **kwargs)
-            profile.disable()
-            return result
-        finally:
-            profile.print_stats(sort='time')
-
-    return profiled_func
+# def profile(func):
+#     def profiled_func(*args, **kwargs):
+#         profile = cProfile.Profile()
+#         try:
+#             profile.enable()
+#             result = func(*args, **kwargs)
+#             profile.disable()
+#             return result
+#         finally:
+#             profile.print_stats(sort='time')
+#
+#     return profiled_func
 
 
 def do_nothing(*args, **kwargs):
@@ -237,5 +251,5 @@ def json2kwargs(f):
     return lambda json: f(**json)
 
 
-def set_default(val, default = None):
+def set_default(val, default=None):
     return default if val is None else val

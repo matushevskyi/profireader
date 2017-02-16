@@ -8,20 +8,20 @@ from ..models.company import Company, UserCompany
 from ..models.messenger import Contact
 from ..models.portal import Portal, UserPortalReader
 from ..models.users import User
-from ..models.permissions import user_is_active
+from ..models.permissions import UserIsActive
 
 
-@messenger_bp.route('/', methods=['GET'], permissions=user_is_active)
+@messenger_bp.route('/', methods=['GET'], permissions=UserIsActive())
 def messenger():
     return render_template('messenger/messenger.html')
 
 
-@messenger_bp.route('/', methods=['OK'], permissions=user_is_active)
+@messenger_bp.route('/', methods=['OK'], permissions=UserIsActive())
 def messenger_load(json):
     return {}
 
 
-@messenger_bp.route('/community_search/', methods=['OK'], permissions=user_is_active)
+@messenger_bp.route('/community_search/', methods=['OK'], permissions=UserIsActive())
 def community_search(json):
     PER_PAGE = 20
     portals_ids = []
@@ -105,7 +105,7 @@ def community_search(json):
     }
 
 
-@messenger_bp.route('/contacts_search/', methods=['OK'], permissions=user_is_active)
+@messenger_bp.route('/contacts_search/', methods=['OK'], permissions=UserIsActive())
 def contacts_search(json):
     page_size = 100
     query = g.db.query(Contact.id, Contact.status, User). \
@@ -135,7 +135,7 @@ def contacts_search(json):
     }
 
 
-@messenger_bp.route('/contact_action/', methods=['OK'], permissions=user_is_active)
+@messenger_bp.route('/contact_action/', methods=['OK'], permissions=UserIsActive())
 def contact_action(json):
     action = json['action']
 

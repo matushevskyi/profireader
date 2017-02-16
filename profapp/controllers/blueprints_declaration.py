@@ -1,5 +1,5 @@
 from flask import Blueprint
-
+from profapp.models.permissions import Permissions
 
 class PrOldBlueprint(Blueprint):
     declared_endpoints = {}
@@ -45,7 +45,6 @@ class PrBlueprint(Blueprint):
         from flask import request, render_template, session, redirect, url_for, g, jsonify, current_app
         from ..models import exceptions
         from functools import wraps
-        import traceback
         if options and 'methods' in options and 'OK' in options['methods']:
             options['methods'][options['methods'].index('OK')] = 'POST'
             ok_method = True
@@ -54,15 +53,14 @@ class PrBlueprint(Blueprint):
 
         if options and 'permissions' in options:
             permissions = options['permissions']
-            if not isinstance(permissions, list):
-                permissions = [permissions]
+            if not isinstance(permissions, Permissions):
+                raise Exception('permission have to be Permission object for blueprint={}, rule={}'.format(
+                    self.name, rule))
             del options['permissions']
         else:
-            # raise exceptions.RouteWithoutPermissions()
-            permissions = None
+            raise exceptions.RouteWithoutPermissions()
 
         def decorator(f):
-
             @wraps(f)
             def wrapped_function(*args, **kwargs):
                 method = request.method
@@ -72,24 +70,24 @@ class PrBlueprint(Blueprint):
 
                 try:
 
-                    if request.url_rule.rule not in self.registered_functions[f.__name__][1]:
-                        raise exceptions.RouteWithoutPermissions(self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
+                    if request.url_rule.rule not in self.registered_functions[f.__name__]['perm']:
+                        raise exceptions.RouteWithoutPermissions(
+                            self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
 
-                    ps = self.registered_functions[f.__name__][1][request.url_rule.rule]
+                    ps = self.registered_functions[f.__name__]['perm'][request.url_rule.rule]
 
                     if not ps:
-                        raise exceptions.RouteWithoutPermissions(self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
+                        raise exceptions.RouteWithoutPermissions(
+                            self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
 
                     if method == 'OK' or method == 'POST':
                         json = request.json
-                        for p in ps:
-                            if not p(json, *args, **kwargs):
-                                raise exceptions.UnauthorizedUser()
+                        if not ps.check(json, *args, **kwargs):
+                            raise exceptions.UnauthorizedUser()
                         ret = f(json, *args, **kwargs)
                     else:
-                        for p in ps:
-                            if not p(*args, **kwargs):
-                                raise exceptions.UnauthorizedUser()
+                        if not ps.check(*args, **kwargs):
+                            raise exceptions.UnauthorizedUser()
                         ret = f(*args, **kwargs)
 
 
@@ -102,7 +100,6 @@ class PrBlueprint(Blueprint):
                     elif method == 'OK':
                         return jsonify(
                             {'data': {}, 'ok': False, 'error_code': exceptions.NotLoggedInUser.__name__})
-
 
                 # except Exception as e:
                 #     if method == 'GET':
@@ -120,15 +117,27 @@ class PrBlueprint(Blueprint):
                 elif method == 'OK':
                     return jsonify({'data': ret, 'ok': True, 'error_code': 'NO_ERROR'})
 
-            if f.__name__ not in self.registered_functions:
-                self.registered_functions[f.__name__] = (wrapped_function, {}, current_app)
+            # if f.__name__ not in self.registered_functions:
+            #     self.registered_functions[f.__name__] = (wrapped_function, {}, current_app)
+            #
+            # self.registered_functions[f.__name__][1][self.url_prefix + rule] = permissions
+            #
+            # endpoint = options.pop("endpoint", f.__name__)
+            # self.add_url_rule(rule, endpoint, self.registered_functions[f.__name__][0], **options)
+            #
+            # return self.registered_functions[f.__name__][0]
+            #
+            #
 
-            self.registered_functions[f.__name__][1][self.url_prefix + rule] = permissions
+            if f.__name__ not in self.registered_functions:
+                self.registered_functions[f.__name__] = {'func': wrapped_function, 'perm': {}, 'app': current_app}
+
+            self.registered_functions[f.__name__]['perm'][self.url_prefix + rule] = permissions
 
             endpoint = options.pop("endpoint", f.__name__)
-            self.add_url_rule(rule, endpoint, self.registered_functions[f.__name__][0], **options)
+            self.add_url_rule(rule, endpoint, self.registered_functions[f.__name__]['func'], **options)
 
-            return self.registered_functions[f.__name__][0]
+            return self.registered_functions[f.__name__]['func']
 
         return decorator
 
@@ -138,7 +147,7 @@ index_bp = PrOldBlueprint('index', __name__)
 auth_bp = PrOldBlueprint('auth', __name__)
 admin_bp = PrOldBlueprint('admin', __name__)
 user_bp = PrOldBlueprint('user', __name__)
-article_bp = PrOldBlueprint('article', __name__)
+article_bp = PrBlueprint('article', __name__, url_prefix='/article')
 filemanager_bp = PrOldBlueprint('filemanager', __name__)
 image_editor_bp = PrOldBlueprint('image_editor', __name__)
 company_bp = PrBlueprint('company', __name__, url_prefix='/company')

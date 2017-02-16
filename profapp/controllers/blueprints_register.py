@@ -36,7 +36,7 @@ def register_profi(app):
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(user_bp, url_prefix='/user')
     app.register_blueprint(filemanager_bp, url_prefix='/filemanager')
-    app.register_blueprint(article_bp, url_prefix='/articles')
+    app.register_blueprint(article_bp)
     app.register_blueprint(image_editor_bp, url_prefix='/image_editor')
     app.register_blueprint(company_bp)
     app.register_blueprint(portal_bp, url_prefix='/portal')

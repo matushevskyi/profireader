@@ -136,7 +136,7 @@ def prepare_connections(app, echo=False):
 
         from fluent import sender
         g.logger = sender.FluentSender(app.apptype, host=app.config['FLUENT_LOGGER_HOST'], port=app.config['FLUENT_LOGGER_PORT'])
-        g.log = lambda *args: g.logger.emit(*args) and (print(*args) if echo else utils.do_nothing())
+        g.log = lambda *args: print(*args)
 
         event.listen(db_session, 'after_flush', on_after_flush)
 
@@ -182,6 +182,7 @@ def setup_authomatic(app):
 
 def load_user(apptype):
     g.user = current_user if current_user.is_authenticated() else None
+    g.user_id = g.user.id if g.user else None
     if current_user and current_user.is_authenticated():
         current_user.ping()
 
