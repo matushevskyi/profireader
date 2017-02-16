@@ -17,7 +17,7 @@ from ..models.tag import Tag
 from ..models.translate import TranslateTemplate
 from ..models.exceptions import UnauthorizedUser
 from profapp.models.translate import Phrase
-# from ..models.permissions import user_is_active, company_is_active, employee_af, employee_have_right, RIGHT_AT_COMPANY
+from profapp.models import permissions
 
 
 @portal_bp.route('/create/company/<string:company_id>/', methods=['GET'])
@@ -397,25 +397,16 @@ def old_publications_url(company_id):
 # @check_right(UserIsEmployee, ['company_id'])
 def publications(portal_id):
     portal = Portal.get(portal_id)
-    return render_template('portal/portal_publications.html', company=portal.own_company, portal=portal)
-
-
-def get_publication_dict(publication):
-    ret = {}
-    ret['publication'] = publication.get_client_side_dict()
-    if ret.get('long'):
-        del ret['long']
-    ret['id'] = publication.id
-    ret['actions'] = PublishUnpublishInPortal(publication=publication, division=publication.portal_division,
-                                              company=publication.portal_division.portal.own_company).actions()
-    return ret
+    membership = MemberCompanyPortal.get_by_portal_id_company_id(company_id=portal.company_owner_id, portal_id=portal.id)
+    return render_template('portal/portal_publications.html', company=portal.own_company,
+                           portal=portal, membership = membership)
 
 
 @portal_bp.route('/<string:portal_id>/publications/', methods=['OK'])
-# @check_right(UserIsEmployee, ['company_id'])
 def publications_load(json, portal_id):
     portal = Portal.get(portal_id)
     company = portal.own_company
+    membership = MemberCompanyPortal.get_by_portal_id_company_id(company_id=company.id, portal_id=portal.id)
 
     publications = utils.db.query_filter(Publication).join(PortalDivision,
                                                            PortalDivision.id == Publication.portal_division_id). \
@@ -424,7 +415,7 @@ def publications_load(json, portal_id):
     return {'company': company.get_client_side_dict(),
             'portal': portal.get_client_side_dict(),
             'rights_user_in_company': UserCompany.get_by_user_and_company_ids(company_id=company.id).rights,
-            'grid_data': list(map(get_publication_dict, publications)),
+            'grid_data': [p.portal_publication_grid_row(membership) for p in publications],
             'total': len(publications)}
 
 

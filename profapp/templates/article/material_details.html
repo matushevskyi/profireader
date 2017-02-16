@@ -71,8 +71,10 @@
                     $publish({
                         material_id: publication ? null : $scope.data['material']['id'],
                         publication_id: publication ? publication['id'] : null,
+                        request_from: 'company_material_details',
                         action: action,
-                        publication_membership_id: row['id']
+                        actor_membership_id: row['id'],
+                        publisher_membership_id: row['id']
                     }).result.then($scope.gridApi.grid.grid_change_row);
                 }
                 else {
@@ -83,8 +85,9 @@
                         }))
                         .then(function (resp) {
                             $ok($scope.url_publication_change_status({
-                                membership_id: row.id,
+                                actor_membership_id: row.id,
                                 action: action,
+                                request_from: 'company_material_details',
                                 publication_id: row.publication.id
                             }), {}, $scope.gridApi.grid.grid_change_row);
                         });
@@ -126,12 +129,7 @@
                         }
                     },
 
-                    {
-                        name: 'actions', type: 'actions', onclick: 'grid_action', width: '200'
-
-                    }
-
-
+                    {name: 'actions', type: 'actions', onclick: 'grid_action', width: '200'}
                 ]
             });
 

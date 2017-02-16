@@ -102,7 +102,7 @@
                 }
             }
 
-            $scope.gridOptions = $.extend({}, $scope.gridOptions, {
+            $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
                 urlLoadGridData: $scope.url_banners,
                 columnDefs: [
                     {name: 'place'},
@@ -134,7 +134,7 @@
 
 
     <div ng-controller="portal_banners" ng-cloak>
-        <div class="grid" id="grid1" ui-grid-pagination ui-grid-edit ui-grid="gridOptions">
+        <div class="grid" id="grid1" ui-grid-pagination ui-grid-edit ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
                 <i class="fa fa-spinner fa-spin"></i>
                 <div>{{ _('Data Loading...') }}</div>

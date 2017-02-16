@@ -96,10 +96,10 @@ def publish_dialog_save(publication, jpublication, status):
 
 
 @article_bp.route(
-    '/publication_change_status/<string:publication_id>/actor_membership_id/<string:membership_id>/action/<string:action>/',
+    '/publication_change_status/<string:publication_id>/actor_membership_id/<string:actor_membership_id>/action/<string:action>/request_from/<string:request_from>/',
     methods=['OK'], permissions=UserIsActive())
-def publication_change_status(json, publication_id, membership_id, action):
-    actor_membership = MemberCompanyPortal.get(membership_id)
+def publication_change_status(json, publication_id, actor_membership_id, action, request_from):
+    actor_membership = MemberCompanyPortal.get(actor_membership_id)
     publication = Publication.get(publication_id)
 
     if action == ActionsForPublicationAtMembership.ACTIONS['UNPUBLISH']:
@@ -109,13 +109,17 @@ def publication_change_status(json, publication_id, membership_id, action):
     elif action == ActionsForPublicationAtMembership.ACTIONS['DELETE']:
         publication.status = Publication.STATUSES['DELETED']
     publication.save()
-    return actor_membership.material_or_publication_grid_row(publication.material)
+
+    if request_from == 'company_material_details':
+        return actor_membership.material_or_publication_grid_row(publication.material)
+    elif request_from == 'portal_publications':
+        return publication.portal_publication_grid_row(actor_membership)
 
 
 @article_bp.route(
     '/material_change_status/<string:material_id>/action/<string:action>/',
     methods=['OK'], permissions=UserIsActive())
-def publication_change_status(json, material_id, action):
+def material_change_status(json, material_id, action):
     material = Material.get(material_id)
 
     if action == ActionsForMaterialAtMembership.ACTIONS['UNDELETE']:
@@ -150,23 +154,24 @@ def submit_or_publish_material(json, material_id):
         return publication.validate(True)
     else:
         publication.save()
+        g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
+                       (publication.id, "', '".join([t.id for t in publication.tags])))
+
         # membership.NOTIFY_ARTICLE_SUBMITED_BY_COMPANY(material_title=publication.material.title)
 
-        # g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
-        #                (publication.id, "', '".join([t.id for t in publication.tags])))
 
 
         return publisher_membership.material_or_publication_grid_row(publication.material)
 
 
-@article_bp.route('/publish/<string:publication_id>/actor_membership_id/<string:membership_id>/',
+@article_bp.route('/publish/<string:publication_id>/actor_membership_id/<string:actor_membership_id>/request_from/<string:request_from>/',
                   methods=['OK'], permissions=UserIsActive())
-def publish(json, publication_id, membership_id):
+def publish(json, publication_id, actor_membership_id, request_from):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
     publication = Publication.get(publication_id)
 
-    actor_membership = MemberCompanyPortal.get(membership_id)
+    actor_membership = MemberCompanyPortal.get(actor_membership_id)
     publisher_membership = MemberCompanyPortal.get_by_portal_id_company_id(
         publication.portal_division.portal_id, publication.material.company_id)
 
@@ -180,14 +185,12 @@ def publish(json, publication_id, membership_id):
         return publication.validate(True)
     else:
         publication.save()
+        g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
+                       (publication.id, "', '".join([t.id for t in publication.tags])))
 
         # membership.NOTIFY_ARTICLE_SUBMITED_BY_COMPANY(material_title=publication.material.title)
 
-        # g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
-        #                (publication.id, "', '".join([t.id for t in publication.tags])))
-
-
-        if actor_membership == publisher_membership:
-            return publisher_membership.material_or_publication_grid_row(publication.material)
-        else:
-            return None
+        if request_from == 'company_material_details':
+            return actor_membership.material_or_publication_grid_row(publication.material)
+        elif request_from == 'portal_publications':
+            return publication.portal_publication_grid_row(actor_membership)

@@ -396,7 +396,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             },
             rowTemplate: '<div ng-class="{\'disabled\': row.entity[\'disabled\'] }"><div ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.colDef.name" class="ui-grid-cell" ng-class="{ \'ui-grid-row-header-cell\': col.isRowHeader }" ui-grid-cell></div></div>',
             paginationPageSizes: [1, 10, 25, 50, 75, 100, 1000],
-            paginationPageSize: 50,
+            paginationPageSize: 300,
             enableColumnMenu: false,
             enableFiltering: true,
             enableCellEdit: false,

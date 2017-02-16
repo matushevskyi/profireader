@@ -375,6 +375,19 @@ class Publication(Base, PRBase, PRElasticDocument):
                    }
         return actions[self.visibility]()
 
+    def portal_publication_grid_row(self, actor_membership):
+        from profapp.models.permissions import ActionsForPublicationAtMembership
+        from profapp.models.portal import MemberCompanyPortal
+        publisher_membership = MemberCompanyPortal.get_by_portal_id_company_id(
+            company_id=self.material.company_id, portal_id=self.portal_division.portal_id)
+
+        return {
+            'id': self.id,
+            'publication': self.get_client_side_dict(
+                'id,status,visibility,publishing_tm,tags,portal_division.id|name,portal_division.portal.id|name|host,material.id|title'),
+            'publisher_membership': publisher_membership.get_client_side_dict(fields='id,company.id|name|logo,portal.id|host|name|logo'),
+            'actions': ActionsForPublicationAtMembership.actions(membership=actor_membership, publication=self)}
+
     def get_client_side_dict(self, fields='id|read_count|tags|portal_division_id|cr_tm|md_tm|status|material_id|'
                                           'visibility|publishing_tm|event_begin_tm,event_end_tm,company.id|name, '
                                           'portal_division.id|name|portal_id, portal_division.portal.id|name|host, material',

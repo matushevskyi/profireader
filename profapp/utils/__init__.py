@@ -152,6 +152,8 @@ def dict_deep_get(dictionary, *keys, on_error=Exception):
     for k in keys:
         if isinstance(ret, dict):
             ret = ret[k]
+        elif hasattr(ret, k):
+            ret = getattr(ret, k)
         elif on_error is Exception:
             raise Exception('can`t get {} from {}'.format(keys, dict))
         else:

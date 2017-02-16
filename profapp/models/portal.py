@@ -765,6 +765,13 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
 
         return ret
 
+    # def get_publication_dict(publication):
+    #     return {
+    #         'publication': publication.get_client_side_dict(),
+    #         'id': publication.id,
+    #         'actions': permissions.ActionsForPublicationAtMembership.actions()
+    #     }
+
     def get_client_side_dict_for_plan(self):
         ret = {
             'membership': self.get_client_side_dict(
