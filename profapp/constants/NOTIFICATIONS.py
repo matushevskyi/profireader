@@ -107,27 +107,14 @@ class NotifyMembership(Notify):
             {'old_status': old_status, 'new_status': new_status},
             more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company)
 
-    def NOTIFY_ARTICLE_SUBMITED_BY_COMPANY(self, material_title, more_phrases_to_company, more_phrases_to_portal):
+    def NOTIFY_MATERIAL_ACTION_BY_COMPANY_OR_PORTAL(self, material_title, action, company_or_portal,
+                                                    more_phrases_to_company=[], more_phrases_to_portal=[]):
         return self._send_notification_about_membership_change(
-            'material `%(material_title)s` was submitted by company' % {'material_title': material_title},
-            more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company
+            '%(company_or_portal)s just %(action)s material `%%(material_title)s`' %
+            {'action': action, 'company_or_portal': company_or_portal},
+            dictionary={'material_title': material_title},
+            more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company,
             **self.__publication_kwargs)
-
-    def NOTIFY_ARTICLE_PUBLISHED_BY_COMPANY(self, old_status, new_status):
-        """publication %(name)s"""
-        return self._send_notification_about_membership_change(**self.__publication_kwargs)
-
-    def NOTIFY_ARTICLE_PUBLISHED_BY_PORTAL(self, old_status, new_status):
-        """publication %(name)s"""
-        return self._send_notification_about_membership_change(**self.__publication_kwargs)
-
-    def NOTIFY_ARTICLE_UNPUBLISHED_BY_COMPANY(self, old_status, new_status):
-        """publication %(name)s"""
-        return self._send_notification_about_membership_change(**self.__publication_kwargs)
-
-    def NOTIFY_ARTICLE_UNPUBLISHED_BY_PORTAL(self, old_status, new_status):
-        """publication %(name)s"""
-        return self._send_notification_about_membership_change(**self.__publication_kwargs)
 
     def NOTIFY_ARTICLE_VISIBILITY_CHANGED_BY_PLAN_MEMBERSHIP_CHANGE(
             self, more_phrases_to_company, more_phrases_to_portal):

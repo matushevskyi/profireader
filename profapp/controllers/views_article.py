@@ -110,23 +110,27 @@ def publication_change_status(json, publication_id, actor_membership_id, action,
         publication.status = Publication.STATUSES['DELETED']
     publication.save()
 
+    actor_membership.NOTIFY_MATERIAL_ACTION_BY_COMPANY_OR_PORTAL(
+        action=action, material_title=publication.material.title,
+        company_or_portal='company' if request_from == 'company_material_details' else 'portal')
+
     if request_from == 'company_material_details':
         return actor_membership.material_or_publication_grid_row(publication.material)
     elif request_from == 'portal_publications':
         return publication.portal_publication_grid_row(actor_membership)
 
 
-@article_bp.route(
-    '/material_change_status/<string:material_id>/action/<string:action>/',
-    methods=['OK'], permissions=UserIsActive())
-def material_change_status(json, material_id, action):
-    material = Material.get(material_id)
-
-    if action == ActionsForMaterialAtMembership.ACTIONS['UNDELETE']:
-        material.status = Material.STATUSES['NORMAL']
-    elif action == ActionsForMaterialAtMembership.ACTIONS['DELETE']:
-        material.status = Material.STATUSES['DELETED']
-    material.save()
+# @article_bp.route(
+#     '/material_change_status/<string:material_id>/action/<string:action>/',
+#     methods=['OK'], permissions=UserIsActive())
+# def material_change_status(json, material_id, action):
+#     material = Material.get(material_id)
+#
+#     if action == ActionsForMaterialAtMembership.ACTIONS['UNDELETE']:
+#         material.status = Material.STATUSES['NORMAL']
+#     elif action == ActionsForMaterialAtMembership.ACTIONS['DELETE']:
+#         material.status = Material.STATUSES['DELETED']
+#     material.save()
 
 
 @article_bp.route('/submit_or_publish_material/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
@@ -136,6 +140,7 @@ def submit_or_publish_material(json, material_id):
     publication = Publication(material=Material.get(material_id))
     publisher_membership = MemberCompanyPortal.get(json['publisher_membership']['id'])
     employment = UserCompany.get_by_user_and_company_ids(company_id=publication.material.company_id)
+    also_publish = json.get('also_publish', None)
 
     if action == 'load':
         return utils.dict_merge(
@@ -145,27 +150,28 @@ def submit_or_publish_material(json, material_id):
                  publisher_membership.rights[RIGHT_AT_PORTAL.PUBLICATION_PUBLISH]
              })
     else:
-        publish_dialog_save(publication, json['publication'],
-                            status=Publication.STATUSES['PUBLISHED'] if
-                            json.get('also_publish', None) else Publication.STATUSES['SUBMITTED'])
+        publish_dialog_save(
+            publication, json['publication'],
+            status=Publication.STATUSES['PUBLISHED'] if also_publish else Publication.STATUSES['SUBMITTED'])
 
     if action == 'validate':
         publication.detach()
         return publication.validate(True)
     else:
         publication.save()
-        g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
-                       (publication.id, "', '".join([t.id for t in publication.tags])))
+        utils.db.execute_function("tag_publication_set_position('%s', ARRAY ['%s']);" %
+                                  (publication.id, "', '".join([t.id for t in publication.tags])))
 
-        # membership.NOTIFY_ARTICLE_SUBMITED_BY_COMPANY(material_title=publication.material.title)
-
-
+        publisher_membership.NOTIFY_MATERIAL_ACTION_BY_COMPANY_OR_PORTAL(
+            action='PUBLISH' if also_publish else 'SUBMIT',
+            company_or_portal='company', material_title=publication.material.title)
 
         return publisher_membership.material_or_publication_grid_row(publication.material)
 
 
-@article_bp.route('/publish/<string:publication_id>/actor_membership_id/<string:actor_membership_id>/request_from/<string:request_from>/',
-                  methods=['OK'], permissions=UserIsActive())
+@article_bp.route(
+    '/publish/<string:publication_id>/actor_membership_id/<string:actor_membership_id>/request_from/<string:request_from>/',
+    methods=['OK'], permissions=UserIsActive())
 def publish(json, publication_id, actor_membership_id, request_from):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
@@ -185,10 +191,12 @@ def publish(json, publication_id, actor_membership_id, request_from):
         return publication.validate(True)
     else:
         publication.save()
-        g.db().execute("SELECT tag_publication_set_position('%s', ARRAY ['%s']);" %
-                       (publication.id, "', '".join([t.id for t in publication.tags])))
+        utils.db.execute_function("tag_publication_set_position('%s', ARRAY ['%s']);" %
+                                  (publication.id, "', '".join([t.id for t in publication.tags])))
 
-        # membership.NOTIFY_ARTICLE_SUBMITED_BY_COMPANY(material_title=publication.material.title)
+        actor_membership.NOTIFY_MATERIAL_ACTION_BY_COMPANY_OR_PORTAL(
+            action='PUBLISH', material_title=publication.material.title,
+            company_or_portal='company' if request_from == 'company_material_details' else 'portal')
 
         if request_from == 'company_material_details':
             return actor_membership.material_or_publication_grid_row(publication.material)
