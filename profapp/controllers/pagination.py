@@ -12,6 +12,7 @@ def pagination(query, for_id=None, page=1, items_per_page=Config.ITEMS_PER_PAGE,
      Return query with pagination parameters, all pages, current page"""
 
 
+
     # query_for_all = query
 # TODO OZ by OZ: select only ID, and maybe use some sql function to search page via id (window function)
 #     query_for_all.options(load_only("id"))

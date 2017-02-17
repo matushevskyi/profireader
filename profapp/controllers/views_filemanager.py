@@ -15,7 +15,7 @@ from .blueprints_declaration import filemanager_bp
 from .request_wrapers import check_right
 from ..models.company import Company, MemberCompanyPortal
 from ..models.rights import FilemanagerRights, UserIsActive
-from ..models.permissions import RIGHT_AT_COMPANY
+from ..models.permissions import RIGHT_AT_COMPANY, EmployeeHasRightAtCompany
 
 
 def parent_folder(func):
@@ -37,6 +37,7 @@ json_result = {"result": {"success": True, "error": None}}
 @check_right(UserIsActive)
 def filemanager():
     from collections import OrderedDict
+    from profapp.models.company import UserCompany
 
     last_visit_root_name = ''
     if 'last_root' in request.cookies:
@@ -45,38 +46,35 @@ def filemanager():
         last_root_id = ''
 
     filemanager_company_list = OrderedDict()
+    file_manager_called_for = request.args.get('file_manager_called_for', '')
 
-    for user_company in g.user.employments:
-        if user_company.has_rights(RIGHT_AT_COMPANY.FILES_BROWSE) == True:
-            filemanager_company_list[user_company.company_id] = File.folder_dict(user_company.company,
-                                                                                 {'can_upload': FilemanagerRights(
-                                                                                     company=user_company.company_id).action_is_allowed(
-                                                                                     FilemanagerRights.ACTIONS[
-                                                                                         'UPLOAD'])})
-    for user_company in g.user.employments:
-        if user_company.company.own_portal:
-            company_membership_in_portal = utils.db.query_filter(MemberCompanyPortal, portal_id=user_company.company.own_portal.id). \
-                filter(
-                MemberCompanyPortal.company_id != user_company.company.id and MemberCompanyPortal.status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']) \
-                .join(Company).filter(Company.status == Company.STATUSES['COMPANY_ACTIVE']).all()
+    for company in g.user.companies_employer_active:
 
-            for company_membership in company_membership_in_portal:
-                # YG: needed for check user rights in companies
-                right = FilemanagerRights(
-                    company=company_membership.company_id).action_is_allowed(
-                    FilemanagerRights.ACTIONS[
-                        'UPLOAD'])
-                if company_membership.company_id not in filemanager_company_list and right is True:
-                    # print(
-                    #     company_membership.company)
-                    filemanager_company_list[company_membership.company_id] = {
-                            'can_upload': FilemanagerRights(
-                                company=company_membership.company_id).action_is_allowed(
-                                FilemanagerRights.ACTIONS[
-                                    'UPLOAD'])}
+        if UserCompany.get_by_user_and_company_ids(company_id=company.id).has_rights(RIGHT_AT_COMPANY.FILES_BROWSE):
+            filemanager_company_list[company.id] = File.folder_dict(
+                company, {'can_upload': EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
+                    company_id=company.id)})
+    # for user_company in g.user.employments:
+    #     if user_company.company.own_portal:
+    #         company_membership_in_portal = utils.db.query_filter(MemberCompanyPortal,
+    #                                                              portal_id=user_company.company.own_portal.id). \
+    #             filter(
+    #             MemberCompanyPortal.company_id != user_company.company.id and MemberCompanyPortal.status ==
+    #             MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']) \
+    #             .join(Company).filter(Company.status == Company.STATUSES['COMPANY_ACTIVE']).all()
+    #
+    #         for company_membership in company_membership_in_portal:
+    #             # YG: needed for check user rights in companies
+    #             right = EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
+    #                 company_id=company_membership.company_id)
+    #             if company_membership.company_id not in filemanager_company_list and right is True:
+    #                 # print(
+    #                 #     company_membership.company)
+    #                 filemanager_company_list[company_membership.company_id] = {
+    #                     'can_upload': EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
+    #                         company_id=company_membership.company_id)}
     # filemanager_company_list.sort(key=lambda k: k['name'])
-    file_manager_called_for = request.args[
-        'file_manager_called_for'] if 'file_manager_called_for' in request.args else ''
+
     file_manager_on_action = jsonmodule.loads(
         request.args['file_manager_on_action']) if 'file_manager_on_action' in request.args else {}
     file_manager_default_action = request.args[
@@ -115,8 +113,8 @@ def list(json):
 @filemanager_bp.route('/createdir/', methods=['OK'])
 @check_right(UserIsActive)
 def createdir(json):
-    if FilemanagerRights(company=get_company_from_folder(json['params']['root_id'])).action_is_allowed(
-            FilemanagerRights.ACTIONS['CREATE_FOLDER']) != True:
+    if EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD). \
+            check(company_id=get_company_from_folder(json['params']['root_id']).id) is not True:
         return False
     return File.createdir(name=json['params']['name'],
                           root_folder_id=json['params']['root_id'],
@@ -127,8 +125,8 @@ def createdir(json):
 @check_right(UserIsActive)
 def set_properties(json):
     file = File.get(json['params']['id'])
-    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).action_is_allowed(
-            FilemanagerRights.ACTIONS['UPLOAD']) != True:
+    if not file or EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
+            company_id=get_company_from_folder(json['params']['root_id']).id) is not True:
         return False
     return File.set_properties(file, json['params']['add_all'], name=json['params']['name'],
                                copyright_author_name=json['params']['author_name'],
@@ -139,8 +137,8 @@ def set_properties(json):
 @check_right(UserIsActive)
 def copy(json):
     file = File.get(json['params']['id'])
-    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['folder_id'])).action_is_allowed(
-            FilemanagerRights.ACTIONS['UPLOAD']) != True:
+    if not file or EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
+            company_id=get_company_from_folder(json['params']['folder_id']).id) is not True:
         return False
     return file.copy_file(json['params']['folder_id']).id
 
@@ -149,8 +147,8 @@ def copy(json):
 @check_right(UserIsActive)
 def cut(json):
     file = File.get(json['params']['id'])
-    if not file or FilemanagerRights(company=get_company_from_folder(json['params']['id'])).action_is_allowed(
-            FilemanagerRights.ACTIONS['UPLOAD']) != True:
+    if not file or EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
+            company_id=get_company_from_folder(json['params']['folder_id']).id) is not True:
         return False
     return file.move_to(json['params']['folder_id'])
 
@@ -171,9 +169,8 @@ def get_company_from_folder(file_id):
 def remove(json, file_id):
     file = File.get(file_id)
     ancestors = File.ancestors(file.parent_id)
-    if not file or FilemanagerRights(
-            company=utils.db.query_filter(Company, journalist_folder_file_id=ancestors[0]).first()).action_is_allowed(
-        FilemanagerRights.ACTIONS['REMOVE'], file) != True:
+    if not file or EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
+            company_id=utils.db.query_filter(Company, journalist_folder_file_id=ancestors[0]).first().id) is not True:
         return False
     return file.remove()
 
@@ -186,7 +183,7 @@ def send(parent_id):
     if parent.mime == 'root':
         root = parent.id
     company = utils.db.query_filter(Company, journalist_folder_file_id=root).one()
-    if FilemanagerRights(company=company).action_is_allowed(FilemanagerRights.ACTIONS['UPLOAD']) != True:
+    if EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(company_id=company.id) is not True:
         return jsonify({'error': True})
     data = request.form
     uploaded_file = request.files['file']

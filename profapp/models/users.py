@@ -74,11 +74,12 @@ class User(Base, UserMixin, PRBase):
                                              secondary='reader_portal',
                                              secondaryjoin="and_(UserPortalReader.portal_id == Portal.id, Portal.status == 'PORTAL_ACTIVE', UserPortalReader.status == 'active')")
 
-    active_companies_employers = relationship('Company',
+    companies_employer_active = relationship('Company',
                                               viewonly=True,
-                                              primaryjoin='User.id == UserCompany.user_id',
+                                              primaryjoin="and_(User.id == UserCompany.user_id, UserCompany.status == 'EMPLOYMENT_ACTIVE')",
                                               secondary='user_company',
                                               secondaryjoin="and_(UserCompany.company_id == Company.id, Company.status == 'COMPANY_ACTIVE', UserCompany.status == 'EMPLOYMENT_ACTIVE')")
+
 
     def set_avatar_preset(self, r, v):
         if v['selected_by_user']['type'] == 'preset':

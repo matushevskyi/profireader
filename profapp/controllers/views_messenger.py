@@ -29,7 +29,7 @@ def community_search(json):
         portals_ids.append(p.id)
 
     companies_ids = []
-    for c in g.user.active_companies_employers:
+    for c in g.user.companies_employer_active:
         companies_ids.append(c.id)
 
     # use load_for_infinite_scroll
@@ -88,7 +88,7 @@ def community_search(json):
                                                   u.active_portals_subscribed if
                                                   p.id in portals_ids]
         user_dict['common_companies_employers'] = [c.get_client_side_dict(fields='id,logo.url,name') for c in
-                                                   u.active_companies_employers if
+                                                   u.companies_employer_active if
                                                    c.id in companies_ids]
         contact = g.db().query(Contact).filter_by(user1_id=min([u.id, g.user.id])).filter_by(
             user2_id=max([u.id, g.user.id])) \

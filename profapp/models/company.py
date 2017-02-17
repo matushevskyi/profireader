@@ -77,7 +77,7 @@ class Company(Base, PRBase, PRElasticDocument):
                                                       viewonly=True,
                                                       primaryjoin="and_(Company.id == UserCompany.company_id, or_(UserCompany.status == 'EMPLOYMENT_ACTIVE', UserCompany.status == 'EMPLOYMENT_REQUESTED_BY_USER', UserCompany.status == 'EMPLOYMENT_SUSPENDED_BY_COMPANY'))")
 
-    users_employments_active = relationship('User',
+    users_employee_active = relationship('User',
                                           viewonly=True,
                                           primaryjoin="and_(Company.id == UserCompany.company_id, UserCompany.status == 'EMPLOYMENT_ACTIVE')",
                                           secondary='user_company',
@@ -314,7 +314,6 @@ class Company(Base, PRBase, PRElasticDocument):
 
 
 class UserCompany(Base, PRBase, EmploymentChange):
-
 
     __tablename__ = 'user_company'
 

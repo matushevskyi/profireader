@@ -22,6 +22,7 @@ from .pr_base import PRBase, Base
 from .. import utils
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..controllers.errors import VideoAlreadyExistInPlaylist
+from profapp.models.permissions import ActionsForFileManagerAtMembership
 
 
 class FileContent(Base, PRBase):
@@ -146,7 +147,7 @@ class File(Base, PRBase):
         return rel_sort + sort
 
     @staticmethod
-    def search(name, folder_id, rights_object, file_manager_called_for='', ):
+    def search(name, folder_id, file_manager_called_for='', ):
         if name == None:
             return None
         name = name.lower()
@@ -169,19 +170,18 @@ class File(Base, PRBase):
                     'path_to': File.path(file),
                     'author_name': file.copyright_author_name,
                     'description': file.description,
-                    'actions': rights_object.actions(file, file_manager_called_for),
+                    'actions': ActionsForFileManagerAtMembership.actions(file, file_manager_called_for),
                     }
                    for file in s if file.mime != 'image/thumbnail')
         return ret
 
     @staticmethod
     def list(parent_id=None, file_manager_called_for='', name=None, company_id=None):
-        from ..models.rights import FilemanagerRights
         folder = File.get(parent_id)
-        rights_object = FilemanagerRights(company=company_id)
-        search_files = File.search(name, parent_id, rights_object, file_manager_called_for)
+        # rights_object = FilemanagerRights(company=company_id)
+        search_files = File.search(name, parent_id, file_manager_called_for)
 
-        if search_files != None:
+        if search_files is not None:
             ret = search_files
         else:
             ret = [{'size': file.size, 'name': file.name, 'id': file.id,
@@ -195,53 +195,22 @@ class File(Base, PRBase):
                     'path_to': File.path(file),
                     'author_name': file.copyright_author_name,
                     'description': file.description,
-                    'actions': rights_object.actions(file, file_manager_called_for),
+                    'actions': ActionsForFileManagerAtMembership.actions(file, file_manager_called_for),
                     } for file in utils.db.query_filter(File, parent_id=parent_id)
-                   if rights_object.action_is_allowed(rights_object.ACTIONS['SHOW'])
-                   and file.mime != 'image/thumbnail']
+                   if file.mime != 'image/thumbnail']
             ret.append({'id': folder.id, 'parent_id': folder.parent_id,
                         'type': 'parent',
                         'date': str(folder.md_tm).split('.')[0],
                         'url': folder.url(),
                         'author_name': folder.copyright_author_name,
                         'description': folder.description,
-                        'actions': rights_object.actions(folder, file_manager_called_for),
+                        'actions': ActionsForFileManagerAtMembership.actions(folder, file_manager_called_for),
                         })
         return ret
 
     def createScaledImage(self, width, height):
         pass
 
-    # def get_thumbnails(self, size):
-    #     if self.mime.split('/')[0] == 'image' and self.mime != 'image/thumbnail':
-    #         str_size = '{height}x{width}'.format(height=str(size[0]), width=str(size[1]))
-    #         if not self.get_thumbnail():
-    #             try:
-    #                 image_pil = Image.open(BytesIO(self.file_content.content))
-    #                 resized = File.scale(image_pil, size)
-    #                 bytes_file = BytesIO()
-    #                 resized.save(bytes_file, self.mime.split('/')[-1].upper())
-    #                 thumbnail = File(md_tm=self.md_tm, size=sys.getsizeof(bytes_file.getvalue()),
-    #                                  name=self.name + '_thumbnail_{str_size}'.format(
-    #                                      str_size=str_size),
-    #                                  parent_id=self.parent_id,
-    #                                  author_user_id=self.author_user_id,
-    #                                  root_folder_id=self.root_folder_id,
-    #                                  company_id=self.company_id,
-    #                                  mime=self.mime.split('/')[0] + '/thumbnail').save()
-    #                 content = FileContent(content=bytes_file.getvalue(), file=thumbnail)
-    #                 g.db.add_all([thumbnail, content])
-    #                 g.db.flush()
-    #                 exist = db(FileImg, original_image_id=self.id)
-    #                 if exist:
-    #                     exist.delete()
-    #                 FileImg(original_image_id=self.id,
-    #                         croped_image_id=thumbnail.id,
-    #                         width=image_pil.width,
-    #                         height=image_pil.height).save()
-    #             except Exception as e:
-    #                 self.delete()
-    #     return self
 
     @staticmethod
     def scale(image, max_size, method=Image.ANTIALIAS):
@@ -256,20 +225,6 @@ class File(Base, PRBase):
         back = Image.new("RGB", max_size, "white")
         back.paste(scaled, offset)
         return back
-
-    # def get_thumbnail_url(self):
-    #
-    #     if self.mime.split('/')[0] == 'image'
-    #     thumbnail_id = self.get_thumbnail()
-    #     if not thumbnail_id:
-    #         self.get_thumbnails(size=Config.THUMBNAILS_SIZE)
-    #         thumbnail_id = self.get_thumbnail()
-    #     return File().url(thumbnail_id) if thumbnail_id else self.url()
-
-    # def get_thumbnail(self):
-    #     croped_image_id = g.db.execute(
-    #         ("SELECT croped_image_id FROM image_croped WHERE original_image_id='{}'").format(self.id)).fetchone()
-    #     return croped_image_id[0] if croped_image_id else None
 
     def type(self):
         if self.mime == 'root' or self.mime == 'directory':
@@ -310,10 +265,12 @@ class File(Base, PRBase):
 
     @staticmethod
     def get_all_dir(f_id, copy_id=None):
-        files_in_parent = [file for file in utils.db.query_filter(File, parent_id=f_id) if file.mime == 'directory' and file.id != copy_id]
+        files_in_parent = [file for file in utils.db.query_filter(File, parent_id=f_id) if
+                           file.mime == 'directory' and file.id != copy_id]
         for file in files_in_parent:
             if file.mime == 'directory':
-                [files_in_parent.append(fil) for fil in utils.db.query_filter(File, parent_id=file.id, mime='directory') if
+                [files_in_parent.append(fil) for fil in utils.db.query_filter(File, parent_id=file.id, mime='directory')
+                 if
                  fil.id != copy_id]
         return files_in_parent
 
