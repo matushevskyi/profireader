@@ -134,8 +134,8 @@ def prepare_connections(app, echo=False):
         g.call_after_commit = []
         g.functions_to_call_after_commit = {}
 
-        from fluent import sender
-        g.logger = sender.FluentSender(app.apptype, host=app.config['FLUENT_LOGGER_HOST'], port=app.config['FLUENT_LOGGER_PORT'])
+#        from fluent import sender
+#        g.logger = sender.FluentSender(app.apptype, host=app.config['FLUENT_LOGGER_HOST'], port=app.config['FLUENT_LOGGER_PORT'])
         g.log = lambda *args: print(*args)
 
         event.listen(db_session, 'after_flush', on_after_flush)
