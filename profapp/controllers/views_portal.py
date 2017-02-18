@@ -18,6 +18,7 @@ from ..models.translate import TranslateTemplate
 from ..models.exceptions import UnauthorizedUser
 from profapp.models.translate import Phrase
 from profapp.models import permissions
+from sqlalchemy import or_
 
 
 @portal_bp.route('/create/company/<string:company_id>/', methods=['GET'])
@@ -37,14 +38,16 @@ def profile(company_id=None, portal_id=None):
 @portal_bp.route('/<string:portal_id>/profile/', methods=['OK'])
 def profile_load(json, company_id=None, portal_id=None):
     action = g.req('action', allowed=['load', 'save', 'validate'])
-    layouts = utils.db.query_filter(PortalLayout).all()
-    division_types = PortalDivisionType.get_division_types()
     portal = Portal.get(portal_id) if portal_id else Portal.launch_new_portal(Company.get(company_id))
+    layouts = utils.db.query_filter(PortalLayout)
+    if not g.user.is_maintainer():
+        layouts = layouts.filter(or_(hidden = False, id = portal.portal.id))
+    division_types = PortalDivisionType.get_division_types()
 
     client_side = lambda: {
         'select': {
             'languages': Config.LANGUAGES,
-            'layouts': utils.get_client_side_list(layouts),
+            'layouts': utils.get_client_side_list(layouts.all(), more_fields='hidden'),
             'division_types': utils.get_client_side_dict(division_types)
         },
         'portal': portal.get_client_side_dict(
@@ -129,7 +132,7 @@ def profile_load(json, company_id=None, portal_id=None):
                 portal.company_memberships[0].current_membership_plan_issued.start()
                 UserCompany.get_by_user_and_company_ids(company_id=company_id). \
                     NOTIFY_PORTAL_CREATED(portal_host=portal.host, portal_name=portal.name)
-            #                portal.own_company.notifications_company_changes(
+            # portal.own_company.notifications_company_changes(
             #                    notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'],
             #                    what_happened="portal %s was created" % (utils.jinja.link_external()),
             #                    rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
@@ -333,6 +336,7 @@ def membership_set_tags(json, membership_id):
             membership.save().set_tags_positions()
             return {'membership': membership.portal_memberee_grid_row()}
 
+
 @portal_bp.route('/membership/<string:membership_id>/change_status/<string:new_status>/', methods=['OK'])
 def membership_change_status(json, membership_id, new_status):
     membership = MemberCompanyPortal.get(membership_id)
@@ -397,9 +401,10 @@ def old_publications_url(company_id):
 # @check_right(UserIsEmployee, ['company_id'])
 def publications(portal_id):
     portal = Portal.get(portal_id)
-    membership = MemberCompanyPortal.get_by_portal_id_company_id(company_id=portal.company_owner_id, portal_id=portal.id)
+    membership = MemberCompanyPortal.get_by_portal_id_company_id(company_id=portal.company_owner_id,
+                                                                 portal_id=portal.id)
     return render_template('portal/portal_publications.html', company=portal.own_company,
-                           portal=portal, membership = membership)
+                           portal=portal, membership=membership)
 
 
 @portal_bp.route('/<string:portal_id>/publications/', methods=['OK'])

@@ -31,7 +31,7 @@ client_secret.*
 db/database_full.*
 db/database.*.bak
 
-
+*.pyc
 *.bak
 *.js.map
 *.css.map

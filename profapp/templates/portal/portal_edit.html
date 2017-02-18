@@ -252,7 +252,7 @@
                             <div>
                                 <label>{{ ::_('Portal layout') }}</label>
                                 <select class="form-control w20em" ng-model="data.portal.portal_layout_id"
-                                        ng-options="layout.id as layout.name for layout in data.select.layouts"></select>
+                                        ng-options="layout.id as (layout.name + (layout.hidden?' (hidden)':'')) for layout in data.select.layouts"></select>
 
                             </div>
                             <div>
