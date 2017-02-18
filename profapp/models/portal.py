@@ -326,12 +326,9 @@ class PortalLayout(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     name = Column(TABLE_TYPES['name'], nullable=False)
     path = Column(TABLE_TYPES['name'], nullable=False)
+    hidden = Column(TABLE_TYPES['boolean'], nullable=False, default=False)
 
-    def __init__(self, name=None):
-        self.name = name
-
-    def get_client_side_dict(self, fields='id|name',
-                             more_fields=None):
+    def get_client_side_dict(self, fields='id|name', more_fields=None):
         return self.to_dict(fields, more_fields)
 
 

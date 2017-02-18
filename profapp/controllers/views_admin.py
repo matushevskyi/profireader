@@ -14,6 +14,11 @@ from ..models.rights import UserIsActive
 from ..models.translate import TranslateTemplate
 
 
+@admin_bp.route('/', methods=['GET'])
+@check_right(UserIsActive)
+def index():
+    return render_template('admin/index.html')
+
 @admin_bp.route('/translations', methods=['GET'])
 @check_right(UserIsActive)
 def translations():
@@ -127,7 +132,7 @@ def ips_delete(json):
 
 
 
-# Greckas config
+
 
 
 @admin_bp.route('/config', methods=['GET'])

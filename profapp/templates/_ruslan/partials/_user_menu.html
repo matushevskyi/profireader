@@ -141,20 +141,21 @@
 
                     <li ng-if="user" role="presentation" class="menu-profile">
                         <a class="login-profile" href="{{ url_auth_logout() }}">{{ _('Log out') }}</a>
-                        <!--<ul class="dropdown-menu">
-                            <li ng-show="user.id"><a href="{{ url_user_profile({user_id:user.id}) }}">{{ _('Profile') }}</a></li>
-                            <li ng-show="user.id" ><a href="{{ url_auth_logout() }}" >{{_('Log Out') }}</a></li>
-                            <li ng-show="!user.id" class="dropdown-link"><a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=login' }}">{{_('Log In') }}</a></li>
-                            <li ng-show="!user.id" class="dropdown-link"><a href="{{ url_for('auth.login_signup_endpoint') + '?login_signup=signup' }}">{{_('Sign Up') }}</a></li>
-                        </ul>-->
                     </li>
 
                     <li ng-if="!user" role="presentation" class="menu-profile">
                         <a class="login-profile" href="{{ login_url }}">{{ _('Login') }}</a>
                     </li>
+
                 </ul>
             </div>
         </div>
     </div>
+    {% endraw %}{% if g.user and g.user.is_maintainer() %}
+                        <div role="presentation" class="menu-profile par pat">
+                            <a class="login-profile" href="{{ url_for('admin.index') }}">{{ _(':o') }}</a>
+                        </div>
+{% endif %}{% raw %}
 </nav>
+
 {% endraw %}

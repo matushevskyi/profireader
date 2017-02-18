@@ -55,6 +55,10 @@ class User(Base, UserMixin, PRBase):
     STATUSES = {'USER_ACTIVE': 'USER_ACTIVE', 'USER_BANNED': 'USER_BANNED'}
     status = Column(TABLE_TYPES['status'], default=STATUSES['USER_ACTIVE'])
 
+    GROUPS = {'USER_GROUP_OCHLOS': 'USER_GROUP_OCHLOS', 'USER_GROUP_MAINTAINER': 'USER_GROUP_MAINTAINER',
+              'USER_GROUP_ADMIN': 'USER_GROUP_ADMIN'}
+    group = Column(TABLE_TYPES['status'], default=GROUPS['USER_GROUP_OCHLOS'])
+
     last_seen_tm = Column(TABLE_TYPES['timestamp'], default=datetime.datetime.utcnow)
     last_informed_about_unread_communication_tm = Column(TABLE_TYPES['timestamp'], default=datetime.datetime.utcnow)
 
@@ -75,11 +79,16 @@ class User(Base, UserMixin, PRBase):
                                              secondaryjoin="and_(UserPortalReader.portal_id == Portal.id, Portal.status == 'PORTAL_ACTIVE', UserPortalReader.status == 'active')")
 
     companies_employer_active = relationship('Company',
-                                              viewonly=True,
-                                              primaryjoin="and_(User.id == UserCompany.user_id, UserCompany.status == 'EMPLOYMENT_ACTIVE')",
-                                              secondary='user_company',
-                                              secondaryjoin="and_(UserCompany.company_id == Company.id, Company.status == 'COMPANY_ACTIVE', UserCompany.status == 'EMPLOYMENT_ACTIVE')")
+                                             viewonly=True,
+                                             primaryjoin="and_(User.id == UserCompany.user_id, UserCompany.status == 'EMPLOYMENT_ACTIVE')",
+                                             secondary='user_company',
+                                             secondaryjoin="and_(UserCompany.company_id == Company.id, Company.status == 'COMPANY_ACTIVE', UserCompany.status == 'EMPLOYMENT_ACTIVE')")
 
+    def is_admin(self):
+        return self.group == self.GROUPS['USER_GROUP_ADMIN']
+
+    def is_maintainer(self, or_admin = True):
+        return self.group == self.GROUPS['USER_GROUP_MAINTAINER'] or (or_admin and self.is_admin())
 
     def set_avatar_preset(self, r, v):
         if v['selected_by_user']['type'] == 'preset':
@@ -334,10 +343,9 @@ class User(Base, UserMixin, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
-
-class Group(Base, PRBase):
-    __tablename__ = 'group'
-    id = Column(TABLE_TYPES['string_30'], primary_key=True)
+    # class Group(Base, PRBase):
+    #     __tablename__ = 'group'
+    #     id = Column(TABLE_TYPES['string_30'], primary_key=True)
 
 
     # profireader_(name|first_name|last_name|email|gender|phone|link)
