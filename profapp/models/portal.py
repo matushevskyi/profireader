@@ -1230,7 +1230,6 @@ class PortalDivision(Base, PRBase):
         from ..models.translate import Phrase
         from ..models.company import Company
         from collections import OrderedDict
-        from ..models.rights import BaseRightsEmployeeInCompany
 
         if not self.publications:
             return

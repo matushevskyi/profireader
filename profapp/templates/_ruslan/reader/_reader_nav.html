@@ -6,8 +6,8 @@
 
 <div class="container">
     <div ng-cloak class="row reader-list-nav menu-company ">
-                <a class="reader_button_list" href="{{ url_for('index.list_reader') }}">{{ _('News') }}</a>
-                <a class="reader_button_favorite" href="{{ url_for('index.list_reader', favorite=True) }}">{{ _('Bookmark') }}</a>
+                <a class="reader_button_list" href="{{ url_for('index.index') }}">{{ _('News') }}</a>
+                <a class="reader_button_favorite" href="{{ url_for('index.index', favorite=True) }}">{{ _('Bookmark') }}</a>
                 <a class="reader_button_profile" href="{{ url_for('index.reader_profile') }}" >{{ _('Subscriptions') }}</a>
     </div>
 </div>

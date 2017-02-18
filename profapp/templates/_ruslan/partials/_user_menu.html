@@ -22,10 +22,10 @@
             }
         };
 
-        $scope.url_list_reader = {{ raw_url_for('index.list_reader')|safe }}
+        $scope.url_list_reader = {{ raw_url_for('index.index')|safe }}
                 $scope.url_general = function () {
                     if ($scope.user) {
-                        return '{{ url_for('index.list_reader')|safe }}'
+                        return '{{ url_for('index.index')|safe }}'
                     }
                     else {
                         return '{{ url_for('index.index')|safe }}'
@@ -153,7 +153,7 @@
     </div>
     {% endraw %}{% if g.user and g.user.is_maintainer() %}
                         <div role="presentation" class="menu-profile par pat">
-                            <a class="login-profile" href="{{ url_for('admin.index') }}">{{ _(':o') }}</a>
+                            <a class="login-profile" href="{{ url_for('admin.index') }}">{{ _('admin') }}</a>
                         </div>
 {% endif %}{% raw %}
 </nav>

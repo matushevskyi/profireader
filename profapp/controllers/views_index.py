@@ -6,23 +6,19 @@ from flask import render_template, request, session, redirect, url_for, g
 from sqlalchemy import and_, desc
 
 from .blueprints_declaration import index_bp
-from .request_wrapers import check_right
 from .. import utils
 from ..controllers import errors
 from ..models.materials import Publication, ReaderPublication
 from ..models.portal import PortalDivision, UserPortalReader, Portal, ReaderUserPortalPlan, ReaderDivision
-from ..models.rights import AllowAll
-from ..models.rights import UserIsActive, UserNonBanned
+from ..models.permissions import UserIsActive, AvailableForAll
 
 
-@index_bp.route('portals_list/', methods=['GET'])
-@check_right(AllowAll)
+@index_bp.route('portals_list/', methods=['GET'], permissions=AvailableForAll())
 def portals_list():
     return render_template('general/portals_list.html')
 
 
-@index_bp.route('portals_list/', methods=['OK'])
-@check_right(AllowAll)
+@index_bp.route('portals_list/', methods=['OK'], permissions=AvailableForAll())
 def portals_list_load(json):
     filter = (Portal.name.ilike("%" + json['text'] + "%"))
     if g.user:
@@ -38,82 +34,39 @@ def portals_list_load(json):
             'end': True}
 
 
-@index_bp.route('subscribe/<string:portal_id>', methods=['GET'])
-@check_right(AllowAll)
+@index_bp.route('subscribe/<string:portal_id>', methods=['GET'], permissions=AvailableForAll())
 def auth_before_subscribe_to_portal(portal_id):
     session['portal_id'] = portal_id
     return redirect(url_for('auth.login_signup_endpoint', login_signup='login'))
 
 
-# @index_bp.route('send_email', methods=['POST'])
-# @check_right(AllowAll)
-# def send_email():
-#     return email_send(**{name: str(val) for name, val in request.form.items()})
-
-
-# @index_bp.route('details_reader/<string:publication_id>')
-# @check_right(UserNonBanned)
-# def details_reader(publication_id):
-#     article = Publication.get(publication_id)
-#     article.add_recently_read_articles_to_session()
-#     article_dict = article.get_client_side_dict(fields='id, title,short, cr_tm, md_tm, '
-#                                                        'publishing_tm, keywords, status, long, image_file_id,'
-#                                                        'division.name, division.portal.id,'
-#                                                        'company.name|id')
-#     article_dict['tags'] = article.tags
-#     ReaderPublication.add_to_table_if_not_exists(publication_id)
-#     favorite = article.check_favorite_status()
-#
-#     return render_template('partials/reader/reader_details.html',
-#                            article=article_dict,
-#                            favorite=favorite
-#                            )
-
-
-@index_bp.route('list_reader_from_front/<string:portal_id>', methods=['GET'])
+@index_bp.route('list_reader_from_front/<string:portal_id>', methods=['GET'], permissions=AvailableForAll())
 def list_reader_from_front(portal_id):
     portal = Portal.get(portal_id)
     if g.user:
         portals = utils.db.query_filter(Portal).filter((Portal.id.in_(utils.db.query_filter(UserPortalReader.portal_id, user_id=g.user.id)))).all()
         if portal in portals:
-            return redirect(url_for('index.list_reader'))
+            return redirect(url_for('index.index'))
         else:
             return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
     else:
         return redirect(url_for('index.auth_before_subscribe_to_portal', portal_id=portal_id))
 
-
-@index_bp.route('', methods=['GET'])
-@check_right(AllowAll)
-def index():
-    if g.user and g.user.is_authenticated():
-        try:
-            UserIsActive().is_allowed(raise_exception_redirect_if_not=True)
-        except errors.NoRights as e:
-            return redirect(e.url)
-        return render_template('_ruslan/reader/_reader_content.html', favorite=request.args.get('favorite') == 'True')
-    return render_template('general/index.html')
-
-
-@index_bp.route('welcome/', methods=['GET'])
-@check_right(AllowAll)
+@index_bp.route('welcome/', methods=['GET'], permissions=AvailableForAll())
 def welcome():
     if g.user and g.user.is_authenticated():
         return render_template('general/welcome.html')
     else:
         return redirect(url_for('index.index'))
 
-
-@index_bp.route('', methods=['GET'])
-@check_right(UserNonBanned)
-def list_reader():
+@index_bp.route('', methods=['GET'], permissions=AvailableForAll())
+def index():
     if g.user and g.user.is_authenticated() and getattr(g.user, 'tos', False):
         return render_template('_ruslan/reader/_reader_content.html', favorite=request.args.get('favorite') == 'True')
     return render_template('general/index.html')
 
 
-@index_bp.route('', methods=['OK'])
-@check_right(UserNonBanned)
+@index_bp.route('', methods=['OK'], permissions=UserIsActive())
 def list_reader_load(json):
     favorite = request.args.get('favorite') == 'True'
     localtime = time.gmtime(time.time())
@@ -139,23 +92,20 @@ def list_reader_load(json):
     }
 
 
-@index_bp.route('add_to_favorite/', methods=['OK'])
-@check_right(UserNonBanned)
+@index_bp.route('add_to_favorite/', methods=['OK'], permissions=UserIsActive())
 def add_delete_favorite(json):
     return ReaderPublication.add_delete_favorite_user_article(json.get('article')['id'],
                                                               json.get('article')['is_favorite'])
 
 
-@index_bp.route('add_to_like/', methods=['OK'])
-@check_right(UserNonBanned)
+@index_bp.route('add_to_like/', methods=['OK'], permissions=UserIsActive())
 def add_delete_like(json):
     ReaderPublication.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
     return {'liked': ReaderPublication.count_likes(g.user.id, json.get('article')['id']),
             'list_liked_reader': ReaderPublication.get_list_reader_liked(json.get('article')['id'])}
 
 
-@index_bp.route('subscribe/', methods=['OK'])
-@check_right(UserNonBanned)
+@index_bp.route('subscribe/', methods=['OK'], permissions=UserIsActive())
 def reader_subscribe_registered(json):
     user_dict = g.user.get_client_side_dict()
     portal_id = json['portal_id']
@@ -182,14 +132,12 @@ def reader_subscribe_registered(json):
         return 'You already subscribed on this portal!'
 
 
-@index_bp.route('profile/', methods=['GET'])
-@check_right(UserNonBanned)
+@index_bp.route('profile/', methods=['GET'], permissions=UserIsActive())
 def reader_profile():
     return render_template('partials/reader/reader_profile.html')
 
 
-@index_bp.route('profile/', methods=['OK'])
-@check_right(UserNonBanned)
+@index_bp.route('profile/', methods=['OK'], permissions=UserIsActive())
 def reader_profile_load(json):
     pagination_params = list()
     filter_params = []
@@ -214,14 +162,12 @@ def reader_profile_load(json):
                              for key in grid_data}}
 
 
-@index_bp.route('edit_portal_subscription/<string:reader_portal_id>')
-@check_right(UserNonBanned)
+@index_bp.route('edit_portal_subscription/<string:reader_portal_id>', permissions=UserIsActive())
 def edit_portal_subscription(reader_portal_id):
     return render_template('partials/reader/edit_portal_subscription.html')
 
 
-@index_bp.route('edit_portal_subscription/<string:reader_portal_id>', methods=['OK'])
-@check_right(UserNonBanned)
+@index_bp.route('edit_portal_subscription/<string:reader_portal_id>', methods=['OK'], permissions=UserIsActive())
 def edit_portal_subscription_load(json, reader_portal_id):
     reader_portal = utils.db.query_filter(UserPortalReader, id=reader_portal_id).one()
     if request.args.get('action') == 'load':
@@ -239,8 +185,7 @@ def edit_portal_subscription_load(json, reader_portal_id):
     return reader_portal.validate()
 
 
-@index_bp.route('edit_profile_/<string:reader_portal_id>', methods=['OK'])
-@check_right(UserNonBanned)
+@index_bp.route('edit_profile_/<string:reader_portal_id>', methods=['OK'], permissions=UserIsActive())
 def edit_profile_submit(json, reader_portal_id):
     divisions_and_comments = utils.db.query_filter(UserPortalReader, id=reader_portal_id).one().show_divisions_and_comments
     for item in json['divisions']:
@@ -250,20 +195,17 @@ def edit_profile_submit(json, reader_portal_id):
     return json
 
 
-@index_bp.route('buy_subscription')
-@check_right(UserNonBanned)
+@index_bp.route('buy_subscription', permissions=UserIsActive())
 def buy_subscription():
     return render_template('partials/reader/buy_subscription.html')
 
 
-@index_bp.route('contact_us/', methods=["GET"])
-@check_right(AllowAll)
+@index_bp.route('contact_us/', methods=["GET"], permissions=AvailableForAll())
 def contact_us():
     return render_template('contact_us.html', data={'email': g.user.address_email if g.user else '', 'message': ''})
 
 
-@index_bp.route('contact_us/', methods=["OK"])
-@check_right(AllowAll)
+@index_bp.route('contact_us/', methods=["OK"], permissions=AvailableForAll())
 def contact_us_load(json_data):
     from ..constants import REGEXP
     if not re.match(r'([^\s]{3}[\s]*.*){10}', json_data.get('message', '')):
@@ -277,15 +219,13 @@ def contact_us_load(json_data):
         return {}
 
 
-@index_bp.route('_/add_delete_favorite/<string:publication_id>/', methods=['OK'])
-@check_right(AllowAll)
+@index_bp.route('_/add_delete_favorite/<string:publication_id>/', methods=['OK'], permissions=AvailableForAll())
 def reader_add_delete_favorite(json, publication_id):
     publication = Publication.get(publication_id).add_delete_favorite(json['on'])
     return {'on': True if json['on'] else False, 'favorite_count': publication.favorite_count()}
 
 
-@index_bp.route('_/add_delete_liked/<string:publication_id>/', methods=['OK'])
-@check_right(AllowAll)
+@index_bp.route('_/add_delete_liked/<string:publication_id>/', methods=['OK'], permissions=AvailableForAll())
 def reader_add_delete_liked(json, publication_id):
     publication = Publication.get(publication_id).add_delete_like(json['on'])
     return {'on': True if json['on'] else False, 'liked_count': publication.liked_count()}

@@ -11,11 +11,8 @@ from .request_wrapers import check_right
 from .. import utils
 from ..models.messenger import Socket
 from ..models.portal import Portal
-from ..models.rights import AllowAll
 from ..models.users import User
-
-
-#
+from ..models.permissions import AvailableForAll
 
 
 def set_after_logination_params():
@@ -49,8 +46,7 @@ def get_after_logination_params():
         session.pop('back_to')
     return ret
 
-@auth_bp.route('/login_signup/', methods=['GET'])
-@check_right(AllowAll)
+@auth_bp.route('/login_signup/', methods=['GET'], permissions = AvailableForAll())
 def login_signup_endpoint():
     if current_user.is_authenticated():
         back_to = check_after_logination_params(current_user)
@@ -60,8 +56,7 @@ def login_signup_endpoint():
         return render_template('auth/login_signup.html', login_signup=request.args.get('login_signup', 'login'))
 
 
-@auth_bp.route('/login_signup/', methods=['OK'])
-@check_right(AllowAll)
+@auth_bp.route('/login_signup/', methods=['OK'], permissions = AvailableForAll())
 def signup(json_data):
     action = g.req('action', allowed=['validate', 'save'])
 
@@ -84,8 +79,7 @@ def signup(json_data):
 
 
 
-@auth_bp.route('/login/', methods=['OK'])
-@check_right(AllowAll)
+@auth_bp.route('/login/', methods=['OK'], permissions = AvailableForAll())
 def login(json_data):
     email = json_data.get('email', '')
     password = json_data.get('password', '')
@@ -103,9 +97,8 @@ def login(json_data):
         return {'back_to': check_after_logination_params(user)}
 
 
-@auth_bp.route('/email_confirmation/', methods=['GET'])
-@auth_bp.route('/email_confirmation/<string:token>/', methods=['GET'])
-@check_right(AllowAll)
+@auth_bp.route('/email_confirmation/', methods=['GET'], permissions = AvailableForAll())
+@auth_bp.route('/email_confirmation/<string:token>/', methods=['GET'], permissions = AvailableForAll())
 def email_confirmation(token=None):
     set_after_logination_params()
     if not token:
@@ -128,8 +121,7 @@ def email_confirmation(token=None):
         return redirect(back_to if back_to else url_for('index.welcome'))
 
 
-@auth_bp.route('request_new_email_confirmation_token/', methods=["OK"])
-@check_right(AllowAll)
+@auth_bp.route('request_new_email_confirmation_token/', methods=["OK"], permissions = AvailableForAll())
 def request_new_email_confirmation_token(json_data):
     from ..constants import REGEXP
     email = json_data.get('email', '')
@@ -148,8 +140,7 @@ def request_new_email_confirmation_token(json_data):
             return {'error': 'User with this email is not registered'}
 
 
-@auth_bp.route('tos/', methods=['OK'])
-@check_right(AllowAll)
+@auth_bp.route('tos/', methods=['OK'], permissions = AvailableForAll())
 def tos(json):
     if json.get('accept', False):
         current_user.tos = True
@@ -161,9 +152,8 @@ def tos(json):
 
 
 # TODO: YG by OZ:
-# @auth_bp.route('//', methods=['POST'])
-@auth_bp.route('/login_signup/<soc_network_name>', methods=['GET', 'POST'])
-@check_right(AllowAll)
+# @auth_bp.route('//', methods=['POST'], permissions = AvailableForAll())
+@auth_bp.route('/login_signup/<soc_network_name>', methods=['GET', 'POST'], permissions = AvailableForAll())
 def login_signup_soc_network(soc_network_name):
     # TODO: fix it!
     portal_id = session.get('portal_id')
@@ -217,22 +207,19 @@ def login_signup_soc_network(soc_network_name):
 
 
 
-@auth_bp.route('/logout/', methods=['GET'])
+@auth_bp.route('/logout/', methods=['GET'], permissions = AvailableForAll())
 @login_required
-@check_right(AllowAll)
 def logout():
     User.logout()
     return redirect(url_for('index.index'))
 
 
-@auth_bp.route('/request_new_password/', methods=['GET'])
-@check_right(AllowAll)
+@auth_bp.route('/request_new_password/', methods=['GET'], permissions = AvailableForAll())
 def request_new_reset_password_token():
     return render_template("auth/request_new_password.html")
 
 
-@auth_bp.route('/request_new_password/', methods=["OK"])
-@check_right(AllowAll)
+@auth_bp.route('/request_new_password/', methods=["OK"], permissions = AvailableForAll())
 def request_new_reset_password_token_load(json_data):
     from ..constants import REGEXP
     email = json_data.get('email', '')
@@ -248,15 +235,13 @@ def request_new_reset_password_token_load(json_data):
             return {'error': 'User with this email is not registered'}
 
 
-@auth_bp.route('/reset_password/<string:token>/', methods=['GET'])
-@check_right(AllowAll)
+@auth_bp.route('/reset_password/<string:token>/', methods=['GET'], permissions = AvailableForAll())
 def reset_password(token):
     return render_template("auth/reset_password.html",
                            reset_pass_user=utils.db.query_filter(User, pass_reset_token=token).first())
 
 
-@auth_bp.route('/reset_password/<string:token>/', methods=['OK'])
-@check_right(AllowAll)
+@auth_bp.route('/reset_password/<string:token>/', methods=['OK'], permissions = AvailableForAll())
 def reset_password_load(json_data, token):
     user = utils.db.query_filter(User, pass_reset_token=token).first()
     if user:

@@ -96,13 +96,3 @@ class NoRights(Exception):
 
     def __init__(self, redirect_to='/'):
         self.url = redirect_to
-
-#
-# @csrf.error_handler
-# def csrf_error(reason):
-#     return render_template('errors/404.html', reason=reason), 400
-#
-#
-# @exception_bp.errorhandler(404)
-# def page_not_found(reason):
-#     return render_template('errors/404.html', reason=reason), 404

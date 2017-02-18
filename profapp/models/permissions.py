@@ -121,7 +121,7 @@ class RIGHT_AT_PORTAL(BinaryRights):
 
 
 class Permissions:
-    _operator = 'or'
+    _operator = 'hihi'
     _operands = []
 
     def __init__(self, operator='hahaha', *args):
@@ -150,6 +150,14 @@ class Permissions:
         return True
 
 
+class AvailableForAll(Permissions):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def check(self, *args, **kwargs):
+        return True
+
+
 class UserIsActive(Permissions):
     user_id = None
     user = None
@@ -167,6 +175,28 @@ class UserIsActive(Permissions):
             raise exceptions.UnconfirmedEmailUser()
 
         return True
+
+
+class UserIsAdmin(UserIsActive):
+    def check(self, *args, **kwargs):
+        del kwargs['user_id']
+        return super(UserIsAdmin, self).check(*args, **kwargs) and self.user.is_admin()
+
+
+class UserIsMaintainer(UserIsActive):
+    def check(self, *args, **kwargs):
+        del kwargs['user_id']
+        return super(UserIsMaintainer, self).check(*args, **kwargs) and self.user.is_maintainer(or_admin=False)
+
+
+class UserIsAdminOrMaintainer(UserIsActive):
+    def check(self, *args, **kwargs):
+        del kwargs['user_id']
+        return super(UserIsAdminOrMaintainer, self).check(*args, **kwargs) and self.user.is_maintainer(or_admin=True)
+
+class UserIsOwner(UserIsActive):
+    def check(self, *args, **kwargs):
+        return super(UserIsOwner, self).check(*args, **kwargs) and g.user.id == kwargs['user_id']
 
 
 class CompanyIsActive(Permissions):
@@ -278,6 +308,21 @@ class EmployeeHasRightAtCompany(Permissions):
 
         else:
             return True if employment.rights[self.rights] else False
+
+
+class EmployeeHasRightAtPortalOwnCompany(EmployeeHasRightAtCompany):
+
+    def check(self, *args, **kwargs):
+        from profapp.models.portal import Portal, MemberCompanyPortal
+        if 'portal_id' in kwargs:
+            portal = Portal.get(kwargs['portal_id'])
+        elif 'membership_id' in kwargs:
+            portal = MemberCompanyPortal.get(kwargs['membership_id']).portal
+        else:
+            raise Exception("No portal found by portal_id or membership_id kwargs={}".format(kwargs))
+
+        kwargs['company_id'] = portal.company_owner_id
+        return super(EmployeeHasRightAtPortalOwnCompany, self).check(*args, **kwargs) and portal.is_active()
 
 
 class EmployeeHasRightAtMembershipCompany(Permissions):
@@ -536,7 +581,6 @@ class ActionsForFileManagerAtMembership(Permissions):
             del actions['download']
         else:
             del actions['paste']
-
 
         if called_for == 'file_browse_image':
             actions['choose'] = re.search('^image/.*', file.mime) is not None
