@@ -68,9 +68,7 @@ def profile(company_id=None):
         employment.md_tm = None
         employment.save()
 
-    return render_template('company/company_profile.html',
-                           user_is_employee=employment is not None,
-                           company=company)
+    return render_template('company/company_profile.html', company=company)
 
 
 @company_bp.route('/create/', methods=['OK'], permissions=UserIsActive())

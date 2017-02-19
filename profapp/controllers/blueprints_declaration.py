@@ -75,24 +75,25 @@ class PrBlueprint(Blueprint):
                 hide_error = not (g.debug or g.testing)
 
                 try:
-
-                    if request.url_rule.rule not in self.registered_functions[f.__name__]['perm']:
-                        raise exceptions.RouteWithoutPermissions(
+                    ps = getattr(wrapped_function, '_permissions', None)
+                    # print(request.url_rule.rule, wrapped_function._permissions)
+                    if ps is None:
+                        raise exceptions.RouteWithoutPermissions("view function without permissions: " +
                             self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
 
-                    ps = self.registered_functions[f.__name__]['perm'][request.url_rule.rule]
+                    ps = ps.get(request.url_rule.rule, None)
 
-                    if not ps:
-                        raise exceptions.RouteWithoutPermissions(
+                    if ps is None:
+                        raise exceptions.RouteWithoutPermissions("cant find permissions for rule: " +
                             self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
 
                     if method == 'OK':
                         json = request.json
-                        if not ps.check(json, *args, **kwargs):
+                        if not ps['permissions'].check(json, *args, **kwargs):
                             raise exceptions.UnauthorizedUser()
                         ret = f(json, *args, **kwargs)
                     else:
-                        if not ps.check(*args, **kwargs):
+                        if not ps['permissions'].check(*args, **kwargs):
                             raise exceptions.UnauthorizedUser()
                         ret = f(*args, **kwargs)
 
@@ -138,9 +139,16 @@ class PrBlueprint(Blueprint):
             if f.__name__ not in self.registered_functions:
                 self.registered_functions[f.__name__] = {'func': wrapped_function, 'perm': {}, 'app': current_app}
 
+            func = self.registered_functions[f.__name__]['func']
+            if getattr(func, '_permissions', None) is None:
+                setattr(func, '_permissions', {})
+                func._permissions[self.url_prefix + rule] = \
+                    {'url_prefix': self.url_prefix, 'rule': rule, 'permissions': permissions}
+
             self.registered_functions[f.__name__]['perm'][self.url_prefix + rule] = permissions
 
             endpoint = options.pop("endpoint", f.__name__)
+
             self.add_url_rule(rule, endpoint, self.registered_functions[f.__name__]['func'], **options)
 
             return self.registered_functions[f.__name__]['func']

@@ -194,6 +194,7 @@ class UserIsAdminOrMaintainer(UserIsActive):
         del kwargs['user_id']
         return super(UserIsAdminOrMaintainer, self).check(*args, **kwargs) and self.user.is_maintainer(or_admin=True)
 
+
 class UserIsOwner(UserIsActive):
     def check(self, *args, **kwargs):
         return super(UserIsOwner, self).check(*args, **kwargs) and g.user.id == kwargs['user_id']
@@ -207,7 +208,7 @@ class CompanyIsActive(Permissions):
         from ..models.company import Company
         if 'company_id' in kwargs:
             self.company_id = kwargs['company_id']
-        self.company = Company.get(self.company_id)
+        self.company = Company.get(self.company_id, returnNoneIfNotExists=True)
 
         if not self.company:
             raise Exception("No company found `%s`" % self.company_id)
@@ -227,7 +228,7 @@ class PortalIsActive(Permissions):
         from ..models.company import Portal
         if 'portal_id' in kwargs:
             self.portal_id = kwargs['portal_id']
-        self.portal = Portal.get(self.portal_id)
+        self.portal = Portal.get(self.portal_id, returnNoneIfNotExists = True)
         if not self.portal:
             raise Exception("No portal found `%s`" % self.portal_id)
 
@@ -271,7 +272,7 @@ class MembershipIsActive(Permissions):
     def check(self, membership_id):
         from ..models.portal import MemberCompanyPortal
         self.membership_id = membership_id
-        self.membership = MemberCompanyPortal.get(self.membership_id)
+        self.membership = MemberCompanyPortal.get(self.membership_id, returnNoneIfNotExists = True)
 
         if not self.membership:
             raise Exception("No membership found by user_id, company_id = {},{}".format(self.membership_id))
@@ -311,7 +312,6 @@ class EmployeeHasRightAtCompany(Permissions):
 
 
 class EmployeeHasRightAtPortalOwnCompany(EmployeeHasRightAtCompany):
-
     def check(self, *args, **kwargs):
         from profapp.models.portal import Portal, MemberCompanyPortal
         if 'portal_id' in kwargs:
@@ -335,9 +335,7 @@ class EmployeeHasRightAtMembershipCompany(Permissions):
         membership_is_active = MembershipIsActive()
         membership_is_active.check(membership_id)
         employee_has_right = EmployeeHasRightAtCompany(self.rights)
-        employee_has_right.check(company_id=membership_is_active.membership.company_id)
-
-        return True
+        return employee_has_right.check(company_id=membership_is_active.membership.company_id)
 
 
 class EmployeeHasRightAF(Permissions):
