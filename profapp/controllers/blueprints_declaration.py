@@ -142,8 +142,9 @@ class PrBlueprint(Blueprint):
             func = self.registered_functions[f.__name__]['func']
             if getattr(func, '_permissions', None) is None:
                 setattr(func, '_permissions', {})
-                func._permissions[self.url_prefix + rule] = \
-                    {'url_prefix': self.url_prefix, 'rule': rule, 'permissions': permissions}
+
+            func._permissions[self.url_prefix + rule] = \
+                {'url_prefix': self.url_prefix, 'rule': rule, 'permissions': permissions}
 
             self.registered_functions[f.__name__]['perm'][self.url_prefix + rule] = permissions
 
