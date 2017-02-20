@@ -285,8 +285,15 @@ class Portal(Base, PRBase):
         ret = self.to_dict(fields, more_fields)
         if get_publications_count:
             for d in self.divisions:
+                from ..models.materials import Publication
+                from sqlalchemy.sql import functions
+
                 if d.portal_division_type.id in [PortalDivision.TYPES['events'], PortalDivision.TYPES['news']]:
-                    utils.find_by_id(ret['divisions'], d.id)['publication_count'] = len(d.publications)
+                    cnt = g.db.query(Publication.status, Publication.visibility,
+                                     functions.count(Publication.id).label('cnt')). \
+                        filter(and_(Publication.portal_division_id == d.id)). \
+                        group_by(Publication.status, Publication.visibility).all()
+                    utils.find_by_id(ret['divisions'], d.id)['publication_count'] = Publication.group_by_status_and_visibility(cnt)
 
         if get_own_or_profi_host:
             if ret['host'][

@@ -267,11 +267,11 @@
                     <td ng-bind-html="price(data.membership.current_membership_plan_issued)|html"></td>
                     <td ng-bind-html="duration(data.membership.current_membership_plan_issued)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-OPEN"
-                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'open', data.select.publications)|html"></td>
+                        ng-bind-html="publication_count_for_plan(data.membership.current_membership_plan_issued, 'open', data.select.publications)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-REGISTERED"
-                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'registered', data.select.publications)|html"></td>
+                        ng-bind-html="publication_count_for_plan(data.membership.current_membership_plan_issued, 'registered', data.select.publications)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-PAYED"
-                        ng-bind-html="publication_count(data.membership.current_membership_plan_issued, 'payed', data.select.publications)|html"></td>
+                        ng-bind-html="publication_count_for_plan(data.membership.current_membership_plan_issued, 'payed', data.select.publications)|html"></td>
                 </tr>
 
 
@@ -302,11 +302,11 @@
                     <td ng-bind-html="price(data.membership.requested_membership_plan_issued)|html"></td>
                     <td ng-bind-html="duration(data.membership.requested_membership_plan_issued)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-OPEN"
-                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'open', data.select.publications)|html"></td>
+                        ng-bind-html="publication_count_for_plan(data.membership.requested_membership_plan_issued, 'open', data.select.publications)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-REGISTERED"
-                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'registered', data.select.publications)|html"></td>
+                        ng-bind-html="publication_count_for_plan(data.membership.requested_membership_plan_issued, 'registered', data.select.publications)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-PAYED"
-                        ng-bind-html="publication_count(data.membership.requested_membership_plan_issued, 'payed', data.select.publications)|html"></td>
+                        ng-bind-html="publication_count_for_plan(data.membership.requested_membership_plan_issued, 'payed', data.select.publications)|html"></td>
                 </tr>
 
                 </tbody>
@@ -328,11 +328,11 @@
                     <td ng-bind-html="price(plan)|html"></td>
                     <td ng-bind-html="duration(plan)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-OPEN"
-                        ng-bind-html="publication_count(plan, 'open', data.select.publications, true)|html"></td>
+                        ng-bind-html="publication_count_for_plan(plan, 'open', data.select.publications, true)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-REGISTERED"
-                        ng-bind-html="publication_count(plan, 'registered', data.select.publications, true)|html"></td>
+                        ng-bind-html="publication_count_for_plan(plan, 'registered', data.select.publications, true)|html"></td>
                     <td class="w1em publication-bg-VISIBILITY-PAYED"
-                        ng-bind-html="publication_count(plan, 'payed', data.select.publications, true)|html"></td>
+                        ng-bind-html="publication_count_for_plan(plan, 'payed', data.select.publications, true)|html"></td>
                 </tr>
 
                 <tr>
