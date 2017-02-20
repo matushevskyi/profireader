@@ -270,7 +270,7 @@ def _url_permitted(endpoint, dictionary={}):
             if re.match(r'.*<([^:]+(\([^()]+\))?:)?'+d+'>.*', permission['rule']):
                 matched[d] = dictionary[d]
         if matched == dictionary:
-            return permission['permissions'].check(**dictionary)
+            return url_for(endpoint, **dictionary) if permission['permissions'].check(**dictionary) else False
 
     raise Exception(
             'url_permitted: Cant find any matched rule at endpoint `{}` for passed dictionary {}'.format(endpoint,
