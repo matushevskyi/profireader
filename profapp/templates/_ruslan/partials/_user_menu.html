@@ -22,15 +22,15 @@
             }
         };
 
-        $scope.url_list_reader = {{ raw_url_for('index.list_reader')|safe }}
-                $scope.url_general = function () {
-                    if ($scope.user) {
-                        return '{{ url_for('index.list_reader')|safe }}'
-                    }
-                    else {
-                        return '{{ url_for('index.index')|safe }}'
-                    }
-                };
+        $scope.url_list_reader = {{ raw_url_for('index.index')|safe }}
+            $scope.url_general = function () {
+                if ($scope.user) {
+                    return '{{ url_for('index.index')|safe }}'
+                }
+                else {
+                    return '{{ url_for('index.index')|safe }}'
+                }
+            };
 
         $scope.url_company_companies = {{ raw_url_for('company.companies')|safe }};
         $scope.url_general_help = {{ raw_url_for('index.contact_us')|safe }};
@@ -69,6 +69,7 @@
     });
 
 </script>
+
 {% raw %}
 <nav ng-controller="user_controller" id="user_controller-controller" class="navbar navbar-fixed-top nav-bg">
     <div class="container" ng-cloak>
@@ -96,12 +97,16 @@
                             class="fa fa-newspaper-o"></i><span>{{ _('Стрічкa читача') }}</span></a></li>
                     <!-- @formatter:off  -->
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_messenger }}"
-                        title="{{ ::_('All messages') }}"
-                        class="pr" ng-class="{'selected': selected_user_menu == 'messages'}"><i
-                        class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span><div
-                        ng-if="unread_message_count || unread_notification_count || contact_request_count"
-                        class="pa unread_messages_and_notifications_count">{{ unread_message_count +
-                        unread_notification_count + contact_request_count}}</div></a></li>
+                                                                                           title="{{ ::_('All messages') }}"
+                                                                                           class="pr"
+                                                                                           ng-class="{'selected': selected_user_menu == 'messages'}"><i
+                            class="fa fa-envelope-o"></i><span>{{ _('Всі повідомлення') }}</span>
+                        <div
+                                ng-if="unread_message_count || unread_notification_count || contact_request_count"
+                                class="pa unread_messages_and_notifications_count">{{ unread_message_count +
+                            unread_notification_count + contact_request_count}}
+                        </div>
+                    </a></li>
                     <!-- @formatter:on  -->
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %}
                             href="{{ url_company_companies() }}"
@@ -110,7 +115,7 @@
                             class="fa fa-building-o"></i><span>{{ _('Компанії') }}</span></a></li>
                     <li class="dropdown" ng-if="user"><a {% endraw %}{{ tbvm() }}{% raw %} href=""
                                                                                            ng-click="open_filemanager()"
-                                                                                           title="{{ _('Менеджер файлів') }}"
+                                                                                           title="{{ _('File manager') }}"
                                                                                            ng-class="{'selected': selected_user_menu == 'file_manager'}"><i
                             class="fa fa-folder-open-o"></i><span>{{ _('Менеджер файлів') }}</span></a></li>
                     <li class="dropdown"><a {% endraw %}{{ tbvm() }}{% raw %} href="{{ url_general_help() }}"
@@ -152,10 +157,10 @@
         </div>
     </div>
     {% endraw %}{% if g.user and g.user.is_maintainer() %}
-                        <div role="presentation" class="menu-profile par pat">
-                            <a class="login-profile" href="{{ url_for('admin.index') }}">{{ _(':o') }}</a>
-                        </div>
-{% endif %}{% raw %}
+        <div role="presentation" class="menu-profile par pat">
+            <a class="login-profile" href="{{ url_for('admin.index') }}">{{ _('admin') }}</a>
+        </div>
+    {% endif %}{% raw %}
 </nav>
 
 {% endraw %}

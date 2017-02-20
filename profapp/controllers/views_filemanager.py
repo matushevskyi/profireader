@@ -7,15 +7,12 @@ from functools import wraps
 from flask import jsonify, json
 from flask import render_template, g
 from flask import request
-from flask.ext.login import login_required
 
 from profapp.models.files import File, YoutubeApi
 from profapp import utils
 from .blueprints_declaration import filemanager_bp
-from .request_wrapers import check_right
-from ..models.company import Company, MemberCompanyPortal
-from ..models.rights import FilemanagerRights, UserIsActive
-from ..models.permissions import RIGHT_AT_COMPANY, EmployeeHasRightAtCompany
+from ..models.company import Company
+from ..models.permissions import RIGHT_AT_COMPANY, EmployeeHasRightAtCompany, UserIsActive
 
 
 def parent_folder(func):
@@ -32,9 +29,7 @@ root = os.getcwd() + '/profapp/static/filemanager/tmp'
 json_result = {"result": {"success": True, "error": None}}
 
 
-@filemanager_bp.route('/')
-@login_required
-@check_right(UserIsActive)
+@filemanager_bp.route('/', permissions=UserIsActive())
 def filemanager():
     from collections import OrderedDict
     from profapp.models.company import UserCompany
@@ -54,26 +49,6 @@ def filemanager():
             filemanager_company_list[company.id] = File.folder_dict(
                 company, {'can_upload': EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
                     company_id=company.id)})
-    # for user_company in g.user.employments:
-    #     if user_company.company.own_portal:
-    #         company_membership_in_portal = utils.db.query_filter(MemberCompanyPortal,
-    #                                                              portal_id=user_company.company.own_portal.id). \
-    #             filter(
-    #             MemberCompanyPortal.company_id != user_company.company.id and MemberCompanyPortal.status ==
-    #             MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']) \
-    #             .join(Company).filter(Company.status == Company.STATUSES['COMPANY_ACTIVE']).all()
-    #
-    #         for company_membership in company_membership_in_portal:
-    #             # YG: needed for check user rights in companies
-    #             right = EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
-    #                 company_id=company_membership.company_id)
-    #             if company_membership.company_id not in filemanager_company_list and right is True:
-    #                 # print(
-    #                 #     company_membership.company)
-    #                 filemanager_company_list[company_membership.company_id] = {
-    #                     'can_upload': EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
-    #                         company_id=company_membership.company_id)}
-    # filemanager_company_list.sort(key=lambda k: k['name'])
 
     file_manager_on_action = jsonmodule.loads(
         request.args['file_manager_on_action']) if 'file_manager_on_action' in request.args else {}
@@ -97,8 +72,7 @@ def filemanager():
                            file_manager_default_action=file_manager_default_action)
 
 
-@filemanager_bp.route('/list/', methods=['OK'])
-@check_right(UserIsActive)
+@filemanager_bp.route('/list/', methods=['OK'], permissions=UserIsActive())
 def list(json):
     ancestors = File.ancestors(json['params']['folder_id'])
     company = utils.db.query_filter(Company, journalist_folder_file_id=ancestors[0]).first()
@@ -110,8 +84,7 @@ def list(json):
     return {'list': list, 'ancestors': ancestors}
 
 
-@filemanager_bp.route('/createdir/', methods=['OK'])
-@check_right(UserIsActive)
+@filemanager_bp.route('/createdir/', methods=['OK'], permissions=UserIsActive())
 def createdir(json):
     if EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD). \
             check(company_id=get_company_from_folder(json['params']['root_id']).id) is not True:
@@ -121,8 +94,7 @@ def createdir(json):
                           parent_id=json['params']['folder_id'])
 
 
-@filemanager_bp.route('/properties/', methods=['OK'])
-@check_right(UserIsActive)
+@filemanager_bp.route('/properties/', methods=['OK'], permissions=UserIsActive())
 def set_properties(json):
     file = File.get(json['params']['id'])
     if not file or EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
@@ -133,8 +105,7 @@ def set_properties(json):
                                description=json['params']['description'])
 
 
-@filemanager_bp.route('/copy/', methods=['OK'])
-@check_right(UserIsActive)
+@filemanager_bp.route('/copy/', methods=['OK'], permissions=UserIsActive())
 def copy(json):
     file = File.get(json['params']['id'])
     if not file or EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
@@ -143,8 +114,7 @@ def copy(json):
     return file.copy_file(json['params']['folder_id']).id
 
 
-@filemanager_bp.route('/cut/', methods=['OK'])
-@check_right(UserIsActive)
+@filemanager_bp.route('/cut/', methods=['OK'], permissions=UserIsActive())
 def cut(json):
     file = File.get(json['params']['id'])
     if not file or EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.FILES_UPLOAD).check(
@@ -153,8 +123,7 @@ def cut(json):
     return file.move_to(json['params']['folder_id'])
 
 
-@filemanager_bp.route('/auto_remove/', methods=['OK'])
-@check_right(UserIsActive)
+@filemanager_bp.route('/auto_remove/', methods=['OK'], permissions=UserIsActive())
 def auto_remove(json):
     return File.auto_remove(json.get('list'))
 
@@ -164,8 +133,7 @@ def get_company_from_folder(file_id):
     return utils.db.query_filter(Company, journalist_folder_file_id=ancestors[0]).first()
 
 
-@filemanager_bp.route('/remove/<string:file_id>', methods=['OK'])
-@check_right(UserIsActive)
+@filemanager_bp.route('/remove/<string:file_id>', methods=['OK'], permissions=UserIsActive())
 def remove(json, file_id):
     file = File.get(file_id)
     ancestors = File.ancestors(file.parent_id)
@@ -175,8 +143,7 @@ def remove(json, file_id):
     return file.remove()
 
 
-@filemanager_bp.route('/send/<string:parent_id>/', methods=['POST'])
-@check_right(UserIsActive)
+@filemanager_bp.route('/send/<string:parent_id>/', methods=['POST'], permissions=UserIsActive())
 def send(parent_id):
     parent = File.get(parent_id)
     root = parent.root_folder_id
@@ -208,7 +175,6 @@ def send(parent_id):
     return jsonify({'result': {'size': 0}, 'error': True if file == 'error' else False, 'file_id': file})
 
 
-@filemanager_bp.route('/resumeupload/', methods=['GET'])
-@check_right(UserIsActive)
+@filemanager_bp.route('/resumeupload/', methods=['GET'], permissions=UserIsActive())
 def resumeupload():
     return jsonify({'size': 0})

@@ -231,6 +231,54 @@ def raise_helper(msg):
     raise Exception(msg)
 
 
+from werkzeug.routing import RequestRedirect, MethodNotAllowed, NotFound
+
+
+def get_view_function(url, method='GET'):
+    """Match a url and return the view and arguments
+    it will be called with, or None if there is no view.
+    """
+    adapter = current_app.url_map.bind(None)
+
+    try:
+        match = adapter.match(url, method=method)
+    except RequestRedirect as e:
+        # recursively match redirects
+        return get_view_function(e.new_url, method)
+    except (MethodNotAllowed, NotFound):
+        # no match
+        return None
+
+    try:
+        # return the view function and arguments
+        return current_app.view_functions[match[0]], match[1]
+    except KeyError:
+        # no view is associated with the endpoint
+        return None
+
+
+def _url_permitted(endpoint, dictionary={}):
+    permissions = getattr(current_app.view_functions[endpoint], '_permissions', None)
+
+    if permissions is None:
+        raise Exception('url_permitted: View function for endpoint `{}` without without permissions'.format(endpoint))
+
+    for ind, permission in permissions.items():
+
+        matched = {}
+        for d in dictionary:
+            if re.match(r'.*<([^:]+(\([^()]+\))?:)?'+d+'>.*', permission['rule']):
+                matched[d] = dictionary[d]
+        if matched == dictionary:
+            return permission['permissions'].check(**dictionary)
+
+    raise Exception(
+            'url_permitted: Cant find any matched rule at endpoint `{}` for passed dictionary {}'.format(endpoint,
+                                                                                                      dictionary))
+
+
+
+
 def update_jinja_engine(app):
     def tbvm():
         return ' target="_blank" ' if g.user and g.user.id in ['561e3eaf-2188-4001-b542-e607537567b2'] else ''
@@ -250,11 +298,11 @@ def update_jinja_engine(app):
     app.jinja_env.globals.update(moment=moment)
     app.jinja_env.globals.update(static_address=static_address_html)
     app.jinja_env.globals.update(MAIN_DOMAIN=Config.MAIN_DOMAIN)
-    app.jinja_env.globals.update(MAIN_DOMAIN=Config.MAIN_DOMAIN)
     app.jinja_env.globals['raise'] = raise_helper
     app.jinja_env.globals.update(tinymce_format_groups=HtmlHelper.tinymce_format_groups)
     app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
     app.jinja_env.globals.update(tbvm=tbvm)
+    app.jinja_env.globals.update(_url_permitted=_url_permitted)
     app.jinja_env.globals.update(
         _URL_JOIN=lambda: '//' + MAIN_DOMAIN + '/auth/login_signup/?login_signup=signup&portal_id=' + g.portal_id if g.portal_id else None)
     app.jinja_env.filters['nl2br'] = nl2br
@@ -263,3 +311,12 @@ def update_jinja_engine(app):
     app.jinja_env.filters['highlighted'] = highlighted
     app.jinja_env.filters['timestamp'] = timestamp
     app.jinja_env.filters['date'] = date
+
+    macro = ("""{% macro if_url_permitted(endpoint) %}
+{% if _url_permitted(endpoint, kwargs) %}
+{{ caller(_url_permitted(endpoint, kwargs)) }}
+{% endif %}
+{% endmacro %}""")
+
+    macro_template = app.jinja_env.from_string(macro)
+    app.jinja_env.globals['if_url_permitted'] = macro_template.module.if_url_permitted

@@ -121,7 +121,7 @@ class RIGHT_AT_PORTAL(BinaryRights):
 
 
 class Permissions:
-    _operator = 'or'
+    _operator = 'hihi'
     _operands = []
 
     def __init__(self, operator='hahaha', *args):
@@ -150,6 +150,14 @@ class Permissions:
         return True
 
 
+class AvailableForAll(Permissions):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def check(self, *args, **kwargs):
+        return True
+
+
 class UserIsActive(Permissions):
     user_id = None
     user = None
@@ -169,6 +177,29 @@ class UserIsActive(Permissions):
         return True
 
 
+class UserIsAdmin(UserIsActive):
+    def check(self, *args, **kwargs):
+        del kwargs['user_id']
+        return super(UserIsAdmin, self).check(*args, **kwargs) and self.user.is_admin()
+
+
+class UserIsMaintainer(UserIsActive):
+    def check(self, *args, **kwargs):
+        del kwargs['user_id']
+        return super(UserIsMaintainer, self).check(*args, **kwargs) and self.user.is_maintainer(or_admin=False)
+
+
+class UserIsAdminOrMaintainer(UserIsActive):
+    def check(self, *args, **kwargs):
+        del kwargs['user_id']
+        return super(UserIsAdminOrMaintainer, self).check(*args, **kwargs) and self.user.is_maintainer(or_admin=True)
+
+
+class UserIsOwner(UserIsActive):
+    def check(self, *args, **kwargs):
+        return super(UserIsOwner, self).check(*args, **kwargs) and g.user.id == kwargs['user_id']
+
+
 class CompanyIsActive(Permissions):
     company_id = None
     company = None
@@ -177,7 +208,7 @@ class CompanyIsActive(Permissions):
         from ..models.company import Company
         if 'company_id' in kwargs:
             self.company_id = kwargs['company_id']
-        self.company = Company.get(self.company_id)
+        self.company = Company.get(self.company_id, returnNoneIfNotExists=True)
 
         if not self.company:
             raise Exception("No company found `%s`" % self.company_id)
@@ -197,7 +228,7 @@ class PortalIsActive(Permissions):
         from ..models.company import Portal
         if 'portal_id' in kwargs:
             self.portal_id = kwargs['portal_id']
-        self.portal = Portal.get(self.portal_id)
+        self.portal = Portal.get(self.portal_id, returnNoneIfNotExists = True)
         if not self.portal:
             raise Exception("No portal found `%s`" % self.portal_id)
 
@@ -241,7 +272,7 @@ class MembershipIsActive(Permissions):
     def check(self, membership_id):
         from ..models.portal import MemberCompanyPortal
         self.membership_id = membership_id
-        self.membership = MemberCompanyPortal.get(self.membership_id)
+        self.membership = MemberCompanyPortal.get(self.membership_id, returnNoneIfNotExists = True)
 
         if not self.membership:
             raise Exception("No membership found by user_id, company_id = {},{}".format(self.membership_id))
@@ -280,6 +311,20 @@ class EmployeeHasRightAtCompany(Permissions):
             return True if employment.rights[self.rights] else False
 
 
+class EmployeeHasRightAtPortalOwnCompany(EmployeeHasRightAtCompany):
+    def check(self, *args, **kwargs):
+        from profapp.models.portal import Portal, MemberCompanyPortal
+        if 'portal_id' in kwargs:
+            portal = Portal.get(kwargs['portal_id'])
+        elif 'membership_id' in kwargs:
+            portal = MemberCompanyPortal.get(kwargs['membership_id']).portal
+        else:
+            raise Exception("No portal found by portal_id or membership_id kwargs={}".format(kwargs))
+
+        kwargs['company_id'] = portal.company_owner_id
+        return super(EmployeeHasRightAtPortalOwnCompany, self).check(*args, **kwargs) and portal.is_active()
+
+
 class EmployeeHasRightAtMembershipCompany(Permissions):
     rights = None
 
@@ -290,9 +335,7 @@ class EmployeeHasRightAtMembershipCompany(Permissions):
         membership_is_active = MembershipIsActive()
         membership_is_active.check(membership_id)
         employee_has_right = EmployeeHasRightAtCompany(self.rights)
-        employee_has_right.check(company_id=membership_is_active.membership.company_id)
-
-        return True
+        return employee_has_right.check(company_id=membership_is_active.membership.company_id)
 
 
 class EmployeeHasRightAF(Permissions):
@@ -536,7 +579,6 @@ class ActionsForFileManagerAtMembership(Permissions):
             del actions['download']
         else:
             del actions['paste']
-
 
         if called_for == 'file_browse_image':
             actions['choose'] = re.search('^image/.*', file.mime) is not None

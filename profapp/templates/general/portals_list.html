@@ -26,7 +26,7 @@
                         if (resp === true) {
                             add_message('You have successfully subscribed to this portal', 'success')
                             $timeout(function () {
-                                window.location.href = '{{ url_for('index.list_reader') }}'
+                                window.location.href = '{{ url_for('index.index') }}'
                             }, 1500)
                         } else {
                             add_message(resp, 'warning', 3000)

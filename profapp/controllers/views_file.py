@@ -4,19 +4,17 @@ import re
 import urllib.parse
 from io import BytesIO
 from time import time
-from zlib import adler32
 
 from flask import current_app
 from flask import request, g, abort
-from flask._compat import string_types, text_type
+from flask._compat import string_types
 from sqlalchemy import or_
 from werkzeug.datastructures import Headers
 
 from profapp import utils
 from .blueprints_declaration import file_bp
-from .request_wrapers import check_right
 from ..models.files import File, FileContent
-from ..models.rights import AllowAll
+from profapp.models.permissions import AvailableForAll
 
 try:
     from werkzeug.wsgi import wrap_file
@@ -29,23 +27,8 @@ def file_query(table, file_id):
     return query
 
 
-# @file_bp.route('<string:file_id>')
-# def download(file_id):
-#    file = file_query(File, file_id)
-#    file_c = file_query(FileContent, file_id)
-#    if not file or not file_c:
-#        abort(404)
-#    else:
-#        content = file_c.content
-#        response = make_response(content)
-#        response.headers['Content-Type'] = "application/octet-stream"
-#        response.headers['Content-Disposition'] = 'attachment; filename=%s' % urllib.parse.quote(file.name)
-#        return response
-
-
-@file_bp.route('<string:file_id>/')
-@file_bp.route('<string:file_id>')
-@check_right(AllowAll)
+@file_bp.route('<string:file_id>/', permissions=AvailableForAll())
+@file_bp.route('<string:file_id>', permissions=AvailableForAll())
 def get(file_id):
     image_query = file_query(File, file_id)
 

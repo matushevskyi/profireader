@@ -221,6 +221,10 @@ class Company(Base, PRBase, PRElasticDocument):
             sub_query = utils.db.query_filter(MemberCompanyPortal, portal_id=portal_id)
         return sorted(list({partner.status for partner in sub_query}))
 
+    def get_rights_for_current_user(self):
+        employment = UserCompany.get_by_user_and_company_ids(company_id=self.id)
+        return employment.rights if employment else None
+
     def get_user_with_rights(self, *rights_sets, get_text_representation=False):
         from ..models.permissions import RIGHT_AT_COMPANY
         # TODO: OZ by OZ: use operator overloading (&,|) instead of list(|),set(&)
