@@ -1092,54 +1092,23 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
             comment="to portal owner company employees with rights %s%s" % (
                 ','.join(rights_at_portal), phrase_comment))
 
+        users_at_company = self.company.get_user_with_rights(rights_at_company)
+        users_at_portal = self.portal.own_company.get_user_with_rights(rights_at_portal)
+
+        if self.company == self.portal.own_company:
+            users_at_company = list(set(users_at_company) - set(users_at_portal))
+
         Socket.prepare_notifications(
-            self.company.get_user_with_rights(rights_at_company),
+            users_at_company,
             notification_type_to_company_employees,
             [phrase_to_employees_at_company] + more_phrases_to_company, except_to_user=except_to_user)
 
         Socket.prepare_notifications(
-            self.portal.own_company.get_user_with_rights(rights_at_portal),
+            users_at_portal,
             notification_type_to_portal_employees,
             [phrase_to_employees_at_portal] + more_phrases_to_portal, except_to_user=except_to_user)
 
         return lambda: utils.do_nothing()
-
-
-
-
-        # _text = None
-        # _comment = None
-        #
-        # _right_at_company = None
-        # _notification_type_to_company_employees = None
-        #
-        # _right_at_portal = None
-        # _notification_type_to_portal_employees = None
-        #
-        #
-        #
-        # def __init__(self, text, comment=None,
-        #              right_at_company=RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION,
-        #              notification_type_to_company_employees=NOTIFICATION_TYPES['MEMBER_COMPANY_ACTIVITY'],
-        #              right_at_portal=RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-        #              notification_type_to_portal_employees=NOTIFICATION_TYPES['MEMBEREE_PORTAL_ACTIVITY'],
-        #              ):
-        #
-        #     self._text = text
-        #     self._comment = comment
-        #
-        #     self._right_at_company = right_at_company
-        #     self._notification_type_to_company_employees = notification_type_to_company_employees
-        #
-        #     self._right_at_portal = right_at_portal
-        #     self._notification_type_to_portal_employees = notification_type_to_portal_employees
-
-        # @staticmethod
-        # def PLAN_REQUESTED_BY_COMPANY(new_plan_name, dictionary={}, more_phrases_to_company=[], more_phrases_to_portal=[], except_to_user=[g.user]):
-        #     return NOTIFICATIONS('requested new plan `%(new_plan_name)s` by company')
-        #
-        #
-        #
 
 
 class ReaderUserPortalPlan(Base, PRBase):
@@ -1223,37 +1192,6 @@ class PortalDivision(Base, PRBase):
             'keywords': self.html_keywords if self.html_keywords else ','.join(t.text for t in self.tags),
             'description': self.html_description
         }
-
-    def notify_company_about_deleted_publications(self, because_of):
-        from ..models.messenger import Socket
-        from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
-        from ..models.translate import Phrase
-        from ..models.company import Company
-        from collections import OrderedDict
-
-        if not self.publications:
-            return
-
-        header_phrase = "Because of division %%(division_name)s at portal %s was %s by user %s some publications was deleted" % \
-                        (utils.jinja.link_external(), because_of, utils.jinja.link_user_profile())
-        phrases_to_portal = [Phrase(header_phrase, dict={'division_name': self.name})]
-        phrases_to_companies_editors = OrderedDict()
-
-        for p in self.publications:
-            if p.material.company_id not in phrases_to_companies_editors:
-                phrases_to_companies_editors[p.material.company_id] = [Phrase(header_phrase)]
-
-            publication_phrase = Phrase("deleted a publication named `%(title)s`", dict={'title': p.title})
-            phrases_to_portal.append(publication_phrase)
-            phrases_to_companies_editors[p.material.company_id].append(publication_phrase)
-
-        Socket.prepare_notifications(self.portal.own_company.get_users_with_rights(),
-                                     NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
-
-        for company_id, phrases in phrases_to_companies_editors.items():
-            Socket.prepare_notifications(Company.get(company_id).get_users_with_rights(
-                RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH, RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH),
-                NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
 
     def is_active(self):
         return True

@@ -30,10 +30,6 @@ class NotifyMembership(Notify):
         'notification_type_to_portal_employees': NOTIFICATION_TYPES['ARTICLES_ACTIVITY']
     }
 
-    #    def _call_send_notification_about_membership_change(self, substitute_now={}, *args, **kwargs):
-    #        text, dictionary = self._getfunc(substitute_now)
-    #        return self._send_notification_about_membership_change(text, dictionary, *args, **kwargs)
-
     def NOTIFY_PLAN_REQUESTED_BY_COMPANY(self, requested_plan_name):
         return self._send_notification_about_membership_change(
             'requested new plan `%(requested_plan_name)s` by company',
@@ -116,9 +112,16 @@ class NotifyMembership(Notify):
             more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company,
             **self.__publication_kwargs)
 
+    def NOTIFY_MATERIAL_PUBLICATION_BULK_ACTION(self, action, reason, more_phrases_to_company=[],
+                                                more_phrases_to_portal=[]):
+        return self._send_notification_about_membership_change(
+            'following publications was %(action)s because of %(reason)s' % {'action': action, 'reason': reason},
+            more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company,
+            **self.__publication_kwargs)
+
     def NOTIFY_ARTICLE_VISIBILITY_CHANGED_BY_PLAN_MEMBERSHIP_CHANGE(
             self, more_phrases_to_company, more_phrases_to_portal):
-        return self._call_send_notification_about_membership_change(
+        return self._send_notification_about_membership_change(
             'New plan was applied for membership and changes of publication visibility was made',
             more_phrases_to_company=more_phrases_to_company,
             more_phrases_to_portal=more_phrases_to_portal,
@@ -126,7 +129,7 @@ class NotifyMembership(Notify):
 
     def NOTIFY_ARTICLE_STILL_HOLDED_DESPITE_BY_PLAN_MEMBERSHIP_CHANGE(
             self, more_phrases_to_company, more_phrases_to_portal):
-        return self._call_send_notification_about_membership_change(
+        return self._send_notification_about_membership_change(
             'New plan was applied for membership HOLDED message still remains',
             more_phrases_to_company=more_phrases_to_company,
             more_phrases_to_portal=more_phrases_to_portal,

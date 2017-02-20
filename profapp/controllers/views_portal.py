@@ -120,12 +120,54 @@ def profile_load(json, company_id=None, portal_id=None):
                     nd.id = None
             portal.logo = jp['logo']
             portal.favicon = jp['favicon']
-            for del_div in deleted_divisions:
-                del_div.notify_company_about_deleted_publications('deleted')
+
+            #
+            # from ..models.messenger import Socket
+            # from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
+            # from ..models.translate import Phrase
+            # from ..models.company import Company
+            # from collections import OrderedDict
+            #
+            # if not self.publications:
+            #     return
+            #
+            # header_phrase = "Because of division %%(division_name)s at portal %s was %s by user %s some publications was deleted" % \
+            #                 (utils.jinja.link_external(), because_of, utils.jinja.link_user_profile())
+            # phrases_to_portal = [Phrase(header_phrase, dict={'division_name': self.name})]
+            # phrases_to_companies_editors = OrderedDict()
+            #
+            # for p in self.publications:
+            #     if p.material.company_id not in phrases_to_companies_editors:
+            #         phrases_to_companies_editors[p.material.company_id] = [Phrase(header_phrase)]
+            #
+            #     publication_phrase = Phrase("deleted a publication named `%(title)s`", dict={'title': p.title})
+            #     phrases_to_portal.append(publication_phrase)
+            #     phrases_to_companies_editors[p.material.company_id].append(publication_phrase)
+            #
+            # Socket.prepare_notifications(self.portal.own_company.get_users_with_rights(),
+            #                              NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
+            #
+            # for company_id, phrases in phrases_to_companies_editors.items():
+            #     Socket.prepare_notifications(Company.get(company_id).get_users_with_rights(
+            #         RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH, RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH),
+            #         NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
+            #
+
+
+            unpublished_publications_by_reason_and_membership_id = {'deleted': {}, 'type_changed': {}}
+
+            def append_to_phrases(publication, index):
+                utils.dict_deep_replace(
+                    [], unpublished_publications_by_reason_and_membership_id,
+                    index, publication.get_publisher_membership().id, add_only_if_not_exists=True).append(
+                    Phrase("deleted a publication named `%(title)s`", dict={'title': publication.title}))
+
+            for div in deleted_divisions:
+                map(lambda p: append_to_phrases(p, 'deleted'), div.publications)
 
             for div in portal.divisions:
                 if div.id in changed_division_types:
-                    div.notify_company_about_deleted_publications('type changed')
+                    map(lambda p: append_to_phrases(p, 'type_changed'), div.publications)
                     div.publications = []
 
             if not portal_id:
@@ -135,11 +177,24 @@ def profile_load(json, company_id=None, portal_id=None):
                 portal.company_memberships[0].current_membership_plan_issued.start()
                 UserCompany.get_by_user_and_company_ids(company_id=company_id). \
                     NOTIFY_PORTAL_CREATED(portal_host=portal.host, portal_name=portal.name)
-            # portal.own_company.notifications_company_changes(
-            #                    notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'],
-            #                    what_happened="portal %s was created" % (utils.jinja.link_external()),
-            #                    rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
-            #                    additional_dict={'portal': portal})
+
+            if unpublished_publications_by_reason_and_membership_id['deleted']:
+                for membership_id, phrases in unpublished_publications_by_reason_and_membership_id['deleted'].items():
+                    MemberCompanyPortal.get(membership_id).NOTIFY_MATERIAL_PUBLICATION_BULK_ACTION(
+                        'deleted', 'division deleted',
+                        more_phrases_to_company=phrases, more_phrases_to_portal=phrases)
+
+            if unpublished_publications_by_reason_and_membership_id['type_changed']:
+                for membership_id, phrases in unpublished_publications_by_reason_and_membership_id['deleted'].items():
+                    MemberCompanyPortal.get(membership_id).NOTIFY_MATERIAL_PUBLICATION_BULK_ACTION(
+                        'deleted', 'division type changed',
+                        more_phrases_to_company=phrases, more_phrases_to_portal=phrases)
+
+# portal.own_company.notifications_company_changes(
+#                    notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'],
+#                    what_happened="portal %s was created" % (utils.jinja.link_external()),
+#                    rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
+#                    additional_dict={'portal': portal})
 
             portal.save()
 
