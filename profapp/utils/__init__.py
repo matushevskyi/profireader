@@ -177,7 +177,7 @@ def dict_deep_replace(what_to_append, dictionary, *args, add_only_if_not_exists=
         dictionary = dictionary[a]
     if not add_only_if_not_exists or lastindex not in dictionary:
         dictionary[lastindex] = what_to_append
-    return what_to_append
+    return dictionary[lastindex]
 
 
 def dict_deep_inc(dictionary, *args, inc_by=1):

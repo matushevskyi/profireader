@@ -15,8 +15,8 @@ from ..models.users import User
 
 class Socket:
     @staticmethod
-    def notification_delivered(*args, **kwargs):
-        print('notification_delivered', args, kwargs)
+    def notification_delivered(ack_id, notification_name, *args, **kwargs):
+        print('notification_delivered (ack_id={})'.format(ack_id), notification_name, args, kwargs)
 
     @staticmethod
     def request_status_changed(to_user_id, from_user_id, status):
@@ -26,7 +26,9 @@ class Socket:
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
             socketIO.emit('request_status_changed',
                           {'to_user_id': to_user_id, 'from_user_id': from_user_id, 'status': status},
-                          Socket.notification_delivered)
+                          lambda ack_id: Socket.notification_delivered(
+                              ack_id, 'request_status_changed',
+                              {'to_user_id': to_user_id, 'from_user_id': from_user_id, 'status': status}))
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
@@ -35,7 +37,8 @@ class Socket:
         from config import MAIN_DOMAIN
 
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
-            socketIO.emit('send_notification', notification_data, Socket.notification_delivered)
+            socketIO.emit('send_notification', notification_data,
+                          lambda ack_id: Socket.notification_delivered(ack_id, 'send_notification', notification_data))
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
@@ -43,15 +46,19 @@ class Socket:
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
-            socketIO.emit('insert_translation', data, Socket.notification_delivered)
+            socketIO.emit('insert_translation', data,
+                          lambda ack_id: Socket.notification_delivered(ack_id, 'insert_translation', data))
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
     def update_translation(id, data):
+        return True
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
-            socketIO.emit('update_translation', {'id': id, 'data': data}, Socket.notification_delivered)
+            socketIO.emit('update_translation', {'id': id, 'data': data},
+                          lambda ack_id: Socket.notification_delivered(ack_id, 'update_translation',
+                                                                       {'id': id, 'data': data}))
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
@@ -233,8 +240,6 @@ class Message(Base, PRBase):
         return ret
 
 
-
-
 class Notification(Base, PRBase):
     __tablename__ = 'notification'
 
@@ -284,6 +289,7 @@ class Notification(Base, PRBase):
         ret = utils.dict_merge(self.get_client_side_dict(fields='id,content,notification_type,to_user_id'),
                                {'cr_tm': self.cr_tm.strftime("%a, %d %b %Y %H:%M:%S GMT")})
         return ret
+
 
 @event.listens_for(Notification.content, "set")
 def set_notification_content(target, value, oldvalue, initiator):

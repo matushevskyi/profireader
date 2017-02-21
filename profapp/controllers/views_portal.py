@@ -44,7 +44,7 @@ def profile_load(json, company_id=None, portal_id=None):
     portal = Portal.get(portal_id) if portal_id else Portal.launch_new_portal(Company.get(company_id))
     layouts = utils.db.query_filter(PortalLayout)
     if not g.user.is_maintainer():
-        layouts = layouts.filter(or_(hidden=False, id=portal.portal.id))
+        layouts = layouts.filter(or_(PortalLayout.hidden == False, PortalLayout.id == portal.portal_layout_id))
     division_types = PortalDivisionType.get_division_types()
 
     client_side = lambda: {
@@ -154,20 +154,22 @@ def profile_load(json, company_id=None, portal_id=None):
             #
 
 
-            unpublished_publications_by_reason_and_membership_id = {'deleted': {}, 'type_changed': {}}
+            unpublished_publications_by_membership_id = {}
 
-            def append_to_phrases(publication, index):
+            def append_to_phrases(publication):
                 utils.dict_deep_replace(
-                    [], unpublished_publications_by_reason_and_membership_id,
-                    index, publication.get_publisher_membership().id, add_only_if_not_exists=True).append(
-                    Phrase("deleted a publication named `%(title)s`", dict={'title': publication.title}))
+                    [], unpublished_publications_by_membership_id,
+                    publication.get_publisher_membership().id, add_only_if_not_exists=True).append(
+                    Phrase("deleted a publication named `%(title)s`", dict={'title': publication.material.title}))
 
             for div in deleted_divisions:
-                map(lambda p: append_to_phrases(p, 'deleted'), div.publications)
+                for p in div.publications:
+                    append_to_phrases(p)
 
             for div in portal.divisions:
                 if div.id in changed_division_types:
-                    map(lambda p: append_to_phrases(p, 'type_changed'), div.publications)
+                    for p in div.publications:
+                        append_to_phrases(p)
                     div.publications = []
 
             if not portal_id:
@@ -178,23 +180,11 @@ def profile_load(json, company_id=None, portal_id=None):
                 UserCompany.get_by_user_and_company_ids(company_id=company_id). \
                     NOTIFY_PORTAL_CREATED(portal_host=portal.host, portal_name=portal.name)
 
-            if unpublished_publications_by_reason_and_membership_id['deleted']:
-                for membership_id, phrases in unpublished_publications_by_reason_and_membership_id['deleted'].items():
+            if unpublished_publications_by_membership_id:
+                for membership_id, phrases in unpublished_publications_by_membership_id.items():
                     MemberCompanyPortal.get(membership_id).NOTIFY_MATERIAL_PUBLICATION_BULK_ACTION(
-                        'deleted', 'division deleted',
+                        'purged', 'division type was changed or division was deleted',
                         more_phrases_to_company=phrases, more_phrases_to_portal=phrases)
-
-            if unpublished_publications_by_reason_and_membership_id['type_changed']:
-                for membership_id, phrases in unpublished_publications_by_reason_and_membership_id['deleted'].items():
-                    MemberCompanyPortal.get(membership_id).NOTIFY_MATERIAL_PUBLICATION_BULK_ACTION(
-                        'deleted', 'division type changed',
-                        more_phrases_to_company=phrases, more_phrases_to_portal=phrases)
-
-# portal.own_company.notifications_company_changes(
-#                    notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'],
-#                    what_happened="portal %s was created" % (utils.jinja.link_external()),
-#                    rights_at_company=RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE,
-#                    additional_dict={'portal': portal})
 
             portal.save()
 
