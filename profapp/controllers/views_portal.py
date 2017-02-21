@@ -424,6 +424,7 @@ def companies_members(portal_id):
     portal = Portal.get(portal_id)
     return render_template('portal/companies_members.html',
                            portal=portal,
+                           company=portal.own_company,
                            employment=UserCompany.get_by_user_and_company_ids(
                                company_id=portal.company_owner_id).get_client_side_dict()
                            )

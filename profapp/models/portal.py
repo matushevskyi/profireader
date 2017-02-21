@@ -17,9 +17,8 @@ from .. import utils
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..models.tag import Tag, TagMembership
-from profapp import on_value_changed
 import calendar
-
+from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
 class Portal(Base, PRBase):
     __tablename__ = 'portal'
@@ -547,26 +546,26 @@ class MembershipPlanIssued(Base, PRBase):
                       old_count['by_visibility_status'][vis]['PUBLISHED']
 
             if changes > 0:
-                phrases_changes += Phrase(
+                phrases_changes.append(Phrase(
                     '%(count)s publications of visibility %(visibility)s was unholded',
-                    dict={'count': changes, 'visibility': visibility_translation[vis]})
+                    dict={'count': changes, 'visibility': visibility_translation[vis]}))
             elif changes < 0:
-                phrases_changes += Phrase(
+                phrases_changes.append(Phrase(
                     "%(count)s publications of visibility %(visibility)s was holded",
-                    dict={'count': -changes, 'visibility': visibility_translation[vis]})
+                    dict={'count': -changes, 'visibility': visibility_translation[vis]}))
             if new_count['by_visibility_status'][vis]['HOLDED'] > 0 and changes > 0:
-                phrases_remain += Phrase(
+                phrases_remain.append(Phrase(
                     "%(count)s publications of visibility %(visibility)s remain holded",
                     dict={'count': new_count['by_visibility_status'][vis]['HOLDED'],
-                          'visibility': visibility_translation[vis]})
+                          'visibility': visibility_translation[vis]}))
 
         if phrases_changes or phrases_remain:
             if phrases_changes:
-                self.member_company_portal.NOTIFY_PUBLICATIN_VISIBILOITY_CHANGED_BY_PLAN_MEMBERSHIP_CHANGE(
+                self.member_company_portal.NOTIFY_ARTICLE_VISIBILITY_CHANGED_BY_PLAN_MEMBERSHIP_CHANGE(
                     more_phrases_to_portal=phrases_changes + phrases_remain,
                     more_phrases_to_company=phrases_changes + phrases_remain)
             else:
-                self.member_company_portal.NOTIFY_PUBLICATIN_STILL_HOLDED_DESPITE_BY_PLAN_MEMBERSHIP_CHANGE(
+                self.member_company_portal.NOTIFY_ARTICLE_STILL_HOLDED_DESPITE_BY_PLAN_MEMBERSHIP_CHANGE(
                     more_phrases_to_portal=phrases_changes + phrases_remain,
                     more_phrases_to_company=phrases_changes + phrases_remain)
 
@@ -578,10 +577,10 @@ class MembershipPlanIssued(Base, PRBase):
         return self
 
 
-from profapp.constants.NOTIFICATIONS import NotifyMembership
+from profapp.constants.NOTIFICATIONS import NotifyMembershipChange
 
 
-class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
+class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembershipChange):
     from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
     __tablename__ = 'member_company_portal'
 
@@ -1042,7 +1041,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
 
         return Publication.group_by_status_and_visibility(cnt)
 
-    from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
     def _send_notification_about_membership_change(
             self, text, dictionary={}, comment='',
@@ -1346,44 +1344,3 @@ class ReaderDivision(Base, PRBase):
             lambda x, y: int(x) + int(y), list(map(lambda item: self.show_division_and_comments_numeric[item[0]],
                                                    filter(lambda item: item[1], tuple_or_list))), 0)
 
-# @on_value_changed(MemberCompanyPortal.status)
-# def membership_status_changed(target: MemberCompanyPortal, new_status, old_status, action):
-#     changed_by = None
-#
-#     if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and \
-#                     target.company_id == target.portal.company_owner_id \
-#             and not old_status:
-#         return
-#
-#     if new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
-#                       MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY'],
-#                       MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']] or \
-#             (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
-#                      old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
-#                                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']]):
-#         changed_by = 'company'
-#
-#     elif new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
-#                         MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL'],
-#                         MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']] or \
-#             (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
-#                      old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
-#                                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']]):
-#         changed_by = 'portal'
-#
-#     if changed_by:
-#         target.send_notifications_about_employment_changes(
-#             what_happened="changed status from %s to %s by %s" % (old_status, new_status, changed_by),
-#         )()
-#
-#         if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
-#                 not target.current_membership_plan_issued.started_tm:
-#             target.current_membership_plan_issued.start()
-#
-#             target.member_company_portal.send_notifications_about_employment_changes(
-#                 what_happened='new plan `%(new_plan_name)s` was started because membership activated by ' + changed_by,
-#                 dictionary={'new_plan_name': target.current_membership_plan_issued.name})
-#
-#         return
-#     else:
-#         raise Exception(action, "action %s: status changed from %s to %s is not allowed" % (action, old_status, new_status))

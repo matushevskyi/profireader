@@ -7,7 +7,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import and_, expression
 
 from config import Config
-from profapp import on_value_changed
 from .elastic import PRElasticField, PRElasticDocument
 from .files import FileImg, FileImgDescriptor
 from .pr_base import PRBase, Base, Grid
