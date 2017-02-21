@@ -16,7 +16,7 @@
                                                          request_from,
                                                          material_id, publication_id,
                                                          actor_membership_id, publisher_membership_id) {
-{#        TODO: OZ by OZ: publisher_membership_id is obsolete. we can get it from publication or material#}
+        {#        TODO: OZ by OZ: publisher_membership_id is obsolete. we can get it from publication or material#}
 
         $scope.$$translate = {{ translates('submit_publish_dialog')|safe }};
         $scope.url_submit_or_publish_material = {{ raw_url_for('article.submit_or_publish_material')|safe }};
@@ -27,9 +27,11 @@
         $scope.url_submit_or_publish = function () {
             return material_id ?
                 $scope.url_submit_or_publish_material({'material_id': material_id}) :
-                $scope.url_publish({'publication_id': publication_id,
+                $scope.url_publish({
+                    'publication_id': publication_id,
                     'actor_membership_id': actor_membership_id,
-                    'request_from': request_from});
+                    'request_from': request_from
+                });
         };
 
         $scope.action = action;

@@ -72,7 +72,7 @@ def signup(json_data):
         new_user.save()
         g.db.commit()
         new_user.generate_confirmation_token(get_after_logination_params()).save()
-        Socket.send_greeting([new_user])
+        new_user.NOTIFY_WELCOME()
         g.db.commit()
 
         return {}
@@ -191,7 +191,7 @@ def login_signup_soc_network(soc_network_name):
                 user.avatar_selected_preset = 'gravatar'
                 g.db.add(user)
                 user.save()
-                Socket.send_greeting([user])
+                user.NOTIFY_WELCOME()
 
             if user:
                 User.logout()

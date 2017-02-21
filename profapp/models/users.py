@@ -22,9 +22,10 @@ from ..constants import RECORD_IDS
 from ..constants import REGEXP
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..controllers import errors
+from profapp.constants.NOTIFICATIONS import NotifyUser, NOTIFICATION_TYPES
 
 
-class User(Base, UserMixin, PRBase):
+class User(Base, UserMixin, PRBase, NotifyUser):
     __tablename__ = 'user'
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
@@ -87,7 +88,7 @@ class User(Base, UserMixin, PRBase):
     def is_admin(self):
         return self.group == self.GROUPS['USER_GROUP_ADMIN']
 
-    def is_maintainer(self, or_admin = True):
+    def is_maintainer(self, or_admin=True):
         return self.group == self.GROUPS['USER_GROUP_MAINTAINER'] or (or_admin and self.is_admin())
 
     def set_avatar_preset(self, r, v):
@@ -241,28 +242,6 @@ class User(Base, UserMixin, PRBase):
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
             url=url, hash=hash, size=size, default=default, rating=rating)
 
-    # def logged_in_via(self):
-    #     via = None
-    #     if self.address_email:
-    #         via = REGISTERED_WITH_FLIPPED['profireader']
-    #     else:
-    #         short_soc_net = SOCIAL_NETWORKS[1:]
-    #         for soc_net in short_soc_net:
-    #             x = soc_net + '_id'
-    #             if getattr(self, x):
-    #                 via = REGISTERED_WITH_FLIPPED[soc_net]
-    #                 break
-    #     return via
-    #
-    #
-    # def attribute_getter(self, logged_via, attr):
-    #     if logged_via == 'profireader' and attr == 'id':
-    #         full_attr = 'id'
-    #     else:
-    #         full_attr = logged_via + '_' + attr
-    #     attr_value = getattr(self, full_attr)
-    #     return attr_value
-
     def verify_password(self, password):
         return self.password_hash and \
                check_password_hash(self.password_hash, password)
@@ -343,9 +322,32 @@ class User(Base, UserMixin, PRBase):
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
-    # class Group(Base, PRBase):
-    #     __tablename__ = 'group'
-    #     id = Column(TABLE_TYPES['string_30'], primary_key=True)
+    def _send_notification(self, text, dictionary={}, comment='',
+                           notification_type=NOTIFICATION_TYPES['PROFIREADER'], more_phrases=[]):
 
+        from ..models.messenger import Socket
+        from ..models.translate import Phrase
 
-    # profireader_(name|first_name|last_name|email|gender|phone|link)
+        more_phrases = more_phrases if isinstance(more_phrases, list) else [more_phrases]
+
+        default_dict = {
+            'url_profile_to_user': url_for('user.profile', user_id=self.id),
+            'to_user': self,
+        }
+
+        if getattr(g, 'user', None):
+            sender = "Sender is user " + utils.jinja.link_user_profile() + " "
+            default_dict['url_profile_from_user'] = url_for('user.profile', user_id=g.user.id)
+            default_dict['from_user'] = g.user
+        else:
+            sender = 'Sender is anonymous'
+
+        all_dictionary_data = utils.dict_merge(default_dict, dictionary)
+
+        Socket.prepare_notifications(
+            [self], notification_type,
+            [Phrase('Hello {}. '.format(utils.jinja.link('url_profile_to_user', 'to_user.full_name')) + text + '. ' + sender,
+                    dict=all_dictionary_data, comment=comment)] + more_phrases, except_to_user=[])
+
+        return lambda: utils.do_nothing()
+

@@ -40,49 +40,52 @@
             </div>
             {% endraw %}
             <div class="row">
-                {% if portal %}{% set menu_portal_id = portal.id %}{% else %}{% set menu_portal_id = company.own_portal.id %}{% endif %}
-                <div ng-if="company.own_portal" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 pl0 pr0">
-                    {% call(url) if_url_permitted('portal.profile', portal_id = menu_portal_id) %}
-                        <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_profile'}"
-                           href="{{ url }}">{{ _('Portal profile') }}</a>
-                    {% endcall %}
-                    {% call(url) if_url_permitted('portal.banners', portal_id = menu_portal_id) %}
-                        <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_banners'}"
-                           href="{{ url }}">{{ _('Banners') }}</a>
-                    {% endcall %}
-                    {% call(url) if_url_permitted('portal.tags', portal_id = menu_portal_id) %}
-                        <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_tags'}"
-                           href="{{ url }}">{{ _('Tags') }}</a>
-                    {% endcall %}
-                    {% call(url) if_url_permitted('portal.publications', portal_id = menu_portal_id) %}
-                        <a class="pull-right" ng-class="{'selected': selected_company_menu == 'publications'}"
-                           id="publications"
-                           href="{{ url }}">{{ _('Publications') }}</a>
-                    {% endcall %}
-                    {% call(url) if_url_permitted('portal.readers', portal_id = menu_portal_id) %}
-                        <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_readers'}"
-                           id="companies_readers"
-                           href="{{ url }}">{{ _('Readers') }}</a>
-                    {% endcall %}
-                    {% call(url) if_url_permitted('portal.plans', portal_id = menu_portal_id) %}
-                        <a class="pull-right" ng-class="{'selected': selected_company_menu == 'membership_plans'}"
-                           href="{{ url }}">{{ _('Membership plans') }}</a>
-                    {% endcall %}
-                    {% call(url) if_url_permitted('portal.companies_members', portal_id = menu_portal_id) %}
-                        <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_members'}"
-                           href="{{ url }}">{{ _('Members') }}</a>
-                    {% endcall %}
-                    {#                    <a class="pull-right" ng-if="company.author_user_id == user.id"#}
-                    {#                       ng-class="{'selected': selected_company_menu == 'portal_translations'}"#}
-                    {#                       href="{{ url_portal_translations({company_id: company.id}) }}">{{ _('Translations') }}</a>#}
-                    {#                    <a class="dn pull-right" ng-class="{'selected': selected_company_menu == 'comments'}"#}
-                    {#                       id="comments"#}
-                    {#                       href="#">{{ _('Comments') }}</a>#}
-                    {#                    <a class="pull-right" ng-if="0" ng-class="{'selected': selected_company_menu == 'statistics'}"#}
-                    {#                       id="statistics"#}
-                    {#                       href="#">{{ _('Statistics') }}</a>#}
-                </div>
-            </div>
+                {% if company.own_portal %}
+                    {% if portal %}{% set menu_portal_id = portal.id %}{% else %}
+                        {% set menu_portal_id = company.own_portal.id %}{% endif %}
+                    <div ng-if="company.own_portal" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 pl0 pr0">
+                        {% call(url) if_url_permitted('portal.profile', portal_id = menu_portal_id) %}
+                            <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_profile'}"
+                               href="{{ url }}">{{ _('Portal profile') }}</a>
+                        {% endcall %}
+                        {% call(url) if_url_permitted('portal.banners', portal_id = menu_portal_id) %}
+                            <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_banners'}"
+                               href="{{ url }}">{{ _('Banners') }}</a>
+                        {% endcall %}
+                        {% call(url) if_url_permitted('portal.tags', portal_id = menu_portal_id) %}
+                            <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_tags'}"
+                               href="{{ url }}">{{ _('Tags') }}</a>
+                        {% endcall %}
+                        {% call(url) if_url_permitted('portal.publications', portal_id = menu_portal_id) %}
+                            <a class="pull-right" ng-class="{'selected': selected_company_menu == 'publications'}"
+                               id="publications"
+                               href="{{ url }}">{{ _('Publications') }}</a>
+                        {% endcall %}
+                        {% call(url) if_url_permitted('portal.readers', portal_id = menu_portal_id) %}
+                            <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_readers'}"
+                               id="companies_readers"
+                               href="{{ url }}">{{ _('Readers') }}</a>
+                        {% endcall %}
+                        {% call(url) if_url_permitted('portal.plans', portal_id = menu_portal_id) %}
+                            <a class="pull-right" ng-class="{'selected': selected_company_menu == 'membership_plans'}"
+                               href="{{ url }}">{{ _('Membership plans') }}</a>
+                        {% endcall %}
+                        {% call(url) if_url_permitted('portal.companies_members', portal_id = menu_portal_id) %}
+                            <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_members'}"
+                               href="{{ url }}">{{ _('Members') }}</a>
+                        {% endcall %}
+                        {#                    <a class="pull-right" ng-if="company.author_user_id == user.id"#}
+                        {#                       ng-class="{'selected': selected_company_menu == 'portal_translations'}"#}
+                        {#                       href="{{ url_portal_translations({company_id: company.id}) }}">{{ _('Translations') }}</a>#}
+                        {#                    <a class="dn pull-right" ng-class="{'selected': selected_company_menu == 'comments'}"#}
+                        {#                       id="comments"#}
+                        {#                       href="#">{{ _('Comments') }}</a>#}
+                        {#                    <a class="pull-right" ng-if="0" ng-class="{'selected': selected_company_menu == 'statistics'}"#}
+                        {#                       id="statistics"#}
+                        {#                       href="#">{{ _('Statistics') }}</a>#}
+                    </div>
+                    </div>
+                {% endif %}
             {% raw %}
         </div>
     </div>

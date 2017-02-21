@@ -37,8 +37,7 @@ class TagPortalDivision(Base, PRBase):
 
     portal_id = Column(TABLE_TYPES['id_profireader'], nullable=False)
 
-    ForeignKeyConstraint((portal_division_id, portal_id), ('portal_division.id', 'portal_division.portal_id'),
-                         onupdate='CASCADE', ondelete='CASCADE')
+    ForeignKeyConstraint((portal_division_id, portal_id), ('portal_division.id', 'portal_division.portal_id'))
 
 
 class TagPublication(Base, PRBase):
@@ -51,8 +50,7 @@ class TagPublication(Base, PRBase):
     portal_division_id = Column(TABLE_TYPES['id_profireader'], nullable=False)
 
     ForeignKeyConstraint((publication_id, portal_division_id), ('publication.id',
-                                                                'publication.portal_division_id'),
-                         onupdate='CASCADE', ondelete='CASCADE')
+                                                                'publication.portal_division_id'))
 
     position = Column(TABLE_TYPES['position'], nullable=True, default=1)
 
@@ -69,8 +67,7 @@ class TagMembership(Base, PRBase):
     portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'), nullable=False)
 
     ForeignKeyConstraint((member_company_portal_id, portal_id), ('member_company_portal.id',
-                                                                 'member_company_portal.portal_id'),
-                         onupdate='CASCADE', ondelete='CASCADE')
+                                                                 'member_company_portal.portal_id'))
 
     # portal = relationship('Portal', uselist=False)
     # portal_division = relationship('PortalDivision', uselist=False)

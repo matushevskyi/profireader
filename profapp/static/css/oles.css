@@ -279,7 +279,7 @@
 }
 
 *:disabled {
-    pointer-events:none !important;
+    pointer-events: none !important;
 }
 
 .fr {
@@ -307,9 +307,7 @@
     color: gray;
 }
 
-
 /*employment icons*/
-
 
 .pr-grid-cell-field-type-icons-icon-COMPANY_EDIT_PROFILE:before {
     content: "\f022";
@@ -326,8 +324,6 @@
     content: "\f196";
     color: green;
 }
-
-
 
 .pr-grid-cell-field-type-icons-icon-ARTICLES_SUBMIT_OR_PUBLISH:before {
     content: "\f06e";
@@ -349,8 +345,6 @@
     color: dodgerblue;
 }
 
-
-
 .pr-grid-cell-field-type-icons-icon-FILES_BROWSE:before {
     content: "\f115";
     color: blueviolet;
@@ -366,7 +360,6 @@
     color: blueviolet;
 }
 
-
 .pr-grid-cell-field-type-icons-icon-EMPLOYEE_ENLIST_OR_FIRE:before {
     content: "\f0c0";
     color: #FF4103;
@@ -376,8 +369,6 @@
     content: "\f029";
     color: #FF4103;
 }
-
-
 
 .pr-grid-cell-field-type-icons-icon-PORTAL_EDIT_PROFILE:before {
     content: "\f022";
@@ -401,7 +392,6 @@
 
 /*employment icons*/
 
-
 /*membership icons*/
 .pr-grid-cell-field-type-icons-icon-PUBLICATION_UNPUBLISH:before {
     content: "\f070";
@@ -412,8 +402,8 @@
     content: "\f06e";
     color: dodgerblue;
 }
-/*membership icons*/
 
+/*membership icons*/
 
 .pr-grid-cell-field-type-actions {
     padding: 2px;
@@ -930,3 +920,10 @@ div.pr-row:last-child div.pr-cell {
     max-width: 500px;
 }
 
+span.pr-grid-publications-vs {
+    min-width: 2.5em;
+    height: 100%;
+    padding: 4px 2px;
+    margin: 1px;
+    display: inline-block;
+}
