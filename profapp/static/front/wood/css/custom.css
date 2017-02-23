@@ -528,16 +528,11 @@ p {
 
 .article-thumbnail-text {
     display: block;
-    display: -webkit-box;
     max-width: 100%;
     height: auto;
     margin: 0 auto;
     font-size: 1em;
     line-height: 1.5;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
     margin-top: 15px;
     margin-bottom: 15px;
 }
