@@ -723,7 +723,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             return pr_dictionary(phrase, dictionary, '', this, $ok, phrase_default, phrase_comment);
         },
 
-        publication_count: function (plan, pub_type, already_published_counts, show_planed_counts) {
+        publication_count_for_plan: function (plan, pub_type, already_published_counts, show_planed_counts) {
             var pub_type_upper = pub_type.toUpperCase();
             var pub_type_lower = pub_type.toLowerCase();
 
@@ -1316,6 +1316,56 @@ var find_by_id = function (list, id) {
     return find_by_keys(list, id, 'id');
 };
 
+publication_counts_span = function (status, visibility, cnt, classes) {
+    return '<span class="tar ' + (classes ? classes : '') + ' pr-grid-publications-vs publication-fg-STATUS-' + status + ' publication-bg-VISIBILITY-' + visibility + '">' + cnt + '</span>';
+};
+
+publications_counts_by_status_and_visibility_cell = function (value) {
+    var all_statuses = ['PUBLISHED', 'HOLDED', 'SUBMITTED', 'UNPUBLISHED', 'DELETED'];
+    var all_visibilities = ['OPEN', 'REGISTERED', 'PAYED'];
+    var ret = [];
+    $.each(all_visibilities,
+        function (ind, visibility) {
+            ret.push(publication_counts_span('PUBLISHED', visibility, value['by_status_visibility']['PUBLISHED'][visibility]));
+        });
+    return publication_counts_span('PUBLISHED', '', value['by_status']['PUBLISHED'], 'bold') + '</span> = ' + ret.join('+');
+};
+
+publications_counts_by_status_and_visibility_tooltip = function (value) {
+    var ret = [];
+    var all_statuses = ['PUBLISHED', 'HOLDED', 'SUBMITTED', 'UNPUBLISHED', 'DELETED'];
+    var all_visibilities = ['OPEN', 'REGISTERED', 'PAYED'];
+
+    $.each(all_statuses, function (ind, status) {
+        var by_visibility = value['by_status_visibility'][status];
+        var ret_v = [];
+        $.each(all_visibilities, function (ind1, visibility) {
+            ret_v.push(publication_counts_span(status, visibility, by_visibility[visibility]));
+        });
+        ret.push('<span class="publication-fg-STATUS-' + status + '">' + status + ': ' + publication_counts_span(status, '', value['by_status'][status], 'bold') + '</span> = ' + ret_v.join('+'));
+    });
+    var ret_v = [];
+
+    $.each(all_visibilities, function (ind, visibility) {
+        ret_v.push(publication_counts_span('', visibility, value['by_visibility'][visibility], 'italic black'));
+    });
+
+    ret.push('<span class="italic black">ALL: ' + publication_counts_span('', '', value['all'], 'bold') + '</span> = ' + ret_v.join('+'));
+    return '<div class="tar nowrap">' + ret.join('</div><div class="tar nowrap">') + '</div>';
+};
+
+publication_column = function () {
+    return {
+        name: 'publications',
+        width: '185',
+        'uib-tooltip-html': function (row, value) {
+            return publications_counts_by_status_and_visibility_tooltip(value);
+        },
+        render: function (row, value) {
+            return publications_counts_by_status_and_visibility_cell(value);
+        }
+    };
+};
 
 window.lastUserActivity = now();
 window.onUserActivity = {};

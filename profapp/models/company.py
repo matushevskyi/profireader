@@ -10,7 +10,7 @@ from .pr_base import PRBase, Base, Grid
 from .users import User
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..constants.NOTIFICATIONS import EmploymentChange
+from ..constants.NOTIFICATIONS import NotifyEmploymentChange
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from profapp import utils
 from profapp.models.permissions import RIGHT_AT_COMPANY
@@ -317,7 +317,7 @@ class Company(Base, PRBase, PRElasticDocument):
 
 
 
-class UserCompany(Base, PRBase, EmploymentChange):
+class UserCompany(Base, PRBase, NotifyEmploymentChange):
 
     __tablename__ = 'user_company'
 

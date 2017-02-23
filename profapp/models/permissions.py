@@ -331,9 +331,9 @@ class EmployeeHasRightAtMembershipCompany(Permissions):
     def __init__(self, right=RIGHT_AT_COMPANY._ANY):
         self.rights = right
 
-    def check(self, membership_id, user_id=None):
+    def check(self, *args, **kwargs):
         membership_is_active = MembershipIsActive()
-        membership_is_active.check(membership_id)
+        membership_is_active.check(kwargs['membership_id'])
         employee_has_right = EmployeeHasRightAtCompany(self.rights)
         return employee_has_right.check(company_id=membership_is_active.membership.company_id)
 
