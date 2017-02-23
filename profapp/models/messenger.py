@@ -5,7 +5,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import and_
 from sqlalchemy.sql import expression
 
-from profapp import on_value_changed
 from .pr_base import PRBase, Base
 from .. import utils
 from ..constants.TABLE_TYPES import TABLE_TYPES
@@ -15,8 +14,8 @@ from ..models.users import User
 
 class Socket:
     @staticmethod
-    def notification_delivered(*args, **kwargs):
-        print('notification_delivered', args, kwargs)
+    def notification_delivered(ack_id, notification_name, *args, **kwargs):
+        print('notification_delivered (ack_id={})'.format(ack_id), notification_name, args, kwargs)
 
     @staticmethod
     def request_status_changed(to_user_id, from_user_id, status):
@@ -26,7 +25,9 @@ class Socket:
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
             socketIO.emit('request_status_changed',
                           {'to_user_id': to_user_id, 'from_user_id': from_user_id, 'status': status},
-                          Socket.notification_delivered)
+                          lambda ack_id: Socket.notification_delivered(
+                              ack_id, 'request_status_changed',
+                              {'to_user_id': to_user_id, 'from_user_id': from_user_id, 'status': status}))
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
@@ -35,23 +36,29 @@ class Socket:
         from config import MAIN_DOMAIN
 
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
-            socketIO.emit('send_notification', notification_data, Socket.notification_delivered)
+            socketIO.emit('send_notification', notification_data,
+                          lambda ack_id: Socket.notification_delivered(ack_id, 'send_notification', notification_data))
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
     def insert_translation(data):
+        return True
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
-            socketIO.emit('insert_translation', data, Socket.notification_delivered)
+            socketIO.emit('insert_translation', data,
+                          lambda ack_id: Socket.notification_delivered(ack_id, 'insert_translation', data))
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
     def update_translation(id, data):
+        return True
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
         with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
-            socketIO.emit('update_translation', {'id': id, 'data': data}, Socket.notification_delivered)
+            socketIO.emit('update_translation', {'id': id, 'data': data},
+                          lambda ack_id: Socket.notification_delivered(ack_id, 'update_translation',
+                                                                       {'id': id, 'data': data}))
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
@@ -82,14 +89,6 @@ class Socket:
 
         return utils.do_nothing()
 
-    @staticmethod
-    def send_greeting(to_users):
-        from profapp.models.translate import Phrase
-        return Socket.prepare_notifications(to_users, NOTIFICATION_TYPES['CUSTOM'],
-                                            Phrase("Welcome to profireader. You can change %s or get a look at %s" % \
-                                                   (utils.jinja.link('url_profile_to_user', 'your profile', True),
-                                                    utils.jinja.link('url_tutorial', 'tutorial', True)),
-                                                   dict={'url_tutorial': url_for('tutorial.index')}))()
 
 
 class Contact(Base, PRBase):
@@ -175,44 +174,6 @@ class Contact(Base, PRBase):
         }
 
 
-@on_value_changed(Contact.status)
-def contact_status_changed(target, new_value, old_value, action):
-    # send contact request messages via socketIO (to both users)
-    def ret():
-        Socket.request_status_changed(target.user1_id, target.user2_id,
-                                      target.get_status_for_user(target.user1_id, new_value))
-        Socket.request_status_changed(target.user2_id, target.user1_id,
-                                      target.get_status_for_user(target.user2_id, new_value))
-
-    return ret
-
-
-@on_value_changed(Contact.status)
-def contact_status_changed_2(target, new_value, old_value, action):
-    from profapp.models.translate import Phrase
-    # send notifications
-    to_user = User.get(target.get_another_user_id(g.user.id))
-
-    new_status = target.get_status_for_user(to_user.id, new_value) if new_value else None
-    old_status = target.get_status_for_user(to_user.id, old_value) if old_value else None
-
-    if new_status == Contact.STATUSES['ACTIVE_ACTIVE'] and old_status == Contact.STATUSES['REQUESTED_UNCONFIRMED']:
-        phrase = "User %s accepted your friendship request :)" % (utils.jinja.link_user_profile(),)
-    elif new_status == Contact.STATUSES['ANY_REVOKED'] and old_status == Contact.STATUSES['ACTIVE_ACTIVE']:
-        phrase = "User %s revoked your friendship :(" % (utils.jinja.link_user_profile(),)
-    else:
-        phrase = None
-
-    # possible notification - 2
-    if phrase:
-        return Socket.prepare_notifications([to_user], NOTIFICATION_TYPES['FRIENDSHIP_ACTIVITY'],
-                                            Phrase(phrase, comment=
-                                            'sent to user when friendship request status is changed from `%s` to `%s`' %
-                                            (old_value, new_value)))
-    else:
-        return utils.do_nothing()
-
-
 class Message(Base, PRBase):
     __tablename__ = 'message'
 
@@ -231,8 +192,6 @@ class Message(Base, PRBase):
                                {'cr_tm': self.cr_tm.strftime("%a, %d %b %Y %H:%M:%S GMT"),
                                 'chat_room_id': self.contact_id})
         return ret
-
-
 
 
 class Notification(Base, PRBase):
@@ -284,6 +243,7 @@ class Notification(Base, PRBase):
         ret = utils.dict_merge(self.get_client_side_dict(fields='id,content,notification_type,to_user_id'),
                                {'cr_tm': self.cr_tm.strftime("%a, %d %b %Y %H:%M:%S GMT")})
         return ret
+
 
 @event.listens_for(Notification.content, "set")
 def set_notification_content(target, value, oldvalue, initiator):

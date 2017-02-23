@@ -53,7 +53,7 @@
                    type="radio"/>
             {{ visibility_type }}
             <span class="fr"
-                  ng-bind-html="publication_count(data.publisher_membership.current_membership_plan_issued, visibility_type, data.publication_count)|html"></span>
+                  ng-bind-html="publication_count_for_plan(data.publisher_membership.current_membership_plan_issued, visibility_type, data.publication_count)|html"></span>
         </label>
         <hr/>
         {{ _('Select publication date') }}<span

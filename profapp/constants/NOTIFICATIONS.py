@@ -1,7 +1,10 @@
+import html
+from profapp import utils
+from flask import url_for
 from profapp.models.permissions import RIGHT_AT_COMPANY
 
 NOTIFICATION_TYPES = {
-    'CUSTOM': 'CUSTOM',
+    'PROFIREADER': 'PROFIREADER',
     'FRIENDSHIP_ACTIVITY': 'FRIENDSHIP_ACTIVITY',
     'COMPANY_ACTIVITY': 'COMPANY_ACTIVITY',
     'ARTICLES_ACTIVITY': 'ARTICLES_ACTIVITY',
@@ -20,7 +23,7 @@ class Notify:
         return '{:%a, %d %b %Y %H:%M:%S GMT}'.format(date_time)
 
 
-class NotifyMembership(Notify):
+class NotifyMembershipChange(Notify):
     __publication_kwargs = {
         'rights_at_company': [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
                               RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH],
@@ -29,10 +32,6 @@ class NotifyMembership(Notify):
         'notification_type_to_company_employees': NOTIFICATION_TYPES['ARTICLES_ACTIVITY'],
         'notification_type_to_portal_employees': NOTIFICATION_TYPES['ARTICLES_ACTIVITY']
     }
-
-    #    def _call_send_notification_about_membership_change(self, substitute_now={}, *args, **kwargs):
-    #        text, dictionary = self._getfunc(substitute_now)
-    #        return self._send_notification_about_membership_change(text, dictionary, *args, **kwargs)
 
     def NOTIFY_PLAN_REQUESTED_BY_COMPANY(self, requested_plan_name):
         return self._send_notification_about_membership_change(
@@ -107,31 +106,25 @@ class NotifyMembership(Notify):
             {'old_status': old_status, 'new_status': new_status},
             more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company)
 
-    def NOTIFY_ARTICLE_SUBMITED_BY_COMPANY(self, material_title, more_phrases_to_company, more_phrases_to_portal):
+    def NOTIFY_MATERIAL_ACTION_BY_COMPANY_OR_PORTAL(self, material_title, action, company_or_portal,
+                                                    more_phrases_to_company=[], more_phrases_to_portal=[]):
         return self._send_notification_about_membership_change(
-            'material `%(material_title)s` was submitted by company' % {'material_title': material_title},
-            more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company
+            '%(company_or_portal)s just %(action)s material `%%(material_title)s`' %
+            {'action': action, 'company_or_portal': company_or_portal},
+            dictionary={'material_title': material_title},
+            more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company,
             **self.__publication_kwargs)
 
-    def NOTIFY_ARTICLE_PUBLISHED_BY_COMPANY(self, old_status, new_status):
-        """publication %(name)s"""
-        return self._send_notification_about_membership_change(**self.__publication_kwargs)
-
-    def NOTIFY_ARTICLE_PUBLISHED_BY_PORTAL(self, old_status, new_status):
-        """publication %(name)s"""
-        return self._send_notification_about_membership_change(**self.__publication_kwargs)
-
-    def NOTIFY_ARTICLE_UNPUBLISHED_BY_COMPANY(self, old_status, new_status):
-        """publication %(name)s"""
-        return self._send_notification_about_membership_change(**self.__publication_kwargs)
-
-    def NOTIFY_ARTICLE_UNPUBLISHED_BY_PORTAL(self, old_status, new_status):
-        """publication %(name)s"""
-        return self._send_notification_about_membership_change(**self.__publication_kwargs)
+    def NOTIFY_MATERIAL_PUBLICATION_BULK_ACTION(self, action, reason, more_phrases_to_company=[],
+                                                more_phrases_to_portal=[]):
+        return self._send_notification_about_membership_change(
+            'following publications was %(action)s because of %(reason)s' % {'action': action, 'reason': reason},
+            more_phrases_to_portal=more_phrases_to_portal, more_phrases_to_company=more_phrases_to_company,
+            **self.__publication_kwargs)
 
     def NOTIFY_ARTICLE_VISIBILITY_CHANGED_BY_PLAN_MEMBERSHIP_CHANGE(
             self, more_phrases_to_company, more_phrases_to_portal):
-        return self._call_send_notification_about_membership_change(
+        return self._send_notification_about_membership_change(
             'New plan was applied for membership and changes of publication visibility was made',
             more_phrases_to_company=more_phrases_to_company,
             more_phrases_to_portal=more_phrases_to_portal,
@@ -139,7 +132,7 @@ class NotifyMembership(Notify):
 
     def NOTIFY_ARTICLE_STILL_HOLDED_DESPITE_BY_PLAN_MEMBERSHIP_CHANGE(
             self, more_phrases_to_company, more_phrases_to_portal):
-        return self._call_send_notification_about_membership_change(
+        return self._send_notification_about_membership_change(
             'New plan was applied for membership HOLDED message still remains',
             more_phrases_to_company=more_phrases_to_company,
             more_phrases_to_portal=more_phrases_to_portal,
@@ -149,7 +142,7 @@ class NotifyMembership(Notify):
 from profapp.models.permissions import RIGHT_AT_COMPANY
 
 
-class EmploymentChange(Notify):
+class NotifyEmploymentChange(Notify):
     def NOTIFY_STATUS_CHANGED_BY_COMPANY(self, old_status, new_status):
         return self._send_notification_about_employment_change(
             'status of employment changed from `%(old_status)s` to `%(new_status)s` by company' %
@@ -178,3 +171,28 @@ class EmploymentChange(Notify):
         return self._send_notification_about_employment_change(
             'portal %s was created' % (jinja.link_external(),),
             {'portal': {'host': portal_host, 'name': portal_name}})
+
+
+class NotifyUser(Notify):
+    def NOTIFY_FRIEND_STATUS_CHANGED(self, old_status, new_status):
+        return self._send_notification(
+            'Friendship status changed from `%(old_status)s` to `%(new_status)s`' %
+            {'old_status': old_status, 'new_status': new_status},
+            notification_type=NOTIFICATION_TYPES['FRIENDSHIP_ACTIVITY'])
+
+    def NOTIFY_WELCOME(self):
+        from profapp import MAIN_DOMAIN
+        return self._send_notification(
+            'Welcome to %s. Get a look at %s' % (
+                utils.jinja.link_external(href_placeholder='main_domain', text_placeholder='profireader',
+                                          url_prefix='https://'),
+                utils.jinja.link('url_tutorial', 'tutorial', True)),
+            {'url_tutorial': url_for('tutorial.index'), 'profireader': 'profireader', 'main_domain': MAIN_DOMAIN}
+        )
+
+    def NOTIFY_MESSAGE_FROM_PORTAL_FRONT(self, message, portal):
+        return self._send_notification(
+            'You have message from portal %s as member of company %s<hr/>%%(message)s' %
+            (utils.jinja.link_external(), utils.jinja.link_company_profile()),
+            {'company': portal.own_company, 'portal': portal, 'message': html.escape(message)},
+            notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'])

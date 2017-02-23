@@ -12,6 +12,6 @@
 # By default this script does nothing.
 
 service postgresql restart
-cd /var/www/tools && ./run_with_env.sh chat.py &
+cd /var/www/tools && ./run_with_env.sh websockets.py &
 
 exit 0

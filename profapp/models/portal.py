@@ -17,9 +17,8 @@ from .. import utils
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..models.tag import Tag, TagMembership
-from profapp import on_value_changed
 import calendar
-
+from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
 class Portal(Base, PRBase):
     __tablename__ = 'portal'
@@ -285,8 +284,15 @@ class Portal(Base, PRBase):
         ret = self.to_dict(fields, more_fields)
         if get_publications_count:
             for d in self.divisions:
+                from ..models.materials import Publication
+                from sqlalchemy.sql import functions
+
                 if d.portal_division_type.id in [PortalDivision.TYPES['events'], PortalDivision.TYPES['news']]:
-                    utils.find_by_id(ret['divisions'], d.id)['publication_count'] = len(d.publications)
+                    cnt = g.db.query(Publication.status, Publication.visibility,
+                                     functions.count(Publication.id).label('cnt')). \
+                        filter(and_(Publication.portal_division_id == d.id)). \
+                        group_by(Publication.status, Publication.visibility).all()
+                    utils.find_by_id(ret['divisions'], d.id)['publication_count'] = Publication.group_by_status_and_visibility(cnt)
 
         if get_own_or_profi_host:
             if ret['host'][
@@ -326,12 +332,9 @@ class PortalLayout(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     name = Column(TABLE_TYPES['name'], nullable=False)
     path = Column(TABLE_TYPES['name'], nullable=False)
+    hidden = Column(TABLE_TYPES['boolean'], nullable=False, default=False)
 
-    def __init__(self, name=None):
-        self.name = name
-
-    def get_client_side_dict(self, fields='id|name',
-                             more_fields=None):
+    def get_client_side_dict(self, fields='id|name', more_fields=None):
         return self.to_dict(fields, more_fields)
 
 
@@ -543,26 +546,26 @@ class MembershipPlanIssued(Base, PRBase):
                       old_count['by_visibility_status'][vis]['PUBLISHED']
 
             if changes > 0:
-                phrases_changes += Phrase(
+                phrases_changes.append(Phrase(
                     '%(count)s publications of visibility %(visibility)s was unholded',
-                    dict={'count': changes, 'visibility': visibility_translation[vis]})
+                    dict={'count': changes, 'visibility': visibility_translation[vis]}))
             elif changes < 0:
-                phrases_changes += Phrase(
+                phrases_changes.append(Phrase(
                     "%(count)s publications of visibility %(visibility)s was holded",
-                    dict={'count': -changes, 'visibility': visibility_translation[vis]})
+                    dict={'count': -changes, 'visibility': visibility_translation[vis]}))
             if new_count['by_visibility_status'][vis]['HOLDED'] > 0 and changes > 0:
-                phrases_remain += Phrase(
+                phrases_remain.append(Phrase(
                     "%(count)s publications of visibility %(visibility)s remain holded",
                     dict={'count': new_count['by_visibility_status'][vis]['HOLDED'],
-                          'visibility': visibility_translation[vis]})
+                          'visibility': visibility_translation[vis]}))
 
         if phrases_changes or phrases_remain:
             if phrases_changes:
-                self.member_company_portal.NOTIFY_PUBLICATIN_VISIBILOITY_CHANGED_BY_PLAN_MEMBERSHIP_CHANGE(
+                self.member_company_portal.NOTIFY_ARTICLE_VISIBILITY_CHANGED_BY_PLAN_MEMBERSHIP_CHANGE(
                     more_phrases_to_portal=phrases_changes + phrases_remain,
                     more_phrases_to_company=phrases_changes + phrases_remain)
             else:
-                self.member_company_portal.NOTIFY_PUBLICATIN_STILL_HOLDED_DESPITE_BY_PLAN_MEMBERSHIP_CHANGE(
+                self.member_company_portal.NOTIFY_ARTICLE_STILL_HOLDED_DESPITE_BY_PLAN_MEMBERSHIP_CHANGE(
                     more_phrases_to_portal=phrases_changes + phrases_remain,
                     more_phrases_to_company=phrases_changes + phrases_remain)
 
@@ -574,10 +577,10 @@ class MembershipPlanIssued(Base, PRBase):
         return self
 
 
-from profapp.constants.NOTIFICATIONS import NotifyMembership
+from profapp.constants.NOTIFICATIONS import NotifyMembershipChange
 
 
-class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
+class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembershipChange):
     from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
     __tablename__ = 'member_company_portal'
 
@@ -1038,7 +1041,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
 
         return Publication.group_by_status_and_visibility(cnt)
 
-    from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
     def _send_notification_about_membership_change(
             self, text, dictionary={}, comment='',
@@ -1095,54 +1097,23 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembership):
             comment="to portal owner company employees with rights %s%s" % (
                 ','.join(rights_at_portal), phrase_comment))
 
+        users_at_company = self.company.get_user_with_rights(rights_at_company)
+        users_at_portal = self.portal.own_company.get_user_with_rights(rights_at_portal)
+
+        if self.company == self.portal.own_company:
+            users_at_company = list(set(users_at_company) - set(users_at_portal))
+
         Socket.prepare_notifications(
-            self.company.get_user_with_rights(rights_at_company),
+            users_at_company,
             notification_type_to_company_employees,
             [phrase_to_employees_at_company] + more_phrases_to_company, except_to_user=except_to_user)
 
         Socket.prepare_notifications(
-            self.portal.own_company.get_user_with_rights(rights_at_portal),
+            users_at_portal,
             notification_type_to_portal_employees,
             [phrase_to_employees_at_portal] + more_phrases_to_portal, except_to_user=except_to_user)
 
         return lambda: utils.do_nothing()
-
-
-
-
-        # _text = None
-        # _comment = None
-        #
-        # _right_at_company = None
-        # _notification_type_to_company_employees = None
-        #
-        # _right_at_portal = None
-        # _notification_type_to_portal_employees = None
-        #
-        #
-        #
-        # def __init__(self, text, comment=None,
-        #              right_at_company=RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION,
-        #              notification_type_to_company_employees=NOTIFICATION_TYPES['MEMBER_COMPANY_ACTIVITY'],
-        #              right_at_portal=RIGHT_AT_COMPANY.PORTAL_MANAGE_MEMBERS_COMPANIES,
-        #              notification_type_to_portal_employees=NOTIFICATION_TYPES['MEMBEREE_PORTAL_ACTIVITY'],
-        #              ):
-        #
-        #     self._text = text
-        #     self._comment = comment
-        #
-        #     self._right_at_company = right_at_company
-        #     self._notification_type_to_company_employees = notification_type_to_company_employees
-        #
-        #     self._right_at_portal = right_at_portal
-        #     self._notification_type_to_portal_employees = notification_type_to_portal_employees
-
-        # @staticmethod
-        # def PLAN_REQUESTED_BY_COMPANY(new_plan_name, dictionary={}, more_phrases_to_company=[], more_phrases_to_portal=[], except_to_user=[g.user]):
-        #     return NOTIFICATIONS('requested new plan `%(new_plan_name)s` by company')
-        #
-        #
-        #
 
 
 class ReaderUserPortalPlan(Base, PRBase):
@@ -1226,38 +1197,6 @@ class PortalDivision(Base, PRBase):
             'keywords': self.html_keywords if self.html_keywords else ','.join(t.text for t in self.tags),
             'description': self.html_description
         }
-
-    def notify_company_about_deleted_publications(self, because_of):
-        from ..models.messenger import Socket
-        from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
-        from ..models.translate import Phrase
-        from ..models.company import Company
-        from collections import OrderedDict
-        from ..models.rights import BaseRightsEmployeeInCompany
-
-        if not self.publications:
-            return
-
-        header_phrase = "Because of division %%(division_name)s at portal %s was %s by user %s some publications was deleted" % \
-                        (utils.jinja.link_external(), because_of, utils.jinja.link_user_profile())
-        phrases_to_portal = [Phrase(header_phrase, dict={'division_name': self.name})]
-        phrases_to_companies_editors = OrderedDict()
-
-        for p in self.publications:
-            if p.material.company_id not in phrases_to_companies_editors:
-                phrases_to_companies_editors[p.material.company_id] = [Phrase(header_phrase)]
-
-            publication_phrase = Phrase("deleted a publication named `%(title)s`", dict={'title': p.title})
-            phrases_to_portal.append(publication_phrase)
-            phrases_to_companies_editors[p.material.company_id].append(publication_phrase)
-
-        Socket.prepare_notifications(self.portal.own_company.get_users_with_rights(),
-                                     NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
-
-        for company_id, phrases in phrases_to_companies_editors.items():
-            Socket.prepare_notifications(Company.get(company_id).get_users_with_rights(
-                RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH, RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH),
-                NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
 
     def is_active(self):
         return True
@@ -1405,44 +1344,3 @@ class ReaderDivision(Base, PRBase):
             lambda x, y: int(x) + int(y), list(map(lambda item: self.show_division_and_comments_numeric[item[0]],
                                                    filter(lambda item: item[1], tuple_or_list))), 0)
 
-# @on_value_changed(MemberCompanyPortal.status)
-# def membership_status_changed(target: MemberCompanyPortal, new_status, old_status, action):
-#     changed_by = None
-#
-#     if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and \
-#                     target.company_id == target.portal.company_owner_id \
-#             and not old_status:
-#         return
-#
-#     if new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
-#                       MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY'],
-#                       MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_COMPANY']] or \
-#             (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
-#                      old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_COMPANY'],
-#                                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL']]):
-#         changed_by = 'company'
-#
-#     elif new_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
-#                         MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_PORTAL'],
-#                         MemberCompanyPortal.STATUSES['MEMBERSHIP_CANCELED_BY_PORTAL']] or \
-#             (new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and
-#                      old_status in [MemberCompanyPortal.STATUSES['MEMBERSHIP_SUSPENDED_BY_PORTAL'],
-#                                     MemberCompanyPortal.STATUSES['MEMBERSHIP_REQUESTED_BY_COMPANY']]):
-#         changed_by = 'portal'
-#
-#     if changed_by:
-#         target.send_notifications_about_employment_changes(
-#             what_happened="changed status from %s to %s by %s" % (old_status, new_status, changed_by),
-#         )()
-#
-#         if new_status == MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE'] and old_status != new_status and \
-#                 not target.current_membership_plan_issued.started_tm:
-#             target.current_membership_plan_issued.start()
-#
-#             target.member_company_portal.send_notifications_about_employment_changes(
-#                 what_happened='new plan `%(new_plan_name)s` was started because membership activated by ' + changed_by,
-#                 dictionary={'new_plan_name': target.current_membership_plan_issued.name})
-#
-#         return
-#     else:
-#         raise Exception(action, "action %s: status changed from %s to %s is not allowed" % (action, old_status, new_status))

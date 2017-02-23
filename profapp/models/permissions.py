@@ -120,121 +120,8 @@ class RIGHT_AT_PORTAL(BinaryRights):
         return [self.PUBLICATION_PUBLISH, self.PUBLICATION_UNPUBLISH]
 
 
-#
-#
-# class PublishUnpublishInPortal:
-#     from ..models.permissions import RIGHT_AT_COMPANY, RIGHT_AT_PORTAL
-#
-#     def __init__(self, publication=None, division=None, company=None, portal=None):
-#         self.publication = publication if isinstance(publication, Publication) else Publication.get(
-#             publication) if publication else None
-#         self.division = division if isinstance(division, PortalDivision) else PortalDivision.get(
-#             division) if division else None
-#         self.company = company if isinstance(company, Company) else Company.get(company) if company else None
-#
-#         self.portal = portal if isinstance(portal, Portal) else self.division.portal if self.division else None
-#
-#     def get_allowed_attributes(self, key, value):
-#         if key == 'publication_id':
-#             key = 'publication'
-#             value = Publication.get(value)
-#         elif key == 'company_id':
-#             key = 'company'
-#             value = Company.get(value)
-#         return key, value
-#
-#
-#
-#     delete_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-#                      'employment': [RIGHT_AT_COMPANY.ARTICLES_DELETE]}
-#
-#     publish_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-#                       'employment': [RIGHT_AT_COMPANY.ARTICLES_DELETE]}
-#
-#     unpublish_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-#                         'employment': [RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH]}
-#
-#     republish_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH,
-#                                        RIGHT_AT_PORTAL.PUBLICATION_UNPUBLISH],
-#                         'employment': [RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH,
-#                                        RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
-#
-#     edit_rights = {'membership': [RIGHT_AT_PORTAL.PUBLICATION_PUBLISH],
-#                    'employment': [RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH]}
-#
-#     ACTIONS_FOR_STATUSES = {
-#         STATUSES['SUBMITTED']: {
-#             ACTIONS['PUBLISH']: publish_rights,
-#             ACTIONS['DELETE']: delete_rights,
-#             # ACTIONS['EDIT']: edit_rights,
-#         },
-#         STATUSES['HOLDED']: {
-#             # ACTIONS['PUBLISH']: publish_rights,
-#             ACTIONS['UNPUBLISH']: unpublish_rights,
-#             ACTIONS['DELETE']: delete_rights,
-#             # ACTIONS['EDIT']: edit_rights,
-#         },
-#         STATUSES['PUBLISHED']: {
-#             ACTIONS['REPUBLISH']: republish_rights,
-#             ACTIONS['UNPUBLISH']: unpublish_rights,
-#             # ACTIONS['EDIT']: edit_rights,
-#             ACTIONS['DELETE']: delete_rights
-#         },
-#         STATUSES['UNPUBLISHED']: {
-#             ACTIONS['REPUBLISH']: publish_rights,
-#             # ACTIONS['EDIT']: edit_rights,
-#             ACTIONS['DELETE']: delete_rights
-#         },
-#         STATUSES['DELETED']: {
-#             ACTIONS['UNDELETE']: delete_rights,
-#         }
-#     }
-#
-#     def actions(self):
-#         return BaseRightsInProfireader.base_actions(self, object=self.publication)
-#
-#
-#
-#     def action_is_allowed(self, action_name):
-#         company = self.company if self.company else self.division.portal.own_company \
-#             if self.division else self.publication.company if self.publication else None
-#         membership_portal_id = self.division.portal.id if self.division else ''
-#         if not company:
-#             raise Exception('Bad data!')
-#         employee = UserCompany.get_by_user_and_company_ids(company_id=company.id)
-#         if not employee:
-#             return "Sorry!You are not employee in this company!"
-#
-#         membership = MemberCompanyPortal.get_by_portal_id_company_id(portal_id=membership_portal_id,
-#                                                                      company_id=company.id)
-#         if not membership:
-#             raise Exception('Bad data!')
-#         company_object = self.division.portal.own_company
-#         check_objects_status = {'employeer': company,
-#                                 'employee': employee,
-#                                 'membership': membership,
-#                                 'company where you want update publication': company_object,
-#                                 'division': self.division}
-#
-#         return BaseRightsInProfireader._is_action_allowed(self.publication, action_name,
-#                                                           check_objects_status,
-#                                                           {'employment': employee, 'membership': membership},
-#                                                           actions=self.ACTIONS,
-#                                                           actions_for_statuses=self.ACTIONS_FOR_STATUSES)
-#
-#     def get_active_division(self, divisions):
-#         return [division.get_client_side_dict() for division in divisions
-#                 if (division.portal_division_type_id in ['events', 'news'] and division.is_active())]
-#
-#     @staticmethod
-#     def get_portals_where_company_is_member(company):
-#         """This method return all portals-partners current company"""
-#         return [memcomport.portal for memcomport in
-#                 utils.db.query_filter(MemberCompanyPortal, company_id=company.id).all()]
-
-
 class Permissions:
-    _operator = 'or'
+    _operator = 'hihi'
     _operands = []
 
     def __init__(self, operator='hahaha', *args):
@@ -263,6 +150,14 @@ class Permissions:
         return True
 
 
+class AvailableForAll(Permissions):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def check(self, *args, **kwargs):
+        return True
+
+
 class UserIsActive(Permissions):
     user_id = None
     user = None
@@ -282,6 +177,29 @@ class UserIsActive(Permissions):
         return True
 
 
+class UserIsAdmin(UserIsActive):
+    def check(self, *args, **kwargs):
+        del kwargs['user_id']
+        return super(UserIsAdmin, self).check(*args, **kwargs) and self.user.is_admin()
+
+
+class UserIsMaintainer(UserIsActive):
+    def check(self, *args, **kwargs):
+        del kwargs['user_id']
+        return super(UserIsMaintainer, self).check(*args, **kwargs) and self.user.is_maintainer(or_admin=False)
+
+
+class UserIsAdminOrMaintainer(UserIsActive):
+    def check(self, *args, **kwargs):
+        del kwargs['user_id']
+        return super(UserIsAdminOrMaintainer, self).check(*args, **kwargs) and self.user.is_maintainer(or_admin=True)
+
+
+class UserIsOwner(UserIsActive):
+    def check(self, *args, **kwargs):
+        return super(UserIsOwner, self).check(*args, **kwargs) and g.user.id == kwargs['user_id']
+
+
 class CompanyIsActive(Permissions):
     company_id = None
     company = None
@@ -290,7 +208,7 @@ class CompanyIsActive(Permissions):
         from ..models.company import Company
         if 'company_id' in kwargs:
             self.company_id = kwargs['company_id']
-        self.company = Company.get(self.company_id)
+        self.company = Company.get(self.company_id, returnNoneIfNotExists=True)
 
         if not self.company:
             raise Exception("No company found `%s`" % self.company_id)
@@ -310,7 +228,7 @@ class PortalIsActive(Permissions):
         from ..models.company import Portal
         if 'portal_id' in kwargs:
             self.portal_id = kwargs['portal_id']
-        self.portal = Portal.get(self.portal_id)
+        self.portal = Portal.get(self.portal_id, returnNoneIfNotExists = True)
         if not self.portal:
             raise Exception("No portal found `%s`" % self.portal_id)
 
@@ -354,7 +272,7 @@ class MembershipIsActive(Permissions):
     def check(self, membership_id):
         from ..models.portal import MemberCompanyPortal
         self.membership_id = membership_id
-        self.membership = MemberCompanyPortal.get(self.membership_id)
+        self.membership = MemberCompanyPortal.get(self.membership_id, returnNoneIfNotExists = True)
 
         if not self.membership:
             raise Exception("No membership found by user_id, company_id = {},{}".format(self.membership_id))
@@ -393,19 +311,31 @@ class EmployeeHasRightAtCompany(Permissions):
             return True if employment.rights[self.rights] else False
 
 
+class EmployeeHasRightAtPortalOwnCompany(EmployeeHasRightAtCompany):
+    def check(self, *args, **kwargs):
+        from profapp.models.portal import Portal, MemberCompanyPortal
+        if 'portal_id' in kwargs:
+            portal = Portal.get(kwargs['portal_id'])
+        elif 'membership_id' in kwargs:
+            portal = MemberCompanyPortal.get(kwargs['membership_id']).portal
+        else:
+            raise Exception("No portal found by portal_id or membership_id kwargs={}".format(kwargs))
+
+        kwargs['company_id'] = portal.company_owner_id
+        return super(EmployeeHasRightAtPortalOwnCompany, self).check(*args, **kwargs) and portal.is_active()
+
+
 class EmployeeHasRightAtMembershipCompany(Permissions):
     rights = None
 
     def __init__(self, right=RIGHT_AT_COMPANY._ANY):
         self.rights = right
 
-    def check(self, membership_id, user_id=None):
+    def check(self, *args, **kwargs):
         membership_is_active = MembershipIsActive()
-        membership_is_active.check(membership_id)
+        membership_is_active.check(kwargs['membership_id'])
         employee_has_right = EmployeeHasRightAtCompany(self.rights)
-        employee_has_right.check(company_id=membership_is_active.membership.company_id)
-
-        return True
+        return employee_has_right.check(company_id=membership_is_active.membership.company_id)
 
 
 class EmployeeHasRightAF(Permissions):
@@ -595,6 +525,75 @@ class ActionsForPublicationAtMembership(Permissions):
         for change in ret:
             change['message'] = ''
         return ret
+
+
+class ActionsForFileManagerAtMembership(Permissions):
+    _action = None
+
+    ACTIONS = {
+        'DOWNLOAD': 'download',
+        'REMOVE': 'remove',
+        'CUT': 'cut',
+        'PROPERTIES': 'properties',
+        'PASTE': 'paste',
+        'COPY': 'copy',
+        'CHOOSE': 'choose'
+    }
+
+    def __init__(self, action):
+        self._action = action
+
+    def check(self, membership_id):
+        from profapp.models.portal import MemberCompanyPortal
+        from profapp import utils
+
+        membership = MemberCompanyPortal.get(membership_id)
+
+        action = utils.find_by_keys(self.actions(membership), self._action, 'name')
+
+        if not action:
+            raise Exception("Unknown action {} for membership={}, publication={}".format(
+                self._action, membership_id))
+
+        return action['enabled'] is True
+
+    # @staticmethod
+    # def base_actions(self, *args, object=None, **kwargs):
+    #     if not isinstance(object, str) and not hasattr(object, 'status'):
+    #         raise Exception('Bad data!')
+    #     return {action_name: self.action_is_allowed(action_name, *args, **kwargs) for action_name
+    #             in self.ACTIONS_FOR_STATUSES[object.status if not isinstance(object, str) else object]}
+
+    @classmethod
+    # TODO: OZ by OZ: convert this actions as in another Actions classes
+    def actions(cls, file, called_for):
+        import re
+        actions = {}
+        if not file:
+            raise Exception('Bad data!')
+
+        for a in cls.ACTIONS:
+            actions[cls.ACTIONS[a]] = True
+
+        if file.mime in ['directory', 'root']:
+            del actions['download']
+        else:
+            del actions['paste']
+
+        if called_for == 'file_browse_image':
+            actions['choose'] = re.search('^image/.*', file.mime) is not None
+        elif called_for == 'file_browse_media':
+            actions['choose'] = re.search('^video/.*', file.mime) is not None
+        elif called_for == 'file_browse_file':
+            actions['choose'] = True
+        else:
+            del actions['choose']
+
+        return actions
+
+    @classmethod
+    def file_actions_by_membership(cls, actionname, file):
+        return True
 
 #
 # def employee_have_right(right=None):

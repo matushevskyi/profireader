@@ -29,7 +29,7 @@ def community_search(json):
         portals_ids.append(p.id)
 
     companies_ids = []
-    for c in g.user.active_companies_employers:
+    for c in g.user.companies_employer_active:
         companies_ids.append(c.id)
 
     # use load_for_infinite_scroll
@@ -88,7 +88,7 @@ def community_search(json):
                                                   u.active_portals_subscribed if
                                                   p.id in portals_ids]
         user_dict['common_companies_employers'] = [c.get_client_side_dict(fields='id,logo.url,name') for c in
-                                                   u.active_companies_employers if
+                                                   u.companies_employer_active if
                                                    c.id in companies_ids]
         contact = g.db().query(Contact).filter_by(user1_id=min([u.id, g.user.id])).filter_by(
             user2_id=max([u.id, g.user.id])) \
@@ -139,8 +139,39 @@ def contacts_search(json):
 def contact_action(json):
     action = json['action']
 
+    # from profapp.models.translate import Phrase
+    # # send notifications
+    # to_user = User.get(target.get_another_user_id(g.user.id))
+    #
+    # action
+    # new_status = target.get_status_for_user(to_user.id, new_value) if new_value else None
+    # old_status = target.get_status_for_user(to_user.id, old_value) if old_value else None
+    #
+    # Socket.request_status_changed(target.user1_id, target.user2_id,
+    #                               target.get_status_for_user(target.user1_id, new_value))
+    # Socket.request_status_changed(target.user2_id, target.user1_id,
+    #                               target.get_status_for_user(target.user2_id, new_value))
+    #
+    # if new_status == Contact.STATUSES['ACTIVE_ACTIVE'] and old_status == Contact.STATUSES['REQUESTED_UNCONFIRMED']:
+    #     phrase = "User %s accepted your friendship request :)" % (utils.jinja.link_user_profile(),)
+    # elif new_status == Contact.STATUSES['ANY_REVOKED'] and old_status == Contact.STATUSES['ACTIVE_ACTIVE']:
+    #     phrase = "User %s revoked your friendship :(" % (utils.jinja.link_user_profile(),)
+    # else:
+    #     phrase = None
+    #
+    # # possible notification - 2
+    # if phrase:
+    #     return Socket.prepare_notifications([to_user], NOTIFICATION_TYPES['FRIENDSHIP_ACTIVITY'],
+    #                                         Phrase(phrase, comment=
+    #                                         'sent to user when friendship request status is changed from `%s` to `%s`' %
+    #                                         (old_value, new_value)))
+    # else:
+    #     return utils.do_nothing()
+    #
+
     user1_id = min([g.user.id, json['user_id']])
     user2_id = max([g.user.id, json['user_id']])
+    another_user = User.get(json['user_id'])
     contact = g.db().query(Contact).filter_by(user1_id=user1_id, user2_id=user2_id).first()
 
     if contact:
@@ -149,14 +180,19 @@ def contact_action(json):
         if action == 'add' and old_status_for_g_user in [contact.STATUSES['ANY_REVOKED'],
                                                          contact.STATUSES['REVOKED_ANY']]:
             contact.set_status_for_user(g.user.id, contact.STATUSES['REQUESTED_UNCONFIRMED'])
+            another_user.NOTIFY_FRIEND_STATUS_CHANGED(old_status='NONE', new_status='REQUESTED')
         elif action == 'remove' and old_status_for_g_user == contact.STATUSES['ACTIVE_ACTIVE']:
             contact.set_status_for_user(g.user.id, contact.STATUSES['REVOKED_ANY'])
+            another_user.NOTIFY_FRIEND_STATUS_CHANGED(old_status='ACTIVE', new_status='NONE')
         elif action == 'revoke' and old_status_for_g_user == contact.STATUSES['REQUESTED_UNCONFIRMED']:
             contact.set_status_for_user(g.user.id, contact.STATUSES['REVOKED_ANY'])
+            another_user.NOTIFY_FRIEND_STATUS_CHANGED(old_status='REQUESTED', new_status='NONE')
         elif action == 'confirm' and old_status_for_g_user == contact.STATUSES['UNCONFIRMED_REQUESTED']:
             contact.set_status_for_user(g.user.id, contact.STATUSES['ACTIVE_ACTIVE'])
+            another_user.NOTIFY_FRIEND_STATUS_CHANGED(old_status='REQUESTED', new_status='ACTIVE')
         elif action == 'unban' and old_status_for_g_user == contact.STATUSES['BANNED_ACTIVE']:
             contact.set_status_for_user(g.user.id, contact.STATUSES['ACTIVE_ACTIVE'])
+            another_user.NOTIFY_FRIEND_STATUS_CHANGED(old_status='BANNED', new_status='ACTIVE')
         else:
             raise BadDataProvided(
                 "Wrong action `%s` for status `%s=>%s`" % (action, contact.status, old_status_for_g_user))
@@ -164,6 +200,7 @@ def contact_action(json):
         if action == 'add':
             contact = Contact(user1_id=user1_id, user2_id=user2_id)
             contact.set_status_for_user(g.user.id, contact.STATUSES['REQUESTED_UNCONFIRMED'])
+            another_user.NOTIFY_FRIEND_STATUS_CHANGED(old_status='NONE', new_status='REQUESTED')
         else:
             raise BadDataProvided("Wrong action `add` for no contact")
 

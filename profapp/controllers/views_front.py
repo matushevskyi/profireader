@@ -5,7 +5,7 @@ from sqlalchemy.sql import expression
 
 from config import Config
 from .blueprints_declaration import front_bp
-from .request_wrapers import check_right, get_portal
+from .request_wrapers import get_portal
 from .. import utils
 from ..models.company import Company
 from ..models.elastic import elasticsearch
@@ -13,7 +13,7 @@ from ..models.materials import Publication
 from ..models.messenger import Socket, Notification
 from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal
-from ..models.rights import AllowAll
+from ..models.permissions import AvailableForAll
 from ..models.users import User
 
 
@@ -216,7 +216,8 @@ def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company
 
         return url_for(request.endpoint, **url_args) + (('?search=' + search_text) if search_text else '')
 
-    afilter = [{'term': {'status': MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']}}, {'term': {'portal_id': portal.id}}]
+    afilter = [{'term': {'status': MemberCompanyPortal.STATUSES['MEMBERSHIP_ACTIVE']}},
+               {'term': {'portal_id': portal.id}}]
 
     all_tags = portal.get_client_side_dict(fields='tags')['tags']
 
@@ -301,13 +302,12 @@ subportal_prefix = '_c/<string:member_company_id>/<string:member_company_name>/'
 
 def url_catalog_toggle_tag(portal, tag_text):
     catalog_division = utils.db.query_filter(PortalDivision, portal_id=portal.id,
-                                    portal_division_type_id=PortalDivision.TYPES['catalog']).one()
+                                             portal_division_type_id=PortalDivision.TYPES['catalog']).one()
     return url_for('front.division', division_name=catalog_division.name, tags=tag_text)
 
 
-@front_bp.route(subportal_prefix)
-@front_bp.route(subportal_prefix + '<string:member_company_page>/')
-@check_right(AllowAll)
+@front_bp.route(subportal_prefix, permissions=AvailableForAll())
+@front_bp.route(subportal_prefix + '<string:member_company_page>/', permissions=AvailableForAll())
 @get_portal
 def company_page(portal, member_company_id, member_company_name, member_company_page='about'):
     if member_company_page not in ['about', 'address', 'contacts']:
@@ -329,20 +329,22 @@ def company_page(portal, member_company_id, member_company_name, member_company_
                            member_company_page=member_company_page)
 
 
-@front_bp.route('/', methods=['GET'])
-@front_bp.route('<int:page>/', methods=['GET'])
-@front_bp.route('tags/<string:tags>/', methods=['GET'])
-@front_bp.route('<int:page>/tags/<string:tags>/', methods=['GET'])
-@front_bp.route('<string:division_name>/', methods=['GET'])
-@front_bp.route('<string:division_name>/<int:page>/', methods=['GET'])
-@front_bp.route('<string:division_name>/tags/<string:tags>/', methods=['GET'])
-@front_bp.route('<string:division_name>/<int:page>/', methods=['GET'])
-@front_bp.route('<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'])
-@front_bp.route(subportal_prefix + '_d/<string:division_name>/', methods=['GET'])
-@front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/', methods=['GET'])
-@front_bp.route(subportal_prefix + '_d/<string:division_name>/tags/<string:tags>/', methods=['GET'])
-@front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'])
-@check_right(AllowAll)
+@front_bp.route('/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<int:page>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<int:page>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<string:division_name>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<string:division_name>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<string:division_name>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<string:division_name>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route(subportal_prefix + '_d/<string:division_name>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/', methods=['GET'],
+                permissions=AvailableForAll())
+@front_bp.route(subportal_prefix + '_d/<string:division_name>/tags/<string:tags>/', methods=['GET'],
+                permissions=AvailableForAll())
+@front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'],
+                permissions=AvailableForAll())
 @get_portal
 def division(portal, division_name=None, page=1, tags=None, member_company_id=None, member_company_name=None):
     # this function was created to work with search in division also. I just commented this feature in case we will want back it
@@ -386,7 +388,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                    tags=all_tags(portal),
                                    seo=membership.seo_dict(),
                                    membership=utils.db.query_filter(MemberCompanyPortal, company_id=member_company.id,
-                                                           portal_id=portal.id).one(),
+                                                                    portal_id=portal.id).one(),
                                    url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
                                    member_company=member_company.get_client_side_dict(
                                        more_fields='employments,employments.user,employments.user.avatar.url'),
@@ -419,8 +421,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                )
 
 
-@front_bp.route('_a/<string:publication_id>/<string:publication_title>')
-@check_right(AllowAll)
+@front_bp.route('_a/<string:publication_id>/<string:publication_title>', permissions=AvailableForAll())
 @get_portal
 def article_details(portal, publication_id, publication_title):
     # TODO: OZ by OZ: redirect if title is wrong
@@ -431,7 +432,8 @@ def article_details(portal, publication_id, publication_title):
     if article_visibility is True:
         publication.add_to_read()
     else:
-        utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id, publication_title=publication_title)
+        utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id,
+                                  publication_title=publication_title)
 
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.name)
@@ -447,11 +449,10 @@ def article_details(portal, publication_id, publication_title):
                            )
 
 
-@front_bp.route('_s/', methods=['GET'])
-@front_bp.route('_s/<int:page>/', methods=['GET'])
-@front_bp.route('_s/tags/<string:tags>/', methods=['GET'])
-@front_bp.route('_s/tags/<string:tags>/<int:page>/', methods=['GET'])
-@check_right(AllowAll)
+@front_bp.route('_s/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('_s/<int:page>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('_s/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('_s/tags/<string:tags>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
 @get_portal
 def search(portal, page=1, tags=None):
     search_data = get_search_tags_pages_search(portal, page, tags, request.args.get('search') or '')
@@ -461,52 +462,32 @@ def search(portal, page=1, tags=None):
                            portal=portal_and_settings(portal), **search_data)
 
 
-@front_bp.route('_/add_delete_favorite/<string:publication_id>/', methods=['OK'])
-@check_right(AllowAll)
+@front_bp.route('_/add_delete_favorite/<string:publication_id>/', methods=['OK'], permissions=AvailableForAll())
 def add_delete_favorite(json, publication_id):
     publication = Publication.get(publication_id).add_delete_favorite(json['on'])
     return {'on': True if json['on'] else False, 'favorite_count': publication.favorite_count()}
 
 
-@front_bp.route('_/add_delete_liked/<string:publication_id>/', methods=['OK'])
-@check_right(AllowAll)
+@front_bp.route('_/add_delete_liked/<string:publication_id>/', methods=['OK'], permissions=AvailableForAll())
 def add_delete_liked(json, publication_id):
     publication = Publication.get(publication_id).add_delete_like(json['on'])
     return {'on': True if json['on'] else False, 'liked_count': publication.liked_count()}
 
 
-@front_bp.route('_/<string:member_company_id>/send_message/', methods=['OK'])
-@check_right(AllowAll)
+@front_bp.route('_/<string:member_company_id>/send_message/', methods=['OK'], permissions=AvailableForAll())
 def send_message(json, member_company_id):
-    import html
-    from profapp.models.translate import Phrase
-
     send_to = User.get(json['user_id'])
     company = Company.get(member_company_id)
-
-    if g.user and g.user.id:
-        phrase = "User %s sent you email as member of company %s" % (utils.jinja.link_user_profile(),
-                                                                     utils.jinja.link_company_profile())
-    else:
-        phrase = "Anonymous sent you email as member of company %s" % (
-            utils.jinja.link_company_profile(),)
-
-    Socket.prepare_notifications([send_to], NOTIFICATION_TYPES['CUSTOM'],
-                                 Phrase(phrase + '<hr/>%(message)s',
-                                 dict = {'company': company,
-                                  'url_company_profile': url_for('company.profile', company_id=company.id),
-                                  'message': html.escape(json['message'])},
-                                 comment="this message is sent by portal visitor to some company employee"))()
-
+    send_to.NOTIFY_MESSAGE_FROM_PORTAL_FRONT(message=json['message'], company=company)
     return {}
 
 
-@front_bp.route('robots.txt', methods=['GET'], strict_slashes=True)
+@front_bp.route('robots.txt', methods=['GET'], strict_slashes=True, permissions=AvailableForAll())
 def robots_txt():
     return "User-agent: *\n"
 
 
-@front_bp.route('sitemap.xml', methods=['GET'], strict_slashes=True)
+@front_bp.route('sitemap.xml', methods=['GET'], strict_slashes=True, permissions=AvailableForAll())
 @get_portal
 def sitemap(portal):
     from sqlalchemy import desc

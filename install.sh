@@ -184,7 +184,7 @@ function menu_fluent {
 
 function menu_deb {
     conf_comm "apt-get update
-apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev openjdk-8-jre haproxy" sudo npm
+apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev openjdk-7-jre haproxy" sudo npm
     }
 
 function menu_npm {
@@ -272,8 +272,9 @@ apt-get install certbot -t jessie-backports" sudo apache2_config
 function menu_apache2_config {
     wwwdir=$(rr 'Enter http dir' $PWD)
     maindomain=$(rr 'Enter main domain' `get_main_domain`)
-    conf_comm "cat ./conf/apache2/directory-access.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/directory-access.conf
-cat ./conf/apache2/lets-encrypt-requests.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/lets-encrypt-requests.conf
+    conf_comm "
+cat ./conf/apache2/directory-access.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/directory-access.conf
+cat ./conf/apache2/profi-wsgi-apache2.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/profi-wsgi-apache2.conf
 cp ./conf/apache2/ports.conf /etc/apache2/
 rm /etc/apache2/sites-enabled/000-default.conf
 mkdir /var/log/profi

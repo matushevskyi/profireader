@@ -1,6 +1,7 @@
 from flask import Blueprint
 from profapp.models.permissions import Permissions
 
+
 class PrOldBlueprint(Blueprint):
     declared_endpoints = {}
 
@@ -39,7 +40,10 @@ class PrOldBlueprint(Blueprint):
 
 
 class PrBlueprint(Blueprint):
-    registered_functions = {}
+
+    def __init__(self, *args, **kwargs):
+        self.registered_functions = {}
+        super(PrBlueprint, self).__init__(*args, **kwargs)
 
     def route(self, rule, **options):
         from flask import request, render_template, session, redirect, url_for, g, jsonify, current_app
@@ -58,7 +62,9 @@ class PrBlueprint(Blueprint):
                     self.name, rule))
             del options['permissions']
         else:
-            raise exceptions.RouteWithoutPermissions()
+            raise exceptions.RouteWithoutPermissions(
+                'permission have to be Permission object for blueprint={}, rule={}'.format(
+                    self.name, rule))
 
         def decorator(f):
             @wraps(f)
@@ -69,24 +75,25 @@ class PrBlueprint(Blueprint):
                 hide_error = not (g.debug or g.testing)
 
                 try:
-
-                    if request.url_rule.rule not in self.registered_functions[f.__name__]['perm']:
-                        raise exceptions.RouteWithoutPermissions(
+                    ps = getattr(wrapped_function, '_permissions', None)
+                    # print(request.url_rule.rule, wrapped_function._permissions)
+                    if ps is None:
+                        raise exceptions.RouteWithoutPermissions("view function without permissions: " +
                             self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
 
-                    ps = self.registered_functions[f.__name__]['perm'][request.url_rule.rule]
+                    ps = ps.get(request.url_rule.rule, None)
 
-                    if not ps:
-                        raise exceptions.RouteWithoutPermissions(
+                    if ps is None:
+                        raise exceptions.RouteWithoutPermissions("cant find permissions for rule: " +
                             self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
 
-                    if method == 'OK' or method == 'POST':
+                    if method == 'OK':
                         json = request.json
-                        if not ps.check(json, *args, **kwargs):
+                        if not ps['permissions'].check(json, *args, **kwargs):
                             raise exceptions.UnauthorizedUser()
                         ret = f(json, *args, **kwargs)
                     else:
-                        if not ps.check(*args, **kwargs):
+                        if not ps['permissions'].check(*args, **kwargs):
                             raise exceptions.UnauthorizedUser()
                         ret = f(*args, **kwargs)
 
@@ -132,9 +139,17 @@ class PrBlueprint(Blueprint):
             if f.__name__ not in self.registered_functions:
                 self.registered_functions[f.__name__] = {'func': wrapped_function, 'perm': {}, 'app': current_app}
 
+            func = self.registered_functions[f.__name__]['func']
+            if getattr(func, '_permissions', None) is None:
+                setattr(func, '_permissions', {})
+
+            func._permissions[self.url_prefix + rule] = \
+                {'url_prefix': self.url_prefix, 'rule': rule, 'permissions': permissions}
+
             self.registered_functions[f.__name__]['perm'][self.url_prefix + rule] = permissions
 
             endpoint = options.pop("endpoint", f.__name__)
+
             self.add_url_rule(rule, endpoint, self.registered_functions[f.__name__]['func'], **options)
 
             return self.registered_functions[f.__name__]['func']
@@ -142,23 +157,17 @@ class PrBlueprint(Blueprint):
         return decorator
 
 
-static_bp = PrOldBlueprint('static', __name__, static_folder='static')
-index_bp = PrOldBlueprint('index', __name__)
-auth_bp = PrOldBlueprint('auth', __name__)
-admin_bp = PrOldBlueprint('admin', __name__)
-user_bp = PrOldBlueprint('user', __name__)
+static_bp = PrBlueprint('static', __name__, static_folder='static')
+index_bp = PrBlueprint('index', __name__, url_prefix='/')
+auth_bp = PrBlueprint('auth', __name__, url_prefix='/auth')
+admin_bp = PrBlueprint('admin', __name__, url_prefix='/admin')
+user_bp = PrBlueprint('user', __name__, url_prefix='/user')
 article_bp = PrBlueprint('article', __name__, url_prefix='/article')
-filemanager_bp = PrOldBlueprint('filemanager', __name__)
-image_editor_bp = PrOldBlueprint('image_editor', __name__)
+filemanager_bp = PrBlueprint('filemanager', __name__, url_prefix='/filemanager')
 company_bp = PrBlueprint('company', __name__, url_prefix='/company')
-portal_bp = PrOldBlueprint('portal', __name__)
-front_bp = PrOldBlueprint('front', __name__)
-file_bp = PrOldBlueprint('file', __name__)
-exception_bp = PrOldBlueprint('exception', __name__)
-tools_bp = PrOldBlueprint('tools', __name__)
-# help_bp = PrOldBlueprint('help', __name__)
-# reader_bp = PrOldBlueprint('reader', __name__)
+portal_bp = PrBlueprint('portal', __name__, url_prefix='/portal')
+front_bp = PrBlueprint('front', __name__, url_prefix='/')
+file_bp = PrBlueprint('file', __name__, url_prefix='/')
+tools_bp = PrBlueprint('tools', __name__, url_prefix='/tools')
 messenger_bp = PrBlueprint('messenger', __name__, url_prefix='/messenger')
-socket_bp = PrOldBlueprint('socket', __name__)
-tutorial_bp = PrOldBlueprint('tutorial', __name__)
-# reader_bp = Blueprint('reader', __name__)
+tutorial_bp = PrBlueprint('tutorial', __name__, url_prefix='/tutorial')

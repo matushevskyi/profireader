@@ -21,10 +21,12 @@
 
             <div class="modal-body">
                 <label>{{ ::_('html title') }}</label><br/>
-                <input class="w100 form-control mb2em" ng-model="seo_data.title" placeholder="{{ ::_('leave empty to use division name') }}"/>
+                <input class="w100 form-control mb2em" ng-model="seo_data.title"
+                       placeholder="{{ ::_('leave empty to use division name') }}"/>
 
                 <label>{{ ::_('html keywords') }}</label><br/>
-                <input class="w100 form-control mb2em" ng-model="seo_data.keywords" placeholder="{{ ::_('leave empty to use division tags') }}"/>
+                <input class="w100 form-control mb2em" ng-model="seo_data.keywords"
+                       placeholder="{{ ::_('leave empty to use division tags') }}"/>
 
                 <label>{{ ::_('html description') }}</label><br/>
                 <textarea class="w100 h10em form-control" ng-model="seo_data.description" placeholder=""></textarea>
@@ -47,6 +49,7 @@
                     $scope.division.settings = {'company_id': $scope.data.portal.company_memberships[0]['company']['id']}
                 }
                 if ((newv === 'news' || newv === 'events') && !$scope.division['publication_count']) {
+                    console.log('fix me');
                     $scope.division['publication_count'] = 0;
                 }
             });
@@ -77,6 +80,9 @@
 
             $scope.url_after_save = {{ raw_url_for('company.profile')|safe }};
 
+            $scope.publications_counts_by_status_and_visibility_cell = publications_counts_by_status_and_visibility_cell;
+            $scope.publications_counts_by_status_and_visibility_tooltip = publications_counts_by_status_and_visibility_tooltip;
+
             $scope.changeDescription = function (d) {
                 var modalInstance = $uibModal.open({
                     templateUrl: 'portal_edit_division_decription.html',
@@ -97,7 +103,6 @@
             };
 
 
-
             $scope.afterSave = function (resp) {
                 if (!$scope.portal_id) {
                     window.location.href = $scope.url_after_save({company_id: resp['portal']['own_company']['id']})
@@ -111,20 +116,20 @@
             $scope.amidLoad = function (resp) {
                 if (!$scope.portal_id) {
                     resp['portal']['divisions'] =
-                            _.map(['index', 'news', 'events', 'catalog', 'company_subportal'], function (t) {
-                                return {
-                                    'id': randomHash(), 'portal_division_type_id': t,
-                                    'html_description': '',
-                                    'html_keywords': '',
-                                    'html_title': '',
-                                    'name': $scope._('new portal division ' + t)
-                                };
-                            });
+                        _.map(['index', 'news', 'events', 'catalog', 'company_subportal'], function (t) {
+                            return {
+                                'id': randomHash(), 'portal_division_type_id': t,
+                                'html_description': '',
+                                'html_keywords': '',
+                                'html_title': '',
+                                'name': $scope._('new portal division ' + t)
+                            };
+                        });
 
                     resp['portal']['divisions'][1]['publication_count'] = 0;
                     resp['portal']['divisions'][2]['publication_count'] = 0;
                     resp['portal']['divisions'][resp['portal']['divisions'].length - 1]['settings'] =
-                    {'company_id': resp['portal']['own_company']['id']};
+                        {'company_id': resp['portal']['own_company']['id']};
                 }
                 return resp;
             };
@@ -252,7 +257,7 @@
                             <div>
                                 <label>{{ ::_('Portal layout') }}</label>
                                 <select class="form-control w20em" ng-model="data.portal.portal_layout_id"
-                                        ng-options="layout.id as layout.name for layout in data.select.layouts"></select>
+                                        ng-options="layout.id as (layout.name + (layout.hidden?' (hidden)':'')) for layout in data.select.layouts"></select>
 
                             </div>
                             <div>
@@ -333,8 +338,10 @@
                             <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 p025em">
                                 <div class="dib border-none"
                                      pr-validation-answer="data_validation:divisions[division.id].settings">
-                                    <span ng-if="division.portal_division_type_id == 'events' || division.portal_division_type_id == 'news'">
-                                        {{ ::_('%(publication_count)s publications', division) }}
+                                    <span tooltip-append-to-body="true" tooltip-class="pr-grid-tooltip-class" tooltip-animation="false"
+                                            uib-tooltip-html="publications_counts_by_status_and_visibility_tooltip(division.publication_count)" ng-bind-html="publications_counts_by_status_and_visibility_cell(division.publication_count)|html"
+                                            ng-if="division.portal_division_type_id == 'events' || division.portal_division_type_id == 'news'">
+
                                     </span>
                                     <select
                                             ng-disabled="division['remove_this_existing_division']"

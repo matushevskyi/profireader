@@ -116,7 +116,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
 
 
-                    var cell_value = '{{ ::' + cell_raw_value + ' }}';
+                    var cell_value = '{{ ' + cell_raw_value + ' }}';
                     var cell_html_value = '<span ng-bind-html="' + cell_raw_value + '"></span>';
 
 
@@ -396,7 +396,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             },
             rowTemplate: '<div ng-class="{\'disabled\': row.entity[\'disabled\'] }"><div ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.colDef.name" class="ui-grid-cell" ng-class="{ \'ui-grid-row-header-cell\': col.isRowHeader }" ui-grid-cell></div></div>',
             paginationPageSizes: [1, 10, 25, 50, 75, 100, 1000],
-            paginationPageSize: 300,
+            paginationPageSize: 10,
             enableColumnMenu: false,
             enableFiltering: true,
             enableCellEdit: false,
@@ -412,46 +412,3 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
     });
 });
 
-publication_column = function () {
-        var spanf = function (status, visibility, cnt, classes) {
-            return '<span class="tar ' + (classes ? classes : '') + ' pr-grid-publications-vs publication-fg-STATUS-' + status + ' publication-bg-VISIBILITY-' + visibility + '">' + cnt + '</span>';
-        };
-
-        var all_statuses = ['PUBLISHED', 'HOLDED', 'SUBMITTED', 'UNPUBLISHED', 'DELETED'];
-        var all_visibilities = ['OPEN', 'REGISTERED', 'PAYED'];
-
-        return {
-            name: 'publications',
-            width: '185',
-            'uib-tooltip-html': function (row, value) {
-                var ret = [];
-
-                $.each(all_statuses, function (ind, status) {
-                    var by_visibility = value['by_status_visibility'][status];
-                    var ret_v = [];
-                    $.each(all_visibilities, function (ind1, visibility) {
-                        ret_v.push(spanf(status, visibility, by_visibility[visibility]));
-                    });
-                    ret.push('<span class="publication-fg-STATUS-' + status + '">' + status + ': ' + spanf(status, '', value['by_status'][status], 'bold') + '</span> = ' + ret_v.join('+'));
-                });
-                var ret_v = [];
-
-                $.each(all_visibilities, function (ind, visibility) {
-                    ret_v.push(spanf('', visibility, value['by_visibility'][visibility], 'italic black'));
-                });
-
-                ret.push('<span class="italic black">ALL: ' + spanf('', '', value['all'], 'bold') + '</span> = ' + ret_v.join('+'));
-                return '<div class="tar nowrap">' + ret.join('</div><div class="tar nowrap">') + '</div>';
-
-            },
-            render: function (row, value) {
-                var ret = [];
-                $.each(all_visibilities,
-                    function (ind, visibility) {
-                        ret.push(spanf('PUBLISHED', visibility, value['by_status_visibility']['PUBLISHED'][visibility]));
-                    });
-                return spanf('PUBLISHED', '', value['by_status']['PUBLISHED'], 'bold') + '</span> = ' + ret.join('+');
-
-            }
-        };
-    }

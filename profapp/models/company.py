@@ -10,7 +10,7 @@ from .pr_base import PRBase, Base, Grid
 from .users import User
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..constants.NOTIFICATIONS import EmploymentChange
+from ..constants.NOTIFICATIONS import NotifyEmploymentChange
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from profapp import utils
 from profapp.models.permissions import RIGHT_AT_COMPANY
@@ -77,7 +77,7 @@ class Company(Base, PRBase, PRElasticDocument):
                                                       viewonly=True,
                                                       primaryjoin="and_(Company.id == UserCompany.company_id, or_(UserCompany.status == 'EMPLOYMENT_ACTIVE', UserCompany.status == 'EMPLOYMENT_REQUESTED_BY_USER', UserCompany.status == 'EMPLOYMENT_SUSPENDED_BY_COMPANY'))")
 
-    users_employments_active = relationship('User',
+    users_employee_active = relationship('User',
                                           viewonly=True,
                                           primaryjoin="and_(Company.id == UserCompany.company_id, UserCompany.status == 'EMPLOYMENT_ACTIVE')",
                                           secondary='user_company',
@@ -221,6 +221,10 @@ class Company(Base, PRBase, PRElasticDocument):
             sub_query = utils.db.query_filter(MemberCompanyPortal, portal_id=portal_id)
         return sorted(list({partner.status for partner in sub_query}))
 
+    def get_rights_for_current_user(self):
+        employment = UserCompany.get_by_user_and_company_ids(company_id=self.id)
+        return employment.rights if employment else None
+
     def get_user_with_rights(self, *rights_sets, get_text_representation=False):
         from ..models.permissions import RIGHT_AT_COMPANY
         # TODO: OZ by OZ: use operator overloading (&,|) instead of list(|),set(&)
@@ -313,8 +317,7 @@ class Company(Base, PRBase, PRElasticDocument):
 
 
 
-class UserCompany(Base, PRBase, EmploymentChange):
-
+class UserCompany(Base, PRBase, NotifyEmploymentChange):
 
     __tablename__ = 'user_company'
 
