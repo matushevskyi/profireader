@@ -10,7 +10,7 @@
 
     <script>
         module.controller('company_partner_details', function ($scope, $ok) {
-            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_partners');
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_members');
 
             $scope.employeer  = {{ employeer|tojson|safe }};
             $scope.member = {{ member|tojson|safe }};

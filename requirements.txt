@@ -39,3 +39,5 @@ requests
 python-socketio==0.7.0
 socketIO-client==0.7.0
 eventlet==0.19.0
+fluent-logger==0.4.4
+snakeviz==0.4.1

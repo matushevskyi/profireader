@@ -709,7 +709,7 @@
 
                 var err = function (e) {
                     reStoreState();
-                    $scope.onError(typeof e === 'string' ? e : 'image loading error');
+                    $scope.onError(typeof e === 'string' ? e : e.message?e.message:'image loading error');
                     $timeout(function () {
                     })
                 };

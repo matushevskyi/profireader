@@ -1,23 +1,19 @@
-<header class="navbar navbar-inverse navbar-fixed-top">
+<header class="navbar navbar-default navbar-fixed-top">
     <div class="container-fluid">
         <div class="navbar-header">
             {% if tags and tags.all %}
             <!--Off-canvas toggle button-->
-            <button type="button" class="navbar-toggle pull-left offcanvas-btn" data-toggle="offcanvas"
-                    data-target=".navmenu" data-canvas="body">
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
+            <button type="button" class="navbar-toggle pull-left offcanvas-btn" data-toggle="offcanvas" data-target=".navmenu" data-canvas="body">
+                <span class="sr-only">Toggle navigation</span>
+                <i class="fa fa-bars" aria-hidden="true"></i>
             </button>
             <!--Collapsive navbar toggle button-->
             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapsible">
                 <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
+                <i class="fa fa-bars" aria-hidden="true"></i>
             </button>
             {% endif %}
-            <a class="navbar-brand" href="/" style="width: 200px; "><img class="img-responsive" src="{{ portal.logo.url }}"></a>
+            <a class="navbar-brand" href="/" style="width: 200px; "><img class="img-responsive bg-contain" src="{{ portal.logo.url }}"></a>
         </div>
         <!--Collapsive navbar-->
         <nav class="navbar-collapse collapse" id="navbar-collapsible" role="navigation">
@@ -42,8 +38,7 @@
                 <div class="form-group">
                     <div class="input-group">
                         <input class="form-control search-form" type="text" name="search" placeholder="{{ _('Search') }}" value="{{ search.text if search and search.text else ''  }}">
-                        <span class="input-group-addon search-btn"><i class="fa fa-search"
-                                                                      aria-hidden="true"></i></span>
+                        <span class="input-group-addon search-btn"><i class="fa fa-search" aria-hidden="true"></i></span>
                     </div>
                 </div>
             </form>

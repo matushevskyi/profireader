@@ -1,0 +1,108 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block title %}Profireader - {{ _('Partners') }}{% endblock title %}
+
+{% block head %}
+    {{ super() }}
+    {% include '_ruslan/partials/_header_files_grid.html' %}
+    {% include '_ruslan/partials/_header_files_membership_plan.html' %}
+{% endblock head %}
+
+{% block portal_content %}
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+
+    <script>
+
+        module.controller('company_partners', function ($scope, $ok, $membership_plan) {
+
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_members');
+            $scope.$$translate = {{translates('company_partners') | safe}};
+            $scope.url_load = '{{ url_for('portal.companies_members_load', portal_id=portal.id)}}';
+            $scope.url_membership_update = {{ raw_url_for('portal.membership_update')| safe}};
+            $scope.url_change_status = {{ raw_url_for('portal.membership_change_status')|safe }};
+
+            {% raw %}
+
+            $scope.portal_link = function (link) {
+                if (link) {
+                    return 'http://' + link;
+                } else {
+                    return null
+                }
+            };
+
+            $scope.grid_update_row = function (updated_row) {
+//                    TODO: SS by OZ: how i can access grid data without data cariable in my scope?
+                $scope.gridApi.grid.grid_change_row(updated_row);
+            };
+
+            $scope.grid_action = function (id, action, row, column_name) {
+                if (column_name == 'actions') {
+                    if (action === 'ALLOW') {
+                        window.location.href = $scope.url_membership_update({membership_id: row.id});
+                    } else {
+                        return $ok($scope.url_change_status({membership_id: row.id}),
+                                {action: action}, function (resp) {
+                                    $scope.gridApi.grid.grid_change_row(resp);
+                                }).finally(function () {
+                        })
+                    }
+                }
+            };
+
+            $scope.set_membership_plan = function (id, row, column_name) {
+                $membership_plan({
+                    membership_id: row['id'],
+                    request_or_set: 'set'
+                }).result.then(function (resp) {
+                    $scope.gridApi.grid.grid_change_row(resp);
+                });
+            };
+
+            $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
+                urlLoadGridData: $scope.url_load,
+                columnDefs: [
+                    {
+                        name: 'membership.company.name',
+                        type: 'link',
+                        img_url: 'membership.company.logo.url',
+                        href: 'portal_link(row.entity.membership.company.own_portal.host)'
+                    },
+                    {
+                        name: 'membership_plan',
+                        onclick: 'set_membership_plan',
+                        render: function (row, value) {
+                            return row['membership']['current_membership_plan_issued']['name'] +
+                                    (row['membership']['requested_membership_plan_issued'] ? ('/<em>' + row['membership']['requested_membership_plan_issued']['name'] + '</em>') : '');
+                        }
+                    },
+                    {name: 'membership.status', afilter: {type: 'multi_select', default_selected: true}},
+                    publication_column(),
+                    {name: 'membership.rights', width: '200', type: 'icons', afilter: {type: 'input'}},
+                    {
+                        name: 'actions', width: '*', type: 'actions', onclick: 'grid_action', classes: function (id,
+                                                                                                                 entity, field) {
+                        return entity.status !== 'ACTIVE' ? 'non-active' : '';
+                    }
+                    }
+                ]
+            });
+            {% endraw %}
+        })
+    </script>
+
+    {% raw %}
+
+    <div id="company_partners_controller" ng-controller="company_partners" ng-cloak>
+        <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+                <i class="fa fa-spinner fa-spin"></i>
+                <div>{{ _('Data Loading...') }}</div>
+            </div>
+        </div>
+    </div>
+    {% endraw %}
+{% endblock portal_content %}

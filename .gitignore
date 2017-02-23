@@ -30,7 +30,7 @@ client_secret.*
 # database
 db/database_full.*
 db/database.*.bak
-db/*.sql
+
 
 *.bak
 *.js.map
@@ -47,6 +47,7 @@ profireader_haproxy.key.pem*
 main_domain.py
 letsencryptrequests/
 scrt/
+log/
 #profapp/static/front/wood
 #profapp/templates/front/wood
 

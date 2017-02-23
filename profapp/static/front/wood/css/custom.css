@@ -1,23 +1,19 @@
 /*Common settings*/
 
-@media (max-width: 480px){
+@media (max-width: 1200px){
     .company-name,
     .article-comments,
-    .post-date {
-        display: block;
-    }
-    .company-name,
-    .article-comments,
-    .post-date {
-        margin-bottom: 6px;
-    }
-
-    .company-name {
-        margin-top: 12px;
+    .post-date,
+    .article-read-count,
+    .like,
+    .bookmark {
+        display: inline-block;
+        margin-bottom: 10px;
     }
 }
 
 body {
+    background-color: #eee;
     height: 100%;
     font-family: 'Open Sans', 'Helvetica Neue', sans-serif;
     padding-top: 90px;
@@ -28,17 +24,67 @@ a:hover {
     text-decoration: none;
 }
 
+.tag-selected a{
+    color: #fff;
+}
+
+.search_highlighted {
+    color: #26A69A;
+}
+
+.tag-selected {
+    background-color: #26A69A!important;
+    display: inline-block;
+    font-size: 0.875em;
+    font-weight: 400;
+    color: #fff;
+}
+
+.tag-selected:hover {
+    background-color: #26A69A;
+}
+
+.tag-not-selected {
+    font-size: 0.875em;
+}
+
+p {
+    text-align: left!important;
+    line-height: 1.5;
+}
+
+.bg-contain {
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
 /*Offcanvas menu settings*/
 
 .tag-menu {
     width: 300px;
-    background-color: #263238;
+    background-color: #37474F;
     border: 0;
 }
 
-.tag-selected {
-    background-color: #00695C;
+.tag-menu li a,
+.label {
     color: #fff;
+    font-weight: 400;
+}
+
+.navmenu-inverse .navmenu-nav li {
+    padding: 6px 15px 6px 15px;
+    cursor: pointer;
+}
+
+.navmenu-inverse .navmenu-nav li:hover {
+    background-color: #26A69A;
+
+}
+
+.navmenu-inverse .navmenu-nav li .tag-selected {
+    background-color: #26A69A;
 }
 
 .offcanvas-btn {
@@ -47,23 +93,31 @@ a:hover {
 
 /*Header settings*/
 
-@media(max-width: 1220px) {
+@media(max-width: 1160px) {
     .navbar-header {
         float: none;
     }
 
     .navbar-left {
-        float: none !important;
+        float: none!important;
     }
 
     .navbar-toggle {
         display: block;
     }
 
+    .navbar-default .navbar-toggle .icon-bar {
+        background-color: #212121;
+    }
+
     .navbar-collapse,
     .navbar-form {
         border-top: 1px solid transparent;
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    .navbar-default .navbar-collapse {
+        border: 0;
     }
 
     .navbar-form {
@@ -78,6 +132,13 @@ a:hover {
         border-bottom: 1px solid transparent;
         -webkit-box-shadow: inset 0 1px 0 rgba(255,255,255,.1),0 1px 0 rgba(255,255,255,.1);
         box-shadow: inset 0 1px 0 rgba(255,255,255,.1),0 1px 0 rgba(255,255,255,.1);
+    }
+
+    .navbar-default .navbar-nav>.active>a,
+    .navbar-default .navbar-nav>.active>a:focus,
+    .navbar-default .navbar-nav>.active>a:hover {
+        color: #fff;
+        background-color: #26A69A;
     }
 
     .navbar-fixed-top {
@@ -98,11 +159,6 @@ a:hover {
         float: none;
     }
 
-    .navbar-nav>li>a {
-        padding-top: 10px;
-        padding-bottom: 10px;
-    }
-
     .collapse.in {
         display:block !important;
     }
@@ -114,8 +170,34 @@ a:hover {
     }
 }
 
-.navbar-inverse {
-    background-color: #212121;
+.navbar-default .navbar-toggle:focus,
+.navbar-default .navbar-toggle:hover {
+    background-color: transparent;
+}
+
+.navbar-default .navbar-toggle i {
+    color: #424242;
+    font-size: 1.4em;
+}
+
+.navbar-default .navbar-toggle i:focus,
+.navbar-default .navbar-toggle i:hover {
+    color: #26A69A;
+}
+
+.navbar-default .navbar-nav>.active>a,
+.navbar-default .navbar-nav>.active>a:focus,
+.navbar-default .navbar-nav>.active>a:hover {
+    color: #fff;
+    background-color: #26A69A;
+}
+
+.navbar-default {
+    background-color: #fff;
+    box-shadow: 0 2px 6px 0 #9E9E9E;
+    -webkit-box-shadow: 0 2px 6px 0 #9E9E9E;
+    -moz-box-shadow: 0 2px 6px 0 #9E9E9E;
+    color: #0a0a0a;
 }
 
 .navbar-collapse.in {
@@ -123,14 +205,20 @@ a:hover {
 }
 
 .navbar-toggle {
-    margin-top: 13px;
-    margin-bottom: 13px;
-    margin-left: 15px;
+    margin: 8px 15px 8px 15px;
+    padding: 10px;
+    border: 0;
 }
 
-.navbar-nav li a{
+.navbar-default .navbar-nav>li>a {
     padding-top: 20px;
-    padding-bottom: 20px;
+    padding-bottom: 21px;
+    font-size: 0.875em;
+    color: #757575;
+}
+
+.navbar-default .navbar-nav>li>a:hover {
+    color: #26A69A;
 }
 
 /*Search form*/
@@ -142,8 +230,8 @@ a:hover {
 }
 
 .search-form {
-    border-color: #424242;
-    background-color: #080808;
+    border-color: #BDBDBD;
+    background-color: transparent;
     color: #9d9d9d;
 }
 
@@ -153,8 +241,8 @@ a:hover {
 
 .search-btn {
     color: #9d9d9d;
-    background-color: #080808;
-    border-color: #424242;
+    background-color: transparent;
+    border-color: #BDBDBD;
 }
 
 .search-btn:hover {
@@ -165,7 +253,7 @@ a:hover {
 }
 
 .search-btn:active {
-    background-color: #009688;
+    background-color: #26A69A;
 }
 
 /*Profireader button*/
@@ -307,18 +395,44 @@ a:hover {
      color: #009688;
  }
 
- .fa-main-tag {
-
- }
-
- /*Article thumbnail settings*/
+/*Article thumbnail settings*/
 
 .article-thumbnail,
 .company-thumbnail,
 .event-article-thumbnail {
+    width: 100%;
     height: auto;
     background-color: #fff;
     margin-bottom: 30px;
+    margin-left: 0;
+    margin-right: 0;
+    box-shadow: 0px 2px 4px 0px #BDBDBD;
+    -webkit-box-shadow: 0px 2px 4px 0px #BDBDBD;
+    -moz-box-shadow: 0px 2px 4px 0px #BDBDBD;
+}
+
+@media (max-width: 768px) {
+    .article-thumbnail-header {
+        font-size: 1.5em;
+    }
+
+    .article-thumbnail-subtitle {
+        font-size: 1em;
+    }
+
+    .article-thumbnail-text {
+        font-size: 0.875em!important;
+    }
+}
+
+.img {
+    padding-top: 15px;
+}
+
+.text {
+    padding-top: 15px;
+    padding-bottom: 30px;
+    padding-right: 30px;
 }
 
 .article-thumbnail-img {
@@ -352,9 +466,10 @@ a:hover {
 }
 
 .div-link {
+    font-size: 1.2em;
     margin-top: 0;
     margin-bottom: 15px;
-    color: #009688;
+    color: #26A69A;
 }
 
 .div-link:hover {
@@ -362,25 +477,30 @@ a:hover {
 }
 
 .company-link:hover {
-    color: #009688;
+    color: #26A69A;
 }
 
 .comment:hover {
-    color: #009688;
+    color: #26A69A;
 }
 
 .main-tag {
     display: inline-block;
     font-size: 0.875em;
     font-weight: 400;
-    background-color: #26A69A;
+    background-color: #607D8B;
     margin-right: 15px;
     margin-top: 15px;
+    color: #fff;
 }
 
 .main-tag:hover {
-    background-color: #009688;
+    background-color: #26A69A;
     text-decoration-line: none;
+}
+
+.main-tag a {
+    color: #fff;
 }
 
 .article-details {
@@ -392,36 +512,28 @@ a:hover {
     color: #757575;
 }
 
-.article-social {
-    font-size: 0.875em;
-    color: #757575;
-}
-
 .company-name,
 .post-date,
 .article-comments,
 .article-read-count,
-.article-author{
+.article-author,
+.bookmark,
+.like {
     margin-right: 15px;
 }
 
 .company-location {
-    color: #009688;
+    color: #26A69A;
 }
 
 .article-thumbnail-text {
     display: block;
-    display: -webkit-box;
     max-width: 100%;
-    height: 100px;
+    height: auto;
     margin: 0 auto;
     font-size: 1em;
-    line-height: 1.6;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 30px;
+    line-height: 1.5;
+    margin-top: 15px;
     margin-bottom: 15px;
 }
 
@@ -435,7 +547,7 @@ a:hover {
 }
 
 .event-date, .event-location {
-    color: #009688;
+    color: #26A69A;
     font-size: 0.875em;
 }
 
@@ -447,9 +559,11 @@ a:hover {
 
 .vertical-banner {
     width: 165px;
-    height: 240px;
+    height: auto;
     margin-bottom: 30px;
     cursor: pointer;
+    display: inline-block;
+    overflow: hidden;
 }
 
 .horizontal-banner {
@@ -457,6 +571,8 @@ a:hover {
     height: auto;
     margin-bottom: 30px;
     cursor: pointer;
+    display: inline-block;
+    overflow: hidden;
 }
 
 /*Paginaton settings*/
@@ -466,13 +582,14 @@ a:hover {
     font-size: 1.125em;
     color: #757575;
     font-weight: 600;
+    background-color: transparent;
 }
 
 .pagination li a:hover {
     background-color: transparent;
     border-radius: 4px;
-    border: 1px solid #009688;
-    color: #009688;
+    border: 1px solid #26A69A;
+    color: #26A69A;
 }
 
 .pagination .active a,
@@ -482,11 +599,11 @@ a:hover {
 .pagination .active span:focus,
 .pagination .active span:hover {
     z-index: 3;
-    color: #009688;
+    color: #26A69A;
     cursor: default;
     background-color: transparent;
     border-radius: 4px;
-    border: 1px solid #009688;
+    border: 1px solid #26A69A;
 }
 
 /*Footer settings*/
@@ -532,14 +649,20 @@ a:hover {
 
 /*Company page settings*/
 
-.company-menu {
+.company-head {
+    background-color: #fff;
     margin-bottom: 30px;
+    box-shadow: 0 2px 4px 0 #BDBDBD;
+    -webkit-box-shadow: 0 2px 4px 0 #BDBDBD;
+    -moz-box-shadow: 0 2px 4px 0 #BDBDBD;
 }
 
 .company-header {
+    background-color: #fff;
     width: 100%;
     height: auto;
     margin-bottom: 30px;
+    padding-top: 30px;
 }
 
 .logo {
@@ -555,19 +678,36 @@ a:hover {
 }
 
 .nav-pills li a {
-    background-color: #EEEEEE;
+    background-color: #eee;
     border-radius: 0;
-    color: #757575;
+    color: #424242;
 }
 
 .nav-pills li.active a,
 .nav-pills li.active a:focus,
 .nav-pills li.active a:hover {
-    background-color: #009688;
+    background-color: #424242;
+    color: #eee;
 }
 
 .nav-pills li a:hover {
-    background-color: #E0E0E0;
+    background-color: #424242;
+    color: #eee;
+}
+
+.company-contacts,
+.company-address {
+    background-color: #fff;
+    margin-bottom: 30px;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    box-shadow: 0 2px 4px 0 #BDBDBD;
+    -webkit-box-shadow: 0 2px 4px 0 #BDBDBD;
+    -moz-box-shadow: 0 2px 4px 0 #BDBDBD;
+}
+
+.contacts-divider {
+    margin: 0 0 30px 0;
 }
 
 .contacts-header {
@@ -575,7 +715,7 @@ a:hover {
     margin-bottom: 30px;
     font-weight: 600;
     font-size: 1em;
-    color: #009688;
+    color: #26A69A;
 }
 
 .contact {
@@ -619,10 +759,30 @@ a:hover {
 
 .message:hover,
 .address a:hover {
-    color: #009688;
+    color: #26A69A;
+}
+
+.address{
+    margin-bottom: 30px;
+}
+
+#map {
+    margin-bottom: 30px;
+    width: 100%;
+    height: 427px;
 }
 
 /*Article settings*/
+
+.article-full,
+.about-bg {
+    background-color: #fff;
+    padding: 30px 60px 60px 60px;
+    box-shadow: 0 2px 4px 0 #BDBDBD;
+    -webkit-box-shadow: 0 2px 4px 0 #BDBDBD;
+    -moz-box-shadow: 0 2px 4px 0 #BDBDBD;
+    margin-bottom: 30px;
+}
 
 .article-header {
     margin-bottom: 30px;
@@ -634,6 +794,7 @@ a:hover {
     font-weight: 600;
     color: #424242;
     margin-bottom: 30px;
+    margin-top: 0;
 }
 
 .article-description {
@@ -642,21 +803,57 @@ a:hover {
     font-weight: 600;
     color: #424242;
     margin-bottom: 15px;
+    text-align: left;
 }
 
-.article-text {
-    font-size: 1.25em;
+.article-text,
+.article-body p {
+    font-size: 1em;
     line-height: 1.5;
+    text-align: left;
 }
 
 .article-main-img {
     width: 100%;
     height: auto;
+    margin-bottom: 30px;
 }
 
 .article-img {
     margin-top: 15px;
     margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+    .article-full,
+    .about-bg {
+        padding: 30px 30px 60px 30px;
+    }
+
+    .div-link {
+        font-size: 1em;
+    }
+
+    .article-headling {
+        font-size: 1.8em;
+    }
+
+    .company-name,
+    .post-date,
+    .article-comments,
+    .article-read-count,
+    .article-author,
+    .bookmark,
+    .like,
+    .article-text,
+    .article-body p,
+    .main-tag a {
+        font-size: 0.875em;
+    }
+
+    .article-description {
+        font-size: 1em;
+    }
 }
 
 /*Pager settings*/
@@ -675,15 +872,13 @@ a:hover {
 .pager li a:hover {
     background-color: transparent;
     border-radius: 100%;
-    border: 1px solid #009688;
-    color: #009688;
+    border: 1px solid #26A69A;
+    color: #26A69A;
     padding: 5px 5px 5px 5px;
     width: 36px;
     height: 36px;
 }
 
-
-/*TODO: YM by OZ: my classes ---->>>>*/
 .link {
     cursor: pointer;
     -webkit-touch-callout: none; /* iOS Safari */
@@ -693,8 +888,3 @@ a:hover {
     -ms-user-select: none; /* Internet Explorer/Edge */
     user-select: none;
 }
-
-.mr15px {
-    margin-right: 15px;
-}
-/*TODO: YM by OZ: my classes <<<<<---- */

@@ -115,6 +115,10 @@ body {
   box-shadow: none !important;
 }
 
+.background-none {
+  background: none !important;
+}
+
 /* ---footer--- */
 
 .footer-layout {
@@ -857,7 +861,6 @@ body {
   box-shadow: 0 2px 5px 0 rgba(255, 0, 0, 0.75), 0 2px 10px 0 rgba(255, 0, 0, 0.12);
 }
 
-
 .error-input {
   color: @color-red-hover;
 }
@@ -1531,4 +1534,79 @@ body {
   color: black;
   opacity: 1;
   z-index: 1002;
+}
+
+.SelectMembershipPlanController_class {
+  table {
+    width: 100%;
+
+    tr {
+
+    }
+
+    h5 {
+      margin-bottom: 0px;
+    }
+
+    td, th {
+      padding: 2px;
+      border: solid gray 2px;
+    }
+
+    th {
+      text-align: center;
+    }
+
+    h5 {
+      text-align: left;
+      font-weight: bold;
+    }
+
+    hr {
+      margin: 10px 0px;
+    }
+
+  }
+}
+
+.publication-bg-VISIBILITY {
+
+  &-OPEN {
+    background-color: #AAffAA;
+  }
+
+  &-REGISTERED {
+    background-color: #ffffaa;
+  }
+
+  &-PAYED {
+    background-color: #FFCCCC;
+  }
+
+  &-CONFIDENTIAL {
+    background-color: #AAAAAA;
+  }
+}
+
+.publication-fg-STATUS {
+
+  &-SUBMITTED {
+    color: #000;
+  }
+
+  &-UNPUBLISHED {
+    color: #550;
+  }
+
+  &-HOLDED {
+    color: #700;
+  }
+
+  &-PUBLISHED {
+    color: #050;
+  }
+
+  &-DELETED {
+    color: #555;
+  }
 }

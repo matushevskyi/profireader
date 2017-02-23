@@ -1,23 +1,27 @@
 <script>
     module.controller('CompanyMenuController', ['$scope', '$timeout', function ($scope, $timeout) {
+        angularControllerFunction('user_controller', 'set_selected_user_menu')('companies');
+
         $scope.user = {{ g.user.get_client_side_dict()| tojson|safe }};
-        $scope.company = {{ company.get_client_side_dict()|tojson|safe }};
+        $scope.company = {{ (company.get_client_side_dict() if company else portal.own_company.get_client_side_dict())|tojson|safe }};
         $scope.user_active = {{ user_company_active|safe}}
         $scope.$$translate = {{ translates('CompanyMenuController')|safe }};
 
         $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
         $scope.url_company_materials = {{ raw_url_for('company.materials')|safe }};
-        $scope.url_portal_companies_partners = {{ raw_url_for('portal.companies_partners')|safe }};
+        $scope.url_portal_companies_members = {{ raw_url_for('portal.companies_members')|safe }};
         $scope.url_company_employees = {{ raw_url_for('company.employees')|safe }};
         $scope.url_portal_publications = {{ raw_url_for('portal.publications')|safe }};
+        $scope.url_portal_plans = {{ raw_url_for('portal.plans')|safe }};
 
-        $scope.url_portal_portal = {{ raw_url_for('portal.profile')|safe }};
+
+        $scope.url_portal_profile = {{ raw_url_for('portal.profile')|safe }};
 
         $scope.url_portal_tags = {{ raw_url_for('portal.tags')|safe }};
-        $scope.url_portal_banners = {{ raw_url_for('portal.portal_banners')|safe }};
+        $scope.url_portal_banners = {{ raw_url_for('portal.banners')|safe }};
         $scope.url_portal_translations = {{ raw_url_for('portal.translations')|safe }};
-        $scope.url_company_readers = {{ raw_url_for('company.readers')|safe }};
-        $scope.url_portal_portals_partners = {{ raw_url_for('portal.portals_partners')|safe }};
+        $scope.url_portal_readers = {{ raw_url_for('portal.readers')|safe }};
+        $scope.url_portal_portals_partners = {{ raw_url_for('company.portal_memberees')|safe }};
 
         $scope.selected_company_menu = '';
         $scope.set_selected_company_menu = function (menu_item) {
@@ -35,7 +39,7 @@
                 <div class="col-lg-12 col-md-6 col-sm-4 col-xs-4 pl0 pr0">
                     <a ng-class="{'selected': selected_company_menu == 'materials'}"
                        href="{{ url_company_materials({company_id: company.id}) }}">{{ _('Materials') }}</a>
-                    <a ng-class="{'selected': selected_company_menu == 'portals_partners'}" id="companies_partners"
+                    <a ng-class="{'selected': selected_company_menu == 'portal_memberees'}" id="portal_memberees"
                        href="{{ url_portal_portals_partners({company_id: company.id}) }}">{{ _('Membership') }}</a>
                     <a ng-class="{'selected': selected_company_menu == 'companies_employees'}"
                        href="{{ url_company_employees({company_id: company.id}) }}">{{ _('Employees') }}</a>
@@ -48,24 +52,26 @@
             <div class="row">
                 <div ng-if="company.own_portal" class="col-lg-12 col-md-12 col-sm-12 col-xs-12 pl0 pr0">
                     <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_profile'}"
-                       href="{{ url_portal_portal({company_id: company.id, create_or_update: 'update'}) }}">{{ _('Portal profile') }}</a>
+                       href="{{ url_portal_profile({portal_id: company.own_portal.id}) }}">{{ _('Portal profile') }}</a>
                     <a ng-if="0" class="pull-right" ng-if="company.author_user_id == user.id" ng-class="{'selected': selected_company_menu == 'portal_translations'}"
                        href="{{ url_portal_translations({company_id: company.id}) }}">{{ _('Translations') }}</a>
                     <a class="pull-right" ng-if="company.author_user_id == user.id" ng-class="{'selected': selected_company_menu == 'portal_banners'}"
-                       href="{{ url_portal_banners({company_id: company.id}) }}">{{ _('Banners') }}</a>
+                       href="{{ url_portal_banners({portal_id: company.own_portal.id}) }}">{{ _('Banners') }}</a>
                     <a class="pull-right" ng-if="company.author_user_id == user.id" ng-class="{'selected': selected_company_menu == 'portal_tags'}"
-                       href="{{ url_portal_tags({company_id: company.id}) }}">{{ _('Tags') }}</a>
+                       href="{{ url_portal_tags({portal_id: company.own_portal.id}) }}">{{ _('Tags') }}</a>
                     <a class="pull-right" ng-class="{'selected': selected_company_menu == 'publications'}"
                        id="publications"
-                       href="{{ url_portal_publications({company_id: company.id}) }}">{{ _('Publications') }}</a>
-                    <a class="pull-right" ng-class="{'selected': selected_company_menu == 'comments'}"
+                       href="{{ url_portal_publications({portal_id: company.own_portal.id}) }}">{{ _('Publications') }}</a>
+                    <a class="dn pull-right" ng-class="{'selected': selected_company_menu == 'comments'}"
                        id="comments"
                        href="#">{{ _('Comments') }}</a>
                     <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_readers'}"
                        id="companies_readers"
-                       href="{{ url_company_readers({company_id: company.id}) }}">{{ _('Readers') }}</a>
-                    <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_partners'}"
-                       href="{{ url_portal_companies_partners({company_id: company.id}) }}">{{ _('Members') }}</a>
+                       href="{{ url_portal_readers({portal_id: company.own_portal.id}) }}">{{ _('Readers') }}</a>
+                    <a class="pull-right" ng-class="{'selected': selected_company_menu == 'membership_plans'}"
+                       href="{{ url_portal_plans({portal_id: company.own_portal.id}) }}">{{ _('Membership plans') }}</a>
+                    <a class="pull-right" ng-class="{'selected': selected_company_menu == 'companies_members'}"
+                       href="{{ url_portal_companies_members({portal_id: company.own_portal.id}) }}">{{ _('Members') }}</a>
                     <a class="pull-right" ng-if="0" ng-class="{'selected': selected_company_menu == 'statistics'}"
                        id="statistics"
                        href="#">{{ _('Statistics') }}</a>

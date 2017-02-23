@@ -1,20 +1,19 @@
+import datetime
+import re
+import time
+
 from flask import render_template, request, session, redirect, url_for, g
+from sqlalchemy import and_, desc
+
 from .blueprints_declaration import index_bp
-from ..models.portal import Portal, UserPortalReader
-from ..models.pr_base import Search, PRBase
-from tools.db_utils import db
 from .request_wrapers import check_right
-from ..models.rights import AllowAll
 from .. import utils
-from ..models.rights import UserIsActive, UserNonBanned
-import time, datetime
+from ..controllers import errors
 from ..models.materials import Publication, ReaderPublication
 from ..models.portal import PortalDivision, UserPortalReader, Portal, ReaderUserPortalPlan, ReaderDivision
-from sqlalchemy import and_, desc
-from .errors import BadDataProvided
-import re
-from ..controllers import errors
-from ..utils import email_utils
+from ..models.rights import AllowAll
+from ..models.rights import UserIsActive, UserNonBanned
+
 
 @index_bp.route('portals_list/', methods=['GET'])
 @check_right(AllowAll)
@@ -28,7 +27,7 @@ def portals_list_load(json):
     filter = (Portal.name.ilike("%" + json['text'] + "%"))
     if g.user:
         filter = and_(filter, ~Portal.id.in_(
-            db(UserPortalReader.portal_id).filter(UserPortalReader.user_id == g.user.id).all()))
+            utils.db.query_filter(UserPortalReader.portal_id).filter(UserPortalReader.user_id == g.user.id).all()))
 
     portals, next_page = Portal.get_page(filter=filter, page=json.get('next_page'), per_page=10)
 
@@ -44,7 +43,6 @@ def portals_list_load(json):
 def auth_before_subscribe_to_portal(portal_id):
     session['portal_id'] = portal_id
     return redirect(url_for('auth.login_signup_endpoint', login_signup='login'))
-
 
 
 # @index_bp.route('send_email', methods=['POST'])
@@ -76,7 +74,7 @@ def auth_before_subscribe_to_portal(portal_id):
 def list_reader_from_front(portal_id):
     portal = Portal.get(portal_id)
     if g.user:
-        portals = db(Portal).filter((Portal.id.in_(db(UserPortalReader.portal_id, user_id=g.user.id)))).all()
+        portals = utils.db.query_filter(Portal).filter((Portal.id.in_(utils.db.query_filter(UserPortalReader.portal_id, user_id=g.user.id)))).all()
         if portal in portals:
             return redirect(url_for('index.list_reader'))
         else:
@@ -122,12 +120,12 @@ def list_reader_load(json):
 
     if favorite:
         publication_filter = (
-            Publication.id == db(ReaderPublication, user_id=g.user.id, favorite=True).subquery().c.publication_id)
+            Publication.id == utils.db.query_filter(ReaderPublication, user_id=g.user.id, favorite=True).subquery().c.publication_id)
     else:
         division_filter = \
-            and_(PortalDivision.portal_id == db(UserPortalReader, user_id=g.user.id).subquery().c.portal_id)
+            and_(PortalDivision.portal_id == utils.db.query_filter(UserPortalReader, user_id=g.user.id).subquery().c.portal_id)
         publication_filter = and_(
-            Publication.portal_division_id == db(PortalDivision).filter(division_filter).subquery().c.id,
+            Publication.portal_division_id == utils.db.query_filter(PortalDivision).filter(division_filter).subquery().c.id,
             Publication.status == Publication.STATUSES['PUBLISHED'],
             Publication.publishing_tm < datetime.datetime(*localtime[:6]))
 
@@ -139,7 +137,6 @@ def list_reader_load(json):
         'articles': [p.create_article() for p in publications],
         'favorite': favorite
     }
-
 
 
 @index_bp.route('add_to_favorite/', methods=['OK'])
@@ -155,7 +152,6 @@ def add_delete_like(json):
     ReaderPublication.add_delete_liked_user_article(json.get('article')['id'], json.get('article')['liked'])
     return {'liked': ReaderPublication.count_likes(g.user.id, json.get('article')['id']),
             'list_liked_reader': ReaderPublication.get_list_reader_liked(json.get('article')['id'])}
-
 
 
 @index_bp.route('subscribe/', methods=['OK'])
@@ -227,7 +223,7 @@ def edit_portal_subscription(reader_portal_id):
 @index_bp.route('edit_portal_subscription/<string:reader_portal_id>', methods=['OK'])
 @check_right(UserNonBanned)
 def edit_portal_subscription_load(json, reader_portal_id):
-    reader_portal = db(UserPortalReader, id=reader_portal_id).one()
+    reader_portal = utils.db.query_filter(UserPortalReader, id=reader_portal_id).one()
     if request.args.get('action') == 'load':
         if not reader_portal.show_divisions_and_comments:
             reader_portal.show_divisions_and_comments = [division_show for division_show in
@@ -246,7 +242,7 @@ def edit_portal_subscription_load(json, reader_portal_id):
 @index_bp.route('edit_profile_/<string:reader_portal_id>', methods=['OK'])
 @check_right(UserNonBanned)
 def edit_profile_submit(json, reader_portal_id):
-    divisions_and_comments = db(UserPortalReader, id=reader_portal_id).one().show_divisions_and_comments
+    divisions_and_comments = utils.db.query_filter(UserPortalReader, id=reader_portal_id).one().show_divisions_and_comments
     for item in json['divisions']:
         for show_division_and_comments in divisions_and_comments:
             if item['division_id'] == show_division_and_comments.division_id:
@@ -275,7 +271,7 @@ def contact_us_load(json_data):
     elif not re.match(REGEXP.EMAIL, json_data.get('email', '')):
         return {'error': 'Please enter correct email'}
     else:
-        email_utils.send_email(subject='Send help message', send_to=["profireader.service@gmail.com"],
+        utils.email.send_email(subject='Send help message', send_to=["profireader.service@gmail.com"],
                                html=('From ' + json_data['email'] + ': ' + json_data['message']))
 
         return {}
@@ -293,6 +289,3 @@ def reader_add_delete_favorite(json, publication_id):
 def reader_add_delete_liked(json, publication_id):
     publication = Publication.get(publication_id).add_delete_like(json['on'])
     return {'on': True if json['on'] else False, 'liked_count': publication.liked_count()}
-
-
-

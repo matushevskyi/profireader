@@ -1,33 +1,18 @@
+import datetime
+
+from flask import render_template
+from sqlalchemy.sql import expression
+
+from profapp import utils
 from .blueprints_declaration import admin_bp
-from flask import g, request, url_for, render_template, flash, current_app
-from .request_wrapers import ok
 from .pagination import pagination
 from .request_wrapers import check_right
-from flask.ext.login import login_required
-from ..models.translate import TranslateTemplate
-from ..models.ip import Ips
-from tools.db_utils import db
-from sqlalchemy.sql import expression
-import datetime
 from ..models.config import Config
-from flask import session
+from ..models.ip import Ips
 from ..models.pr_base import Grid
 from ..models.rights import UserIsActive
-from .blueprints_declaration import admin_bp
-from flask import g, request, url_for, render_template, flash, current_app
-from .request_wrapers import ok
-from .pagination import pagination
-from .request_wrapers import check_right
-from flask.ext.login import login_required
 from ..models.translate import TranslateTemplate
-from ..models.ip import Ips
-from tools.db_utils import db
-from sqlalchemy.sql import expression
-import datetime
-from ..models.config import Config
-from flask import session
-from ..models.pr_base import Grid
-from ..models.rights import UserIsActive
+
 
 @admin_bp.route('/translations', methods=['GET'])
 @check_right(UserIsActive)
@@ -45,10 +30,10 @@ def translations_load(json):
 
     grid_filters = {
         'template': [{'value': portal[0], 'label': portal[0]} for portal in
-                    db(TranslateTemplate.template).group_by(TranslateTemplate.template) \
+                     utils.db.query_filter(TranslateTemplate.template).group_by(TranslateTemplate.template) \
         .order_by(expression.asc(expression.func.lower(TranslateTemplate.template))).all()],
         'url': [{'value': portal[0], 'label': portal[0]} for portal in
-                    db(TranslateTemplate.url).group_by(TranslateTemplate.url) \
+                utils.db.query_filter(TranslateTemplate.url).group_by(TranslateTemplate.url) \
         .order_by(expression.asc(expression.func.lower(TranslateTemplate.url))).all()]
     }
     return {'grid_data': [translation.get_client_side_dict() for translation in translations],
@@ -61,7 +46,7 @@ def translations_load(json):
 @admin_bp.route('/translations_save', methods=['OK'])
 @check_right(UserIsActive)
 def translations_save(json):
-    exist = db(TranslateTemplate, template=json['row'], name=json['col']).first()
+    exist = utils.db.query_filter(TranslateTemplate, template=json['row'], name=json['col']).first()
     return TranslateTemplate.get(exist.id).attr({json['lang']: json['val']}).save().get_client_side_dict()
 
 @admin_bp.route('/delete', methods=['OK'])
@@ -98,7 +83,7 @@ def ips_load(json):
         for d in json.get('search_text'):
             params['search_text'][d] = json.get('search_text')[d]
     if json.get('editItem'):
-        exist = db(Ips, template=json.get('editItem')['template'], name=json.get('editItem')['name']).first()
+        exist = utils.db.query_filter(Ips, template=json.get('editItem')['template'], name=json.get('editItem')['name']).first()
         i = datetime.datetime.now()
         Ips.get(exist.id).attr({json.get('editItem')['col']: json.get('editItem')['newValue'], 'md_tm':i}).save().get_client_side_dict()
     subquery = Ips.subquery_search(**params)
@@ -106,9 +91,9 @@ def ips_load(json):
     translations, pages, current_page, count = pagination(subquery, page=page, items_per_page=pageSize)
     add_param = {'value': '1','label': '-- all --'}
 
-    templates = db(TranslateTemplate.template).group_by(TranslateTemplate.template) \
+    templates = utils.db.query_filter(TranslateTemplate.template).group_by(TranslateTemplate.template) \
         .order_by(expression.asc(expression.func.lower(TranslateTemplate.template))).all()
-    urls = db(TranslateTemplate.url).group_by(TranslateTemplate.url) \
+    urls = utils.db.query_filter(TranslateTemplate.url).group_by(TranslateTemplate.url) \
         .order_by(expression.asc(expression.func.lower(TranslateTemplate.url))).all()
 
     urls_g = TranslateTemplate.list_for_grid_tables(urls, add_param,False)
@@ -124,7 +109,7 @@ def ips_load(json):
 @admin_bp.route('/ips_save', methods=['OK'])
 @check_right(UserIsActive)
 def ips_save(json):
-    exist = db(Ips, template=json['row'], name=json['col']).first()
+    exist = utils.db.query_filter(Ips, template=json['row'], name=json['col']).first()
     return Ips.get(exist.id).attr({json['lang']: json['val']}).save().get_client_side_dict()
 
 
@@ -132,7 +117,7 @@ def ips_save(json):
 @check_right(UserIsActive)
 def ips_add(json):
 
-     exist = db(Ips, template=json['row'], name=json['col']).first()
+     exist = utils.db.query_filter(Ips, template=json['row'], name=json['col']).first()
      return Ips.get(exist.id).attr({json['lang']: json['val']}).add().get_client_side_dict()
 
 @admin_bp.route('/ips_delete', methods=['OK'])
@@ -172,7 +157,7 @@ def config_load(json):
         for d in json.get('search_text'):
             params['search_text'][d] = json.get('search_text')[d]
     if json.get('editItem'):
-        exist = db(Config, template=json.get('editItem')['template'], name=json.get('editItem')['name']).first()
+        exist = utils.db.query_filter(Config, template=json.get('editItem')['template'], name=json.get('editItem')['name']).first()
         i = datetime.datetime.now()
         Config.get(exist.id).attr({json.get('editItem')['col']: json.get('editItem')['newValue'], 'md_tm':i}).save().get_client_side_dict()
     subquery = Config.subquery_search(template=json.get('template') or None,

@@ -1,25 +1,15 @@
-from .blueprints_declaration import messenger_bp
-from flask import render_template, request, url_for, g, redirect, abort
-from .request_wrapers import check_right
-from .errors import BadDataProvided
-from sqlalchemy import func
-
-from ..constants import RECORD_IDS
-
-from tools.db_utils import db
-from ..models.users import User
-from ..models.company import Company, UserCompany
-from ..models.portal import Portal, UserPortalReader
-from ..models.messenger import Contact, Message, Notification
-
-from ..models.rights import EditCompanyRight, EmployeesRight, EditPortalRight, UserIsEmployee, EmployeeAllowRight, \
-    CanCreateCompanyRight, UserIsActive, BaseRightsEmployeeInCompany
-
+from flask import render_template, g
 from sqlalchemy import and_, or_
 from sqlalchemy.sql import expression
-from .. import utils
-from sqlalchemy import update
-import datetime
+
+from .blueprints_declaration import messenger_bp
+from .errors import BadDataProvided
+from .request_wrapers import check_right
+from ..models.company import Company, UserCompany
+from ..models.messenger import Contact
+from ..models.portal import Portal, UserPortalReader
+from ..models.rights import UserIsActive
+from ..models.users import User
 
 
 @messenger_bp.route('/', methods=['GET'])

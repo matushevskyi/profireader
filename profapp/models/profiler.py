@@ -1,7 +1,7 @@
+from sqlalchemy import Column
+
 from .pr_base import PRBase, Base
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from sqlalchemy import Column
-from tools.db_utils import db
 
 
 class Profiler(PRBase, Base):
