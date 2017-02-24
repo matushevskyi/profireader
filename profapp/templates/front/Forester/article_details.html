@@ -1,0 +1,86 @@
+{% extends 'layout.html' %}
+{% block title -%}
+    {{ _('%(article_title)s - %(portal_name)s', {'article_title': article.title, 'portal_name': portal.name}) }}
+{%- endblock %}
+{% block body %}
+    {% import 'macros.html' as frontmacros %}
+    {% include 'tags_menu.html' %}
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 col-lg-10">
+                <main class="clearfix" role="main">
+                    <article class="article-full">
+                        <!--Main article image-->
+                        <figure class="article-main-img">
+                            <img class="img-responsive" src="{{ article['illustration']['url'] }}" alt="">
+                            {# <figcaption class="">Підпис до фото</figcaption>#}
+                        </figure>
+
+                        <!--Article header-->
+                        <header class="article-header">
+                            <a class="div-link" href="{{ url_for('front.division', division_name=article['portal_division']['name']) }}">{{ article['portal_division']['name']|safe }}</a>
+                            <h1 class="article-headling">{{ article['title']|safe }}</h1>
+                            {% if article['subtitle'] %}
+                                <h4 class="article-headling">{{ article['subtitle']|safe }}</h4>{% endif %}
+                            <div class="article-details clearfix">
+                                <!--Company link-->
+                                <span class="company-name text-nowrap">
+                                    <a class="company-link" href="{{ url_for('front.company_page', member_company_name = article['company']['name'], member_company_id = article['company']['id']) }}"><i class="fa fa-building-o" aria-hidden="true" style="margin-right: 5px"></i>{{ article['company']['name'] }}</a>
+                                </span>
+                                <!--Article comments-->
+                                {#span class="article-comments">#}
+                                {#  <a class="comment" href=""><i class="fa fa-comment-o" aria-hidden="true" style="margin-right: 5px"></i>5 коментарів</a>#}
+                                {#</span>#}
+                                <!--Article publication date-->
+                                <span class="post-date text-nowrap">
+                                    <i class="fa fa-clock-o" aria-hidden="true"></i>
+                                    <time class="publication-date">{{ frontmacros.article_date(article.portal_division.portal_division_type_id, article) }}</time>
+                                </span>
+                                <span class="article-read-count text-nowrap"><i class="fa fa-eye" aria-hidden="true" style="margin-right: 5px"></i>{{ _('%(read_count)s readers', article) }}</span>{% if article['author'] %}<span class="author"><i class="fa fa-user" aria-hidden="true" style="margin-right: 5px"></i>{{ article['author'] }}</span>{% endif %}
+                                <span class="like text-nowrap" if-not-authenticated="{{ _('If you want like article pls login or register in profireader') }}" onclick="switch_something(this, '{{ url_for('front.add_delete_liked', publication_id=article['id']) }}', '.fa-thumbs-o-up', '.fa-thumbs-up', {'liked_count': 'liked_count'});">
+                                    <span class="company-link link {% if article.social_activity.liked %}hide{% endif %}"><i class="fa fa-thumbs-o-up" style="margin-right: 5px"></i>{{ _('Like') }}<liked_count>{{ article.social_activity.liked_count }}</liked_count></span>
+                                    <span class="company-link link {% if not article.social_activity.liked %}hide{% endif %}"><i class="fa fa-thumbs-up" style="margin-right: 5px"></i>{{ _('Unlike') }}<liked_count>{{ article.social_activity.liked_count }}</liked_count></span>
+                                </span>
+                                <span class="bookmark text-nowrap" if-not-authenticated="{{ _('If you want bookmark this article pls login or register in profireader') }}" onclick="switch_something(this, '{{ url_for('front.add_delete_favorite', publication_id=article['id']) }}', '.fa-bookmark-o', '.fa-bookmark', {'favorite_count': 'bookmarked_count'});">
+                                    <span class="company-link link {% if article.social_activity.favorite %}hide{% endif %}"><i class="fa fa-bookmark-o" style="margin-right: 5px"></i>{{ _('Add to bookmark') }}<bookmarked_count>{{ article.social_activity.favorite_count }}</bookmarked_count></span>
+                                    <span class="company-ink link {% if not article.social_activity.favorite %}hide{% endif %}"><i class="fa fa-bookmark" style="margin-right: 5px"></i>
+                                    {{ _('Remove from bookmark') }}<bookmarked_count>{{ article.social_activity.favorite_count }}</bookmarked_count></span>
+                                </span>
+                            </div>
+                            <div class="tags-at-right nw">
+                                {% for tag in article.tags %}
+                                    {{ frontmacros.tag(tag, tags, 'main-tag label') }}
+                                {% endfor %}
+                            </div>
+                            <hr>
+                        </header>
+                        <!--Article body-->
+                        <section class="article-body">
+                            <!--Article text-->
+                            <p class="article-text">
+                                {{ article['short'] |safe }}
+                                {% if article_visibility %}
+                                    {{ article['long'] |safe }}
+                                {% else %}
+                                    {% include 'article_unavailable.html' %}
+                                {% endif %}
+                            </p>
+                        </section>
+                    </article>
+                </main>
+                <!--Pager-->
+                {#<nav>#}
+                {#  <ul class="pager">#}
+                {#      <li class="previous"><a href="#"><i class="fa fa-chevron-left" aria-hidden="true" style="margin-right: 5px"></i></a></li>#}
+                {#      <li class="next"><a href="#"><i class="fa fa-chevron-right" aria-hidden="true" style="margin-left: 5px"></i></a></li>#}
+                {#  </ul>#}
+                {#</nav>#}
+            </div>
+            <!--Vertical banners-->
+            <aside class="col-xs-12 col-lg-2">
+                {% include 'right_banners.html' %}
+            </aside>
+        </div>
+    </div>
+    {% include 'article_social_script.html' %}
+{% endblock %}
