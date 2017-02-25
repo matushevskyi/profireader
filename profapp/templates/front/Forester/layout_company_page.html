@@ -1,0 +1,22 @@
+{% extends 'layout.html' %}
+{% block title -%}
+    {{ _('title ' + company_menu_selected_item + ' %(company_name)s - %(portal_name)s', {'company_name': member_company.name, 'portal_name': portal.name}) }}
+{%- endblock %}
+{% block body %}
+    {% include 'tags_menu.html' %}
+    {% include 'company_menu.html' %}
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 col-lg-10">
+                <div class="clearfix">
+                    <main role="main">
+                            {% block company_content %}{% endblock %}
+                    </main>
+                </div>
+            </div>
+            <aside class="col-xs-12 col-lg-2">
+                {% include 'right_banners.html' %}
+            </aside>
+        </div>
+    </div>
+{% endblock %}
