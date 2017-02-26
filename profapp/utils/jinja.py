@@ -171,18 +171,18 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
 
 def moment(value, out_format=None):
     if isinstance(value, datetime.datetime):
-        value = value.isoformat(' ') + ' GMT'
+        value = value.isoformat(' ')
         return Markup(
-            "<script> document.write(moment.utc('{}').local().format('{}')) </script><noscript>{}</noscript>".format(
+            "<script>document.write(moment.utc('{}', 'YYYY-MM-DD HH:mm:ss GMT').local().format('{}')) </script><noscript>{} GMT</noscript>".format(
                 value, out_format if out_format else 'dddd, LL (HH:mm)', value))
     elif isinstance(value, datetime.date):
         value = value.strftime('%Y-%m-%d')
         return Markup(
-            "<script> document.write(moment('{}').format('{}')) </script><noscript>{}</noscript>".format(
+            "<script>document.write(moment('{}', 'YYYY-MM-DD').format('{}')) </script><noscript>{}</noscript>".format(
                 value, out_format if out_format else 'dddd, LL', value))
     else:
         return Markup(
-            "<script> document.write(moment.utc('{}').local().format('{}')) </script><noscript>{}</noscript>".format(
+            "<script>document.write(moment.utc('{}').local().format('{}')) </script><noscript>{}</noscript>".format(
                 value, out_format if out_format else 'dddd, LL (HH:mm)', value))
 
 
