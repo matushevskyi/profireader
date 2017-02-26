@@ -93,7 +93,7 @@ p {
 
 /*Header settings*/
 
-@media(max-width: 1160px) {
+@media(max-width: 1220px) {
     .navbar-header {
         float: none;
     }
@@ -168,6 +168,10 @@ p {
     .navbar-brand {
         display: none;
     }
+}
+
+.navbar-brand {
+    padding: 0;
 }
 
 .navbar-default .navbar-toggle:focus,
@@ -417,11 +421,7 @@ p {
     }
 
     .article-thumbnail-subtitle {
-        font-size: 1em;
-    }
-
-    .article-thumbnail-text {
-        font-size: 0.875em!important;
+        font-size: 1.25em;
     }
 }
 
@@ -529,12 +529,26 @@ p {
 .article-thumbnail-text {
     display: block;
     max-width: 100%;
-    height: auto;
+    height: 94px;
     margin: 0 auto;
     font-size: 1em;
     line-height: 1.5;
     margin-top: 15px;
     margin-bottom: 15px;
+    overflow: hidden;
+    position: relative;
+}
+
+.article-thumbnail-text:after {
+    content: "";
+    text-align: right;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 70%;
+    height: 1.2em;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), white 100%);
+    pointer-events: none;
 }
 
 .article-thumbnail-divider {

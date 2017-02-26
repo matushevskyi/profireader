@@ -43,10 +43,9 @@
                 </span>
             </div>
             <!--Article description-->
-            {% if article['short'] %}<div class="clearfix">
-                <p class="article-thumbnail-text">
-                    {{ article|highlighted('short') }}
-                </p>
+            {% if article['short'] %}
+                <div class="clearfix">
+                <p class="article-thumbnail-text">{{ article|highlighted('short') }}</p>
             </div>{% endif %}
             <!--Article main tag-->
             {% if article.tags|length %}{% set tag = article.tags[0] %}

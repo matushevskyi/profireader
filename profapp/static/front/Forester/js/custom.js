@@ -22,5 +22,15 @@ function $ok(url, data, success, fail) {
 function add_message(message, type) {}
 
 //Clamp.js settings
-var paragraph = document.getElementsByClassName("article-thumbnail-text");
-$clamp(paragraph, {clamp: 4});
+
+/*var paragraph = document.getElementsByClassName("article-thumbnail-text");
+$clamp(paragraph, {clamp: 4});*/
+
+//$clamp('article-thumbnail-text', {clamp: 3});
+
+
+
+$(window).bind('load', function() {
+  // Clamp.js
+  $clamp(document.getElementsByClassName("article-thumbnail-text"), {clamp: 3});
+  });
