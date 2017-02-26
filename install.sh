@@ -243,22 +243,29 @@ for file in $files
 do
   cat conf/cron/\$file | sed 's#/var/www/#$PWD/#g' > /etc/cron.d/profi_\$file
 done
-systemctl restart cron.service" sudo haproxy_config
+systemctl restart cron.service" sudo haproxy_compile
     }
 
 
-# function menu_haproxy_compile {
-#     conf_comm "apt-get purge haproxy
-# sed -i '/haproxy-1.5/d' /etc/apt/sources.list
-# echo '' >> /etc/apt/sources.list
-# echo 'deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
-# echo 'deb-src http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
-# apt-get update
-# apt-get install haproxy" sudo haproxy_config
-#     }
+ function menu_haproxy_compile {
+     conf_comm "apt-get purge haproxy
+ sed -i '/haproxy-1.7/d' /etc/apt/sources.list
+ echo '' >> /etc/apt/sources.list
+ echo 'deb http://ppa.launchpad.net/vbernat/haproxy-1.7/ubuntu trusty main' >> /etc/apt/sources.list
+ echo 'deb-src http://ppa.launchpad.net/vbernat/haproxy-1.7/ubuntu trusty main' >> /etc/apt/sources.list
+ apt-get update
+ apt-get install haproxy" sudo haproxy_config
+     }
+#   "cat ./conf/haproxy.cfg | sed -e 's#----maindomain----#$maindomain#g' > /etc/haproxy/haproxy.conf
+
+function conf_comm_copy_conf_file {
+    echo "cat $1 | sed -e 's#$3#$4#g' > $2"
+}
 
 function menu_haproxy_config {
-    conf_comm "cp ./conf/haproxy.cfg /etc/haproxy/
+    maindomain=$(rr 'Enter main domain' `get_main_domain`)
+haproxy=$(conf_comm_copy_conf_file './conf/haproxy.cfg' '/etc/haproxy/haproxy.cfg' '----maindomain----' $maindomain)
+conf_comm "$haproxy
 systemctl restart haproxy.service" sudo letsencrypt
     }
 
@@ -518,6 +525,7 @@ if [[ "$1" == "" ]]; then
       "fluent" "install fluent" \
       "deb" "install deb packages" \
       "cron_files" "update cron files" \
+      "haproxy_compile" "compile haproxy 1.7" \
       "haproxy_config" "copy haproxy config to /etc/haproxy" \
       "npm" "install nodejs, npm, bower and gulp globally" \
       "bower" "download bower components in ./profapp/static/bower_components" \
