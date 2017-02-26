@@ -256,9 +256,16 @@ systemctl restart cron.service" sudo haproxy_compile
  apt-get update
  apt-get install haproxy" sudo haproxy_config
      }
+#   "cat ./conf/haproxy.cfg | sed -e 's#----maindomain----#$maindomain#g' > /etc/haproxy/haproxy.conf
+
+function conf_comm_copy_conf_file {
+    echo "cat $1 | sed -e 's#$3#$4#g' > $2"
+}
 
 function menu_haproxy_config {
-    conf_comm "cp ./conf/haproxy.cfg /etc/haproxy/
+    maindomain=$(rr 'Enter main domain' `get_main_domain`)
+haproxy=$(conf_comm_copy_conf_file './conf/haproxy.cfg' '/etc/haproxy/haproxy.cfg' '----maindomain----' $maindomain)
+conf_comm "$haproxy
 systemctl restart haproxy.service" sudo letsencrypt
     }
 
