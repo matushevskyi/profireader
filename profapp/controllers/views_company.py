@@ -12,7 +12,7 @@ from ..models.translate import TranslateTemplate
 from ..models.pr_base import PRBase
 from ..models.portal import MemberCompanyPortal, MembershipPlan
 from ..models.permissions import UserIsActive, CompanyIsActive, EmployeeHasRightAF, \
-    EmployeeHasRightAtMembershipCompany, EmployeeHasRightAtCompany, RIGHT_AT_COMPANY
+    EmployeeHasRightAtMembershipCompany, EmployeeHasRightAtCompany, RIGHT_AT_COMPANY, CheckFunction
 from ..models.exceptions import UnauthorizedUser
 
 
@@ -47,7 +47,7 @@ def search_for_company_to_join(json):
 
 
 @company_bp.route('/join_to_company/', methods=['OK'],
-                  permissions=UserIsActive() & utils.json2kwargs(CompanyIsActive))
+                  permissions=UserIsActive() & CheckFunction(lambda json: CompanyIsActive().check(company_id = json['company_id'])))
 def join_to_company(json):
     employment = \
         UserCompany.apply_user_to_company(company_id=json['company_id'])
