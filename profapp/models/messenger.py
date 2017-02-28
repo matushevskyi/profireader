@@ -22,7 +22,7 @@ class Socket:
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
 
-        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+        with SocketIO('localhost', 5000) as socketIO:
             socketIO.emit('request_status_changed',
                           {'to_user_id': to_user_id, 'from_user_id': from_user_id, 'status': status},
                           lambda ack_id: Socket.notification_delivered(
@@ -35,7 +35,7 @@ class Socket:
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
 
-        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+        with SocketIO('localhost', 5000) as socketIO:
             socketIO.emit('send_notification', notification_data,
                           lambda ack_id: Socket.notification_delivered(ack_id, 'send_notification', notification_data))
             socketIO.wait_for_callbacks(seconds=1)
