@@ -1,0 +1,267 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block title %}Profireader - {{ _('Analytics') }}{% endblock title %}
+
+{% block head %}
+    <script type="text/javascript" src="//www.google.com/jsapi?ext.jsjsapi"></script>
+    {{ super() }}
+{% endblock head %}
+
+{% block portal_content %}
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+    <script>
+        (function (w, d, s, g, js, fs) {
+            g = w.gapi || (w.gapi = {});
+            g.analytics = {
+                q: [], ready: function (f) {
+                    this.q.push(f);
+                }
+            };
+            js = d.createElement(s);
+            fs = d.getElementsByTagName(s)[0];
+            js.src = 'https://apis.google.com/js/platform.js';
+            fs.parentNode.insertBefore(js, fs);
+            js.onload = function () {
+                g.load('analytics');
+            };
+        }(window, document, 'script'));
+    </script>
+
+    <script>
+        module.controller('google_analytics', ['$scope', function ($scope) {
+            $scope.interval = null;
+
+            $scope.view_id = 'ga:141853939';
+            $scope.columns = ['ga:pageviews', 'ga:sessions', 'ga:users'];
+            $scope.selected_column = 0;
+            $scope.graphs = [
+                {
+                    query: {
+                        'dimensions': 'ga:pagePathLevel1',
+{#                        'filters': 'ga:pagePathLevel1!=/',#}
+                        'max-results': 7
+                    },
+                    chart: {
+                        'type': 'PIE',
+                        'options': {
+                            'width': '100%',
+                            'pieHole': 4 / 9,
+                        }
+                    }
+                },
+                {
+                    query: {
+                        'dimensions': 'ga:country',
+                        'max-results': 7
+                    },
+                    chart: {
+                        'type': 'GEO',
+                        'options': {
+                            'width': '100%',
+
+                        }
+                    }
+                }
+
+            ];
+
+            $scope.set_date = function (interval) {
+                $scope.to_date = moment().format('YYYY-MM-DD');
+                $scope.interval = interval;
+                switch (interval) {
+                    case 'today':
+                        $scope.from_date = moment().format('YYYY-MM-DD');
+                        break;
+                    case 'yesterday':
+                        $scope.from_date = moment().add(-1, 'days').format('YYYY-MM-DD');
+                        $scope.to_date = moment().add(-1, 'days').format('YYYY-MM-DD');
+                        break;
+                    case 'week':
+                        $scope.from_date = moment().add(-6, 'days').format('YYYY-MM-DD');
+                        break;
+                    case 'month':
+                        $scope.from_date = moment().add(-1, 'months').add(1, 'days').format('YYYY-MM-DD');
+                        break;
+                    case 'quarter':
+                        $scope.from_date = moment().add(-3, 'months').add(1, 'days').format('YYYY-MM-DD');
+                        break;
+                    case 'year':
+                        $scope.from_date = moment().add(-1, 'years').add(1, 'days').format('YYYY-MM-DD');
+                        break;
+                    default:
+                        $scope.interval = null;
+                }
+                $scope.redraw();
+            };
+
+            $scope.redraw = function () {
+
+                var interval = (moment($scope.to_date, 'YYYY-MM-DD').utc() - moment($scope.from_date, 'YYYY-MM-DD').utc())/(1000*3600*24);
+                console.log(interval/(3600 * 24));
+                var clickListener;
+                var dataChartMain = new gapi.analytics.googleCharts.DataChart({
+                    query: {
+                        'ids': $scope.view_id, // <-- Replace with the ids value for your view.
+                        'start-date': $scope.from_date,
+                        'end-date': $scope.to_date,
+                        'metrics': $scope.columns.join(','),
+                        'dimensions': interval > 1 ? (interval > (31 * 6) ? 'ga:yearMonth' : 'ga:date') : 'ga:hour'
+                    },
+                    chart: {
+                        'container': 'chart-main-container',
+                        'type': 'LINE',
+                        'options': {
+                            'width': '100%'
+                        }
+                    }
+                });
+                dataChartMain.execute();
+
+                dataChartMain.on('success', function (response) {
+                    $scope.redrawAnother();
+                    var tableChart = response.chart;
+                    var dataTable = new google.visualization.DataTable(response.data);
+                    if (clickListener) {
+                        google.visualization.events.removeListener(clickListener);
+                    }
+                    clickListener = google.visualization.events
+                        .addListener(tableChart, 'select', function () {
+                            if (!tableChart.getSelection().length) return;
+                            var column = tableChart.getSelection()[0]['column'];
+                            $scope.selected_column = column - 1;
+                            $scope.redrawAnother();
+                        });
+                });
+            };
+
+            $scope.redrawAnother = function (column) {
+                $.each($scope.graphs, function (ind, params) {
+                    new gapi.analytics.googleCharts.DataChart({
+                        query: $.extend({
+                            'ids': $scope.view_id,
+                            'start-date': $scope.from_date,
+                            'end-date': $scope.to_date,
+                            'sort': '-' + $scope.columns[$scope.selected_column],
+                            'metrics': $scope.columns[$scope.selected_column],
+                        }, params['query']),
+                        chart: $.extend({
+                            'container': 'chart-' + ind + '-container',
+                        }, params['chart'])
+                    }).execute();
+
+                });
+
+
+                {#                /**#}
+                {#                 * Creates a new DataChart instance showing top 5 most popular demos/tools#}
+                {#                 * amongst returning users only.#}
+                {#                 * It will be rendered inside an element with the id "chart-3-container".#}
+                {#                 */#}
+                {#                var dataChart2 = new gapi.analytics.googleCharts.DataChart({#}
+                {#                    query: {#}
+                {#                        'ids': 'ga:141853939', // <-- Replace with the ids value for your view.#}
+                {#                        'start-date': $scope.from_date.format('YYYY-MM-DD'),#}
+                {#                        'end-date': $scope.to_date.format('YYYY-MM-DD'),#}
+                {#                        'metrics': 'ga:pageviews',#}
+                {#                        'dimensions': 'ga:pagePathLevel1',#}
+                {#                        'filters': 'ga:pagePathLevel1!=/',#}
+                {#                        'sort': '-ga:pageviews',#}
+                {#                        'max-results': 7#}
+                {#                    },#}
+                {#                    chart: {#}
+                {#                        'container': 'chart-2-container',#}
+                {#                        'type': 'PIE',#}
+                {#                        'options': {#}
+                {#                            'width': '100%',#}
+                {#                            'pieHole': 4 / 9,#}
+                {#                        }#}
+                {#                    }#}
+                {#                });#}
+                {#                dataChart2.execute();#}
+                {##}
+                {#                var dataChart3 = new gapi.analytics.googleCharts.DataChart({#}
+                {#                    query: {#}
+                {#                        'ids': 'ga:141853939', // <-- Replace with the ids value for your view.#}
+                {#                        'start-date': '7daysAgo',#}
+                {#                        'end-date': 'today',#}
+                {#                        metrics: 'ga:sessions',#}
+                {#                        dimensions: 'ga:country'#}
+                {#                        'sort': '-ga:pageviews',#}
+                {#                        'max-results': 7#}
+                {#                    },#}
+                {#                    chart: {#}
+                {#                        'container': 'chart-3-container',#}
+                {#                        'type': 'GEO',#}
+                {#                        'options': {#}
+                {#                            'width': '100%',#}
+                {##}
+                {#                        }#}
+                {#                    }#}
+                {#                });#}
+                {#                dataChart3.execute();#}
+            };
+
+            $scope.ready = function () {
+
+                gapi.analytics.ready(function () {
+                    /**
+                     * Authorize the user with an access token obtained server side.
+                     */
+                    gapi.analytics.auth.authorize({
+                        'serverAuth': {
+                            'access_token': '{{ access_token }}'
+                        }
+                    });
+                    {#                    google.load("visualization", "1", {packages:["corechart"]});#}
+                    {#                    google.setOnLoadCallback(function () {#}
+                    $scope.set_date('yesterday');
+                    {#                    });#}
+
+                });
+            }
+
+
+        }])
+
+    </script>
+
+    <div ng-controller="google_analytics" ng-init="ready()" class="container" ng-cloak>
+        {% raw %}
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <button ng-click="set_date('today')">{{ ::_('Today') }}</button>
+                    <button ng-click="set_date('yesterday')">{{ ::_('Yesterday') }}</button>
+                    <button ng-click="set_date('week')">{{ ::_('Last week') }}</button>
+                    <button ng-click="set_date('month')">{{ ::_('Last month') }}</button>
+                    <button ng-click="set_date('quarter')">{{ ::_('Last quarter') }}</button>
+                    <button ng-click="set_date('year')">{{ ::_('Last Year') }}</button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    {{ from_date }}
+                    {{ ::_('from date') }} <input class="form-control w20em di" ng-model="from_date" pr-date-picker/>
+                    {{ ::_('to date') }} <input class="form-control w20em di" ng-model="to_date" pr-date-picker/>
+                </div>
+            </div>
+        </div>
+        {% endraw %}
+    </div>
+
+    <div id="chart-main-container"></div>
+    <div id="chart-0-container"></div>
+    <div id="chart-1-container"></div>
+    <div id="chart-2-container"></div>
+
+
+
+
+
+
+{% endblock portal_content %}
+
+
