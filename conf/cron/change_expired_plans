@@ -1,2 +1,2 @@
-*/1 * * * * root cd /var/www/tools && profilog='/var/log/profi/change_expired_plans' && ./run_with_env_only_single_copy.sh change_expired_plans.py 2>>$profilog.error 1>>$profilog.log
+#*/1 * * * * root cd /var/www/tools && profilog='/var/log/profi/change_expired_plans' && ./run_with_env_only_single_copy.sh change_expired_plans.py 2>>$profilog.error 1>>$profilog.log
 

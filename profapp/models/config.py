@@ -13,15 +13,7 @@ class Config(Base, PRBase):
     comment = Column(TABLE_TYPES['text'])
     client_side = Column(TABLE_TYPES['boolean'])
     server_side = Column(TABLE_TYPES['boolean'])
-
-    def __init__(self, id=None, value=None, type=None, comment=None, client_side=None, server_side=None):
-        self.id = id
-        self.value = value
-        self.type = type
-        self.comment = comment
-        self.client_side = client_side
-        self.server_side = server_side
-
+    md_tm = Column(TABLE_TYPES['timestamp'])
 
     @staticmethod
     def subquery_search(template=None, url=None, **kwargs):

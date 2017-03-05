@@ -122,7 +122,7 @@ def prImage(id=None, if_no_image=None, position='center'):
 
 
 def config_variables():
-    variables = g.db.query(ModelConfig).filter_by(server_side=1).all()
+    variables = g.db.query(ModelConfig).filter_by(client_side=1).all()
     ret = {}
     for variable in variables:
         var_id = variable.id
@@ -154,6 +154,22 @@ def translate_phrase(context, phrase, dictionary=None, phrase_default=None, phra
 def translate_html(context, phrase, dictionary=None, phrase_default=None, phrase_comment=None):
     return Markup(translate_phrase_or_html(context, phrase, dictionary, '*', phrase_default=phrase_default,
                                            phrase_comment=phrase_comment))
+
+
+def google_analytics(web_property_id):
+    if not web_property_id:
+        return ''
+    return Markup("""<!-- Google Analytics -->
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', '""" + web_property_id + """', 'auto');
+ga('send', 'pageview');
+</script>
+<!-- End Google Analytics -->""")
 
 
 def static_address_html(relative_file_name):
@@ -267,16 +283,14 @@ def _url_permitted(endpoint, dictionary={}):
 
         matched = {}
         for d in dictionary:
-            if re.match(r'.*<([^:]+(\([^()]+\))?:)?'+d+'>.*', permission['rule']):
+            if re.match(r'.*<([^:]+(\([^()]+\))?:)?' + d + '>.*', permission['rule']):
                 matched[d] = dictionary[d]
         if matched == dictionary:
             return url_for(endpoint, **dictionary) if permission['permissions'].check(**dictionary) else False
 
     raise Exception(
-            'url_permitted: Cant find any matched rule at endpoint `{}` for passed dictionary {}'.format(endpoint,
-                                                                                                      dictionary))
-
-
+        'url_permitted: Cant find any matched rule at endpoint `{}` for passed dictionary {}'.format(endpoint,
+                                                                                                     dictionary))
 
 
 def update_jinja_engine(app):
@@ -295,6 +309,7 @@ def update_jinja_engine(app):
     app.jinja_env.globals.update(secret_data=secret_data)
     app.jinja_env.globals.update(_=translate_phrase)
     app.jinja_env.globals.update(__=translate_html)
+    app.jinja_env.globals.update(google_analytics=google_analytics)
     app.jinja_env.globals.update(moment=moment)
     app.jinja_env.globals.update(static_address=static_address_html)
     app.jinja_env.globals.update(MAIN_DOMAIN=Config.MAIN_DOMAIN)

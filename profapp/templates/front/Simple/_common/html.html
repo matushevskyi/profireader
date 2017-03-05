@@ -20,6 +20,7 @@
     {% if portal.advs['bottom_banner'] -%}
     {{ portal.advs['head_end']|safe }}
     {%- endif %}
+    {{ google_analytics(portal.google_analytics_web_property_id)|safe }}
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {{ portal.advs['body_begin']|safe }}

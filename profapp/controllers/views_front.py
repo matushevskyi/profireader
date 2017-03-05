@@ -41,7 +41,7 @@ def get_search_text_and_division(portal, division_name):
 
 def portal_and_settings(portal):
     # TODO OZ by OZ: use polymorphic association and return object here (maybe we even will not need  this function)
-    ret = portal.get_client_side_dict()
+    ret = portal.get_client_side_dict(more_fields='google_analytics_web_property_id')
     newd = OrderedDict()
     subportals_by_companies_id = OrderedDict()
     for di in ret['divisions']:
