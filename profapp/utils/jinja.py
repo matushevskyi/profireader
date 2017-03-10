@@ -1,4 +1,4 @@
-from flask import Flask, g, request, current_app, session, url_for
+from flask import Flask, g, request, current_app, session, url_for, jsonify
 import jinja2
 from jinja2 import Markup, escape
 import datetime
@@ -12,6 +12,7 @@ from config import secret_data
 from main_domain import MAIN_DOMAIN
 from ..models.config import Config as ModelConfig
 import hashlib
+from profapp.models.third.google_analytics_management import PortalAnalytics
 
 
 def link(href_placeholder, text_placeholder, placeholder_is_text=False):
@@ -156,9 +157,24 @@ def translate_html(context, phrase, dictionary=None, phrase_default=None, phrase
                                            phrase_comment=phrase_comment))
 
 
-def google_analytics(web_property_id):
-    if not web_property_id:
+def google_analytics(portal, analytics: PortalAnalytics):
+    from profapp.models.third.google_analytics_management import CUSTOM_DIMENSION, CUSTOM_METRIC
+    if not portal['google_analytics_web_property_id']:
         return ''
+    analytics = json.dumps({
+        'dimension' + str(portal['google_analytics_dimensions'][
+                              CUSTOM_DIMENSION['user_type']]): 'Identified' if g.user else 'Anonymous',
+        'dimension' + str(portal['google_analytics_dimensions'][
+                              CUSTOM_DIMENSION['company_id']]): analytics.company_id,
+        'dimension' + str(portal['google_analytics_dimensions'][
+                              CUSTOM_DIMENSION['page_type']]): analytics.page_type,
+        'dimension' + str(portal['google_analytics_dimensions'][
+                              CUSTOM_DIMENSION['publication_visibility']]): analytics.publication_visibility,
+        'dimension' + str(portal['google_analytics_dimensions'][
+                              CUSTOM_DIMENSION['publication_reached']]): analytics.publication_reached,
+        'metric' + str(portal['google_analytics_metrics'][
+                           CUSTOM_METRIC['income']]): analytics.income,
+    })
     return Markup("""<!-- Google Analytics -->
 <script>
 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -166,7 +182,8 @@ def google_analytics(web_property_id):
 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
-ga('create', '""" + web_property_id + """', 'auto');
+ga('create', '""" + portal['google_analytics_web_property_id'] + """', 'auto');
+ga('set', """ + analytics + """);
 ga('send', 'pageview');
 </script>
 <!-- End Google Analytics -->""")

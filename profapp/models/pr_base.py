@@ -572,6 +572,10 @@ class PRBase:
         return g.db().query(cls).filter(cls.id == id).first() if returnNoneIfNotExists else g.db().query(cls).filter(
             cls.id == id).one()
 
+    @classmethod
+    def all(cls):
+        return g.db().query(cls).all()
+
     def to_dict_object_property(self, object_name):
         object_property = getattr(self, object_name)
         if isinstance(object_property, datetime.datetime):

@@ -205,6 +205,10 @@ def get_from_list_by_key(list, key):
     return [x.get(key, '') for x in list]
 
 
+def list_of_dicts_from_list(alist, *keys):
+    return [{k: i for k in keys} for i in alist]
+
+
 from html.parser import HTMLParser
 
 

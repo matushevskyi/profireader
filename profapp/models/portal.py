@@ -20,6 +20,7 @@ from ..models.tag import Tag, TagMembership
 import calendar
 from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
+
 class Portal(Base, PRBase):
     __tablename__ = 'portal'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
@@ -40,6 +41,9 @@ class Portal(Base, PRBase):
     # url_vkontakte = Column(TABLE_TYPES['url'])
 
     google_analytics_web_property_id = Column(TABLE_TYPES['string_100'])
+    google_analytics_view_id = Column(TABLE_TYPES['string_100'])
+    google_analytics_dimensions = Column(TABLE_TYPES['json'])
+    google_analytics_metrics = Column(TABLE_TYPES['json'])
 
     company_owner_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), unique=True)
     portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_layout.id'))
@@ -132,6 +136,20 @@ class Portal(Base, PRBase):
 
     def is_active(self):
         return True
+
+    def setup_ssl(self):
+        return True
+
+    def setup_google_analytics(self):
+        from profapp.models.third.google_analytics_management import GoogleAnalyticsManagement
+        ga_man = GoogleAnalyticsManagement()
+        if self.google_analytics_web_property_id:
+            ga_man.update_host_for_property(self.google_analytics_web_property_id, new_host=self.host)
+        else:
+            self.google_analytics_web_property_id, self.google_analytics_view_id = \
+                ga_man.create_web_property_and_view(self.host)
+            self.google_analytics_dimensions, self.google_analytics_metrics = \
+                ga_man.create_custom_dimensions_and_metrics(self.google_analytics_web_property_id)
 
     @staticmethod
     def launch_new_portal(company):
@@ -293,7 +311,8 @@ class Portal(Base, PRBase):
                                      functions.count(Publication.id).label('cnt')). \
                         filter(and_(Publication.portal_division_id == d.id)). \
                         group_by(Publication.status, Publication.visibility).all()
-                    utils.find_by_id(ret['divisions'], d.id)['publication_count'] = Publication.group_by_status_and_visibility(cnt)
+                    utils.find_by_id(ret['divisions'], d.id)[
+                        'publication_count'] = Publication.group_by_status_and_visibility(cnt)
 
         if get_own_or_profi_host:
             if ret['host'][
@@ -1042,7 +1061,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembershipChang
 
         return Publication.group_by_status_and_visibility(cnt)
 
-
     def _send_notification_about_membership_change(
             self, text, dictionary={}, comment='',
             rights_at_company=RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION,
@@ -1344,4 +1362,3 @@ class ReaderDivision(Base, PRBase):
         self._show_division_and_comments = self.show_division_and_comments_numeric_all & reduce(
             lambda x, y: int(x) + int(y), list(map(lambda item: self.show_division_and_comments_numeric[item[0]],
                                                    filter(lambda item: item[1], tuple_or_list))), 0)
-

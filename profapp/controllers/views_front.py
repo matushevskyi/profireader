@@ -15,6 +15,7 @@ from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal
 from ..models.permissions import AvailableForAll
 from ..models.users import User
+from profapp.models.third.google_analytics_management import PortalAnalytics
 
 
 def all_tags(portal):
@@ -41,7 +42,7 @@ def get_search_text_and_division(portal, division_name):
 
 def portal_and_settings(portal):
     # TODO OZ by OZ: use polymorphic association and return object here (maybe we even will not need  this function)
-    ret = portal.get_client_side_dict(more_fields='google_analytics_web_property_id')
+    ret = portal.get_client_side_dict(more_fields='google_analytics_web_property_id, google_analytics_dimensions, google_analytics_metrics')
     newd = OrderedDict()
     subportals_by_companies_id = OrderedDict()
     for di in ret['divisions']:
@@ -320,6 +321,8 @@ def company_page(portal, member_company_id, member_company_name, member_company_
                            portal=portal_and_settings(portal),
                            division=dvsn.get_client_side_dict(),
                            seo=membership.seo_dict(),
+                           analytics=PortalAnalytics(page_type='company_subportal',
+                                                     company_id=member_company_id),
                            tags=all_tags(portal),
                            membership=membership,
                            url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
@@ -363,6 +366,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                 'front/' + g.portal_layout_path + 'division_articles.html',
                 division=dvsn.get_client_side_dict(),
                 seo=dvsn.seo_dict(),
+                analytics=PortalAnalytics(page_type=dvsn.portal_division_type_id),
                 portal=portal_and_settings(portal),
                 **articles_data)
 
@@ -374,6 +378,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                    division=dvsn.get_client_side_dict(),
                                    portal=portal_and_settings(portal),
                                    seo=dvsn.seo_dict(),
+                                   analytics=PortalAnalytics(page_type=dvsn.portal_division_type_id),
                                    **membership_data
                                    )
         elif dvsn.portal_division_type_id == 'company_subportal':
@@ -387,6 +392,8 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                    division=dvsn.get_client_side_dict(),
                                    tags=all_tags(portal),
                                    seo=membership.seo_dict(),
+                                   analytics=PortalAnalytics(page_type=dvsn.portal_division_type_id,
+                                                             company_id=member_company.id),
                                    membership=utils.db.query_filter(MemberCompanyPortal, company_id=member_company.id,
                                                                     portal_id=portal.id).one(),
                                    url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
@@ -413,6 +420,8 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                portal=portal_and_settings(portal),
                                division=dvsn.get_client_side_dict(),
                                seo=membership.seo_dict(),
+                               analytics=PortalAnalytics(page_type=dvsn.portal_division_type_id,
+                                                         company_id=member_company.id),
                                member_company=member_company.get_client_side_dict(),
                                membership=membership.get_client_side_dict(fields="id|company|tags"),
                                url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
@@ -443,6 +452,10 @@ def article_details(portal, publication_id, publication_title):
                            tags=all_tags(portal),
                            division=division.get_client_side_dict(),
                            seo=publication.seo_dict(),
+                           analytics=PortalAnalytics(page_type='publication',
+                                                     company_id=publication.material.company_id,
+                                                     publication_visibility=publication.visibility,
+                                                     publication_reached='True' if article_visibility is True else 'False'),
                            article=publication.create_article(),
                            article_visibility=article_visibility,
                            articles_related=publication.get_related_articles(),
@@ -459,6 +472,7 @@ def search(portal, page=1, tags=None):
 
     return render_template('front/' + g.portal_layout_path + 'search.html',
                            seo={'title': '', 'description': '', 'keywords': ''},
+                           analytics=PortalAnalytics(page_type='other'),
                            portal=portal_and_settings(portal), **search_data)
 
 
@@ -517,5 +531,6 @@ def sitemap(portal):
 def error_404():
     return render_template('front/' + g.portal_layout_path + '404.html',
                            seo={'title': '', 'description': '', 'keywords': ''},
+                           analytics=PortalAnalytics(page_type='other'),
                            tags=all_tags(g.portal),
                            portal=portal_and_settings(g.portal))

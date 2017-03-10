@@ -81,6 +81,7 @@ var prDatePicker_and_DateTimePicker = function (name, $timeout) {
         restrict: 'A',
         scope: {
             ngModel: '=',
+            ngChange: '&'
         },
         link: function (scope, element, attrs, ngModelController) {
 
@@ -95,6 +96,7 @@ var prDatePicker_and_DateTimePicker = function (name, $timeout) {
             }];
 
             scope.$watch('ngModel', function (newdate, olddate) {
+                console.log(newdate, olddate);
                 var setdate = null;
                 if (newdate) {
                     setdate = moment(newdate);
@@ -127,6 +129,11 @@ var prDatePicker_and_DateTimePicker = function (name, $timeout) {
                     scope['ngModel'] = e.date ?
                         ((name === 'prDatePicker') ? moment(e.date).format('YYYY-MM-DD') : e.date.toISOString()) :
                         null;
+                    $timeout(function () {
+                        if (scope['ngChange']) {
+                            scope['ngChange']();
+                        }
+                    }, 0);
                 }, 0)
 
             })

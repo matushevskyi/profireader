@@ -153,6 +153,8 @@ def profile_load(json, company_id=None, portal_id=None):
                         'purged', 'division type was changed or division was deleted',
                         more_phrases_to_company=phrases, more_phrases_to_portal=phrases)
 
+            portal.setup_ssl()
+            portal.setup_google_analytics()
             portal.save()
 
             g.db.commit()
@@ -287,12 +289,62 @@ def set_membership_plan(json, membership_id):
             return membership.set_new_plan_issued(requested_plan_id, immediately).company_member_grid_row()
 
 
+# def initialize_analyticsreporting(portal_id):
+#   """Initializes an analyticsreporting service object.
+#
+#   Returns:
+#     analytics an authorized analyticsreporting service object.
+#   """
+#   from oauth2client.service_account import ServiceAccountCredentials
+#   import datetime
+#   from profapp.models.config import Config as ModelConfig
+#
+#
+#
+#   # portal = Portal.get(portal_id)
+#   # GoogleAnalyticsReport()
+#   # access_token = ModelConfig.get('access_token_for_analytics')
+#   # if access_token.md_tm.timestamp() < datetime.datetime.utcnow().timestamp() - 3000:
+#   #     access_token.value = ServiceAccountCredentials.from_json_keyfile_name(
+#   #         'scrt/Profireader_project_google_service_account_key.json',
+#   #         'https://www.googleapis.com/auth/analytics.readonly').get_access_token().access_token
+#   #     access_token.save()
+#
+#
+#
+#   return analytics
+
+
+@portal_bp.route('/<string:portal_id>/analytics/get_report/', methods=['OK'],
+                 permissions=EmployeeHasRightAtPortalOwnCompany(RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE))
+def analytics_report(json, portal_id):
+    from profapp.models.third.google_analytics_management import GoogleAnalyticsReport
+    analytics = GoogleAnalyticsReport()
+    portal = Portal.get(portal_id)
+    r = json['query']
+    r['viewId'] = portal.google_analytics_view_id
+    r = {
+        'dateRanges': [{'startDate': '7daysAgo', 'endDate': 'today'}],
+        'metrics': [{'expression': 'ga:sessions'}],
+    }
+    r['viewId'] = portal.google_analytics_view_id
+    ret = analytics.service.reports().batchGet(
+        body={
+            'reportRequests': [r]
+        }
+    ).execute()
+    return ret
+
 @portal_bp.route('/<string:portal_id>/analytics/', methods=['GET'],
                  permissions=EmployeeHasRightAtPortalOwnCompany(RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE))
 def analytics(portal_id):
     from oauth2client.service_account import ServiceAccountCredentials
     import datetime
     from profapp.models.config import Config as ModelConfig
+    from profapp.models.dictionary import Country
+    from profapp.models.portal import PortalDivisionType
+    from profapp.models.materials import Publication
+    dict_id_name = lambda l: utils.list_of_dicts_from_list(l, 'id', 'name')
 
     portal = Portal.get(portal_id)
     access_token = ModelConfig.get('access_token_for_analytics')
@@ -301,7 +353,16 @@ def analytics(portal_id):
             'scrt/Profireader_project_google_service_account_key.json',
             'https://www.googleapis.com/auth/analytics.readonly').get_access_token().access_token
         access_token.save()
+
     return render_template('portal/analytics.html', portal=portal, company=portal.own_company,
+                           select={'country': utils.get_client_side_list(Country.all(), fields='iso,name'),
+                                   'user_type': dict_id_name(['Identified', 'Anonymous']),
+                                   'publication_visibility': dict_id_name([v for v in Publication.VISIBILITIES]),
+                                   'publication_reached': dict_id_name(['True', 'False']),
+                                   'page_type': dict_id_name(
+                                       [pdt.id for pdt in PortalDivisionType.all()]) + dict_id_name(
+                                       ['publication', 'other'])
+                                   },
                            access_token=access_token.value)
 
 
