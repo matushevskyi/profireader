@@ -3,7 +3,8 @@
 {% block title %}Profireader - {{ _('Analytics') }}{% endblock title %}
 
 {% block head %}
-    <script type="text/javascript" src="//www.google.com/jsapi?ext.jsjsapi"></script>
+    {#    <script type="text/javascript" src="//www.google.com/jsapi?ext.jsjsapi"></script>#}
+    <script type="text/javascript" src="//www.gstatic.com/charts/loader.js"></script>
     {{ super() }}
 {% endblock head %}
 
@@ -12,23 +13,23 @@
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
 
-    <script>
-        (function (w, d, s, g, js, fs) {
-            g = w.gapi || (w.gapi = {});
-            g.analytics = {
-                q: [], ready: function (f) {
-                    this.q.push(f);
-                }
-            };
-            js = d.createElement(s);
-            fs = d.getElementsByTagName(s)[0];
-            js.src = 'https://apis.google.com/js/platform.js';
-            fs.parentNode.insertBefore(js, fs);
-            js.onload = function () {
-                g.load('analytics');
-            };
-        }(window, document, 'script'));
-    </script>
+    {#    <script>#}
+    {#        (function (w, d, s, g, js, fs) {#}
+    {#            g = w.gapi || (w.gapi = {});#}
+    {#            g.analytics = {#}
+    {#                q: [], ready: function (f) {#}
+    {#                    this.q.push(f);#}
+    {#                }#}
+    {#            };#}
+    {#            js = d.createElement(s);#}
+    {#            fs = d.getElementsByTagName(s)[0];#}
+    {#            js.src = 'https://apis.google.com/js/platform.js';#}
+    {#            fs.parentNode.insertBefore(js, fs);#}
+    {#            js.onload = function () {#}
+    {#                g.load('analytics');#}
+    {#            };#}
+    {#        }(window, document, 'script'));#}
+    {#    </script>#}
 
     <script>
         module.controller('google_analytics', ['$scope', '$ok', function ($scope, $ok) {
@@ -52,7 +53,6 @@
                     _type: 'history',
                     _func_query: function (graph) {
                         var interval = (moment(graph.query['end-date'], 'YYYY-MM-DD').utc() - moment(graph.query['start-date'], 'YYYY-MM-DD').utc()) / (1000 * 3600 * 24);
-                        console.log(graph, interval);
                         return {
                             'dimensions': interval > 1 ? (interval > (31 * 6) ? 'ga:yearMonth' : 'ga:date') : 'ga:hour'
                         };
@@ -134,13 +134,10 @@
                 if (graph_options) {
                     graph_options['query']['start-date'] = start_date;
                     graph_options['query']['end-date'] = end_date;
-                    {#                    graph_options['_interval'] = null;#}
-                    $scope.redrawAnother(graph_options);
                 }
                 else {
                     $scope.start_date = start_date;
                     $scope.end_date = end_date;
-                    {#                    $scope._interval = null;#}
                 }
             };
 
@@ -158,7 +155,7 @@
                     copy['_filters']['page_type'] = 'publication';
                 }
                 $scope.graphs.push(copy);
-                $scope.redrawAnother(copy);
+                $scope.redrawAnother(copy, null, 'add_graph');
             };
 
             $scope.remove_graph = function (graph_index) {
@@ -177,7 +174,6 @@
                         interval_found = interval;
                     }
                 });
-                console.log(interval_found, current_interval, graph_options);
                 if (!interval_found || (interval_found && current_interval !== interval_found)) {
                     if (graph_options) {
                         graph_options._interval = interval_found;
@@ -188,95 +184,147 @@
                 }
             };
 
-            $scope.redrawAnother = function (redraw_only_options, reset_interval) {
-                $.each($scope.graphs, function (ind, params) {
-                    if (!redraw_only_options || redraw_only_options === params) {
+            $scope.redrawAnother = function (redraw_only_options, reset_interval, log) {
+                $.each($scope.graphs, function (ind, graph) {
+                    if (!redraw_only_options || redraw_only_options === graph) {
                         if (reset_interval) {
                             $scope.is_interval_selected(redraw_only_options);
                         }
-                        var filters = [];
-                        var container_id = 'chart-' + params['_hash'] + '-container';
-                        $.each(params['_filters'], function (filter_name, filter_value) {
-                            if ($scope.portal['google_analytics_dimensions'][filter_name]) {
-                                if (filter_value === '') {
-                                    filters.push('dimension' + $scope.portal['google_analytics_dimensions'][filter_name] + '=~^$');
-                                }
-                                else if (filter_value !== '__ANY__') {
-                                    filters.push('dimension' + $scope.portal['google_analytics_dimensions'][filter_name] + '==' + filter_value);
-                                }
-                            }
-                            else {
-                                filters.push(filter_name + '==' + filter_value);
-                            }
-                        });
-                        params = {
+                        var container_id = 'chart-' + graph['_hash'] + '-container';
+                        var params = {
                             query: $.extend({
-                                'ids': $scope.view_id,
+                                'filters': graph['_filters'],
+                                {#                                'ids': $scope.view_id,#}
                                 {#                                'sort': '-' + $scope.columns[$scope.selected_column],#}
-                            }, filters.length ? {'filters': 'ga:' + filters.join(',ga:')} : {}, params['query'], params['_func_query'] ? params['_func_query'](params) : {}),
+                            }, graph['query'], graph['_func_query'] ? graph['_func_query'](graph) : {}),
                             chart: $.extend({
                                 'container': container_id,
-                            }, params['chart'])
-                        }
+                            }, graph['chart'])
+                        };
+                        graph['_loaded'] = false;
+                        $('#'+container_id).html($scope._('loading...'));
                         $ok($scope.url_portal_analytics_report, params, function (resp) {
-                            console.log(resp);
-                            });
+                            var chart = null;
+                            var rows = [[resp['dimension'], resp['metric']]].concat(resp['rows']);
+                            switch (params['chart']['type']) {
+                                case 'GEO':
+                                    chart = new google.visualization.GeoChart(document.getElementById(container_id));
+                                    chart.draw(google.visualization.arrayToDataTable(rows), {
+                                        title: $scope._('Total ' + resp['metric'] + ': %(total)s', {total: resp['total']?resp['total']:0}),
+                                    });
 
+                                    break;
+                                case 'LINE':
+                                    var chart = new google.visualization.ColumnChart(document.getElementById(container_id));
 
-{#                        var aa = new gapi.analytics.googleCharts.DataChart();#}
+                                    var addDays = function (date, days) {
+                                        var dat = new Date(date);
+                                        dat.setDate(dat.getDate() + days);
+                                        return dat;
+                                    };
 
-{#                        aa.on('success', function (response) {#}
-{#                            if (params['chart']['type'] === 'PIE') {#}
-{#                                $.each($('#' + container_id + ' svg g:first g g text'), function (ind, label) {#}
-{#                                    if (label === '__NA__') {#}
-{#                                        $(label).html($scope._(params['_type'] + ' is not applicable'));#}
-{#                                    }#}
-{#                                    else {#}
-{#                                        if ((params['_type']) === 'page_type') {#}
-{#                                            $(label).html($scope._('page_type ' + label, {}, label));#}
-{#                                        }#}
-{#                                        if ((params['_type']) === 'company_id') {#}
-{#                                            console.log($scope.portal.company_memberships, $(label).html());#}
-{#                                            $(label).html(find_by_keys($scope.portal.company_memberships, $(label).html(), 'company', 'id'));#}
-{#                                        }#}
-{#                                        if ((params['_type']) === 'company_id') {#}
-{#                                            console.log($scope.portal.company_memberships, $(label).html());#}
-{#                                            $(label).html(find_by_keys($scope.portal.company_memberships, $(label).html(), 'company', 'id'));#}
-{#                                        }#}
-{#                                    }#}
-{##}
-{#                                });#}
-{#                            }#}
-{##}
-                            {#                            response.dataTable.cols[0].label = 'Users';#}
-{#                        });#}
-{#                        aa.execute();#}
+                                    var timedatediscretization = {
+                                        'hour': {
+                                            'columntype': 'number',
+                                            'valueconverter': parseInt,
+                                            'hAxis': {
+                                                baselineColor: 'transparent',
+                                                gridlines: {color: 'transparent'},
+                                                ticks: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22],
+                                                format: 'decimal',
+                                                viewWindow: {
+                                                    min: -1, max: 24
+                                                }
+                                            },
+                                        },
+                                        'date': {
+                                            'columntype': 'date',
+                                            'valueconverter': function (val) {
+                                                return new Date(val.replace(/(....)(..)(..)/, '$1-$2-$3'));
+                                            },
+                                            'hAxis': {
+                                                baselineColor: 'transparent',
+                                                gridlines: {color: 'transparent'},
+                                                format: 'dd MMM yyyy',
+                                                viewWindow: {
+                                                    'min': addDays(params['query']['start-date'], -1),
+                                                    'max': addDays(params['query']['end-date'], 1)
+                                                }
+                                            }
+                                        },
+                                        'yearMonth': {
+                                            'columntype': 'date',
+                                            'valueconverter': function (val) {
+                                                return new Date(val.replace(/(....)(..)/, '$1-$2-15'));
+                                            },
+                                            'hAxis': {
+                                                baselineColor: 'transparent',
+                                                gridlines: {color: 'transparent'},
+                                                format: 'MMMM yyyy',
+                                                viewWindow: {
+                                                    'min': addDays(params['query']['start-date'], -7),
+                                                    'max': addDays(params['query']['end-date'], 7)
+                                                }
+                                            }
+                                        }
+                                    };
+                                    var ifcall = function (ind, arg) {
+                                        var ret = (typeof timedatediscretization[resp['dimension']][ind] === 'function') ?
+                                            timedatediscretization[resp['dimension']][ind](arg) : timedatediscretization[resp['dimension']][ind]
+                                        return ret;
+                                    };
+
+                                    var data = new google.visualization.DataTable();
+                                    data.addColumn(ifcall('columntype'), resp['dimension']);
+                                    data.addColumn('number', resp['metric']);
+
+                                    for (var i = 1; i < rows.length; i++) {
+                                        data.addRow([ifcall('valueconverter', rows[i][0]), rows[i][1]]);
+                                    }
+
+                                    chart.draw(data, {
+                                        title: $scope._('Total ' + resp['metric'] + ': %(total)s', {total: resp['total']?resp['total']:0}),
+                                        legend: {position: "none"},
+                                        bar: {
+                                            groupWidth: 20
+                                        },
+                                        vAxis: {
+                                            format: 'long',
+                                        },
+                                        hAxis: ifcall('hAxis')
+                                    });
+                                    break;
+
+                                default:
+                                    var chart = new google.visualization.PieChart(document.getElementById(container_id));
+                                    chart.draw(google.visualization.arrayToDataTable(rows), {
+                                        pieStartAngle: 100,
+                                        title: $scope._('Total ' + resp['metric'] + ': %(total)s', {total: resp['total']?resp['total']:0}),
+                                    });
+                            }
+                            graph['_loaded'] = true;
+                        });
                     }
                 });
             };
 
             $scope.ready = function () {
 
-                gapi.analytics.ready(function () {
-                    /**
-                     * Authorize the user with an access token obtained server side.
-                     */
-                    gapi.analytics.auth.authorize({
-                        'serverAuth': {
-                            'access_token': '{{ access_token }}'
-                        }
-                    });
+                google.charts.load("current", {packages: ["corechart", "bar", "geochart"]});
+                google.charts.setOnLoadCallback(drawChart);
+
+                function drawChart() {
                     $scope.set_interval();
                     $scope._loaded = true;
                     $scope.$digest();
-                });
+                };
             };
 
             $scope.generate_getter_setter_function_filter = function (graph_options, filter_name) {
                 return function (value) {
                     if (angular.isDefined(value)) {
                         graph_options['_filters'][filter_name] = value;
-                        $scope.redrawAnother(graph_options);
+                        $scope.redrawAnother(graph_options, null, 'generate_getter_setter_function_filter');
                     } else {
                         if (graph_options['_filters'][filter_name] === undefined) {
                             return '__ANY__';
@@ -284,19 +332,20 @@
                         return graph_options['_filters'][filter_name] ? graph_options['_filters'][filter_name] : '';
                     }
                 }
-            }
+            };
 
             $scope.generate_getter_setter_function_date = function (graph_options, start_or_end) {
                 return function (value) {
                     if (angular.isDefined(value)) {
                         graph_options['query'][start_or_end + '-date'] = value;
-                        $scope.redrawAnother(graph_options);
+                        $scope.redrawAnother(graph_options, null, 'generate_getter_setter_function_date');
                     } else {
                         return graph_options['query'][start_or_end + '-date'];
                     }
                 }
             }
-        }])
+        }
+        ])
 
     </script>
 
@@ -306,20 +355,25 @@
              style="background-color: #eee">
             <div class="col-md-10">
                 {{ ::_('what to show', {} ,'show') }}
-                <select ng-change="redrawAnother(graph_properties)" ng-model="graph_properties['query']['metrics']"
+                <select ng-change="redrawAnother(graph_properties, null, 'select ng-change')"
+                        ng-model="graph_properties['query']['metrics']"
+                        ng-disabled="!graph_properties._loaded"
                         class="form-control w10em di m025em"
                         ng-options="metric.id as metric.name for metric in metrics"></select>
                 {{ ::_('grouped by ' + graph_properties['_type']) }}
 
                 {{ ::_('start date', {} ,'from') }} <input class="form-control w10em di m025em"
-                                                           ng-change="redrawAnother(graph_properties, true)"
+                                                           ng-disabled="!graph_properties._loaded"
+                                                           ng-change="redrawAnother(graph_properties, true, 'start_date')"
                                                            ng-model="graph_properties['query']['start-date']"
                                                            pr-date-picker/>
                 {{ ::_('end date', {} ,'to') }} <input class="form-control w10em di m025em"
-                                                       ng-change="redrawAnother(graph_properties, true)"
+                                                       ng-disabled="!graph_properties._loaded"
+                                                       ng-change="redrawAnother(graph_properties, true, 'end_date')"
                                                        ng-model="graph_properties['query']['end-date']"
                                                        pr-date-picker/>
                 <select ng-model="graph_properties['_interval']"
+                        ng-disabled="!graph_properties._loaded"
                         class="form-control w10em di m025em" ng-change="set_interval(graph_properties)">
                     <option style="display:none" value="" class="italic">{{ ::_('select date interval') }}</option>
                     <option ng-value="interval" ng-repeat="interval in select['interval']">{{ ::_(interval) }}</option>
@@ -338,7 +392,7 @@
                 {{ ::_('Filters') }}
                 <br/>
                 <select ng-if="graph_properties['_type']!=='page_type'"
-                        ng-disabled="graph_properties['_type'] === 'publication_visibility' || graph_properties['_type']==='publication_reached'"
+                        ng-disabled="!graph_properties._loaded || graph_properties['_type'] === 'publication_visibility' || graph_properties['_type']==='publication_reached'"
                         class="form-control w20em di m025em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'page_type')"
                         ng-model-options="{getterSetter: true }">
@@ -346,7 +400,7 @@
                     <option ng-repeat="pt in select['page_type']" value="{{ pt.id }}">{{ pt.name }}</option>
                 </select>
                 <select ng-if="graph_properties['_type']!=='page_type'"
-                        ng-disabled="graph_properties['_filters']['page_type']!=='publication' || graph_properties['_type'] === 'publication_visibility'"
+                        ng-disabled="!graph_properties._loaded || graph_properties['_filters']['page_type']!=='publication' || graph_properties['_type'] === 'publication_visibility'"
                         class="form-control w9em di m025em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'publication_visibility')"
                         ng-model-options="{getterSetter: true }">
@@ -355,7 +409,7 @@
                     </option>
                 </select>
                 <select ng-if="graph_properties['_type']!=='page_type'"
-                        ng-disabled="graph_properties['_filters']['page_type']!=='publication' || graph_properties['_type'] === 'publication_reached'"
+                        ng-disabled="!graph_properties._loaded || graph_properties['_filters']['page_type']!=='publication' || graph_properties['_type'] === 'publication_reached'"
                         class="form-control w9em di ml1em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'publication_reached')"
                         ng-model-options="{getterSetter: true }">
@@ -364,6 +418,7 @@
                     </option>
                 </select>
                 <select ng-if="graph_properties['_type']!=='company_id'"
+                        ng-disabled="!graph_properties._loaded"
                         class="form-control w20em di m025em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'company_id')"
                         ng-model-options="{getterSetter: true }">
@@ -374,6 +429,7 @@
                     <option value="__NA__" class="italic">{{ ::_('Pages where company is not specified') }}</option>
                 </select>
                 <select ng-if="graph_properties['_type']!=='user_type'"
+                        ng-disabled="!graph_properties._loaded"
                         class="form-control w20em di m025em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'user_type')"
                         ng-model-options="{getterSetter: true }">
@@ -381,6 +437,7 @@
                     <option ng-repeat="ut in select['user_type']" value="{{ ut.id }}">{{ ut.name }}</option>
                 </select>
                 <select ng-if="graph_properties['_type']!=='geo'"
+                        ng-disabled="!graph_properties._loaded"
                         class="form-control w20em di m025em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'countryIsoCode')"
                         ng-model-options="{getterSetter: true }">
@@ -420,6 +477,7 @@
 
     </div>
     {% endraw %}
+    <div id="piechart"></div>
     </div>
 
 

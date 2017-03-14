@@ -20,9 +20,8 @@ class Socket:
     @staticmethod
     def request_status_changed(to_user_id, from_user_id, status):
         from socketIO_client import SocketIO
-        from config import MAIN_DOMAIN
 
-        with SocketIO('localhost', 5000) as socketIO:
+        with SocketIO('socket.profi', 5000) as socketIO:
             socketIO.emit('request_status_changed',
                           {'to_user_id': to_user_id, 'from_user_id': from_user_id, 'status': status},
                           lambda ack_id: Socket.notification_delivered(
@@ -33,29 +32,25 @@ class Socket:
     @staticmethod
     def notification(notification_data):
         from socketIO_client import SocketIO
-        from config import MAIN_DOMAIN
 
-        with SocketIO('localhost', 5000) as socketIO:
+        with SocketIO('socket.profi', 5000) as socketIO:
             socketIO.emit('send_notification', notification_data,
                           lambda ack_id: Socket.notification_delivered(ack_id, 'send_notification', notification_data))
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
     def insert_translation(data):
-        return True
         from socketIO_client import SocketIO
-        from config import MAIN_DOMAIN
-        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+        with SocketIO('socket.profi', 5000) as socketIO:
             socketIO.emit('insert_translation', data,
                           lambda ack_id: Socket.notification_delivered(ack_id, 'insert_translation', data))
             socketIO.wait_for_callbacks(seconds=1)
 
     @staticmethod
     def update_translation(id, data):
-        return True
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
-        with SocketIO('socket.' + MAIN_DOMAIN, 80) as socketIO:
+        with SocketIO('socket.profi', 5000) as socketIO:
             socketIO.emit('update_translation', {'id': id, 'data': data},
                           lambda ack_id: Socket.notification_delivered(ack_id, 'update_translation',
                                                                        {'id': id, 'data': data}))
@@ -88,7 +83,6 @@ class Socket:
             g.call_after_commit.append(lambda d=d: Socket.notification(d))
 
         return utils.do_nothing()
-
 
 
 class Contact(Base, PRBase):

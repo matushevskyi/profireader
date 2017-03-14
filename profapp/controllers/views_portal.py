@@ -319,21 +319,93 @@ def set_membership_plan(json, membership_id):
                  permissions=EmployeeHasRightAtPortalOwnCompany(RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE))
 def analytics_report(json, portal_id):
     from profapp.models.third.google_analytics_management import GoogleAnalyticsReport
+    from profapp.models.translate import TranslateTemplate
+
+    def _(phrase, prefix='', dictionary={}):
+        return TranslateTemplate.translate_and_substitute(
+            'google_analytics_report', ((prefix + ' ') if prefix else '') + phrase, dictionary=dictionary,
+            phrase_default=phrase)
+
+    def get_dimension_name(d):
+        dimension_index = d.partition(':dimension')[2]
+        if dimension_index:
+            for dim_name, ind in portal.google_analytics_dimensions.items():
+                if ind == int(dimension_index):
+                    return dim_name
+        return d.partition(':')[2]
+
+    def get_metric_name(m):
+        metric_index = m.partition(':metric')[2]
+        if metric_index:
+            for met_name, ind in portal.google_analytics_metrics.items():
+                if ind == int(metric_index):
+                    return met_name
+        return m.partition(':')[2]
+
     analytics = GoogleAnalyticsReport()
     portal = Portal.get(portal_id)
     r = json['query']
+    r['dateRanges'] = [{'startDate': r['start-date'], 'endDate': r['end-date']}]
+    del r['end-date']
+    del r['start-date']
     r['viewId'] = portal.google_analytics_view_id
-    r = {
-        'dateRanges': [{'startDate': '7daysAgo', 'endDate': 'today'}],
-        'metrics': [{'expression': 'ga:sessions'}],
-    }
-    r['viewId'] = portal.google_analytics_view_id
-    ret = analytics.service.reports().batchGet(
-        body={
-            'reportRequests': [r]
+    r['dimensions'] = [{'name': d} for d in r['dimensions'].split(',')]
+    r['metrics'] = [{'expression': m} for m in r['metrics'].split(',')]
+    if 'max-results' in r:
+        del r['max-results']
+    if 'filters' in r:
+        dimensionFilterClauses = {
+            'operator': 'AND',
+            'filters': []
         }
-    ).execute()
-    return ret
+        for dimension_name, filter_value in r['filters'].items():
+            if filter_value != '__ANY__':
+                dim_index = portal.google_analytics_dimensions.get(dimension_name, None)
+                dimensionFilterClauses['filters'].append({
+                    "dimensionName": 'ga:' + (dimension_name if dim_index is None else 'dimension{}'.format(dim_index)),
+                    "not": filter_value == '',
+                    "operator": 'EXACT',
+                    "expressions": [filter_value],
+                    "caseSensitive": True})
+
+        if len(dimensionFilterClauses['filters']):
+            r['dimensionFilterClauses'] = dimensionFilterClauses
+
+        del r['filters']
+
+    report = analytics.service.reports().batchGet(body={'reportRequests': [r]}).execute()['reports'][0]
+
+    dimension_name = get_dimension_name(report['columnHeader']['dimensions'][0])
+    metric_name = get_metric_name(report['columnHeader']['metricHeader']['metricHeaderEntries'][0]['name'])
+
+    def sort_dimension(rows, name):
+
+        if name == 'page_type':
+            by_page_type = ['index', 'news', 'events', 'catalog', 'publication', 'company_subportal']
+            return sorted(rows, key=lambda x: by_page_type.index(x[0]) if x[0] in by_page_type else 100000)
+        if name == 'company_id':
+            return sorted(rows, key=lambda x: 'z' if x[0] == '__NA__' else Company.get(x[0]).id)
+        else:
+            return rows
+
+    ret = {'metric': _(metric_name, prefix='metric'), 'dimension': _(dimension_name, prefix='dimension')}
+    if 'rows' in report['data']:
+        rows = [[r['dimensions'][0], int(r['metrics'][0]['values'][0])] for r in report['data']['rows']]
+        rows = sort_dimension(rows, dimension_name)
+        formatted_rows = []
+        for r in rows:
+            if dimension_name == 'company_id':
+                formatted_rows.append(
+                    [_(r[0], prefix=dimension_name) if r[0] == '__NA__' else Company.get(r[0]).name, r[1]])
+            else:
+                formatted_rows.append([_(r[0], prefix=dimension_name), r[1]])
+        ret['rows'] = formatted_rows
+        ret['total'] = int(report['data']['totals'][0]['values'][0])
+        return ret
+    else:
+        ret['rows'] = []
+        return ret
+
 
 @portal_bp.route('/<string:portal_id>/analytics/', methods=['GET'],
                  permissions=EmployeeHasRightAtPortalOwnCompany(RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE))
