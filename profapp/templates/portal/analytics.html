@@ -52,12 +52,13 @@
                     _filters: {},
                     _type: 'history',
                     _func_query: function (graph) {
-                        var interval = (moment(graph.query['end-date'], 'YYYY-MM-DD').utc() - moment(graph.query['start-date'], 'YYYY-MM-DD').utc()) / (1000 * 3600 * 24);
+                        var interval = (moment(graph.query['date']['end'], 'YYYY-MM-DD').utc() -
+                            moment(graph.query['date']['start'], 'YYYY-MM-DD').utc()) / (1000 * 3600 * 24);
                         return {
                             'dimensions': interval > 1 ? (interval > (31 * 6) ? 'ga:yearMonth' : 'ga:date') : 'ga:hour'
                         };
                     },
-                    query: {},
+                    query: {date: {}},
                     chart: {
                         'type': 'LINE',
                         'options': {
@@ -69,6 +70,7 @@
                     _filters: {},
                     _type: 'geo',
                     query: {
+                        date: {},
                         'dimensions': 'ga:country',
                         'max-results': 10
                     },
@@ -85,6 +87,7 @@
                     _filters: {},
                     _type: name,
                     query: {
+                        date: {},
                         'dimensions': 'ga:dimension' + ga_index,
                         'max-results': 10
                     },
@@ -132,8 +135,8 @@
                     return [start_date, end_date];
                 }
                 if (graph_options) {
-                    graph_options['query']['start-date'] = start_date;
-                    graph_options['query']['end-date'] = end_date;
+                    graph_options['query']['date']['start'] = start_date;
+                    graph_options['query']['date']['end'] = end_date;
                 }
                 else {
                     $scope.start_date = start_date;
@@ -145,8 +148,8 @@
             $scope.add_graph = function (graph_options) {
                 var copy = angular.copy(graph_options);
                 copy['_hash'] = 'graph_hash_' + Date.now();
-                copy['query']['start-date'] = $scope.start_date;
-                copy['query']['end-date'] = $scope.end_date;
+                copy['query']['date']['start'] = $scope.start_date;
+                copy['query']['date']['end'] = $scope.end_date;
                 copy['query']['metrics'] = $scope.add_metric;
                 if (graph_options['_type'] === 'publication_visibility') {
                     copy['_filters']['page_type'] = 'publication';
@@ -167,7 +170,7 @@
                 var interval_found = undefined;
                 $.each($scope.select.interval, function (ind, interval) {
                     var check_is_interval = $scope.set_interval(null, interval);
-                    if (graph_options && check_is_interval[0] === graph_options.query['start-date'] && check_is_interval[1] === graph_options.query['end-date']) {
+                    if (graph_options && check_is_interval[0] === graph_options.query['date']['start'] && check_is_interval[1] === graph_options.query['date']['end']) {
                         interval_found = interval;
                     }
                     if (!graph_options && check_is_interval[0] === $scope.start_date && check_is_interval[1] === $scope.end_date) {
@@ -185,6 +188,7 @@
             };
 
             $scope.redrawAnother = function (redraw_only_options, reset_interval, log) {
+                console.log(redraw_only_options, reset_interval, log);
                 $.each($scope.graphs, function (ind, graph) {
                     if (!redraw_only_options || redraw_only_options === graph) {
                         if (reset_interval) {
@@ -194,8 +198,6 @@
                         var params = {
                             query: $.extend({
                                 'filters': graph['_filters'],
-                                {#                                'ids': $scope.view_id,#}
-                                {#                                'sort': '-' + $scope.columns[$scope.selected_column],#}
                             }, graph['query'], graph['_func_query'] ? graph['_func_query'](graph) : {}),
                             chart: $.extend({
                                 'container': container_id,
@@ -247,8 +249,8 @@
                                                 gridlines: {color: 'transparent'},
                                                 format: 'dd MMM yyyy',
                                                 viewWindow: {
-                                                    'min': addDays(params['query']['start-date'], -1),
-                                                    'max': addDays(params['query']['end-date'], 1)
+                                                    'min': addDays(params['query']['date']['start'], -1),
+                                                    'max': addDays(params['query']['date']['end'], 1)
                                                 }
                                             }
                                         },
@@ -262,8 +264,8 @@
                                                 gridlines: {color: 'transparent'},
                                                 format: 'MMMM yyyy',
                                                 viewWindow: {
-                                                    'min': addDays(params['query']['start-date'], -7),
-                                                    'max': addDays(params['query']['end-date'], 7)
+                                                    'min': addDays(params['query']['start'], -7),
+                                                    'max': addDays(params['query']['end'], 7)
                                                 }
                                             }
                                         }
@@ -365,12 +367,12 @@
                 {{ ::_('start date', {} ,'from') }} <input class="form-control w10em di m025em"
                                                            ng-disabled="!graph_properties._loaded"
                                                            ng-change="redrawAnother(graph_properties, true, 'start_date')"
-                                                           ng-model="graph_properties['query']['start-date']"
+                                                           ng-model="graph_properties['query']['date']['start']"
                                                            pr-date-picker/>
                 {{ ::_('end date', {} ,'to') }} <input class="form-control w10em di m025em"
                                                        ng-disabled="!graph_properties._loaded"
                                                        ng-change="redrawAnother(graph_properties, true, 'end_date')"
-                                                       ng-model="graph_properties['query']['end-date']"
+                                                       ng-model="graph_properties['query']['date']['end']"
                                                        pr-date-picker/>
                 <select ng-model="graph_properties['_interval']"
                         ng-disabled="!graph_properties._loaded"
@@ -428,13 +430,14 @@
                     </option>
                     <option value="__NA__" class="italic">{{ ::_('Pages where company is not specified') }}</option>
                 </select>
-                <select ng-if="graph_properties['_type']!=='user_type'"
+                <select ng-if="graph_properties['_type']!=='reader_plan'"
                         ng-disabled="!graph_properties._loaded"
                         class="form-control w20em di m025em"
-                        ng-model="generate_getter_setter_function_filter(graph_properties, 'user_type')"
+                        ng-model="generate_getter_setter_function_filter(graph_properties, 'reader_plan')"
                         ng-model-options="{getterSetter: true }">
-                    <option value="__ANY__" class="italic">{{ ::_('Any user') }}</option>
-                    <option ng-repeat="ut in select['user_type']" value="{{ ut.id }}">{{ ut.name }}</option>
+                    <option value="__ANY__" class="italic">{{ ::_('Any reader plan') }}</option>
+                    <option value="__ANONYMOUS__" class="italic">{{ ::_('Anonymous') }}</option>
+                    <option ng-repeat="rp in select['reader_plan']" value="{{ rp.id }}">{{ rp.name }}</option>
                 </select>
                 <select ng-if="graph_properties['_type']!=='geo'"
                         ng-disabled="!graph_properties._loaded"

@@ -18,9 +18,10 @@ CUSTOM_DIMENSION = {'page_type': 'page_type',
                     'publication_visibility': 'publication_visibility',
                     'publication_reached': 'publication_reached',
                     'company_id': 'company_id',
-                    'user_type': 'user_type'}
+                    'reader_plan': 'reader_plan'}
 
 CUSTOM_METRIC = {'income': 'income'}
+
 
 class PortalAnalytics:
     page_type = ''
@@ -29,11 +30,13 @@ class PortalAnalytics:
     publication_reached = 'False'
     income = 0
 
-    def __init__(self, page_type, publication_visibility='__NA__', publication_reached='__NA__', company_id='__NA__',
+    def __init__(self, page_type, publication_visibility='__NA__', publication_reached='__NA__',
+                 reader_plan='Anonymous', company_id='__NA__',
                  income=0):
         self.page_type = page_type
         self.publication_visibility = publication_visibility
         self.publication_reached = publication_reached
+        self.reader_plan = reader_plan
         self.company_id = company_id
         self.income = income
 
@@ -45,7 +48,6 @@ class GoogleAnalyticsReport:
 
         # Authenticate and construct service.
         self.service = self._get_service('analytics', 'v4', scope)
-
 
     def _get_service(self, api_name, api_version, scope):
         # Use the developer console and replace the values with your
@@ -155,7 +157,7 @@ class GoogleAnalyticsManagement:
             body={'name': name}).execute()
 
     def create_custom_dimensions_and_metrics(self, web_property_id):
-        return {name: self.service.management().customDimensions().insert(
+        custom_dimensions = {name: self.service.management().customDimensions().insert(
             accountId=self.account['id'],
             webPropertyId=web_property_id,
             body={
@@ -163,8 +165,8 @@ class GoogleAnalyticsManagement:
                 'scope': 'HIT',
                 'active': True
             }
-        ).execute()['index'] for name in CUSTOM_DIMENSION},
-        {name: self.service.management().customMetrics().insert(
+        ).execute()['index'] for name in CUSTOM_DIMENSION}
+        custom_metrics = {name: self.service.management().customMetrics().insert(
             accountId=self.account['id'],
             webPropertyId=web_property_id,
             body={
@@ -174,6 +176,7 @@ class GoogleAnalyticsManagement:
                 'active': True
             }
         ).execute()['index'] for name in CUSTOM_METRIC}
+        return custom_dimensions, custom_metrics
 
     def update_host_for_property(self, web_property_id, new_host):
         web_property = self.get_web_property(web_property_id)

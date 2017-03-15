@@ -351,8 +351,6 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
         @app.errorhandler(404)
         def page_not_found(e):
-
-            from flask import Flask, render_template
             from profapp.controllers.views_front import error_404
             return error_404()
 

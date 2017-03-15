@@ -163,7 +163,7 @@ def google_analytics(portal, analytics: PortalAnalytics):
         return ''
     analytics = json.dumps({
         'dimension' + str(portal['google_analytics_dimensions'][
-                              CUSTOM_DIMENSION['user_type']]): 'Identified' if g.user else 'Anonymous',
+                              CUSTOM_DIMENSION['reader_plan']]): analytics.reader_plan,
         'dimension' + str(portal['google_analytics_dimensions'][
                               CUSTOM_DIMENSION['company_id']]): analytics.company_id,
         'dimension' + str(portal['google_analytics_dimensions'][

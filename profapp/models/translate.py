@@ -171,7 +171,7 @@ class TranslateTemplate(Base, PRBase):
 
             return TranslateTemplate.try_to_guess_lang(translation, language)
         else:
-            return phrase
+            return phrase if phrase_default is None else phrase_default
 
     @staticmethod
     def translate_and_substitute(template, phrase, dictionary={}, language=None, url=None, allow_html='',

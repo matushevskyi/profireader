@@ -327,6 +327,18 @@ class Portal(Base, PRBase):
                 ret['host_profi'] = ''
         return ret
 
+    def get_analytics(self, page_type, company_id='__NA__',
+                      publication_visibility='__NA__', publication_reached='__NA__'):
+        from profapp.models.third.google_analytics_management import PortalAnalytics
+        from profapp.models.portal import UserPortalReader
+        user_portal_reader = UserPortalReader.get_by_portal_id_user_id(self.id)
+
+        return PortalAnalytics(
+            page_type=page_type, company_id=company_id,
+            income=len([a for a in self.advs if re.match(r'.*data-revive-id.*', str(a.html), re.DOTALL)]),
+            publication_visibility=publication_visibility, publication_reached=publication_reached,
+            reader_plan=user_portal_reader.portal_plan_id if user_portal_reader else 'Anonymous')
+
     def subscribe_user(self, user=None):
         user = user if user else g.user
 
@@ -1293,8 +1305,9 @@ class UserPortalReader(Base, PRBase):
             yield (portal.id, portal.name,)
 
     @staticmethod
-    def get(user_id=None, portal_id=None):
-        return utils.db.query_filter(UserPortalReader).filter_by(user_id=user_id, portal_id=portal_id).first()
+    def get_by_portal_id_user_id(portal_id, user_id=None):
+        return utils.db.query_filter(UserPortalReader).filter_by(user_id=user_id if user_id else g.user_id,
+                                                                 portal_id=portal_id).first()
 
     @staticmethod
     def get_portals_and_plan_info_for_user(user_id, page, items_per_page, filter_params):

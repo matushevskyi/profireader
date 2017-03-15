@@ -48,6 +48,10 @@
                             <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_profile'}"
                                href="{{ url }}">{{ _('Portal profile') }}</a>
                         {% endcall %}
+                        {% call(url) if_url_permitted('portal.analytics', portal_id = menu_portal_id) %}
+                            <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_analytics'}"
+                               href="{{ url }}">{{ _('Analytics') }}</a>
+                        {% endcall %}
                         {% call(url) if_url_permitted('portal.banners', portal_id = menu_portal_id) %}
                             <a class="pull-right" ng-class="{'selected': selected_company_menu == 'portal_banners'}"
                                href="{{ url }}">{{ _('Banners') }}</a>

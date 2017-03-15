@@ -345,9 +345,8 @@ def analytics_report(json, portal_id):
     analytics = GoogleAnalyticsReport()
     portal = Portal.get(portal_id)
     r = json['query']
-    r['dateRanges'] = [{'startDate': r['start-date'], 'endDate': r['end-date']}]
-    del r['end-date']
-    del r['start-date']
+    r['dateRanges'] = [{'startDate': r['date']['start'], 'endDate': r['date']['end']}]
+    del r['date']
     r['viewId'] = portal.google_analytics_view_id
     r['dimensions'] = [{'name': d} for d in r['dimensions'].split(',')]
     r['metrics'] = [{'expression': m} for m in r['metrics'].split(',')]
@@ -428,7 +427,8 @@ def analytics(portal_id):
 
     return render_template('portal/analytics.html', portal=portal, company=portal.own_company,
                            select={'country': utils.get_client_side_list(Country.all(), fields='iso,name'),
-                                   'user_type': dict_id_name(['Identified', 'Anonymous']),
+                                   'reader_plan': [
+                                       {'name': 'Free', 'id': '5609c73a-1007-4001-9b16-5c84f18ad571'}],
                                    'publication_visibility': dict_id_name([v for v in Publication.VISIBILITIES]),
                                    'publication_reached': dict_id_name(['True', 'False']),
                                    'page_type': dict_id_name(
