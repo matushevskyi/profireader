@@ -219,9 +219,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
     .factory('$ok', ['$http', function ($http) {
         return function (url, data, ifok, iferror, translate, disableonsubmid) {
             //console.log($scope);
-            function error(result, error_code) {
+            function error(result, error_code, message) {
                 if (iferror) {
-                    iferror(result, error_code)
+                    iferror(result, error_code, message)
                 }
                 else {
                     // add_message(result, 'danger');
@@ -232,15 +232,15 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             //pass here dialog DOM element from controller wherever $uibModalInstance is used
 
             return $http.post(url, $.extend({}, data, translate ? {__translate: translate} : {})).then(
-                function (resp) {
-                    if (!resp || !resp['data'] || typeof resp['data'] !== 'object' || resp === null) {
-                        return error('wrong response', -1);
+                function (response) {
+                    if (!response || !response['data'] || typeof response['data'] !== 'object' || response === null) {
+                        return error(null, -1, 'wrong response');
                     }
 
-                    resp = resp ['data'];
+                    var resp = response['data'];
 
                     if (!resp['ok']) {
-                        return error(resp['data'], resp['error_code']);
+                        return error(resp['data'], resp['error_code'], resp['message']);
                     }
 
                     if (ifok) {
@@ -249,7 +249,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
                 },
                 function () {
-                    return error('wrong response', -1);
+                    return error(null, -1, 'wrong response');
                 }
             );
         }

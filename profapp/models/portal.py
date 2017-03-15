@@ -337,7 +337,7 @@ class Portal(Base, PRBase):
             page_type=page_type, company_id=company_id,
             income=len([a for a in self.advs if re.match(r'.*data-revive-id.*', str(a.html), re.DOTALL)]),
             publication_visibility=publication_visibility, publication_reached=publication_reached,
-            reader_plan=user_portal_reader.portal_plan_id if user_portal_reader else 'Anonymous')
+            reader_plan=user_portal_reader.portal_plan_id if user_portal_reader else '__NA__')
 
     def subscribe_user(self, user=None):
         user = user if user else g.user

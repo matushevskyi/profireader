@@ -195,7 +195,8 @@ class Search(Base):
         for arg in args:
             join_params = arg.get('join') or arg['class']
             join_search.append(utils.db.query_filter(subquery_search).join(join_params,
-                                                                  arg['class'].id == subquery_search.c.index).subquery())
+                                                                           arg[
+                                                                               'class'].id == subquery_search.c.index).subquery())
         objects = collections.OrderedDict()
         to_order = {}
         _order_by = kwargs.get('order_by') or Search.ORDER_MD_TM
@@ -230,17 +231,17 @@ class Search(Base):
     def __get_subquery(self, *args, ord_by=None):
         def add_joined_search(field_name):
             joined = utils.db.query_filter(Search.index, func.min(Search.text).label('text'),
-                                  func.min(Search.table_name).label('table_name'),
-                                  index=subquery_search.subquery().c.index).filter(
+                                           func.min(Search.table_name).label('table_name'),
+                                           index=subquery_search.subquery().c.index).filter(
                 Search.kind.in_(tuple(field_name))).group_by(Search.index)
             return joined
 
         subquery_search = utils.db.query_filter(Search.index.label('index'),
-                                       func.sum(Search.relevance).label('relevance'),
-                                       func.min(Search.table_name).label('table_name'),
-                                       func.min(Search.md_tm).label('md_tm'),
-                                       func.max(Search.position).label('position'),
-                                       func.max(Search.text).label('text')).filter(
+                                                func.sum(Search.relevance).label('relevance'),
+                                                func.min(Search.table_name).label('table_name'),
+                                                func.min(Search.md_tm).label('md_tm'),
+                                                func.max(Search.position).label('position'),
+                                                func.max(Search.text).label('text')).filter(
             or_(*self.__get_search_params(*args))).group_by('index')
         if type(ord_by) in (str, list, tuple):
             order = self.__get_order('text', 'text')
@@ -308,7 +309,8 @@ class Search(Base):
             if filter_params is None:
                 filter_array = [Search.index == utils.db.query_filter(arg['class'].id).subquery().c.id]
             else:
-                filter_array = [Search.index == utils.db.query_filter(arg['class'].id).filter(filter_params).subquery().c.id]
+                filter_array = [
+                    Search.index == utils.db.query_filter(arg['class'].id).filter(filter_params).subquery().c.id]
             filter_array.append(Search.table_name == arg['class'].__tablename__)
             filter_array.append(Search.kind.in_(fields))
             search_text = self.__search_text
@@ -382,12 +384,12 @@ class Grid:
                     sort['field'].desc())
         return query
 
-    # @staticmethod
-    # def grid_tuple_to_dict(tuple):
-    #     list = []
-    #     for t in tuple:
-    #         list.extend([t[0]] + t[1])
-    #     return list
+        # @staticmethod
+        # def grid_tuple_to_dict(tuple):
+        #     list = []
+        #     for t in tuple:
+        #         list.extend([t[0]] + t[1])
+        #     return list
 
 
 class PRBase:
@@ -566,6 +568,10 @@ class PRBase:
     def get_client_side_dict(self, fields='id',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
+
+    @classmethod
+    def get_attr(cls, id, attr='id', ifNone=None):
+        return getattr(g.db().query(cls).filter(cls.id == id).first(), attr, ifNone)
 
     @classmethod
     def get(cls, id, returnNoneIfNotExists=False):
@@ -824,12 +830,12 @@ class PRBase:
         # event.listen(cls, 'after_update', cls.after_update)
         # event.listen(cls, 'after_delete', cls.after_delete)
 
-    # @staticmethod
-    # def datetime_from_utc_to_local(utc_datetime, format):
-    #     now_timestamp = time.time()
-    #     offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
-    #     utc_datetime = utc_datetime + offset
-    #     return datetime.datetime.strftime(utc_datetime, format)
+        # @staticmethod
+        # def datetime_from_utc_to_local(utc_datetime, format):
+        #     now_timestamp = time.time()
+        #     offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
+        #     utc_datetime = utc_datetime + offset
+        #     return datetime.datetime.strftime(utc_datetime, format)
 
 #
 #

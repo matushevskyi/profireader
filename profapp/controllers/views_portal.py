@@ -318,8 +318,9 @@ def set_membership_plan(json, membership_id):
 @portal_bp.route('/<string:portal_id>/analytics/get_report/', methods=['OK'],
                  permissions=EmployeeHasRightAtPortalOwnCompany(RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE))
 def analytics_report(json, portal_id):
-    from profapp.models.third.google_analytics_management import GoogleAnalyticsReport
+    from profapp.models.third.google_analytics_management import GoogleAnalyticsReport, CUSTOM_DIMENSION
     from profapp.models.translate import TranslateTemplate
+    from profapp.models.portal import ReaderUserPortalPlan
 
     def _(phrase, prefix='', dictionary={}):
         return TranslateTemplate.translate_and_substitute(
@@ -358,7 +359,15 @@ def analytics_report(json, portal_id):
             'filters': []
         }
         for dimension_name, filter_value in r['filters'].items():
-            if filter_value != '__ANY__':
+            if filter_value == '__ID__':
+                dim_index = portal.google_analytics_dimensions.get(dimension_name, None)
+                dimensionFilterClauses['filters'].append({
+                    "dimensionName": 'ga:' + (dimension_name if dim_index is None else 'dimension{}'.format(dim_index)),
+                    "not": False,
+                    "operator": 'REGEXP',
+                    "expressions": ['^........*$'],
+                    "caseSensitive": True})
+            elif filter_value != '__ANY__':
                 dim_index = portal.google_analytics_dimensions.get(dimension_name, None)
                 dimensionFilterClauses['filters'].append({
                     "dimensionName": 'ga:' + (dimension_name if dim_index is None else 'dimension{}'.format(dim_index)),
@@ -383,7 +392,10 @@ def analytics_report(json, portal_id):
             by_page_type = ['index', 'news', 'events', 'catalog', 'publication', 'company_subportal']
             return sorted(rows, key=lambda x: by_page_type.index(x[0]) if x[0] in by_page_type else 100000)
         if name == 'company_id':
-            return sorted(rows, key=lambda x: 'z' if x[0] == '__NA__' else Company.get(x[0]).id)
+            return sorted(rows, key=lambda x: 'z' if x[0] == '__NA__' else Company.get_attr(x[0], ifNone='zzz'))
+        if name == 'reader_plan':
+            return sorted(rows,
+                          key=lambda x: 'z' if x[0] == '__NA__' else ReaderUserPortalPlan.get_attr(x[0], ifNone='zzz'))
         else:
             return rows
 
@@ -393,11 +405,18 @@ def analytics_report(json, portal_id):
         rows = sort_dimension(rows, dimension_name)
         formatted_rows = []
         for r in rows:
-            if dimension_name == 'company_id':
+            if dimension_name == CUSTOM_DIMENSION['company_id']:
                 formatted_rows.append(
-                    [_(r[0], prefix=dimension_name) if r[0] == '__NA__' else Company.get(r[0]).name, r[1]])
-            else:
+                    [_(r[0], prefix=dimension_name) if r[0] == '__NA__' else
+                     Company.get_attr(r[0], 'name', ifNone='unknown company'), r[1]])
+            elif dimension_name == CUSTOM_DIMENSION['reader_plan']:
+                formatted_rows.append(
+                    [_('anonymous', prefix=dimension_name) if r[0] == '__NA__' else
+                     ReaderUserPortalPlan.get_attr(r[0], 'name', ifNone='unknown plan'), r[1]])
+            elif dimension_name in CUSTOM_DIMENSION:
                 formatted_rows.append([_(r[0], prefix=dimension_name), r[1]])
+            else:
+                formatted_rows.append([r[0], r[1]])
         ret['rows'] = formatted_rows
         ret['total'] = float(report['data']['totals'][0]['values'][0])
         return ret

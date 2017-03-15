@@ -91,7 +91,12 @@ class PrBlueprint(Blueprint):
                         json = request.json
                         if not ps['permissions'].check(json, *args, **kwargs):
                             raise exceptions.UnauthorizedUser()
-                        ret = f(json, *args, **kwargs)
+                        try:
+                            ret = f(json, *args, **kwargs)
+                        except Exception as e:
+                            return jsonify(
+                                {'data': {}, 'ok': False, 'error_code': -1, 'message': e.__str__()})
+
                     else:
                         if not ps['permissions'].check(*args, **kwargs):
                             raise exceptions.UnauthorizedUser()

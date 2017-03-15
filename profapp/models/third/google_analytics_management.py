@@ -31,7 +31,7 @@ class PortalAnalytics:
     income = 0
 
     def __init__(self, page_type, publication_visibility='__NA__', publication_reached='__NA__',
-                 reader_plan='Anonymous', company_id='__NA__',
+                 reader_plan='__NA__', company_id='__NA__',
                  income=0):
         self.page_type = page_type
         self.publication_visibility = publication_visibility

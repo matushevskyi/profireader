@@ -147,9 +147,9 @@
                             });
                     }
                     graph['_loaded'] = true;
-                }, function (resp) {
+                }, function (resp, error_code, message) {
                     graph['_loaded'] = true;
-                    $('#' + container_id).html('Error with message: ' + resp);
+                    $('#' + container_id).text('Error with message: ' + message);
                 });
             };
 
@@ -188,13 +188,14 @@
                     }
                 }
             ];
-            $.each($scope.portal['google_analytics_dimensions'], function (name, ga_index) {
+{#            $.each($scope.portal['google_analytics_dimensions'], function (name, ga_index) {#}
+            $.each(['page_type', 'company_id', 'reader_plan', 'publication_visibility', 'publication_reached'], function (ind, name) {
                 $scope.graph_types.push({
                     _filters: {},
                     _type: name,
                     query: {
                         date: {},
-                        'dimensions': 'ga:dimension' + ga_index,
+                        'dimensions': 'ga:dimension' + $scope.portal['google_analytics_dimensions'][name],
                         'max-results': 10
                     },
                     chart: {
@@ -382,7 +383,7 @@
                         class="form-control w20em di m025em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'page_type')"
                         ng-model-options="{getterSetter: true }">
-                    <option value="__ANY__" class="italic">{{ ::_('Any type') }}</option>
+                    <option value="__ANY__" class="italic">{{ ::_('No type filter') }}</option>
                     <option ng-repeat="pt in select['page_type']" value="{{ pt.id }}">{{ pt.name }}</option>
                 </select>
                 <select ng-if="graph_properties['_type']!=='page_type'"
@@ -390,7 +391,7 @@
                         class="form-control w9em di m025em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'publication_visibility')"
                         ng-model-options="{getterSetter: true }">
-                    <option value="__ANY__" class="italic">{{ ::_('Any visibility')}}</option>
+                    <option value="__ANY__" class="italic">{{ ::_('No visibility filter')}}</option>
                     <option ng-repeat="pv in select['publication_visibility']" value="{{ pv.id }}">{{ pv.name }}
                     </option>
                 </select>
@@ -399,7 +400,7 @@
                         class="form-control w9em di ml1em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'publication_reached')"
                         ng-model-options="{getterSetter: true }">
-                    <option value="__ANY__" class="italic">{{ ::_('Reached or not')}}</option>
+                    <option value="__ANY__" class="italic">{{ ::_('No reached filter')}}</option>
                     <option ng-repeat="pr in select['publication_reached']" value="{{ pr.id }}">{{ pr.name }}
                     </option>
                 </select>
@@ -408,7 +409,7 @@
                         class="form-control w20em di m025em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'company_id')"
                         ng-model-options="{getterSetter: true }">
-                    <option value="__ANY__" class="italic">{{ ::_('Any company') }}</option>
+                    <option value="__ANY__" class="italic">{{ ::_('No company filter') }}</option>
                     <option ng-repeat="m in portal.company_memberships"
                             value="{{ m.company.id }}">{{ m.company.name }}
                     </option>
@@ -419,8 +420,9 @@
                         class="form-control w20em di m025em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'reader_plan')"
                         ng-model-options="{getterSetter: true }">
-                    <option value="__ANY__" class="italic">{{ ::_('Any reader plan') }}</option>
-                    <option value="__ANONYMOUS__" class="italic">{{ ::_('Anonymous') }}</option>
+                    <option value="__ANY__" class="italic">{{ ::_('No plan filter') }}</option>
+                    <option value="__ID__" class="italic">{{ ::_('Any registered user') }}</option>
+                    <option value="__NA__" class="italic">{{ ::_('Anonymous') }}</option>
                     <option ng-repeat="rp in select['reader_plan']" value="{{ rp.id }}">{{ rp.name }}</option>
                 </select>
                 <select ng-if="graph_properties['_type']!=='geo'"
@@ -428,7 +430,7 @@
                         class="form-control w20em di m025em"
                         ng-model="generate_getter_setter_function_filter(graph_properties, 'countryIsoCode')"
                         ng-model-options="{getterSetter: true }">
-                    <option value="__ANY__" class="italic">{{ ::_('Any country') }}</option>
+                    <option value="__ANY__" class="italic">{{ ::_('No country filter') }}</option>
                     <option ng-repeat="c in select['country']" value="{{ c.iso }}">{{ c.name }}</option>
                 </select>
             </div>
