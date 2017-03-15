@@ -13,24 +13,6 @@
         {% include 'company/company_base_angular.html' %}
     {% endblock company_base %}
 
-    {#    <script>#}
-    {#        (function (w, d, s, g, js, fs) {#}
-    {#            g = w.gapi || (w.gapi = {});#}
-    {#            g.analytics = {#}
-    {#                q: [], ready: function (f) {#}
-    {#                    this.q.push(f);#}
-    {#                }#}
-    {#            };#}
-    {#            js = d.createElement(s);#}
-    {#            fs = d.getElementsByTagName(s)[0];#}
-    {#            js.src = 'https://apis.google.com/js/platform.js';#}
-    {#            fs.parentNode.insertBefore(js, fs);#}
-    {#            js.onload = function () {#}
-    {#                g.load('analytics');#}
-    {#            };#}
-    {#        }(window, document, 'script'));#}
-    {#    </script>#}
-
     <script>
         module.controller('google_analytics', ['$scope', '$ok', function ($scope, $ok) {
 
@@ -47,6 +29,130 @@
 
             $scope._interval = 'yesterday';
             $scope._loaded = false;
+            $scope.redraw = function (graph, check_is_interval_selected) {
+                if (!graph) {
+                    return;
+                }
+                if (check_is_interval_selected) {
+                    $scope.is_interval_selected(graph);
+                }
+                var container_id = 'chart-' + graph['_hash'] + '-container';
+                var params = {
+                    query: $.extend({
+                        'filters': graph['_filters'],
+                    }, graph['query'], graph['_func_query'] ? graph['_func_query'](graph) : {}),
+                    chart: $.extend({
+                        'container': container_id,
+                    }, graph['chart'])
+                };
+                graph['_loaded'] = false;
+                $('#' + container_id).html($scope._('loading...'));
+                $ok($scope.url_portal_analytics_report, params, function (resp) {
+                    var chart = null;
+                    var rows = [[resp['dimension'], resp['metric']]].concat(resp['rows']);
+                    switch (params['chart']['type']) {
+                        case 'GEO':
+                            chart = new google.visualization.GeoChart(document.getElementById(container_id));
+                            chart.draw(google.visualization.arrayToDataTable(rows), {
+                                title: $scope._('Total ' + resp['metric'] + ': %(total)s', {total: resp['total'] ? resp['total'] : 0}),
+                            });
+
+                            break;
+                        case 'LINE':
+                            var chart = new google.visualization.ColumnChart(document.getElementById(container_id));
+
+                            var addDays = function (date, days) {
+                                var dat = new Date(date);
+                                dat.setDate(dat.getDate() + days);
+                                return dat;
+                            };
+
+                            var timedatediscretization = {
+                                'hour': {
+                                    'columntype': 'number',
+                                    'valueconverter': parseInt,
+                                    'hAxis': {
+                                        baselineColor: 'transparent',
+                                        gridlines: {color: 'transparent'},
+                                        ticks: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22],
+                                        format: 'decimal',
+                                        viewWindow: {
+                                            min: -1, max: 24
+                                        }
+                                    },
+                                },
+                                'date': {
+                                    'columntype': 'date',
+                                    'valueconverter': function (val) {
+                                        return new Date(val.replace(/(....)(..)(..)/, '$1-$2-$3'));
+                                    },
+                                    'hAxis': {
+                                        baselineColor: 'transparent',
+                                        gridlines: {color: 'transparent'},
+                                        format: 'dd MMM yyyy',
+                                        viewWindow: {
+                                            'min': addDays(params['query']['date']['start'], -1),
+                                            'max': addDays(params['query']['date']['end'], 1)
+                                        }
+                                    }
+                                },
+                                'yearMonth': {
+                                    'columntype': 'date',
+                                    'valueconverter': function (val) {
+                                        return new Date(val.replace(/(....)(..)/, '$1-$2-15'));
+                                    },
+                                    'hAxis': {
+                                        baselineColor: 'transparent',
+                                        gridlines: {color: 'transparent'},
+                                        format: 'MMMM yyyy',
+                                        viewWindow: {
+                                            'min': addDays(params['query']['date']['start'], -7),
+                                            'max': addDays(params['query']['date']['end'], 7)
+                                        }
+                                    }
+                                }
+                            };
+                            var ifcall = function (ind, arg) {
+                                var ret = (typeof timedatediscretization[resp['dimension']][ind] === 'function') ?
+                                    timedatediscretization[resp['dimension']][ind](arg) : timedatediscretization[resp['dimension']][ind]
+                                return ret;
+                            };
+
+                            var data = new google.visualization.DataTable();
+                            data.addColumn(ifcall('columntype'), resp['dimension']);
+                            data.addColumn('number', resp['metric']);
+
+                            for (var i = 1; i < rows.length; i++) {
+                                data.addRow([ifcall('valueconverter', rows[i][0]), rows[i][1]]);
+                            }
+
+                            chart.draw(data, {
+                                title: $scope._('Total ' + resp['metric'] + ': %(total)s', {total: resp['total'] ? resp['total'] : 0}),
+                                legend: {position: "none"},
+                                bar: {
+                                    groupWidth: 20
+                                },
+                                vAxis: {
+                                    format: 'long',
+                                },
+                                hAxis: ifcall('hAxis')
+                            });
+                            break;
+
+                        default:
+                            var chart = new google.visualization.PieChart(document.getElementById(container_id));
+                            chart.draw(google.visualization.arrayToDataTable(rows), {
+                                pieStartAngle: 100,
+                                title: $scope._('Total ' + resp['metric'] + ': %(total)s', {total: resp['total'] ? resp['total'] : 0}),
+                            });
+                    }
+                    graph['_loaded'] = true;
+                }, function (resp) {
+                    graph['_loaded'] = true;
+                    $('#' + container_id).html('Error with message: ' + resp);
+                });
+            };
+
             $scope.graph_types = [
                 {
                     _filters: {},
@@ -157,8 +263,9 @@
                 if (graph_options['_type'] === 'publication_reached') {
                     copy['_filters']['page_type'] = 'publication';
                 }
-                $scope.graphs.push(copy);
-                $scope.redrawAnother(copy, null, 'add_graph');
+                copy._redraw = _.debounce($scope.redraw, 100),
+                    $scope.graphs.push(copy);
+                copy._redraw(copy, true);
             };
 
             $scope.remove_graph = function (graph_index) {
@@ -187,129 +294,6 @@
                 }
             };
 
-            $scope.redrawAnother = function (redraw_only_options, reset_interval, log) {
-                console.log(redraw_only_options, reset_interval, log);
-                $.each($scope.graphs, function (ind, graph) {
-                    if (!redraw_only_options || redraw_only_options === graph) {
-                        if (reset_interval) {
-                            $scope.is_interval_selected(redraw_only_options);
-                        }
-                        var container_id = 'chart-' + graph['_hash'] + '-container';
-                        var params = {
-                            query: $.extend({
-                                'filters': graph['_filters'],
-                            }, graph['query'], graph['_func_query'] ? graph['_func_query'](graph) : {}),
-                            chart: $.extend({
-                                'container': container_id,
-                            }, graph['chart'])
-                        };
-                        graph['_loaded'] = false;
-                        $('#'+container_id).html($scope._('loading...'));
-                        $ok($scope.url_portal_analytics_report, params, function (resp) {
-                            var chart = null;
-                            var rows = [[resp['dimension'], resp['metric']]].concat(resp['rows']);
-                            switch (params['chart']['type']) {
-                                case 'GEO':
-                                    chart = new google.visualization.GeoChart(document.getElementById(container_id));
-                                    chart.draw(google.visualization.arrayToDataTable(rows), {
-                                        title: $scope._('Total ' + resp['metric'] + ': %(total)s', {total: resp['total']?resp['total']:0}),
-                                    });
-
-                                    break;
-                                case 'LINE':
-                                    var chart = new google.visualization.ColumnChart(document.getElementById(container_id));
-
-                                    var addDays = function (date, days) {
-                                        var dat = new Date(date);
-                                        dat.setDate(dat.getDate() + days);
-                                        return dat;
-                                    };
-
-                                    var timedatediscretization = {
-                                        'hour': {
-                                            'columntype': 'number',
-                                            'valueconverter': parseInt,
-                                            'hAxis': {
-                                                baselineColor: 'transparent',
-                                                gridlines: {color: 'transparent'},
-                                                ticks: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22],
-                                                format: 'decimal',
-                                                viewWindow: {
-                                                    min: -1, max: 24
-                                                }
-                                            },
-                                        },
-                                        'date': {
-                                            'columntype': 'date',
-                                            'valueconverter': function (val) {
-                                                return new Date(val.replace(/(....)(..)(..)/, '$1-$2-$3'));
-                                            },
-                                            'hAxis': {
-                                                baselineColor: 'transparent',
-                                                gridlines: {color: 'transparent'},
-                                                format: 'dd MMM yyyy',
-                                                viewWindow: {
-                                                    'min': addDays(params['query']['date']['start'], -1),
-                                                    'max': addDays(params['query']['date']['end'], 1)
-                                                }
-                                            }
-                                        },
-                                        'yearMonth': {
-                                            'columntype': 'date',
-                                            'valueconverter': function (val) {
-                                                return new Date(val.replace(/(....)(..)/, '$1-$2-15'));
-                                            },
-                                            'hAxis': {
-                                                baselineColor: 'transparent',
-                                                gridlines: {color: 'transparent'},
-                                                format: 'MMMM yyyy',
-                                                viewWindow: {
-                                                    'min': addDays(params['query']['start'], -7),
-                                                    'max': addDays(params['query']['end'], 7)
-                                                }
-                                            }
-                                        }
-                                    };
-                                    var ifcall = function (ind, arg) {
-                                        var ret = (typeof timedatediscretization[resp['dimension']][ind] === 'function') ?
-                                            timedatediscretization[resp['dimension']][ind](arg) : timedatediscretization[resp['dimension']][ind]
-                                        return ret;
-                                    };
-
-                                    var data = new google.visualization.DataTable();
-                                    data.addColumn(ifcall('columntype'), resp['dimension']);
-                                    data.addColumn('number', resp['metric']);
-
-                                    for (var i = 1; i < rows.length; i++) {
-                                        data.addRow([ifcall('valueconverter', rows[i][0]), rows[i][1]]);
-                                    }
-
-                                    chart.draw(data, {
-                                        title: $scope._('Total ' + resp['metric'] + ': %(total)s', {total: resp['total']?resp['total']:0}),
-                                        legend: {position: "none"},
-                                        bar: {
-                                            groupWidth: 20
-                                        },
-                                        vAxis: {
-                                            format: 'long',
-                                        },
-                                        hAxis: ifcall('hAxis')
-                                    });
-                                    break;
-
-                                default:
-                                    var chart = new google.visualization.PieChart(document.getElementById(container_id));
-                                    chart.draw(google.visualization.arrayToDataTable(rows), {
-                                        pieStartAngle: 100,
-                                        title: $scope._('Total ' + resp['metric'] + ': %(total)s', {total: resp['total']?resp['total']:0}),
-                                    });
-                            }
-                            graph['_loaded'] = true;
-                        });
-                    }
-                });
-            };
-
             $scope.ready = function () {
 
                 google.charts.load("current", {packages: ["corechart", "bar", "geochart"]});
@@ -326,7 +310,7 @@
                 return function (value) {
                     if (angular.isDefined(value)) {
                         graph_options['_filters'][filter_name] = value;
-                        $scope.redrawAnother(graph_options, null, 'generate_getter_setter_function_filter');
+                        graph_options._redraw(graph_options);
                     } else {
                         if (graph_options['_filters'][filter_name] === undefined) {
                             return '__ANY__';
@@ -340,7 +324,7 @@
                 return function (value) {
                     if (angular.isDefined(value)) {
                         graph_options['query'][start_or_end + '-date'] = value;
-                        $scope.redrawAnother(graph_options, null, 'generate_getter_setter_function_date');
+                        graph_options._redraw(graph_options);
                     } else {
                         return graph_options['query'][start_or_end + '-date'];
                     }
@@ -357,7 +341,7 @@
              style="background-color: #eee">
             <div class="col-md-10">
                 {{ ::_('what to show', {} ,'show') }}
-                <select ng-change="redrawAnother(graph_properties, null, 'select ng-change')"
+                <select ng-change="graph_properties._redraw(graph_properties)"
                         ng-model="graph_properties['query']['metrics']"
                         ng-disabled="!graph_properties._loaded"
                         class="form-control w10em di m025em"
@@ -366,12 +350,12 @@
 
                 {{ ::_('start date', {} ,'from') }} <input class="form-control w10em di m025em"
                                                            ng-disabled="!graph_properties._loaded"
-                                                           ng-change="redrawAnother(graph_properties, true, 'start_date')"
+                                                           ng-change="redraw(graph_properties, true, 'start_date')"
                                                            ng-model="graph_properties['query']['date']['start']"
                                                            pr-date-picker/>
                 {{ ::_('end date', {} ,'to') }} <input class="form-control w10em di m025em"
                                                        ng-disabled="!graph_properties._loaded"
-                                                       ng-change="redrawAnother(graph_properties, true, 'end_date')"
+                                                       ng-change="redraw(graph_properties, true, 'end_date')"
                                                        ng-model="graph_properties['query']['date']['end']"
                                                        pr-date-picker/>
                 <select ng-model="graph_properties['_interval']"

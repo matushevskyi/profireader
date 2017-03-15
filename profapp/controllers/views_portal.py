@@ -389,7 +389,7 @@ def analytics_report(json, portal_id):
 
     ret = {'metric': _(metric_name, prefix='metric'), 'dimension': _(dimension_name, prefix='dimension')}
     if 'rows' in report['data']:
-        rows = [[r['dimensions'][0], int(r['metrics'][0]['values'][0])] for r in report['data']['rows']]
+        rows = [[r['dimensions'][0], float(r['metrics'][0]['values'][0])] for r in report['data']['rows']]
         rows = sort_dimension(rows, dimension_name)
         formatted_rows = []
         for r in rows:
@@ -399,7 +399,7 @@ def analytics_report(json, portal_id):
             else:
                 formatted_rows.append([_(r[0], prefix=dimension_name), r[1]])
         ret['rows'] = formatted_rows
-        ret['total'] = int(report['data']['totals'][0]['values'][0])
+        ret['total'] = float(report['data']['totals'][0]['values'][0])
         return ret
     else:
         ret['rows'] = []
