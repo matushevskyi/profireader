@@ -45,6 +45,8 @@ class Config(object):
 
     JSON_SORT_KEYS = False
 
+    PROTOCOL = 'http:'
+
     # Application threads. A common general assumption is
     # using 2 per available processor cores - to handle
     # incoming requests using one and performing background

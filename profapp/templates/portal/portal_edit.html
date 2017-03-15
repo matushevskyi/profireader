@@ -74,6 +74,8 @@
         module.controller('portal_edit', ['$scope', '$uibModal', function ($scope, $uibModal) {
             $scope.$$translate = {{ translates('portal_edit')|safe }};
 
+            $scope.protocol = '{{ g.protocol }}';
+
             $scope.portal_id = {{ ("'" + portal_id + "'" if portal_id else 'null')|safe }};
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')($scope.portal_id ? 'portal_profile' : 'home');
 
@@ -248,7 +250,7 @@
                             <div>
                                 <label>{{ ::_('Host') }}</label>
                                 <a class="form-control border-none oh nowrap" target="_blank"
-                                   ng-href="https://{{ data.portal.host_profi_or_own === 'own'?data.portal.host_own:(data.portal.host_profi + '.' + MAIN_DOMAIN) }}">https://{{
+                                   ng-href="{{ protocol }}//{{ data.portal.host_profi_or_own === 'own'?data.portal.host_own:(data.portal.host_profi + '.' + MAIN_DOMAIN) }}">{{ protocol }}//{{
                                     data.portal.host_profi_or_own ===
                                     'own'?data.portal.host_own:(data.portal.host_profi + '.' + MAIN_DOMAIN) }}<span
                                             class="fa fa-external-link pr-external-link"></span></a>
