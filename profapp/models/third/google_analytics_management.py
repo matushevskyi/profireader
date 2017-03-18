@@ -82,7 +82,7 @@ class GoogleAnalyticsReport:
 
 class GoogleAnalyticsManagement:
     service = None
-    account = None
+    accounts = None
 
     def __init__(self):
         # Define the auth scopes to request.
@@ -97,10 +97,8 @@ class GoogleAnalyticsManagement:
         # Authenticate and construct service.
         self.service = self._get_service('analytics', 'v3', scope, key_file_location, service_account_email)
 
-        accounts = self.service.management().accounts().list().execute()
-        if accounts.get('items'):
-            # Get the first Google Analytics account.
-            self.account = accounts.get('items')[0]
+        self.accounts = sorted(self.service.management().accounts().list().execute().get('items'),
+                               key=lambda x: x['created'])
 
     def _get_service(self, api_name, api_version, scope, key_file_location,
                      service_account_email):
@@ -127,47 +125,46 @@ class GoogleAnalyticsManagement:
 
         return service
 
-    def get_web_properties(self):
-        return self.service.management().webproperties().list(accountId=self.account['id']).execute().get('items')
+    def get_web_properties(self, account_id):
+        return self.service.management().webproperties().list(accountId=account_id).execute().get('items')
 
-    def get_web_property(self, web_property_id):
-        return utils.find_by_id(self.get_web_properties(), web_property_id)
+    def get_web_property(self, account_id, web_property_id):
+        return utils.find_by_id(self.get_web_properties(account_id), web_property_id)
 
-    def get_view(self, view_id):
-        return utils.find_by_id(self.get_views(), view_id)
+    def get_view(self, account_id, web_peroperty, view_id):
+        return utils.find_by_id(self.get_views(account_id, web_peroperty), view_id)
 
-    def get_views(self, web_peroperty):
-        return self.service.management().profiles().list(accountId=self.account['id'],
+    def get_views(self, account_id, web_peroperty):
+        return self.service.management().profiles().list(accountId=account_id,
                                                          webPropertyId=web_peroperty['id']).execute().get('items')
 
     @staticmethod
     def websiteUrl(host):
         return 'https://' + host
 
-    def create_web_property(self, host):
-        return self.service.management().webproperties().insert(
-            accountId=self.account['id'],
-            body={'websiteUrl': self.websiteUrl(host),
-                  'name': 'Analytics for ' + host}).execute()
+    def create_web_property(self, account_id, host):
+        return self.service.management().webproperties().insert(accountId=account_id,
+                                                                body={'websiteUrl': self.websiteUrl(host),
+                                                                      'name': 'Analytics for ' + host}).execute()
 
-    def create_view(self, web_peroperty, name='View'):
-        return self.service.management().profiles().insert(
-            accountId=self.account['id'],
-            webPropertyId=web_peroperty['id'],
-            body={'name': name}).execute()
+    def delete_web_property(self, account_id, web_property_id):
+        return self.service.management().webproperties().delete(accountId=account_id,
+                                                                body={'websiteUrl': self.websiteUrl(host),
+                                                                      'name': 'Analytics for ' + host}).execute()
 
-    def create_custom_dimensions_and_metrics(self, web_property_id):
+    def create_view(self, account_id, web_peroperty, name='View'):
+        return self.service.management().profiles().insert(accountId=account_id, webPropertyId=web_peroperty['id'],
+                                                           body={'name': name}).execute()
+
+    def create_custom_dimensions_and_metrics(self, account_id, web_property_id):
         custom_dimensions = {name: self.service.management().customDimensions().insert(
-            accountId=self.account['id'],
-            webPropertyId=web_property_id,
-            body={
+            accountId=account_id, webPropertyId=web_property_id, body={
                 'name': name,
                 'scope': 'HIT',
                 'active': True
-            }
-        ).execute()['index'] for name in CUSTOM_DIMENSION}
+            }).execute()['index'] for name in CUSTOM_DIMENSION}
         custom_metrics = {name: self.service.management().customMetrics().insert(
-            accountId=self.account['id'],
+            accountId=account_id,
             webPropertyId=web_property_id,
             body={
                 'name': name,
@@ -178,23 +175,24 @@ class GoogleAnalyticsManagement:
         ).execute()['index'] for name in CUSTOM_METRIC}
         return custom_dimensions, custom_metrics
 
-    def update_host_for_property(self, web_property_id, new_host):
+    def update_host_for_property(self, account_id, web_property_id, new_host):
         web_property = self.get_web_property(web_property_id)
         if web_property['websiteUrl'] == self.websiteUrl(new_host):
             return False
-        return self.service.management().webproperties().patch(
-            accountId=self.account['id'],
-            webPropertyId=web_property_id,
-            body={
-                'websiteUrl': self.websiteUrl(new_host),
-                'name': 'Analytics for ' + new_host
-            }
-        ).execute()
+        return self.service.management().webproperties().patch(accountId=account_id, webPropertyId=web_property_id,
+                                                               body={
+                                                                   'websiteUrl': self.websiteUrl(new_host),
+                                                                   'name': 'Analytics for ' + new_host
+                                                               }).execute()
 
     def create_web_property_and_view(self, host, name=None):
-        web_property_created = self.create_web_property(host)
-        view_created = self.create_view(web_property_created, ('View for ' + host) if name is None else name)
-        return web_property_created['id'], view_created['id']
+        for ac in self.accounts:
+            if len(self.get_web_properties(ac['id'])) < 49:
+                web_property_created = self.create_web_property(ac['id'], host)
+                view_created = self.create_view(ac['id'], web_property_created,
+                                                ('View for ' + host) if name is None else name)
+                return ac['id'], web_property_created['id'], view_created['id']
+        raise Exception('no available google analytics account. Please create more in ga control panel')
 
 
 

@@ -40,6 +40,7 @@ class Portal(Base, PRBase):
     url_linkedin = Column(TABLE_TYPES['url'])
     # url_vkontakte = Column(TABLE_TYPES['url'])
 
+    google_analytics_account_id = Column(TABLE_TYPES['string_100'])
     google_analytics_web_property_id = Column(TABLE_TYPES['string_100'])
     google_analytics_view_id = Column(TABLE_TYPES['string_100'])
     google_analytics_dimensions = Column(TABLE_TYPES['json'])
@@ -144,12 +145,14 @@ class Portal(Base, PRBase):
         from profapp.models.third.google_analytics_management import GoogleAnalyticsManagement
         ga_man = GoogleAnalyticsManagement()
         if self.google_analytics_web_property_id:
-            ga_man.update_host_for_property(self.google_analytics_web_property_id, new_host=self.host)
+            ga_man.update_host_for_property(
+                self.google_analytics_account_id, self.google_analytics_web_property_id, new_host=self.host)
         else:
-            self.google_analytics_web_property_id, self.google_analytics_view_id = \
+            self.google_analytics_account_id, self.google_analytics_web_property_id, self.google_analytics_view_id = \
                 ga_man.create_web_property_and_view(self.host)
             self.google_analytics_dimensions, self.google_analytics_metrics = \
-                ga_man.create_custom_dimensions_and_metrics(self.google_analytics_web_property_id)
+                ga_man.create_custom_dimensions_and_metrics(
+                    self.google_analytics_account_id, self.google_analytics_web_property_id)
 
     @staticmethod
     def launch_new_portal(company):
@@ -248,6 +251,7 @@ class Portal(Base, PRBase):
         if utils.db.query_filter(Portal, company_owner_id=self.own_company.id).filter(Portal.id != self.id).count():
             errors['form'] = 'portal for company already exists'
 
+        self.host = self.host.lower()
         if utils.db.query_filter(Portal, host=self.host).filter(Portal.id != self.id).count():
             errors['host'] = 'host already taken by another portal'
 

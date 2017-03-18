@@ -365,7 +365,7 @@ def analytics_report(json, portal_id):
                     "dimensionName": 'ga:' + (dimension_name if dim_index is None else 'dimension{}'.format(dim_index)),
                     "not": False,
                     "operator": 'REGEXP',
-                    "expressions": ['^........*$'],
+                    "expressions": ['^........-....-....-....-............$'],
                     "caseSensitive": True})
             elif filter_value != '__ANY__':
                 dim_index = portal.google_analytics_dimensions.get(dimension_name, None)

@@ -177,11 +177,6 @@ dpkg -i ./elasticsearch-"$elastic_version".deb
 rm ./elasticsearch-"$elastic_version".deb" sudo fluent
 }
 
-function menu_fluent {
-#    elastic_version=$(rr 'elasticsearch version' 2.3.3)
-    conf_comm "curl -L https://toolbelt.treasuredata.com/sh/install-debian-jessie-td-agent2.sh | sh" sudo deb
-}
-
 function menu_deb {
     conf_comm "apt-get update
 apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev openjdk-7-jre haproxy" sudo npm
@@ -381,6 +376,24 @@ function menu_port {
     conf_comm "iptables -t nat -A OUTPUT  -d 127.0.0.1  -p tcp --dport 80 -j REDIRECT --to-port $toport" sudo db_user_bass
     }
 
+
+function menu_fluent {
+    echo "After instalation visit http://localhost:9090 (user/pass=admin/changeme)"
+    conf_comm "sed -i '/^.*\(soft\|hard\)[[:blank:]]\+nofile.*$/d' /etc/security/limits.conf
+echo 'root soft nofile 65536' >> /etc/security/limits.conf
+echo 'root hard nofile 65536' >> /etc/security/limits.conf
+echo '* soft nofile 65536' >> /etc/security/limits.conf
+echo '* hard nofile 65536' >> /etc/security/limits.conf
+sed -i '/^#\?[[:blank:]]\+\(net\.ipv4\.tcp_tw_recycle\|net\.ipv4\.tcp_tw_reuse\|net\.ipv4\.ip_local_port_range\)[[:blank:]]\+=[[:blank:]]\+.*$/d' /etc/sysctl.conf
+echo 'net.ipv4.tcp_tw_recycle = 1' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_tw_reuse = 1' >> /etc/sysctl.conf
+echo 'net.ipv4.ip_local_port_range = 10240    65535' >> /etc/sysctl.conf
+#curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-xenial-td-agent2.sh | sh
+curl -L https://toolbelt.treasuredata.com/sh/install-debian-jessie-td-agent2.sh | sh
+cp ./conf/td-agent-ui.service /etc/systemd/system/
+systemctl enable td-agent-ui.service" sudo deb
+    }
+
 function menu_db_user_pass {
     echo "Going to create user/pass from secret data and create such user/pass using postgres user"
     echo "If user exists, only password will be changed"
@@ -543,6 +556,7 @@ if [[ "$1" == "" ]]; then
       "python_3" "install python 3" \
       "venv" "create virtual environment" \
       "modules" "install required python modules (via pip)" \
+      "fluent" "install fluentd and frontend" \
       "db_user_pass" "create postgres user/password" \
       "db_rename" "rename database (create backup)" \
       "db_create" "create empty database" \
