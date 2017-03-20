@@ -26,7 +26,7 @@ custom_format = {
 
 logging.basicConfig(level=logging.INFO)
 l = logging.getLogger('fluent.test')
-h = handler.FluentHandler('app.follow', host='host', port=24224)
+h = handler.FluentHandler('test.follow', host='fluent.profi', port=24224)
 formatter = handler.FluentRecordFormatter(custom_format)
 h.setFormatter(formatter)
 l.addHandler(h)
@@ -34,10 +34,10 @@ l.info({
   'from': 'userA',
   'to': 'userB'
 })
-l.info('{"from": "userC", "to": "userD"}')
+l.error('{"from": "userC", "to": "userD"}')
 l.info("This log entry will be logged with the additional key: 'message'.")
 
-if __name__ == '__main__':
+if __name__ == '!!__main__':
 
     parser = argparse.ArgumentParser(description='activate requested (and confirmed) plans')
     args = parser.parse_args()
