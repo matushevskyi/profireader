@@ -15,27 +15,30 @@ import argparse
 import datetime
 
 import logging
-from fluent import handler
+import logstash
 
-custom_format = {
-  'host': '%(hostname)s',
-  'where': '%(module)s.%(funcName)s',
-  'type': '%(levelname)s',
-  'stack_trace': '%(exc_text)s'
-}
 
-logging.basicConfig(level=logging.INFO)
-l = logging.getLogger('fluent.test')
-h = handler.FluentHandler('test.follow', host='fluent.profi', port=24224)
-formatter = handler.FluentRecordFormatter(custom_format)
-h.setFormatter(formatter)
-l.addHandler(h)
-l.info({
-  'from': 'userA',
-  'to': 'userB'
-})
-l.error('{"from": "userC", "to": "userD"}')
-l.info("This log entry will be logged with the additional key: 'message'.")
+test_logger = logging.getLogger('python-logstash-logger')
+test_logger.setLevel(logging.INFO)
+test_logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1))
+# test_logger.addHandler(logstash.TCPLogstashHandler(host, 5959, version=1))
+
+test_logger.error('python-logstash: test logstash error message.')
+test_logger.info('python-logstash: test logstash info message.')
+test_logger.warning('python-logstash: test logstash warning message.')
+#
+# # add extra field to logstash message
+# extra = {
+#     'test_string': 'python version: ' + repr(sys.version_info),
+#     'test_boolean': True,
+#     'test_dict': {'a': 1, 'b': 'c'},
+#     'test_float': 1.23,
+#     'test_integer': 123,
+#     'test_list': [1, 2, '3'],
+# }
+# test_logger.info('python-logstash: test extra fields', extra=extra)
+#
+
 
 if __name__ == '!!__main__':
 

@@ -10,10 +10,72 @@
 #    - name: Update apt cache
 #      apt:
 #        update_cache: yes
-    - name: Install java
+    - name: Add java repo
       apt_repository:
         repo: 'ppa:webupd8team/java'
-        codename: 'jessie'
+        codename: 'xenial'
+        update_cache: yes
+    - name: Install java
+      apt:
+        name: 'oracle-java8-installer'
+    - name: add elastic repo key
+      apt_key:
+        url: "https://packages.elastic.co/GPG-KEY-elasticsearch"
+        state: present
+    - name: Add elasticsearch repo
+      apt_repository:
+        repo: 'deb http://packages.elastic.co/elasticsearch/2.x/debian stable main'
+        state: present
+        update_cache: yes
+    - name: Install elasticsearc
+      apt:
+        name: 'elasticsearch'
+    - name: Enable elasticsearch service
+      service:
+        name: elasticsearch
+        state: started
+        enabled: yes
+    - name: Add kibana
+      apt_repository:
+        repo: 'deb http://packages.elastic.co/kibana/4.4/debian stable main'
+        state: present
+        update_cache: yes
+    - name: Install kibana
+      apt:
+        name: 'kibana'
+    - name: Enable kibana service
+      service:
+        name: kibana
+        state: started
+        enabled: yes
+    - name: Add logstash
+      apt_repository:
+        repo: 'deb http://packages.elastic.co/logstash/2.2/debian stable main'
+        state: present
+        update_cache: yes
+    - name: Install logstash
+      apt:
+        name: 'logstash'
+    - name: Enable logstash service
+      service:
+        name: logstash
+        state: started
+        enabled: yes
+
+
+
+
+
+#    - name: allow access from local net
+#      replace:
+#        path: /home/jdoe/.ssh/known_hosts
+#        regexp: '^old\.host\.name[^\n]*\n'
+#        owner: jdoe
+#        group: jdoe
+#        mode: 0644
+
+
+
 #    - name: Install common packages
 #      apt:
 #        name: "{{ item }}"
