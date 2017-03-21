@@ -1,0 +1,43 @@
+---
+
+- hosts: "elk"
+  remote_user: root
+  become: no
+  tasks:
+    - name: Usage
+      debug:
+        msg: ""
+#    - name: Update apt cache
+#      apt:
+#        update_cache: yes
+    - name: Install java
+      apt_repository:
+        repo: 'ppa:webupd8team/java'
+        codename: 'jessie'
+#    - name: Install common packages
+#      apt:
+#        name: "{{ item }}"
+#      with_items:
+#        - vim
+#        - zsh
+#        - mc
+#        - ssh
+#        - git
+#        - build-essential
+#        - sudo
+#        - nmap
+#        - curl
+#        - bzip2
+#        - pv
+#    - name: Install oh-my-zhs (best shell needs braces)
+#      shell: curl -L http://install.ohmyz.sh | sh
+#    - name: Download .zshrc file
+#      get_url:
+#        url: https://raw.githubusercontent.com/kakabomba/keys/master/.zshrc
+#        dest: /root/.zshrc
+#        mode: 0644
+#    - name: Download vimrc file
+#      get_url:
+#        url: https://raw.githubusercontent.com/kakabomba/keys/master/vimrc
+#        dest: /etc/vim/vimrc
+#        mode: 0644
