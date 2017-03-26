@@ -117,6 +117,7 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
     # strong_reference_session(Session())
     return db_session
 
+
 #
 # def setup_logger(apptype, host='fluid.profi', port=24224):
 
@@ -134,8 +135,8 @@ def prepare_connections(app, echo=False):
         g.call_after_commit = []
         g.functions_to_call_after_commit = {}
 
-#        from fluent import sender
-#        g.logger = sender.FluentSender(app.apptype, host=app.config['FLUENT_LOGGER_HOST'], port=app.config['FLUENT_LOGGER_PORT'])
+        #        from fluent import sender
+        #        g.logger = sender.FluentSender(app.apptype, host=app.config['FLUENT_LOGGER_HOST'], port=app.config['FLUENT_LOGGER_PORT'])
         g.log = lambda *args: print(*args)
 
         event.listen(db_session, 'after_flush', on_after_flush)
@@ -274,6 +275,34 @@ class AnonymousUser(AnonymousUserMixin):
 
 
 login_manager.anonymous_user = AnonymousUser
+from functools import partial
+
+class logger:
+    _l = None
+
+    critical = None
+    error = None
+    warning = None
+    notice = None
+    debug = None
+
+
+
+    def __init__(self, apptype, debug):
+        import logging
+        import logstash
+        logger = logging.getLogger(apptype)
+        logger.setLevel(logging.DEBUG if debug else logging.INFO)
+        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1))
+        self._l = logger
+        self.critical = partial(self._l.critical, stack_info=True)
+        self.error = partial(self._l.error, stack_info=True)
+        self.warning = partial(self._l.warning, stack_info=True)
+        self.info = partial(self._l.info, stack_info=True)
+        self.debug = partial(self._l.debug, stack_info=True)
+
+    def exceptopn(self, message):
+        self._l.exceptopn(message)
 
 
 def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
@@ -285,7 +314,9 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.debug = app.config['DEBUG'] if 'DEBUG' in app.config else False
     app.testing = app.config['TESTING'] if 'TESTING' in app.config else False
+
     app.apptype = apptype
+    app.log = logger(apptype, app.debug)
 
     app.before_request(prepare_connections(app))
     app.before_request(lambda: load_user(apptype))

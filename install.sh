@@ -139,8 +139,13 @@ function error_if_exists {
     fi
     }
 
-function get_profidb {
-    echo `cat scrt/secret_data.py | grep 'DB_NAME\s*=' | sed -e 's/^\s*DB_NAME\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+function get_profi_secret_value {
+    echo `cat scrt/secret_data.py | grep "$1\s*=" | sed -e "s/^\s*$1\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g" `
+    }
+
+
+function runsql_remote_dump {
+    conf_comm "cat '$1' | PGPASSWORD='$5' psql -w --host='$3' --username='$4' '$2'" "$6"
     }
 
 function runsql {
@@ -149,7 +154,7 @@ su postgres -c \"echo \\\"$1\\\" | psql\"" sudo "$2"
     }
 
 function runsql_dump {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     filenam=$(rr "$1" "$2")
     conf_comm "systemctl restart postgresql.service
 su postgres -c 'cat $filenam | psql $profidb'" sudo "$3"
@@ -434,12 +439,12 @@ function menu_compare_makarony_artek {
     }
 
 function menu_db_rename {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     runsql "ALTER DATABASE $profidb RENAME TO bak_$profidb""_"`$gitv`"_"`$datev` 'db_create'
     }
 
 function menu_db_create {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     psqldb=$(rr 'Enter postgresql database name' $profidb)
 
     profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
@@ -454,8 +459,9 @@ function menu_db_download_minimal {
 function menu_db_load_minimal {
     runsql_dump 'Enter sql structure filename' db/database.structure db_save_minimal
     }
+
 function menu_db_save_minimal {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     conf_comm "su postgres -c 'pg_dump -s $profidb' > db/database.structure
 tables=\$(su postgres -c \"echo 'SELECT RelName FROM pg_Description JOIN pg_Class ON pg_Description.ObjOID = pg_Class.OID WHERE ObjSubID = 0 AND Description LIKE '\\\"'\\\"%persistent%\\\"'\\\" | psql -t $profidb\" | sed '/^\\s*\$/d' | sed -e 's/^/-t /g' | tr \"\\n\" \" \" )
 su postgres -c \"pg_dump --inserts -a \$tables $profidb\" >> db/database.initial
@@ -468,12 +474,18 @@ function menu_db_download_full {
     }
 
 function menu_db_load_full {
-    runsql_dump 'Enter sql full dump filename' db/database_full.sql menu_db_reassign_ownership 
+    runsql_remote_dump \
+       $(rr 'Enter sql full dump filename' 'db/database_full.sql') \
+       $(rr 'Enter database name' $(get_profi_secret_value 'DB_NAME')) \
+       $(rr 'Enter database host' $(get_profi_secret_value 'DB_HOST')) \
+       $(rr 'Enter database user' $(get_profi_secret_value 'DB_USER')) \
+       $(rr 'Enter database password' $(get_profi_secret_value 'DB_PASSWORD')) \
+       menu_db_reassign_ownership
     }
 
 function menu_db_reassign_ownership {
 
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
 
     profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
 
@@ -486,7 +498,7 @@ su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT table_name     FROM inform
 
 function menu_db_localize {
 
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
 
     maindomain=$(rr 'Enter main domain' `get_main_domain`)
     conf_comm "
@@ -496,7 +508,7 @@ su postgres -c \"psql -c 'SELECT __localize_hosts('\\\"'\\\"'$maindomain'\\\"'\\
     }
 
 function menu_db_save_full {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     conf_comm "
 mv db/database_full.sql db/database_full.sql."`$gitv`"_"`$datev`".bak
 su postgres -c 'pg_dump $profidb' > db/database_full.sql
