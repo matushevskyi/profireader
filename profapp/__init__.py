@@ -135,10 +135,6 @@ def prepare_connections(app, echo=False):
         g.call_after_commit = []
         g.functions_to_call_after_commit = {}
 
-        #        from fluent import sender
-        #        g.logger = sender.FluentSender(app.apptype, host=app.config['FLUENT_LOGGER_HOST'], port=app.config['FLUENT_LOGGER_PORT'])
-        g.log = lambda *args: print(*args)
-
         event.listen(db_session, 'after_flush', on_after_flush)
 
         @event.listens_for(g.db, 'after_commit')
@@ -277,6 +273,7 @@ class AnonymousUser(AnonymousUserMixin):
 login_manager.anonymous_user = AnonymousUser
 from functools import partial
 
+
 class logger:
     _l = None
 
@@ -286,23 +283,32 @@ class logger:
     notice = None
     debug = None
 
-
-
-    def __init__(self, apptype, debug):
+    def __init__(self, apptype, debug, testing):
         import logging
         import logstash
         logger = logging.getLogger(apptype)
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
         logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1))
         self._l = logger
-        self.critical = partial(self._l.critical, stack_info=True)
-        self.error = partial(self._l.error, stack_info=True)
-        self.warning = partial(self._l.warning, stack_info=True)
-        self.info = partial(self._l.info, stack_info=True)
-        self.debug = partial(self._l.debug, stack_info=True)
 
-    def exceptopn(self, message):
-        self._l.exceptopn(message)
+        def pp(t, message):
+            print('{}: {}'.format(t, message))
+            return True
+
+        if debug:
+            self.exception = lambda m: pp('!!! Exception', m) and self._l.exception(m, stack_info=True)
+            self.critical = lambda m: pp('!!! Critical', m) and self._l.critical(m, stack_info=True)
+            self.error = lambda m: pp('!! Error', m) and self._l.error(m, stack_info=True)
+            self.warning = lambda m: pp('! Warning', m) and self._l.warning(m, stack_info=True)
+            self.info = lambda m: pp('Info', m) and self._l.info(m, stack_info=True)
+            self.debug = lambda m: pp('Debug', m) and self._l.debug(m, stack_info=True)
+        else:
+            self.exception = partial(self._l.exception, stack_info=True)
+            self.critical = partial(self._l.critical, stack_info=True)
+            self.error = partial(self._l.error, stack_info=True)
+            self.warning = partial(self._l.warning, stack_info=True if testing else False)
+            self.info = partial(self._l.info, stack_info=True if testing else False)
+            self.debug = partial(self._l.debug, stack_info=True)
 
 
 def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
@@ -316,7 +322,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.testing = app.config['TESTING'] if 'TESTING' in app.config else False
 
     app.apptype = apptype
-    app.log = logger(apptype, app.debug)
+    app.log = logger(apptype, app.debug, app.testing)
 
     app.before_request(prepare_connections(app))
     app.before_request(lambda: load_user(apptype))
@@ -391,6 +397,10 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     elif apptype == 'file':
         from profapp.controllers.blueprints_register import register_file as register_blueprints_file
         register_blueprints_file(app)
+    elif apptype == 'profi':
+        from profapp.controllers.blueprints_register import register_profi as register_blueprints_profi
+        register_blueprints_profi(app)
+        update_jinja_engine(app)
     else:
         from profapp.controllers.blueprints_register import register_profi as register_blueprints_profi
         register_blueprints_profi(app)

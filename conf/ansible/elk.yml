@@ -53,47 +53,14 @@
     - name: Install logstash
       apt:
         name: 'logstash'
+    - name: Create logstash systemd service file
+      copy:
+        src: ../logstash/logstash.service
+        dest: /lib/systemd/system/logstash.service
+        mode: 0644
     - name: Enable logstash service
       service:
         name: logstash
-        state: started
         enabled: yes
-
-
-#    - name: allow access from local net
-#      replace:
-#        path: /home/jdoe/.ssh/known_hosts
-#        regexp: '^old\.host\.name[^\n]*\n'
-#        owner: jdoe
-#        group: jdoe
-#        mode: 0644
-
-
-
-#    - name: Install common packages
-#      apt:
-#        name: "{{ item }}"
-#      with_items:
-#        - vim
-#        - zsh
-#        - mc
-#        - ssh
-#        - git
-#        - build-essential
-#        - sudo
-#        - nmap
-#        - curl
-#        - bzip2
-#        - pv
-#    - name: Install oh-my-zhs (best shell needs braces)
-#      shell: curl -L http://install.ohmyz.sh | sh
-#    - name: Download .zshrc file
-#      get_url:
-#        url: https://raw.githubusercontent.com/kakabomba/keys/master/.zshrc
-#        dest: /root/.zshrc
-#        mode: 0644
-#    - name: Download vimrc file
-#      get_url:
-#        url: https://raw.githubusercontent.com/kakabomba/keys/master/vimrc
-#        dest: /etc/vim/vimrc
-#        mode: 0644
+        state: started
+        daemon_reload: yes

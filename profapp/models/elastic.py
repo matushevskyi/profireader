@@ -2,10 +2,10 @@ import json
 import math
 
 import requests
-from flask import g
 from sqlalchemy import event
 
 from profapp import utils
+from flask import g, request, current_app
 
 
 
@@ -33,8 +33,7 @@ class PRElasticConnection:
         import sys
         do_not_raise_exception = do_not_raise_exception if do_not_raise_exception else (method == 'DELETE')
 
-        g.log('elastic',
-              {'method': method, 'path': path, 'called_from': sys._getframe(1).f_code.co_name, 'request': req})
+        # current_app.log.debug({'method': method, 'path': path, 'called_from': sys._getframe(1).f_code.co_name, 'request': req})
 
         if method == 'POST':
             response = requests.post(path, data=json.dumps(req))
@@ -49,15 +48,15 @@ class PRElasticConnection:
         else:
             raise Exception("unknown method `" + method + '`')
         if returnstatusonly:
-            g.log('elastic', {'header': response.status_code.__str__()})
+            # current_app.log.debug({'header': response.status_code.__str__()})
             return True if response.status_code == 200 else False
         else:
-            g.log('elastic', {'header': response.status_code.__str__()})
+            # current_app.log.debug({'header': response.status_code.__str__()})
 
             if response.status_code > 299 and not do_not_raise_exception:
                 ret = json.loads(response.text)
                 raise PRElasticException(ret, response)
-            g.log('elastic', {'response': response.text})
+            # current_app.log.debug({'response': response.text})
             return response.text if notjson else json.loads(response.text)
 
     def index_exists(self, index_name):
@@ -227,7 +226,7 @@ class PRElasticDocument:
                 }
             }}, method='PUT')
             if ret:
-                g.log('elastic', {'created_index': index_name})
+                current_app.log.info({'created_index': index_name})
                 self.elastic_cached_index_doctype[index_name] = {}
             return True if ret else False
 
@@ -245,7 +244,7 @@ class PRElasticDocument:
             ret = elasticsearch.rq(path=elasticsearch.path(index_name, '_mapping', doctype_name),
                                    req=self.elastic_doctype_mappintg(), method='PUT')
             if ret:
-                g.log('elastic', {'created_doctype': doctype_name, 'index': index_name})
+                current_app.log.info({'created_doctype': doctype_name, 'index': index_name})
                 self.elastic_cached_index_doctype[index_name][doctype_name] = True
             return True if ret else False
 
