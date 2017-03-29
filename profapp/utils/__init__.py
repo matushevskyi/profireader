@@ -26,6 +26,10 @@ def dict_merge(*args, remove={}, **kwargs):
     return {k: v for k, v in ret.items() if not k in remove}
 
 
+def dict_pluck(dictionary, *args):
+    return {k: dictionary[k] for k in args}
+
+
 def dict_merge_recursive(*args):
     import collections
 
@@ -163,6 +167,7 @@ def dict_deep_get(dictionary, *keys, on_error=Exception):
 
 def find_by_keys(list, val, *keys, on_error=None):
     return next((d for d in list if dict_deep_get(d, *keys, on_error=on_error) == val), on_error)
+
 
 def find_by_id(list, id):
     return find_by_keys(list, id, 'id')

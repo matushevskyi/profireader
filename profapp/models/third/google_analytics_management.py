@@ -13,6 +13,7 @@ import httplib2
 from oauth2client import client
 from oauth2client import file
 from oauth2client import tools
+from time import sleep
 
 CUSTOM_DIMENSION = {'page_type': 'page_type',
                     'publication_visibility': 'publication_visibility',
@@ -84,6 +85,10 @@ class GoogleAnalyticsManagement:
     service = None
     accounts = None
 
+    def _s(self, retval=None, seconds=0.1):
+        sleep(seconds)
+        return retval
+
     def __init__(self):
         # Define the auth scopes to request.
         scope = ['https://www.googleapis.com/auth/analytics.readonly',
@@ -125,65 +130,103 @@ class GoogleAnalyticsManagement:
 
         return service
 
-    def get_web_properties(self, account_id):
+    def get_account(self, account_id):
+        if not account_id:
+            return None
+        for a in self.accounts:
+            if a['id'] == account_id:
+                return a
+        return None
+
+    def get_web_properties(self, account_id) -> list:
+        if not account_id:
+            return []
         return self.service.management().webproperties().list(accountId=account_id).execute().get('items')
 
     def get_web_property(self, account_id, web_property_id):
+        if not account_id or not web_property_id:
+            return None
         return utils.find_by_id(self.get_web_properties(account_id), web_property_id)
 
-    def get_view(self, account_id, web_peroperty, view_id):
-        return utils.find_by_id(self.get_views(account_id, web_peroperty), view_id)
+    def get_view(self, account_id, web_peroperty_id, view_id):
+        if not web_peroperty_id or not view_id:
+            # print('retutning none for web_peroperty_id={}, view_id{}'.format(web_peroperty_id, view_id))
+            return None
+        return utils.find_by_id(self.get_views(account_id, web_peroperty_id), view_id)
 
-    def get_views(self, account_id, web_peroperty):
+    def get_views(self, account_id, web_peroperty_id):
+        if not account_id or not web_peroperty_id:
+            return []
         return self.service.management().profiles().list(accountId=account_id,
-                                                         webPropertyId=web_peroperty['id']).execute().get('items')
+                                                         webPropertyId=web_peroperty_id).execute().get('items')
 
     @staticmethod
     def websiteUrl(host):
         return 'https://' + host
 
     def create_web_property(self, account_id, host):
-        return self.service.management().webproperties().insert(accountId=account_id,
-                                                                body={'websiteUrl': self.websiteUrl(host),
-                                                                      'name': 'Analytics for ' + host}).execute()
+        return self._s(self.service.management().webproperties().insert(
+            accountId=account_id, body={'websiteUrl': self.websiteUrl(host),
+                                        'name': 'Analytics for ' + host}).execute())
 
+    # there is no delete functions for web property in ga management api :(
     def delete_web_property(self, account_id, web_property_id):
-        return self.service.management().webproperties().delete(accountId=account_id,
-                                                                body={'websiteUrl': self.websiteUrl(host),
-                                                                      'name': 'Analytics for ' + host}).execute()
+        pass
 
-    def create_view(self, account_id, web_peroperty, name='View'):
-        return self.service.management().profiles().insert(accountId=account_id, webPropertyId=web_peroperty['id'],
-                                                           body={'name': name}).execute()
+    def delete_view(self, account_id, web_property_id, view_id):
+        return self._s(
+            self.service.management().profiles().delete(
+                accountId=account_id,
+                webPropertyId=web_property_id,
+                profileId=view_id).execute())
 
-    def create_custom_dimensions_and_metrics(self, account_id, web_property_id):
-        custom_dimensions = {name: self.service.management().customDimensions().insert(
+    def create_view(self, account_id, web_property, name='View'):
+        return self._s(
+            self.service.management().profiles().insert(accountId=account_id, webPropertyId=web_property['id'],
+                                                        body={'name': name}).execute())
+
+    def create_custom_dimension(self, account_id, web_property_id, dimension_name):
+        return self._s(self.service.management().customDimensions().insert(
             accountId=account_id, webPropertyId=web_property_id, body={
-                'name': name,
+                'name': dimension_name,
                 'scope': 'HIT',
                 'active': True
-            }).execute()['index'] for name in CUSTOM_DIMENSION}
-        custom_metrics = {name: self.service.management().customMetrics().insert(
-            accountId=account_id,
-            webPropertyId=web_property_id,
-            body={
-                'name': name,
+            }).execute()['index'])
+
+    def create_custom_metric(self, account_id, web_property_id, metric_name):
+        return self._s(self.service.management().customMetrics().insert(
+            accountId=account_id, webPropertyId=web_property_id, body={
+                'name': metric_name,
                 'scope': 'HIT',
                 'type': 'CURRENCY',
                 'active': True
-            }
-        ).execute()['index'] for name in CUSTOM_METRIC}
+            }).execute()['index'])
+
+    def create_custom_dimensions_and_metrics(self, account_id, web_property_id):
+        custom_dimensions = {name: self.create_custom_dimension(account_id, web_property_id, name)
+                             for name in CUSTOM_DIMENSION}
+        custom_metrics = {name: self.create_custom_metric(account_id, web_property_id, name)
+                          for name in CUSTOM_METRIC}
         return custom_dimensions, custom_metrics
 
+    def get_custom_dimensions_and_metrics(self, account_id, web_property_id):
+        custom_dimensions = self.service.management().customDimensions().list(
+            accountId=account_id, webPropertyId=web_property_id).execute().get('items')
+        custom_metrics = self.service.management().customMetrics().list(
+            accountId=account_id, webPropertyId=web_property_id).execute().get('items')
+        return [utils.dict_pluck(cd, 'index', 'id', 'name', 'scope') for cd in custom_dimensions], \
+               [utils.dict_pluck(cm, 'index', 'id', 'name', 'scope', 'type') for cm in custom_metrics]
+
     def update_host_for_property(self, account_id, web_property_id, new_host):
-        web_property = self.get_web_property(web_property_id)
+        web_property = self.get_web_property(account_id, web_property_id)
         if web_property['websiteUrl'] == self.websiteUrl(new_host):
             return False
-        return self.service.management().webproperties().patch(accountId=account_id, webPropertyId=web_property_id,
-                                                               body={
-                                                                   'websiteUrl': self.websiteUrl(new_host),
-                                                                   'name': 'Analytics for ' + new_host
-                                                               }).execute()
+        return self._s(
+            self.service.management().webproperties().patch(accountId=account_id, webPropertyId=web_property_id,
+                                                            body={
+                                                                'websiteUrl': self.websiteUrl(new_host),
+                                                                'name': 'Analytics for ' + new_host
+                                                            }).execute())
 
     def create_web_property_and_view(self, host, name=None):
         for ac in self.accounts:
@@ -195,87 +238,44 @@ class GoogleAnalyticsManagement:
         raise Exception('no available google analytics account. Please create more in ga control panel')
 
 
-
-        # def get_results(self, profile_id):
-        #     # Use the Analytics Service Object to query the Core Reporting API
-        #     # for the number of sessions within the past seven days.
-        #     return service.data().ga().get(
-        #         ids='ga:' + profile_id,
-        #         start_date='7daysAgo',
-        #         end_date='today',
-        #         metrics='ga:sessions').execute()
-
-
-
-        # def get_first_profile_id(self):
-        #     # Use the Analytics service object to get the first profile id.
-        #
-        #     # Get a list of all Google Analytics accounts for this user
-        #     # accountsSummaries = service.management().accountSummaries().list().execute()
-        #     accounts = service.management().accounts().list().execute()
-        #
-        #     if accounts.get('items'):
-        #         # Get the first Google Analytics account.
-        #         account = accounts.get('items')[0].get('id')
-        #
-        #         # Get a list of all the properties for the first account.
-        #         properties = service.management().webproperties().list(
-        #             accountId=account).execute()
-        #
-        #         if properties.get('items'):
-        #             # Get the first property id.
-        #             property = properties.get('items')[0].get('id')
-        #
-        #             # Get a list of all views (profiles) for the first property.
-        #             profiles = service.management().profiles().list(
-        #                 accountId=account,
-        #                 webPropertyId=property).execute()
-        #
-        #             if profiles.get('items'):
-        #                 # return the first view (profile) id.
-        #                 return profiles.get('items')[0].get('id')
-        #
-        #     return None
-
-
-def main():
-    from profapp import create_app, prepare_connections
-
-    parser = argparse.ArgumentParser(description='send greetings message')
-    parser.add_argument("--create_for_portal_host")
-    args = parser.parse_args()
-
-    app = create_app(apptype='profi', config='config.CommandLineConfig')
-    with app.app_context():
-        prepare_connections(app)(echo=True)
-        service = get_pr_service()
-        account = get_account(service)
-        if args.create_for_portal_host:
-            portal = g.db.query(Portal).filter(Portal.host == args.create_for_portal_host).one()
-            web_peroperties = get_web_properties(service, account)
-            for web_peroperty in web_peroperties:
-                if re.sub('^https?://', '', web_peroperty['websiteUrl']) == portal.host:
-                    create_view(service, account, web_peroperty)
-                    raise Exception('we already have web_property(id={}) for host={}'.
-                                    format(web_peroperty['id'], portal.host))
-
-            create_web_property(portal.host, service, account)
-            web_peroperties = get_web_properties(service, account)
-            web_property_just_created = None
-            for web_peroperty in web_peroperties:
-                if re.sub('^https?://', '', web_peroperty['websiteUrl']) == portal.host:
-                    web_property_just_created = web_peroperty
-            if not web_property_just_created:
-                raise Exception('cant find just created web_property for portal={}'.format(portal.host))
-            create_view(service, account, web_property_just_created)
-
-            # http: // prominfo.com.ua.borshch.m.ntaxa.com /
-
-
-            # profile = get_first_profile_id(service)
-            # get_web_properties(service)
-            # print_results(get_results(service, profile))
-
-# if __name__ == '__main__':
-#     main()
+# def main():
+#     from profapp import create_app, prepare_connections
 #
+#     parser = argparse.ArgumentParser(description='send greetings message')
+#     parser.add_argument("--create_for_portal_host")
+#     args = parser.parse_args()
+#
+#     app = create_app(apptype='profi', config='config.CommandLineConfig')
+#     with app.app_context():
+#         prepare_connections(app)(echo=True)
+#         service = get_pr_service()
+#         account = get_account(service)
+#         if args.create_for_portal_host:
+#             portal = g.db.query(Portal).filter(Portal.host == args.create_for_portal_host).one()
+#             web_peroperties = get_web_properties(service, account)
+#             for web_peroperty in web_peroperties:
+#                 if re.sub('^https?://', '', web_peroperty['websiteUrl']) == portal.host:
+#                     create_view(service, account, web_peroperty)
+#                     raise Exception('we already have web_property(id={}) for host={}'.
+#                                     format(web_peroperty['id'], portal.host))
+#
+#             create_web_property(portal.host, service, account)
+#             web_peroperties = get_web_properties(service, account)
+#             web_property_just_created = None
+#             for web_peroperty in web_peroperties:
+#                 if re.sub('^https?://', '', web_peroperty['websiteUrl']) == portal.host:
+#                     web_property_just_created = web_peroperty
+#             if not web_property_just_created:
+#                 raise Exception('cant find just created web_property for portal={}'.format(portal.host))
+#             create_view(service, account, web_property_just_created)
+#
+#             # http: // prominfo.com.ua.borshch.m.ntaxa.com /
+#
+#
+#             # profile = get_first_profile_id(service)
+#             # get_web_properties(service)
+#             # print_results(get_results(service, profile))
+#
+# # if __name__ == '__main__':
+# #     main()
+# #
