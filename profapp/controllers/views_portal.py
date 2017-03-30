@@ -1,4 +1,4 @@
-from flask import render_template, g, redirect, url_for
+from flask import render_template, g, redirect, url_for, current_app
 from sqlalchemy import desc
 from config import Config
 from profapp.controllers.errors import BadDataProvided
@@ -153,8 +153,24 @@ def profile_load(json, company_id=None, portal_id=None):
                         'purged', 'division type was changed or division was deleted',
                         more_phrases_to_company=phrases, more_phrases_to_portal=phrases)
 
-            portal.setup_ssl()
-            portal.setup_google_analytics()
+            try:
+                portal.setup_ssl()
+            except Exception as e:
+                current_app.log.error(e)
+                current_app.log.error('Error processing ssl for portal',
+                                      **current_app.log.extra(
+                                          portal=portal.get_client_side_dict(fields='id,host,name')))
+
+            try:
+                from profapp.models.third.google_analytics_management import GoogleAnalyticsManagement
+                ga_man = GoogleAnalyticsManagement()
+                portal.setup_google_analytics(ga_man, force_recreate=False)
+                portal.update_google_analytics_host(ga_man)
+            except Exception as e:
+                current_app.log.error(e)
+                current_app.log.error('Error processing google analytics for portal',
+                                      **current_app.log.extra(
+                                          portal=portal.get_client_side_dict(fields='id,host,name')))
             portal.save()
 
             g.db.commit()

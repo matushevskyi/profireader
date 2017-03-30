@@ -62,7 +62,7 @@ def create_web_property(host, service, account=None):
 
     service.management().webproperties().insert(
         accountId=account['id'],
-        body={'websiteUrl': 'https://' + host, 'name': 'Analytics for ' + host}).execute()
+        body={'websiteUrl': 'https://' + host, 'name': 'Property for ' + host}).execute()
 
 
 def create_view(service, account, web_peroperty):

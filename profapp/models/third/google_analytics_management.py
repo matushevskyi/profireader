@@ -167,7 +167,7 @@ class GoogleAnalyticsManagement:
     def create_web_property(self, account_id, host):
         return self._s(self.service.management().webproperties().insert(
             accountId=account_id, body={'websiteUrl': self.websiteUrl(host),
-                                        'name': 'Analytics for ' + host}).execute())
+                                        'name': 'Property for ' + host}).execute())
 
     # there is no delete functions for web property in ga management api :(
     def delete_web_property(self, account_id, web_property_id):
@@ -182,7 +182,8 @@ class GoogleAnalyticsManagement:
 
     def create_view(self, account_id, web_property, name='View'):
         return self._s(
-            self.service.management().profiles().insert(accountId=account_id, webPropertyId=web_property['id'],
+            self.service.management().profiles().insert(accountId=account_id,
+                                                        webPropertyId=web_property['id'],
                                                         body={'name': name}).execute())
 
     def create_custom_dimension(self, account_id, web_property_id, dimension_name):
@@ -219,13 +220,25 @@ class GoogleAnalyticsManagement:
 
     def update_host_for_property(self, account_id, web_property_id, new_host):
         web_property = self.get_web_property(account_id, web_property_id)
-        if web_property['websiteUrl'] == self.websiteUrl(new_host):
+        if web_property['websiteUrl'] == self.websiteUrl(new_host) and web_property['name'] == ('View for ' + new_host):
             return False
         return self._s(
             self.service.management().webproperties().patch(accountId=account_id, webPropertyId=web_property_id,
                                                             body={
                                                                 'websiteUrl': self.websiteUrl(new_host),
-                                                                'name': 'Analytics for ' + new_host
+                                                                'name': 'Property for ' + new_host
+                                                            }).execute())
+
+    def update_host_for_view(self, account_id, web_property_id, view_id, new_host):
+        view = self.get_view(account_id, web_property_id, view_id)
+        if view['websiteUrl'] == self.websiteUrl(new_host) and view['name'] == ('View for ' + new_host):
+            return False
+        return self._s(
+            self.service.management().profiles().patch(accountId=account_id, webPropertyId=web_property_id,
+                                                            profileId=view_id,
+                                                            body={
+                                                                'websiteUrl': self.websiteUrl(new_host),
+                                                                'name': 'View for ' + new_host
                                                             }).execute())
 
     def create_web_property_and_view(self, host, name=None):
@@ -236,7 +249,6 @@ class GoogleAnalyticsManagement:
                                                 ('View for ' + host) if name is None else name)
                 return ac['id'], web_property_created['id'], view_created['id']
         raise Exception('no available google analytics account. Please create more in ga control panel')
-
 
 # def main():
 #     from profapp import create_app, prepare_connections

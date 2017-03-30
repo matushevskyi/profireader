@@ -141,13 +141,16 @@ class Portal(Base, PRBase):
     def setup_ssl(self):
         return True
 
-    def setup_google_analytics(self, force_recreate = False):
-        from profapp.models.third.google_analytics_management import GoogleAnalyticsManagement
-        ga_man = GoogleAnalyticsManagement()
-        if self.google_analytics_web_property_id and not force_recreate:
-            ga_man.update_host_for_property(
-                self.google_analytics_account_id, self.google_analytics_web_property_id, new_host=self.host)
-        else:
+    def update_google_analytics_host(self, ga_man):
+        ga_man.update_host_for_property(
+            self.google_analytics_account_id, self.google_analytics_web_property_id, new_host=self.host)
+        ga_man.update_host_for_view(
+            self.google_analytics_account_id, self.google_analytics_web_property_id, self.google_analytics_view_id,
+            new_host=self.host)
+
+
+    def setup_google_analytics(self, ga_man, force_recreate=False):
+        if force_recreate or not self.google_analytics_account_id:
             self.google_analytics_account_id, self.google_analytics_web_property_id, self.google_analytics_view_id = \
                 ga_man.create_web_property_and_view(self.host)
             self.google_analytics_dimensions, self.google_analytics_metrics = \
