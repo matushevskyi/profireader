@@ -1,27 +1,16 @@
 #!/usr/bin/env bash
 
-basen=$(echo $1 | sed 's/.py$//g')
-
-if [ ! -d '/run/profi' ]; then
-  mkdir '/run/profi'
+cd $(dirname $0)
+mkdir -p /var/run/profi
+basen=$(basename "$1" | cut -d. -f1)
+pid_file="/var/run/profi/$basen.pid"
+if [ -f $pid_file ]; then
+  echo "currently running under pid $(cat $pid_file). you can try: kill -9 $(cat $pid_file)"
+else
+  ./run_with_env.sh $1 ${@:2} &
+  pid=$!
+  echo $pid>$pid_file
+  wait $pid
+  rm $pid_file
 fi
-
-pidfile="/run/profi/$basen.pid"
-
-if [ -f $pidfile ]; then
-  (>&2 echo "Error. pid file $pidfile exists.
-  kill -9  $(cat $pidfile)
-  rm $pidfile")
-  exit
-fi
-echo "Starting work $1"
-START=$(date +%s)
-source ../.venv/bin/activate && echo $$ > $pidfile && python ./$1 ${@:2}
-if [[ "$?" != "0" ]]; then
-  echo "Error occurred"
-fi
-rm $pidfile
-END=$(date +%s)
-DIFF=$(( $END - $START ))
-echo "It took $DIFF seconds"
 

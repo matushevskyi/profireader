@@ -201,7 +201,6 @@ bower install" nosudo bower_components_dev
     }
 
 
-
 function menu_bower_components_dev {
     conf_comm "cd ./profapp/static/bower_components_dev
 mkdir ./angular-db-filemanager
@@ -236,12 +235,11 @@ cat /etc/hosts" sudo cron_files
 
 function menu_cron_files {
     files=$(/bin/ls ./conf/cron | tr '\n' ' ')
-    conf_comm "mkdir /var/log/profi
-mkdir /run/profi
+    conf_comm "mkdir -p /run/profi
 rm /etc/cron.d/profi_*
 for file in $files
 do
-  cat conf/cron/\$file | sed 's#/var/www/#$PWD/#g' > /etc/cron.d/profi_\$file
+  cat conf/cron/\$file | sed 's#----directory----#$PWD#g' > /etc/cron.d/profi_\$file
 done
 systemctl restart cron.service" sudo haproxy_compile
     }
