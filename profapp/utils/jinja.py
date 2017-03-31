@@ -1,4 +1,4 @@
-from flask import Flask, g, request, current_app, session, url_for
+from flask import Flask, g, request, current_app, session, url_for, jsonify
 import jinja2
 from jinja2 import Markup, escape
 import datetime
@@ -12,6 +12,7 @@ from config import secret_data
 from main_domain import MAIN_DOMAIN
 from ..models.config import Config as ModelConfig
 import hashlib
+from profapp.models.third.google_analytics_management import PortalAnalytics
 
 
 def link(href_placeholder, text_placeholder, placeholder_is_text=False):
@@ -122,7 +123,7 @@ def prImage(id=None, if_no_image=None, position='center'):
 
 
 def config_variables():
-    variables = g.db.query(ModelConfig).filter_by(server_side=1).all()
+    variables = g.db.query(ModelConfig).filter_by(client_side=1).all()
     ret = {}
     for variable in variables:
         var_id = variable.id
@@ -156,6 +157,38 @@ def translate_html(context, phrase, dictionary=None, phrase_default=None, phrase
                                            phrase_comment=phrase_comment))
 
 
+def google_analytics(portal, analytics: PortalAnalytics):
+    from profapp.models.third.google_analytics_management import CUSTOM_DIMENSION, CUSTOM_METRIC
+    if not portal['google_analytics_web_property_id']:
+        return ''
+    analytics = json.dumps({
+        'dimension' + str(portal['google_analytics_dimensions'][
+                              CUSTOM_DIMENSION['reader_plan']]): analytics.reader_plan,
+        'dimension' + str(portal['google_analytics_dimensions'][
+                              CUSTOM_DIMENSION['company_id']]): analytics.company_id,
+        'dimension' + str(portal['google_analytics_dimensions'][
+                              CUSTOM_DIMENSION['page_type']]): analytics.page_type,
+        'dimension' + str(portal['google_analytics_dimensions'][
+                              CUSTOM_DIMENSION['publication_visibility']]): analytics.publication_visibility,
+        'dimension' + str(portal['google_analytics_dimensions'][
+                              CUSTOM_DIMENSION['publication_reached']]): analytics.publication_reached,
+        'metric' + str(portal['google_analytics_metrics'][
+                           CUSTOM_METRIC['income']]): analytics.income,
+    })
+    return Markup("""<!-- Google Analytics -->
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', '""" + portal['google_analytics_web_property_id'] + """', 'auto');
+ga('set', """ + analytics + """);
+ga('send', 'pageview');
+</script>
+<!-- End Google Analytics -->""")
+
+
 def static_address_html(relative_file_name):
     return Markup(utils.static_address(relative_file_name))
 
@@ -171,18 +204,18 @@ def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
 
 def moment(value, out_format=None):
     if isinstance(value, datetime.datetime):
-        value = value.isoformat(' ') + ' GMT'
+        value = value.isoformat(' ')
         return Markup(
-            "<script> document.write(moment.utc('{}').local().format('{}')) </script><noscript>{}</noscript>".format(
+            "<script>document.write(moment.utc('{}', 'YYYY-MM-DD HH:mm:ss GMT').local().format('{}')) </script><noscript>{} GMT</noscript>".format(
                 value, out_format if out_format else 'dddd, LL (HH:mm)', value))
     elif isinstance(value, datetime.date):
         value = value.strftime('%Y-%m-%d')
         return Markup(
-            "<script> document.write(moment('{}').format('{}')) </script><noscript>{}</noscript>".format(
+            "<script>document.write(moment('{}', 'YYYY-MM-DD').format('{}')) </script><noscript>{}</noscript>".format(
                 value, out_format if out_format else 'dddd, LL', value))
     else:
         return Markup(
-            "<script> document.write(moment.utc('{}').local().format('{}')) </script><noscript>{}</noscript>".format(
+            "<script>document.write(moment.utc('{}').local().format('{}')) </script><noscript>{}</noscript>".format(
                 value, out_format if out_format else 'dddd, LL (HH:mm)', value))
 
 
@@ -267,16 +300,14 @@ def _url_permitted(endpoint, dictionary={}):
 
         matched = {}
         for d in dictionary:
-            if re.match(r'.*<([^:]+(\([^()]+\))?:)?'+d+'>.*', permission['rule']):
+            if re.match(r'.*<([^:]+(\([^()]+\))?:)?' + d + '>.*', permission['rule']):
                 matched[d] = dictionary[d]
         if matched == dictionary:
             return url_for(endpoint, **dictionary) if permission['permissions'].check(**dictionary) else False
 
     raise Exception(
-            'url_permitted: Cant find any matched rule at endpoint `{}` for passed dictionary {}'.format(endpoint,
-                                                                                                      dictionary))
-
-
+        'url_permitted: Cant find any matched rule at endpoint `{}` for passed dictionary {}'.format(endpoint,
+                                                                                                     dictionary))
 
 
 def update_jinja_engine(app):
@@ -295,6 +326,7 @@ def update_jinja_engine(app):
     app.jinja_env.globals.update(secret_data=secret_data)
     app.jinja_env.globals.update(_=translate_phrase)
     app.jinja_env.globals.update(__=translate_html)
+    app.jinja_env.globals.update(google_analytics=google_analytics)
     app.jinja_env.globals.update(moment=moment)
     app.jinja_env.globals.update(static_address=static_address_html)
     app.jinja_env.globals.update(MAIN_DOMAIN=Config.MAIN_DOMAIN)

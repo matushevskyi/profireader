@@ -5,7 +5,7 @@ from profapp.models.users import User
 from profapp.models.messenger import Socket, Notification
 from flask import g
 from sqlalchemy import and_, or_
-from profapp.constants
+from profapp.constants import NOTIFICATIONS
 
 from profapp import create_app, prepare_connections
 import argparse

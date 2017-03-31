@@ -139,8 +139,13 @@ function error_if_exists {
     fi
     }
 
-function get_profidb {
-    echo `cat scrt/secret_data.py | grep 'DB_NAME\s*=' | sed -e 's/^\s*DB_NAME\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+function get_profi_secret_value {
+    echo `cat scrt/secret_data.py | grep "$1\s*=" | sed -e "s/^\s*$1\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g" `
+    }
+
+
+function runsql_remote_dump {
+    conf_comm "cat '$1' | PGPASSWORD='$5' psql -w --host='$3' --username='$4' '$2'" "$6"
     }
 
 function runsql {
@@ -149,7 +154,7 @@ su postgres -c \"echo \\\"$1\\\" | psql\"" sudo "$2"
     }
 
 function runsql_dump {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     filenam=$(rr "$1" "$2")
     conf_comm "systemctl restart postgresql.service
 su postgres -c 'cat $filenam | psql $profidb'" sudo "$3"
@@ -177,11 +182,6 @@ dpkg -i ./elasticsearch-"$elastic_version".deb
 rm ./elasticsearch-"$elastic_version".deb" sudo fluent
 }
 
-function menu_fluent {
-#    elastic_version=$(rr 'elasticsearch version' 2.3.3)
-    conf_comm "curl -L https://toolbelt.treasuredata.com/sh/install-debian-jessie-td-agent2.sh | sh" sudo deb
-}
-
 function menu_deb {
     conf_comm "apt-get update
 apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev openjdk-7-jre haproxy" sudo npm
@@ -199,7 +199,6 @@ function menu_bower {
     conf_comm "cd ./profapp/static
 bower install" nosudo bower_components_dev
     }
-
 
 
 function menu_bower_components_dev {
@@ -229,19 +228,18 @@ function menu_hosts {
     conf_comm "sed -i '/\(db\|web\|mail\|memcached\|elastic\).profi/d' /etc/hosts
 sed -i '/\\.profi/d' /etc/hosts
 echo '' >> /etc/hosts
-echo '127.0.0.1 db.profi mail.profi memcached.profi elastic.profi fluent.profi' >> /etc/hosts
+echo '127.0.0.1 db.profi mail.profi memcached.profi elastic.profi fluent.profi socket.profi' >> /etc/hosts
 echo '127.0.0.1 web.profi static.web.profi file001.web.profi socket.web.profi portal.web.profi' >> /etc/hosts
 cat /etc/hosts" sudo cron_files
     }
 
 function menu_cron_files {
     files=$(/bin/ls ./conf/cron | tr '\n' ' ')
-    conf_comm "mkdir /var/log/profi
-mkdir /run/profi
+    conf_comm "mkdir -p /run/profi
 rm /etc/cron.d/profi_*
 for file in $files
 do
-  cat conf/cron/\$file | sed 's#/var/www/#$PWD/#g' > /etc/cron.d/profi_\$file
+  cat conf/cron/\$file | sed 's#----directory----#$PWD#g' > /etc/cron.d/profi_\$file
 done
 systemctl restart cron.service" sudo haproxy_compile
     }
@@ -381,6 +379,24 @@ function menu_port {
     conf_comm "iptables -t nat -A OUTPUT  -d 127.0.0.1  -p tcp --dport 80 -j REDIRECT --to-port $toport" sudo db_user_bass
     }
 
+
+function menu_fluent {
+    echo "After instalation visit http://localhost:9090 (user/pass=admin/changeme)"
+    conf_comm "sed -i '/^.*\(soft\|hard\)[[:blank:]]\+nofile.*$/d' /etc/security/limits.conf
+echo 'root soft nofile 65536' >> /etc/security/limits.conf
+echo 'root hard nofile 65536' >> /etc/security/limits.conf
+echo '* soft nofile 65536' >> /etc/security/limits.conf
+echo '* hard nofile 65536' >> /etc/security/limits.conf
+sed -i '/^#\?[[:blank:]]\+\(net\.ipv4\.tcp_tw_recycle\|net\.ipv4\.tcp_tw_reuse\|net\.ipv4\.ip_local_port_range\)[[:blank:]]\+=[[:blank:]]\+.*$/d' /etc/sysctl.conf
+echo 'net.ipv4.tcp_tw_recycle = 1' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_tw_reuse = 1' >> /etc/sysctl.conf
+echo 'net.ipv4.ip_local_port_range = 10240    65535' >> /etc/sysctl.conf
+#curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-xenial-td-agent2.sh | sh
+curl -L https://toolbelt.treasuredata.com/sh/install-debian-jessie-td-agent2.sh | sh
+cp ./conf/td-agent-ui.service /etc/systemd/system/
+systemctl enable td-agent-ui.service" sudo deb
+    }
+
 function menu_db_user_pass {
     echo "Going to create user/pass from secret data and create such user/pass using postgres user"
     echo "If user exists, only password will be changed"
@@ -421,12 +437,12 @@ function menu_compare_makarony_artek {
     }
 
 function menu_db_rename {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     runsql "ALTER DATABASE $profidb RENAME TO bak_$profidb""_"`$gitv`"_"`$datev` 'db_create'
     }
 
 function menu_db_create {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     psqldb=$(rr 'Enter postgresql database name' $profidb)
 
     profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
@@ -441,8 +457,9 @@ function menu_db_download_minimal {
 function menu_db_load_minimal {
     runsql_dump 'Enter sql structure filename' db/database.structure db_save_minimal
     }
+
 function menu_db_save_minimal {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     conf_comm "su postgres -c 'pg_dump -s $profidb' > db/database.structure
 tables=\$(su postgres -c \"echo 'SELECT RelName FROM pg_Description JOIN pg_Class ON pg_Description.ObjOID = pg_Class.OID WHERE ObjSubID = 0 AND Description LIKE '\\\"'\\\"%persistent%\\\"'\\\" | psql -t $profidb\" | sed '/^\\s*\$/d' | sed -e 's/^/-t /g' | tr \"\\n\" \" \" )
 su postgres -c \"pg_dump --inserts -a \$tables $profidb\" >> db/database.initial
@@ -455,12 +472,18 @@ function menu_db_download_full {
     }
 
 function menu_db_load_full {
-    runsql_dump 'Enter sql full dump filename' db/database_full.sql menu_db_reassign_ownership 
+    runsql_remote_dump \
+       $(rr 'Enter sql full dump filename' 'db/database_full.sql') \
+       $(rr 'Enter database name' $(get_profi_secret_value 'DB_NAME')) \
+       $(rr 'Enter database host' $(get_profi_secret_value 'DB_HOST')) \
+       $(rr 'Enter database user' $(get_profi_secret_value 'DB_USER')) \
+       $(rr 'Enter database password' $(get_profi_secret_value 'DB_PASSWORD')) \
+       menu_db_reassign_ownership
     }
 
 function menu_db_reassign_ownership {
 
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
 
     profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
 
@@ -473,7 +496,7 @@ su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT table_name     FROM inform
 
 function menu_db_localize {
 
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
 
     maindomain=$(rr 'Enter main domain' `get_main_domain`)
     conf_comm "
@@ -483,7 +506,7 @@ su postgres -c \"psql -c 'SELECT __localize_hosts('\\\"'\\\"'$maindomain'\\\"'\\
     }
 
 function menu_db_save_full {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     conf_comm "
 mv db/database_full.sql db/database_full.sql."`$gitv`"_"`$datev`".bak
 su postgres -c 'pg_dump $profidb' > db/database_full.sql
@@ -543,6 +566,7 @@ if [[ "$1" == "" ]]; then
       "python_3" "install python 3" \
       "venv" "create virtual environment" \
       "modules" "install required python modules (via pip)" \
+      "fluent" "install fluentd and frontend" \
       "db_user_pass" "create postgres user/password" \
       "db_rename" "rename database (create backup)" \
       "db_create" "create empty database" \

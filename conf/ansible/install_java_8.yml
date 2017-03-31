@@ -1,0 +1,10 @@
+---
+
+- name: Add java repo
+  apt_repository:
+    repo: 'ppa:webupd8team/java'
+    codename: 'xenial'
+    update_cache: yes
+- name: Install java
+  apt:
+    name: 'oracle-java8-installer'

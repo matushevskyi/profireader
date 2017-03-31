@@ -25,8 +25,6 @@
         <link href="{{ static_address('front/' + portal.layout.name + '/css/custom.css') }}" rel="stylesheet">
         <link href="{{ static_address('css/article.css') }}" rel="stylesheet">
         <link href="{{ static_address('front/' + portal.layout.name + '/css/article.css') }}" rel="stylesheet">
-        <script src="{{ static_address('front/' + portal.layout.name + '/js/jquery-3.1.0.min.js') }}"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
         <script src="{{ static_address('new/moment/moment.min.js') }}"></script>
         {% if g.lang != 'en' -%}
             <script src="{{ static_address('new/moment/' + g.lang + '.js') }}"></script>
@@ -34,6 +32,7 @@
         {% if portal.advs['bottom_banner'] -%}
             {{ portal.advs['head_end']|safe }}
         {%- endif %}
+        {{ google_analytics(portal, analytics)|safe }}
     {% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -42,9 +41,41 @@
     {% block body %}{% endblock %}
     {% include 'footer.html' %}
     <script src="{{ static_address('front/' + portal.layout.name + '/js/jquery-3.1.1.min.js') }}"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
     <script src="{{ static_address('front/' + portal.layout.name + '/js/bootstrap.min.js') }}"></script>
     <script src="{{ static_address('front/' + portal.layout.name + '/js/jasny-bootstrap.min.js') }}"></script>
-{#    <script src="{{ static_address('front/' + portal.layout.name + '/js/clamp.min.js') }}"></script>#}
+    <script src="{{ static_address('front/' + portal.layout.name + '/js/clamp.min.js') }}"></script>
     <script src="{{ static_address('front/' + portal.layout.name + '/js/custom.js') }}"></script>
+    <script>
+        window.addEventListener("message", function (messageevent) {
+        console.log(messageevent);
+        if (!messageevent.data || !messageevent.data['profireader_session_id']) {
+            return false;
+        }
+
+        if (messageevent.data && messageevent.data.profireader_session_id) {
+            $.cookie('beaker.session.id', messageevent.data.profireader_session_id, {path: '/'});
+        }
+
+        if (messageevent.data && messageevent.data.user {% if g.user and g.user.id %}
+                    && messageevent.data.user.id !== '{{ g.user.id }}'{% endif %}) {
+            _USER = messageevent.data.user;
+            $('#profireader_user_link').attr('href', '{{ p_main_domain }}/user/' + messageevent.data.user.id + '/profile/');
+            $('#profireader_user_link span').html(messageevent.data.welcome);
+            $('#profireader_user_link img').attr('src', messageevent.data.user.avatar.url);
+            $('#profireader_user_link').show();
+            $('#profireader_link').hide();
+        }
+        else if (messageevent.data && !messageevent.data.user) {
+            _USER = {};
+            $('#profireader_user_link').attr('href', '//{{ url_join }}/');
+            $('#profireader_user_link span').html(messageevent.data.welcome);
+            $('#profireader_user_link img').css('background-image', 'none');
+            $('#profireader_user_link').hide();
+            $('#profireader_link').show();
+        }
+    }, false);
+    $('body').prepend('<iframe style="position: absolute; width: 1px; height: 1px; visibility: hidden; left: -1px; top: -1px;" src="{{ '//' + MAIN_DOMAIN }}/tools/SSO/' + $.cookie('beaker.session.id') + '/"></iframe>');
+    </script>
 </body>
 </html>

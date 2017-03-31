@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-basen=$(echo $1 | sed 's/.py$//g')
-
+cd $(dirname $0)
+basen=$(basename "$1" | cut -d. -f1)
 source ../.venv/bin/activate
+python $1 ${@:2} 2>&1 | logger -t $basen
 
-python ./$1 ${@:2} 1>>/var/log/profi/$basen.log 2>>/var/log/profi/$basen.error
 

@@ -29,7 +29,7 @@ def portals_list_load(json):
 
     return {'list_portals':
                 [utils.dict_merge(p.get_client_side_dict(),
-                                  {'subscribed': True if UserPortalReader.get(portal_id=p.id) else False}) for
+                                  {'subscribed': True if UserPortalReader.get_by_portal_id_user_id(portal_id=p.id) else False}) for
                  p in portals],
             'end': True}
 

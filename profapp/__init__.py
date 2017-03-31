@@ -117,6 +117,7 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
     # strong_reference_session(Session())
     return db_session
 
+
 #
 # def setup_logger(apptype, host='fluid.profi', port=24224):
 
@@ -133,10 +134,6 @@ def prepare_connections(app, echo=False):
         # g.after_commit_models = []
         g.call_after_commit = []
         g.functions_to_call_after_commit = {}
-
-#        from fluent import sender
-#        g.logger = sender.FluentSender(app.apptype, host=app.config['FLUENT_LOGGER_HOST'], port=app.config['FLUENT_LOGGER_PORT'])
-        g.log = lambda *args: print(*args)
 
         event.listen(db_session, 'after_flush', on_after_flush)
 
@@ -211,7 +208,7 @@ def load_user(apptype):
     g.portal = None
     g.portal_id = None
     g.portal_layout_path = ''
-    g.protocol = 'http:'
+    g.protocol = Config.PROTOCOL
 
     g.debug = current_app.debug
     g.testing = current_app.testing
@@ -274,6 +271,61 @@ class AnonymousUser(AnonymousUserMixin):
 
 
 login_manager.anonymous_user = AnonymousUser
+from functools import partial
+
+
+class logger:
+    _l = None
+
+    critical = None
+    error = None
+    warning = None
+    notice = None
+    debug = None
+
+    @staticmethod
+    def extra(**kwargs):
+        return {'extra': {'zzz_pr_more_info': kwargs}}
+
+    def __init__(self, apptype, debug, testing):
+        import logging
+        import logstash
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG if debug else logging.INFO)
+        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type = apptype))
+        self._l = logger
+
+        def pp(t, message, *args, **kwargs):
+            import pprint
+            ppr = pprint.PrettyPrinter(indent=2, compact=True, width = 120)
+            extra = kwargs.get('extra', None)
+            if extra:
+                extra = extra.get('zzz_pr_more_info', None)
+            print('{}: {}'.format(t, message))
+            if extra:
+                ppr.pprint(extra)
+            return True
+
+        if debug:
+            self.exception = lambda m, *args, **kwargs: pp('!!! Exception', m, *args, **kwargs) and \
+                                                        self._l.exception(m, *args, stack_info=True, **kwargs)
+            self.critical = lambda m, *args, **kwargs: pp('!!! Critical', m, *args, **kwargs) and \
+                                                       self._l.critical(m, *args, stack_info=True, **kwargs)
+            self.error = lambda m, *args, **kwargs: pp('!! Error', m, *args, **kwargs) and \
+                                                    self._l.error(m, *args, stack_info=True, **kwargs)
+            self.warning = lambda m, *args, **kwargs: pp('! Warning', m, *args, **kwargs) and \
+                                                      self._l.warning(m, *args, stack_info=True, **kwargs)
+            self.info = lambda m, *args, **kwargs: pp('Info', m, *args, **kwargs) and \
+                                                   self._l.info(m, *args, stack_info=True, **kwargs)
+            self.debug = lambda m, *args, **kwargs: pp('Debug', m, *args, **kwargs) and \
+                                                    self._l.debug(m, *args, stack_info=True, **kwargs)
+        else:
+            self.exception = partial(self._l.exception, stack_info=True)
+            self.critical = partial(self._l.critical, stack_info=True)
+            self.error = partial(self._l.error, stack_info=True)
+            self.warning = partial(self._l.warning, stack_info=True if testing else False)
+            self.info = partial(self._l.info, stack_info=True if testing else False)
+            self.debug = partial(self._l.debug, stack_info=True)
 
 
 def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
@@ -285,7 +337,9 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.debug = app.config['DEBUG'] if 'DEBUG' in app.config else False
     app.testing = app.config['TESTING'] if 'TESTING' in app.config else False
+
     app.apptype = apptype
+    app.log = logger(apptype, app.debug, app.testing)
 
     app.before_request(prepare_connections(app))
     app.before_request(lambda: load_user(apptype))
@@ -351,8 +405,6 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
         @app.errorhandler(404)
         def page_not_found(e):
-
-            from flask import Flask, render_template
             from profapp.controllers.views_front import error_404
             return error_404()
 
@@ -362,6 +414,10 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     elif apptype == 'file':
         from profapp.controllers.blueprints_register import register_file as register_blueprints_file
         register_blueprints_file(app)
+    elif apptype == 'profi':
+        from profapp.controllers.blueprints_register import register_profi as register_blueprints_profi
+        register_blueprints_profi(app)
+        update_jinja_engine(app)
     else:
         from profapp.controllers.blueprints_register import register_profi as register_blueprints_profi
         register_blueprints_profi(app)

@@ -1,4 +1,4 @@
-from flask import render_template, g, redirect, url_for
+from flask import render_template, g, redirect, url_for, current_app
 from sqlalchemy import desc
 from config import Config
 from profapp.controllers.errors import BadDataProvided
@@ -121,39 +121,6 @@ def profile_load(json, company_id=None, portal_id=None):
             portal.logo = jp['logo']
             portal.favicon = jp['favicon']
 
-            #
-            # from ..models.messenger import Socket
-            # from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
-            # from ..models.translate import Phrase
-            # from ..models.company import Company
-            # from collections import OrderedDict
-            #
-            # if not self.publications:
-            #     return
-            #
-            # header_phrase = "Because of division %%(division_name)s at portal %s was %s by user %s some publications was deleted" % \
-            #                 (utils.jinja.link_external(), because_of, utils.jinja.link_user_profile())
-            # phrases_to_portal = [Phrase(header_phrase, dict={'division_name': self.name})]
-            # phrases_to_companies_editors = OrderedDict()
-            #
-            # for p in self.publications:
-            #     if p.material.company_id not in phrases_to_companies_editors:
-            #         phrases_to_companies_editors[p.material.company_id] = [Phrase(header_phrase)]
-            #
-            #     publication_phrase = Phrase("deleted a publication named `%(title)s`", dict={'title': p.title})
-            #     phrases_to_portal.append(publication_phrase)
-            #     phrases_to_companies_editors[p.material.company_id].append(publication_phrase)
-            #
-            # Socket.prepare_notifications(self.portal.own_company.get_users_with_rights(),
-            #                              NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
-            #
-            # for company_id, phrases in phrases_to_companies_editors.items():
-            #     Socket.prepare_notifications(Company.get(company_id).get_users_with_rights(
-            #         RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH, RIGHT_AT_COMPANY.ARTICLES_UNPUBLISH),
-            #         NOTIFICATION_TYPES['PUBLICATION_ACTIVITY'], phrases_to_portal)()
-            #
-
-
             unpublished_publications_by_membership_id = {}
 
             def append_to_phrases(publication):
@@ -186,6 +153,24 @@ def profile_load(json, company_id=None, portal_id=None):
                         'purged', 'division type was changed or division was deleted',
                         more_phrases_to_company=phrases, more_phrases_to_portal=phrases)
 
+            try:
+                portal.setup_ssl()
+            except Exception as e:
+                current_app.log.error(e)
+                current_app.log.error('Error processing ssl for portal',
+                                      **current_app.log.extra(
+                                          portal=portal.get_client_side_dict(fields='id,host,name')))
+
+            try:
+                from profapp.models.third.google_analytics_management import GoogleAnalyticsManagement
+                ga_man = GoogleAnalyticsManagement()
+                portal.setup_google_analytics(ga_man, force_recreate=False)
+                portal.update_google_analytics_host(ga_man)
+            except Exception as e:
+                current_app.log.error(e)
+                current_app.log.error('Error processing google analytics for portal',
+                                      **current_app.log.extra(
+                                          portal=portal.get_client_side_dict(fields='id,host,name')))
             portal.save()
 
             g.db.commit()
@@ -318,6 +303,174 @@ def set_membership_plan(json, membership_id):
             return ret
         else:
             return membership.set_new_plan_issued(requested_plan_id, immediately).company_member_grid_row()
+
+
+# def initialize_analyticsreporting(portal_id):
+#   """Initializes an analyticsreporting service object.
+#
+#   Returns:
+#     analytics an authorized analyticsreporting service object.
+#   """
+#   from oauth2client.service_account import ServiceAccountCredentials
+#   import datetime
+#   from profapp.models.config import Config as ModelConfig
+#
+#
+#
+#   # portal = Portal.get(portal_id)
+#   # GoogleAnalyticsReport()
+#   # access_token = ModelConfig.get('access_token_for_analytics')
+#   # if access_token.md_tm.timestamp() < datetime.datetime.utcnow().timestamp() - 3000:
+#   #     access_token.value = ServiceAccountCredentials.from_json_keyfile_name(
+#   #         'scrt/Profireader_project_google_service_account_key.json',
+#   #         'https://www.googleapis.com/auth/analytics.readonly').get_access_token().access_token
+#   #     access_token.save()
+#
+#
+#
+#   return analytics
+
+
+@portal_bp.route('/<string:portal_id>/analytics/get_report/', methods=['OK'],
+                 permissions=EmployeeHasRightAtPortalOwnCompany(RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE))
+def analytics_report(json, portal_id):
+    from profapp.models.third.google_analytics_management import GoogleAnalyticsReport, CUSTOM_DIMENSION
+    from profapp.models.translate import TranslateTemplate
+    from profapp.models.portal import ReaderUserPortalPlan
+
+    def _(phrase, prefix='', dictionary={}):
+        return TranslateTemplate.translate_and_substitute(
+            'google_analytics_report', ((prefix + ' ') if prefix else '') + phrase, dictionary=dictionary,
+            phrase_default=phrase)
+
+    def get_dimension_name(d):
+        dimension_index = d.partition(':dimension')[2]
+        if dimension_index:
+            for dim_name, ind in portal.google_analytics_dimensions.items():
+                if ind == int(dimension_index):
+                    return dim_name
+        return d.partition(':')[2]
+
+    def get_metric_name(m):
+        metric_index = m.partition(':metric')[2]
+        if metric_index:
+            for met_name, ind in portal.google_analytics_metrics.items():
+                if ind == int(metric_index):
+                    return met_name
+        return m.partition(':')[2]
+
+    analytics = GoogleAnalyticsReport()
+    portal = Portal.get(portal_id)
+    r = json['query']
+    r['dateRanges'] = [{'startDate': r['date']['start'], 'endDate': r['date']['end']}]
+    del r['date']
+    r['viewId'] = portal.google_analytics_view_id
+    r['dimensions'] = [{'name': d} for d in r['dimensions'].split(',')]
+    r['metrics'] = [{'expression': m} for m in r['metrics'].split(',')]
+    if 'max-results' in r:
+        del r['max-results']
+    if 'filters' in r:
+        dimensionFilterClauses = {
+            'operator': 'AND',
+            'filters': []
+        }
+        for dimension_name, filter_value in r['filters'].items():
+            if filter_value == '__ID__':
+                dim_index = portal.google_analytics_dimensions.get(dimension_name, None)
+                dimensionFilterClauses['filters'].append({
+                    "dimensionName": 'ga:' + (dimension_name if dim_index is None else 'dimension{}'.format(dim_index)),
+                    "not": False,
+                    "operator": 'REGEXP',
+                    "expressions": ['^........-....-....-....-............$'],
+                    "caseSensitive": True})
+            elif filter_value != '__ANY__':
+                dim_index = portal.google_analytics_dimensions.get(dimension_name, None)
+                dimensionFilterClauses['filters'].append({
+                    "dimensionName": 'ga:' + (dimension_name if dim_index is None else 'dimension{}'.format(dim_index)),
+                    "not": filter_value == '',
+                    "operator": 'EXACT',
+                    "expressions": [filter_value],
+                    "caseSensitive": True})
+
+        if len(dimensionFilterClauses['filters']):
+            r['dimensionFilterClauses'] = dimensionFilterClauses
+
+        del r['filters']
+
+    report = analytics.service.reports().batchGet(body={'reportRequests': [r]}).execute()['reports'][0]
+
+    dimension_name = get_dimension_name(report['columnHeader']['dimensions'][0])
+    metric_name = get_metric_name(report['columnHeader']['metricHeader']['metricHeaderEntries'][0]['name'])
+
+    def sort_dimension(rows, name):
+
+        if name == 'page_type':
+            by_page_type = ['index', 'news', 'events', 'catalog', 'publication', 'company_subportal']
+            return sorted(rows, key=lambda x: by_page_type.index(x[0]) if x[0] in by_page_type else 100000)
+        if name == 'company_id':
+            return sorted(rows, key=lambda x: 'z' if x[0] == '__NA__' else Company.get_attr(x[0], ifNone='zzz'))
+        if name == 'reader_plan':
+            return sorted(rows,
+                          key=lambda x: 'z' if x[0] == '__NA__' else ReaderUserPortalPlan.get_attr(x[0], ifNone='zzz'))
+        else:
+            return rows
+
+    ret = {'metric': _(metric_name, prefix='metric'), 'dimension': _(dimension_name, prefix='dimension')}
+    if 'rows' in report['data']:
+        rows = [[r['dimensions'][0], float(r['metrics'][0]['values'][0])] for r in report['data']['rows']]
+        rows = sort_dimension(rows, dimension_name)
+        formatted_rows = []
+        for r in rows:
+            if dimension_name == CUSTOM_DIMENSION['company_id']:
+                formatted_rows.append(
+                    [_(r[0], prefix=dimension_name) if r[0] == '__NA__' else
+                     Company.get_attr(r[0], 'name', ifNone='unknown company'), r[1]])
+            elif dimension_name == CUSTOM_DIMENSION['reader_plan']:
+                formatted_rows.append(
+                    [_('anonymous', prefix=dimension_name) if r[0] == '__NA__' else
+                     ReaderUserPortalPlan.get_attr(r[0], 'name', ifNone='unknown plan'), r[1]])
+            elif dimension_name in CUSTOM_DIMENSION:
+                formatted_rows.append([_(r[0], prefix=dimension_name), r[1]])
+            else:
+                formatted_rows.append([r[0], r[1]])
+        ret['rows'] = formatted_rows
+        ret['total'] = float(report['data']['totals'][0]['values'][0])
+        return ret
+    else:
+        ret['rows'] = []
+        return ret
+
+
+@portal_bp.route('/<string:portal_id>/analytics/', methods=['GET'],
+                 permissions=EmployeeHasRightAtPortalOwnCompany(RIGHT_AT_COMPANY.PORTAL_EDIT_PROFILE))
+def analytics(portal_id):
+    from oauth2client.service_account import ServiceAccountCredentials
+    import datetime
+    from profapp.models.config import Config as ModelConfig
+    from profapp.models.dictionary import Country
+    from profapp.models.portal import PortalDivisionType
+    from profapp.models.materials import Publication
+    dict_id_name = lambda l: utils.list_of_dicts_from_list(l, 'id', 'name')
+
+    portal = Portal.get(portal_id)
+    access_token = ModelConfig.get('access_token_for_analytics')
+    if access_token.md_tm.timestamp() < datetime.datetime.utcnow().timestamp() - 3000:
+        access_token.value = ServiceAccountCredentials.from_json_keyfile_name(
+            'scrt/Profireader_project_google_service_account_key.json',
+            'https://www.googleapis.com/auth/analytics.readonly').get_access_token().access_token
+        access_token.save()
+
+    return render_template('portal/analytics.html', portal=portal, company=portal.own_company,
+                           select={'country': utils.get_client_side_list(Country.all(), fields='iso,name'),
+                                   'reader_plan': [
+                                       {'name': 'Free', 'id': '5609c73a-1007-4001-9b16-5c84f18ad571'}],
+                                   'publication_visibility': dict_id_name([v for v in Publication.VISIBILITIES]),
+                                   'publication_reached': dict_id_name(['True', 'False']),
+                                   'page_type': dict_id_name(
+                                       [pdt.id for pdt in PortalDivisionType.all()]) + dict_id_name(
+                                       ['publication', 'other'])
+                                   },
+                           access_token=access_token.value)
 
 
 @portal_bp.route('/<string:portal_id>/banners/', methods=['GET'],

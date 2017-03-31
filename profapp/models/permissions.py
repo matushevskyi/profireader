@@ -371,7 +371,7 @@ class CheckFunction(Permissions):
         self.f = f
 
     def check(self, *args, **kwargs):
-        return self.f()
+        return self.f(*args, **kwargs)
 
 
 class ActionsForMaterialAtMembership(Permissions):

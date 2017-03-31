@@ -20,6 +20,7 @@ from ..models.tag import Tag, TagMembership
 import calendar
 from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
+
 class Portal(Base, PRBase):
     __tablename__ = 'portal'
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
@@ -39,6 +40,11 @@ class Portal(Base, PRBase):
     url_linkedin = Column(TABLE_TYPES['url'])
     # url_vkontakte = Column(TABLE_TYPES['url'])
 
+    google_analytics_account_id = Column(TABLE_TYPES['string_100'])
+    google_analytics_web_property_id = Column(TABLE_TYPES['string_100'])
+    google_analytics_view_id = Column(TABLE_TYPES['string_100'])
+    google_analytics_dimensions = Column(TABLE_TYPES['json'])
+    google_analytics_metrics = Column(TABLE_TYPES['json'])
 
     company_owner_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), unique=True)
     portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_layout.id'))
@@ -131,6 +137,25 @@ class Portal(Base, PRBase):
 
     def is_active(self):
         return True
+
+    def setup_ssl(self):
+        return True
+
+    def update_google_analytics_host(self, ga_man):
+        ga_man.update_host_for_property(
+            self.google_analytics_account_id, self.google_analytics_web_property_id, new_host=self.host)
+        ga_man.update_host_for_view(
+            self.google_analytics_account_id, self.google_analytics_web_property_id, self.google_analytics_view_id,
+            new_host=self.host)
+
+
+    def setup_google_analytics(self, ga_man, force_recreate=False):
+        if force_recreate or not self.google_analytics_account_id:
+            self.google_analytics_account_id, self.google_analytics_web_property_id, self.google_analytics_view_id = \
+                ga_man.create_web_property_and_view(self.host)
+            self.google_analytics_dimensions, self.google_analytics_metrics = \
+                ga_man.create_custom_dimensions_and_metrics(
+                    self.google_analytics_account_id, self.google_analytics_web_property_id)
 
     @staticmethod
     def launch_new_portal(company):
@@ -229,6 +254,7 @@ class Portal(Base, PRBase):
         if utils.db.query_filter(Portal, company_owner_id=self.own_company.id).filter(Portal.id != self.id).count():
             errors['form'] = 'portal for company already exists'
 
+        self.host = self.host.lower()
         if utils.db.query_filter(Portal, host=self.host).filter(Portal.id != self.id).count():
             errors['host'] = 'host already taken by another portal'
 
@@ -292,7 +318,8 @@ class Portal(Base, PRBase):
                                      functions.count(Publication.id).label('cnt')). \
                         filter(and_(Publication.portal_division_id == d.id)). \
                         group_by(Publication.status, Publication.visibility).all()
-                    utils.find_by_id(ret['divisions'], d.id)['publication_count'] = Publication.group_by_status_and_visibility(cnt)
+                    utils.find_by_id(ret['divisions'], d.id)[
+                        'publication_count'] = Publication.group_by_status_and_visibility(cnt)
 
         if get_own_or_profi_host:
             if ret['host'][
@@ -306,6 +333,18 @@ class Portal(Base, PRBase):
                 ret['host_own'] = ret['host']
                 ret['host_profi'] = ''
         return ret
+
+    def get_analytics(self, page_type, company_id='__NA__',
+                      publication_visibility='__NA__', publication_reached='__NA__'):
+        from profapp.models.third.google_analytics_management import PortalAnalytics
+        from profapp.models.portal import UserPortalReader
+        user_portal_reader = UserPortalReader.get_by_portal_id_user_id(self.id)
+
+        return PortalAnalytics(
+            page_type=page_type, company_id=company_id,
+            income=len([a for a in self.advs if re.match(r'.*data-revive-id.*', str(a.html), re.DOTALL)]),
+            publication_visibility=publication_visibility, publication_reached=publication_reached,
+            reader_plan=user_portal_reader.portal_plan_id if user_portal_reader else '__NA__')
 
     def subscribe_user(self, user=None):
         user = user if user else g.user
@@ -1041,7 +1080,6 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembershipChang
 
         return Publication.group_by_status_and_visibility(cnt)
 
-
     def _send_notification_about_membership_change(
             self, text, dictionary={}, comment='',
             rights_at_company=RIGHT_AT_COMPANY.COMPANY_MANAGE_PARTICIPATION,
@@ -1274,8 +1312,9 @@ class UserPortalReader(Base, PRBase):
             yield (portal.id, portal.name,)
 
     @staticmethod
-    def get(user_id=None, portal_id=None):
-        return utils.db.query_filter(UserPortalReader).filter_by(user_id=user_id, portal_id=portal_id).first()
+    def get_by_portal_id_user_id(portal_id, user_id=None):
+        return utils.db.query_filter(UserPortalReader).filter_by(user_id=user_id if user_id else g.user_id,
+                                                                 portal_id=portal_id).first()
 
     @staticmethod
     def get_portals_and_plan_info_for_user(user_id, page, items_per_page, filter_params):
@@ -1343,4 +1382,3 @@ class ReaderDivision(Base, PRBase):
         self._show_division_and_comments = self.show_division_and_comments_numeric_all & reduce(
             lambda x, y: int(x) + int(y), list(map(lambda item: self.show_division_and_comments_numeric[item[0]],
                                                    filter(lambda item: item[1], tuple_or_list))), 0)
-
