@@ -30,9 +30,9 @@
             <div class="short-text"><h5>{{ article.short|safe }}</h5></div>
         </div>
         {% if article_visibility == True %}
-            <div>{{ article['long'] |safe }}</div>
+            <div class="article-details-long-text">{{ article['long'] |safe }}</div>
         {% else %}
-            <div class="error">{{ article_visibility['message'] }}</div>
+            <div class="article-details-long-text error">{{ article_visibility['message'] }}</div>
         {% endif %}
         <div class="article-company-and-date pr">
             <div class="article-company nw">
