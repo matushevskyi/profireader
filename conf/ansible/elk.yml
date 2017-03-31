@@ -7,52 +7,15 @@
     - name: Usage
       debug:
         msg: ""
-    - name: Add java repo
-      apt_repository:
-        repo: 'ppa:webupd8team/java'
-        codename: 'xenial'
-        update_cache: yes
-    - name: Install java
-      apt:
-        name: 'oracle-java8-installer'
-    - name: add elastic repo key
-      apt_key:
-        url: "https://packages.elastic.co/GPG-KEY-elasticsearch"
-        state: present
-    - name: Add elasticsearch repo
-      apt_repository:
-        repo: 'deb http://packages.elastic.co/elasticsearch/2.x/debian stable main'
-        state: present
-        update_cache: yes
-    - name: Install elasticsearc
-      apt:
-        name: 'elasticsearch'
-    - name: Enable elasticsearch service
-      service:
-        name: elasticsearch
-        state: started
-        enabled: yes
-    - name: Add kibana
-      apt_repository:
-        repo: 'deb http://packages.elastic.co/kibana/4.4/debian stable main'
-        state: present
-        update_cache: yes
-    - name: Install kibana
-      apt:
-        name: 'kibana'
-    - name: Enable kibana service
-      service:
-        name: kibana
-        state: started
-        enabled: yes
-    - name: Add logstash
-      apt_repository:
-        repo: 'deb http://packages.elastic.co/logstash/2.2/debian stable main'
-        state: present
-        update_cache: yes
-    - name: Install logstash
-      apt:
-        name: 'logstash'
+
+    - include: install_java_8.yml
+    - include: install_and_enable_service.yml name='elasticsearch' \
+               repo="deb http://packages.elastic.co/elasticsearch/2.x/debian stable main" \
+               key="https://packages.elastic.co/GPG-KEY-elasticsearch"
+    - include: install_and_enable_service.yml name='kibana' \
+                repo="deb http://packages.elastic.co/kibana/4.4/debian stable main" \
+    - include: install_and_enable_service.yml name='logstash' \
+                repo="deb http://packages.elastic.co/logstash/2.2/debian stable main"
     - name: Create logstash systemd service file
       copy:
         src: ../logstash/logstash.service
@@ -64,3 +27,4 @@
         enabled: yes
         state: started
         daemon_reload: yes
+

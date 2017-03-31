@@ -1,0 +1,21 @@
+---
+
+- name: add key
+  apt_key:
+    url: '{{ key }}'
+    state: present
+  when: key|default(None) != None
+- name: Add repo
+  apt_repository:
+    repo: '{{ repo }}'
+    state: present
+    update_cache: yes
+  when: repo|default(None) != None
+- name: Install apt
+  apt:
+    name: '{{ name }}'
+- name: Enable service
+  service:
+    name: '{{ service|default(name) }}'
+    state: started
+    enabled: yes
