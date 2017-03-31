@@ -421,7 +421,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                )
 
 
-@front_bp.route('_a/<string:publication_id>/<string:publication_title>', permissions=AvailableForAll())
+@front_bp.route('_a/<string:publication_id>/<path:publication_title>', permissions=AvailableForAll())
 @get_portal
 def article_details(portal, publication_id, publication_title):
     # TODO: OZ by OZ: redirect if title is wrong

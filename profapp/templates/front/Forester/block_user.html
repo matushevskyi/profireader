@@ -2,7 +2,7 @@
 {% set p_main_domain = '//' + MAIN_DOMAIN %}
 <div>
     <!--If user is logged in-->
-    <a style="{% if not g.user %}display: none;{% endif %}" class="userpic" href="{% if g.user %}{{ p_main_domain }}/users/profile/{{ g.user.id }}{% endif %}" id="profireader_user_link">
+    <a style="{% if not g.user %}display: none;{% endif %}" class="userpic" href="{% if g.user %}{{ p_main_domain }}/user/{{ g.user.id }}/profile/{% endif %}" id="profireader_user_link">
         <img src="{{ g.user.avatar.url if g.user else '' }}" alt="" class="img-circle bg-contain">
     </a>
     <!--If user is not logged in-->
