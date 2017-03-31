@@ -190,9 +190,9 @@ class NotifyUser(Notify):
             {'url_tutorial': url_for('tutorial.index'), 'profireader': 'profireader', 'main_domain': MAIN_DOMAIN}
         )
 
-    def NOTIFY_MESSAGE_FROM_PORTAL_FRONT(self, message, portal):
+    def NOTIFY_MESSAGE_FROM_PORTAL_FRONT(self, message, company, portal):
         return self._send_notification(
             'You have message from portal %s as member of company %s<hr/>%%(message)s' %
             (utils.jinja.link_external(), utils.jinja.link_company_profile()),
-            {'company': portal.own_company, 'portal': portal, 'message': html.escape(message)},
+            {'company': company, 'portal': portal, 'message': html.escape(message)},
             notification_type=NOTIFICATION_TYPES['PORTAL_ACTIVITY'])

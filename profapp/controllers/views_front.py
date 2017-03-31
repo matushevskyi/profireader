@@ -475,10 +475,11 @@ def add_delete_liked(json, publication_id):
 
 
 @front_bp.route('_/<string:member_company_id>/send_message/', methods=['OK'], permissions=AvailableForAll())
-def send_message(json, member_company_id):
+@get_portal
+def send_message(portal, json, member_company_id):
     send_to = User.get(json['user_id'])
     company = Company.get(member_company_id)
-    send_to.NOTIFY_MESSAGE_FROM_PORTAL_FRONT(message=json['message'], company=company)
+    send_to.NOTIFY_MESSAGE_FROM_PORTAL_FRONT(message=json['message'], portal=portal, company=company)
     return {}
 
 
