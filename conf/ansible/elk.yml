@@ -16,6 +16,11 @@
                 repo="deb http://packages.elastic.co/kibana/4.4/debian stable main" \
     - include: install_and_enable_service.yml name='logstash' \
                 repo="deb http://packages.elastic.co/logstash/2.2/debian stable main"
+    - name: Copy logstash config
+      copy:
+        src: ../logstash/profi.conf
+        dest: /etc/logstash/conf.d/profi.conf
+        mode: 0644
     - name: Create logstash systemd service file
       copy:
         src: ../logstash/logstash.service
