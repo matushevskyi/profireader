@@ -205,8 +205,8 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False
 
     # Define database connection parameters
-    host = secret_data.DB_HOST_UNITTEST
-    database = secret_data.DB_NAME_UNITTEST
+    host = secret_data.DB_UNITTEST_HOST
+    database = secret_data.DB_UNITTEST_NAME
 
     # Define the database - we are working with
     SQLALCHEMY_DATABASE_URI = \

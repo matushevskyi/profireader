@@ -148,9 +148,27 @@ function runsql_remote_dump {
     conf_comm "cat '$1' | PGPASSWORD='$5' psql -w --host='$3' --username='$4' '$2'" "$6"
     }
 
+function run_remote {
+    command=${2//'\'/'\\'}
+    command=${command//'"'/'\"'}
+    echo $command
+    conf_comm "ssh $1 \"$command\"" sudo "$3"
+    }
+
+function run_remote_sql {
+    rstrt='systemctl restart postgresql.service'
+    command="$rstrt; su postgres -c \"echo \\\"$2\\\" | psql\"; $rstrt"
+    echo $command
+    run_remote $1 "$command" $3
+    }
+
 function runsql {
     conf_comm "systemctl restart postgresql.service
 su postgres -c \"echo \\\"$1\\\" | psql\"" sudo "$2"
+    }
+
+function run_sql_via_net {
+    conf_comm "echo '$1' | PGPASSWORD='$(get_profi_secret_value 'DB_PASSWORD')' psql --host='$(get_profi_secret_value 'DB_HOST')' --username='$(get_profi_secret_value 'DB_USER')' '$(get_profi_secret_value 'DB_NAME')'"
     }
 
 function runsql_dump {
@@ -410,10 +428,13 @@ function menu_db_user_pass {
 ALTER USER $psqluser WITH PASSWORD '$psqlpass';" compare_local_makarony
     }
 
-makaronyaddress='m.ntaxa.com/profireader/54322'
-localaddress='localhost/profireader/5432'
-kupytyaddress='a.ntaxa.com/profireader/54143'
-artekaddress='a.ntaxa.com/profireader/54141'
+profidbname=`cat scrt/secret_data.py | grep 'DB_NAME' | sed -e 's/^\s*DB_NAME\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+profipass=`cat scrt/secret_data.py | grep 'DB_PASSWORD' | sed -e 's/^\s*DB_PASSWORD\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+makaronyaddress="m.ntaxa.com/$profidbname/54322/$profiuser/$profipass"
+localaddress="postgres.profi/$profidbname/5432/$profiuser/$profipass"
+kupytyaddress="a.ntaxa.com/$profidbname/54143/$profiuser/$profipass"
+artekaddress="p.ntaxa.com/$profidbname/54141/$profiuser/$profipass"
 
 
 function menu_compare_local_makarony {
@@ -423,22 +444,23 @@ function menu_compare_local_makarony {
 
 function menu_compare_local_kupyty {
     conf_comm "cd ./db
-./postgres.dump_and_compare_structure.sh $localaddress $kupytyaddress" nosudo compare_makarony_artek
+./postgres.dump_and_compare_structure.sh $localaddress $kupytyaddress" nosudo compare_makarony_production
     }
 
-function menu_compare_local_artek {
+function menu_compare_local_production {
     conf_comm "cd ./db
-./postgres.dump_and_compare_structure.sh $localaddress $artekaddress" nosudo compare_makarony_artek
+./postgres.dump_and_compare_structure.sh $localaddress $artekaddress" nosudo compare_makarony_production
     }
 
-function menu_compare_makarony_artek {
+function menu_compare_makarony_production {
     conf_comm "cd ./db
 ./postgres.dump_and_compare_structure.sh $makaronyaddress $artekaddress" nosudo db_rename
     }
 
 function menu_db_rename {
     profidb=$(get_profi_secret_value 'DB_NAME')
-    runsql "ALTER DATABASE $profidb RENAME TO bak_$profidb""_"`$gitv`"_"`$datev` 'db_create'
+    echo $datev
+    run_remote_sql $(get_profi_secret_value 'DB_HOST') "ALTER DATABASE $profidb RENAME TO bak_$profidb""_"`$gitv`"_"`$datev` 'db_create'
     }
 
 function menu_db_create {
@@ -446,7 +468,7 @@ function menu_db_create {
     psqldb=$(rr 'Enter postgresql database name' $profidb)
 
     profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
-    runsql "CREATE DATABASE $psqldb WITH ENCODING 'UTF8' LC_COLLATE='C.UTF-8' LC_CTYPE='C.UTF-8'  OWNER = $profiuser TEMPLATE=template0" db_download_minimal
+    run_remote_sql $(get_profi_secret_value 'DB_HOST') "CREATE DATABASE $psqldb WITH ENCODING 'UTF8' LC_COLLATE='C.UTF-8' LC_CTYPE='C.UTF-8'  OWNER = $profiuser TEMPLATE=template0" db_download_minimal
     }
 
 
@@ -535,6 +557,8 @@ next='_'
 	#eval $a
 
 #exit
+datev="date +%y_%m_%d___%H_%M_%S"
+gitv='git rev-parse --short HEAD'
 if [[ "$1" == "" ]]; then
   while :
   do
@@ -581,12 +605,10 @@ if [[ "$1" == "" ]]; then
       "elastic_reindex_all" "recreate all documents in elasticsearch" \
       "compare_local_makarony" "compare local database and dev version" \
       "compare_local_kupyty" "compare local database and testing version" \
-      "compare_local_artek" "compare local database and production version" \
+      "compare_local_production" "compare local database and production version" \
       "compare_makarony_artek" "compare dev database and production version" \
       "exit" "Exit" 2> /tmp/"$rand"selected_menu_
   reset
-  datev="date +%y_%m_%d___%H_%M_%S"
-  gitv='git rev-parse --short HEAD'
   menu_`cat /tmp/"$rand"selected_menu_`
   done
 else

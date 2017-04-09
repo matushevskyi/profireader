@@ -139,6 +139,10 @@ class Portal(Base, PRBase):
         return True
 
     def setup_ssl(self):
+        bashCommand = "ssh -i ./scrt/id_rsa_haproxy haproxy 'cd /usr/local/bin/; /usr/local/bin/certbot_front.sh {} www.{}'".format(self.host, self.host)
+        import subprocess
+        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+        output, error = process.communicate()
         return True
 
     def update_google_analytics_host(self, ga_man):
@@ -147,7 +151,6 @@ class Portal(Base, PRBase):
         ga_man.update_host_for_view(
             self.google_analytics_account_id, self.google_analytics_web_property_id, self.google_analytics_view_id,
             new_host=self.host)
-
 
     def setup_google_analytics(self, ga_man, force_recreate=False):
         if force_recreate or not self.google_analytics_account_id:
@@ -255,6 +258,11 @@ class Portal(Base, PRBase):
             errors['form'] = 'portal for company already exists'
 
         self.host = self.host.lower()
+
+        if any([re.match('^' + h + ('.' + Config.MAIN_DOMAIN).replace('.', '\.') + '$', self.host) for h in
+                ['file[0-9]+', 'ads', 'mail', 'socket', 'static', 'ns[0-9]', 'www']]):
+            errors['host'] = 'this hostname is registered'
+
         if utils.db.query_filter(Portal, host=self.host).filter(Portal.id != self.id).count():
             errors['host'] = 'host already taken by another portal'
 
