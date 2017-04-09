@@ -434,7 +434,8 @@ profipass=`cat scrt/secret_data.py | grep 'DB_PASSWORD' | sed -e 's/^\s*DB_PASSW
 makaronyaddress="m.ntaxa.com/$profidbname/54322/$profiuser/$profipass"
 localaddress="postgres.profi/$profidbname/5432/$profiuser/$profipass"
 kupytyaddress="a.ntaxa.com/$profidbname/54143/$profiuser/$profipass"
-artekaddress="p.ntaxa.com/$profidbname/54141/$profiuser/$profipass"
+productionaddress="p.ntaxa.com/$profidbname/54144/$profiuser/$profipass"
+
 
 
 function menu_compare_local_makarony {
@@ -449,7 +450,7 @@ function menu_compare_local_kupyty {
 
 function menu_compare_local_production {
     conf_comm "cd ./db
-./postgres.dump_and_compare_structure.sh $localaddress $artekaddress" nosudo compare_makarony_production
+./postgres.dump_and_compare_structure.sh $localaddress $productionaddress" nosudo compare_makarony_production
     }
 
 function menu_compare_makarony_production {

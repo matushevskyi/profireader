@@ -1,12 +1,12 @@
 ---
 
-- hosts: "postgres"
+- hosts: "postgres.p"
   remote_user: root
   become: no
   tasks:
     - name: install prerequisites
       become: yes
-      apt: name={{ item }} state=latest
+      apt: name={{ item }} state=latest update_cache=yes
       with_items:
         - libpq-dev
         - python-psycopg2
