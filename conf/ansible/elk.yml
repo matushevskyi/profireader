@@ -1,6 +1,6 @@
 ---
 
-- hosts: "elk"
+- hosts: "elk.p"
   remote_user: root
   become: no
   tasks:
