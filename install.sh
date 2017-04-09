@@ -246,8 +246,13 @@ function menu_hosts {
     conf_comm "sed -i '/\(db\|web\|mail\|memcached\|elastic\).profi/d' /etc/hosts
 sed -i '/\\.profi/d' /etc/hosts
 echo '' >> /etc/hosts
-echo '127.0.0.1 db.profi mail.profi memcached.profi elastic.profi fluent.profi socket.profi' >> /etc/hosts
-echo '127.0.0.1 web.profi static.web.profi file001.web.profi socket.web.profi portal.web.profi' >> /etc/hosts
+echo '127.0.0.1 mail.profi' >> /etc/hosts
+echo '127.0.0.1 memcached.profi' >> /etc/hosts
+echo '127.0.0.1 elastic.profi' >> /etc/hosts
+echo '127.0.0.1 socket.profi' >> /etc/hosts
+echo '127.0.0.1 postgres.profi' >> /etc/hosts
+echo '127.0.0.1 elk.profi' >> /etc/hosts
+echo '#127.0.0.1 web.profi static.web.profi file001.web.profi socket.web.profi portal.web.profi' >> /etc/hosts
 cat /etc/hosts" sudo cron_files
     }
 
