@@ -156,9 +156,9 @@ def profile_load(json, company_id=None, portal_id=None):
             try:
                 portal.setup_ssl()
             except Exception as e:
-                current_app.log.error(e)
                 current_app.log.error('Error processing ssl for portal',
                                       **current_app.log.extra(
+                                          exception=e,
                                           portal=portal.get_client_side_dict(fields='id,host,name')))
 
             try:
