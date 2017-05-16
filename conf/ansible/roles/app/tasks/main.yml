@@ -3,6 +3,9 @@
   include_vars: "../vars/env/{{ env }}.yml"
 
 - name: Load a variables
+  include_vars: "../vars/vault/{{ env }}.yml"
+
+- name: Load a variables
   include_vars: "../vars/vault.yml"
 
 - git:
