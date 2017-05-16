@@ -1,0 +1,31 @@
+---
+
+- hosts: "{{ hosts|default('*') }}"
+  remote_user: root
+  tasks:
+  - name: Load a variables
+    include_vars: "../vars/{{ env }}.yml"
+  - name: update hosts
+    blockinfile:
+      path: /etc/hosts
+      block: "{{ hostnames_and_ips }}"
+  - name: "change zsh theme"
+    lineinfile:
+      path: /etc/zsh/zshrc
+      regexp: '^\s*export ZSH_THEME="[^"]+".*'
+      line: 'export ZSH_THEME="{{ zsh.theme|trim }}"'
+    when: zsh is defined and zsh.theme is defined
+
+  - name: "change zsh prompt"
+    lineinfile:
+      path: /etc/zsh/zshrc
+      regexp: "^\\s*PROMPT='.*"
+      line: "PROMPT='{{ zsh.prompt|trim }}'"
+    when: zsh is defined and zsh.prompt is defined and zsh.prompt
+
+  - name: "comment zsh prompt"
+    lineinfile:
+      path: /etc/zsh/zshrc
+      regexp: "^\\s*PROMPT='.*"
+      state: absent
+    when: zsh is defined and zsh.prompt is defined and not zsh.prompt

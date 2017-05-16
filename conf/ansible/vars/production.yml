@@ -1,0 +1,14 @@
+---
+hostnames_and_ips: |
+      10.10.11.10 profi.profi
+      10.10.11.11 front.profi
+      10.10.11.12 postgres.profi
+      10.10.11.13 socket.profi
+      10.10.11.14 static.profi
+      10.10.11.15 file001.profi
+      10.10.11.16 elastic.profi
+      10.10.11.17 memcached.profi
+      10.10.11.18 elk.profi
+zsh:
+  prompt: |
+      :%{$fg[cyan]%}PROFI%{$reset_color%}-%{$fg[red]%}PRODUCTION%{$reset_color%}: [%{$fg[$NCOLOR]%}%B%n%b%{$reset_color%}@%{$fg[green]%}%B%m%b%{$reset_color%}:%{$fg[$NCOLOR]%}%30<...<%~%<<%{$reset_color%}]%(!.#.$)
