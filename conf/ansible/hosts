@@ -1,3 +1,10 @@
 [profi]
-elk
-postgres
+profi-profi
+profi-front
+profi-postgres
+profi-socket
+profi-static
+profi-file001
+profi-elastic
+profi-memcached
+profi-elk
