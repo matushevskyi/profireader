@@ -7,6 +7,7 @@ import re
 from profapp.models.messenger import Contact, Message, Notification
 from flask import g
 from profapp.utils import db
+from profapp.constants.APPLICATION_PORTS import APPLICATION_PORTS
 
 connected_sid_user_id = {}
 connected_user_id_sids = {}
@@ -278,4 +279,4 @@ def update_translation(sid, tramslation_id_and_data):
 
 
 app = socketio.Middleware(sio, app)
-eventlet.wsgi.server(eventlet.listen(('', 5000)), app)
+eventlet.wsgi.server(eventlet.listen(('', APPLICATION_PORTS['socket'])), app)
