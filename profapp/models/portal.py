@@ -139,7 +139,7 @@ class Portal(Base, PRBase):
         return True
 
     def setup_ssl(self):
-        bashCommand = "ssh -i ./scrt/id_rsa_haproxy root@haproxy /bin/bash /usr/local/bin/certbot_front.sh {} www.{}".format(self.host, self.host)
+        bashCommand = "ssh -i ./scrt/id_rsa_haproxy root@haproxy.profi /bin/bash /usr/local/bin/certbot_front.sh {}".format(self.host)
         import subprocess
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
