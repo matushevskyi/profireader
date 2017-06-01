@@ -156,9 +156,9 @@ def profile_load(json, company_id=None, portal_id=None):
             try:
                 portal.setup_ssl()
             except Exception as e:
-                current_app.log.error(e)
                 current_app.log.error('Error processing ssl for portal',
                                       **current_app.log.extra(
+                                          exception=e,
                                           portal=portal.get_client_side_dict(fields='id,host,name')))
 
             try:
@@ -453,12 +453,12 @@ def analytics(portal_id):
     dict_id_name = lambda l: utils.list_of_dicts_from_list(l, 'id', 'name')
 
     portal = Portal.get(portal_id)
-    access_token = ModelConfig.get('access_token_for_analytics')
-    if access_token.md_tm.timestamp() < datetime.datetime.utcnow().timestamp() - 3000:
-        access_token.value = ServiceAccountCredentials.from_json_keyfile_name(
-            'scrt/Profireader_project_google_service_account_key.json',
-            'https://www.googleapis.com/auth/analytics.readonly').get_access_token().access_token
-        access_token.save()
+    # access_token = ModelConfig.get('access_token_for_analytics')
+    # if access_token.md_tm.timestamp() < datetime.datetime.utcnow().timestamp() - 3000:
+    #     access_token.value = ServiceAccountCredentials.from_json_keyfile_name(
+    #         'scrt/Profireader_project_google_service_account_key.json',
+    #         'https://www.googleapis.com/auth/analytics.readonly').get_access_token().access_token
+    #     access_token.save()
 
     return render_template('portal/analytics.html', portal=portal, company=portal.own_company,
                            select={'country': utils.get_client_side_list(Country.all(), fields='iso,name'),
@@ -469,8 +469,7 @@ def analytics(portal_id):
                                    'page_type': dict_id_name(
                                        [pdt.id for pdt in PortalDivisionType.all()]) + dict_id_name(
                                        ['publication', 'other'])
-                                   },
-                           access_token=access_token.value)
+                                   })
 
 
 @portal_bp.route('/<string:portal_id>/banners/', methods=['GET'],

@@ -10,9 +10,12 @@ from .. import utils
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..controllers.errors import BadDataProvided
 from ..models.users import User
+from ..constants.APPLICATION_PORTS import APPLICATION_PORTS
 
 
 class Socket:
+
+
     @staticmethod
     def notification_delivered(ack_id, notification_name, *args, **kwargs):
         print('notification_delivered (ack_id={})'.format(ack_id), notification_name, args, kwargs)
@@ -21,7 +24,7 @@ class Socket:
     def request_status_changed(to_user_id, from_user_id, status):
         from socketIO_client import SocketIO
 
-        with SocketIO('socket.profi', 5000) as socketIO:
+        with SocketIO('socket.profi', APPLICATION_PORTS['socket']) as socketIO:
             socketIO.emit('request_status_changed',
                           {'to_user_id': to_user_id, 'from_user_id': from_user_id, 'status': status},
                           lambda ack_id: Socket.notification_delivered(
@@ -33,7 +36,7 @@ class Socket:
     def notification(notification_data):
         from socketIO_client import SocketIO
 
-        with SocketIO('socket.profi', 5000) as socketIO:
+        with SocketIO('socket.profi', APPLICATION_PORTS['socket']) as socketIO:
             socketIO.emit('send_notification', notification_data,
                           lambda ack_id: Socket.notification_delivered(ack_id, 'send_notification', notification_data))
             socketIO.wait_for_callbacks(seconds=1)
@@ -41,7 +44,7 @@ class Socket:
     @staticmethod
     def insert_translation(data):
         from socketIO_client import SocketIO
-        with SocketIO('socket.profi', 5000) as socketIO:
+        with SocketIO('socket.profi', APPLICATION_PORTS['socket']) as socketIO:
             socketIO.emit('insert_translation', data,
                           lambda ack_id: Socket.notification_delivered(ack_id, 'insert_translation', data))
             socketIO.wait_for_callbacks(seconds=1)
@@ -50,7 +53,7 @@ class Socket:
     def update_translation(id, data):
         from socketIO_client import SocketIO
         from config import MAIN_DOMAIN
-        with SocketIO('socket.profi', 5000) as socketIO:
+        with SocketIO('socket.profi', APPLICATION_PORTS['socket']) as socketIO:
             socketIO.emit('update_translation', {'id': id, 'data': data},
                           lambda ack_id: Socket.notification_delivered(ack_id, 'update_translation',
                                                                        {'id': id, 'data': data}))

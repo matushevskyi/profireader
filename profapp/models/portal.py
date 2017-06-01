@@ -4,7 +4,7 @@ import re
 from functools import reduce
 
 import simplejson
-from flask import g, url_for
+from flask import g, url_for, current_app
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import and_, or_, expression
@@ -139,10 +139,12 @@ class Portal(Base, PRBase):
         return True
 
     def setup_ssl(self):
-        bashCommand = "ssh -i ./scrt/id_rsa_haproxy haproxy 'cd /usr/local/bin/; /usr/local/bin/certbot_front.sh {} www.{}'".format(self.host, self.host)
+        bashCommand = "ssh -i ./scrt/id_rsa_haproxy root@haproxy.profi /bin/bash /usr/local/bin/certbot_front.sh {}".format(self.host)
         import subprocess
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
+        # print(bashCommand, output, error)
+        # current_app.log.notice("running bash command for ssl: {}, output={}, error={}".format(bashCommand, output, error))
         return True
 
     def update_google_analytics_host(self, ga_man):
@@ -260,7 +262,7 @@ class Portal(Base, PRBase):
         self.host = self.host.lower()
 
         if any([re.match('^' + h + ('.' + Config.MAIN_DOMAIN).replace('.', '\.') + '$', self.host) for h in
-                ['file[0-9]+', 'ads', 'mail', 'socket', 'static', 'ns[0-9]', 'www']]):
+                ['file[0-9]+', 'ads', 'elk', 'mail', 'socket', 'static', 'ns[0-9]', 'www']]):
             errors['host'] = 'this hostname is registered'
 
         if utils.db.query_filter(Portal, host=self.host).filter(Portal.id != self.id).count():
