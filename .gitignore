@@ -6,7 +6,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-env/
 venv/
 .venv/
 build/
@@ -36,7 +35,7 @@ db/database.*.bak
 *.js.map
 *.css.map
 .venv/
-
+.ssh
 tmp*
 
 **/node_modules
