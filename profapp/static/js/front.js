@@ -39,7 +39,7 @@ function $ok(url, data, success, fail) {
                 success(resp['data'])
             }
             else if (fail) {
-                fail(resp['data'])
+                fail(resp)
             }
         } : null
     });

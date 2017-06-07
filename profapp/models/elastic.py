@@ -1,10 +1,12 @@
 import json
 import math
-from .. import utils
-from utils.db_utils import db
+
 import requests
-import inspect
 from sqlalchemy import event
+
+from profapp import utils
+from flask import g, request, current_app
+
 
 
 # engine = create_engine(ProductionDevelopmentConfig.SQLALCHEMY_DATABASE_URI)
@@ -27,11 +29,12 @@ class PRElasticConnection:
         return (self.host + '/' + '/'.join(args)) + '?' + \
                ('&'.join(["%s=%s" % (k, v) for k, v in params.items()]) if params else '')
 
-    def rq(self, path='', req={}, method='GET', returnstatusonly=False, notjson=False):
+    def rq(self, path='', req={}, method='GET', returnstatusonly=False, notjson=False, do_not_raise_exception=False):
         import sys
+        do_not_raise_exception = do_not_raise_exception if do_not_raise_exception else (method == 'DELETE')
 
-        print(method + ' - ' + path + ' called from ' + sys._getframe(1).f_code.co_name)
-        print('------ request = `' + req.__str__() + '`')
+        # current_app.log.debug({'method': method, 'path': path, 'called_from': sys._getframe(1).f_code.co_name, 'request': req})
+
         if method == 'POST':
             response = requests.post(path, data=json.dumps(req))
         elif method == 'PUT':
@@ -45,14 +48,15 @@ class PRElasticConnection:
         else:
             raise Exception("unknown method `" + method + '`')
         if returnstatusonly:
-            print('++++++ response(header only) =`' + response.status_code.__str__() + '`')
+            # current_app.log.debug({'header': response.status_code.__str__()})
             return True if response.status_code == 200 else False
         else:
-            print('++++++ response(header) =`' + response.status_code.__str__() + '`')
-            if response.status_code > 299:
+            # current_app.log.debug({'header': response.status_code.__str__()})
+
+            if response.status_code > 299 and not do_not_raise_exception:
                 ret = json.loads(response.text)
-                raise PRElasticException(ret['error'], response)
-            print('++++++ response(text) =`' + response.text + '`')
+                raise PRElasticException(ret, response)
+            # current_app.log.debug({'response': response.text})
             return response.text if notjson else json.loads(response.text)
 
     def index_exists(self, index_name):
@@ -89,12 +93,78 @@ class PRElasticConnection:
     def remove_index(self, index_name):
         return self.rq(path=self.path(index_name), method='DELETE')
 
-    def search(self, index_name, document_type, sort=["_score"], filter=[], must=[], should=[], page=1,
+    def search(self, index_name, document_type, sort=["_score"], afilter=[],
+               must=None,
+               highlight=None,
+               text=None,
+               fields={},
+               should=[], page=1,
                items_per_page=10):
 
-        req = {
-            "sort": sort,
-            "query": {"bool": {"filter": filter, "must": must, "should": should}}}
+        def get_param(params, param_name):
+            par_and_def = {
+                'boost': 1,
+                'number_of_fragments': 1
+            }
+            if isinstance(params, int):
+                params = {'boost': params}
+
+            return params.get(param_name, par_and_def[param_name])
+
+        messages = {}
+
+        if not text or text == '':
+            text = None
+
+        longwords = {}
+        shortwords = {}
+
+        if text is not None:
+            import re
+            words = re.compile("\s+").split(text)
+            remove = re.compile('[^\w]+')
+            words = [remove.sub('', w) for w in words]
+            for w in words:
+                (shortwords if len(w) < 3 else longwords)[w] = w
+            text = ' AND '.join(['*' + w + '*' for w in longwords])
+
+        if len(shortwords) > 0:
+            messages["words %(words)s was excluded as too short (minimum 3 characters required)"] = \
+                {'words': '`' + '`, `'.join(
+                    ['<span class="search_highlighted">' + w + '</span>' for w in shortwords]) + '`'}
+
+        if not text or text == '':
+            text = None
+
+        if must is None and fields is not None and text is not None:
+            must = [{"query_string": {'query': text,
+
+                                      'fields': [f + '^' + str(get_param(pm, 'boost')) for f, pm in fields.items()]}}]
+            # must = [{"multi_match": {'query': text,
+            #                          "operator": "and",
+            #                          'fields': [f + '^' + str(get_param(pm, 'boost')) for f, pm in fields.items()]}}]
+
+        if highlight is None and fields is not None and text is not None:
+            highlight = {
+                "pre_tags": ['<span class="search_highlighted">'],
+                "post_tags": ["</span>"],
+                'fields': {f: {'fragment_size': 200, 'number_of_fragments': get_param(pm, 'number_of_fragments')} for
+                           f, pm in fields.items()}
+            }
+
+        req = {}
+        if sort:
+            req['sort'] = sort
+        if highlight:
+            req['highlight'] = highlight
+        if afilter or must or should:
+            req['query'] = {'bool': {}}
+            if afilter:
+                req['query']['bool']['filter'] = afilter
+            if must:
+                req['query']['bool']['must'] = must
+            if should:
+                req['query']['bool']['should'] = should
 
         count = self.rq(path=self.path(index_name, document_type, '_count'),
                         req=req, method='GET')['count']
@@ -103,16 +173,19 @@ class PRElasticConnection:
 
         p = utils.putInRange(page, 1, pages)
         p = 1 if p == 0 else p
-        print(page, p, pages)
         items = utils.putInRange(items_per_page, 1, 100)
 
         res = self.rq(
             path=self.path(index_name, document_type, '_search', params={'size': items,
                                                                          'from': (p - 1) * items}),
             req=req, method='GET')
-        found = [h['_source'] for h in res['hits']['hits']]
 
-        return (found, pages, p)
+        found = [utils.dict_merge(h['_source'],
+                                  {'_index': h['_index'], '_highlight': h.get('highlight', {}), '_type': h['_type'],
+                                   '_id': h['_id']})
+                 for h in res['hits']['hits']]
+
+        return (found, pages, p, messages)
 
 
 elasticsearch = PRElasticConnection('http://elastic.profi:9200')
@@ -125,30 +198,11 @@ class PRElasticDocument:
         return None
 
     def elastic_get_document(self):
-        return {k: v.setter() for k, v in self.elastic_get_fields().items()}
-
-    def elastic_replace(self):
-        self.create_doctype_if_not_exists()
-        return elasticsearch.replace_document(self.elastic_get_index(),
-                                              self.elastic_get_doctype(),
-                                              self.elastic_get_id(),
-                                              self.elastic_get_document(),
-                                              )
-
-    def elastic_insert(self):
-        self.create_doctype_if_not_exists()
-        return elasticsearch.replace_document(self.elastic_get_index(),
-                                              self.elastic_get_doctype(),
-                                              self.elastic_get_id(),
-                                              self.elastic_get_document(),
-                                              )
-
-    def elastic_delete(self):
-        self.create_doctype_if_not_exists()
-        return elasticsearch.delete_document(self.elastic_get_index(),
-                                              self.elastic_get_doctype(),
-                                              self.elastic_get_id()
-                                              )
+        ret = {}
+        for k, v in self.elastic_get_fields().items():
+            ret[k] = v.setter()
+        return ret
+        # return {k: v.setter() for k, v in self.elastic_get_fields().items()}
 
     def create_index_if_not_exist(self):
         index_name = self.elastic_get_index()
@@ -159,9 +213,20 @@ class PRElasticDocument:
                 self.elastic_cached_index_doctype[index_name] = {}
                 return True
 
-            ret = elasticsearch.rq(path=elasticsearch.path(index_name), req={"settings": {}}, method='PUT')
+            ret = elasticsearch.rq(path=elasticsearch.path(index_name), req={"settings": {
+
+                "analysis": {
+                    "filter": {
+                        "mynGram": {
+                            "type": "nGram",
+                            "min_gram": 2,
+                            "max_gram": 50
+                        }
+                    }
+                }
+            }}, method='PUT')
             if ret:
-                print('created index:', index_name)
+                current_app.log.info({'created_index': index_name})
                 self.elastic_cached_index_doctype[index_name] = {}
             return True if ret else False
 
@@ -179,7 +244,7 @@ class PRElasticDocument:
             ret = elasticsearch.rq(path=elasticsearch.path(index_name, '_mapping', doctype_name),
                                    req=self.elastic_doctype_mappintg(), method='PUT')
             if ret:
-                print('created doctype:', index_name, doctype_name)
+                current_app.log.info({'created_doctype': doctype_name, 'index': index_name})
                 self.elastic_cached_index_doctype[index_name][doctype_name] = True
             return True if ret else False
 
@@ -187,17 +252,13 @@ class PRElasticDocument:
         return {'properties': {f_name: field.generate_mapping() for f_name, field in self.elastic_get_fields().items()}}
 
     @classmethod
-    def elastic_remove_all_indexes(cls):
-        pass
-
-    @classmethod
     def elastic_get_all_documents(cls):
-        return db(cls).all()
+        return utils.db.query_filter(cls).all()
 
     @classmethod
     def elastic_reindex_all(cls):
         for o in cls.elastic_get_all_documents():
-            o.elastic_replace()
+            o.elastic_update()
 
     def elastic_get_index(self):
         return None
@@ -207,6 +268,93 @@ class PRElasticDocument:
 
     def elastic_get_id(self):
         return None
+
+    def elastic_update(self):
+        self.create_doctype_if_not_exists()
+        return elasticsearch.replace_document(self.elastic_get_index(),
+                                              self.elastic_get_doctype(),
+                                              self.elastic_get_id(),
+                                              self.elastic_get_document())
+
+    def elastic_insert(self):
+        self.create_doctype_if_not_exists()
+        return elasticsearch.replace_document(self.elastic_get_index(),
+                                              self.elastic_get_doctype(),
+                                              self.elastic_get_id(),
+                                              self.elastic_get_document())
+
+    def elastic_delete(self):
+        return elasticsearch.delete_document(self.elastic_get_index(),
+                                             self.elastic_get_doctype(),
+                                             self.elastic_get_id())
+
+    @staticmethod
+    def event_insert_elastic(mapper, connection, target):
+        target.elastic_insert()
+
+    @staticmethod
+    def event_update_elastic(mapper, connection, target):
+        target.elastic_update()
+
+    @staticmethod
+    def event_delete_elastic(mapper, connection, target):
+        target.elastic_delete()
+
+    @staticmethod
+    def elastic_listeners(cls):
+        event.listen(cls, "after_insert", cls.event_insert_elastic)
+        event.listen(cls, "after_update", cls.event_update_elastic)
+        event.listen(cls, "after_delete", cls.event_delete_elastic)
+
+
+        # @staticmethod
+        # def after_update_elastic(mapper, connection, target):
+        #     a = target.__class__.get(target.id)
+        #     print(a)
+        #
+        # @staticmethod
+        # def after_delete_elastic(mapper, connection, target):
+        #     a = target.__class__.get(target.id)
+        #     print(a)
+
+
+        # @staticmethod
+        # def after_insert_elastic(session = None, target=None):
+        #     target.elastic_insert()
+        #
+        # @staticmethod
+        # def after_update_elastic(mapper=None, connection=None, target=None):
+        #     target.elastic_update()
+        #
+        # @staticmethod
+        # def after_delete_elastic(mapper=None, connection=None, target=None):
+        #     target.elastic_delete()
+        #
+        # @classmethod
+        # def __declare_last__(cls):
+        #     event.listen(cls, 'after_insert', cls.after_insert_elastic)
+        # #     event.listen(cls, 'after_update', cls.after_update_elastic)
+        # #     event.listen(cls, 'after_delete', cls.after_delete_elastic)
+
+        # @classmethod
+        # def __declare_last__(cls):
+        #     # event.listen(g.db, "pending_to_persistent", PRElasticDocument.after_insert_elastic)
+        #     pass
+        # event.listen(cls, 'pending_to_persistent', cls.after_insert_elastic)
+        # event.listen(cls, 'after_update', cls.after_update_elastic)
+        # event.listen(cls, 'after_delete', cls.after_delete_elastic)
+
+
+# from sqlalchemy.orm import sessionmaker
+# Session = sessionmaker()
+#
+# event.listen(Session, "before_commit", PRElasticDocument.after_insert_elastic)
+
+
+# event.listen(g.db, "pending_to_persistent", PRElasticDocument.after_insert_elastic)
+# @event.listens_for(g.db, "pending_to_persistent")
+# def intercept_pending_to_persistent(session, object_):
+#     print(object_.after_insert_elastic())
 
 
 class PRElasticField:
@@ -380,7 +528,7 @@ class PRElasticField:
 
         # def search_elastic(type, body):
         #     es = Elasticsearch(hosts='elastic.profi')
-        #     return ([utils.dict_merge(r['_source'], {'id': r['_id']}) for r in es.search(index='profireader',
+        #     return ([tools.dict_merge(r['_source'], {'id': r['_id']}) for r in es.search(index='profireader',
         #                                                                                   doc_type=type,
         #                                                                                   body=body)['hits']['hits']], 10, 1)
 

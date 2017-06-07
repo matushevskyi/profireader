@@ -1,0 +1,44 @@
+<nav id="topmenu" class="navbar navbar-default navbar-static-top">
+    <div class="container plr0">
+        <div id="home-url" class="navbar-header pull-left" style="margin-left: 0px; margin-right: 0px; ">
+            <a href="/" style="margin-right: 1em"><img
+                    class="portal-logo" {{ prImageUrl(portal.logo.url, position = 'left') }} /></a>
+        </div>
+        <div class="navbar-header pull-right" style="margin-left: 0px; margin-right: 0px;">
+            <div class="fr">{% include 'block_user.html' %}</div>
+            <div class="fr">
+                <form class="search-form nw" action="{{ search.url if search else url_for('front.search') }}">
+                    <input class="form-control" name="search" placeholder="{{ _('Search text placeholder') }}"
+                           value="{{ search.text if search and search.text else '' }}">
+                    <button class="btn btn-success" type="submit"><i class="fa fa-search"> {{ _('Search') }}</i>
+                    </button>
+                </form>
+            </div>
+            <button id="topmenu_button_sandwich" type="button" class="navbar-toggle collapsed mlr05"
+                    data-toggle="collapse" data-target="#navbar"
+                    aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+        </div>
+    </div>
+    <div class="container plr0">
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                {% for division_id, di in portal.divisions.items() %}
+                    {% if di.portal_division_type_id in ['news', 'events', 'catalog'] %}
+                        <li {% if division and di.id == division.id %}class="active"{% endif %}>
+                            <a href="{{ url_for('front.division', division_name=di.name) }}">{{ di.name }}</a>
+                        </li>
+                    {% elif division and di.portal_division_type_id in ['company_subportal'] %}
+                        <li {% if di.id == division.id %}class="active"{% endif %}>
+                            <a href="{{ url_for('front.company_page', member_company_id = di['subportal_company'].id, member_company_name = di['subportal_company'].name) }}">{{ di.name }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</nav>

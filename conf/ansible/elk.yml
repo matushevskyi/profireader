@@ -1,0 +1,34 @@
+---
+
+- hosts: "elk.p"
+  remote_user: root
+  become: no
+  tasks:
+    - name: Usage
+      debug:
+        msg: ""
+
+    - include: install_java_8.yml
+    - include: install_and_enable_service.yml name='elasticsearch' \
+               repo="deb http://packages.elastic.co/elasticsearch/2.x/debian stable main" \
+               key="https://packages.elastic.co/GPG-KEY-elasticsearch"
+    - include: install_and_enable_service.yml name='kibana' \
+                repo="deb http://packages.elastic.co/kibana/4.4/debian stable main" \
+    - include: install_and_enable_service.yml name='logstash' \
+                repo="deb http://packages.elastic.co/logstash/2.2/debian stable main"
+    - name: Copy logstash config
+      copy:
+        src: ../logstash/profi.conf
+        dest: /etc/logstash/conf.d/profi.conf
+        mode: 0644
+    - name: Create logstash systemd service file
+      copy:
+        src: ../logstash/logstash.service
+        dest: /lib/systemd/system/logstash.service
+        mode: 0644
+    - name: Enable logstash service
+      service:
+        name: logstash
+        enabled: yes
+        state: started
+        daemon_reload: yes

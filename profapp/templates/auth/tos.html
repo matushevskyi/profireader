@@ -1,0 +1,45 @@
+{% extends "_ruslan/_index_layout.html" %}
+{% block title %}Profireader - {{ _('Tos') }}{% endblock title %}
+
+{% block portal_content %}
+
+    <script>
+        module.controller('tos', function ($scope, $ok) {
+
+            $scope.sending = false;
+
+            $scope.accept = function (accept) {
+                $scope.sending = true;
+                if (accept) {
+                    $ok('', {'accept': accept}, function (resp) {
+                        if (resp['redirect']) {
+                            add_message('Thanks!', 'success')
+                            window.location.href = '{{ url_for('index.welcome') }}';
+                        }
+                        else {
+                            $scope.sending = false;
+                            add_message(resp['error'], 'error')
+                        }
+                    })
+                }
+                else {
+                    $scope.sending = false;
+                    add_message('Sorry. You have to accept tos in order to proceed', 'error')
+                }
+            };
+
+        });
+    </script>
+
+    <div class="container" ng-controller="tos">
+        <h1>{{ _('Please read and accept tos') }}</h1>
+        {{ __('TOS') }}
+        <br/>
+        <br/>
+
+        <button ng-disabled="sending" ng-click="accept(true)">{{ _('Accept') }}</button>
+        <button ng-disabled="sending" ng-click="accept(false)">{{ _('Reject') }}</button>
+
+
+    </div>
+{% endblock portal_content %}

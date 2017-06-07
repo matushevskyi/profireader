@@ -1,0 +1,1 @@
+#*/59 * * * * root ----directory----/tools/run_with_env_only_single_copy.sh check_letsencrypt_ssls.py

@@ -1,0 +1,129 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block title %}{{ _('Article history') }}{% endblock title %}
+
+{% block portal_content %}
+
+
+    <script>
+        module.controller('article_my_versions', ['$scope', '$ok', function ($scope, $ok) {
+            $scope.url_material_update = {{ raw_url_for('article.article_show_form')|safe }};
+            $scope.url_search_for_company = {{ raw_url_for('article.search_for_company_to_submit')|safe }};
+            $scope.url_submit = {{ raw_url_for('article.submit_to_company')|safe }};
+            $scope.url_resubmit = {{ raw_url_for('article.resubmit_to_company')|safe }};
+
+            $scope.selectedCompany_name = '';
+            $scope.selectedCompany = null;
+            $scope.selectedCompany_sending = false;
+            $scope.$$translate = {{ translates('article_my_versions')|safe }};
+
+            $scope.onSelect = function ($item, $model, $label) {
+                if (!$item || !$item.id) {
+                    $scope.selectedCompany_name = '';
+                    $scope.selectedCompany = null;
+                }
+                else {
+                    $scope.selectedCompany = $item;
+                }
+            };
+
+            $scope.searchForCompanyToSubmit = function (val) {
+                return $ok($scope.url_search_for_company(), {
+                    article_id: $scope.data.id,
+                    search: val
+                }, function (resp) {
+                    return resp.length ? resp : [{id: false, name: 'No results'}];
+                });
+            };
+
+            $scope.sh = function (company_id) {
+                setTimeout(function () {
+                    scrool($('#article_submitted_to_company_id_' + company_id), {
+                        afterScroll: function () {
+                            highlight($('#article_submitted_to_company_id_' + company_id));
+                        }
+                    });
+                }, 500);
+            };
+
+            $scope.submitToCompany = function () {
+                $ok($scope.url_submit({article_id: $scope.data['id']}), {company_id: $scope.selectedCompany.id}, function (resp) {
+                    $scope.selectedCompany = null;
+                    $scope.selectedCompany_name = null;
+                    $scope.data = resp['article'];
+                    $scope.sh(resp['company_id']);
+                }).finally(function () {
+                    $scope.selectedCompany_sending = false;
+                });
+            };
+
+            $scope.resubmit = function (article_company_id) {
+                $ok($scope.url_resubmit({article_company_id: article_company_id}), {}, function (resp) {
+                    console.log(resp);
+                    var found = false;
+                    $.each($scope.data.submitted_versions, function (ind, a) {
+                        if (a.id === resp.article.id) {
+                            {#TODO RP by OZ:  PART 2. look for PART 1 in this file #}
+                            $scope.data.submitted_versions[ind] = resp.article;
+                            found = true;
+                            return false;
+                        }
+                    });
+                    if (!found) {
+                        $scope.data.submitted_versions.push(resp.article);
+                    }
+                    $scope.sh(resp.article['company_id']);
+
+                });
+            }
+
+        }]);
+    </script>
+    {% raw %}
+
+    <div ng-init="loadData()" ng-controller="article_my_versions">
+        <div>
+            <div ng-if="loading">{{ _('Loading...') }}</div>
+            <div ng-if="!loading">
+                <h2>{{ _('Article title is `%(data.mine_version.title)s`') }}</h2>
+                {{ data.mine_version.short }}
+                <h4>{{ _('Created at %(data.mine_version.cr_tm)s') }}</h4>
+                <h4>{{ _('Last modified at %(data.mine_version.md_tm)s') }} [<a
+                        href="{{ url_material_update({article_company_id: data.mine_version.id}) }}">{{_('edit')}}</a>]
+                </h4>
+
+                {{ _('submit my article to company') }} <input typeahead-on-select="onSelect($item, $model, $label)"
+                                                               typeahead-template-url="typeaheadTemplate.html"
+                                                               typeahead-loading="loadingCompanies"
+                                                               ng-model="selectedCompany_name"
+                                                               typeahead="company as company.name for company in searchForCompanyToSubmit($viewValue)"
+                                                               name="company_id"/>&nbsp;
+                <button class="btn" ng-click="submitToCompany()"
+                        ng-class="{'disabled': !selectedCompany || selectedCompany_sending}"
+                        ng-disabled="!selectedCompany || selectedCompany_sending">{{ _('submit for publication') }}
+                </button>
+                <i ng-show="loadingCompanies" class="glyphicon glyphicon-refresh"></i>
+                <hr/>
+                <h2>{{ _('Submitted to following companies') }}</h2>
+
+                <div style="height: 30em; overflow: auto">
+    <span ng-repeat="a_submitted in data.submitted_versions"
+          id="article_submitted_to_company_id_{{ a_submitted.company_id }}">
+        <h3>{{ _('Article title is `%(title)s` submitted to company `%(company.name)s` and has status `%(status)s`',
+            a_submitted) }} [<a
+                    href="{{ url_update({article_company_id: a_submitted.id}) }}">{{ _(edit) }}</a>]
+            <span ng-if="a_submitted.status === 'declined'">[<a ng-click="resubmit(a_submitted.id)" href="#">{{_('resubmit')}}</a>]</span>
+        </h3>
+        {{ a_submitted.short }}
+        <!-- TODO RP by OZ:  PART 1. if we change element of array data.submitted (see PART 2) below h5 elements don't rerendered  -->
+        <h5>{{ _('Created at %(cr_tm)s', a_submitted) }}</h5>
+        <h5>{{ _('Last modified at %(md_tm)s by user `%(editor.full_name)s`', a_submitted) }}</h5>
+    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endraw %}
+
+{% endblock portal_content %}
+

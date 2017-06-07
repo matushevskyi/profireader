@@ -1,8 +1,3 @@
-from flask import render_template, flash
-from flask_wtf.csrf import CsrfProtect
-from .blueprints_declaration import exception_bp
-
-csrf = CsrfProtect()
 
 
 class Error(Exception):
@@ -58,10 +53,9 @@ class SubscribeToOwn(Error):
 
 
 class PortalAlreadyExist(Error):
-
-            # except errors.PortalAlreadyExist as e:
-            #     details = e.args[0]
-            #     print(details['message'])
+    # except errors.PortalAlreadyExist as e:
+    #     details = e.args[0]
+    #     print(details['message'])
     pass
 
 
@@ -84,7 +78,7 @@ class VideoAlreadyExistInPlaylist(Error):
 class ValidationException(Error):
     """ Inappropriate argument value (of correct type). """
 
-    def __init__(self, validation_result): # real signature unknown
+    def __init__(self, validation_result):  # real signature unknown
         self.result = validation_result
         pass
 
@@ -96,12 +90,9 @@ class WrongNumberOfParameters(Error):
 class WrongMandatoryParametersPassedToFunction(Error):
     pass
 
-#
-# @csrf.error_handler
-# def csrf_error(reason):
-#     return render_template('errors/404.html', reason=reason), 400
-#
-#
-# @exception_bp.errorhandler(404)
-# def page_not_found(reason):
-#     return render_template('errors/404.html', reason=reason), 404
+
+class NoRights(Exception):
+    url = '/'
+
+    def __init__(self, redirect_to='/'):
+        self.url = redirect_to

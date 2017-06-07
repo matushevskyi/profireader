@@ -59,12 +59,12 @@
 <div ng-controller="message-controller" id="controller-message-controller" ng-cloak>
     {% raw %}
     <div ng-repeat="alert in alerts" class="row">
-        <div class="col-lg-offset-3 col-md-offset-3 col-lg-6 col-md-6 col-sm-10 col-xs-12 flash-message flash-message-{{ alert.type }}" onclick="this.style.bottom='60px'">
+        <div class="col-lg-offset-3 col-md-offset-3 col-lg-6 col-md-6 col-sm-10 col-xs-12 flash-message flash-message-{{ alert.type }}" >
             <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 img-message" >
-                <img src="//static.profireader.com/static/images/0.gif" width="128" height="129" alt="{{ alert.type }}">
+                <img ng-src="{{ static_address('images/0.gif') }}" width="128" height="129" alt="{{ alert.type }}">
             </div>
-            <div class="col-lg-8 col-md-8 col-xs-8 col-sm-8">
-                <i class="fa fa-times" ng-click="closeAlert($index)"></i>
+            <div class="col-lg-8 col-md-8 col-xs-8 col-sm-8"  ng-click="closeAlert($index)">
+                <i class="fa fa-times"></i>
                 <h3>{{ _(alert.type + '!') }}</h3>
                 <p>{{ alert.msg }}</p>
             </div>

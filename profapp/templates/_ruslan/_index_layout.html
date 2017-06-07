@@ -20,17 +20,16 @@
 
     <link href='https://fonts.googleapis.com/css?family=Roboto:400,900,300,500,700&subset=latin,cyrillic-ext,cyrillic'
           rel='stylesheet' type='text/css'>
-    <link href="//static.profireader.com/static/css/font-awesome.min.css" rel="stylesheet">
+    <link href="{{ static_address('css/font-awesome.min.css') }}" rel="stylesheet">
     {% if g.debug %}
-        <link href="//static.profireader.com/static/css/bootstrap.css" rel="stylesheet">
+        <link href="{{ static_address('new/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     {% else %}
         <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
     {% endif %}
-    <link href="//static.profireader.com/static/css/_profreader.css" rel="stylesheet">
-    <link href="//static.profireader.com/static/css/style.css" rel="stylesheet">
-    <link href="//static.profireader.com/static/css/icons.css" rel="stylesheet">
-    <link href="//static.profireader.com/static/css/oles.css" rel="stylesheet">
-{#    <link rel="stylesheet" type="text/css" href="/static/new/jquery-datetimepicker/jquery.datetimepicker.css">#}
+    <link href="{{ static_address('css/_profreader.css') }}" rel="stylesheet">
+    <link href="{{ static_address('css/style.css') }}" rel="stylesheet">
+    <link href="{{ static_address('css/icons.css') }}" rel="stylesheet">
+    <link href="{{ static_address('css/oles.css') }}" rel="stylesheet">
 
 
 {% endblock styles %}
@@ -38,44 +37,46 @@
 {% block head %}
     {{ super() }}
 
-    <link rel="shortcut icon" href="//static.profireader.com/static/favicon.ico" type="image/x-icon"/>
-    <link rel="icon" href="//static.profireader.com/static/favicon.ico" type="image/gif"/>
+    <link rel="shortcut icon" href="{{ static_address('favicon.ico') }}" type="image/x-icon"/>
+    <link rel="icon" href="{{ static_address('favicon.ico') }}" type="image/gif"/>
 
     <script>
         var pr_angular_modules = ['ui.bootstrap', 'profireaderdirectives', 'ngSanitize', 'ajaxFormModule',
-            'ngAnimate', 'ngTouch'];
+            'ngAnimate', 'ngTouch', 'ngRoute'];
     </script>
 
     {{ config_variables()|safe }}
 
 
     {% if g.debug %}
-        <script src="//static.profireader.com/static/new/jquery/jquery.min.js"></script>
-        <script src="//static.profireader.com/static/new/jquery/jquery-ui.js"></script>
+        <script src="{{ static_address('new/jquery/jquery.min.js') }}"></script>
+        <script src="{{ static_address('new/jquery/jquery-ui.js') }}"></script>
 
-       <script src="//static.profireader.com/static/js/underscore-min.js"></script>
+        <script src="{{ static_address('js/underscore-min.js') }}"></script>
 
-        <script src="//static.profireader.com/static/new/bootstrap/js/bootstrap.js"></script>
+        <script src="{{ static_address('new/bootstrap/js/bootstrap.js') }}"></script>
 
-        <script src="//static.profireader.com/static/new/angular/angular.min.js"></script>
-        <script src="//static.profireader.com/static/new/angular-bootstrap/ui-bootstrap.min.js"></script>
+        <script src="{{ static_address('new/angular/angular.min.js') }}"></script>
+        <script src="{{ static_address('new/angular-route/angular-route.js') }}"></script>
+
+        <script src="{{ static_address('new/angular-bootstrap/ui-bootstrap.min.js') }}"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.1.0/ui-bootstrap.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.1.0/ui-bootstrap-tpls.min.js"></script>
     {% else %}
-        {#        <script src="//static.profireader.com/static/new/jquery/jquery.min.js"></script>#}
+        {#        <script src="{{ static_address('new/jquery/jquery.min.js') }}"></script>#}
         <script src="https://code.jquery.com/jquery-2.1.4.min.js"
                 integrity="sha256-8WqyJLuWKRBVhxXIL1jBDD7SDxU936oZkCnxQbWwJVw=" crossorigin="anonymous"></script>
         <script src="https://code.jquery.com/ui/1.10.4/jquery-ui.min.js"
                 integrity="sha256-oTyWrNiP6Qftu4vs2g0RPCKr3g1a6QTlITNgoebxRc4=" crossorigin="anonymous"></script>
-        <script src="//static.profireader.com/static/new/jquery-datetimepicker/jquery.datetimepicker.js"></script>
+        <script src="{{ static_address('new/jquery-datetimepicker/jquery.datetimepicker.js') }}"></script>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 
 
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>
-        <script src="//static.profireader.com/static/new/angular-bootstrap/ui-bootstrap.min.js"></script>
-        <script src="//static.profireader.com/static/new/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
+        <script src="{{ static_address('new/angular-bootstrap/ui-bootstrap.min.js') }}"></script>
+        <script src="{{ static_address('new/angular-bootstrap/ui-bootstrap-tpls.min.js') }}"></script>
     {% endif %}
 
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-sanitize.js"></script>
@@ -83,28 +84,42 @@
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-touch.js"></script>
 
 
-    <link href="//static.profireader.com/static/new/angular-ui-select/select.min.css" rel="stylesheet">
-    <script src="//static.profireader.com/static/new/angular-ui-select/select.min.js"></script>
+    <link href="{{ static_address('new/angular-ui-select/select.min.css') }}" rel="stylesheet">
+    <script src="{{ static_address('new/angular-ui-select/select.min.js') }}"></script>
 
 
-    <script src="//static.profireader.com/static/new/moment/moment.min.js"></script>
-    {% if g.lang != 'en' %}<script src="//static.profireader.com/static/new/moment/{{ g.lang }}.js"></script>{% endif %}
-    <script type="text/javascript"  src="//static.profireader.com/static/new/eonasdan-bootstrap-datetimepicker/bootstrap-datetimepicker.min.js"></script>
-    <link rel="stylesheet"          href="//static.profireader.com/static/new/eonasdan-bootstrap-datetimepicker/bootstrap-datetimepicker.min.css" />
+    <script src="{{ static_address('new/moment/moment.min.js') }}"></script>
+    {% if g.lang != 'en' %}
+        <script src="{{ static_address('new/moment/' + g.lang + '.js') }}"></script>{% endif %}
+    <script type="text/javascript"
+            src="{{ static_address('new/eonasdan-bootstrap-datetimepicker/bootstrap-datetimepicker.min.js') }}"></script>
+    <link rel="stylesheet"
+          href="{{ static_address('new/eonasdan-bootstrap-datetimepicker/bootstrap-datetimepicker.min.css') }}"/>
 
 
-    <script src="//static.profireader.com/static/angular-ajax-validator/ngAjaxValidator.js"></script>
-{#    <script src="//static.profireader.com/static/angular-ui-slider/slider.js"></script>#}
-    <script src="//static.profireader.com/static/js/profireader_angular.js"></script>
-    <script src="//static.profireader.com/static/js/profireader.js"></script>
+    <script src="{{ static_address('angular-ajax-validator/ngAjaxValidator.js') }}"></script>
 
+    <script src="{{ static_address('js/profireader_angular.js') }}"></script>
 
+    {% if g.user.id %}
+        <script src="{{ static_address('new/socket.io.js/socket.io.js') }}"></script>
 
-    <script>
-        {% for message in get_flashed_messages() %}
-            add_message('{{ message }}', 'warning');
-        {% endfor %}
-    </script>
+        <script>
+
+            var pr_chat_socket = io.connect('//socket.{{ MAIN_DOMAIN }}',
+                {'transports': ['websocket', 'polling']});
+
+            pr_chat_socket.on('general_notification', function (resp) {
+                if (resp['unread']) {
+                    angularControllerFunction('user_controller', 'set_unread_messages_and_notifications_count')(resp['unread']['messages'], resp['unread']['notifications'], resp['unread']['contacts']);
+                }
+            });
+
+            {% for message in get_flashed_messages() %}
+                add_message('{{ message }}', 'warning');
+            {% endfor %}
+        </script>
+    {% endif %}
 
 {%- endblock head %}
 
@@ -124,15 +139,13 @@
     <div class="container-fluid widewrapper">
         {% include 'flashed-messages.html' %}
 
-        {% block portal_content %}
-
-        {% endblock portal_content %}
+        {% block portal_content %}{% endblock portal_content %}
     </div>
-
 
 {% endblock content %}
 
 
 {% block footer %}
-    {% include 'partials/portal_footer_Profireader.html' %}
+    {% include 'partials/profireader_footer.html' %}
 {% endblock footer %}
+

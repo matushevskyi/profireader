@@ -1,44 +1,36 @@
-from flask import render_template, redirect, url_for, request, g, make_response, json, jsonify, session
-# from profapp.models.bak_articles import Article, Material, Publication, ReaderPublication
-from profapp.models.portal import PortalDivision, UserPortalReader, Portal, MemberCompanyPortal
-from ..models.pr_base import Search, PRBase, Grid
+from flask import render_template, g
+
+from profapp.models.portal import PortalDivision, Portal, MemberCompanyPortal
+
 from .blueprints_declaration import article_bp
-from .request_wrapers import ok, tos_required, check_right
-from .pagination import pagination
-from config import Config
-from .views_file import crop_image
-from ..models.company import Company, UserCompany
-from ..models.tag import Tag, TagPublication
-from ..models.materials import Material, Publication
-
-from utils.db_utils import db
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql import expression, and_
-from sqlalchemy import text
-import time
 from .. import utils
-import datetime
-from ..models.rights import EditOrSubmitMaterialInPortal, PublishUnpublishInPortal, EditMaterialRight, \
-    EditPublicationRight, UserIsEmployee, UserIsActive, BaseRightsEmployeeInCompany
+from ..models.company import Company, UserCompany
+from ..models.materials import Material, Publication
+from ..models.pr_base import PRBase, Grid
+from ..models.tag import Tag
+from ..models.permissions import UserIsActive, EmployeeHasRightAtCompany, RIGHT_AT_COMPANY, RIGHT_AT_PORTAL, \
+    CheckFunction
+from profapp.models.permissions import ActionsForMaterialAtMembership, ActionsForPublicationAtMembership
 
 
-@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['GET'])
-# @article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['GET'])
-@article_bp.route('/<string:company_id>/material_create/', methods=['GET'])
-@check_right(EditMaterialRight, ['material_id'])
-@check_right(EditPublicationRight, ['publication_id', 'company_id'])
-@check_right(BaseRightsEmployeeInCompany, ['company_id'], BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
-def article_show_form(material_id=None, company_id=None):
+def material_can_be_edited():
+    return EmployeeHasRightAtCompany(RIGHT_AT_COMPANY.ARTICLES_EDIT_OTHERS) | \
+           (EmployeeHasRightAtCompany() &
+            CheckFunction(lambda material_id, company_id: Material.get(material_id).editor_user_id == g.user_id))
+
+
+@article_bp.route('/<string:company_id>/material_create/', methods=['GET'],
+                  permissions=EmployeeHasRightAtCompany(RIGHT_AT_COMPANY._ANY))
+@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['GET'],
+                  permissions=material_can_be_edited())
+def article_show_form(company_id, material_id=None):
     company = Company.get(company_id)
-    return render_template('article/form.html', material_id=material_id, company_id=company_id, company=company)
+    return render_template('article/edit.html', material_id=material_id, company_id=company_id, company=company)
 
 
-@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['OK'])
-# @article_bp.route('/<string:company_id>/publication_update/<string:publication_id>/', methods=['OK'])
-@article_bp.route('/<string:company_id>/material_create/', methods=['OK'])
-@check_right(EditMaterialRight, ['material_id'])
-# @check_right(EditPublicationRight, ['publication_id', 'company_id'])
-@check_right(BaseRightsEmployeeInCompany, ['company_id'], BaseRightsEmployeeInCompany.ACTIONS['CREATE_MATERIAL'])
+@article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['OK'],
+                  permissions=UserIsActive())
+@article_bp.route('/<string:company_id>/material_create/', methods=['OK'], permissions=UserIsActive())
 def load_form_create(json_data, company_id=None, material_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
@@ -50,186 +42,163 @@ def load_form_create(json_data, company_id=None, material_id=None):
     if action == 'load':
         return {'material': material.get_client_side_dict(more_fields='long|company|illustration')}
     else:
-        parameters = g.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
+        parameters = utils.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
         material.attr(parameters['material'])
         if action == 'validate':
             material.detach()
             return material.validate(material.id is not None)
         else:
-            material.illustration = utils.dict_merge(json_data['material']['illustration'],
-                                                     {'company': material.company,
-                                                      'file_name_prefix': 'illustration_for_material_%s' % (
-                                                          material.id,)})
+            material.save()
+            material.illustration = json_data['material']['illustration']
 
             return {'material': material.save().get_client_side_dict(more_fields='long|company|illustration')}
 
 
-@article_bp.route('/material_details/<string:material_id>/', methods=['GET'])
-@check_right(UserIsEmployee, ['material_id'])
+@article_bp.route('/material_details/<string:material_id>/', methods=['GET'], permissions=UserIsActive())
 def material_details(material_id):
     company = Company.get(Material.get(material_id).company.id)
-    return render_template('company/material_details.html',
+    return render_template('article/material_details.html',
                            article=Material.get(material_id).get_client_side_dict(),
                            company=company)
 
 
-def get_portal_dict_for_material(portal, company, material=None, publication=None, submit=None):
-    ret = {}
-    ret['portal'] = portal.get_client_side_dict(
-        fields='id, name, host, logo_file_id, divisions.id|name|portal_division_type_id, own_company.name|id|logo_file_id')
-
-    # ret['rights'] = MemberCompanyPortal.get(company_id=company_id, portal_id=ret['id']).rights
-    ret['divisions'] = PRBase.get_ordered_dict([d for d in ret['portal']['divisions'] if (
-        d['portal_division_type_id'] == 'events' or d['portal_division_type_id'] == 'news')])
-    ret['company_id'] = company.id
-    if material:
-        publication_in_portal = db(Publication).filter_by(material_id=material.id).filter(
-            Publication.portal_division_id.in_(
-                [div_id for div_id, div in ret['divisions'].items()])).first()
-    else:
-        publication_in_portal = publication
-    if publication_in_portal:
-        if submit:
-            ret['replace_id'] = publication_in_portal.id
-        ret['id'] = portal.id if submit else publication_in_portal.id
-        ret['publication'] = publication_in_portal.get_client_side_dict(
-            'id,status,visibility,portal_division_id,publishing_tm')
-        ret['publication']['division'] = ret['divisions'][ret['publication']['portal_division_id']]
-        ret['publication']['counts'] = '0/0/0/0'
-        ret['actions'] = PublishUnpublishInPortal(publication=publication_in_portal,
-                                                  division=publication_in_portal.division, company=company).actions()
-
-    else:
-        ret['id'] = portal.id
-        ret['publication'] = None
-        ret['actions'] = {EditOrSubmitMaterialInPortal.ACTIONS['SUBMIT']:
-                              EditOrSubmitMaterialInPortal(material=material, portal=portal).actions()[
-                                  EditOrSubmitMaterialInPortal.ACTIONS['SUBMIT']]}
-
-    return ret
-
-
-@article_bp.route('/material_details/<string:material_id>/', methods=['OK'])
-@check_right(UserIsEmployee, ['material_id'])
+@article_bp.route('/material_details/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
 def material_details_load(json, material_id):
     material = Material.get(material_id)
     company = material.company
 
     return {
         'material': material.get_client_side_dict(more_fields='long'),
-        'actions': {EditOrSubmitMaterialInPortal.ACTIONS['EDIT']:
-                        EditMaterialRight(material=material, portal=company.own_portal).is_allowed()},
-        'company': company.get_client_side_dict(),
+        'actions': {'EDIT': material_can_be_edited().check(company_id=company.id, material_id=material_id)},
         'portals': {
-            'grid_data': [get_portal_dict_for_material(portal, company, material) for portal in
-                          PublishUnpublishInPortal.get_portals_where_company_is_member(company)],
-            'grid_filters': {
-                'publication.status': Grid.filter_for_status(Publication.STATUSES)
-            }
-
+            'grid_data': [m.material_or_publication_grid_row(material) for m in company.memberships_active]
         }
     }
 
 
-@article_bp.route('/submit_publish/<string:article_action>/', methods=['OK'])
-@check_right(UserIsActive)
-def submit_publish(json, article_action):
+def publish_dialog_load(publication, publisher_membership):
+    return {
+        'publication': publication.get_client_side_dict(),
+        'publisher_membership': publisher_membership.get_client_side_dict(
+            fields='id, company, portal, portal.divisions_publicable, current_membership_plan_issued'),
+        'publication_count': publisher_membership.get_publication_count()
+    }
+
+
+def publish_dialog_save(publication, jpublication, status):
+    publication.portal_division = PortalDivision.get(jpublication['portal_division_id'], returnNoneIfNotExists=True)
+    publication.visibility = jpublication['visibility']
+    publication.tags = [Tag.get(t['id']) for t in jpublication['tags']]
+    for d in ['publishing_tm', 'event_begin_tm', 'event_end_tm']:
+        setattr(publication, d, PRBase.parse_timestamp(jpublication.get(d)))
+    if status:
+        publication.status = status
+
+
+@article_bp.route(
+    '/publication_change_status/<string:publication_id>/actor_membership_id/<string:actor_membership_id>/action/<string:action>/request_from/<string:request_from>/',
+    methods=['OK'], permissions=UserIsActive())
+def publication_change_status(json, publication_id, actor_membership_id, action, request_from):
+    actor_membership = MemberCompanyPortal.get(actor_membership_id)
+    publication = Publication.get(publication_id)
+
+    if action == ActionsForPublicationAtMembership.ACTIONS['UNPUBLISH']:
+        publication.status = Publication.STATUSES['UNPUBLISHED']
+    elif action == ActionsForPublicationAtMembership.ACTIONS['UNDELETE']:
+        publication.status = Publication.STATUSES['UNPUBLISHED']
+    elif action == ActionsForPublicationAtMembership.ACTIONS['DELETE']:
+        publication.status = Publication.STATUSES['DELETED']
+    publication.save()
+
+    actor_membership.NOTIFY_MATERIAL_ACTION_BY_COMPANY_OR_PORTAL(
+        action=action, material_title=publication.material.title,
+        company_or_portal='company' if request_from == 'company_material_details' else 'portal')
+
+    if request_from == 'company_material_details':
+        return actor_membership.material_or_publication_grid_row(publication.material)
+    elif request_from == 'portal_publications':
+        return publication.portal_publication_grid_row(actor_membership)
+
+
+# @article_bp.route(
+#     '/material_change_status/<string:material_id>/action/<string:action>/',
+#     methods=['OK'], permissions=UserIsActive())
+# def material_change_status(json, material_id, action):
+#     material = Material.get(material_id)
+#
+#     if action == ActionsForMaterialAtMembership.ACTIONS['UNDELETE']:
+#         material.status = Material.STATUSES['NORMAL']
+#     elif action == ActionsForMaterialAtMembership.ACTIONS['DELETE']:
+#         material.status = Material.STATUSES['DELETED']
+#     material.save()
+
+
+@article_bp.route('/submit_or_publish_material/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
+def submit_or_publish_material(json, material_id):
     action = g.req('action', allowed=['load', 'validate', 'save'])
-    company = Company.get(json['company']['id'])
-    if article_action == 'SUBMIT':
-        material = Material.get(json['material']['id'])
-        check = EditOrSubmitMaterialInPortal(material=material, portal=json['portal']['id']).action_is_allowed(
-            article_action)
-        if check != True:
-            return check
-        publication = Publication(material=material)
-        more_data_to_ret = {
-            'material': {'id': material.id},
-            'can_material_also_be_published': check == True
-        }
-    else:
-        publication = Publication.get(json['publication']['id'])
-        check = PublishUnpublishInPortal(publication=publication, division=publication.portal_division_id,
-                                         company=company).action_is_allowed(article_action)
-        if check != True:
-            return check
-        more_data_to_ret = {}
+
+    publication = Publication(material=Material.get(material_id))
+    publisher_membership = MemberCompanyPortal.get(json['publisher_membership']['id'])
+    employment = UserCompany.get_by_user_and_company_ids(company_id=publication.material.company_id)
+    also_publish = json.get('also_publish', None)
 
     if action == 'load':
-        portal = Portal.get(json['portal']['id'])
-        ret = {
-            'publication': publication.get_client_side_dict(),
-            'company': company.get_client_side_dict(),
-            'portal': portal.get_client_side_dict()
-        }
-        ret['portal']['divisions'] = PRBase.get_ordered_dict(
-            PublishUnpublishInPortal().get_active_division(portal.divisions))
-
-        return utils.dict_merge(ret, more_data_to_ret)
+        return utils.dict_merge(
+            publish_dialog_load(publication, publisher_membership),
+            {'can_material_also_be_published':
+                 employment.rights[RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH] and \
+                 publisher_membership.rights[RIGHT_AT_PORTAL.PUBLICATION_PUBLISH]
+             })
     else:
+        publish_dialog_save(
+            publication, json['publication'],
+            status=Publication.STATUSES['PUBLISHED'] if also_publish else Publication.STATUSES['SUBMITTED'])
 
-        publication.attr(g.filter_json(json['publication'], 'portal_division_id'))
-        publication.publishing_tm = PRBase.parse_timestamp(json['publication'].get('publishing_tm'))
-        publication.event_begin_tm = PRBase.parse_timestamp(json['publication'].get('event_begin_tm'))
-        publication.event_end_tm = PRBase.parse_timestamp(json['publication'].get('event_end_tm'))
-        publication.tags = [Tag.get(t['id']) for t in json['publication']['tags']]
-
-        if 'also_publish' in json and json['also_publish']:
-            publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
-        else:
-            if article_action in [PublishUnpublishInPortal.ACTIONS['PUBLISH'],
-                                  PublishUnpublishInPortal.ACTIONS['REPUBLISH']]:
-                publication.status = PublishUnpublishInPortal.STATUSES['PUBLISHED']
-            elif article_action in [PublishUnpublishInPortal.ACTIONS['UNPUBLISH'],
-                                    PublishUnpublishInPortal.ACTIONS['UNDELETE']]:
-                publication.status = PublishUnpublishInPortal.STATUSES['UNPUBLISHED']
-            elif article_action in [PublishUnpublishInPortal.ACTIONS['DELETE']]:
-                publication.status = PublishUnpublishInPortal.STATUSES['DELETED']
-
-        if action == 'validate':
-            publication.detach()
-            return publication.validate(True if article_action == 'SUBMIT' else False)
-        else:
-            # if article_action == 'SUBMIT':
-            #     publication.long = material.clone_for_portal_images_and_replace_urls(publication.portal_division_id,
-            #                                                                          publication)
-            publication.save().set_tags_positions()
-            return get_portal_dict_for_material(publication.portal, company, publication=publication,
-                                                submit=article_action == 'SUBMIT')
-
-
-@article_bp.route('/list_reader')
-@article_bp.route('/list_reader/<int:page>/')
-@check_right(UserIsActive)
-def list_reader(page=1):
-    search_text = request.args.get('search_text') or ''
-    favorite = 'favorite' in request.args
-    if not favorite:
-        articles, pages, page = Search().search({'class': Publication,
-                                                 'filter': and_(Publication.portal_division_id ==
-                                                                db(PortalDivision).filter(
-                                                                    PortalDivision.portal_id ==
-                                                                    db(UserPortalReader,
-                                                                       user_id=g.user.id).subquery().
-                                                                    c.portal_id).subquery().c.id,
-                                                                Publication.status ==
-                                                                Publication.STATUSES['PUBLISHED']),
-                                                 'tags': True, 'return_fields': 'default_dict'}, page=page)
+    if action == 'validate':
+        publication.detach()
+        return publication.validate(True)
     else:
-        articles, pages, page = Search().search({'class': Publication,
-                                                 'filter': (Publication.id == db(ReaderPublication,
-                                                                                 user_id=g.user.id,
-                                                                                 favorite=True).subquery().c.
-                                                            article_portal_division_id),
-                                                 'tags': True, 'return_fields': 'default_dict'}, page=page,
-                                                search_text=search_text)
-    portals = UserPortalReader.get_portals_for_user() if not articles else None
+        publication.save()
+        utils.db.execute_function("tag_publication_set_position('%s', ARRAY ['%s']);" %
+                                  (publication.id, "', '".join([t.id for t in publication.tags])))
 
-    return render_template('partials/reader/reader_base.html',
-                           articles=articles,
-                           pages=pages,
-                           current_page=page,
-                           page_buttons=Config.PAGINATION_BUTTONS,
-                           portals=portals,
-                           favorite=favorite
-                           )
+        publisher_membership.NOTIFY_MATERIAL_ACTION_BY_COMPANY_OR_PORTAL(
+            action='PUBLISH' if also_publish else 'SUBMIT',
+            company_or_portal='company', material_title=publication.material.title)
+
+        return publisher_membership.material_or_publication_grid_row(publication.material)
+
+
+@article_bp.route(
+    '/publish/<string:publication_id>/actor_membership_id/<string:actor_membership_id>/request_from/<string:request_from>/',
+    methods=['OK'], permissions=UserIsActive())
+def publish(json, publication_id, actor_membership_id, request_from):
+    action = g.req('action', allowed=['load', 'validate', 'save'])
+
+    publication = Publication.get(publication_id)
+
+    actor_membership = MemberCompanyPortal.get(actor_membership_id)
+    publisher_membership = MemberCompanyPortal.get_by_portal_id_company_id(
+        publication.portal_division.portal_id, publication.material.company_id)
+
+    if action == 'load':
+        return publish_dialog_load(publication, publisher_membership)
+    else:
+        publish_dialog_save(publication, json['publication'], status=Publication.STATUSES['PUBLISHED'])
+
+    if action == 'validate':
+        publication.detach()
+        return publication.validate(True)
+    else:
+        publication.save()
+        utils.db.execute_function("tag_publication_set_position('%s', ARRAY ['%s']);" %
+                                  (publication.id, "', '".join([t.id for t in publication.tags])))
+
+        actor_membership.NOTIFY_MATERIAL_ACTION_BY_COMPANY_OR_PORTAL(
+            action='PUBLISH', material_title=publication.material.title,
+            company_or_portal='company' if request_from == 'company_material_details' else 'portal')
+
+        if request_from == 'company_material_details':
+            return actor_membership.material_or_publication_grid_row(publication.material)
+        elif request_from == 'portal_publications':
+            return publication.portal_publication_grid_row(actor_membership)

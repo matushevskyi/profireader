@@ -1,0 +1,55 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block title %}{{ _('Employment update') }}{% endblock title %}
+
+{% block portal_content %}
+
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+    <script>
+        module.controller('company_employee_update', function ($scope, $ok) {
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_employees');
+            $scope.$$translate = {{ translates('company_employee_update')|safe }};
+
+            $scope.url_company_employee_list = {{ raw_url_for('company.employees')|safe }};
+            $scope.after_save = function () {
+                window.location.href = $scope.url_company_employee_list({
+                    'company_id': $scope.data.employer.id
+                    {#                    'user_id': $scope.data.employee.id#}
+                });
+            };
+
+
+        });
+    </script>
+    {% raw %}
+
+    <div ng-controller="company_employee_update" ng-cloak>
+        <div af af-after-save="after_save" af-watch="data.employment" ng-model="data" >
+            <h2>
+                <img class="person-small-cover" pr-image-url="{{ data.employee.avatar.url }}"/>
+                <img class="logo-small-cover" pr-image-url="{{ data.employer.logo.url }}"/>
+                {{ _('Employee `%(data.employee.full_name)s` at company `%(data.employer.name)s`') }}</h2>
+
+            <img pr-image-url="{{ employer.logo.url }}"/>
+            {{ _('permissions') }}<br>
+            <div ng-repeat="(right_name, permitted) in data.employment.rights">
+                <img ng-src="{{ static_address('images/0.gif') }}"
+                     class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"/>
+                <label>
+                    <i ng-class="{disabled: !permitted}"  class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"></i>
+                   <input style="width: 0px; height: 0px;" ng-model="data.employment.rights[right_name]" type="checkbox"/> {{ right_name }}</label>
+            </div>
+            <button class="btn fr" type="button" ng-disabled="!$af.isActionAllowed(data, 'save')"
+                    ng-click="$af.save(data)">{{ _('Save') }}
+            </button>
+            <button class="btn fr" type="button" ng-click="$af.reset(data)">{{ _('Reset') }}</button>
+
+        </div>
+    </div>
+
+    {% endraw %}
+
+{% endblock portal_content %}

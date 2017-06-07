@@ -1,10 +1,7 @@
 from .blueprints_declaration import tutorial_bp
 from flask import render_template
-from .request_wrapers import ok, tos_required, check_right
-from ..models.rights import AllowAll
+from ..models.permissions import AvailableForAll
 
-
-@tutorial_bp.route('/')
-@check_right(AllowAll)
-def tutorial():
+@tutorial_bp.route('/', permissions=AvailableForAll())
+def index():
     return render_template('/tutorial.html')

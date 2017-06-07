@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+{% block title -%}
+    {{ _('search - %(portal_name)s', {'portal_name': portal.name}) }}
+{%- endblock %}
+{% block search_in_menu -%}{% endblock %}
+{% block description -%}{%- endblock %}
+{% block keywords -%}{%- endblock %}
+
+{% block center_content %}
+
+    <br/><br/><br/><br/>
+
+    <h3 class="tac">{{ _('Sorry, we can find requested document, pls try serach') }}</h3>
+
+    <br/><br/><br/><br/>
+
+    <form class="search-form nw tac" action="{{ url_for('front.search') }}">
+        <input class="form-control" style="width: 25em" name="search" placeholder="{{ _('Search text placeholder') }}" value="">
+        <button class="btn btn-success" type="submit"><i class="fa fa-search"> {{ _('Search') }}</i>
+        </button>
+    </form>
+
+
+
+{% endblock %}

@@ -1,0 +1,21 @@
+{% macro tag(tag, tags, span_classes = '') %}
+    <span class="{{ span_classes }} {{ 'tag-selected label' if tag.text in tags.selected_names else 'tag-not-selected' }}">
+        <a {% if tags.url_toggle_tag %}href="{{ tags.url_toggle_tag(tag.text) }}"{% endif %}>
+            <i class="fa fa-tag" aria-hidden="true" style="margin-right: 5px"></i>
+            {{ tag.text }}
+        </a>
+    </span>
+{% endmacro %}
+{% macro article_date(division_type, article) %}
+    {% if division_type == 'events' %}
+        {% if article.event_begin_tm and article.event_begin_tm %}
+            {{ moment(article.event_begin_tm, out_format = 'LL') }} - {{ moment(article.event_end_tm, out_format = 'LL') }}
+        {% elif article.event_begin_tm %}
+            {{ moment(article.event_begin_tm, out_format = 'LL') }}
+        {% elif article.event_end_tm %}
+            {{ moment(article.event_end_tm, out_format = 'LL') }}
+        {% endif %}
+    {% elif article.publishing_tm %}
+        {{ moment(article.publishing_tm, out_format = 'LL') }}
+    {% endif %}
+{% endmacro %}

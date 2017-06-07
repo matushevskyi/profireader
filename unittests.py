@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     # parser = argparse.ArgumentParser(prog='unittests')
-    parser.add_argument("--host", help="host", default='profireader.com')
+    parser.add_argument("--host", help="host", default=Config.MAIN_DOMAIN)
     parser.add_argument("--port", help="port", default='8080', type=int)
     parser.add_argument("--front", help="frontend", default='n')
     args = parser.parse_args()

@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block center_content %}
+    {% for member_id, membership in memberships.items() %}
+        {% include 'member_short.html' %}
+    {% else %}
+        {% if tags.selected_names or search_text != '' %}
+            <h3 class="tac">{{ _('There are no companies with current search criteria') }}</h3>
+        {% else %}
+            <h3 class="tac">{{ _('There are no active companies joined to this portal') }}</h3>
+        {% endif %}
+    {% endfor %}
+
+    {% include '_common/block_pager.html' %}
+{% endblock %}

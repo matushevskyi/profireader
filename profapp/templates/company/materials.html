@@ -27,13 +27,6 @@
             $scope.url_publication_update = {{ raw_url_for('article.article_show_form')|safe }};
             $scope.actions = {{ actions|safe }}
 
-            $scope.getBackground = function(row){
-                if(row.entity['portal.name'] === ''){
-                    return {'background': 'white', 'color': '#18bc9c'}
-                }else{
-                    return {'background': '#18bc9c', 'color': 'white'}
-                }
-            };
 
             $scope.grid_action = function (id, action, row, column_name) {
                 if(row.actions[action] == true){
@@ -44,47 +37,29 @@
                 }
             };
 
-            $scope.url_publication_details = function(host, publication_id) {
-                return '//'+host+'/details/'+publication_id
-            }
-
+            $scope.url_publication_details = {{ raw_url_for('front.article_details')|safe }};
 
             {% raw %}
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
+
                 urlLoadGridData: $scope.url_search_article({company_id: $scope.company.id}),
-                category: [{
-                    name: 'searching',
-                    field: 'title&editor.profireader_name',
-                    visible: true,
-                    filtering: true,
-                    filter: {type: 'input'}
-                }],
+
                 columnDefs: [
                     {
-                        name: 'title', category:"searching",  width: '30%',
-                        type: 'link', cellStyle:"getBackground(row)",
+                        name: 'title', width: '30%',
+                        type: 'link',
+//                        cellStyle:"getBackground(row)",
                         img_url: 'illustration.url',
-                        href: 'url_material_details({company_id:grid.appScope.company.id,material_id:row.entity.id})'
+                        href: "url_material_details({company_id:grid.appScope.company.id,material_id:row.entity.id})"
                     },{
-                        name: 'editor.profireader_name', category:"searching"
+                        name: 'editor.full_name', acategory:"searching"
                     },{
-                        name: 'md_tm',enableCellEdit: true,
+                        name: 'md_tm',
                         afilter: {type: 'date_range'}
-                    },{
-                        name: 'portal.name', type: 'link',
-                        href: 'url_publication_details(row.entity.portal.host, row.entity.id)',
-                        classes: 'link',
-                        filter: {type:'multi_select'}
-                    },{
-                        name:'actions', type: 'actions', onclick: 'grid_action'
-                    },{
-                        name: 'status',
-                        filter: {type: 'multi_select'}
-                    },{
-                        name: 'publication_visibility',
-                        afilter: {type: 'select'}
-                    }
+                    },
+                    publication_column()
+
                 ]
             });
 
@@ -95,10 +70,10 @@
     {% raw %}
     <div ng-controller="materials_list" ng-cloak>
         <h2>{{ _('Materials of company `%(company.name)s`')}}</h2>
-        <a href="{{ url_material_create({company_id: company.id}) }}" ng-if="actions.create_material === true">{{ _('Create new material') }}</a>
+        <a href="{{ url_material_create({company_id: company.id}) }}" ng-if="actions['CREATE_MATERIAL'] === true">{{ ::_('Create new material') }}</a>
         <div class="grid" id="grid1" ui-grid-edit ui-grid-grouping ui-grid-pagination ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
-              <i class="fa fa-spin fa-spinner"></i><div>{{ _('Data Loading...') }}</div>
+              <i class="fa fa-spinner fa-spin"></i><div>{{ _('Data Loading...') }}</div>
             </div>
         </div>
     </div>

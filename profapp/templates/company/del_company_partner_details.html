@@ -1,0 +1,46 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block title %}{{ _('Employment details') }}{% endblock title %}
+
+{% block portal_content %}
+
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+    <script>
+        module.controller('company_partner_details', function ($scope, $ok) {
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_members');
+
+            $scope.employeer  = {{ employeer|tojson|safe }};
+            $scope.member = {{ member|tojson|safe }};
+            $scope.url_company_partner_update = {{ raw_url_for('portal.company_partner_update')|safe }};
+            $scope.update = function () {
+                 window.location.href = $scope.url_company_partner_update({
+                    'company_id':$scope.employeer.id,
+                    'member_id': $scope.member.company.id
+                })
+            }
+
+        });
+    </script>
+    {% raw %}
+
+    <div ng-controller="company_partner_details" ng-cloak>
+        <h2>
+            <img class="person-small-cover" pr-image-url ="member.company.logo.url"/>
+            <img class="logo-small-cover" pr-image-url="{{ employeer.logo.url }}"/>
+            {{ _('Portal partner `%(member.company.name)s` at company `%(employeer.name)s`') }}</h2>
+        <img pr-image-url="{{ employer.logo.url }}"/>
+        {{ _('status') }} {{ member.status }}<br>
+        <div ng-class="{disabled: !permitted}" ng-repeat="(right_name, permitted) in member.rights">
+            <img ng-src="{{ static_address('images/0.gif') }}"
+                 class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"/>
+            {{ right_name }}
+        </div>
+        <button pr-user-rights="user_right" class="btn fr" type="button" ng-click="update()">{{ _('Update partners') }}</button>
+    </div>
+
+    {% endraw %}
+
+{% endblock portal_content %}

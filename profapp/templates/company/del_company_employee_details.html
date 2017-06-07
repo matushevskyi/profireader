@@ -1,0 +1,57 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block title %}{{ _('Employment details') }}{% endblock title %}
+
+{% block portal_content %}
+
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+    <script>
+        module.controller('company_employee_details', function ($scope, $ok) {
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_employees');
+
+            $scope.employee = {{ employee|tojson|safe }};
+            $scope.employer = {{ employer|tojson|safe }};
+            $scope.employment = {{ employment|tojson|safe }};
+            $scope.user_right = {{ user_right_in|safe }}
+                    $scope.url_company_employee_update = {{ raw_url_for('company.employee_update')|safe }};
+            $scope.update = function () {
+                if ($scope.user_right) {
+                    window.location.href = $scope.url_company_employee_update({
+                        'company_id': $scope.employer.id,
+                        'user_id': $scope.employee.id
+                    });
+                } else {
+                    add_message('Sorry!!!You haven\'t got  appropriate rights!', 'danger', 8000)
+                }
+            }
+
+        });
+    </script>
+    {% raw %}
+
+    <div ng-controller="company_employee_details" ng-cloak>
+
+        <h2>
+            <img class="person-small-cover" pr-image-url="{{ employee.avatar.url }}"/>
+            <img class="logo-small-cover" pr-image-url="{{ employer.logo.url }}"/>
+            {{ _('Employee `%(employee.full_name)s` at company `%(employer.name)s`') }}</h2>
+
+        <img pr-image-url="{{ employer.logo.url }}"/>
+        {{ _('status') }} {{ employment.status }}<br>
+        {{ _('position') }} {{ employment.position }}<br>
+        {{ _('permissions') }}<br>
+        <div ng-class="{disabled: !permitted}" ng-repeat="(right_name, permitted) in employment.rights">
+            <i class="pr-grid-cell-field-type-icons-icon pr-grid-cell-field-type-icons-icon-{{ right_name }}"></i>{{
+            right_name }}
+        </div>
+        <button pr-user-rights="user_right" class="btn fr" type="button" ng-click="update()">{{ _('Update employment')
+            }}
+        </button>
+    </div>
+
+    {% endraw %}
+
+{% endblock portal_content %}
