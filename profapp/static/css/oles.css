@@ -928,7 +928,6 @@ span.pr-grid-publications-vs {
     display: inline-block;
 }
 
-
 .mce-sortable-images .mce-sortable-images {
     background-color: #0c65a5;
 }
@@ -951,8 +950,16 @@ span.pr-grid-publications-vs {
     cursor: ns-resize;
 }
 
-.mce-sortable-images .ul-sortable-images li>* {
+.mce-sortable-images .ul-sortable-images li > * {
     margin: 3px;
 }
+
+.mce-sortable-images div input[type=file] {
+    width: 1px;
+    height: 1px;
+    position: absolute;
+    visibility: hidden;
+}
+
 /*.mce-sortable-images>div {position: relative}*/
 /*.mce-sortable-images>div .mce-sortable-images-row {margin: 5px; height: 2em;}*/

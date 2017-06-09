@@ -3,118 +3,93 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
     editor.addButton('gallery', {
         text: 'Gallery',
         icon: false,
+        stateSelector: 'primagegallery:not([data-mce-object],[data-mce-placeholder])',
         onclick: function () {
-
-            var add_image = function () {
-                console.log(win.add({
-                    type: 'textbox',
-                    name: 'wordcount',
-                }));
-                console.log(win);
+            var galleryElm = editor.selection.getNode();
+            console.log(galleryElm);
+            var defaultdata = {width: '100%', height: '10em', title: 'Gallery'};
+            var data = $.extend({}, defaultdata);
+            if (galleryElm && galleryElm.nodeName == 'PRIMAGEGALLERY' && !galleryElm.getAttribute('data-mce-object') && !galleryElm.getAttribute('data-mce-placeholder')) {
+                data = {
+                    width: $(galleryElm).css('width'),
+                    height: $(galleryElm).css('height'),
+                    title: $(galleryElm).alt(),
+                };
+            } else {
+                galleryElm = null;
             }
 
-            image_row = {
-                type: 'container',
-                layout: 'flex',
-                name: 'images_container',
-                direction: 'row',
-                classes: 'sortable-images-row',
-                align: 'center',
-                spacing: 5,
-                items: [
-                    {
-                        name: 'image_title',
-                        type: 'textbox',
-                        size: 10,
-                        label: 'Title'
-                    },
-                    {
-                        name: 'image_copyright',
-                        type: 'textbox',
-                        size: 10,
-                        label: 'Copyright'
-                    },
-                    {
-                        type: 'filepicker',
-                        filetype: 'image',
-                        label: 'Source',
-                        size: 10,
-                    },
-                    {
-                        type: 'button',
-                        label: 'Del',
-                        size: 1,
-
-                    },
-                ]
-            };
-
-            console.log('!!!');
-            win = editor.windowManager.open({
+            var win = editor.windowManager.open({
                 title: 'Article gallery',
-                bodyType: 'tabpanel',
-                body: [
+                buttons: [{
+                    classes: 'primagegallery-upload',
+                    text: "Upload", onclick: function () {
+                        console.log($('.mce-sortable-images div input[type=file]'));
+                        $('.mce-sortable-images div input[type=file]').trigger('click');
+                    }
+                },
                     {
-                        title: 'General',
-                        type: 'form',
-                        items: [{
-                            name: 'gallery_title', type: 'textbox', label: 'Gallery Title'
-                        },
-                            {
-                                type: 'container',
-                                label: 'Dimensions',
-                                layout: 'flex',
-                                direction: 'row',
-                                align: 'center',
-                                spacing: 5,
-                                items: [
-                                    {
-                                        name: 'width',
-                                        type: 'textbox',
-                                        maxLength: 5,
-                                        size: 3,
-                                        ariaLabel: 'Width'
-                                    },
-                                    {type: 'label', text: 'x'},
-                                    {
-                                        name: 'height',
-                                        type: 'textbox',
-                                        maxLength: 5,
-                                        size: 3,
-                                        ariaLabel: 'Height'
-                                    },
-                                ]
-                            }
+                        text: "Save", onclick: function () {
+                        var normalize_size = function (s, d) {
+                            var ret = s.trim();
+                            ret += (ret.match(/^\d+(\.\d*)?$/) || ret.match(/^(\d*\.)?\d+$/)) ? 'px' : '';
+                            return (ret.match(/^\d+(\.\d*)?(px|em|%|pt|mm)$/) || ret.match(/^(\d*\.)?\d+(px|em|%|pt|mm)$/)) ? ret : d;
+                        };
+
+                        var images_container = get_image_container();
+                        // var first_image= get_image(0);
+                        editor.selection.collapse(true);
+                        editor.execCommand('mceInsertContent', false, editor.dom.createHTML('primagegallery', {
+                            class: 'pr-image-gallery',
+                            style: 'width: ' + normalize_size(e.data.width,
+                                defaultdata['width']) + '; height: ' + normalize_size(e.data.height, defaultdata['height']),
+                        }));
+                        win.close();
+                    }
+                    }, {
+                        text: "Cancel", onclick: function () {
+                            win.close();
+                        }
+                    }
+                ],
+
+				bodyType: 'form',
+                body: [{
+                    name: 'gallery_title', type: 'textbox', label: 'Gallery Title'
+                },
+                    {
+                        type: 'container',
+                        label: 'Dimensions',
+                        layout: 'flex',
+                        direction: 'row',
+                        align: 'center',
+                        spacing: 5,
+                        items: [
+                            {name: 'width', type: 'textbox', size: 3, ariaLabel: 'Width'},
+                            {type: 'label', text: 'x'},
+                            {name: 'height', type: 'textbox', size: 3, ariaLabel: 'Height'},
                         ]
                     }, {
-                        title: 'Images',
-                        direction: 'column',
-                        layout: 'flex',
-                        items: [{
-                            type: 'container',
-                            minHeight: 300,
-                            minWidth: 500,
-                            classes: 'sortable-images'
-                        }, {
-                            type: 'container',
-                            direction: 'row',
-                            align: 'right',
-                            spacing: 5,
-                            minHeight: 50,
-                            classes: 'sortable-images-controls',
-                            minWidth: 500,
-                            items: []
-                        }],
-
-                    }],
-                onsubmit: function (e) {
-                    console.log(e.data);
-                    console.log(win.toJSON());
-                }
+                        type: 'container',
+                        minHeight: 300,
+                        minWidth: 500,
+                        classes: 'sortable-images'
+                    },
+                ],
             });
 
+            var get_image_container = function () {
+                return images_container = $('#' + win._id + ' ul.ul-sortable-images');
+            };
+
+            var get_image = function (n) {
+                var ret = get_image_container
+
+            };
+
+
             var add_html = function () {
-                var images_container = $('#' + win._id + ' ul.ul-sortable-images');
+                var images_container = get_image_container();
                 var ret = $('<li mce-container-body mce-abs-layout>' +
                     '<img src="' + static_address('images/0.gif') + '" />' +
                     '<input class="mce-textbox mce-first pr-gallery-image-title" hidefocus="1" style="width: 10em;"/>' +
@@ -139,8 +114,8 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             };
 
             $('#' + win._id + ' .mce-sortable-images div').append('<ul class="ul-sortable-images"></ul>');
-            $('#' + win._id + ' .mce-sortable-images-controls div').append('<input class="mce-btn"><input type="file" multiple class="pr-gallery-upload" role="presentation" tabindex="-1" style="height: 100%; width: 100%;"/></div>');
-            $('#' + win._id + ' .mce-sortable-images-controls .pr-gallery-upload').bind('change', function (event) {
+            $('#' + win._id + ' .mce-sortable-images div').append('<input type="file" multiple />');
+            $('#' + win._id + ' .mce-sortable-images div input[type=file]').bind('change', function (event) {
                 var the_files = (event.target.files && event.target.files.length) ? event.target.files : [];
                 var uploaders = [];
 
@@ -168,9 +143,6 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 }
                 $(this).val('');
             });
-
-            // <div id="mceu_57-body" class="mce-container-body mce-abs-layout ui-sortable" style="width: 372px; height: 30px;"><div id="mceu_57-absend" class="mce-abs-end ui-sortable"></div><input id="mceu_58" class="mce-textbox mce-abs-layout-item mce-first" value="" hidefocus="1" size="10" style="left: 0px; top: 0px; width: 92px; height: 28px;"><input id="mceu_59" class="mce-textbox mce-abs-layout-item" value="" hidefocus="1" size="10" style="left: 107px; top: 0px; width: 92px; height: 28px;"><div id="mceu_60" class="mce-combobox mce-abs-layout-item mce-has-open ui-sortable" style="left: 214px; top: 0px; width: 135px; height: 30px;"><input id="mceu_60-inp" class="mce-textbox" value="" hidefocus="1" spellcheck="false" size="10" placeholder="" style="width: 92px;"><div id="mceu_60-open" class="mce-btn mce-open ui-sortable" tabindex="-1" role="button"><button id="mceu_60-action" type="button" hidefocus="1" tabindex="-1"><i class="mce-ico mce-i-browse"></i></button></div></div><div id="mceu_61" class="mce-widget mce-btn mce-btn-1 mce-abs-layout-item mce-last ui-sortable" tabindex="-1" aria-labelledby="mceu_61" role="button" style="left: 354px; top: 6px; width: 16px; height: 16px;"><button role="presentation" type="button" tabindex="-1" style="height: 100%; width: 100%;"></button></div></div>
-
         }
     })
     ;

@@ -36,3 +36,13 @@ body.article-content {
     width: 698px;
     background-color: white;
   }
+
+primagegallery.pr-image-gallery {
+    background-color: #00c853;
+    min-width: 10px;
+    min-height: 10px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    display: inline-block;
+}
