@@ -3,13 +3,13 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
     editor.addButton('gallery', {
         text: 'Gallery',
         icon: false,
-        stateSelector: 'primagegallery:not([data-mce-object],[data-mce-placeholder])',
+        stateSelector: 'image-gallery:not([data-mce-object],[data-mce-placeholder])',
         onclick: function () {
             var galleryElm = editor.selection.getNode();
             console.log(galleryElm);
             var defaultdata = {width: '50%', height: '10em', gallery_title: 'Gallery'};
             var data = $.extend({}, defaultdata);
-            if (galleryElm && galleryElm.nodeName == 'PRIMAGEGALLERY' && !galleryElm.getAttribute('data-mce-object') && !galleryElm.getAttribute('data-mce-placeholder')) {
+            if (galleryElm && galleryElm.nodeName == 'IMAGE-GALLERY' && !galleryElm.getAttribute('data-mce-object') && !galleryElm.getAttribute('data-mce-placeholder')) {
                 data = {
                     width: $(galleryElm).css('width'),
                     height: $(galleryElm).css('height'),
@@ -23,7 +23,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 title: 'Article gallery',
                 data: data,
                 buttons: [{
-                    'classes': 'primagegallery-upload',
+                    'classes': 'image-gallery-upload',
                     'text': "Upload", onclick: function () {
                         $('.mce-sortable-images div input[type=file]').trigger('click');
                     }
@@ -40,11 +40,13 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
 
                             var first_image = get_image(0);
                             editor.selection.collapse(true);
-                            editor.execCommand('mceInsertContent', false, editor.dom.createHTML('primagegallery', {
-                                class: 'pr-image-gallery',
-                                style: 'width: ' + normalize_size(win.data.data.width,
-                                    defaultdata['width']) + '; height: ' + normalize_size(win.data.data.height, defaultdata['height']),
-                            }));
+                            var new_id = randomHash();
+                            editor.execCommand('mceInsertContent', false, '<image-gallery id="'+new_id+'"></image-gallery>');
+                            tinymceRenderGalleryPreview(new_id);
+                            // editor.dom.createHTML('image-gallery', {
+                            //     astyle: 'width: ' + normalize_size(win.data.data.width,
+                            //         defaultdata['width']) + '; height: ' + normalize_size(win.data.data.height, defaultdata['height']),
+                            // }));
                             win.close();
                         }
                     }, {

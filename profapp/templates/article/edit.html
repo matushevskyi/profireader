@@ -83,22 +83,48 @@
                 }).object().// convert each [key, val] pair to {key: val} element
                 value(); // get result
 
+            var func_for_gallery_render = function (ed) {
+                // make sure the instance of the TinyMCE editor has been fully loaded
+                ed.on('init', function (args) {
+                    window.tinymceRenderGalleryPreview = function (id) {
+{#                        alert(id);#}
+                        {#                        $(this).addClass('image-gallery-tinymce-preview');#}
+                        var iframe = $('#' + args.target.id  + '_ifr');
+                        console.log($('#' + id, iframe.contents()));
+                        $('#' + id, iframe.contents()).addClass('image-gallery-tinymce-preview'); // or some other selector to get the iframe
+                        {#                        $('[tokenid=' + token + ']', iframe.contents()).addClass('border');#}
+                    };
+                    {#                    var ImageGalleryProto = Object.create(HTMLElement.prototype);#}
+                    {#                    ImageGalleryProto.createdCallback = function () {#}
+                    {#                        console.log('~~~~~~~~~~');#}
+
+                    {#//                        $(this).attr('contenteditable','false');#}
+                    {#//                        $(this).disableSelection();#}
+                    {#                        this.innerHTML = "<image-preview/>!<image-preview>" + $(this) + "<title><info></info>22";#}
+                    {#                    };#}
+                    {#                    $("#" + args.target.id + "_ifr")[0].contentWindow.document.registerElement('image-gallery', {prototype: ImageGalleryProto});#}
+                });
+            };
+
             tinymceExtendSettings($scope.tinyArticleOptions, {
                 height: '500px', body_class: 'article-content', image_list: true,
                 formats: formats,
-                pr_formats: _.size(custom_formats) ? get_array_for_menu_build(custom_formats) : []
+                object_resizing: 'table,img,image-gallery',
+                pr_formats: _.size(custom_formats) ? get_array_for_menu_build(custom_formats) : [],
+                setup: func_for_gallery_render
             });
 
             tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'plugins', ' ');
+            {#            tinymceExtendSettings($scope.tinyArticleOptions, 'noneditable_noneditable_class', 'mceNonEditable', ',');#}
             tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'toolbar1', ' ');
-            tinymceExtendSettings($scope.tinyArticleOptions, 'primagegallery', 'custom_elements', ',');
-            tinymceExtendSettings($scope.tinyArticleOptions, 'primagegallery[*]', 'valid_elements', ',');
-        }]);
+            tinymceExtendSettings($scope.tinyArticleOptions, 'image-gallery', 'custom_elements', ',');
+            tinymceExtendSettings($scope.tinyArticleOptions, 'image-gallery[*]', 'valid_elements', ',');
 
+        }]);
     </script>
 
     {% raw %}
-
+    <image-gallery></image-gallery>
     <div ng-init="init()" ng-controller="article_edit" ng-cloak class="create-material">
         <div class="row link-page create-new-material"><h5>{{ _(title) }}</h5></div>
         <form name="newMaterial">

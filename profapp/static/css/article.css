@@ -37,12 +37,16 @@ body.article-content {
     background-color: white;
   }
 
-primagegallery.pr-image-gallery {
+image-gallery.image-gallery-tinymce-preview {
     background-color: #00c853;
-    min-width: 10px;
-    min-height: 10px;
+    min-width: 2em;
+    min-height: 2em;
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
     display: inline-block;
+}
+
+image-gallery {
+
 }
