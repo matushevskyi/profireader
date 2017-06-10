@@ -11,7 +11,7 @@
 
     <script type="text/ng-template" id="translation_tinymce.html">
             <div class="modal-header"><h3 class="modal-title">{{ _('Edit translate with HTML tag!') }}</h3></div>
-            <div class="modal-body"><textarea class='modal-content' ui-tinymce="tinymceImageOptions"
+            <div class="modal-body"><textarea class='modal-content' ui-tinymce="tinymceDefaultOptions"
                                               ng-model='EdittextWithHtml'></textarea></div>
             <div class="modal-footer">
                 <button id='buttonDelete' class='btn btn-warning' ng-click='save()'>{{ _('Save') }}</button>

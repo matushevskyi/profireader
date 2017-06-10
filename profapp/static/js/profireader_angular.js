@@ -858,17 +858,18 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             formatYear: 'yy',
             startingDay: 1
         },
-        tinymceImageOptions: {
+
+
+        tinymceDefaultOptions: {
             inline: false,
             menu: [],
             width: 750,
             plugins: 'advlist autolink link image charmap print paste table media',
             skin: 'lightgray',
             theme: 'modern',
-            custom_elements : 'primagegallery',
             'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link image table",
             //'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | link image table"[*],
-            'valid_elements': "iframe[*],img[*],table[*],tbody[*],td[*],th[*],tr[*],p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*],primagegallery[*]",
+            'valid_elements': "iframe[*],img[*],table[*],tbody[*],td[*],th[*],tr[*],p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*]",
             //init_instance_callback1: function () {
             //    console.log('init_instance_callback', arguments);
             //},
@@ -989,6 +990,25 @@ function highlight($el) {
     }, 35000);
 };
 
+function tinymceExtendSettings(toExtend, extendWith, key, extendSeparator) {
+    if (!key) {
+        $.extend(true, toExtend, extendWith);
+        return toExtend;
+    }
+
+    if (key in toExtend) {
+        if (typeof extendSeparator == 'string') {
+            toExtend[key] += (extendSeparator + extendWith)
+        }
+        else {
+            $.extend(true, toExtend, {key: extendWith})
+        }
+    }
+    else {
+        toExtend[key] = extendWith;
+    }
+    return toExtend;
+};
 
 function angularControllerFunction(controller_attr, function_name) {
     var nothing = function () {

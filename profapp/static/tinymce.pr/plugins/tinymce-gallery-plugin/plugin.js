@@ -7,13 +7,13 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
         onclick: function () {
             var galleryElm = editor.selection.getNode();
             console.log(galleryElm);
-            var defaultdata = {width: '100%', height: '10em', title: 'Gallery'};
+            var defaultdata = {width: '50%', height: '10em', gallery_title: 'Gallery'};
             var data = $.extend({}, defaultdata);
             if (galleryElm && galleryElm.nodeName == 'PRIMAGEGALLERY' && !galleryElm.getAttribute('data-mce-object') && !galleryElm.getAttribute('data-mce-placeholder')) {
                 data = {
                     width: $(galleryElm).css('width'),
                     height: $(galleryElm).css('height'),
-                    title: $(galleryElm).alt(),
+                    gallery_title: $(galleryElm).alt(),
                 };
             } else {
                 galleryElm = null;
@@ -21,39 +21,41 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
 
             var win = editor.windowManager.open({
                 title: 'Article gallery',
+                data: data,
                 buttons: [{
-                    classes: 'primagegallery-upload',
-                    text: "Upload", onclick: function () {
-                        console.log($('.mce-sortable-images div input[type=file]'));
+                    'classes': 'primagegallery-upload',
+                    'text': "Upload", onclick: function () {
                         $('.mce-sortable-images div input[type=file]').trigger('click');
                     }
                 },
                     {
-                        text: "Save", onclick: function () {
-                        var normalize_size = function (s, d) {
-                            var ret = s.trim();
-                            ret += (ret.match(/^\d+(\.\d*)?$/) || ret.match(/^(\d*\.)?\d+$/)) ? 'px' : '';
-                            return (ret.match(/^\d+(\.\d*)?(px|em|%|pt|mm)$/) || ret.match(/^(\d*\.)?\d+(px|em|%|pt|mm)$/)) ? ret : d;
-                        };
+                        'text': "Save",
+                        'onclick': function () {
+                            console.log(win);
+                            var normalize_size = function (s, d) {
+                                var ret = s.trim();
+                                ret += (ret.match(/^\d+(\.\d*)?$/) || ret.match(/^(\d*\.)?\d+$/)) ? 'px' : '';
+                                return (ret.match(/^\d+(\.\d*)?(px|em|%|pt|mm)$/) || ret.match(/^(\d*\.)?\d+(px|em|%|pt|mm)$/)) ? ret : d;
+                            };
 
-                        var images_container = get_image_container();
-                        // var first_image= get_image(0);
-                        editor.selection.collapse(true);
-                        editor.execCommand('mceInsertContent', false, editor.dom.createHTML('primagegallery', {
-                            class: 'pr-image-gallery',
-                            style: 'width: ' + normalize_size(e.data.width,
-                                defaultdata['width']) + '; height: ' + normalize_size(e.data.height, defaultdata['height']),
-                        }));
-                        win.close();
-                    }
+                            var first_image = get_image(0);
+                            editor.selection.collapse(true);
+                            editor.execCommand('mceInsertContent', false, editor.dom.createHTML('primagegallery', {
+                                class: 'pr-image-gallery',
+                                style: 'width: ' + normalize_size(win.data.data.width,
+                                    defaultdata['width']) + '; height: ' + normalize_size(win.data.data.height, defaultdata['height']),
+                            }));
+                            win.close();
+                        }
                     }, {
-                        text: "Cancel", onclick: function () {
+                        'text': "Cancel",
+                        'onclick': function () {
                             win.close();
                         }
                     }
                 ],
 
-				bodyType: 'form',
+                bodyType: 'form',
                 body: [{
                     name: 'gallery_title', type: 'textbox', label: 'Gallery Title'
                 },

@@ -11,7 +11,7 @@
 
     <script type="text/ng-template" id="translation_tinymce.html">
         <div class="modal-header"><h3 class="modal-title">{{ _('Edit translate with HTML tag!') }}</h3></div>
-        <div class="modal-body"><textarea class='modal-content' ui-tinymce="tinymceImageOptions"
+        <div class="modal-body"><textarea class='modal-content' ui-tinymce="tinymceTranslationOptions"
                                           ng-model='EdittextWithHtml'></textarea></div>
         <div class="modal-footer">
             <button id='buttonDelete' class='btn btn-warning' ng-click='save()'>{{ _('Save') }}</button>
@@ -46,28 +46,16 @@
                 $uibModalInstance.dismiss('cancel');
             };
 
-            $scope.tinymceImageOptions = {
+            $scope.tinymceTranslationOptions = {
                 inline: false,
                 menu: [],
                 width: 750,
                 forced_root_block : "",
-
-
                 plugins: 'advlist autolink link charmap paste code',
                 skin: 'lightgray',
                 theme: 'modern',
-
-                // plugins: "code",
-                // toolbar: "code",
-                // menubar: "tools",
-
                 'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link image table | code",
-                //'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | link image table"[*],
                 'valid_elements': "iframe[*],img[*],table[*],tbody[*],td[*],th[*],tr[*],p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*]",
-                //init_instance_callback1: function () {
-                //    console.log('init_instance_callback', arguments);
-                //},
-
             }
 
         });
