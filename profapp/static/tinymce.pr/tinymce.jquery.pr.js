@@ -12081,11 +12081,10 @@
                 height = height < 5 ? 5 : height;
 
                 if (selectedElm.nodeName == "IMG" && editor.settings.resize_img_proportional !== false) {
-                    proportional = !VK.modifierPressed(e);
+                    proportional = VK.modifierPressed(e);
                 } else {
                     proportional = VK.modifierPressed(e) || (selectedElm.nodeName == "IMG" && selectedHandle[2] * selectedHandle[3] !== 0);
                 }
-
                 // Constrain proportions
                 if (proportional) {
                     if (abs(deltaX) > abs(deltaY)) {

@@ -7,7 +7,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
         onclick: function () {
             var galleryElm = editor.selection.getNode();
             console.log(galleryElm);
-            var defaultdata = {width: '50%', height: '10em', gallery_title: 'Gallery'};
+            var defaultdata = {width: '400', height: '400', gallery_title: 'Gallery'};
             var data = $.extend({}, defaultdata);
             if (galleryElm && galleryElm.nodeName == 'IMAGE-GALLERY' && !galleryElm.getAttribute('data-mce-object') && !galleryElm.getAttribute('data-mce-placeholder')) {
                 data = {
@@ -34,14 +34,21 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                             console.log(win);
                             var normalize_size = function (s, d) {
                                 var ret = s.trim();
-                                ret += (ret.match(/^\d+(\.\d*)?$/) || ret.match(/^(\d*\.)?\d+$/)) ? 'px' : '';
-                                return (ret.match(/^\d+(\.\d*)?(px|em|%|pt|mm)$/) || ret.match(/^(\d*\.)?\d+(px|em|%|pt|mm)$/)) ? ret : d;
+                                return (ret.match(/^\d+(\.\d*)?(%|)$/) || ret.match(/^(\d*\.)?\d+(%|)$/)) ? ret : d;
                             };
 
                             var first_image = get_image(0);
                             editor.selection.collapse(true);
                             var new_id = randomHash();
-                            editor.execCommand('mceInsertContent', false, '<image-gallery id="'+new_id+'"></image-gallery>');
+                            console.log(first_image.css('backgroundImage'));
+                            editor.execCommand('mceInsertContent', false,
+                                '<img id="' + new_id + '" ' +
+                                'class="image-gallery-tinymce-preview" ' +
+                                'src="' + static_address('images/0.gif') + '" ' +
+                                'style="background-image: url(' + first_image.css('backgroundImage') + ')" ' +
+                                'width="' + normalize_size(win.data.data.width, defaultdata['width']) + '" ' +
+                                'height="' + normalize_size(win.data.data.height, defaultdata['height']) + '" ' +
+                                'data-mce-object="gallery"/>');
                             tinymceRenderGalleryPreview(new_id);
                             // editor.dom.createHTML('image-gallery', {
                             //     astyle: 'width: ' + normalize_size(win.data.data.width,
@@ -87,8 +94,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             };
 
             var get_image = function (n) {
-                var ret = get_image_container
-
+                return $($('img', get_image_container())[n]);
             };
 
 
