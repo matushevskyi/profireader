@@ -1,4 +1,4 @@
-// 4.2.7 (2015-10-27)
+/// 4.2.7 (2015-10-27)
 
 /**
  * Compiled inline version. (Library mode)
@@ -7774,6 +7774,10 @@
                     root = editor.getBody();
                     node = selection.getStart() || root;
                     node = node.ownerDocument != editor.getDoc() ? editor.getBody() : node;
+
+                    if (node.nodeName == 'IMAGE-GALLERY-IMG'  || node.nodeName == 'IMAGE-GALLERY-TITLE') {
+                        node = node.parentNode;
+                    }
 
                     // Edge case for <p>|<img></p>
                     if (node.nodeName == 'IMG' && selection.isCollapsed()) {
@@ -23811,6 +23815,8 @@
             }
 
             start = function (e) {
+
+                console.log('start dragging', e)
                 var docSize = getDocumentSize(doc), handleElm, cursor;
 
                 updateWithTouchData(e);
@@ -23844,6 +23850,7 @@
             };
 
             drag = function (e) {
+                console.log('drag', e);
                 updateWithTouchData(e);
 
                 if (e.button !== downButton) {
@@ -25840,8 +25847,11 @@
             function setMceInteralContent(e) {
                 var selectionHtml, internalContent;
 
+                console.log("dragStart: dropEffect = " + e.dataTransfer.dropEffect + " ; effectAllowed = " + e.dataTransfer.effectAllowed);
+
                 if (e.dataTransfer) {
-                    if (editor.selection.isCollapsed() && e.target.tagName == 'IMG') {
+                    console.log(e.target.tagName);
+                    if (editor.selection.isCollapsed() && ( e.target.tagName == 'IMG' || e.target.tagName == 'IMAGE-GALLERY')) {
                         selection.select(e.target);
                     }
 
@@ -26457,11 +26467,13 @@
                 }
 
                 editor.on('dragstart', function (e) {
+                    console.log('dragstart', e);
                     dragStartRng = selection.getRng();
                     setMceInteralContent(e);
                 });
 
                 editor.on('drop', function (e) {
+                    console.log('drop', e);
                     if (!isDefaultPrevented(e)) {
                         var internalContent = getMceInternalContent(e);
 

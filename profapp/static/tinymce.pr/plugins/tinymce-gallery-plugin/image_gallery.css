@@ -1,0 +1,74 @@
+.mce-sortable-images {
+  background-color: #0c65a5;
+}
+.mce-sortable-images .ul-sortable-images {
+  height: 350px;
+  overflow: auto;
+}
+.mce-sortable-images .ul-sortable-images li {
+  list-style-type: none;
+  margin: 5px;
+}
+.mce-sortable-images .ul-sortable-images li > * {
+  margin: 3px;
+}
+.mce-sortable-images .ul-sortable-images li img.pr-gallery-image-preview {
+  width: 4em;
+  height: 2.2em;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  cursor: ns-resize;
+}
+.mce-sortable-images .ul-sortable-images li input.pr-gallery-image-title {
+  width: 15em;
+}
+.mce-sortable-images .ul-sortable-images li input.pr-gallery-image-copyright {
+  width: 7em;
+}
+.mce-sortable-images .ul-sortable-images li button.pr-gallery-image-remove-undo {
+  height: 100%;
+  width: 4em;
+}
+.mce-sortable-images div input[type=file] {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  visibility: hidden;
+}
+#image-gallery-preview {
+  display: inline-block;
+  position: absolute;
+}
+#image-gallery-preview img {
+  margin: 0px;
+  padding: 0px;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.image-gallery .gallery-title {
+  text-align: center;
+  font-weight: bold;
+}
+image-gallery {
+  display: inline-block;
+  background-color: #00BBA1;
+}
+image-gallery-img {
+  display: block;
+  background-color: red;
+}
+image-gallery-title {
+  display: block;
+  background-color: #0c65a5;
+  -webkit-user-select: none;
+  /* Chrome/Safari */
+  -moz-user-select: none;
+  /* Firefox */
+  -ms-user-select: none;
+  /* IE10+ */
+  /* Rules below not implemented in browsers yet */
+  -o-user-select: none;
+  user-select: none;
+}
+/*# sourceMappingURL=image_gallery.css.map */

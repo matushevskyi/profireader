@@ -217,7 +217,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
 
     }])
     .factory('$ok', ['$http', function ($http) {
-        return function (url, data, ifok, iferror, translate, disableonsubmid) {
+        return function (url, data, ifok, iferror, translate) {
             //console.log($scope);
             function error(result, error_code, message) {
                 if (iferror) {
@@ -227,9 +227,6 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     // add_message(result, 'danger');
                 }
             }
-
-            //TODO MY by OZ: dim disableonsubmid element on submit (by cloning element with coordinates and classes)
-            //pass here dialog DOM element from controller wherever $uibModalInstance is used
 
             return $http.post(url, $.extend({}, data, translate ? {__translate: translate} : {})).then(
                 function (response) {

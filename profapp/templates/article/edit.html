@@ -13,7 +13,7 @@
     {% endblock company_base %}
 
     <script>
-        module.controller('article_edit', ['$scope', function ($scope) {
+        module.controller('article_edit', ['$scope','$ok', function ($scope, $ok) {
 
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
 
@@ -40,7 +40,7 @@
             };
 
             $scope.goToArticle = function (material) {
-                url = {{ raw_url_for('article.material_details')|safe }}({
+                var url = {{ raw_url_for('article.material_details')|safe }}({
                     company_id: material.company_id,
                     material_id: material.id
                 });
@@ -86,12 +86,77 @@
             var func_for_gallery_render = function (ed) {
                 // make sure the instance of the TinyMCE editor has been fully loaded
                 ed.on('init', function (args) {
-                    window.tinymceRenderGalleryPreview = function (id) {
-{#                        alert(id);#}
+
+                    window.tinymceRenderGalleryPreview = function (id, data) {
+                        {#                        alert(id);#}
                         {#                        $(this).addClass('image-gallery-tinymce-preview');#}
-                        var iframe = $('#' + args.target.id  + '_ifr');
-                        console.log($('#' + id, iframe.contents()));
-                        $('#' + id, iframe.contents()).addClass('image-gallery-tinymce-preview'); // or some other selector to get the iframe
+{#                        console.log(data);#}
+{#                        var iframe = $('#' + args.target.id + '_ifr').contents();#}
+{#                        $('body', iframe).prepend('<div id="image-gallery-preview" style="width: ' + data.gallery_width + 'px;">' +#}
+{#                            "<img style='width: " + data.gallery_width + "px; height: " + data.gallery_height + "px; " +#}
+{#                            "background-image: " + data.image_src + "' /><p>" + data.gallery_title + "</p></div>");#}
+{#                        html2canvas($('#image-gallery-preview', iframe)[0], {#}
+{#                            onrendered: function (canvas) {#}
+{#                                console.log(canvas.toDataURL());#}
+{#                                $('#' + id, iframe).attr('src', 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');#}
+{#                                                                $('#' + id, iframe).attr('data-mce-src', '' + canvas.toDataURL('image/gif') + '');#}
+{#                                $('#' + id, iframe).attr('width', data.gallery_width);#}
+{#                                $('#' + id, iframe).attr('height', data.gallery_height);#}
+{#                                $('#image-gallery-preview', iframe).remove();#}
+{#                            }#}
+{#                        });#}
+{##}
+                        {#                        var csssheet = $.grep(iframe[0].styleSheets, function (el) {#}
+                        {#                            el.title == 'gallery_preview_css_rules'#}
+                        {#                        });#}
+                        {#                        csssheet = csssheet.length ? csssheet[0] : (function () {#}
+                        {#                                // Create the <style> tag#}
+                        {#                                var style = iframe[0].createElement('style');#}
+                        {#                                style.setAttribute('title', 'gallery_preview_css_rules');#}
+                        {##}
+                        {#                                // WebKit hack :(#}
+                        {#                                style.appendChild(document.createTextNode(''));#}
+                        {##}
+                        {#                                // Add the <style> element to the page#}
+                        {#                                iframe[0].head.appendChild(style);#}
+                        {##}
+                        {#                                return style.sheet;#}
+                        {#                            })();#}
+
+
+                        {#                        function addCSSRule(sheet, selector, rules, index) {#}
+                        {##}
+                        {#                            console.log(sheet, selector, rules);#}
+                        {##}
+                        {#                            if ("insertRule" in sheet) {#}
+                        {#                                sheet.insertRule(selector + " {" + rules + "}", index ? index : 0);#}
+                        {#                            }#}
+                        {#                            else if ("addRule" in sheet) {#}
+                        {#                                sheet.addRule(selector, rules, index ? index : 0);#}
+                        {#                            }#}
+                        {#                        }#}
+
+
+                        {#                        addCSSRule(csssheet, "#" + id, 'width: ' + data.gallery_width + 'px;');#}
+                        {#                        addCSSRule(csssheet, "#" + id + ' image-gallery-title:before', 'content: "' + data.gallery_title + '"');#}
+                        {#                        addCSSRule(csssheet, "#" + id + ' image-gallery-img', 'width: ' + data.gallery_width + 'px; height: ' + data.gallery_height + 'px; background-image: url(//static.web.profi/static/front/img/profi.png);');#}
+                        {#                        addCSSRule(csssheet, "#" + id + ' image-gallery-img-title:before', 'content: "' + data.gallery_title + '"');#}
+
+
+                        {#                        console.log(csssheet);#}
+
+                        {#                        $(".tdInner1").find(".block").filter(function () {#}
+                        {#                            return $(this).next().hasClass("continuation");#}
+                        {#                        });#}
+                        {#                        console.log(iframe[0].styleSheets);#}
+                        {#                        console.log(iframe[0].document.styleSheets);#}
+                        {#                        var gallery = $('#' + id, iframe);#}
+                        {#                        if (data) {#}
+                        {#                            gallery.data(data);#}
+                        {#                        }#}
+                        {#                        $('body', iframe).prepend('<div style="width: ' + gallery.data("gallery_width") +#}
+                        {#                            'px;" class="image-gallery" id="tinymceRenderGalleryPreviewRender"><div class="gallery-title">' + gallery.data("gallery_title") + '</div></div>');#}
+                        {#                        $('#' + id, iframe.contents()).addClass('image-gallery-tinymce-preview'); // or some other selector to get the iframe#}
                         {#                        $('[tokenid=' + token + ']', iframe.contents()).addClass('border');#}
                     };
                     {#                    var ImageGalleryProto = Object.create(HTMLElement.prototype);#}
@@ -108,6 +173,9 @@
 
             tinymceExtendSettings($scope.tinyArticleOptions, {
                 height: '500px', body_class: 'article-content', image_list: true,
+                gallery_upload: function(data) {
+                    return $ok('{{ url_for('article.gallery_save', company_id = company.id, material_id = material_id)|safe}}', data);
+                },
                 formats: formats,
                 object_resizing: 'table,img,image-gallery',
                 pr_formats: _.size(custom_formats) ? get_array_for_menu_build(custom_formats) : [],
@@ -117,14 +185,13 @@
             tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'plugins', ' ');
             {#            tinymceExtendSettings($scope.tinyArticleOptions, 'noneditable_noneditable_class', 'mceNonEditable', ',');#}
             tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'toolbar1', ' ');
-            tinymceExtendSettings($scope.tinyArticleOptions, 'image-gallery', 'custom_elements', ',');
-            tinymceExtendSettings($scope.tinyArticleOptions, 'image-gallery[*]', 'valid_elements', ',');
+            tinymceExtendSettings($scope.tinyArticleOptions, '~image-gallery,~image-gallery-img,~image-gallery-title', 'custom_elements', ',');
+            tinymceExtendSettings($scope.tinyArticleOptions, 'image-gallery[*],image-gallery-img[*],image-gallery-title[*]', 'valid_elements', ',');
 
         }]);
     </script>
 
     {% raw %}
-    <image-gallery></image-gallery>
     <div ng-init="init()" ng-controller="article_edit" ng-cloak class="create-material">
         <div class="row link-page create-new-material"><h5>{{ _(title) }}</h5></div>
         <form name="newMaterial">

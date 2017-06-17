@@ -202,3 +202,11 @@ def publish(json, publication_id, actor_membership_id, request_from):
             return actor_membership.material_or_publication_grid_row(publication.material)
         elif request_from == 'portal_publications':
             return publication.portal_publication_grid_row(actor_membership)
+
+
+@article_bp.route('/<string:company_id>/gallery_save/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
+@article_bp.route('/<string:company_id>/gallery_save/', methods=['OK'], permissions=UserIsActive())
+def gallery_save(json, company_id, material_id = None):
+    from profapp.models.gallery import MaterialImageGallery, MaterialImageGalleryItem
+    pass
+

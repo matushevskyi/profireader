@@ -24,23 +24,45 @@ $(function () {
     });
 });
 
-function $ok(url, data, success, fail) {
+function $ok(url, data, success, fail, progress) {
     $.ajax({
+
+//        xhr: function () {
+//            var xhr = new window.XMLHttpRequest();
+//            //Upload progress
+//            xhr.upload.addEventListener("progress", function (evt) {
+//                if (evt.lengthComputable) {
+//                    var percentComplete = evt.loaded / evt.total;
+//                    //Do something with upload progress
+//                    console.log(percentComplete);
+//                }
+//            }, false);
+//            //Download progress
+//            xhr.addEventListener("progress", function (evt) {
+//                if (evt.lengthComputable) {
+//                    var percentComplete = evt.loaded / evt.total;
+//                    //Do something with download progress
+//                    console.log(percentComplete);
+//                }
+//            }, false);
+//            return xhr;
+//        },
+
         url: url,
         type: "POST",
         data: JSON.stringify(data),
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         fail: fail ? function (resp) {
-            fail(resp);
-        } : null,
+                fail(resp);
+            } : null,
         success: success ? function (resp) {
-            if (resp['ok']) {
-                success(resp['data'])
-            }
-            else if (fail) {
-                fail(resp)
-            }
-        } : null
+                if (resp['ok']) {
+                    success(resp['data'])
+                }
+                else if (fail) {
+                    fail(resp)
+                }
+            } : null
     });
 }
