@@ -8,7 +8,7 @@ from sqlalchemy.sql import and_, expression
 
 from config import Config
 from .elastic import PRElasticField, PRElasticDocument
-from .files import FileImg, FileImgDescriptor
+from .files import FileImageCrop, FileImgDescriptor
 from .pr_base import PRBase, Base, Grid
 from .. import utils
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
@@ -28,8 +28,8 @@ class Material(Base, PRBase, PRElasticDocument):
     # TODO: OZ by OZ: remove me
     _del_image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=True)
 
-    illustration_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
-    illustration_file_img = relationship(FileImg, uselist=False)
+    illustration_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id), nullable=True)
+    illustration_file_img = relationship(FileImageCrop, uselist=False)
 
     illustration = FileImgDescriptor(relation_name='illustration_file_img',
                                      file_decorator=lambda m, r, f: f.attr(

@@ -45,15 +45,12 @@ class File(Base, PRBase):
     name = Column(TABLE_TYPES['name'], default='', nullable=False)
     mime = Column(String(30), default='text/plain', nullable=False)
     description = Column(TABLE_TYPES['text'], default='', nullable=False)
-    copyright = Column(TABLE_TYPES['text'], default='', nullable=False)
     # youtube_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
     company_id = Column(TABLE_TYPES['id_profireader'],
                         ForeignKey('company.id'))
     # publication_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('publication.id'))
-    copyright_author_name = Column(TABLE_TYPES['name'],
-                                   default='',
-                                   nullable=False)
+    copyright_author_name = Column(TABLE_TYPES['name'], default='', nullable=False)
     ac_count = Column(Integer, default=0, nullable=False)
     size = Column(Integer, default=0, nullable=False)
     author_user_id = Column(TABLE_TYPES['id_profireader'],
@@ -553,13 +550,13 @@ class File(Base, PRBase):
         return croped
 
     def copy_from_cropped_file(self):
-        image_cropped = utils.db.query_filter(FileImg, croped_image_id=self.id).first()
+        image_cropped = utils.db.query_filter(FileImageCrop, croped_image_id=self.id).first()
         if not image_cropped:
             # if article have no record in Illustration table we
             # create one with copied file as `original file for croping`
             new_cropped_from_file = File.get(self.id).copy_file(self.parent_id)
             image_pil = Image.open(BytesIO(new_cropped_from_file.file_content.content))
-            image_cropped = FileImg(original_image_id=new_cropped_from_file.id,
+            image_cropped = FileImageCrop(original_image_id=new_cropped_from_file.id,
                                     croped_image_id=self.id,
                                     x=0, y=0, origin_x=0, origin_y=0,
                                     width=image_pil.width, height=image_pil.height,
@@ -569,7 +566,7 @@ class File(Base, PRBase):
 
         copy_from_origininal = File.get(image_cropped.original_image_id).copy_file(self.parent_id)
         copy_crop = File.get(image_cropped.croped_image_id).copy_file(self.parent_id)
-        FileImg(original_image_id=copy_from_origininal.id,
+        FileImageCrop(original_image_id=copy_from_origininal.id,
                 croped_image_id=copy_crop.id,
                 x=image_cropped.x, y=image_cropped.y,
                 origin_x=image_cropped.origin_x, origin_y=image_cropped.origin_y,
@@ -589,8 +586,8 @@ class File(Base, PRBase):
         return res
 
 
-class FileImg(Base, PRBase):
-    __tablename__ = 'file_img'
+class FileImageCrop(Base, PRBase):
+    __tablename__ = 'file_image_crop'
     id = Column(TABLE_TYPES['id_profireader'], nullable=True, unique=True, primary_key=True)
 
     provenance_image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(File.id), nullable=False)
@@ -629,13 +626,13 @@ class ImagesDescriptor(object):
         pass
 
     def __get__(self, instance, owner):
-        file_img = getattr(instance, self.relation_name)
+        file_image_crop = getattr(instance, self.relation_name)
         ret = {
-            'url': utils.fileUrl(file_img.proceeded_image_file_id) if file_img else self.no_selection_url,
+            'url': utils.fileUrl(file_image_crop.proceeded_image_file_id) if file_image_crop else self.no_selection_url,
             'selected_by_user': {'type': 'provenance',
-                                 'crop': file_img.get_client_side_dict(),
-                                 'provenance_file_id': file_img.provenance_image_file_id
-                                 } if file_img else {'type': 'none'},
+                                 'crop': file_image_crop.get_client_side_dict(),
+                                 'provenance_file_id': file_image_crop.provenance_image_file_id
+                                 } if file_image_crop else {'type': 'none'},
 
             'cropper': {
                 'browse': self.browse,
@@ -647,13 +644,13 @@ class ImagesDescriptor(object):
                 'no_selection_url': self.no_selection_url
             }}
 
-        return self.after_get(instance, file_img, ret) if self.after_get else ret
+        return self.after_get(instance, file_image_crop, ret) if self.after_get else ret
 
-    # def proxy_setter(self, file_img: FileImg, client_data):
+    # def proxy_setter(self, file_image_crop: FileImageCrop, client_data):
     def __set__(self, instance, client_data):
-        file_img = getattr(instance, self.relation_name)
+        file_image_crop = getattr(instance, self.relation_name)
 
-        client_data = self.before_set(instance, file_img, client_data) if self.before_set else client_data
+        client_data = self.before_set(instance, file_image_crop, client_data) if self.before_set else client_data
 
         sel_by_user = client_data['selected_by_user']
         sel_by_user_type = sel_by_user['type']
@@ -661,12 +658,12 @@ class ImagesDescriptor(object):
         if sel_by_user_type == 'none' or sel_by_user_type == 'preset':
             from sqlalchemy import inspect
             setattr(instance, self.relation_name, None)
-            if file_img and inspect(file_img).persistent:
-                file_img.delete()
+            if file_image_crop and inspect(file_image_crop).persistent:
+                file_image_crop.delete()
             return False
 
         if sel_by_user_type == 'provenance':
-            user_img = Image.open(BytesIO(file_img.provenance_image_file.file_content.content))
+            user_img = Image.open(BytesIO(file_image_crop.provenance_image_file.file_content.content))
         elif sel_by_user_type == 'browse':
             user_img = Image.open(BytesIO(File.get(sel_by_user['image_file_id']).file_content.content))
         elif sel_by_user_type == 'upload':
@@ -680,11 +677,11 @@ class ImagesDescriptor(object):
 
         provenance_img, l, t, w, h = self.get_correct_coordinates_and_provenance_image(sel_by_user_crop, user_img)
 
-        if not file_img:
-            setattr(instance, self.relation_name, FileImg())
-            file_img = getattr(instance, self.relation_name)
+        if not file_image_crop:
+            setattr(instance, self.relation_name, FileImageCrop())
+            file_image_crop = getattr(instance, self.relation_name)
 
-        file_img.origin_left, file_img.origin_top, file_img.origin_zoom = \
+        file_image_crop.origin_left, file_image_crop.origin_top, file_image_crop.origin_zoom = \
             sel_by_user_crop['origin_left'] if 'origin_left' in sel_by_user_crop else 0, \
             sel_by_user_crop['origin_top'] if 'origin_top' in sel_by_user_crop else 0, \
             sel_by_user_crop['origin_zoom'] if 'origin_zoom' in sel_by_user_crop else 1
@@ -693,14 +690,14 @@ class ImagesDescriptor(object):
                         provenance_img == user_img and \
                         [round(c) for c in [l, t, w, h]] == \
                         [round(c) for c in
-                         [file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height]]:
+                         [file_image_crop.crop_left, file_image_crop.crop_top, file_image_crop.crop_width, file_image_crop.crop_height]]:
             return True
 
         fmt = user_img.format
 
-        file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
+        file_image_crop.crop_left, file_image_crop.crop_top, file_image_crop.crop_width, file_image_crop.crop_height = l, t, w, h
 
-        file_img.provenance_image_file = self.file_decorator(instance, file_img,
+        file_image_crop.provenance_image_file = self.file_decorator(instance, file_image_crop,
                                                              self.create_file_from_pillow_image(provenance_img,
                                                                                                 'provenance', fmt))
         scale_to_image_size = min(self.image_size[0] / w, self.image_size[1] / h)
@@ -711,7 +708,7 @@ class ImagesDescriptor(object):
         else:
             cropped_pil_img = provenance_img.crop(map(round, [l, t, l + w, t + h]))
 
-        file_img.proceeded_image_file = self.file_decorator(instance, file_img,
+        file_image_crop.proceeded_image_file = self.file_decorator(instance, file_image_crop,
                                                             self.create_file_from_pillow_image(cropped_pil_img,
                                                                                                'proceeded', fmt))
 
@@ -761,13 +758,13 @@ class FileImgDescriptor(object):
             # self.file_decorator = file_decorator
 
     def __get__(self, instance, owner):
-        file_img = getattr(instance, self.relation_name)
+        file_image_crop = getattr(instance, self.relation_name)
         ret = {
-            'url': utils.fileUrl(file_img.proceeded_image_file_id) if file_img else self.no_selection_url,
+            'url': utils.fileUrl(file_image_crop.proceeded_image_file_id) if file_image_crop else self.no_selection_url,
             'selected_by_user': {'type': 'provenance',
-                                 'crop': file_img.get_client_side_dict(),
-                                 'provenance_file_id': file_img.provenance_image_file_id
-                                 } if file_img else {'type': 'none'},
+                                 'crop': file_image_crop.get_client_side_dict(),
+                                 'provenance_file_id': file_image_crop.provenance_image_file_id
+                                 } if file_image_crop else {'type': 'none'},
 
             'cropper': {
                 'browse': self.browse,
@@ -779,7 +776,7 @@ class FileImgDescriptor(object):
                 'no_selection_url': self.no_selection_url
             }}
 
-        return self.after_get(instance, file_img, ret) if self.after_get else ret
+        return self.after_get(instance, file_image_crop, ret) if self.after_get else ret
 
     def get_correct_coordinates_and_provenance_image(self, coords_by_client, img):
 
@@ -824,11 +821,11 @@ class FileImgDescriptor(object):
         FileContent(content=bytes_file.getvalue(), file=file)
         return file
 
-    # def proxy_setter(self, file_img: FileImg, client_data):
+    # def proxy_setter(self, file_image_crop: FileImageCrop, client_data):
     def __set__(self, instance, client_data):
-        file_img = getattr(instance, self.relation_name)
+        file_image_crop = getattr(instance, self.relation_name)
 
-        client_data = self.before_set(instance, file_img, client_data) if self.before_set else client_data
+        client_data = self.before_set(instance, file_image_crop, client_data) if self.before_set else client_data
 
         sel_by_user = client_data['selected_by_user']
         sel_by_user_type = sel_by_user['type']
@@ -836,12 +833,12 @@ class FileImgDescriptor(object):
         if sel_by_user_type == 'none' or sel_by_user_type == 'preset':
             from sqlalchemy import inspect
             setattr(instance, self.relation_name, None)
-            if file_img and inspect(file_img).persistent:
-                file_img.delete()
+            if file_image_crop and inspect(file_image_crop).persistent:
+                file_image_crop.delete()
             return False
 
         if sel_by_user_type == 'provenance':
-            user_img = Image.open(BytesIO(file_img.provenance_image_file.file_content.content))
+            user_img = Image.open(BytesIO(file_image_crop.provenance_image_file.file_content.content))
         elif sel_by_user_type == 'browse':
             user_img = Image.open(BytesIO(File.get(sel_by_user['image_file_id']).file_content.content))
         elif sel_by_user_type == 'upload':
@@ -855,11 +852,11 @@ class FileImgDescriptor(object):
 
         provenance_img, l, t, w, h = self.get_correct_coordinates_and_provenance_image(sel_by_user_crop, user_img)
 
-        if not file_img:
-            setattr(instance, self.relation_name, FileImg())
-            file_img = getattr(instance, self.relation_name)
+        if not file_image_crop:
+            setattr(instance, self.relation_name, FileImageCrop())
+            file_image_crop = getattr(instance, self.relation_name)
 
-        file_img.origin_left, file_img.origin_top, file_img.origin_zoom = \
+        file_image_crop.origin_left, file_image_crop.origin_top, file_image_crop.origin_zoom = \
             sel_by_user_crop['origin_left'] if 'origin_left' in sel_by_user_crop else 0, \
             sel_by_user_crop['origin_top'] if 'origin_top' in sel_by_user_crop else 0, \
             sel_by_user_crop['origin_zoom'] if 'origin_zoom' in sel_by_user_crop else 1
@@ -868,14 +865,14 @@ class FileImgDescriptor(object):
                         provenance_img == user_img and \
                         [round(c) for c in [l, t, w, h]] == \
                         [round(c) for c in
-                         [file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height]]:
+                         [file_image_crop.crop_left, file_image_crop.crop_top, file_image_crop.crop_width, file_image_crop.crop_height]]:
             return True
 
         fmt = user_img.format
 
-        file_img.crop_left, file_img.crop_top, file_img.crop_width, file_img.crop_height = l, t, w, h
+        file_image_crop.crop_left, file_image_crop.crop_top, file_image_crop.crop_width, file_image_crop.crop_height = l, t, w, h
 
-        file_img.provenance_image_file = self.file_decorator(instance, file_img,
+        file_image_crop.provenance_image_file = self.file_decorator(instance, file_image_crop,
                                                              self.create_file_from_pillow_image(provenance_img,
                                                                                                 'provenance', fmt))
         scale_to_image_size = min(self.image_size[0] / w, self.image_size[1] / h)
@@ -886,7 +883,7 @@ class FileImgDescriptor(object):
         else:
             cropped_pil_img = provenance_img.crop(map(round, [l, t, l + w, t + h]))
 
-        file_img.proceeded_image_file = self.file_decorator(instance, file_img,
+        file_image_crop.proceeded_image_file = self.file_decorator(instance, file_image_crop,
                                                             self.create_file_from_pillow_image(cropped_pil_img,
                                                                                                'proceeded', fmt))
 

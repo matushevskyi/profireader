@@ -2,7 +2,7 @@ from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from .pr_base import PRBase, Base
-from .files import FileImg, ImagesDescriptor, File, FileContent
+from .files import FileImageCrop, ImagesDescriptor, File, FileContent
 from .materials import Material
 import re
 
@@ -48,14 +48,13 @@ class MaterialImageGalleryItem(Base, PRBase):
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     material_image_gallery_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(MaterialImageGallery.id))
     title = Column(TABLE_TYPES['string_1000'])
-    copyright = Column(TABLE_TYPES['string_200'])
     position = Column(TABLE_TYPES['position'])
 
-    tiny_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id))
-    small_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id))
-    medium_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id))
-    big_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id))
-    huge_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id))
+    tiny_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id))
+    small_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id))
+    medium_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id))
+    big_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id))
+    huge_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id))
     original_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(File.id))
 
     original_file = relationship(File, foreign_keys=[original_file_id])

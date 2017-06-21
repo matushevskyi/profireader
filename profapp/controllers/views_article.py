@@ -229,7 +229,8 @@ def gallery_save(json, company_id, material_id=None):
 
         item.position = position
         item.title = item_data['title']
-        item.copyright = item_data['copyright']
+        item.copyright = item_data['copyright_author_name']
+
 
     gallery.save()
     return gallery.get_client_side_dict(more_fields='items')
