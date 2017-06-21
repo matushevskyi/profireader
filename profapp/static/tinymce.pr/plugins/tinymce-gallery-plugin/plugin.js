@@ -46,16 +46,19 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                             $('li', '#' + win._id + ' .ul-sortable-images').each(function (index, $li) {
                                 if (!$('input.pr-gallery-image-title', $li).is(':disabled')) {
                                     images.push({
+                                        'id': $('.pr-gallery-image-id', $li).val(),
                                         'title': $('.pr-gallery-image-title', $li).val(),
                                         'copyright': $('.pr-gallery-image-copyright', $li).val(),
-                                        'image': $('img', $li).css('backgroundImage'),
+                                        'binary_data': $('img', $li).css('backgroundImage'),
                                     });
                                 }
                             });
-                            editor.getParam('gallery_upload')({size: win.toJSON(), images: images}).then(
-                                function (a) {
-                                    // win.close()
-                                    add_message(a)
+
+                            editor.getParam('gallery_upload')({'parameters': win.toJSON(), 'images': images}).then(
+                                function (gallery_data) {
+                                    editor.selection.collapse(true);
+					                editor.execCommand('mceInsertContent', false, '<img src="'+fileUrl(gallery_data['items'][0]['id'])+'" data-mce-gallery>');
+                                    win.close()
                                 }, function () {
                                     add_message('Error saving gallery')
                                 }, function () {
@@ -143,6 +146,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 var images_container = get_image_container();
                 var ret = $('<li>' +
                     '<img class="pr-gallery-image-preview" src="' + static_address('images/0.gif') + '" />' +
+                    '<input class="pr-gallery-image-id" hidefocus="1" type="hidden"/>' +
                     '<input class="mce-textbox mce-first pr-gallery-image-title" hidefocus="1" placeholder="title"/>' +
                     '<input class="mce-textbox pr-gallery-image-copyright" hidefocus="1" placeholder="copyright"/>' +
                     '<div class="mce-btn"><button role="presentation" type="button" tabindex="-1" class="pr-gallery-image-remove-undo">Remove</button></div>' +

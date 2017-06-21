@@ -206,7 +206,30 @@ def publish(json, publication_id, actor_membership_id, request_from):
 
 @article_bp.route('/<string:company_id>/gallery_save/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
 @article_bp.route('/<string:company_id>/gallery_save/', methods=['OK'], permissions=UserIsActive())
-def gallery_save(json, company_id, material_id = None):
+def gallery_save(json, company_id, material_id=None):
     from profapp.models.gallery import MaterialImageGallery, MaterialImageGalleryItem
-    pass
+    gallery = MaterialImageGallery.get(json['gallery_id']) if 'gallery_id' in json else MaterialImageGallery()
+    gallery.material = Material.get(material_id) if material_id else None
+    gallery.width = json['parameters']['gallery_width']
+    gallery.height = json['parameters']['gallery_height']
 
+    for item in gallery.items:
+        if len(filter(lambda x: x.id == item.id, json['images'])) < 1:
+            gallery.items.remove(item)
+
+    position = 0
+    for item_data in json['images']:
+        position += 1
+        if item_data['id']:
+            item = MaterialImageGalleryItem.get(item_data['id'])
+        else:
+            item = MaterialImageGalleryItem(binary_data = item_data['binary_data'],
+                                            name=item_data['title'])
+            gallery.items.append(item)
+
+        item.position = position
+        item.title = item_data['title']
+        item.copyright = item_data['copyright']
+
+    gallery.save()
+    return gallery.get_client_side_dict(more_fields='items')

@@ -13,7 +13,7 @@
     {% endblock company_base %}
 
     <script>
-        module.controller('article_edit', ['$scope','$ok', function ($scope, $ok) {
+        module.controller('article_edit', ['$scope','$ok', '$http', function ($scope, $ok, $http) {
 
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
 

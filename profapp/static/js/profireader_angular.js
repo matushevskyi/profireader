@@ -243,7 +243,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     if (ifok) {
                         return ifok(resp['data']);
                     }
-
+                    else {
+                        return resp['data'];
+                    }
                 },
                 function () {
                     return error(null, -1, 'wrong response');
