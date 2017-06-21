@@ -208,7 +208,7 @@ def publish(json, publication_id, actor_membership_id, request_from):
 @article_bp.route('/<string:company_id>/gallery_save/', methods=['OK'], permissions=UserIsActive())
 def gallery_save(json, company_id, material_id=None):
     from profapp.models.gallery import MaterialImageGallery, MaterialImageGalleryItem
-    gallery = MaterialImageGallery.get(json['gallery_id']) if 'gallery_id' in json else MaterialImageGallery()
+    gallery = MaterialImageGallery.get(json['gallery_id']) if 'gallery_id' in json else MaterialImageGallery().save()
     gallery.material = Material.get(material_id) if material_id else None
     gallery.width = json['parameters']['gallery_width']
     gallery.height = json['parameters']['gallery_height']
@@ -224,12 +224,13 @@ def gallery_save(json, company_id, material_id=None):
             item = MaterialImageGalleryItem.get(item_data['id'])
         else:
             item = MaterialImageGalleryItem(binary_data = item_data['binary_data'],
+                                            material_image_gallery = gallery,
                                             name=item_data['title'])
             gallery.items.append(item)
 
         item.position = position
         item.title = item_data['title']
-        item.copyright = item_data['copyright_author_name']
+        item.copyright = item_data['copyright']
 
 
     gallery.save()
