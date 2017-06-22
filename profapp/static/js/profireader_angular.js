@@ -897,7 +897,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             //TODO: OZ by OZ: select css for current theme. also look for another place with same todo
             content_css: [static_address('front/css/bootstrap.css'), static_address('css/article.css'), static_address('front/bird/css/article.css')],
 
-
             //paste_auto_cleanup_on_paste : true,
             //paste_remove_styles: true,
             //paste_remove_styles_if_webkit: true,
@@ -996,11 +995,14 @@ function tinymceExtendSettings(toExtend, extendWith, key, extendSeparator) {
     }
 
     if (key in toExtend) {
-        if (typeof extendSeparator == 'string') {
+        if (typeof extendWith == 'string') {
             toExtend[key] += (extendSeparator + extendWith)
         }
+        else if (Array.isArray(extendWith)) {
+            toExtend[key] = toExtend[key].concat(extendWith);
+        }
         else {
-            $.extend(true, toExtend, {key: extendWith})
+            $.extend(true, toExtend, {key: extendWith});
         }
     }
     else {

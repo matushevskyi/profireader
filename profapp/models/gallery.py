@@ -39,19 +39,20 @@ class MaterialImageGalleryItem(Base, PRBase):
 
         pillow_image = Image.open(BytesIO(
             base64.b64decode(re.sub('("?\))?$', '', re.sub('^((url\("?)?data:image/.+;base64,)?', '', binary_data)))))
+        format = pillow_image.format
 
         scale_to_image_size = min(self.material_image_gallery.available_sizes[0][0] / pillow_image.width,
                                   self.material_image_gallery.available_sizes[0][1] / pillow_image.height)
         if scale_to_image_size < 1:
-            pillow_image.resize((round(pillow_image.width * scale_to_image_size),
+            pillow_image = pillow_image.resize((round(pillow_image.width * scale_to_image_size),
                                  round(pillow_image.height * scale_to_image_size)), Image.ANTIALIAS)
 
         bytes_file = BytesIO()
 
-        pillow_image.save(bytes_file, pillow_image.format)
+        pillow_image.save(bytes_file, format)
 
         self.file = File(size=sys.getsizeof(bytes_file.getvalue()),
-                         mime='image/' + pillow_image.format.lower(), name=name)
+                         mime='image/' + format.lower(), name=name)
 
         FileContent(file=self.file, content=bytes_file.getvalue())
 
@@ -64,3 +65,6 @@ class MaterialImageGalleryItem(Base, PRBase):
 
     file = relationship(File)
     material_image_gallery = relationship(MaterialImageGallery)
+
+    def get_client_side_dict(self, fields='id|file_id', more_fields=None):
+        return self.to_dict(fields, more_fields)
