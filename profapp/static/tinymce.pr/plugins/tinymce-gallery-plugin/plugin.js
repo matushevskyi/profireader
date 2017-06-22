@@ -15,16 +15,96 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
 
 
     var dialog_controller = {
+        win: null,
 
-        init: function (win_id) {
-            $('#' + win_id + ' .mce-sortable-images div').append('<ul class="ul-sortable-images"></ul>');
-            $('#' + win_id + ' .mce-sortable-images div').append('<input type="file" multiple />');
-            $('#' + win_id + ' .mce-sortable-images div input[type=file]').bind('change', this.upload_images);
-            $('#' + win_id + ' .mce-sortable-images').on('click', '.pr-gallery-image-remove-undo', this.remove_undo);
+        open_window: function () {
+            this.win = editor.windowManager.open({
+                title: 'Article gallery',
+                data: data,
+                buttons: [
+                    {
+                        'text': "Save",
+                        'classes': 'primary',
+                        'onclick': function () {
+
+                            editor.getParam('gallery_upload')(dialog_controller.get_data()).then(
+                                function (gallery_data) {
+                                    editor_controller.insertGallery(gallery_data);
+                                    win.close()
+                                }, function () {
+                                    add_message('Error saving gallery')
+                                }, function () {
+                                    console.log(arguments)
+                                });
+                        }
+                    }, {
+                        'classes': 'image-gallery-upload',
+                        'text': "Upload", onclick: function () {
+                            $('.mce-sortable-images div input[type=file]').trigger('click');
+                        }
+                    }, {
+                        'text': "Cancel",
+                        'onclick': function () {
+                            win.close();
+                        }
+                    }
+                ],
+
+                bodyType: 'form',
+                body: [
+                    {
+                        type: 'container',
+                        label: 'Dimensions',
+                        layout: 'flex',
+                        direction: 'row',
+                        align: 'center',
+                        spacing: 5,
+                        items: [
+                            {name: 'gallery_width', type: 'textbox', size: 3, ariaLabel: 'Width'},
+                            {type: 'label', text: 'x'},
+                            {name: 'gallery_height', type: 'textbox', size: 3, ariaLabel: 'Height'},
+                        ]
+                    }, {
+                        type: 'container',
+                        minHeight: 350,
+                        minWidth: 500,
+                        classes: 'sortable-images'
+                    },
+                ],
+            });
+        },
+
+        add_custom_html_elements: function () {
+            $('#' + this.win._id + ' .mce-sortable-images div').append('<ul class="ul-sortable-images"></ul>');
+            $('#' + this.win._id + ' .mce-sortable-images div').append('<input type="file" multiple />');
+            $('#' + this.win._id + ' .mce-sortable-images div input[type=file]').bind('change', dialog_controller.upload_images);
+            $('#' + this.win._id + ' .mce-sortable-images').on('click', '.pr-gallery-image-remove-undo', dialog_controller.remove_undo);
+        },
+
+        show_gallery: function (galleryElm) {
+            var defaultdata = {
+                gallery_width: '200',
+                gallery_height: '100'
+            };
+            var data = $.extend({}, defaultdata);
+            if (galleryElm) {
+
+                if ($(galleryElm).attr('width')) {
+                    data['gallery_width'] = $(galleryElm).attr('width');
+                }
+
+                if ($(galleryElm).attr('height')) {
+                    data['gallery_height'] = $(galleryElm).attr('height');
+                }
+
+                if ($(galleryElm).attr('height')) {
+                    data['gallery_height'] = $(galleryElm).attr('height');
+                }
+            }
         },
 
         get_image_container: function () {
-            return $('#' + win._id + ' ul.ul-sortable-images');
+            return $('#' + this.win._id + ' ul.ul-sortable-images');
         },
 
         upload_images: function (event) {
@@ -37,7 +117,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                     return function (e) {
                         var beginstr = uploader.result.substr(0, 50);
                         if (beginstr.match(/^data:image\/(png|gif|jpeg);base64/g)) {
-                            this.append_image(the_file.name, uploader.result, the_files.type);
+                            dialog_controller.append_image(the_file.name, uploader.result, the_files.type);
                         }
                         else {
                             uploader.onerror(e);
@@ -54,6 +134,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 uploaders[i].readAsDataURL(the_files[i]);
             }
             $(this).val('');
+            console.log($(this), $(this).val());
         },
         remove_undo: function (event) {
             var $li = $(event.currentTarget).closest('li');
@@ -88,6 +169,22 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             var container_row = this.add_html();
             $('img', container_row).css({backgroundImage: 'url(' + file_content + ')'});
             $('.pr-gallery-image-title', container_row).val(file_title);
+        },
+
+        get_data: function () {
+            var images = [];
+            $('li', '#' + this.win._id + ' .ul-sortable-images').each(function (index, $li) {
+                if (!$('input.pr-gallery-image-title', $li).is(':disabled')) {
+                    images.push({
+                        'id': $('.pr-gallery-image-id', $li).val(),
+                        'title': $('.pr-gallery-image-title', $li).val(),
+                        'copyright': $('.pr-gallery-image-copyright', $li).val(),
+                        'binary_data': $('img', $li).css('backgroundImage'),
+                    });
+                }
+            });
+            var data = this.win.toJSON();
+            return {'parameters': data, 'images': images};
         }
     };
 
@@ -142,111 +239,32 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 'src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" ' +
                 'class="data-mce-image-gallery-placeholder ' +
                 this.addCSSRule(gallery_data['id'], gallery_data['items'][0]['file_id']) +
-                '" data-mce-image-gallery-placeholder>="' + gallery_data['id'] + '"');
+                '" data-mce-image-gallery-placeholder="' + gallery_data['id'] + '">');
         }
     };
 
+    editor.on('ResolveName', function (e) {
+        if (e.target.nodeType == 1 && (e.target.getAttribute("data-mce-image-gallery-placeholder"))) {
+            e.name = 'image gallery';
+        }
+    });
 
     editor.addButton('gallery', {
         text: 'Gallery',
         icon: false,
-        stateSelector: 'img[data-mce-gallery]',
+        stateSelector: 'img[data-mce-image-gallery-placeholder]',
         onclick: function () {
             var galleryElm = editor.selection.getNode();
-
-            var defaultdata = {
-                gallery_width: '200',
-                gallery_height: '100'
-            };
-            var data = $.extend({}, defaultdata);
-            if (galleryElm && galleryElm.nodeName == 'img' && galleryElm.getAttribute('data-mce-image-gallery-placeholder')) {
-
-                if ($(galleryElm).attr('width')) {
-                    data['gallery_width'] = $(galleryElm).attr('width');
-                }
-
-                if ($(galleryElm).attr('height')) {
-                    data['gallery_height'] = $(galleryElm).attr('height');
-                }
-
-                if ($(galleryElm).attr('height')) {
-                    data['gallery_height'] = $(galleryElm).attr('height');
-                }
-            } else {
+            if (!galleryElm || galleryElm.nodeName != 'img' || !galleryElm.getAttribute('data-mce-image-gallery-placeholder')) {
                 galleryElm = null;
             }
 
-            var win = editor.windowManager.open({
-                title: 'Article gallery',
-                data: data,
-                buttons: [
-                    {
-                        'text': "Save",
-                        'classes': 'primary',
-                        'onclick': function () {
-                            var images = [];
-                            $('li', '#' + win._id + ' .ul-sortable-images').each(function (index, $li) {
-                                if (!$('input.pr-gallery-image-title', $li).is(':disabled')) {
-                                    images.push({
-                                        'id': $('.pr-gallery-image-id', $li).val(),
-                                        'title': $('.pr-gallery-image-title', $li).val(),
-                                        'copyright': $('.pr-gallery-image-copyright', $li).val(),
-                                        'binary_data': $('img', $li).css('backgroundImage'),
-                                    });
-                                }
-                            });
-                            var data = win.toJSON();
-                            editor.getParam('gallery_upload')({'parameters': data, 'images': images}).then(
-                                function (gallery_data) {
-                                    editor_controller.insertGallery(gallery_data);
-                                    win.close()
-                                }, function () {
-                                    add_message('Error saving gallery')
-                                }, function () {
-                                    console.log(arguments)
-                                });
-                        }
-                    }, {
-                        'classes': 'image-gallery-upload',
-                        'text': "Upload", onclick: function () {
-                            $('.mce-sortable-images div input[type=file]').trigger('click');
-                        }
-                    }, {
-                        'text': "Cancel",
-                        'onclick': function () {
-                            win.close();
-                        }
-                    }
-                ],
-
-                bodyType: 'form',
-                body: [
-                    {
-                        type: 'container',
-                        label: 'Dimensions',
-                        layout: 'flex',
-                        direction: 'row',
-                        align: 'center',
-                        spacing: 5,
-                        items: [
-                            {name: 'gallery_width', type: 'textbox', size: 3, ariaLabel: 'Width'},
-                            {type: 'label', text: 'x'},
-                            {name: 'gallery_height', type: 'textbox', size: 3, ariaLabel: 'Height'},
-                        ]
-                    }, {
-                        type: 'container',
-                        minHeight: 350,
-                        minWidth: 500,
-                        classes: 'sortable-images'
-                    },
-                ],
-            });
-
-
-            dialog_controller.init(win._id);
+            dialog_controller.open_window();
+            dialog_controller.add_custom_html_elements();
+            dialog_controller.show_gallery(galleryElm);
         }
-    })
-    ;
+    });
+
 
 // Adds a menu item to the tools menu
 //  editor.addMenuItem('gallery', {
