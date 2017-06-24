@@ -1,9 +1,9 @@
 
 
 APPLICATION_PORTS = {
-    'profi': 9001,
+    'profi': 8080,
     'front': 8090,
     'static': 9000,
     'socket': 5000,
-    'file': 8080,
+    'file': 9001,
 }
