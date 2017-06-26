@@ -38,7 +38,9 @@ class FileContent(Base, PRBase):
 
 
 class File(Base, PRBase):
+
     __tablename__ = 'file'
+
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     parent_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
     root_folder_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
@@ -47,14 +49,14 @@ class File(Base, PRBase):
     description = Column(TABLE_TYPES['text'], default='', nullable=False)
     # youtube_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'))
 
-    company_id = Column(TABLE_TYPES['id_profireader'],
-                        ForeignKey('company.id'))
+    company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'))
+
     # publication_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('publication.id'))
     copyright_author_name = Column(TABLE_TYPES['name'], default='', nullable=False)
     ac_count = Column(Integer, default=0, nullable=False)
     size = Column(Integer, default=0, nullable=False)
-    author_user_id = Column(TABLE_TYPES['id_profireader'],
-                            ForeignKey('user.id'))
+    author_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('user.id'))
+
     cr_tm = Column(TABLE_TYPES['timestamp'], nullable=False)
     md_tm = Column(TABLE_TYPES['timestamp'], nullable=False)
     ac_tm = Column(TABLE_TYPES['timestamp'], nullable=False)

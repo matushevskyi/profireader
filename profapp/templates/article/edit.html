@@ -174,10 +174,12 @@
             tinymceExtendSettings($scope.tinyArticleOptions, {
                 'height': '500px',
                 'body_class': 'article-content',
-                'gallery_upload': function(data) {
+                'gallery_save': function(data) {
                     return $ok('{{ url_for('article.gallery_save', company_id = company.id, material_id = material_id)|safe}}', data);
                 },
-                'formats': formats,
+                'gallery_load': function(data) {
+                    return $ok('{{ url_for('article.gallery_load', material_id = material_id)|safe}}', data);
+                },'formats': formats,
                 'pr_formats': _.size(custom_formats) ? get_array_for_menu_build(custom_formats) : [],
                 'setup': func_for_gallery_render
             });

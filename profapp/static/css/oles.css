@@ -928,3 +928,8 @@ span.pr-grid-publications-vs {
     display: inline-block;
 }
 
+#message-controller {
+    z-index: 65537;
+    position: fixed;
+}
+

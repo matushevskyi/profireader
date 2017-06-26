@@ -708,7 +708,6 @@ tinymce.PluginManager.add('media', function(editor, url) {
 
 				realElmName = node.attr(name);
 				realElm = new tinymce.html.Node(realElmName, 1);
-				console.log(realElmName);
 
 				// Add width/height to everything but audio
 				if (realElmName != "audio" && realElmName != "script") {
@@ -745,7 +744,6 @@ tinymce.PluginManager.add('media', function(editor, url) {
 					innerNode.value = sanitize(unescape(innerHtml));
 					realElm.append(innerNode);
 				}
-				console.log(node, realElm);
 				node.replace(realElm);
 			}
 		});

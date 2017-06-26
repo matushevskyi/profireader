@@ -216,7 +216,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
         }
 
     }])
-    .factory('$ok', ['$http', function ($http) {
+    .factory('$ok', ['$http','$q', function ($http, $q) {
         return function (url, data, ifok, iferror, translate) {
             //console.log($scope);
             function error(result, error_code, message) {
@@ -224,8 +224,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     iferror(result, error_code, message)
                 }
                 else {
-                    // add_message(result, 'danger');
+                    add_message(result?result:'wrong answer from server', 'danger');
                 }
+                return $q.reject();
             }
 
             return $http.post(url, $.extend({}, data, translate ? {__translate: translate} : {})).then(

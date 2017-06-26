@@ -14,43 +14,55 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
     // });
 
 
+    var galleryElm = null;
+
+
     var dialog_controller = {
         win: null,
 
         open_window: function () {
-            this.win = editor.windowManager.open({
-                title: 'Article gallery',
+            var data = {};
+            dialog_controller.win = editor.windowManager.open({
+                onSubmit: function () {
+                    return false;
+                },
+                title: 'Article image gallery',
                 data: data,
                 buttons: [
                     {
-                        'text': "Save",
-                        'classes': 'primary',
+                        'text': "Ok",
+                        'classes': 'primary image-gallery-save',
                         'onclick': function () {
-
-                            editor.getParam('gallery_upload')(dialog_controller.get_data()).then(
+                            if (!dialog_controller.can_be_saved()) {
+                                return false;
+                            }
+                            dialog_controller.enable_dialog(false, 'Saving...');
+                            editor.getParam('gallery_save')(dialog_controller.get_data()).then(
                                 function (gallery_data) {
                                     editor_controller.insertGallery(gallery_data);
-                                    win.close()
+                                    dialog_controller.win.close();
                                 }, function () {
-                                    add_message('Error saving gallery')
+                                    add_message('Error saving gallery', 'danger');
+                                    dialog_controller.enable_dialog(true);
                                 }, function () {
-                                    console.log(arguments)
+                                    console.log(arguments);
                                 });
                         }
                     }, {
                         'classes': 'image-gallery-upload',
                         'text': "Upload", onclick: function () {
-                            $('.mce-sortable-images div input[type=file]').trigger('click');
+                            $('.mce-pr-sortable-images div input[type=file]').trigger('click');
                         }
                     }, {
                         'text': "Cancel",
                         'onclick': function () {
-                            win.close();
+                            dialog_controller.win.close();
                         }
                     }
                 ],
 
                 bodyType: 'form',
+                classes: 'pr-image-gallery-dialog',
                 body: [
                     {
                         type: 'container',
@@ -60,35 +72,40 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                         align: 'center',
                         spacing: 5,
                         items: [
-                            {name: 'gallery_width', type: 'textbox', size: 3, ariaLabel: 'Width'},
+                            {
+                                name: 'gallery_width', type: 'textbox', size: 3, ariaLabel: 'Width',
+                                'classes': 'pr-image-gallery-width'
+                            },
                             {type: 'label', text: 'x'},
-                            {name: 'gallery_height', type: 'textbox', size: 3, ariaLabel: 'Height'},
+                            {
+                                name: 'gallery_height', type: 'textbox', size: 3, ariaLabel: 'Height',
+                                'classes': 'pr-image-gallery-height'
+                            },
                         ]
                     }, {
                         type: 'container',
                         minHeight: 350,
                         minWidth: 500,
-                        classes: 'sortable-images'
+                        classes: 'pr-sortable-images'
                     },
                 ],
             });
         },
 
         add_custom_html_elements: function () {
-            $('#' + this.win._id + ' .mce-sortable-images div').append('<ul class="ul-sortable-images"></ul>');
-            $('#' + this.win._id + ' .mce-sortable-images div').append('<input type="file" multiple />');
-            $('#' + this.win._id + ' .mce-sortable-images div input[type=file]').bind('change', dialog_controller.upload_images);
-            $('#' + this.win._id + ' .mce-sortable-images').on('click', '.pr-gallery-image-remove-undo', dialog_controller.remove_undo);
+            $('#' + dialog_controller.win._id).append('<div class="pr-image-gallery-dialog-dimmed" style="display: none;"></div><div class="pr-image-gallery-dialog-dimmed-text" style="display: none;"><span></span></div>');
+            $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images div').append('<ul></ul>');
+            $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images div').append('<input type="file" multiple />');
+            $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images div input[type=file]').bind('change', dialog_controller.upload_images);
+            $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images').on('click', '.pr-gallery-item-remove-undo', dialog_controller.remove_undo);
         },
 
-        show_gallery: function (galleryElm) {
-            var defaultdata = {
-                gallery_width: '200',
-                gallery_height: '100'
+        show_gallery: function () {
+            var data = {
+                'gallery_width': '100%',
+                'gallery_height': '200'
             };
-            var data = $.extend({}, defaultdata);
             if (galleryElm) {
-
                 if ($(galleryElm).attr('width')) {
                     data['gallery_width'] = $(galleryElm).attr('width');
                 }
@@ -96,20 +113,46 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 if ($(galleryElm).attr('height')) {
                     data['gallery_height'] = $(galleryElm).attr('height');
                 }
-
-                if ($(galleryElm).attr('height')) {
-                    data['gallery_height'] = $(galleryElm).attr('height');
-                }
+            }
+            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-width').val(data['gallery_width']);
+            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-height').val(data['gallery_height']);
+            if (galleryElm) {
+                dialog_controller.enable_dialog(false);
+                editor.getParam('gallery_load')({'gallery_id': editor_controller.get_id_from_element()}).then(
+                    function (server_data) {
+                        var images_container = dialog_controller.get_image_container();
+                        images_container.html('');
+                        $.each(server_data['items'], function (index, item) {
+                            dialog_controller.append_image(item['id'], item['title'], item['copyright'], item['file_id']);
+                        });
+                        dialog_controller.enable_dialog(true);
+                    }, function () {
+                        add_message('Error loading gallery');
+                        dialog_controller.enable_dialog(true);
+                    });
             }
         },
 
         get_image_container: function () {
-            return $('#' + this.win._id + ' ul.ul-sortable-images');
+            return $('#' + dialog_controller.win._id + ' ul');
         },
 
         upload_images: function (event) {
             var the_files = (event.target.files && event.target.files.length) ? event.target.files : [];
             var uploaders = [];
+            var filesreaded = 0;
+
+
+            var read_file_progress = function () {
+                filesreaded++;
+                if (filesreaded == uploaders.length) {
+                    dialog_controller.enable_dialog(true);
+                }
+                else {
+                    dialog_controller.enable_dialog(false, 'Reading file ' + filesreaded + ' of ' + uploaders.length + '...');
+                }
+                dialog_controller.disable_enable_save_gallery();
+            };
 
             for (var i = 0; i < the_files.length; i++) {
                 uploaders.push(new FileReader());
@@ -117,7 +160,8 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                     return function (e) {
                         var beginstr = uploader.result.substr(0, 50);
                         if (beginstr.match(/^data:image\/(png|gif|jpeg);base64/g)) {
-                            dialog_controller.append_image(the_file.name, uploader.result, the_files.type);
+                            dialog_controller.append_image('', the_file.name, the_file.copyright, null, uploader.result, the_files.type);
+                            read_file_progress();
                         }
                         else {
                             uploader.onerror(e);
@@ -128,36 +172,66 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 uploaders[i].onerror = (function (the_file, uploader) {
                     return function (e) {
                         add_message('File loading error: `' + the_file.name + '`', 'warning');
+                        read_file_progress();
                     }
                 })(the_files[i], uploaders[i]);
 
                 uploaders[i].readAsDataURL(the_files[i]);
             }
             $(this).val('');
-            console.log($(this), $(this).val());
         },
+
         remove_undo: function (event) {
             var $li = $(event.currentTarget).closest('li');
-            var is_disabled = $('input.pr-gallery-image-title', $li).is(':disabled');
+            var is_disabled = $('input.pr-gallery-item-title', $li).is(':disabled');
             $('input', $li).prop('disabled', is_disabled ? false : true);
             is_disabled ? $('input,img', $li).removeClass('disabled') : $('input,img', $li).addClass('disabled');
-            $('.pr-gallery-image-remove-undo', $li).html(is_disabled ? 'Remove' : 'Undo');
+            $('.pr-gallery-item-remove-undo', $li).html(is_disabled ? 'Remove' : 'Undo');
+            dialog_controller.disable_enable_save_gallery();
             event.preventDefault();
+        },
+
+        disable_enable_save_gallery: function () {
+            var images_container = this.get_image_container();
+            var is_disabled = true;
+            $('li', images_container).each(function (ind, $li) {
+                is_disabled = is_disabled && $('input.pr-gallery-item-title', $li).is(':disabled');
+            });
+            $('.mce-image-gallery-save button', $('#' + dialog_controller.win._id)).prop('disabled', is_disabled);
+            return is_disabled;
+        },
+
+        can_be_saved: function () {
+            return !$('.mce-image-gallery-save button', $('#' + dialog_controller.win._id)).is(':disabled') && !$('.pr-image-gallery-dialog-dimmed', $('#' + dialog_controller.win._id)).is(":visible");
+        },
+
+        enable_dialog: function (enable, text) {
+            if (enable) {
+                $('#' + dialog_controller.win._id + ' .pr-image-gallery-dialog-dimmed').hide();
+                $('#' + dialog_controller.win._id + ' .pr-image-gallery-dialog-dimmed-text').hide();
+                $('span', '#' + dialog_controller.win._id + ' .pr-image-gallery-dialog-dimmed-text').text('');
+
+            }
+            else {
+                $('span', '#' + dialog_controller.win._id + ' .pr-image-gallery-dialog-dimmed-text').text(text ? text : 'Loading...');
+                $('#' + dialog_controller.win._id + ' .pr-image-gallery-dialog-dimmed-text').show();
+                $('#' + dialog_controller.win._id + ' .pr-image-gallery-dialog-dimmed').show();
+            }
         },
 
         add_html: function () {
             var images_container = this.get_image_container();
             var ret = $('<li>' +
-                '<img class="pr-gallery-image-preview" src="' + static_address('images/0.gif') + '" />' +
-                '<input class="pr-gallery-image-id" hidefocus="1" type="hidden"/>' +
-                '<input class="mce-textbox mce-first pr-gallery-image-title" hidefocus="1" placeholder="title"/>' +
-                '<input class="mce-textbox pr-gallery-image-copyright" hidefocus="1" placeholder="copyright"/>' +
-                '<div class="mce-btn"><button role="presentation" type="button" tabindex="-1" class="pr-gallery-image-remove-undo">Remove</button></div>' +
+                '<img class="pr-gallery-item-preview" src="' + static_address('images/0.gif') + '" />' +
+                '<input class="pr-gallery-item-id" hidefocus="1" type="hidden"/>' +
+                '<input class="mce-textbox mce-first pr-gallery-item-title" hidefocus="1" placeholder="title"/>' +
+                '<input class="mce-textbox pr-gallery-item-copyright" hidefocus="1" placeholder="copyright"/>' +
+                '<div class="mce-btn"><button role="presentation" type="button" tabindex="-1" class="pr-gallery-item-remove-undo">Remove</button></div>' +
                 '</li>');
             images_container.append(ret);
             images_container.sortable({
                 axis: "y",
-                containment: $('.mce-sortable-images div'),
+                containment: $('.mce-pr-sortable-images div'),
                 handle: "img"
             });
             images_container.disableSelection();
@@ -165,26 +239,28 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
 
         },
 
-        append_image: function (file_title, file_content, file_mime) {
+        append_image: function (item_id, file_title, file_copyright, file_id, file_content, file_mime) {
             var container_row = this.add_html();
-            $('img', container_row).css({backgroundImage: 'url(' + file_content + ')'});
-            $('.pr-gallery-image-title', container_row).val(file_title);
+            $('img', container_row).css({backgroundImage: 'url(' + (file_id ? fileUrl(file_id) : file_content) + ')'});
+            $('.pr-gallery-item-id', container_row).val(item_id);
+            $('.pr-gallery-item-title', container_row).val(file_title);
+            $('.pr-gallery-item-copyright', container_row).val(file_copyright);
         },
 
         get_data: function () {
             var images = [];
-            $('li', '#' + this.win._id + ' .ul-sortable-images').each(function (index, $li) {
-                if (!$('input.pr-gallery-image-title', $li).is(':disabled')) {
+            $('li', '#' + dialog_controller.win._id + ' ul').each(function (index, $li) {
+                if (!$('input.pr-gallery-item-title', $li).is(':disabled')) {
                     images.push({
-                        'id': $('.pr-gallery-image-id', $li).val(),
-                        'title': $('.pr-gallery-image-title', $li).val(),
-                        'copyright': $('.pr-gallery-image-copyright', $li).val(),
+                        'id': $('.pr-gallery-item-id', $li).val(),
+                        'title': $('.pr-gallery-item-title', $li).val(),
+                        'copyright': $('.pr-gallery-item-copyright', $li).val(),
                         'binary_data': $('img', $li).css('backgroundImage'),
                     });
                 }
             });
-            var data = this.win.toJSON();
-            return {'parameters': data, 'images': images};
+            var data = dialog_controller.win.toJSON();
+            return {'gallery_id': editor_controller.get_id_from_element(), 'parameters': data, 'images': images};
         }
     };
 
@@ -221,25 +297,40 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             var rule = "background-image: url(" + fileUrl(first_image_file_id) + ")";
             var className = 'data-mce-image-gallery-placeholder-' + gallery_id;
 
-            if ("insertRule" in sheet) {
-                sheet.insertRule('.' + className + " {" + rule + "}", index ? index : 0);
-            }
+            $.each(sheet.cssRules, function (ind, arule) {
+                if (arule.selectorText.match(gallery_id)) {
+                    sheet.deleteRule(ind);
+                }
+            });
 
-            else if ("addRule" in sheet) {
-                sheet.addRule('.' + className, rule, index ? index : 0);
-            }
+            sheet.insertRule('.' + className + " {" + rule + "}", index ? index : 0);
+
             return className;
         },
 
         insertGallery: function (gallery_data) {
-            editor.selection.collapse(true);
-            editor.execCommand('mceInsertContent', false,
-                '<img data-mce-placeholder ' +
-                'width="' + gallery_data['width'] + '" height="' + gallery_data['height'] + '" ' +
+            gallery_data['items'].sort(function (a, b) {
+                return (a['position'] < b['position']) ? -1 : ((a['position'] > b['position']) ? 1 : 0);
+            });
+
+            var width = $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-width').val();
+            var height = $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-height').val();
+
+            editor.insertContent(
+                '<img data-mce-placeholder width="' + width + '" height="' + height + '" ' +
+                ' title="' + ((gallery_data['items'].length == 1) ? 'only one image' : ((gallery_data['items'].length - 1) + ' more image(s)')) + '"' +
                 'src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" ' +
                 'class="data-mce-image-gallery-placeholder ' +
-                this.addCSSRule(gallery_data['id'], gallery_data['items'][0]['file_id']) +
+                editor_controller.addCSSRule(gallery_data['id'], gallery_data['items'][0]['file_id']) +
                 '" data-mce-image-gallery-placeholder="' + gallery_data['id'] + '">');
+        },
+
+        get_id_from_element: function () {
+            if (!galleryElm) {
+                return null;
+            }
+            var ret = $(galleryElm).attr('data-mce-image-gallery-placeholder');
+            return ret ? ret : null;
         }
     };
 
@@ -254,14 +345,16 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
         icon: false,
         stateSelector: 'img[data-mce-image-gallery-placeholder]',
         onclick: function () {
-            var galleryElm = editor.selection.getNode();
-            if (!galleryElm || galleryElm.nodeName != 'img' || !galleryElm.getAttribute('data-mce-image-gallery-placeholder')) {
-                galleryElm = null;
+            var selected_gallery = editor.selection.getNode();
+            if (!selected_gallery || selected_gallery.nodeName != 'IMG' || !selected_gallery.getAttribute('data-mce-image-gallery-placeholder')) {
+                selected_gallery = null;
             }
+
+            galleryElm = selected_gallery;
 
             dialog_controller.open_window();
             dialog_controller.add_custom_html_elements();
-            dialog_controller.show_gallery(galleryElm);
+            dialog_controller.show_gallery();
         }
     });
 
@@ -284,5 +377,5 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
 //      });
 //    }
 //  });
-})
-;
+});
+
