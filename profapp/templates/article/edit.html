@@ -24,7 +24,7 @@
 
             $scope.amidSave = function (resp) {
                 if (!$scope.data.material.id && resp.material.id) {
-                    window.location.href = {{ raw_url_for('article.article_show_form')|safe }}({
+                    window.location.href = {{ raw_url_for('article.edit_material')|safe }}({
                         company_id: resp.material.company_id,
                         material_id: resp.material.id
                     })
@@ -53,9 +53,11 @@
             };
 
             $scope.getDataForValidation = function (model, deff) {
-                delete model['material']['illustration'];
-                delete model['material']['image_galleries'];
-                return deff(model);
+                var ret = $.extend(true, {}, model);
+                delete ret['material']['image_galleries'];
+                delete ret['material']['illustration'];
+                delete ret['material']['long'];
+                return deff(ret);
             };
 
             $scope.amidLoad = function (resp) {
@@ -119,7 +121,8 @@
 
             <div af af-amid-load="amidLoad" af-amid-save="amidSave"
                  af-before-save="getData"
-                 af-before-validate-todo="getDataForValidation" af-watch="data.material" ng-model="data">
+                 af-before-validate="getDataForValidation"
+                 af-watch="[data.material.short, data.material.title, data.material.subtitle, data.material.keywords, data.material.keywords]" ng-model="data">
 
                 <div style="padding-bottom: 50px">
                     <div>

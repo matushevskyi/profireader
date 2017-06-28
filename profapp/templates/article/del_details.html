@@ -7,7 +7,7 @@
 
     <script>
         module.controller('article_my_versions', ['$scope', '$ok', function ($scope, $ok) {
-            $scope.url_material_update = {{ raw_url_for('article.article_show_form')|safe }};
+            $scope.url_material_update = {{ raw_url_for('article.edit_material')|safe }};
             $scope.url_search_for_company = {{ raw_url_for('article.search_for_company_to_submit')|safe }};
             $scope.url_submit = {{ raw_url_for('article.submit_to_company')|safe }};
             $scope.url_resubmit = {{ raw_url_for('article.resubmit_to_company')|safe }};

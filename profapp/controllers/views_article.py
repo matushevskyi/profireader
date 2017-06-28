@@ -24,7 +24,7 @@ def material_can_be_edited():
                   permissions=EmployeeHasRightAtCompany(RIGHT_AT_COMPANY._ANY))
 @article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['GET'],
                   permissions=material_can_be_edited())
-def article_show_form(company_id, material_id=None):
+def edit_material(company_id, material_id=None):
     company = Company.get(company_id)
     return render_template('article/edit.html', material_id=material_id, company_id=company_id, company=company)
 
@@ -32,7 +32,7 @@ def article_show_form(company_id, material_id=None):
 @article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['OK'],
                   permissions=UserIsActive())
 @article_bp.route('/<string:company_id>/material_create/', methods=['OK'], permissions=UserIsActive())
-def load_form_create(json_data, company_id=None, material_id=None):
+def edit_material_load(json_data, company_id=None, material_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
     if material_id:
