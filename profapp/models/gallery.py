@@ -1,8 +1,8 @@
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint
+from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
 from .pr_base import PRBase, Base
-from .files import FileImageCrop, ImagesDescriptor, File, FileContent
+from .files import File, FileContent
 from .materials import Material
 import re
 
@@ -12,8 +12,6 @@ class MaterialImageGallery(Base, PRBase):
 
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     material_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Material.id))
-    # width = Column(TABLE_TYPES['string_10'])
-    # height = Column(TABLE_TYPES['string_10'])
     available_sizes = Column(TABLE_TYPES['json'], nullable=False,
                              default=(
                                  [[2048, 2048], [1024, 1024], [512, 512], [256, 256], [128, 128], [64, 64], [32, 32]]))

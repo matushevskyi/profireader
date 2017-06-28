@@ -896,7 +896,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             //valid_elements: Config['article_html_valid_elements'],
             //valid_elements: 'a[class],img[class|width|height],p[class],table[class|width|height],th[class|width|height],tr[class],td[class|width|height],span[class],div[class],ul[class],ol[class],li[class]',
             //TODO: OZ by OZ: select css for current theme. also look for another place with same todo
-            content_css: [static_address('front/css/bootstrap.css'), static_address('css/article.css'), static_address('front/bird/css/article.css')],
+            content_css: [static_address('front/css/bootstrap.css'), static_address('css/article.css')],
 
             //paste_auto_cleanup_on_paste : true,
             //paste_remove_styles: true,
@@ -1326,23 +1326,36 @@ var dict_deep_get = function () {
 };
 
 
-var find_by_keys = function () {
+var find_index_by_keys = function () {
     var args = Array.prototype.slice.call(arguments);
     var list = args.shift();
     var val = args.shift();
-    var ret = null;
+    var ret = -1;
     $.each(list, function (ind, dict) {
         if (dict_deep_get.apply(this, [dict].concat(args)) == val) {
-            ret = dict;
+            ret = ind;
             return false;
         }
     });
     return ret;
 };
 
-var find_by_id = function (list, id) {
-    return find_by_keys(list, id, 'id');
+var find_index_by_id = function (list, id) {
+    return find_index_by_keys(list, id, 'id');
 };
+
+var find_by_keys = function () {
+    var args = Array.prototype.slice.call(arguments);
+    var list = args[0];
+    var ind = find_index_by_keys.apply(this, args);
+    return ind>-1?list[ind]:null;
+};
+
+var find_by_id = function (list, id) {
+    var ind = find_index_by_keys(list, id, 'id');
+    return ind>-1?list[ind]:null;
+};
+
 
 publication_counts_span = function (status, visibility, cnt, classes) {
     return '<span class="tar ' + (classes ? classes : '') + ' pr-grid-publications-vs publication-fg-STATUS-' + status + ' publication-bg-VISIBILITY-' + visibility + '">' + cnt + '</span>';

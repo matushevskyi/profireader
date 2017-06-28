@@ -66,6 +66,9 @@ class Material(Base, PRBase, PRElasticDocument):
     publications = relationship('Publication', primaryjoin="Material.id==Publication.material_id",
                                 cascade="save-update, merge, delete")
 
+
+    image_galleries = relationship('MaterialImageGallery')
+
     # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
     #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
     #                  'long': {'relevance': lambda field='long': RELEVANCE.long},
@@ -251,55 +254,6 @@ class Publication(Base, PRBase, PRElasticDocument):
             'image_url': self.material.illustration['url'] if self.material.illustration['selected_by_user'][
                                                                   'type'] == 'provenance' else None
         }
-
-    # def search_filter_default(self, division_id, company_id=None):
-    #     """ :param division_id: string with id from table portal_division,
-    #                optional company_id: string with id from table company. If provided
-    #                , this function will check if ArticleCompany has relation with our class.
-    #         :return: dict with prepared filter parameters for search method """
-    #     division = utils.db.query_filter(PortalDivision, id=division_id).one()
-    #     division_type = division.portal_division_type.id
-    #     visibility = Publication.visibility.in_(Publication.articles_visibility_for_user(
-    #         portal_id=division.portal_id)[0])
-    #     filter = None
-    #     if division_type == 'index':
-    #         filter = {'class': Publication,
-    #                   'filter': and_(Publication.portal_division_id.in_(utils.db.query_filter(
-    #                       PortalDivision.id, portal_id=division.portal_id).filter(
-    #                       PortalDivision.portal_division_type_id != 'events'
-    #                   )), Publication.status == Publication.STATUSES['PUBLISHED'], visibility),
-    #                   'return_fields': 'default_dict', 'tags': True}
-    #     elif division_type == 'news':
-    #         if not company_id:
-    #             filter = {'class': Publication,
-    #                       'filter': and_(Publication.portal_division_id == division_id,
-    #                                      Publication.status ==
-    #                                      Publication.STATUSES['PUBLISHED'], visibility),
-    #                       'return_fields': 'default_dict', 'tags': True}
-    #         else:
-    #             filter = {'class': Publication,
-    #                       'filter': and_(Publication.portal_division_id == division_id,
-    #                                      Publication.status ==
-    #                                      Publication.STATUSES['PUBLISHED'],
-    #                                      utils.db.query_filter(ArticleCompany, company_id=company_id,
-    #                                                            id=Publication.article_company_id).exists(), visibility),
-    #                       'return_fields': 'default_dict', 'tags': True}
-    #     elif division_type == 'events':
-    #         if not company_id:
-    #             filter = {'class': Publication,
-    #                       'filter': and_(Publication.portal_division_id == division_id,
-    #                                      Publication.status ==
-    #                                      Publication.STATUSES['PUBLISHED'], visibility),
-    #                       'return_fields': 'default_dict', 'tags': True}
-    #         else:
-    #             filter = {'class': Publication,
-    #                       'filter': and_(Publication.portal_division_id == division_id,
-    #                                      Publication.status ==
-    #                                      Publication.STATUSES['PUBLISHED'],
-    #                                      utils.db.query_filter(ArticleCompany, company_id=company_id,
-    #                                                            id=Publication.article_company_id).exists(), visibility),
-    #                       'return_fields': 'default_dict', 'tags': True}
-    #     return filter
 
     @staticmethod
     def articles_visibility_for_user(portal_id):

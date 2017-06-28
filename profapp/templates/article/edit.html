@@ -13,7 +13,7 @@
     {% endblock company_base %}
 
     <script>
-        module.controller('article_edit', ['$scope','$ok', '$http', function ($scope, $ok, $http) {
+        module.controller('article_edit', ['$scope', '$ok', '$http', function ($scope, $ok, $http) {
 
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
 
@@ -53,9 +53,8 @@
             };
 
             $scope.getDataForValidation = function (model, deff) {
-                console.log(model, deff);
                 delete model['material']['illustration'];
-                console.log(model, deff);
+                delete model['material']['image_galleries'];
                 return deff(model);
             };
 
@@ -64,6 +63,11 @@
                     location.href = '/';
                     add_message(resp, 'warning', 2000);
                 }
+                $.each(resp['material']['image_galleries'], function (ind, gal) {
+                    $.each(gal['items'], function (ind1, item) {
+                        item['background_image'] = 'url(' + fileUrl(item['file_id']) + ')';
+                    });
+                });
                 return resp;
             };
             $scope.tinyArticleOptions = $.extend(true, $scope.tinymceDefaultOptions);
@@ -83,111 +87,26 @@
                 }).object().// convert each [key, val] pair to {key: val} element
                 value(); // get result
 
-            var func_for_gallery_render = function (ed) {
-                // make sure the instance of the TinyMCE editor has been fully loaded
-                ed.on('init', function (args) {
-
-{#                    window.tinymceRenderGalleryPreview = function (id, data) {#}
-                        {#                        alert(id);#}
-                        {#                        $(this).addClass('image-gallery-tinymce-preview');#}
-{#                        console.log(data);#}
-{#                        var iframe = $('#' + args.target.id + '_ifr').contents();#}
-{#                        $('body', iframe).prepend('<div id="image-gallery-preview" style="width: ' + data.gallery_width + 'px;">' +#}
-{#                            "<img style='width: " + data.gallery_width + "px; height: " + data.gallery_height + "px; " +#}
-{#                            "background-image: " + data.image_src + "' /><p>" + data.gallery_title + "</p></div>");#}
-{#                        html2canvas($('#image-gallery-preview', iframe)[0], {#}
-{#                            onrendered: function (canvas) {#}
-{#                                console.log(canvas.toDataURL());#}
-{#                                $('#' + id, iframe).attr('src', 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');#}
-{#                                                                $('#' + id, iframe).attr('data-mce-src', '' + canvas.toDataURL('image/gif') + '');#}
-{#                                $('#' + id, iframe).attr('width', data.gallery_width);#}
-{#                                $('#' + id, iframe).attr('height', data.gallery_height);#}
-{#                                $('#image-gallery-preview', iframe).remove();#}
-{#                            }#}
-{#                        });#}
-{##}
-{#                                                var csssheet = $.grep(iframe[0].styleSheets, function (el) {#}
-{#                                                    el.title == 'gallery_preview_css_rules'#}
-{#                                                });#}
-{#                                                csssheet = csssheet.length ? csssheet[0] : (function () {#}
-{#                                                        // Create the <style> tag#}
-{#                                                        var style = iframe[0].createElement('style');#}
-{#                                                        style.setAttribute('title', 'gallery_preview_css_rules');#}
-{##}
-{#                                                        // WebKit hack :(#}
-{#                                                        style.appendChild(document.createTextNode(''));#}
-{##}
-{#                                                        // Add the <style> element to the page#}
-{#                                                        iframe[0].head.appendChild(style);#}
-{##}
-{#                                                        return style.sheet;#}
-{#                                                    })();#}
-{##}
-{##}
-{#                                                function addCSSRule(sheet, selector, rules, index) {#}
-{##}
-{#                                                    console.log(sheet, selector, rules);#}
-{##}
-{#                                                    if ("insertRule" in sheet) {#}
-{#                                                        sheet.insertRule(selector + " {" + rules + "}", index ? index : 0);#}
-{#                                                    }#}
-{#                                                    else if ("addRule" in sheet) {#}
-{#                                                        sheet.addRule(selector, rules, index ? index : 0);#}
-{#                                                    }#}
-{#                                                }#}
-
-{##}
-{#                                                addCSSRule(csssheet, "#" + id, 'width: ' + data.gallery_width + 'px;');#}
-{#                                                addCSSRule(csssheet, "#" + id + ' image-gallery-title:before', 'content: "' + data.gallery_title + '"');#}
-{#                                                addCSSRule(csssheet, "#" + id + ' image-gallery-img', 'width: ' + data.gallery_width + 'px; height: ' + data.gallery_height + 'px; background-image: url(//static.web.profi/static/front/img/profi.png);');#}
-{#                                                addCSSRule(csssheet, "#" + id + ' image-gallery-img-title:before', 'content: "' + data.gallery_title + '"');#}
-{##}
-{##}
-                        {#                        console.log(csssheet);#}
-{##}
-                        {#                        $(".tdInner1").find(".block").filter(function () {#}
-                        {#                            return $(this).next().hasClass("continuation");#}
-                        {#                        });#}
-                        {#                        console.log(iframe[0].styleSheets);#}
-                        {#                        console.log(iframe[0].document.styleSheets);#}
-                        {#                        var gallery = $('#' + id, iframe);#}
-                        {#                        if (data) {#}
-                        {#                            gallery.data(data);#}
-                        {#                        }#}
-                        {#                        $('body', iframe).prepend('<div style="width: ' + gallery.data("gallery_width") +#}
-                        {#                            'px;" class="image-gallery" id="tinymceRenderGalleryPreviewRender"><div class="gallery-title">' + gallery.data("gallery_title") + '</div></div>');#}
-                        {#                        $('#' + id, iframe.contents()).addClass('image-gallery-tinymce-preview'); // or some other selector to get the iframe#}
-                        {#                        $('[tokenid=' + token + ']', iframe.contents()).addClass('border');#}
-{#                    };#}
-                    {#                    var ImageGalleryProto = Object.create(HTMLElement.prototype);#}
-                    {#                    ImageGalleryProto.createdCallback = function () {#}
-                    {#                        console.log('~~~~~~~~~~');#}
-
-                    {#//                        $(this).attr('contenteditable','false');#}
-                    {#//                        $(this).disableSelection();#}
-                    {#                        this.innerHTML = "<image-preview/>!<image-preview>" + $(this) + "<title><info></info>22";#}
-                    {#                    };#}
-                    {#                    $("#" + args.target.id + "_ifr")[0].contentWindow.document.registerElement('image-gallery', {prototype: ImageGalleryProto});#}
-                });
-            };
-
             tinymceExtendSettings($scope.tinyArticleOptions, {
                 'height': '500px',
                 'body_class': 'article-content',
-                'gallery_save': function(data) {
-                    return $ok('{{ url_for('article.gallery_save', company_id = company.id, material_id = material_id)|safe}}', data);
+                'gallery_get_data': function (gallery_id) {
+                    return find_by_id($scope.data['material']['image_galleries'], gallery_id);
                 },
-                'gallery_load': function(data) {
-                    return $ok('{{ url_for('article.gallery_load', material_id = material_id)|safe}}', data);
-                },'formats': formats,
+                'gallery_set_data': function (gallery_id, data) {
+                    var index = find_index_by_id($scope.data['material']['image_galleries'], gallery_id);
+                    if (index>-1) {
+                        $scope.data['material']['image_galleries'][index] = data;
+                    }
+                    else {
+                        $scope.data['material']['image_galleries'].push(data);
+                    }
+                }, 'formats': formats,
                 'pr_formats': _.size(custom_formats) ? get_array_for_menu_build(custom_formats) : [],
-                'setup': func_for_gallery_render
             });
 
             tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'plugins', ' ');
             tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'toolbar1', ' ');
-            tinymceExtendSettings($scope.tinyArticleOptions, '~image-gallery,~image-gallery-img,~image-gallery-title', 'custom_elements', ',');
-            tinymceExtendSettings($scope.tinyArticleOptions, 'image-gallery[*],image-gallery-img[*],image-gallery-title[*]', 'valid_elements', ',');
             tinymceExtendSettings($scope.tinyArticleOptions, ['{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/image_gallery.css') }}'], 'content_css');
         }]);
     </script>
@@ -251,7 +170,6 @@
                     {% endraw %}
                     <link href="{{ static_address('css/article.css') }}" rel="stylesheet">
                     <!-- TODO: OZ by OZ: select css for current theme. also look for another place with same todo-->
-                    <link href="{{ static_address('front/bird/css/article.css') }}" rel="stylesheet">
                     {% raw %}
 
                     {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
@@ -259,7 +177,8 @@
                               ng-model="data.material.short"></textarea>
 
                     {{ _('Full text') }}
-                    <textarea ui-tinymce="tinyArticleOptions" id="article_editor" ng-model="data.material.long"></textarea>
+                    <textarea ui-tinymce="tinyArticleOptions" id="article_editor"
+                              ng-model="data.material.long"></textarea>
                 </div>
 
 

@@ -1,21 +1,6 @@
 tinymce.PluginManager.add('gallery', function (editor, url) {
-    // Add a button that opens a window
-
-    // editor.on('NodeChange', function(e) {
-    //         console.log('NodeChange', e.element.nodeName );
-    // if (e.selectionChange && e.element.nodeName == 'IMAGE-GALLERY-IMG'  || e.element.nodeName == 'IMAGE-GALLERY-TITLE') {
-    //     var galleryelem = editor.dom.getParent(editor.selection.getNode(), 'IMAGE-GALLERY');
-    //     var selection = editor.selection;
-    //     select(node:Element);
-    //     selection.select(galleryelem, true);
-    //     editor.nodeChanged();
-    //     selection.collapse(true);
-    // }
-    // });
-
 
     var galleryElm = null;
-
 
     var dialog_controller = {
         win: null,
@@ -37,16 +22,21 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                                 return false;
                             }
                             dialog_controller.enable_dialog(false, 'Saving...');
-                            editor.getParam('gallery_save')(dialog_controller.get_data()).then(
-                                function (gallery_data) {
-                                    editor_controller.insertGallery(gallery_data);
-                                    dialog_controller.win.close();
-                                }, function () {
-                                    add_message('Error saving gallery', 'danger');
-                                    dialog_controller.enable_dialog(true);
-                                }, function () {
-                                    console.log(arguments);
-                                });
+                            var data = dialog_controller.win.toJSON();
+                            editor_controller.insertGallery(dialog_controller.get_data(),
+                                data['gallery_width'], data['gallery_height']);
+                            dialog_controller.enable_dialog(true);
+                            dialog_controller.win.close();
+                            // editor.getParam('gallery_save')(dialog_controller.get_data()).then(
+                            //     function (gallery_data) {
+                            //         editor_controller.insertGallery(gallery_data);
+                            //         dialog_controller.win.close();
+                            //     }, function () {
+                            //         add_message('Error saving gallery', 'danger');
+                            //         dialog_controller.enable_dialog(true);
+                            //     }, function () {
+                            //         console.log(arguments);
+                            //     });
                         }
                     }, {
                         'classes': 'image-gallery-upload',
@@ -100,36 +90,31 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images').on('click', '.pr-gallery-item-remove-undo', dialog_controller.remove_undo);
         },
 
-        show_gallery: function () {
-            var data = {
-                'gallery_width': '100%',
-                'gallery_height': '200'
-            };
-            if (galleryElm) {
-                if ($(galleryElm).attr('width')) {
-                    data['gallery_width'] = $(galleryElm).attr('width');
-                }
+        depict_gallery_and_items_controls: function () {
 
-                if ($(galleryElm).attr('height')) {
-                    data['gallery_height'] = $(galleryElm).attr('height');
-                }
-            }
-            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-width').val(data['gallery_width']);
-            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-height').val(data['gallery_height']);
+            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-width').val('100%');
+            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-height').val('200');
             if (galleryElm) {
                 dialog_controller.enable_dialog(false);
-                editor.getParam('gallery_load')({'gallery_id': editor_controller.get_id_from_element()}).then(
-                    function (server_data) {
-                        var images_container = dialog_controller.get_image_container();
-                        images_container.html('');
-                        $.each(server_data['items'], function (index, item) {
-                            dialog_controller.append_image(item['id'], item['title'], item['copyright'], item['file_id']);
-                        });
-                        dialog_controller.enable_dialog(true);
-                    }, function () {
-                        add_message('Error loading gallery');
-                        dialog_controller.enable_dialog(true);
-                    });
+
+                $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-width').val($(galleryElm).attr('width'));
+                $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-height').val($(galleryElm).attr('height'));
+                var gallery_id = editor_controller.get_id_from_element(galleryElm);
+                var gallery_data = editor.getParam('gallery_get_data')(gallery_id);
+                if (!gallery_data) {
+                    dialog_controller.enable_dialog(true);
+                    add_message('error loading gallery gallery_id=' + gallery_id);
+                    dialog_controller.win.close();
+                    return;
+                }
+
+                var images_container = dialog_controller.get_image_container();
+                images_container.html('');
+                $.each(gallery_data['items'], function (index, item) {
+                    dialog_controller.append_image(item['id'], item['title'], item['copyright'], item['background_image']);
+                });
+
+                dialog_controller.enable_dialog(true);
             }
         },
 
@@ -160,7 +145,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                     return function (e) {
                         var beginstr = uploader.result.substr(0, 50);
                         if (beginstr.match(/^data:image\/(png|gif|jpeg);base64/g)) {
-                            dialog_controller.append_image('', the_file.name, the_file.copyright, null, uploader.result, the_files.type);
+                            dialog_controller.append_image('', the_file.name, the_file.copyright, 'url(' + uploader.result + ')', the_files.type);
                             read_file_progress();
                         }
                         else {
@@ -239,37 +224,43 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
 
         },
 
-        append_image: function (item_id, file_title, file_copyright, file_id, file_content, file_mime) {
+        append_image: function (item_id, file_title, file_copyright, file_background, file_mime) {
             var container_row = this.add_html();
-            $('img', container_row).css({backgroundImage: 'url(' + (file_id ? fileUrl(file_id) : file_content) + ')'});
+            $('img', container_row).css({backgroundImage: file_background});
             $('.pr-gallery-item-id', container_row).val(item_id);
             $('.pr-gallery-item-title', container_row).val(file_title);
             $('.pr-gallery-item-copyright', container_row).val(file_copyright);
         },
 
         get_data: function () {
-            var images = [];
+            var items = [];
             $('li', '#' + dialog_controller.win._id + ' ul').each(function (index, $li) {
                 if (!$('input.pr-gallery-item-title', $li).is(':disabled')) {
-                    images.push({
+                    items.push({
                         'id': $('.pr-gallery-item-id', $li).val(),
+                        'position': items.length + 1,
                         'title': $('.pr-gallery-item-title', $li).val(),
                         'copyright': $('.pr-gallery-item-copyright', $li).val(),
-                        'binary_data': $('img', $li).css('backgroundImage'),
+                        'background_image': $('img', $li).css('backgroundImage'),
                     });
                 }
             });
-            var data = dialog_controller.win.toJSON();
-            return {'gallery_id': editor_controller.get_id_from_element(), 'parameters': data, 'images': images};
+            return {
+                'id': editor_controller.get_id_from_element(galleryElm),
+                'items': items
+            };
         }
     };
 
     var editor_controller = {
 
+        get_iframe_conent: function () {
+            return $(editor.iframeElement).contents()[0];
+        },
+
         getSheet: function () {
             // Create the <style> tag
-            var iframe_content = $(editor.iframeElement).contents()[0];
-
+            var iframe_content = editor_controller.get_iframe_conent();
 
             var csssheet = $.grep(iframe_content.styleSheets, function (el) {
                 return el.title == 'gallery_preview_css_rules'
@@ -291,47 +282,68 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             return style.sheet;
         },
 
-
-        addCSSRule: function (gallery_id, first_image_file_id, index) {
+        deleteOldCSSRule: function (gallery_id) {
             var sheet = this.getSheet();
-            var rule = "background-image: url(" + fileUrl(first_image_file_id) + ")";
-            var className = 'data-mce-image-gallery-placeholder-' + gallery_id;
-
+            var todelete = [];
             $.each(sheet.cssRules, function (ind, arule) {
                 if (arule.selectorText.match(gallery_id)) {
-                    sheet.deleteRule(ind);
+                    todelete.push(ind);
                 }
             });
+            todelete.reverse();
+            $.each(todelete, function (ind, todelind) {
+                sheet.deleteRule(todelind);
+            });
 
+        },
+
+        addCSSRule: function (gallery_id, background_image, index) {
+            editor_controller.deleteOldCSSRule(gallery_id);
+            var sheet = this.getSheet();
+            var rule = 'background-image: ' + background_image + ';'
+            var className = 'data-mce-image-gallery-placeholder-' + gallery_id;
             sheet.insertRule('.' + className + " {" + rule + "}", index ? index : 0);
-
             return className;
         },
 
-        insertGallery: function (gallery_data) {
+        updateGalleryElement: function (gallery_data) {
+            var $img = $('img[data-mce-image-gallery-placeholder=' + gallery_data['id'] + ']', editor_controller.get_iframe_conent());
+            var title = (gallery_data['items'].length == 1) ? 'only one image' : ((gallery_data['items'].length - 1) + ' more image(s)');
+            var background_class = (gallery_data['items'].length?editor_controller.addCSSRule(gallery_data['id'], gallery_data['items'][0]['background_image']):'');
+            $img.attr('title', title);
+            $img.addClass(background_class);
+        },
+
+        insertGallery: function (gallery_data, w, h) {
+
+            editor.insertContent(
+                '<img width="' + w + '" height="' + h + '" class="data-mce-image-gallery-placeholder"' +
+                ' src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"' +
+                ' data-mce-placeholder ' +
+                ' data-mce-image-gallery-placeholder="' + gallery_data['id'] + '">');
+            console.log(gallery_data['items']);
             gallery_data['items'].sort(function (a, b) {
                 return (a['position'] < b['position']) ? -1 : ((a['position'] > b['position']) ? 1 : 0);
             });
-
-            var width = $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-width').val();
-            var height = $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-height').val();
-
-            editor.insertContent(
-                '<img data-mce-placeholder width="' + width + '" height="' + height + '" ' +
-                ' title="' + ((gallery_data['items'].length == 1) ? 'only one image' : ((gallery_data['items'].length - 1) + ' more image(s)')) + '"' +
-                'src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" ' +
-                'class="data-mce-image-gallery-placeholder ' +
-                editor_controller.addCSSRule(gallery_data['id'], gallery_data['items'][0]['file_id']) +
-                '" data-mce-image-gallery-placeholder="' + gallery_data['id'] + '">');
+            editor.getParam('gallery_set_data')(gallery_data['id'], gallery_data);
+            editor_controller.updateGalleryElement(gallery_data);
         },
 
-        get_id_from_element: function () {
-            if (!galleryElm) {
-                return null;
+        get_id_from_element: function (element) {
+            if (!element) {
+                return randomHash();
             }
-            var ret = $(galleryElm).attr('data-mce-image-gallery-placeholder');
-            return ret ? ret : null;
-        }
+            return $(element).attr('data-mce-image-gallery-placeholder');
+        },
+
+        // get_first_image_id_from_element: function (element) {
+        //     if (!element) {
+        //         return null;
+        //     }
+        //     var ret = $(element).attr('data-mce-image-gallery-placeholder').replace(/^.*:/, '');
+        //     return ret ? ret : null;
+        // },
+
     };
 
     editor.on('ResolveName', function (e) {
@@ -340,42 +352,38 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
         }
     });
 
+    editor.on('init', function (e) {
+        editor_controller.getSheet();
+        setTimeout(function () {
+            $('img', $(editor_controller.get_iframe_conent())).each(function (ind, img) {
+                var $img = $(img);
+                var gallery_id = editor_controller.get_id_from_element($img);
+                var gallery_data = editor.getParam('gallery_get_data')(gallery_id);
+                if (!gallery_data) {
+                    add_message('error loading gallery id=' + gallery_id)
+                }
+                else {
+                    editor_controller.updateGalleryElement(gallery_data);
+                }
+            });
+        }, 100);
+    });
+
+
     editor.addButton('gallery', {
         text: 'Gallery',
         icon: false,
         stateSelector: 'img[data-mce-image-gallery-placeholder]',
         onclick: function () {
-            var selected_gallery = editor.selection.getNode();
-            if (!selected_gallery || selected_gallery.nodeName != 'IMG' || !selected_gallery.getAttribute('data-mce-image-gallery-placeholder')) {
-                selected_gallery = null;
+            galleryElm = editor.selection.getNode();
+            if (!galleryElm || galleryElm.nodeName != 'IMG' || !galleryElm.getAttribute('data-mce-image-gallery-placeholder')) {
+                galleryElm = null;
             }
-
-            galleryElm = selected_gallery;
 
             dialog_controller.open_window();
             dialog_controller.add_custom_html_elements();
-            dialog_controller.show_gallery();
+            dialog_controller.depict_gallery_and_items_controls();
         }
     });
-
-
-// Adds a menu item to the tools menu
-//  editor.addMenuItem('gallery', {
-//    text: 'Example plugin',
-//    context: 'tools',
-//    onclick: function() {
-//      // Open window with a specific url
-//      editor.windowManager.open({
-//        title: 'TinyMCE site',
-//        url: 'http://www.tinymce.com',
-//        width: 800,
-//        height: 600,
-//        buttons: [{
-//          text: 'Close',
-//          onclick: 'close'
-//        }]
-//      });
-//    }
-//  });
 });
 

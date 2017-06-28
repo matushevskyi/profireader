@@ -5,6 +5,7 @@ from profapp.models.portal import PortalDivision, Portal, MemberCompanyPortal
 from .blueprints_declaration import article_bp
 from .. import utils
 from ..models.company import Company, UserCompany
+from ..models.gallery import MaterialImageGallery, MaterialImageGalleryItem
 from ..models.materials import Material, Publication
 from ..models.pr_base import PRBase, Grid
 from ..models.tag import Tag
@@ -40,7 +41,7 @@ def load_form_create(json_data, company_id=None, material_id=None):
         material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user)
 
     if action == 'load':
-        return {'material': material.get_client_side_dict(more_fields='long|company|illustration')}
+        return {'material': material.get_client_side_dict(more_fields='long|company|illustration,image_galleries.items,image_galleries.id')}
     else:
         parameters = utils.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
         material.attr(parameters['material'])
@@ -207,7 +208,6 @@ def publish(json, publication_id, actor_membership_id, request_from):
 @article_bp.route('/<string:company_id>/gallery_save/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
 @article_bp.route('/<string:company_id>/gallery_save/', methods=['OK'], permissions=UserIsActive())
 def gallery_save(json, company_id, material_id=None):
-    from profapp.models.gallery import MaterialImageGallery, MaterialImageGalleryItem
     gallery = MaterialImageGallery.get(json['gallery_id']) if json.get('gallery_id') else MaterialImageGallery().save()
     gallery.material = Material.get(material_id) if material_id else None
     # gallery.width = json['parameters']['gallery_width']
@@ -238,6 +238,5 @@ def gallery_save(json, company_id, material_id=None):
 
 @article_bp.route('/gallery_load/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
 def gallery_load(json, material_id):
-    from profapp.models.gallery import MaterialImageGallery
     gallery = MaterialImageGallery.get(json['gallery_id'])
     return gallery.get_client_side_dict(more_fields='items')

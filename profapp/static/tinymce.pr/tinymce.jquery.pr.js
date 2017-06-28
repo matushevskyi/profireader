@@ -23850,7 +23850,6 @@
             };
 
             drag = function (e) {
-                console.log('drag', e);
                 updateWithTouchData(e);
 
                 if (e.button !== downButton) {
