@@ -744,7 +744,6 @@ tinymce.PluginManager.add('media', function(editor, url) {
 					innerNode.value = sanitize(unescape(innerHtml));
 					realElm.append(innerNode);
 				}
-
 				node.replace(realElm);
 			}
 		});

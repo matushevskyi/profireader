@@ -33,7 +33,7 @@ class DateIntervalDescriptor(object):
         res, am = instance.split(' ')
         return {'resolution': res, 'amount': am}
 
-    # def proxy_setter(self, file_img: FileImg, client_data):
+    # def proxy_setter(self, file_image_crop: FileImageCrop, client_data):
     def __set__(self, instance, data):
         if data['amount'] < 0:
             raise errors.BadDataProvided({'message': 'amount < 0'})

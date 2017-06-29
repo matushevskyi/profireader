@@ -9,7 +9,7 @@
         module.controller('article_list', ['$scope', '$ok', '$sce', 'uiGridConstants','uiGridGroupingConstants','$timeout', function ($scope, $ok, $sce, uiGridConstants, uiGridGroupingConstants,$timeout) {
 
             $scope.url_details = {{ raw_url_for('article.details')|safe }};
-            $scope.url_create_article = '{{ url_for('article.article_show_form')|safe }}';
+            $scope.url_create_article = '{{ url_for('article.edit_material')|safe }}';
 
             $scope.url_list = {{ raw_url_for('article.show_mine')|safe }};
             $scope.url_search_article = '{{ url_for('article.load_mine')|safe }}';

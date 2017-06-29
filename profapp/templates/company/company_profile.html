@@ -223,10 +223,10 @@
             </div>
             <div ng-if="editing">
                 <h3>{{ _('Short description:') }}</h3>
-                <textarea ui-tinymce="tinymceImageOptions" ng-model="data.short_description" ng-if="edit"></textarea>
+                <textarea ui-tinymce="tinymceDefaultOptions" ng-model="data.short_description" ng-if="edit"></textarea>
 
                 <h3>{{ _('About company:') }}</h3>
-                <textarea ng-if="editing" ui-tinymce="tinymceImageOptions" ng-model="data.about"></textarea>
+                <textarea ng-if="editing" ui-tinymce="tinymceDefaultOptions" ng-model="data.about"></textarea>
             </div>
             </form>
             <div class="row" ng-if="!editing && data.short_description">

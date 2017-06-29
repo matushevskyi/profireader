@@ -5,6 +5,7 @@ from profapp.models.portal import PortalDivision, Portal, MemberCompanyPortal
 from .blueprints_declaration import article_bp
 from .. import utils
 from ..models.company import Company, UserCompany
+from ..models.gallery import MaterialImageGallery, MaterialImageGalleryItem
 from ..models.materials import Material, Publication
 from ..models.pr_base import PRBase, Grid
 from ..models.tag import Tag
@@ -23,7 +24,7 @@ def material_can_be_edited():
                   permissions=EmployeeHasRightAtCompany(RIGHT_AT_COMPANY._ANY))
 @article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['GET'],
                   permissions=material_can_be_edited())
-def article_show_form(company_id, material_id=None):
+def edit_material(company_id, material_id=None):
     company = Company.get(company_id)
     return render_template('article/edit.html', material_id=material_id, company_id=company_id, company=company)
 
@@ -31,7 +32,7 @@ def article_show_form(company_id, material_id=None):
 @article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['OK'],
                   permissions=UserIsActive())
 @article_bp.route('/<string:company_id>/material_create/', methods=['OK'], permissions=UserIsActive())
-def load_form_create(json_data, company_id=None, material_id=None):
+def edit_material_load(json_data, company_id=None, material_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
 
     if material_id:
@@ -40,7 +41,7 @@ def load_form_create(json_data, company_id=None, material_id=None):
         material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user)
 
     if action == 'load':
-        return {'material': material.get_client_side_dict(more_fields='long|company|illustration')}
+        return {'material': material.get_client_side_dict(more_fields='long|company|illustration,image_galleries.items,image_galleries.id')}
     else:
         parameters = utils.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
         material.attr(parameters['material'])
@@ -48,10 +49,11 @@ def load_form_create(json_data, company_id=None, material_id=None):
             material.detach()
             return material.validate(material.id is not None)
         else:
-            material.save()
+            material.long = material.check_galleries(json_data['material']['image_galleries'], material.long)
             material.illustration = json_data['material']['illustration']
+            material.save()
 
-            return {'material': material.save().get_client_side_dict(more_fields='long|company|illustration')}
+            return {'material': material.get_client_side_dict(more_fields='long|company|illustration')}
 
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'], permissions=UserIsActive())
@@ -202,3 +204,40 @@ def publish(json, publication_id, actor_membership_id, request_from):
             return actor_membership.material_or_publication_grid_row(publication.material)
         elif request_from == 'portal_publications':
             return publication.portal_publication_grid_row(actor_membership)
+
+
+# @article_bp.route('/<string:company_id>/gallery_save/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
+# @article_bp.route('/<string:company_id>/gallery_save/', methods=['OK'], permissions=UserIsActive())
+# def gallery_save(json, company_id, material_id=None):
+#     gallery = MaterialImageGallery.get(json['gallery_id']) if json.get('gallery_id') else MaterialImageGallery().save()
+#     gallery.material = Material.get(material_id) if material_id else None
+#     gallery.width = json['parameters']['gallery_width']
+#     gallery.height = json['parameters']['gallery_height']
+    #
+    # for item in gallery.items:
+    #     if len(list(filter(lambda x: x['id'] == item.id, json['images']))) < 1:
+    #         item.delete()
+    #
+    # position = 0
+    # for item_data in json['images']:
+    #     position += 1
+    #     if item_data['id']:
+    #         item = MaterialImageGalleryItem.get(item_data['id'])
+    #     else:
+    #         item = MaterialImageGalleryItem(binary_data=item_data['binary_data'],
+    #                                         material_image_gallery=gallery,
+    #                                         name=item_data['title'])
+    #         gallery.items.append(item)
+    #
+    #     item.position = position
+    #     item.title = item_data['title']
+    #     item.file.copyright_author_name = item_data['copyright']
+    #
+    # gallery.save()
+    # return gallery.get_client_side_dict(more_fields='items')
+
+
+@article_bp.route('/gallery_load/', methods=['OK'], permissions=UserIsActive())
+def gallery_load(json):
+    gallery = MaterialImageGallery.get(json['gallery_id'])
+    return gallery.get_client_side_dict(more_fields='items')

@@ -36,3 +36,8 @@ body.article-content {
     width: 698px;
     background-color: white;
   }
+
+.mce-item-table {
+    min-width: 2em;
+    min-height: 2em;
+}

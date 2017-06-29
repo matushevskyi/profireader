@@ -927,3 +927,9 @@ span.pr-grid-publications-vs {
     margin: 1px;
     display: inline-block;
 }
+
+#message-controller {
+    z-index: 65537;
+    position: fixed;
+}
+
