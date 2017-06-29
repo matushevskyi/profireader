@@ -4,7 +4,7 @@
     {% include 'tags_menu.html' %}
     <div class="container">
         <div class="row">
-            <div class="col-xs-12 col-lg-10">
+            <div class="col-xs-12 col-md-9">
                 {% for member_id, membership in memberships.items() %}
                     {% include 'company_thumbnail.html' %}
                 {% else %}
@@ -16,7 +16,7 @@
                 {% endfor %}
                 {% include 'pagination.html' %}
             </div>
-        <aside class="col-xs-12 col-lg-2">
+        <aside class="col-xs-12 col-md-3">
             {% include 'right_banners.html' %}
         </aside>
         </div>
