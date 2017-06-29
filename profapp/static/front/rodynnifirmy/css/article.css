@@ -347,3 +347,11 @@
 .article-content .profireader_article_padding_placement_all.profireader_article_padding_size_thick {
     padding: 4em;
 }
+
+img.data-mce-image-gallery-placeholder {
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+
+}

@@ -1,9 +1,25 @@
 {# опис статті + теги #}
+
+<style>
+    img.data-mce-image-gallery-placeholder {
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        cursor: pointer;
+    }
+</style>
+
+<script src="{{ static_address('js/front.js') }}"></script>
+<script>
+    $(function () {
+        set_all_images_galleries('{{ url_for('article.gallery_load') }}');
+    });
+</script>
 <div class="block-item full-block-info" style="height: auto;">
 
     <div class="item-additional-info">
-            <a href="" class="item-company">{{ article['company']['name']|safe }}</a>
-            <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
+        <a href="" class="item-company">{{ article['company']['name']|safe }}</a>
+        <div class="item-publication-date">{{ article['publishing_tm']|safe }}</div>
     </div>
 
     <h2 class="item-title">{{ article['title']|safe }}</h2>
@@ -19,3 +35,4 @@
     </div>
 
 </div>
+$

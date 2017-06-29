@@ -216,7 +216,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
         }
 
     }])
-    .factory('$ok', ['$http','$q', function ($http, $q) {
+    .factory('$ok', ['$http', '$q', function ($http, $q) {
         return function (url, data, ifok, iferror, translate) {
             //console.log($scope);
             function error(result, error_code, message) {
@@ -224,7 +224,7 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     iferror(result, error_code, message)
                 }
                 else {
-                    add_message(result?result:'wrong answer from server', 'danger');
+                    add_message(result ? result : 'wrong answer from server', 'danger');
                 }
                 return $q.reject();
             }
@@ -1348,12 +1348,12 @@ var find_by_keys = function () {
     var args = Array.prototype.slice.call(arguments);
     var list = args[0];
     var ind = find_index_by_keys.apply(this, args);
-    return ind>-1?list[ind]:null;
+    return ind > -1 ? list[ind] : null;
 };
 
 var find_by_id = function (list, id) {
     var ind = find_index_by_keys(list, id, 'id');
-    return ind>-1?list[ind]:null;
+    return ind > -1 ? list[ind] : null;
 };
 
 

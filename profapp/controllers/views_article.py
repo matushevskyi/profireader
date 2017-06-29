@@ -237,7 +237,7 @@ def publish(json, publication_id, actor_membership_id, request_from):
     # return gallery.get_client_side_dict(more_fields='items')
 
 
-# @article_bp.route('/gallery_load/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
-# def gallery_load(json, material_id):
-#     gallery = MaterialImageGallery.get(json['gallery_id'])
-#     return gallery.get_client_side_dict(more_fields='items')
+@article_bp.route('/gallery_load/', methods=['OK'], permissions=UserIsActive())
+def gallery_load(json):
+    gallery = MaterialImageGallery.get(json['gallery_id'])
+    return gallery.get_client_side_dict(more_fields='items')
