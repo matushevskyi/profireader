@@ -19,6 +19,7 @@ class MaterialImageGallery(Base, PRBase):
     material = relationship('Material', uselist=False)
     items = relationship('MaterialImageGalleryItem',
                          order_by='asc(MaterialImageGalleryItem.position)',
+                         cascade="all, delete-orphan",
                          uselist=True)
 
     def get_client_side_dict(self, fields='id|material_id', more_fields=None):
@@ -27,6 +28,16 @@ class MaterialImageGallery(Base, PRBase):
 
 class MaterialImageGalleryItem(Base, PRBase):
     __tablename__ = 'material_image_gallery_item'
+
+    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
+    material_image_gallery_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(MaterialImageGallery.id))
+    title = Column(TABLE_TYPES['string_1000'])
+    position = Column(TABLE_TYPES['position'])
+
+    file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(File.id))
+
+    file = relationship(File)
+    material_image_gallery = relationship(MaterialImageGallery)
 
     def __init__(self, binary_data, name, material_image_gallery: MaterialImageGallery):
         self.material_image_gallery = material_image_gallery
@@ -57,16 +68,6 @@ class MaterialImageGalleryItem(Base, PRBase):
                          root_folder_id=material_image_gallery.material.company.system_folder_file_id)
 
         FileContent(file=self.file, content=bytes_file.getvalue())
-
-    id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
-    material_image_gallery_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(MaterialImageGallery.id))
-    title = Column(TABLE_TYPES['string_1000'])
-    position = Column(TABLE_TYPES['position'])
-
-    file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(File.id))
-
-    file = relationship(File)
-    material_image_gallery = relationship(MaterialImageGallery)
 
     def get_client_side_dict(self, fields='id,position,title,file_id,file.*', more_fields=None):
         ret = self.to_dict(fields, more_fields)

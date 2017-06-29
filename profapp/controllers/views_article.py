@@ -49,10 +49,11 @@ def edit_material_load(json_data, company_id=None, material_id=None):
             material.detach()
             return material.validate(material.id is not None)
         else:
-            material.save()
+            material.long = material.check_galleries(json_data['material']['image_galleries'], material.long)
             material.illustration = json_data['material']['illustration']
+            material.save()
 
-            return {'material': material.save().get_client_side_dict(more_fields='long|company|illustration')}
+            return {'material': material.get_client_side_dict(more_fields='long|company|illustration')}
 
 
 @article_bp.route('/material_details/<string:material_id>/', methods=['GET'], permissions=UserIsActive())
@@ -205,38 +206,38 @@ def publish(json, publication_id, actor_membership_id, request_from):
             return publication.portal_publication_grid_row(actor_membership)
 
 
-@article_bp.route('/<string:company_id>/gallery_save/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
-@article_bp.route('/<string:company_id>/gallery_save/', methods=['OK'], permissions=UserIsActive())
-def gallery_save(json, company_id, material_id=None):
-    gallery = MaterialImageGallery.get(json['gallery_id']) if json.get('gallery_id') else MaterialImageGallery().save()
-    gallery.material = Material.get(material_id) if material_id else None
-    # gallery.width = json['parameters']['gallery_width']
-    # gallery.height = json['parameters']['gallery_height']
+# @article_bp.route('/<string:company_id>/gallery_save/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
+# @article_bp.route('/<string:company_id>/gallery_save/', methods=['OK'], permissions=UserIsActive())
+# def gallery_save(json, company_id, material_id=None):
+#     gallery = MaterialImageGallery.get(json['gallery_id']) if json.get('gallery_id') else MaterialImageGallery().save()
+#     gallery.material = Material.get(material_id) if material_id else None
+#     gallery.width = json['parameters']['gallery_width']
+#     gallery.height = json['parameters']['gallery_height']
+    #
+    # for item in gallery.items:
+    #     if len(list(filter(lambda x: x['id'] == item.id, json['images']))) < 1:
+    #         item.delete()
+    #
+    # position = 0
+    # for item_data in json['images']:
+    #     position += 1
+    #     if item_data['id']:
+    #         item = MaterialImageGalleryItem.get(item_data['id'])
+    #     else:
+    #         item = MaterialImageGalleryItem(binary_data=item_data['binary_data'],
+    #                                         material_image_gallery=gallery,
+    #                                         name=item_data['title'])
+    #         gallery.items.append(item)
+    #
+    #     item.position = position
+    #     item.title = item_data['title']
+    #     item.file.copyright_author_name = item_data['copyright']
+    #
+    # gallery.save()
+    # return gallery.get_client_side_dict(more_fields='items')
 
-    for item in gallery.items:
-        if len(list(filter(lambda x: x['id'] == item.id, json['images']))) < 1:
-            item.delete()
 
-    position = 0
-    for item_data in json['images']:
-        position += 1
-        if item_data['id']:
-            item = MaterialImageGalleryItem.get(item_data['id'])
-        else:
-            item = MaterialImageGalleryItem(binary_data=item_data['binary_data'],
-                                            material_image_gallery=gallery,
-                                            name=item_data['title'])
-            gallery.items.append(item)
-
-        item.position = position
-        item.title = item_data['title']
-        item.file.copyright_author_name = item_data['copyright']
-
-    gallery.save()
-    return gallery.get_client_side_dict(more_fields='items')
-
-
-@article_bp.route('/gallery_load/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
-def gallery_load(json, material_id):
-    gallery = MaterialImageGallery.get(json['gallery_id'])
-    return gallery.get_client_side_dict(more_fields='items')
+# @article_bp.route('/gallery_load/<string:material_id>/', methods=['OK'], permissions=UserIsActive())
+# def gallery_load(json, material_id):
+#     gallery = MaterialImageGallery.get(json['gallery_id'])
+#     return gallery.get_client_side_dict(more_fields='items')

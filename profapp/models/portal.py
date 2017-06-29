@@ -654,7 +654,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembershipChang
     requested_membership_plan_issued_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_issued.id'),
                                                  nullable=True)
     requested_membership_plan_issued = relationship('MembershipPlanIssued',
-                                                    cascade="all, merge",
+                                                    cascade="all",
                                                     single_parent=True,
                                                     foreign_keys=[requested_membership_plan_issued_id])
 
