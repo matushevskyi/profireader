@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source .venv/bin/activate
+
 while [[ true ]]; do
     sleep 1
     echo "starting $1"

@@ -2,7 +2,7 @@ import sys
 
 sys.path.append('..')
 
-from profapp.models.materials import Material, FileImg
+from profapp.models.materials import Material, FileImageCrop
 from profapp.models.company import Company
 from profapp.models.portal import Portal
 

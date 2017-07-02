@@ -8,7 +8,7 @@
     {% set wide_banners = {2:'1',6:'2'} %}
     <div class="container">
         <div class="row">
-            <div class="col-xs-12 col-lg-10">
+            <div class="col-xs-12 col-md-9">
                 <div class="clearfix">
                     <main role="main">
                         {% for article_id, article in articles.items() %}
@@ -33,7 +33,7 @@
                 {% include 'pagination.html' %}
                 </div>
             </div>
-            <aside class="col-xs-12 col-lg-2">
+            <aside class="col-xs-12 col-md-3">
                 {% include 'right_banners.html' %}
             </aside>
         </div>

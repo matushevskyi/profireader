@@ -1,6 +1,6 @@
 from datetime import datetime
 
-import simplejson
+import simplejson, re
 from flask import g, session, url_for
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import relationship
@@ -8,7 +8,7 @@ from sqlalchemy.sql import and_, expression
 
 from config import Config
 from .elastic import PRElasticField, PRElasticDocument
-from .files import FileImg, FileImgDescriptor
+from .files import FileImageCrop, FileImgDescriptor
 from .pr_base import PRBase, Base, Grid
 from .. import utils
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
@@ -28,8 +28,8 @@ class Material(Base, PRBase, PRElasticDocument):
     # TODO: OZ by OZ: remove me
     _del_image_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=True)
 
-    illustration_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
-    illustration_file_img = relationship(FileImg, uselist=False)
+    illustration_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id), nullable=True)
+    illustration_file_img = relationship(FileImageCrop, uselist=False)
 
     illustration = FileImgDescriptor(relation_name='illustration_file_img',
                                      file_decorator=lambda m, r, f: f.attr(
@@ -65,6 +65,8 @@ class Material(Base, PRBase, PRElasticDocument):
 
     publications = relationship('Publication', primaryjoin="Material.id==Publication.material_id",
                                 cascade="save-update, merge, delete")
+
+    image_galleries = relationship('MaterialImageGallery', cascade="all, delete-orphan")
 
     # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
     #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
@@ -124,6 +126,56 @@ class Material(Base, PRBase, PRElasticDocument):
     def elastic_delete(self):
         for p in self.publications:
             p.elastic_delete()
+
+    def check_galleries(self, galleries_cli: list, html:str):
+        from ..models.gallery import MaterialImageGallery, MaterialImageGalleryItem
+
+        def placeholder(id=None):
+            return r'(<img[^>]*data-mce-image-gallery-placeholder=")({})("[^>]*>)'.format(id if id else '[^"]*')
+
+        # galleries that was removed from html will be removed from db
+        galleries_cli = list(filter(
+            lambda x: re.search(placeholder(x['id']), html),
+            galleries_cli))
+
+
+        # remove from db galleries and items removed at client side
+        for gallery in self.image_galleries:
+            g_cli = next(filter(lambda x: x['id'] == gallery.id, galleries_cli), None)
+            if not g_cli:
+                gallery.delete()
+            else:
+                for item in gallery.items:
+                    if not next(filter(lambda x: x['id'] == item.id, g_cli['items']), None):
+                        item.delete()
+
+        for g_cli in galleries_cli:
+            gallery = next(filter(lambda x: x.id == g_cli['id'], self.image_galleries), None)
+
+            # create gallery that is new
+            if not gallery:
+                gallery = MaterialImageGallery()
+                self.image_galleries.append(gallery)
+                gallery.save()
+                html = re.sub(placeholder(g_cli['id']), r'\g<1>{}\g<3>'.format(gallery.id), html)
+
+            position = 0
+            for item_cli in g_cli['items']:
+                position += 1
+                item = next(filter(lambda x: x.id == item_cli['id'], gallery.items), None)
+
+                # create item that is new
+                if not item:
+                    item = MaterialImageGalleryItem(binary_data=re.sub(r'[\'"]?\)$', '', re.sub(r'^url\([\'"]?', '', item_cli['background_image'])),
+                                                    material_image_gallery=gallery,
+                                                    name=item_cli['title'])
+                    gallery.items.append(item)
+
+                item.position = position
+                item.title = item_cli['title']
+                item.file.copyright_author_name = item_cli['copyright']
+
+        return html
 
 
 class ReaderPublication(Base, PRBase):
@@ -251,55 +303,6 @@ class Publication(Base, PRBase, PRElasticDocument):
             'image_url': self.material.illustration['url'] if self.material.illustration['selected_by_user'][
                                                                   'type'] == 'provenance' else None
         }
-
-    # def search_filter_default(self, division_id, company_id=None):
-    #     """ :param division_id: string with id from table portal_division,
-    #                optional company_id: string with id from table company. If provided
-    #                , this function will check if ArticleCompany has relation with our class.
-    #         :return: dict with prepared filter parameters for search method """
-    #     division = utils.db.query_filter(PortalDivision, id=division_id).one()
-    #     division_type = division.portal_division_type.id
-    #     visibility = Publication.visibility.in_(Publication.articles_visibility_for_user(
-    #         portal_id=division.portal_id)[0])
-    #     filter = None
-    #     if division_type == 'index':
-    #         filter = {'class': Publication,
-    #                   'filter': and_(Publication.portal_division_id.in_(utils.db.query_filter(
-    #                       PortalDivision.id, portal_id=division.portal_id).filter(
-    #                       PortalDivision.portal_division_type_id != 'events'
-    #                   )), Publication.status == Publication.STATUSES['PUBLISHED'], visibility),
-    #                   'return_fields': 'default_dict', 'tags': True}
-    #     elif division_type == 'news':
-    #         if not company_id:
-    #             filter = {'class': Publication,
-    #                       'filter': and_(Publication.portal_division_id == division_id,
-    #                                      Publication.status ==
-    #                                      Publication.STATUSES['PUBLISHED'], visibility),
-    #                       'return_fields': 'default_dict', 'tags': True}
-    #         else:
-    #             filter = {'class': Publication,
-    #                       'filter': and_(Publication.portal_division_id == division_id,
-    #                                      Publication.status ==
-    #                                      Publication.STATUSES['PUBLISHED'],
-    #                                      utils.db.query_filter(ArticleCompany, company_id=company_id,
-    #                                                            id=Publication.article_company_id).exists(), visibility),
-    #                       'return_fields': 'default_dict', 'tags': True}
-    #     elif division_type == 'events':
-    #         if not company_id:
-    #             filter = {'class': Publication,
-    #                       'filter': and_(Publication.portal_division_id == division_id,
-    #                                      Publication.status ==
-    #                                      Publication.STATUSES['PUBLISHED'], visibility),
-    #                       'return_fields': 'default_dict', 'tags': True}
-    #         else:
-    #             filter = {'class': Publication,
-    #                       'filter': and_(Publication.portal_division_id == division_id,
-    #                                      Publication.status ==
-    #                                      Publication.STATUSES['PUBLISHED'],
-    #                                      utils.db.query_filter(ArticleCompany, company_id=company_id,
-    #                                                            id=Publication.article_company_id).exists(), visibility),
-    #                       'return_fields': 'default_dict', 'tags': True}
-    #     return filter
 
     @staticmethod
     def articles_visibility_for_user(portal_id):

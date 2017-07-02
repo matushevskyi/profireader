@@ -4,7 +4,7 @@ from flask import url_for
 from sqlalchemy import Column, ForeignKey, and_, or_, desc, text
 from sqlalchemy.orm import relationship
 from .elastic import PRElasticDocument
-from .files import FileImg, FileImgDescriptor
+from .files import FileImageCrop, FileImgDescriptor
 from .files import YoutubePlaylist
 from .pr_base import PRBase, Base, Grid
 from .users import User
@@ -26,8 +26,8 @@ class Company(Base, PRBase, PRElasticDocument):
 
     # _delme_logo_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('file.id'), nullable=True)
 
-    logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
-    logo_file_img = relationship(FileImg, uselist=False)
+    logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id), nullable=True)
+    logo_file_img = relationship(FileImageCrop, uselist=False)
     logo = FileImgDescriptor(relation_name='logo_file_img',
                              file_decorator=lambda c, r, f: f.attr(
                                  name='%s_for_company_logo_%s' % (f.name, c.id),

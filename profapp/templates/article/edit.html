@@ -13,7 +13,7 @@
     {% endblock company_base %}
 
     <script>
-        module.controller('article_edit', ['$scope', function ($scope) {
+        module.controller('article_edit', ['$scope', '$ok', '$http', function ($scope, $ok, $http) {
 
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
 
@@ -24,7 +24,7 @@
 
             $scope.amidSave = function (resp) {
                 if (!$scope.data.material.id && resp.material.id) {
-                    window.location.href = {{ raw_url_for('article.article_show_form')|safe }}({
+                    window.location.href = {{ raw_url_for('article.edit_material')|safe }}({
                         company_id: resp.material.company_id,
                         material_id: resp.material.id
                     })
@@ -32,13 +32,15 @@
                 else {
                     $scope.data['material']['illustration'] = resp['material']['illustration'];
                     add_message($scope._('material was saved'), 'success', 3000);
-                    window.location.href = {{ raw_url_for('article.material_details')|safe}}({company_id: resp.material.company_id,
-                        material_id: resp.material.id})
+                    window.location.href = {{ raw_url_for('article.material_details')|safe}}({
+                        company_id: resp.material.company_id,
+                        material_id: resp.material.id
+                    })
                 }
             };
 
             $scope.goToArticle = function (material) {
-                url = {{ raw_url_for('article.material_details')|safe }}({
+                var url = {{ raw_url_for('article.material_details')|safe }}({
                     company_id: material.company_id,
                     material_id: material.id
                 });
@@ -51,49 +53,68 @@
             };
 
             $scope.getDataForValidation = function (model, deff) {
-                console.log(model, deff);
-                delete model['material']['illustration'];
-                console.log(model, deff);
-                return deff(model);
+                var ret = $.extend(true, {}, model);
+                delete ret['material']['image_galleries'];
+                delete ret['material']['illustration'];
+                delete ret['material']['long'];
+                return deff(ret);
             };
 
             $scope.amidLoad = function (resp) {
                 if (typeof resp === 'string') {
                     location.href = '/';
                     add_message(resp, 'warning', 2000);
-                    console.log(resp)
                 }
+                $.each(resp['material']['image_galleries'], function (ind, gal) {
+                    $.each(gal['items'], function (ind1, item) {
+                        item['background_image'] = 'url(' + fileUrl(item['file_id']) + ')';
+                    });
+                });
                 return resp;
             };
-
-            var tinyArticleOptions = {'height': '500px', 'body_class': 'article-content'}
-
+            $scope.tinyArticleOptions = $.extend(true, $scope.tinymceDefaultOptions);
 
             {% if publication_id %}
                 var custom_formats = {{ tinymce_format_groups('birdy')|tojson }};
-                tinyArticleOptions['toolbar2'] = 'foreground | background | font | border | margin | padding';
+                tinymceExtendSettings($scope.tinyArticleOptions, 'foreground | background | font | border | margin | padding', 'toolbar2', ' | ');
             {% else %}
                 var custom_formats = {};
             {% endif %}
 
-            tinyArticleOptions['formats'] =
-                    _.chain($.extend({}, {{ tinymce_format_groups()|tojson }}, custom_formats)).// here we have dict in form {group_label: {format: format_properties}}
-                    reduce(_.extend, {}).// flatten groups
-                    map(function (format_properties, format_name) { // convert each format to tinymce in flat dictionary
-                        return [format_name, convert_python_format_to_tinymce_format(format_properties)]; // form list of [key, val] pairs
-                    }).object().// convert each [key, val] pair to {key: val} element
-                    value(); // get result
+            var formats =
+                _.chain($.extend({}, {{ tinymce_format_groups()|tojson }}, custom_formats)).// here we have dict in form {group_label: {format: format_properties}}
+                reduce(_.extend, {}).// flatten groups
+                map(function (format_properties, format_name) { // convert each format to tinymce in flat dictionary
+                    return [format_name, convert_python_format_to_tinymce_format(format_properties)]; // form list of [key, val] pairs
+                }).object().// convert each [key, val] pair to {key: val} element
+                value(); // get result
 
-            tinyArticleOptions['pr_formats'] = _.size(custom_formats) ? get_array_for_menu_build(custom_formats) : [];
+            tinymceExtendSettings($scope.tinyArticleOptions, {
+                'height': '500px',
+                'body_class': 'article-content',
+                'gallery_get_data': function (gallery_id) {
+                    return find_by_id($scope.data['material']['image_galleries'], gallery_id);
+                },
+                'gallery_set_data': function (gallery_id, data) {
+                    var index = find_index_by_id($scope.data['material']['image_galleries'], gallery_id);
+                    if (index>-1) {
+                        $scope.data['material']['image_galleries'][index] = data;
+                    }
+                    else {
+                        $scope.data['material']['image_galleries'].push(data);
+                    }
+                }, 'formats': formats,
+                'pr_formats': _.size(custom_formats) ? get_array_for_menu_build(custom_formats) : [],
+            });
 
-            $scope.tinymceImageOptions = $.extend(true, $scope.tinymceImageOptions, tinyArticleOptions);
-
+            tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'plugins', ' ');
+{#            tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'toolbar1', ' ');#}
+            tinymceExtendSettings($scope.tinyArticleOptions, ['{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/image_gallery.css') }}'], 'content_css');
+            $scope.tinyArticleOptions['toolbar1'] = "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link gallery table";
         }]);
-
     </script>
 
     {% raw %}
-
     <div ng-init="init()" ng-controller="article_edit" ng-cloak class="create-material">
         <div class="row link-page create-new-material"><h5>{{ _(title) }}</h5></div>
         <form name="newMaterial">
@@ -101,7 +122,8 @@
 
             <div af af-amid-load="amidLoad" af-amid-save="amidSave"
                  af-before-save="getData"
-                 af-before-validate-todo="getDataForValidation" af-watch="data.material" ng-model="data">
+                 af-before-validate="getDataForValidation"
+                 af-watch="[data.material.short, data.material.title, data.material.subtitle, data.material.keywords, data.material.keywords]" ng-model="data">
 
                 <div style="padding-bottom: 50px">
                     <div>
@@ -123,8 +145,9 @@
                     </div>
 
                     {{ _('Article subtitle') }}
-                    <pr_help_tooltip>article_subtitle</pr_help_tooltip> <span
-                        af-validation-answer="data_validation:subtitle"></span>
+                    <pr_help_tooltip>article_subtitle</pr_help_tooltip>
+                    <span
+                            af-validation-answer="data_validation:subtitle"></span>
                     <input class="form-control article-edit-input" type="text" ng-model="data.material.subtitle">
 
                     {{ _('Keywords') }}
@@ -151,7 +174,6 @@
                     {% endraw %}
                     <link href="{{ static_address('css/article.css') }}" rel="stylesheet">
                     <!-- TODO: OZ by OZ: select css for current theme. also look for another place with same todo-->
-                    <link href="{{ static_address('front/bird/css/article.css') }}" rel="stylesheet">
                     {% raw %}
 
                     {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
@@ -159,8 +181,8 @@
                               ng-model="data.material.short"></textarea>
 
                     {{ _('Full text') }}
-            <textarea ui-tinymce="tinymceImageOptions"
-                      ng-model="data.material.long"></textarea>
+                    <textarea ui-tinymce="tinyArticleOptions" id="article_editor"
+                              ng-model="data.material.long"></textarea>
                 </div>
 
 
