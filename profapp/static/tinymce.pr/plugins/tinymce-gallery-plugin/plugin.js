@@ -27,16 +27,6 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                                 data['gallery_width'], data['gallery_height']);
                             dialog_controller.enable_dialog(true);
                             dialog_controller.win.close();
-                            // editor.getParam('gallery_save')(dialog_controller.get_data()).then(
-                            //     function (gallery_data) {
-                            //         editor_controller.insertGallery(gallery_data);
-                            //         dialog_controller.win.close();
-                            //     }, function () {
-                            //         add_message('Error saving gallery', 'danger');
-                            //         dialog_controller.enable_dialog(true);
-                            //     }, function () {
-                            //         console.log(arguments);
-                            //     });
                         }
                     }, {
                         'classes': 'image-gallery-upload',
@@ -71,6 +61,11 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                                 name: 'gallery_height', type: 'textbox', size: 3, ariaLabel: 'Height',
                                 'classes': 'pr-image-gallery-height'
                             },
+                            {
+                                name: 'calculate_size', type: 'button', size: 5,
+                                'classes': 'pr-image-gallery-calculate-size',
+                                text: 'Recalculate'
+                            }
                         ]
                     }, {
                         type: 'container',
@@ -88,6 +83,8 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images div').append('<input type="file" multiple />');
             $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images div input[type=file]').bind('change', dialog_controller.upload_images);
             $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images').on('click', '.pr-gallery-item-remove-undo', dialog_controller.remove_undo);
+            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-calculate-size button').prop('disabled', true);
+            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-calculate-size').on('click', 'button', dialog_controller.recalculate_size);
         },
 
         depict_gallery_and_items_controls: function () {
@@ -113,7 +110,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 $.each(gallery_data['items'], function (index, item) {
                     dialog_controller.append_image(item['id'], item['title'], item['copyright'], item['background_image']);
                 });
-
+                dialog_controller.disable_enable_save_gallery();
                 dialog_controller.enable_dialog(true);
             }
         },
@@ -126,12 +123,16 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             var the_files = (event.target.files && event.target.files.length) ? event.target.files : [];
             var uploaders = [];
             var filesreaded = 0;
+            var old_image_count = dialog_controller.get_data()['items'].length;
 
 
             var read_file_progress = function () {
                 filesreaded++;
                 if (filesreaded == uploaders.length) {
                     dialog_controller.enable_dialog(true);
+                    if (!old_image_count) {
+                        dialog_controller.recalculate_size();
+                    }
                 }
                 else {
                     dialog_controller.enable_dialog(false, 'Reading file ' + filesreaded + ' of ' + uploaders.length + '...');
@@ -183,6 +184,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 is_disabled = is_disabled && $('input.pr-gallery-item-title', $li).is(':disabled');
             });
             $('.mce-image-gallery-save button', $('#' + dialog_controller.win._id)).prop('disabled', is_disabled);
+            $('.mce-pr-image-gallery-calculate-size button', $('#' + dialog_controller.win._id)).prop('disabled', is_disabled);
             return is_disabled;
         },
 
@@ -249,7 +251,35 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 'id': editor_controller.get_id_from_element(galleryElm),
                 'items': items
             };
-        }
+        },
+
+        recalculate_size: function () {
+            if (dialog_controller.can_be_saved()) {
+                var scale = 1;
+                var area = 1;
+                var items = dialog_controller.get_data()['items'];
+                var cnt = items.length;
+                var loaded = 0;
+                dialog_controller.enable_dialog(false, 'Calculate...');
+                $.each(items, function (ind, item) {
+                    // Create dummy image to get real width and height
+                    $("<img>").attr("src",
+                        item['background_image'].replace(/^url\(['"]?/g, '').replace(/['"]?\)$/g, '')
+                    ).load(function () {
+                        area = area * Math.pow(this.width * this.height, 1./cnt);
+                        scale = scale * Math.pow(this.width/this.height, 1./cnt);
+                        loaded++;
+                        if (loaded == cnt) {
+                            $('.mce-pr-image-gallery-width', '#' + dialog_controller.win._id).val(
+                                Math.round(Math.pow(area*scale, 0.5)));
+                            $('.mce-pr-image-gallery-height', '#' + dialog_controller.win._id).val(
+                                Math.round(Math.pow(area/scale, 0.5)));
+                            dialog_controller.enable_dialog(true, '');
+                        }
+                    });
+                });
+            }
+        },
     };
 
     var editor_controller = {
@@ -309,7 +339,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
         updateGalleryElement: function (gallery_data) {
             var $img = $('img[data-mce-image-gallery-placeholder=' + gallery_data['id'] + ']', editor_controller.get_iframe_conent());
             var title = (gallery_data['items'].length == 1) ? 'only one image' : ((gallery_data['items'].length - 1) + ' more image(s)');
-            var background_class = (gallery_data['items'].length?editor_controller.addCSSRule(gallery_data['id'], gallery_data['items'][0]['background_image']):'');
+            var background_class = (gallery_data['items'].length ? editor_controller.addCSSRule(gallery_data['id'], gallery_data['items'][0]['background_image']) : '');
             $img.attr('title', title);
             $img.addClass(background_class);
         },
@@ -355,12 +385,12 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
     editor.on('init', function (e) {
         editor_controller.getSheet();
         setTimeout(function () {
-            $('img', $(editor_controller.get_iframe_conent())).each(function (ind, img) {
+            $('img[data-mce-image-gallery-placeholder]', $(editor_controller.get_iframe_conent())).each(function (ind, img) {
                 var $img = $(img);
                 var gallery_id = editor_controller.get_id_from_element($img);
                 var gallery_data = editor.getParam('gallery_get_data')(gallery_id);
                 if (!gallery_data) {
-                    add_message('error loading gallery id=' + gallery_id)
+                    add_message('error loading gallery gallery_id=' + gallery_id)
                 }
                 else {
                     editor_controller.updateGalleryElement(gallery_data);
@@ -372,7 +402,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
 
     editor.addButton('gallery', {
         text: 'Gallery',
-        icon: false,
+        icon: 'image',
         stateSelector: 'img[data-mce-image-gallery-placeholder]',
         onclick: function () {
             galleryElm = editor.selection.getNode();

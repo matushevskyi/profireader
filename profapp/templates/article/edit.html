@@ -108,8 +108,9 @@
             });
 
             tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'plugins', ' ');
-            tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'toolbar1', ' ');
+{#            tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'toolbar1', ' ');#}
             tinymceExtendSettings($scope.tinyArticleOptions, ['{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/image_gallery.css') }}'], 'content_css');
+            $scope.tinyArticleOptions['toolbar1'] = "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link gallery table";
         }]);
     </script>
 
