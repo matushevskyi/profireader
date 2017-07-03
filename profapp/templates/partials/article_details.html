@@ -1,20 +1,10 @@
 {# опис статті + теги #}
 
-<style>
-    img.data-mce-image-gallery-placeholder {
-        background-size: contain;
-        background-position: center;
-        background-repeat: no-repeat;
-        cursor: pointer;
-    }
-</style>
-
 <script src="{{ static_address('js/front.js') }}"></script>
-<script>
-    $(function () {
-        set_all_images_galleries('{{ url_for('article.gallery_load') }}');
-    });
-</script>
+
+<link href="{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/image_gallery.css') }}" rel="stylesheet">
+<script src="{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/image_gallery.js') }}" data-gallery-load-url="{{ url_for('article.gallery_load') }}"></script>
+
 <div class="block-item full-block-info" style="height: auto;">
 
     <div class="item-additional-info">
@@ -35,4 +25,3 @@
     </div>
 
 </div>
-$

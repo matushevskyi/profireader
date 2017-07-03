@@ -409,7 +409,6 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             if (!galleryElm || galleryElm.nodeName != 'IMG' || !galleryElm.getAttribute('data-mce-image-gallery-placeholder')) {
                 galleryElm = null;
             }
-
             dialog_controller.open_window();
             dialog_controller.add_custom_html_elements();
             dialog_controller.depict_gallery_and_items_controls();

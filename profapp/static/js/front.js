@@ -66,32 +66,3 @@ function $ok(url, data, success, fail, progress) {
             } : null
     });
 }
-
-set_all_images_galleries = function (url, callback, $container) {
-    var set_item = function ($img, item) {
-        $img.css({backgroundImage: 'url(' + fileUrl(item['file_id']) + ')'});
-        $img.attr('title', item['title'] + "\n" + item['copyright']);
-    };
-    var $cont = $($container ? $container : 'body');
-    var callback = callback ? callback : function ($img, gallery_data) {
-            $img.data('image_gallery_selected_index', 0);
-            $img.data('image_gallery_data', gallery_data);
-
-            set_item($img, gallery_data['items'][0]);
-
-            $img.on('click', function (e) {
-                var data = $img.data('image_gallery_data');
-                var index = $img.data('image_gallery_selected_index');
-                index = index + 1;
-                index = (index >= data.items.length ? 0 : index);
-                $img.data('image_gallery_selected_index', index);
-                set_item($img, gallery_data['items'][index]);
-            });
-        };
-
-    $('img.data-mce-image-gallery-placeholder', $cont).each(function (ind, img) {
-        $ok(url, {'gallery_id': $(img).attr('data-mce-image-gallery-placeholder')}, function (resp) {
-            callback($(img), resp);
-        });
-    });
-};
