@@ -88,6 +88,8 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                         cell_raw_value = 'grid.options.columnDefs[' + i + '][\'render\'](row.entity, COL_FIELD)';
                     }
 
+                    var cell_non_empty_value = cell_raw_value + '?' + cell_raw_value + ':\'-- empty --\'';
+
                     var attributes_for_cell = +col.name + '" pr-id="{{ row.entity.id }}" ';
                     var cell_title = 'title = "{{ ' + cell_raw_value + '|strip_html }}"';
                     if (col['uib-tooltip-html']) {
@@ -126,7 +128,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                     }
                     switch (col.type) {
                         case 'link':
-                            return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" class="' + classes_for_row + '" ' + cell_title + '">' + prefix_img + '<a ng-style="grid.appScope.' + col.cellStyle + '"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}">' + cell_value + '<i ng-if="' + col.link + '" class="fa fa-external-link ml05em" style="font-size: 12px"></i></a></div>';
+                            return '<div  ' + attributes_for_cell + ' ng-style="grid.appScope.' + col.cellStyle + '" class="' + classes_for_row + '" ' + cell_title + '">' + prefix_img + '<a ng-style="grid.appScope.' + col.cellStyle + '"' + attributes_for_cell + ' ' + (col.target ? (' target="' + col.target + '" ') : '') + ' href="{{' + 'grid.appScope.' + col.href + '}}">{{ ' + cell_non_empty_value + ' }}<i ng-if="' + col.link + '" class="fa fa-external-link ml05em" style="font-size: 12px"></i></a></div>';
                         case 'img':
                             return '<div  ' + attributes_for_cell + '  class="' + classes_for_row + '">' + prefix_img + '<img ng-src="' + cell_value + '" style="background-position: center; height: 30px;text-align: center; background-repeat: no-repeat;background-size: contain;"></div>';
                         case 'tags':
