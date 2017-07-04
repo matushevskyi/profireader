@@ -62,3 +62,18 @@ $(document).ready(function() {
 		}
 	});
 });
+
+
+function fileUrl(id, down, if_no_file) {
+
+    if (!id) return (if_no_file ? if_no_file : '');
+
+    if (!id.match(/^[^-]*-[^-]*-4([^-]*)-.*$/, "$1")) return (if_no_file ? if_no_file : '');
+
+    var server = id.replace(/^[^-]*-[^-]*-4([^-]*)-.*$/, "$1");
+    if (down) {
+        return '//file' + server + '.' + MAIN_DOMAIN + '/' + id + '?d'
+    } else {
+        return '//file' + server + '.' + MAIN_DOMAIN + '/' + id + '/'
+    }
+}

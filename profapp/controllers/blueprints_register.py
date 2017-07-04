@@ -37,6 +37,7 @@ def register_front(app):
     app.register_blueprint(front_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(company_bp)
+    app.register_blueprint(article_bp)
     # app.register_blueprint(reader_bp, url_prefix='/')
 
 def register_static(app):

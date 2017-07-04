@@ -10,6 +10,7 @@
         <img src="{{ static_address('images/profireader-logo.svg') }}">
     </a>
 </div>
+{{ config_variables()|safe }}
 <script>
     _USER = {% if g.user %}{{ g.user.get_client_side_dict()|tojson }}{% else %}{}{% endif %};
 </script>

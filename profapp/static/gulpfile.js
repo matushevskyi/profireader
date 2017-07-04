@@ -183,7 +183,7 @@ gulp.task('install_bootstrap', function () {
 gulp.task('less', function () {
     var layouts = ['clover', 'simple'];
 
-    var dirs = ['./css/*.less',];
+    var dirs = ['./css/*.less','./tinymce.pr/plugins/tinymce-gallery-plugin/*.less',];
     for (var i = 0; i < layouts.length; i++) {
         dirs.push('./front/' + layouts[i] + '/css/*.less');
     }

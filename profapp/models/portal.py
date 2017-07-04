@@ -11,7 +11,7 @@ from sqlalchemy.sql import and_, or_, expression
 
 from config import Config
 from .elastic import PRElasticField, PRElasticDocument
-from .files import FileImg, FileImgDescriptor
+from .files import FileImageCrop, FileImgDescriptor
 from .pr_base import PRBase, Base
 from .. import utils
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
@@ -49,8 +49,8 @@ class Portal(Base, PRBase):
     company_owner_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), unique=True)
     portal_layout_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_layout.id'))
 
-    logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
-    logo_file_img = relationship(FileImg, uselist=False, foreign_keys=[logo_file_img_id])
+    logo_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id), nullable=True)
+    logo_file_img = relationship(FileImageCrop, uselist=False, foreign_keys=[logo_file_img_id])
     logo = FileImgDescriptor(relation_name='logo_file_img',
                              file_decorator=lambda p, r, f: f.attr(
                                  name='%s_for_portal_logo_%s' % (f.name, p.id),
@@ -64,8 +64,8 @@ class Portal(Base, PRBase):
     # favicon_from = Column(TABLE_TYPES['string_10'], default='')
     # favicon_file_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(File.id), nullable=True)
 
-    favicon_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
-    favicon_file_img = relationship(FileImg, uselist=False, foreign_keys=[favicon_file_img_id])
+    favicon_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id), nullable=True)
+    favicon_file_img = relationship(FileImageCrop, uselist=False, foreign_keys=[favicon_file_img_id])
     favicon = FileImgDescriptor(relation_name='favicon_file_img',
                                 file_decorator=lambda p, r, f: f.attr(
                                     name='%s_for_portal_favico_%s' % (f.name, p.id),
@@ -654,7 +654,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembershipChang
     requested_membership_plan_issued_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('membership_plan_issued.id'),
                                                  nullable=True)
     requested_membership_plan_issued = relationship('MembershipPlanIssued',
-                                                    cascade="all, merge",
+                                                    cascade="all",
                                                     single_parent=True,
                                                     foreign_keys=[requested_membership_plan_issued_id])
 
@@ -1190,7 +1190,7 @@ class PortalDivisionSettingsDescriptor(object):
             'company_id': instance.portal_division_settings_company_subportal.member_company_portal.company_id
         } if instance.portal_division_type.id == PortalDivision.TYPES['company_subportal'] else {}
 
-    # def proxy_setter(self, file_img: FileImg, client_data):
+    # def proxy_setter(self, file_image_crop: FileImageCrop, client_data):
     def __set__(self, instance, data):
         if instance.portal_division_type.id == PortalDivision.TYPES['company_subportal']:
             membership = next(

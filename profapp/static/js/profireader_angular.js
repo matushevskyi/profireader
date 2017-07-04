@@ -216,20 +216,18 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
         }
 
     }])
-    .factory('$ok', ['$http', function ($http) {
-        return function (url, data, ifok, iferror, translate, disableonsubmid) {
+    .factory('$ok', ['$http', '$q', function ($http, $q) {
+        return function (url, data, ifok, iferror, translate) {
             //console.log($scope);
             function error(result, error_code, message) {
                 if (iferror) {
                     iferror(result, error_code, message)
                 }
                 else {
-                    // add_message(result, 'danger');
+                    add_message(result ? result : 'wrong answer from server', 'danger');
                 }
+                return $q.reject();
             }
-
-            //TODO MY by OZ: dim disableonsubmid element on submit (by cloning element with coordinates and classes)
-            //pass here dialog DOM element from controller wherever $uibModalInstance is used
 
             return $http.post(url, $.extend({}, data, translate ? {__translate: translate} : {})).then(
                 function (response) {
@@ -246,7 +244,9 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
                     if (ifok) {
                         return ifok(resp['data']);
                     }
-
+                    else {
+                        return resp['data'];
+                    }
                 },
                 function () {
                     return error(null, -1, 'wrong response');
@@ -858,7 +858,9 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             formatYear: 'yy',
             startingDay: 1
         },
-        tinymceImageOptions: {
+
+
+        tinymceDefaultOptions: {
             inline: false,
             menu: [],
             width: 750,
@@ -894,8 +896,7 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             //valid_elements: Config['article_html_valid_elements'],
             //valid_elements: 'a[class],img[class|width|height],p[class],table[class|width|height],th[class|width|height],tr[class],td[class|width|height],span[class],div[class],ul[class],ol[class],li[class]',
             //TODO: OZ by OZ: select css for current theme. also look for another place with same todo
-            content_css: [static_address('front/css/bootstrap.css'), static_address('css/article.css'), static_address('front/bird/css/article.css')],
-
+            content_css: [static_address('front/css/bootstrap.css'), static_address('css/article.css')],
 
             //paste_auto_cleanup_on_paste : true,
             //paste_remove_styles: true,
@@ -988,6 +989,28 @@ function highlight($el) {
     }, 35000);
 };
 
+function tinymceExtendSettings(toExtend, extendWith, key, extendSeparator) {
+    if (!key) {
+        $.extend(true, toExtend, extendWith);
+        return toExtend;
+    }
+
+    if (key in toExtend) {
+        if (typeof extendWith == 'string') {
+            toExtend[key] += (extendSeparator + extendWith)
+        }
+        else if (Array.isArray(extendWith)) {
+            toExtend[key] = toExtend[key].concat(extendWith);
+        }
+        else {
+            $.extend(true, toExtend, {key: extendWith});
+        }
+    }
+    else {
+        toExtend[key] = extendWith;
+    }
+    return toExtend;
+};
 
 function angularControllerFunction(controller_attr, function_name) {
     var nothing = function () {
@@ -1303,23 +1326,36 @@ var dict_deep_get = function () {
 };
 
 
-var find_by_keys = function () {
+var find_index_by_keys = function () {
     var args = Array.prototype.slice.call(arguments);
     var list = args.shift();
     var val = args.shift();
-    var ret = null;
+    var ret = -1;
     $.each(list, function (ind, dict) {
         if (dict_deep_get.apply(this, [dict].concat(args)) == val) {
-            ret = dict;
+            ret = ind;
             return false;
         }
     });
     return ret;
 };
 
-var find_by_id = function (list, id) {
-    return find_by_keys(list, id, 'id');
+var find_index_by_id = function (list, id) {
+    return find_index_by_keys(list, id, 'id');
 };
+
+var find_by_keys = function () {
+    var args = Array.prototype.slice.call(arguments);
+    var list = args[0];
+    var ind = find_index_by_keys.apply(this, args);
+    return ind > -1 ? list[ind] : null;
+};
+
+var find_by_id = function (list, id) {
+    var ind = find_index_by_keys(list, id, 'id');
+    return ind > -1 ? list[ind] : null;
+};
+
 
 publication_counts_span = function (status, visibility, cnt, classes) {
     return '<span class="tar ' + (classes ? classes : '') + ' pr-grid-publications-vs publication-fg-STATUS-' + status + ' publication-bg-VISIBILITY-' + visibility + '">' + cnt + '</span>';

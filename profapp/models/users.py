@@ -15,7 +15,7 @@ from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import Config
-from .files import FileImg, FileImgDescriptor
+from .files import FileImageCrop, FileImgDescriptor
 from .pr_base import PRBase, Base
 from .. import utils
 from ..constants import RECORD_IDS
@@ -69,8 +69,8 @@ class User(Base, UserMixin, PRBase, NotifyUser):
     #                                       default='//static.profireader.com/static/no_avatar_small.png')
 
     avatar_selected_preset = Column(TABLE_TYPES['string_30'], nullable=True)
-    avatar_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImg.id), nullable=True)
-    avatar_file_img = relationship(FileImg, uselist=False)
+    avatar_file_img_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(FileImageCrop.id), nullable=True)
+    avatar_file_img = relationship(FileImageCrop, uselist=False)
 
     # TODO: OZ by OZ: some condition about active
     active_portals_subscribed = relationship('Portal',
