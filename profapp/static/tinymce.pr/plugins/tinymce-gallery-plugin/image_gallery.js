@@ -3,6 +3,7 @@
  */
 
 set_all_images_galleries = function (url, callback, $container) {
+
     var set_item = function ($img, item) {
         $img.css({backgroundImage: ''});
         $img.css({backgroundSize: 'auto'});
