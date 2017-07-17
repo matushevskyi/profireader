@@ -21,7 +21,8 @@ from .google import GoogleAuthorize, GoogleToken
 from .pr_base import PRBase, Base
 from .. import utils
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..controllers.errors import VideoAlreadyExistInPlaylist
+# from ..controllers.errors import VideoAlreadyExistInPlaylist
+from . import exceptions
 from profapp.models.permissions import ActionsForFileManagerAtMembership
 
 
@@ -1145,7 +1146,7 @@ class YoutubeVideo(Base, PRBase):
             return fields
         except response_code as e:
             if e.reason == 'duplicate':
-                raise VideoAlreadyExistInPlaylist({'message': 'Video already exist in playlist'})
+                raise exceptions.BadDataProvided('Video already exist in playlist')
             elif e.reason == 'forbidden':
                 self.playlist.add_video_to_cloned_playlist_with_new_name(self)
 

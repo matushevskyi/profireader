@@ -169,6 +169,8 @@ class UserIsActive(Permissions):
         self.user = User.get(self.user_id) if self.user_id else g.user
         if not self.user:
             raise exceptions.NotLoggedInUser()
+        if not self.user.tos:
+            raise exceptions.NotAcceptedTOS()
         if self.user.status != User.STATUSES['USER_ACTIVE']:
             raise exceptions.BannedUser()
         if not self.user.email_confirmed:

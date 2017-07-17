@@ -238,11 +238,11 @@
                             setInParent('afState', statebefore);
                             if (url) {
                                 var promise = $ok(url, dataToSend ? dataToSend : {},
-                                    function (resp, errorcode, httpresp) {
+                                    function (resp, errorcode, message) {
                                         onok(resp);
                                     },
-                                    function (resp, errorcode, httpresp) {
-                                        onfail(resp, errorcode, 'http error');
+                                    function (resp, errorcode, message) {
+                                        onfail(resp, errorcode, message);
                                     }).finally(function () {
                                     validationdict['http'] = null;
                                 });

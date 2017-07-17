@@ -11,7 +11,7 @@ from .constants.USER_REGISTERED import REGISTERED_WITH
 from .models.users import User
 from config import Config
 from .models.config import Config as ModelConfig
-from profapp.controllers.errors import BadDataProvided
+from profapp.models import exceptions
 import os.path
 from profapp import utils
 from flask.sessions import SessionInterface
@@ -20,7 +20,7 @@ from .utils.jinja import *
 from .utils.db import *
 from .utils.email import *
 from .utils.session import *
-from .utils.redirect_url import *
+# from .utils.redirect_url import *
 import json
 from functools import wraps
 from sqlalchemy import event

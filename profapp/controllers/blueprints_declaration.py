@@ -2,41 +2,41 @@ from flask import Blueprint
 from profapp.models.permissions import Permissions
 
 
-class PrOldBlueprint(Blueprint):
-    declared_endpoints = {}
-
-    def you_have_no_permission(self):
-        raise Exception('You have no permission')
-
-    def route(self, rule, **options):
-        from .request_wrapers import ok
-        def decorator(f):
-
-            f.__endpoint__ = self.name
-            f.__method__ = options['methods'] if 'methods' in options else ["GET"]
-            if options and 'methods' in options and 'OK' in options['methods'] and self.name in self.declared_endpoints \
-                    and f.__name__ in self.declared_endpoints[self.name]:
-                options['methods'][options['methods'].index('OK')] = 'POST'
-            if self.name in self.declared_endpoints and f.__name__ in self.declared_endpoints[self.name]:
-                ret = self.declared_endpoints[self.name][f.__name__]
-            else:
-                ret = f
-                if options and 'methods' in options and 'OK' in options['methods']:
-                    options['methods'][options['methods'].index('OK')] = 'POST'
-                    ret = ok(f)
-                    # ret = function_profiler(ret)
-                    self.declared_endpoints[self.name] = {}
-                    self.declared_endpoints[self.name][ret.__name__] = ret
-                else:
-                    # ret = function_profiler(ret)
-                    self.declared_endpoints[self.name] = {}
-                    self.declared_endpoints[self.name][ret.__name__] = ret
-            endpoint = options.pop("endpoint", ret.__name__)
-            self.add_url_rule(rule, endpoint, ret, **options)
-
-            return ret
-
-        return decorator
+#class PrOldBlueprint(Blueprint):
+#    declared_endpoints = {}
+#
+#    def you_have_no_permission(self):
+#        raise Exception('You have no permission')
+#
+#    def route(self, rule, **options):
+#        from .request_wrapers import ok
+#        def decorator(f):
+#
+#            f.__endpoint__ = self.name
+#            f.__method__ = options['methods'] if 'methods' in options else ["GET"]
+#            if options and 'methods' in options and 'OK' in options['methods'] and self.name in self.declared_endpoints \
+#                    and f.__name__ in self.declared_endpoints[self.name]:
+#                options['methods'][options['methods'].index('OK')] = 'POST'
+#            if self.name in self.declared_endpoints and f.__name__ in self.declared_endpoints[self.name]:
+#                ret = self.declared_endpoints[self.name][f.__name__]
+#            else:
+#                ret = f
+#                if options and 'methods' in options and 'OK' in options['methods']:
+#                    options['methods'][options['methods'].index('OK')] = 'POST'
+#                    ret = ok(f)
+#                    # ret = function_profiler(ret)
+#                    self.declared_endpoints[self.name] = {}
+#                    self.declared_endpoints[self.name][ret.__name__] = ret
+#                else:
+#                    # ret = function_profiler(ret)
+#                    self.declared_endpoints[self.name] = {}
+#                    self.declared_endpoints[self.name][ret.__name__] = ret
+#            endpoint = options.pop("endpoint", ret.__name__)
+#             self.add_url_rule(rule, endpoint, ret, **options)
+#
+#             return ret
+#
+#         return decorator
 
 
 class PrBlueprint(Blueprint):
@@ -72,7 +72,7 @@ class PrBlueprint(Blueprint):
                 method = request.method
                 if method == 'POST' and ok_method:
                     method = 'OK'
-                hide_error = not (g.debug or g.testing)
+                # hide_error = not (g.debug or g.testing)
 
                 try:
                     ps = getattr(wrapped_function, '_permissions', None)
@@ -97,51 +97,29 @@ class PrBlueprint(Blueprint):
                             try:
                                 ret = f(json, *args, **kwargs)
                             except Exception as e:
-                                ret = {'data': {}, 'ok': False, 'error_code': -1, 'message': e.__str__()}
+                                ret = {'data': {}, 'ok': False, 'error_code': e.__class__.__name__, 'message': e.__str__()}
 
                     else:
                         if not ps['permissions'].check(*args, **kwargs):
                             raise exceptions.UnauthorizedUser()
                         ret = f(*args, **kwargs)
 
-
-                except exceptions.NotLoggedInUser as e:
-                    if method == 'GET':
-                        session['back_to'] = request.url
-                        return redirect(url_for('auth.login_signup_endpoint'))
-                    elif method == 'POST':
-                        return redirect(url_for('auth.login_signup_endpoint'))
+                except Exception as e:
+                    if method == 'GET' or method == 'POST':
+                        if getattr(e, 'redirect_to', None):
+                            if method == 'GET':
+                                session['back_to'] = request.url
+                            return redirect(e.redirect_to)
+                        raise e
                     elif method == 'OK':
                         return jsonify(
-                            {'data': {}, 'ok': False, 'error_code': exceptions.NotLoggedInUser.__name__})
+                            {'data': {}, 'ok': False, 'error_code': e.__class__.__name__, 'message': e.__str__()})
 
-                # except Exception as e:
-                #     if method == 'GET':
-                #         return render_template('errors/general.html', message='Internal error' if hide_error else e)
-                #     elif method == 'POST':
-                #         return render_template('errors/general.html', message='Internal error' if hide_error else e)
-                #     elif method == 'OK':
-                #         return jsonify({'data': {} if hide_error else traceback.extract_stack(), 'ok': False,
-                #                         'error_code': e if hide_error else type(e).__name__})
-
-                if method == 'GET':
-                    return ret
-                elif method == 'POST':
+                if method == 'GET' or method == 'POST':
                     return ret
                 elif method == 'OK':
-                    return jsonify({'data': ret, 'ok': True, 'error_code': 'NO_ERROR'})
+                    return jsonify({'data': ret, 'ok': True, 'error_code': None})
 
-            # if f.__name__ not in self.registered_functions:
-            #     self.registered_functions[f.__name__] = (wrapped_function, {}, current_app)
-            #
-            # self.registered_functions[f.__name__][1][self.url_prefix + rule] = permissions
-            #
-            # endpoint = options.pop("endpoint", f.__name__)
-            # self.add_url_rule(rule, endpoint, self.registered_functions[f.__name__][0], **options)
-            #
-            # return self.registered_functions[f.__name__][0]
-            #
-            #
 
             if f.__name__ not in self.registered_functions:
                 self.registered_functions[f.__name__] = {'func': wrapped_function, 'perm': {}, 'app': current_app}
