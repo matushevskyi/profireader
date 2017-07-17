@@ -52,7 +52,6 @@
 
     <script>
         window.addEventListener("message", function (messageevent) {
-        console.log(messageevent);
         if (!messageevent.data || !messageevent.data['profireader_session_id']) {
             return false;
         }
