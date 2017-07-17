@@ -7,7 +7,6 @@ from sqlalchemy import and_, desc
 
 from .blueprints_declaration import index_bp
 from .. import utils
-from ..controllers import errors
 from ..models.materials import Publication, ReaderPublication
 from ..models.portal import PortalDivision, UserPortalReader, Portal, ReaderUserPortalPlan, ReaderDivision
 from ..models.permissions import UserIsActive, AvailableForAll
@@ -29,7 +28,8 @@ def portals_list_load(json):
 
     return {'list_portals':
                 [utils.dict_merge(p.get_client_side_dict(),
-                                  {'subscribed': True if UserPortalReader.get_by_portal_id_user_id(portal_id=p.id) else False}) for
+                                  {'subscribed': True if UserPortalReader.get_by_portal_id_user_id(
+                                      portal_id=p.id) else False}) for
                  p in portals],
             'end': True}
 
@@ -44,13 +44,15 @@ def auth_before_subscribe_to_portal(portal_id):
 def list_reader_from_front(portal_id):
     portal = Portal.get(portal_id)
     if g.user:
-        portals = utils.db.query_filter(Portal).filter((Portal.id.in_(utils.db.query_filter(UserPortalReader.portal_id, user_id=g.user.id)))).all()
+        portals = utils.db.query_filter(Portal).filter(
+            (Portal.id.in_(utils.db.query_filter(UserPortalReader.portal_id, user_id=g.user.id)))).all()
         if portal in portals:
             return redirect(url_for('index.index'))
         else:
             return redirect(url_for('index.reader_subscribe', portal_id=portal_id))
     else:
         return redirect(url_for('index.auth_before_subscribe_to_portal', portal_id=portal_id))
+
 
 @index_bp.route('welcome/', methods=['GET'], permissions=AvailableForAll())
 def welcome():
@@ -59,11 +61,19 @@ def welcome():
     else:
         return redirect(url_for('index.index'))
 
+@index_bp.route('privacy/', methods=['GET'], permissions=AvailableForAll())
+def privacy():
+    return render_template('general/privacy.html')
+
+
+
 @index_bp.route('', methods=['GET'], permissions=AvailableForAll())
 def index():
-    if g.user and g.user.is_authenticated() and getattr(g.user, 'tos', False):
-        return render_template('_ruslan/reader/_reader_content.html', favorite=request.args.get('favorite') == 'True')
-    return render_template('general/index.html')
+    if g.user and g.user.is_authenticated():
+        return render_template('_ruslan/reader/_reader_content.html', favorite=request.args.get('favorite') == 'True') \
+            if getattr(g.user, 'tos', False) else redirect(url_for('index.welcome'))
+    else:
+        return render_template('general/index.html')
 
 
 @index_bp.route('', methods=['OK'], permissions=UserIsActive())
@@ -73,12 +83,15 @@ def list_reader_load(json):
 
     if favorite:
         publication_filter = (
-            Publication.id == utils.db.query_filter(ReaderPublication, user_id=g.user.id, favorite=True).subquery().c.publication_id)
+            Publication.id == utils.db.query_filter(ReaderPublication, user_id=g.user.id,
+                                                    favorite=True).subquery().c.publication_id)
     else:
         division_filter = \
-            and_(PortalDivision.portal_id == utils.db.query_filter(UserPortalReader, user_id=g.user.id).subquery().c.portal_id)
+            and_(PortalDivision.portal_id == utils.db.query_filter(UserPortalReader,
+                                                                   user_id=g.user.id).subquery().c.portal_id)
         publication_filter = and_(
-            Publication.portal_division_id == utils.db.query_filter(PortalDivision).filter(division_filter).subquery().c.id,
+            Publication.portal_division_id == utils.db.query_filter(PortalDivision).filter(
+                division_filter).subquery().c.id,
             Publication.status == Publication.STATUSES['PUBLISHED'],
             Publication.publishing_tm < datetime.datetime(*localtime[:6]))
 
@@ -187,7 +200,8 @@ def edit_portal_subscription_load(json, reader_portal_id):
 
 @index_bp.route('edit_profile_/<string:reader_portal_id>', methods=['OK'], permissions=UserIsActive())
 def edit_profile_submit(json, reader_portal_id):
-    divisions_and_comments = utils.db.query_filter(UserPortalReader, id=reader_portal_id).one().show_divisions_and_comments
+    divisions_and_comments = utils.db.query_filter(UserPortalReader,
+                                                   id=reader_portal_id).one().show_divisions_and_comments
     for item in json['divisions']:
         for show_division_and_comments in divisions_and_comments:
             if item['division_id'] == show_division_and_comments.division_id:

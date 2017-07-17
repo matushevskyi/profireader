@@ -8,9 +8,10 @@ from sqlalchemy.sql import expression
 from .pr_base import PRBase, Base
 from .. import utils
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..controllers.errors import BadDataProvided
+# from ..controllers.errors import BadDataProvided
 from ..models.users import User
 from ..constants.APPLICATION_PORTS import APPLICATION_PORTS
+from ..models import exceptions
 
 
 class Socket:
@@ -116,7 +117,7 @@ class Contact(Base, PRBase):
         elif user_id == self.user2_id:
             return self.user1_id
         else:
-            raise BadDataProvided("User with id=`%s` is not presented in contact with id=`%s`" % (user_id, self.id))
+            raise exceptions.BadDataProvided("User with id=`%s` is not presented in contact with id=`%s`" % (user_id, self.id))
 
     def get_client_side_dict(self, fields='id,user1_id,user2_id,status', more_fields=None):
         return self.to_dict(fields, more_fields)
@@ -130,7 +131,7 @@ class Contact(Base, PRBase):
             spliced.reverse()
             return '_'.join(spliced)
         else:
-            raise BadDataProvided("User with id=`%s` is not presented in contact with id=`%s`" % (user_id, self.id))
+            raise exceptions.BadDataProvided("User with id=`%s` is not presented in contact with id=`%s`" % (user_id, self.id))
 
     def set_status_for_user(self, user_id, status):
         if user_id == self.user1_id:

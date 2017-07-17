@@ -10,7 +10,6 @@ from config import Config
 from profapp import utils
 from .pr_base import Base, PRBase
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..controllers.errors import TooManyCredentialsInDb
 
 
 class GoogleToken(Base, PRBase):
@@ -28,15 +27,11 @@ class GoogleToken(Base, PRBase):
          kind should be update, playlist
          If None you should to redirect admin to google auth page.
          If >1 some think is wrong . Raise exception"""
-        try:
-            credentials = utils.db.query_filter(GoogleToken).count()
-            if credentials < 2:
-                return credentials
-            else:
-                raise TooManyCredentialsInDb({'message': 'credentials >1'})
-        except TooManyCredentialsInDb as e:
-            e = e.args[0]
-            print(e['message'])
+        credentials = utils.db.query_filter(GoogleToken).count()
+        if credentials < 2:
+            return credentials
+        else:
+            print('credentials>1')
 
     def save_credentials(self):
         """ This method save and return your credentials to/from db in json format.
@@ -75,6 +70,7 @@ class GoogleToken(Base, PRBase):
         http = credentials.authorize(http)
         return http
 
+
 class GoogleAuthorize(object):
     """ This class can apply api_service name and api_version to build service which you want.
      Default youtube upload service. Method authorize return service with necessary token
@@ -92,7 +88,6 @@ class GoogleAuthorize(object):
         self.redirect_uri = redirect_uri
 
     def get_auth_code(self, ret_flow=False):
-
         """ This method return link for google auth service if ret_flow parameter is not produced,
         else - return flow object. Helpful when you need to have code to make credentials """
         flow = client.flow_from_clientsecrets(self.__project_secret, self.scope,
@@ -109,4 +104,3 @@ class GoogleAuthorize(object):
         """ This method check if current user is profireader admin. Return True or False.
          If you will change dg, you should to change id admins in db """
         return True if session.get('user_id') in Config.PROFIREADER_ADMINS else False
-

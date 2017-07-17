@@ -3,7 +3,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.sql import expression
 
 from .blueprints_declaration import messenger_bp
-from .errors import BadDataProvided
+from ..models import exceptions
 from ..models.company import Company, UserCompany
 from ..models.messenger import Contact
 from ..models.portal import Portal, UserPortalReader
@@ -194,7 +194,7 @@ def contact_action(json):
             contact.set_status_for_user(g.user.id, contact.STATUSES['ACTIVE_ACTIVE'])
             another_user.NOTIFY_FRIEND_STATUS_CHANGED(old_status='BANNED', new_status='ACTIVE')
         else:
-            raise BadDataProvided(
+            raise exceptions.BadDataProvided(
                 "Wrong action `%s` for status `%s=>%s`" % (action, contact.status, old_status_for_g_user))
     else:
         if action == 'add':
@@ -202,7 +202,7 @@ def contact_action(json):
             contact.set_status_for_user(g.user.id, contact.STATUSES['REQUESTED_UNCONFIRMED'])
             another_user.NOTIFY_FRIEND_STATUS_CHANGED(old_status='NONE', new_status='REQUESTED')
         else:
-            raise BadDataProvided("Wrong action `add` for no contact")
+            raise exceptions.BadDataProvided("Wrong action `add` for no contact")
 
     contact.save()
     # g.db.commit()
