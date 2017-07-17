@@ -1,7 +1,7 @@
 from flask import render_template, g, redirect, url_for, current_app
 from sqlalchemy import desc
 from config import Config
-from profapp.controllers.errors import BadDataProvided
+# from profapp.controllers.errors import BadDataProvided
 from .blueprints_declaration import portal_bp
 from .pagination import pagination
 from .. import utils
@@ -15,7 +15,7 @@ from ..models.portal import PortalDivisionType
 from ..models.pr_base import PRBase, Grid
 from ..models.tag import Tag
 from ..models.translate import TranslateTemplate
-from ..models.exceptions import UnauthorizedUser
+from ..models import exceptions
 from profapp.models.translate import Phrase
 from profapp.models.permissions import EmployeeHasRightAtCompany, EmployeeHasRightAtPortalOwnCompany, RIGHT_AT_COMPANY
 from sqlalchemy import or_
@@ -71,7 +71,7 @@ def profile_load(json, company_id=None, portal_id=None):
                            *map(lambda x: 'url_' + x, ['facebook', 'google', 'twitter', 'linkedin']))
 
         if set(portal.divisions) - set(utils.find_by_id(portal.divisions, d['id']) for d in jp['divisions']) != set():
-            raise BadDataProvided('Information for some existing portal division is not provided by client')
+            raise exceptions.BadDataProvided('Information for some existing portal division is not provided by client')
 
         division_position = 0
         unpublish_warning = {}
@@ -242,7 +242,7 @@ def plans_load(json, portal_id):
 
     if action != 'load':
         if set(portal.plans) - set(utils.find_by_id(portal.plans, d['id']) for d in json['plans']) != set():
-            raise BadDataProvided('Information for some existing plans is not provided by client')
+            raise exceptions.BadDataProvided('Information for some existing plans is not provided by client')
 
         plan_position = 0
         validation = PRBase.DEFAULT_VALIDATION_ANSWER()
@@ -567,7 +567,7 @@ def membership_change_status(json, membership_id, new_status):
 
         return membership.company_member_grid_row()
     else:
-        raise UnauthorizedUser()
+        raise exceptions.UnauthorizedUser()
 
 
 @portal_bp.route('/<string:portal_id>/companies_members/', methods=['GET'],

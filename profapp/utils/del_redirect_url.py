@@ -1,5 +1,5 @@
 from flask import request, url_for, current_app
-from ..controllers.errors import WrongNumberOfParameters, WrongMandatoryParametersPassedToFunction
+# from ..controllers.errors import WrongNumberOfParameters, WrongMandatoryParametersPassedToFunction
 from functools import reduce
 from operator import or_
 import inspect
