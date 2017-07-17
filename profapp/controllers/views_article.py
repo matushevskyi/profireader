@@ -10,7 +10,7 @@ from ..models.materials import Material, Publication
 from ..models.pr_base import PRBase, Grid
 from ..models.tag import Tag
 from ..models.permissions import UserIsActive, EmployeeHasRightAtCompany, RIGHT_AT_COMPANY, RIGHT_AT_PORTAL, \
-    CheckFunction
+    CheckFunction, AvailableForAll
 from profapp.models.permissions import ActionsForMaterialAtMembership, ActionsForPublicationAtMembership
 
 
@@ -237,7 +237,7 @@ def publish(json, publication_id, actor_membership_id, request_from):
     # return gallery.get_client_side_dict(more_fields='items')
 
 
-@article_bp.route('/gallery_load/', methods=['OK'], permissions=UserIsActive())
+@article_bp.route('/gallery_load/', methods=['OK'], permissions=AvailableForAll())
 def gallery_load(json):
     gallery = MaterialImageGallery.get(json['gallery_id'])
     return gallery.get_client_side_dict(more_fields='items')
