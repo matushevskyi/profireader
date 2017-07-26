@@ -23,7 +23,25 @@ from .utils.session import *
 # from .utils.redirect_url import *
 import json
 from functools import wraps
-from sqlalchemy import event
+from werkzeug.routing import BaseConverter
+from urllib.parse import quote_plus, unquote_plus
+
+
+class TransliterationConverter(BaseConverter):
+    def to_python(self, value):
+        return unquote_plus(value)
+
+    def to_url(self, value):
+        return quote_plus(g.portal.transliterate(value) if g.portal else value)
+
+
+# class PublicationConverter(BaseConverter):
+#     def to_python(self, value):
+#         return unquote_plus(value)
+#
+#     def to_url(self, publication_id):
+#         from profapp.models.materials import
+#         return quote_plus(g.portal.transliterate(value) if g.portal else value)
 
 
 def req(name, allowed=None, default=None, exception=True):
@@ -292,12 +310,12 @@ class logger:
         import logstash
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
-        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type = apptype))
+        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type=apptype))
         self._l = logger
 
         def pp(t, message, *args, **kwargs):
             import pprint
-            ppr = pprint.PrettyPrinter(indent=2, compact=True, width = 120)
+            ppr = pprint.PrettyPrinter(indent=2, compact=True, width=120)
             extra = kwargs.get('extra', None)
             if extra:
                 extra = extra.get('zzz_pr_more_info', None)
@@ -340,6 +358,8 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.apptype = apptype
     app.log = logger(apptype, app.debug, app.testing)
+
+    app.url_map.converters['translit'] = TransliterationConverter
 
     app.before_request(prepare_connections(app))
     app.before_request(lambda: load_user(apptype))

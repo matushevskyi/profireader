@@ -431,11 +431,17 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                )
 
 
-@front_bp.route('_a/<string:publication_id>/<path:publication_title>', permissions=AvailableForAll())
+@front_bp.route('_a/<string:publication_id>/<translit:publication_title>', permissions=AvailableForAll())
+# @front_bp.route('_a/<publication:publication>', permissions=AvailableForAll())
 @get_portal
-def article_details(portal, publication_id, publication_title):
-    # TODO: OZ by OZ: redirect if title is wrong
+def article_details(portal, publication):
     publication = Publication.get(publication_id)
+
+    if publication_title != portal.transliterate(publication.material.title):
+        return redirect(url_for('front.article_details', publication_id=publication.id,
+                                                        publication_title=publication.material.title))
+
+
     article_visibility = publication.article_visibility_details()
 
     division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()

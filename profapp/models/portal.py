@@ -135,11 +135,26 @@ class Portal(Base, PRBase):
         if not self.portal_layout_id:
             self.portal_layout_id = utils.db.query_filter(PortalLayout).first().id
 
+    def transliterate(self, value, reversed=True, stripnonwords = True, replacespaced = True):
+        from transliterate import translit, get_available_language_codes
+
+        if self.lang in get_available_language_codes() and reversed:
+            value = translit(value, self.lang, reversed=reversed)
+
+        if stripnonwords:
+            value = re.sub(r'[^\s\w\d-]', '', value)
+
+        if replacespaced:
+            value = re.sub(r'\s+','-',value)
+
+        return value
+
     def is_active(self):
         return True
 
     def setup_ssl(self):
-        bashCommand = "ssh -i ./scrt/id_rsa_haproxy root@haproxy.profi /bin/bash /usr/local/bin/certbot_front.sh {}".format(self.host)
+        bashCommand = "ssh -i ./scrt/id_rsa_haproxy root@haproxy.profi /bin/bash /usr/local/bin/certbot_front.sh {}".format(
+            self.host)
         import subprocess
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
