@@ -140,10 +140,10 @@ def prepare_connections(app, echo=False):
 
     from profapp.models.portal import Portal
     portal = app.db.query(Portal).filter_by(host=request.host).first()
-    # g.portal = portal if portal else None
-    # g.portal_id = portal.id if portal else None
-    # g.portal_layout_path = portal.layout.path if portal else ''
-    # g.lang = g.portal.lang if g.portal else g.user_dict['lang'] if portal else 'en'
+    g.portal = portal if portal else None
+    g.portal_id = portal.id if portal else None
+    g.portal_layout_path = portal.layout.path if portal else ''
+    g.lang = g.portal.lang if g.portal else g.user_dict['lang'] if portal else 'en'
 
 
     @event.listens_for(app.db, 'after_commit')
