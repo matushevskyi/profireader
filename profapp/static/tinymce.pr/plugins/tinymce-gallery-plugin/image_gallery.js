@@ -3,6 +3,30 @@
  */
 
 set_all_images_galleries = function (url, callback, $container) {
+
+
+    var prefix = 'data-mce-pr-image-gallery-';
+
+
+    var get_value_units = function (val) {
+        var ret = val.replace(/^\s*/, '').replace(/\s*$/, '');
+        var value = ret.replace(/^([+-]?([0-9]*[.])?[0-9]+).*$/, '$1');
+        var units = ret.replace(/^[+-]?([0-9]*[.])?[0-9]+/, '');
+        return [value, units];
+    };
+
+    var normalizeWidthHeight = function ($img, attr_name) {
+        var def_value = ((attr_name == 'width') ? '100%' : '50%');
+        var ret = $img.attr(prefix + attr_name);
+        if (ret === undefined) {
+            ret = $img.attr(attr_name);
+            ret = (ret === undefined) ? def_value : ret;
+        }
+
+        var val_units = get_value_units(ret);
+        return val_units[0] + (val_units[1] == '' ? 'px' : val_units[1]);
+    };
+
     var set_item = function ($img, item) {
         $img.css({backgroundImage: ''});
         $img.css({backgroundSize: 'auto'});
@@ -13,9 +37,13 @@ set_all_images_galleries = function (url, callback, $container) {
             $img.css({backgroundSize: 'contain'});
         });
         $loader.attr('src', fileUrl(item['file_id']));
-        // }, Math.random()*10000);
 
         $img.attr('title', item['title'] + "\n" + item['copyright']);
+        $img.css('width', normalizeWidthHeight($img, 'width'));
+        var height_val_units = get_value_units(normalizeWidthHeight($img, 'height'));
+        $img.css({'height': (height_val_units[1] === '%')?('' + (height_val_units[0] / 100. * $img.width()) + 'px'):
+            ('' + height_val_units[0] + height_val_units[1])});
+
     };
     var $cont = $($container ? $container : 'body');
     var callback = callback ? callback : function ($img, gallery_data) {

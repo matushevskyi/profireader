@@ -2,6 +2,18 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
 
     var galleryElm = null;
 
+    var get_value_units = function (val) {
+        var ret = val.replace(/^\s*/, '').replace(/\s*$/, '');
+        var value = ret.replace(/^([+-]?([0-9]*[.])?[0-9]+).*$/, '$1');
+        var units = ret.replace(/^[+-]?([0-9]*[.])?[0-9]+/, '');
+        return [value, units];
+    };
+
+    var round_value = function (val, units) {
+        return (parseFloat(val).toFixed(1).replace(/\.?0*$/, '')) + units;
+    };
+
+
     var dialog_controller = {
         win: null,
 
@@ -24,7 +36,7 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                             dialog_controller.enable_dialog(false, 'Saving...');
                             var data = dialog_controller.win.toJSON();
                             editor_controller.insertGallery(dialog_controller.get_data(),
-                                data['gallery_width'], data['gallery_height']);
+                                data['gallery_width'], data['gallery_height'], data['constrain_proportions']);
                             dialog_controller.enable_dialog(true);
                             dialog_controller.win.close();
                         }
@@ -46,26 +58,42 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                 body: [
                     {
                         type: 'container',
-                        label: 'Dimensions',
+                        // label: 'Dimensions',
                         layout: 'flex',
                         direction: 'row',
                         align: 'center',
                         spacing: 5,
                         items: [
                             {
-                                name: 'gallery_width', type: 'textbox', size: 3, ariaLabel: 'Width',
-                                'classes': 'pr-image-gallery-width'
+                                text: 'Dimensions', type: 'label', size: 4,
+                            },
+                            {
+                                name: 'gallery_width', type: 'textbox', size: 4, ariaLabel: 'Width',
+                                id: 'pr_image_gallery_width',
+                                tooltip: 'set width as `X` (pixels) or `X%` (percents of article width)',
+                                classes: 'pr-image-gallery-width'
                             },
                             {type: 'label', text: 'x'},
                             {
-                                name: 'gallery_height', type: 'textbox', size: 3, ariaLabel: 'Height',
-                                'classes': 'pr-image-gallery-height'
+                                name: 'gallery_height', type: 'textbox', size: 4, ariaLabel: 'Height',
+                                id: 'pr_image_gallery_height',
+                                tooltip: 'set width as `X` (pixels) or `X%` (percents of gallery width)',
+                                classes: 'pr-image-gallery-height'
+                            },
+                            {
+                                name: 'constrain_proportions', type: 'checkbox',
+                                classes: 'pr-image-gallery-constrain-proportions',
+                                tooltip: 'Keep aspect ratio on resize',
+                                id: 'pr-image-gallery-keep-constrain-proportions',
+                                onchange: dialog_controller.constrain_proportions,
+                                text: 'Constrain proportions'
                             },
                             {
                                 name: 'calculate_size', type: 'button', size: 5,
-                                'classes': 'pr-image-gallery-calculate-size',
-                                text: 'Recalculate'
-                            }
+                                classes: 'pr-image-gallery-calculate-size',
+                                tooltip: 'Recalculate size to best fit all images',
+                                text: 'Fit size',
+                            },
                         ]
                     }, {
                         type: 'container',
@@ -77,25 +105,49 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             });
         },
 
+
+        constrain_proportions: function () {
+
+            dialog_controller.disable_enable_save_gallery();
+
+            var items = dialog_controller.get_data()['items'];
+            if (items.length !== 1) {
+                return;
+            }
+            var $height_control = $('#pr_image_gallery_height', $('#' + dialog_controller.win._id));
+            if (dialog_controller.win.toJSON()['constrain_proportions']) {
+                $height_control.prop('disabled', true).addClass('disabled');
+                dialog_controller.get_image_size(items[0], function (w, h) {
+                    $height_control.val(round_value(h / w * 100, '%'));
+                });
+            }
+            else {
+                $height_control.prop('disabled', false).removeClass('disabled');
+            }
+        },
+
+
         add_custom_html_elements: function () {
-            $('#' + dialog_controller.win._id).append('<div class="pr-image-gallery-dialog-dimmed" style="display: none;"></div><div class="pr-image-gallery-dialog-dimmed-text" style="display: none;"><span></span></div>');
-            $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images div').append('<ul></ul>');
-            $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images div').append('<input type="file" multiple />');
-            $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images div input[type=file]').bind('change', dialog_controller.upload_images);
-            $('#' + dialog_controller.win._id + ' .mce-pr-sortable-images').on('click', '.pr-gallery-item-remove-undo', dialog_controller.remove_undo);
-            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-calculate-size button').prop('disabled', true);
-            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-calculate-size').on('click', 'button', dialog_controller.recalculate_size);
+            var $container = $('#' + dialog_controller.win._id);
+            $container.append('<div class="pr-image-gallery-dialog-dimmed" style="display: none;"></div><div class="pr-image-gallery-dialog-dimmed-text" style="display: none;"><span></span></div>');
+            $('.mce-pr-sortable-images div', $container).append('<ul></ul>');
+            $('.mce-pr-sortable-images div', $container).append('<input type="file" multiple />');
+            $('.mce-pr-sortable-images div input[type=file]', $container).bind('change', dialog_controller.upload_images);
+            $('.mce-pr-sortable-images', $container).on('click', '.pr-gallery-item-remove-undo', dialog_controller.remove_undo);
+            $('.mce-pr-image-gallery-calculate-size button', $container).prop('disabled', true);
+            $('.mce-pr-image-gallery-calculate-size', $container).on('click', 'button', dialog_controller.recalculate_size);
         },
 
         depict_gallery_and_items_controls: function () {
 
-            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-width').val('100%');
-            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-height').val('200');
+            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-width').val(editor_controller.default_width);
+            $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-height').val(editor_controller.default_height);
             if (galleryElm) {
                 dialog_controller.enable_dialog(false);
 
-                $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-width').val($(galleryElm).attr('width'));
-                $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-height').val($(galleryElm).attr('height'));
+                $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-width').val(editor_controller.normalizeWidthHeight($(galleryElm), 'width'));
+                $('#' + dialog_controller.win._id + ' .mce-pr-image-gallery-height').val(editor_controller.normalizeWidthHeight($(galleryElm), 'height'));
+                dialog_controller.win.find('#constrain_proportions')[0].checked(galleryElm.getAttribute('data-mce-image-gallery-constrain-proportions') === 'true');
                 var gallery_id = editor_controller.get_id_from_element(galleryElm);
                 var gallery_data = editor.getParam('gallery_get_data')(gallery_id);
                 if (!gallery_data) {
@@ -129,10 +181,10 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             var read_file_progress = function () {
                 filesreaded++;
                 if (filesreaded == uploaders.length) {
-                    dialog_controller.enable_dialog(true);
                     if (!old_image_count) {
                         dialog_controller.recalculate_size();
                     }
+                    dialog_controller.enable_dialog(true);
                 }
                 else {
                     dialog_controller.enable_dialog(false, 'Reading file ' + filesreaded + ' of ' + uploaders.length + '...');
@@ -178,14 +230,31 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
         },
 
         disable_enable_save_gallery: function () {
+            console.log('disable_enable_save_gallery');
+            var $context = $('#' + dialog_controller.win._id);
             var images_container = this.get_image_container();
-            var is_disabled = true;
+            var image_numbers = 0;
             $('li', images_container).each(function (ind, $li) {
-                is_disabled = is_disabled && $('input.pr-gallery-item-title', $li).is(':disabled');
+                if (!$('input.pr-gallery-item-title', $li).is(':disabled')) {
+                    image_numbers++;
+                }
             });
-            $('.mce-image-gallery-save button', $('#' + dialog_controller.win._id)).prop('disabled', is_disabled);
-            $('.mce-pr-image-gallery-calculate-size button', $('#' + dialog_controller.win._id)).prop('disabled', is_disabled);
-            return is_disabled;
+            $('.mce-image-gallery-save button', $context).prop('disabled', image_numbers ? false : true);
+            $('.mce-pr-image-gallery-calculate-size button', $context).prop('disabled', image_numbers ? false : true);
+
+            var chkbox = dialog_controller.win.find('#constrain_proportions')[0];
+
+            if (image_numbers === 1) {
+                $('.mce-pr-image-gallery-constrain-proportions', $context).removeClass('disabled');
+                chkbox.disabled(false);
+            }
+            else {
+                $('.mce-pr-image-gallery-constrain-proportions', $context).addClass('disabled');
+                chkbox.disabled(true);
+                chkbox.checked(false);
+                $('#pr_image_gallery_height', $context).prop('disabled', false).removeClass('disabled');
+            }
+            return (image_numbers ? false : true);
         },
 
         can_be_saved: function () {
@@ -253,36 +322,44 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             };
         },
 
+        get_image_size: function (item, callback) {
+            var src = item['background_image'].replace(/^url\(['"]?/g, '').replace(/['"]?\)$/g, '');
+            // Create dummy image to get real width and height
+            $("<img>").attr("src", src).load(function () {
+                callback(this.width, this.height);
+            });
+        },
+
         recalculate_size: function () {
             if (dialog_controller.can_be_saved()) {
                 var scale = 1;
-                var area = 1;
+                // var area = 1;
                 var items = dialog_controller.get_data()['items'];
                 var cnt = items.length;
                 var loaded = 0;
                 dialog_controller.enable_dialog(false, 'Calculate...');
                 $.each(items, function (ind, item) {
-                    // Create dummy image to get real width and height
-                    $("<img>").attr("src",
-                        item['background_image'].replace(/^url\(['"]?/g, '').replace(/['"]?\)$/g, '')
-                    ).load(function () {
-                        area = area * Math.pow(this.width * this.height, 1./cnt);
-                        scale = scale * Math.pow(this.width/this.height, 1./cnt);
-                        loaded++;
-                        if (loaded == cnt) {
-                            $('.mce-pr-image-gallery-width', '#' + dialog_controller.win._id).val(
-                                Math.round(Math.pow(area*scale, 0.5)));
-                            $('.mce-pr-image-gallery-height', '#' + dialog_controller.win._id).val(
-                                Math.round(Math.pow(area/scale, 0.5)));
-                            dialog_controller.enable_dialog(true, '');
-                        }
-                    });
+                    dialog_controller.get_image_size(item,
+                        function (w, h) {
+                            // area = area * Math.pow(w * h, 1. / cnt);
+                            scale = scale * Math.pow(w / h, 1. / cnt);
+                            loaded++;
+                            if (loaded == cnt) {
+                                $('.mce-pr-image-gallery-width', '#' + dialog_controller.win._id).val('100%');
+                                $('.mce-pr-image-gallery-height', '#' + dialog_controller.win._id).val(Math.round(100 / scale) + '%');
+                                dialog_controller.enable_dialog(true, '');
+                            }
+                        })
                 });
             }
         },
     };
 
     var editor_controller = {
+
+        prefix: 'data-mce-pr-image-gallery-',
+        default_width: '100%',
+        default_height: '50%',
 
         get_iframe_conent: function () {
             return $(editor.iframeElement).contents()[0];
@@ -336,27 +413,63 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             return className;
         },
 
-        updateGalleryElement: function (gallery_data) {
-            var $img = $('img[data-mce-image-gallery-placeholder=' + gallery_data['id'] + ']', editor_controller.get_iframe_conent());
+        normalizeWidthHeight: function ($img, attr_name) {
+            var def_value = ((attr_name == 'width') ? editor_controller.default_width : editor_controller.default_height);
+            var ret = $img.attr(editor_controller.prefix + attr_name);
+            if (ret === undefined) {
+                ret = $img.attr(attr_name);
+                ret = (ret === undefined) ? def_value : ret;
+                $img.attr(editor_controller.prefix + attr_name, ret);
+            }
+
+            var val_units = get_value_units(ret);
+            return val_units[0] + (val_units[1] == '' ? 'px' : val_units[1]);
+        },
+
+        resizeGallery: function ($img) {
+            var width = editor_controller.normalizeWidthHeight($img, 'width');
+            var height = editor_controller.normalizeWidthHeight($img, 'height');
+            $img.css({'width': width});
+            if (height.match(/%$/)) {
+                height = '' + (parseFloat(height.replace(/%\s*$/, '')) / 100. * $img.width()) + 'px';
+            }
+            $img.css({'height': height});
+        },
+
+        updateGalleryElement: function ($img, gallery_data) {
+            editor_controller.resizeGallery($img);
             var title = (gallery_data['items'].length == 1) ? 'only one image' : ((gallery_data['items'].length - 1) + ' more image(s)');
             var background_class = (gallery_data['items'].length ? editor_controller.addCSSRule(gallery_data['id'], gallery_data['items'][0]['background_image']) : '');
             $img.attr('title', title);
             $img.addClass(background_class);
+            $img.attr('width', $img.width());
+            $img.attr('height', $img.height());
+            return $img;
         },
 
-        insertGallery: function (gallery_data, w, h) {
 
+        setSize: function ($img, rel_w, rel_h) {
+            $img.attr(editor_controller.prefix + 'width', rel_w);
+            $img.attr(editor_controller.prefix + 'height', rel_h);
+        },
+
+        insertGallery: function (gallery_data, w, h, constrain_proportions) {
             editor.insertContent(
-                '<img width="' + w + '" height="' + h + '" class="data-mce-image-gallery-placeholder"' +
+                '<img class="data-mce-image-gallery-placeholder"' +
                 ' src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"' +
                 ' data-mce-placeholder ' +
-                ' data-mce-image-gallery-placeholder="' + gallery_data['id'] + '">');
-            console.log(gallery_data['items']);
+                ' data-mce-image-gallery-placeholder="' + gallery_data['id'] + '"' +
+                ' data-mce-image-gallery-constrain-proportions="' + constrain_proportions + '"' +
+                ' >');
             gallery_data['items'].sort(function (a, b) {
                 return (a['position'] < b['position']) ? -1 : ((a['position'] > b['position']) ? 1 : 0);
             });
             editor.getParam('gallery_set_data')(gallery_data['id'], gallery_data);
-            editor_controller.updateGalleryElement(gallery_data);
+            var $img = $('img[data-mce-image-gallery-placeholder=' + gallery_data['id'] + ']', editor_controller.get_iframe_conent());
+            editor_controller.setSize($img, w, h);
+            editor_controller.updateGalleryElement($img, gallery_data);
+
+
         },
 
         get_id_from_element: function (element) {
@@ -365,14 +478,6 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
             }
             return $(element).attr('data-mce-image-gallery-placeholder');
         },
-
-        // get_first_image_id_from_element: function (element) {
-        //     if (!element) {
-        //         return null;
-        //     }
-        //     var ret = $(element).attr('data-mce-image-gallery-placeholder').replace(/^.*:/, '');
-        //     return ret ? ret : null;
-        // },
 
     };
 
@@ -393,10 +498,38 @@ tinymce.PluginManager.add('gallery', function (editor, url) {
                     add_message('error loading gallery gallery_id=' + gallery_id)
                 }
                 else {
-                    editor_controller.updateGalleryElement(gallery_data);
+                    editor_controller.updateGalleryElement($img, gallery_data);
                 }
             });
         }, 100);
+
+    });
+
+    editor.on('ObjectResizeStart', function (e) {
+        $(e.target).data(editor_controller.prefix + 'original_size', [$(e.target).width(), $(e.target).height()]);
+    });
+
+    editor.on('ObjectResized', function (e) {
+        var scale = function (size_name, new_w, new_h, old_w, old_h) {
+            var ratio = ((size_name == 'width') ? new_w / old_w : new_h / old_h);
+            var val = editor_controller.normalizeWidthHeight($img, size_name);
+            var value_units = get_value_units(val);
+            if (size_name == 'height' && value_units[1] == '%') {
+                ratio /= new_w / old_w;
+            }
+
+            return round_value(parseFloat(value_units[0]) * ratio, value_units[1]);
+        };
+
+        var $img = $(e.target);
+        var old_values = $img.data(editor_controller.prefix + 'original_size');
+        var new_values = [$img.width(), $img.height()];
+
+        editor_controller.setSize($img,
+            scale('width', new_values[0], new_values[1], old_values[0], old_values[1]),
+            scale('height', new_values[0], new_values[1], old_values[0], old_values[1]));
+
+        $img.attr(editor_controller.prefix + 'constrain-proportions', false);
     });
 
 
