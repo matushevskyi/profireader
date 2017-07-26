@@ -1,0 +1,145 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block title %}Profireader - {{ _('Banners') }}{% endblock title %}
+
+{% block head %}
+    {{ super() }}
+    {% include '_ruslan/partials/_header_files_grid.html' %}
+    {% include '_ruslan/partials/_header_files_articles.html' %}
+{% endblock head %}
+
+{% block portal_content %}
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+    <script type="text/ng-template" id="banners.html">
+        <div class="modal-header"><h3 class="modal-title">{{ _('Edit banners with HTML tag!') }}</h3></div>
+        <div class="modal-body"><textarea rows="5" style="width: 100%" class='modal-content'
+                                          ng-model='EdittextWithHtml'></textarea></div>
+        <div class="modal-footer">
+            <button id='buttonDelete' class='btn btn-warning' ng-click='save()'>{{ _('Save') }}</button>
+            <button class="btn btn-warning" ng-click="cancel()">{{ _('Cancel') }}</button>
+        </div>
+    </script>
+
+    <script>
+        module.controller('banners_controller', function ($scope, $uibModalInstance, EdittextWithHtml) {
+            $scope.EdittextWithHtml = EdittextWithHtml;
+            $scope.save = function () {
+                $uibModalInstance.close($scope.EdittextWithHtml);
+            };
+            $scope.cancel = function () {
+                $uibModalInstance.dismiss('cancel');
+            };
+        });
+
+        module.controller('portal_banners', function ($scope, $ok, $uibModal, $confirm) {
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('portal_banners');
+            $scope.$$translate = {{translates('company_partners') | safe}};
+            $scope.url_banners = '{{ url_for('portal.banners_load', portal_id=portal.id)}}';
+            $scope.url_save_banners = '{{ url_for('portal.save_portal_banner', portal_id = portal.id) }}';
+            $scope.company = {{ company.get_client_side_dict()|safe }};
+
+            {% raw %}
+            $scope.showModalForEdit = function (row, col, text) {
+
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'banners.html',
+                    controller: 'banners_controller',
+                    resolve: {
+                        'EdittextWithHtml': function () {
+                            console.log(row.entity.html)
+                            return row.entity.html
+                        }
+                    }
+                });
+                modalInstance.result.then(function (returnedtext) {
+                    $scope.saveTranslWithHtml(returnedtext, row, col);
+                });
+            };
+
+
+            $scope.sendData = function (grid_data, setdatafuctions) {
+                $scope.loading = true;
+                $ok($scope.url_save_banners, grid_data, setdatafuctions).finally(function () {
+                    $scope.gridApi.grid.setGridData();
+                    $scope.loading = false;
+                    $scope.load_contr = true;
+                });
+            };
+
+            $scope.saveTranslWithHtml = function (text, row, col) {
+                var grid_data = $scope.gridApi.grid.all_grid_data;
+                grid_data['editBanners'] = {
+                    'html': text,
+                    'portal_id': row.entity.portal_id,
+                    'id': row.entity.id
+                };
+                $scope.sendData(grid_data);
+            };
+
+            $scope.confirm_action = function (row_id, action_name, row, column_name) {
+                if (action_name === 'set_default') {
+                    $confirm('are you sure you want reset it to default value', row['default_value']).then(function (resp) {
+                        $ok('', {
+                            'action_name': action_name,
+                            'row': row,
+                            'id': row_id
+                        }, function (resp) {
+                            $scope.gridApi.grid.setGridData();
+                        });
+                    });
+                }
+                else {
+                    $ok('', {
+                        'action_name': action_name,
+                        'row': row,
+                        'id': row_id
+                    }, function (resp) {
+                        $scope.gridApi.grid.setGridData();
+                    });
+                }
+            }
+
+            $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
+                urlLoadGridData: $scope.url_banners,
+                columnDefs: [
+                    {name: 'place'},
+                    {
+                        name: 'html', type: 'editable', subtype: 'tinymce',
+                        modal: "grid.appScope.showModalForEdit(row, col, row.entity[col.field])",
+                        filter: {type: 'input'}
+                    },
+                    {name: 'actions', type: 'actions', 'onclick': 'confirm_action'}
+                ]
+            });
+
+        })
+    </script>
+
+    <script type="text/ng-template" id="portal_banners.html">
+        <div class="modal-header">
+            <h3 class="modal-title">{{ title }}</h3>
+        </div>
+        <div class="modal-body">
+            {{ question }}
+        </div>
+
+        <div class="modal-footer">
+            <button ng-repeat="b in buttons" class="btn {{b.class_name}}" ng-click="ans(b.answer)">{{ b.text }}</button>
+        </div>
+    </script>
+
+
+
+    <div ng-controller="portal_banners" ng-cloak>
+        <div class="grid" id="grid1" ui-grid-pagination ui-grid-edit ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+                <i class="fa fa-spinner fa-spin"></i>
+                <div>{{ _('Data Loading...') }}</div>
+            </div>
+        </div>
+    </div>
+    {% endraw %}
+{% endblock portal_content %}

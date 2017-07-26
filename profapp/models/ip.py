@@ -1,7 +1,8 @@
+from sqlalchemy import Column
+
+from profapp import utils
 from .pr_base import PRBase, Base
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from sqlalchemy import Column
-from utils.db_utils import db
 
 
 class Ips(Base, PRBase):
@@ -17,13 +18,13 @@ class Ips(Base, PRBase):
     @staticmethod
     def delete(objects):
         for obj in objects:
-            f = db(Ips, id=obj['id']).first()
+            f = utils.db.query_filter(Ips, id=obj['id']).first()
             f.delete()
         return 'True'
 
     @staticmethod
     def subquery_search(template=None, url=None, **kwargs):
-        sub_query = db(Ips)
+        sub_query = utils.db.query_filter(Ips)
         if 'filter' in kwargs:
             if 'url' in kwargs['filter']:
                 sub_query = sub_query.filter_by(url=kwargs['filter']['url'])

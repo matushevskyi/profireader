@@ -1,0 +1,75 @@
+{% extends "index_lazy_layout.html" %}
+{% block head %}
+    {{ super() }}
+    {% include '_ruslan/partials/_header_files_grid.html' %}
+{% endblock head %}
+{% block styles %}
+    {{ super() }}
+    <style>
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th {
+    background-color: #af9f86;
+{#    color: white;#}
+    color: #8d4747;
+}
+
+tr:nth-child(even) {background-color: #f2f2f2}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+</style>
+{% endblock styles %}
+
+{% block portal_content %}
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+<script>
+    module.controller('CompanyReaders', ['$scope','$ok', function ($scope, $ok) {
+        angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_readers');
+        $scope.$$translate = {{ translates('CompanyReaders')|safe }};
+        $scope.own_company_id = '{{ company.id }}';
+        $scope.portal_id = '{{ portal.id }}';
+        $scope.get_readers = {{ raw_url_for('portal.readers_load')|safe }};
+        $scope.get_link_user_profile = {{ raw_url_for('user.profile')|safe }};
+
+        {% raw %}
+
+        $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
+             urlLoadGridData: $scope.get_readers({portal_id: $scope.portal_id}),
+             columnDefs: [
+                 { name: 'first_name', type: 'link', href:'get_link_user_profile({user_id : row.entity.id})', enableSorting: false,enableCellEdit: false, enableColumnMenu: false, displayName: 'User profile', width: '35%',
+                     filter: {type:'input'}
+                 },
+                 { name: 'address_email', enableSorting: false,enableCellEdit: false, enableColumnMenu: false, displayName: 'Email',
+                     filter: {type:'input'}
+                 },
+                 { name: 'full_name', enableSorting: false,displayName: 'Nickname', enableCellEdit: false, enableColumnMenu: false,
+                     filter: {type:'input'}
+                 },
+                 { name: 'last_name', enableSorting: false,displayName: 'Last Name', enableCellEdit: false, enableColumnMenu: false,
+                     filter: {type:'input'}
+                 }
+             ]
+         });
+        {% endraw %}
+    }]);
+</script>
+
+    <div ng-controller="CompanyReaders" ng-cloak>
+        <h3 style="text-align: center!important;">{{_('Portal readers')}}</h3>
+        <div class="grid" id="grid1" ui-grid-edit ui-grid-pagination ui-grid="gridOptions1" >
+            <div class="well grid-loading" ng-show="loading">
+              <i class="fa fa-spinner fa-spin"></i><div>{{ _('Data Loading...') }}</div>
+            </div>
+
+        </div>
+    </div>
+{% endblock portal_content %}

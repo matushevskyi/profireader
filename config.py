@@ -1,5 +1,6 @@
 import os
-import secret_data
+import scrt.secret_data as secret_data
+from main_domain import MAIN_DOMAIN
 
 
 def database_uri(host, username, password, db_name):
@@ -19,8 +20,10 @@ class Config(object):
     # 0.0.0.0    profireader.a
     # to /etc/hosts
 
-    # SERVER_NAME = 'profireader.com'
     SITE_TITLE = 'Profireader'
+    MAIN_DOMAIN = MAIN_DOMAIN
+
+    OUR_IPS = ['136.243.204.62']
 
     # Statement for enabling the development environment
     DEBUG = False
@@ -40,32 +43,36 @@ class Config(object):
     PROFIREADER_ADMINS = secret_data.PROFIREADER_ADMINS
     WTF_CSRF_ENABLED = False
 
+    JSON_SORT_KEYS = False
+
+    PROTOCOL = 'http:'
+
     # Application threads. A common general assumption is
     # using 2 per available processor cores - to handle
     # incoming requests using one and performing background
     # operations using the other.
     THREADS_PER_PAGE = 2
 
-# Ratio for image_editor, can be :
-# 1.7777777777777777, 1.3333333333333333, 0.6666666666666666, 1
+    # Ratio for image_editor, can be :
+    # 1.7777777777777777, 1.3333333333333333, 0.6666666666666666, 1
     THUMBNAILS_SIZE = (100, 100)
     IMAGE_EDITOR_RATIO = 1.3333333333333333
-    HEIGHT_IMAGE = 300   # px
+    HEIGHT_IMAGE = 300  # px
     ALLOWED_IMAGE_FORMATS = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG',
                              'JPEG2000', 'MSP', 'PCX', 'PNG', 'PPM',
                              'SPIDER', 'TIFF', 'WebP', 'XBM',
                              'XV Thumbnails']
 
-# Pagination
+    # Pagination
     ITEMS_PER_PAGE = 10
     PAGINATION_BUTTONS = 2
 
-# GOOGLE API
+    # GOOGLE API
     GOOGLE_API_SECRET_KEY = secret_data.GOOGLE_API_SECRET_KEY
     GOOGLE_API_SECRET_JSON = secret_data.GOOGLE_API_SECRET_JSON
     GOOGLE_API_KEY_SIMPLE = secret_data.GOOGLE_API_KEY_SIMPLE
     YOUTUBE_API = dict(SCOPE="https://www.googleapis.com/auth/youtube",
-                       UPLOAD=dict(REDIRECT_URI="http://profireader.com/filemanager/uploader/",
+                       UPLOAD=dict(REDIRECT_URI='//' + MAIN_DOMAIN + "/filemanager/uploader/",
                                    SEND_URI="https://www.googleapis.com/upload/youtube/v3/"
                                             "videos?%s"),
                        CREATE_PLAYLIST=dict(SEND_URI="https://www.googleapis.com/youtube/v3/"
@@ -76,7 +83,7 @@ class Config(object):
     YOUTUBE_API_SERVICE_NAME = "youtube"
     YOUTUBE_API_VERSION = "v3"
 
-# Base rights will added when user is confirmed in company
+    # Base rights will added when user is confirmed in company
     BASE_RIGHT_IN_COMPANY = ['upload_files', 'submit_publications']
     # Define the application directory
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -91,7 +98,7 @@ class Config(object):
 
     # Secret key for wtforms
     WTF_CSRF_ENABLED = False
-    WTF_CSRF_SECRET_KEY = secret_data.WTF_CSRF_SECRET_KEY
+    # WTF_CSRF_SECRET_KEY = secret_data.WTF_CSRF_SECRET_KEY
 
     host = secret_data.DB_HOST
     username = secret_data.DB_USER
@@ -106,14 +113,16 @@ class Config(object):
     # PRESERVE_CONTEXT_ON_EXCEPTION = False
 
     BABEL_DEFAULT_LOCALE = 'uk'
-    LANGUAGES = [{'name':'uk', 'display':'Ukrainian'},
-                 {'name':'en', 'display':'English'}]
+    LANGUAGES = [{'name': 'uk', 'display': 'Ukrainian'},
+                 {'name': 'en', 'display': 'English'}]
 
+    FLUENT_LOGGER_HOST = 'fluid.profi'
+    FLUENT_LOGGER_PORT = 24224
 
 
 class ProductionDevelopmentConfig(Config):
+    # Define database connection parameters
 
-    #Define database connection parameters
     host = os.getenv('PRODUCTION_SERVER_DB_HOST', Config.host)
     username = os.getenv('PRODUCTION_SERVER_DB_USERNAME', Config.username)
     password = os.getenv('PRODUCTION_SERVER_DB_PASSWORD', Config.password)
@@ -137,16 +146,20 @@ class ProductionDevelopmentConfig(Config):
     SITE_TITLE = os.getenv('PRODUCTION_SERVER_SITE_TITLE', Config.SITE_TITLE)
 
     # Facebook settings
-#    CONSUMER_KEY_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_KEY',
-#                                Config.CONSUMER_KEY_FB)
-#    CONSUMER_SECRET_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_SECRET',
-#                                   Config.CONSUMER_SECRET_FB)
+    #    CONSUMER_KEY_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_KEY',
+    #                                Config.CONSUMER_KEY_FB)
+    #    CONSUMER_SECRET_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_SECRET',
+    #                                   Config.CONSUMER_SECRET_FB)
 
 
     if 'PRODUCTION_SERVER_DB_HOST' not in os.environ.keys():
-
         # Statement for enabling the development environment
         DEBUG = True
+
+
+class CommandLineConfig(ProductionDevelopmentConfig):
+    SERVER_NAME = MAIN_DOMAIN
+    SESSION_TYPE = 'filesystem'
 
 
 class FrontConfig(Config):
@@ -156,7 +169,7 @@ class FrontConfig(Config):
     password = os.getenv('PRODUCTION_SERVER_DB_PASSWORD', Config.password)
     db_name = os.getenv('PRODUCTION_SERVER_DB_NAME', Config.database)
 
-    #SERVER_NAME = os.getenv('PRODUCTION_SERVER_NAME', Config.SERVER_NAME)
+    # SERVER_NAME = os.getenv('PRODUCTION_SERVER_NAME', Config.SERVER_NAME)
 
     # Define production database
     SQLALCHEMY_DATABASE_URI = \
@@ -172,13 +185,12 @@ class FrontConfig(Config):
     SITE_TITLE = os.getenv('PRODUCTION_SERVER_SITE_TITLE', Config.SITE_TITLE)
 
     # Facebook settings
-#    CONSUMER_KEY_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_KEY',
-#                                Config.CONSUMER_KEY_FB)
-#    CONSUMER_SECRET_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_SECRET',
-#                                   Config.CONSUMER_SECRET_FB)
+    #    CONSUMER_KEY_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_KEY',
+    #                                Config.CONSUMER_KEY_FB)
+    #    CONSUMER_SECRET_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_SECRET',
+    #                                   Config.CONSUMER_SECRET_FB)
 
     if 'PRODUCTION_SERVER_DB_HOST' not in os.environ.keys():
-
         # Statement for enabling the development environment
         DEBUG = True
 
@@ -193,8 +205,8 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False
 
     # Define database connection parameters
-    host = secret_data.DB_HOST_UNITTEST
-    database = secret_data.DB_NAME_UNITTEST
+    host = secret_data.DB_UNITTEST_HOST
+    database = secret_data.DB_UNITTEST_NAME
 
     # Define the database - we are working with
     SQLALCHEMY_DATABASE_URI = \

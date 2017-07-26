@@ -3,96 +3,124 @@
 {% block head %}
     {{ super() }}
     {% include '_ruslan/partials/_header_files_grid.html' %}
+    {% include '_ruslan/partials/_header_files_publish.html' %}
 {% endblock head %}
 
 {% block title %}Profireader - {{ _('Publications') }}{% endblock title %}
 
 {% block portal_content %}
 
-
-
     <script>
-        module.controller('article_list', function ($scope, $ok, $sce, $publish) {
+        module.controller('article_list', function ($scope, $ok, $sce, $publish, $confirm) {
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('publications');
+
             $scope.company = {{ company.get_client_side_dict()|tojson|safe }};
+            $scope.portal = {{ portal.get_client_side_dict()|tojson|safe }};
+            $scope.membership = {{ membership.get_client_side_dict(fields='id')|tojson|safe }};
+
             $scope.$$translate = {{ translates('article_list')|safe }};
 
-            $scope.url_update_publication = {{ raw_url_for('article.article_show_form')|safe }};
-            $scope.url_search_article = {{ raw_url_for('portal.publications_load')|safe }};
+            $scope.url_load_publications = {{ raw_url_for('portal.publications_load')|safe }};
 
             $scope.url_front_publication_details = {{ raw_url_for('front.article_details')|safe }};
-            $scope.url_front_publication_division = {{ raw_url_for('front.division')|safe }};
+            $scope.url_portal_companies_members = {{ grid_raw_url_for('portal.companies_members')|safe }};
 
-            $scope.url_front_publication_division_host = function (division_name, host) {
-                return division_name ? ('//' + host + $scope.url_front_publication_division({division_name: division_name})) : '';
-            }
+            $scope.url_publication_change_status = {{ raw_url_for('article.publication_change_status')|safe }};
 
-            $scope.url_front_publication_details_host = function (publication_id, host) {
-                return publication_id ? ('//' + host + $scope.url_front_publication_details({publication_id: publication_id})) : '';
-            }
+            $scope.url_company = function (row) {
+                return $scope.url_portal_companies_members(row.publisher_membership['id'], {portal_id: $scope.portal.id})
+            };
+
+            $scope.url_front = function (row) {
+                return '//' + $scope.portal.host +
+                    $scope.url_front_publication_details({
+                        publication_id: row['publication']['id'],
+                        publication_title: row['publication']['material']['title']
+                    });
+            };
 
             {% raw %}
-            $scope.noData = 'No publications';
 
             $scope.loadPublications = function (data, callback) {
-                $scope.loading = true
-                $ok($scope.url_search_article({company_id: $scope.company.id}), data, function (resp) {
+                $scope.loading = true;
+                $ok($scope.url_load_publications({portal_id: $scope.portal.id}), data, function (resp) {
                     callback(resp);
                     $scope.data = resp;
                     callback($scope.data);
-                }).finally(function(){
+                }).finally(function () {
                     $scope.loading = false
                 });
             };
 
             $scope.grid_action = function (id, action, row, column_name) {
-                if (action === 'EDIT') {
-                    window.location.href = $scope.url_update_publication({'company_id': $scope.company.id,'publication_id': row['id']});
-                    return;
-                }
-
-                else {
-                    var modalInstance = $publish({
-                        material_or_publication_id: row['id'],
+                var publication = row['publication'];
+                if (action === 'PUBLISH') {
+                    $publish({
+                        material_id: null,
+                        publication_id: publication['id'],
+                        request_from: 'portal_publications',
                         action: action,
-                        portal_id: $scope.data.portal['id'],
-                        company_id: $scope.company['id']
-                    });
-
-                    modalInstance.result.then(function (updated_row) {
-                        $scope.gridApi.grid.grid_change_row(updated_row);
-                    });
+                        actor_membership_id: $scope.membership.id,
+                        publisher_membership_id: row['publisher_membership']['id']
+                    }).result.then($scope.gridApi.grid.grid_change_row);
                 }
+                else {
+                    $confirm($scope._('are you sure you want ' + action + ' material'),
+                        $scope._('Material named `%(publication.material.title)s` of company `%(publisher_membership.company.name)s` at portal `%(publisher_membership.portal.name)s`', {
+                            publication: row['publication'],
+                            publisher_membership: row['publisher_membership']
+                        }))
+                        .then(function (resp) {
+                            $ok($scope.url_publication_change_status({
+                                actor_membership_id: $scope.membership.id,
+                                action: action,
+                                request_from: 'portal_publications',
+                                publication_id: row.publication.id
+                            }), {}, $scope.gridApi.grid.grid_change_row);
+                        });
+                }
+            };
 
-            }
 
             $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
                 loadGridData: $scope.loadPublications,
                 columnDefs: [
                     {
-                        name: 'publication.division.name', type: 'link', target: 'front',
-                        href: 'url_front_publication_division_host(row.entity.publication.division.name, row.entity.portal.host)'
-                    }
-                    ,
-                    {
-                        name: 'publication.title', type: 'link', target: 'front',
-                        href: 'url_front_publication_details_host(row.entity.publication.id, row.entity.portal.host)'
+                        name: 'publication.material.title',
+                        type: 'link',
+                        target: 'front',
+                        href: 'url_front(row.entity)',
+                        link: true,
+                        width: '200',
+                        img_url: 'publisher_membership.portal.logo.url'
                     },
                     {
-                        name: 'publication.status', afilter: {type: 'select'}, width: 100
+                        name: 'publisher_membership.company.name',
+                        type: 'link',
+                        href: 'url_company(row.entity)',
+                        img_url: 'publisher_membership.company.logo.url',
+                        width: '200'
+                    },
+                    {name: 'publication.tags', afilter: {type: 'multi_select'}, type: 'tags', width: '150'},
+                    {name: 'publication.publishing_tm', enableSorting: true, width: '150'},
+                    {
+                        name: 'publication.visibility', width: '75',
+                        'classes': function (id, row, fieldname) {
+                            return row && row['publication'] ? 'publication-bg-VISIBILITY-' + row['publication']['visibility'] : '';
+                        }
                     },
                     {
-                        name: 'publication.visibility', afilter: {type: 'select'}, width: 100
+                        name: 'publication.status', width: '75',
+                        'classes': function (id, row, fieldname) {
+                            return row && row['publication'] ? 'publication-fg-STATUS-' + row['publication']['status'] : '';
+                        }
                     },
+
                     {
-                        name: 'publication.publishing_tm', afilter: {type: 'date_range'}
-                    }
-                    , {
-                        name: 'actions', type: 'actions', onclick: 'grid_action', width: 300,
+                        name: 'actions', type: 'actions', onclick: 'grid_action', width: '300'
                     }
                 ]
             });
-
 
         });
         {% endraw %}
@@ -100,26 +128,12 @@
     {% include 'company/company_base_angular.html' %}
     {% raw %}
 
-    <style>
-        .pr-grid-cell-field-type-actions-action-publish {
-            background-color: greenyellow;
-        }
-
-        .pr-grid-cell-field-type-actions-action-unpublish {
-            background-color: #1ab7ea;
-        }
-
-        .pr-grid-cell-field-type-actions-action-delete {
-            background-color: red;
-        }
-    </style>
-
     <div ng-controller="article_list" ng-cloak>
-       <!-- <h2>{{ _('Publications at portal `%(data.portal.name)s` (of company `%(data.company.name)s`)')}}</h2> -->
         <h2>{{ _('Publications at portal') }}</h2>
         <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1">
             <div class="well grid-loading" ng-show="loading">
-              <i class="fa fa-spin fa-spinner"></i><div>{{ _('Data Loading...') }}</div>
+                <i class="fa fa-spinner fa-spin"></i>
+                <div>{{ _('Data Loading...') }}</div>
             </div>
         </div>
     </div>

@@ -1,0 +1,2 @@
+*/30 * * * * root ----directory----/tools/run_with_env_only_single_copy.sh check_google_analytics.py --fix --skip-checking-analytics
+35 4 * * * root ----directory----/tools/run_with_env_only_single_copy.sh check_google_analytics.py --skip-checking-portals

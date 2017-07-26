@@ -1,0 +1,27 @@
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="shortcut icon" href="{{ portal.favicon.url }}" type="image/x-icon"/>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js" crossorigin="anonymous"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+
+<link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.css" rel="stylesheet">
+
+<script src="{{ static_address('new/moment/moment.min.js') }}"></script>
+{% if g.lang != 'en' -%}
+    <script src="{{ static_address('new/moment/' + g.lang + '.js') }}"></script>
+{%- endif %}
+
+<link href="{{ static_address('front/' + portal.layout.name + '/css/style.css') }}" rel="stylesheet">
+<link href="{{ static_address('css/article.css') }}" rel="stylesheet">
+<link href="{{ static_address('front/' + portal.layout.name + '/css/article.css') }}" rel="stylesheet">
+
+<script src="{{ static_address('front/' + portal.layout.name + '/js/script.js') }}"></script>
+
+
+{{ config_variables()|safe }}

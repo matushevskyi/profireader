@@ -1,9 +1,15 @@
 <!---?GRID?---->
-    <link rel="styleSheet" href="//static.profireader.com/static/css/ui-grid.css"/>
-    <script src="//static.profireader.com/static/ui-grid/ui-grid.min.js"></script>
-{#    <script src="//static.profireader.com/static/ui-grid/csv.js"></script>#}
-{#    <script src="//static.profireader.com/static/ui-grid/pdfmake.js"></script>#}
-    <script src="//static.profireader.com/static/ui-grid/vfs_fonts.js"></script>
-    <script>
-           pr_angular_modules.push('ui.grid' , 'ui.grid.pagination' , 'ui.grid.edit', 'ui.grid.selection', 'ui.grid.grouping', 'ui.grid.treeView' );
-     </script>
+<link rel="styleSheet" href="{{ static_address('css/ui-grid.css') }}"/>
+<script src="{{ static_address('ui-grid/ui-grid.min.js') }}"></script>
+{#    <script src="{{ static_address('ui-grid/vfs_fonts.js') }}"></script>#}
+<script src="{{ static_address('js/pr-grid-angular.js') }}"></script>
+<style>
+
+    .pr-grid-cell-field-name-publications {
+        padding: 0px;
+    }
+
+</style>
+<script>
+    pr_angular_modules.push('ui.grid', 'ui.grid.pagination', 'ui.grid.edit', 'ui.grid.selection', 'ui.grid.grouping', 'ui.grid.treeView');
+</script>

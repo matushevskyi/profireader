@@ -1,0 +1,22 @@
+{# реєстрація/логування з підпискою на портали через соціальні мережі #}
+<div class="social-icons-style">
+    <div class="google-icon">
+        <a
+           href="{{ url_for('auth.login_signup_soc_network', soc_network_name='google', portal_id=request.args.get('subscribe', None)) }}"><i class="fa fa-google-plus-square fa-3x"></i></a>
+    </div>
+    <div class="facebook-icon">
+        <a
+           href="{{ url_for('auth.login_signup_soc_network', soc_network_name='facebook', portal_id=request.args.get('subscribe', None)) }}"><i class="fa fa-facebook-square fa-3x"></i></a>
+    </div>
+    <div class="linkedin-icon">
+        <a
+           href="{{ url_for('auth.login_signup_soc_network', soc_network_name='linkedin', portal_id=request.args.get('subscribe', None)) }}"><i
+                class="fa fa-linkedin-square fa-3x"></i></a>
+    </div>
+    {#    <div class="microsoft-icon">#}
+    {#        <a#}
+    {#           href="{{ url_for('auth.login_signup_soc_network', soc_network_name='microsoft', portal_id=request.args.get('subscribe', None)) }}">#}
+    {#            <i class="fa fa-windows fa-3x"></i>#}
+    {#        </a>#}
+    {#    </div>#}
+</div>

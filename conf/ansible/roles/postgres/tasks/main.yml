@@ -1,0 +1,41 @@
+
+- name: Load a variables
+  include_vars: "../vars/vault.yml"
+
+- name: install prerequisites
+  become: yes
+  apt: name={{ item }} state=latest update_cache=yes
+  with_items:
+    - libpq-dev
+    - python-psycopg2
+
+- name: Install postgresql
+  apt:
+    update_cache: yes
+    name: 'postgresql'
+
+- name: copy scripts
+  copy:
+    src: "{{role_path}}/scripts/"
+    mode: preserve
+    dest: "/"
+
+- name: Enable postgres
+  service:
+    name: postgresql
+    state: restarted
+    enabled: yes
+
+- name: create profi database
+  sudo: yes
+  sudo_user: postgres
+  postgresql_db:
+    name: "{{ postgres.db }}"
+
+- name: create profi database
+  sudo: yes
+  sudo_user: postgres
+  postgresql_user:
+    db: "{{ postgres.db }}"
+    name: "{{ postgres.user }}"
+    password: "{{ postgres.pass }}"

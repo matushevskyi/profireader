@@ -1,0 +1,7 @@
+---
+
+- hosts: "{{ hosts|default('*') }}"
+  remote_user: root
+  roles:
+    - profi
+    - postgres

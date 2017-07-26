@@ -1,34 +1,52 @@
-from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..constants.TABLE_TYPES import TABLE_TYPES
-from sqlalchemy import Table, Column, Integer, Text, ForeignKey, String, Boolean, or_, and_, text, desc, asc, join
-from sqlalchemy.orm import relationship, backref, make_transient, class_mapper, aliased
-from sqlalchemy.sql import func
+import collections
+import datetime
+import operator
 import re
 import sys
-import traceback
-from flask import g
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import event
-from ..controllers import errors
-from utils.db_utils import db
-from html.parser import HTMLParser
-from ..constants.SEARCH import RELEVANCE
-from config import Config
-import collections
-from sqlalchemy.sql import expression, functions, update
-from sqlalchemy import and_
-import datetime
 import time
-import operator
+import traceback
 from collections import OrderedDict
-import base64
-from PIL import Image
-from io import BytesIO
 
-from ..utils import fileUrl, fileID
-from sqlalchemy.ext.associationproxy import association_proxy, AssociationProxy
+from flask import g
+from sqlalchemy import Column, or_, desc, asc
+from sqlalchemy import and_
+from sqlalchemy.ext.associationproxy import AssociationProxy
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import make_transient, class_mapper
+from sqlalchemy.sql import expression
+from sqlalchemy.sql import func
+
+from config import Config
+from .. import utils
+from ..constants.SEARCH import RELEVANCE
+from ..constants.TABLE_TYPES import TABLE_TYPES
+from ..models import exceptions
 
 Base = declarative_base()
+
+
+class DateIntervalDescriptor(object):
+    def __init__(self):
+        pass
+
+    def __get__(self, instance, owner):
+        res, am = instance.split(' ')
+        return {'resolution': res, 'amount': am}
+
+    # def proxy_setter(self, file_image_crop: FileImageCrop, client_data):
+    def __set__(self, instance, data):
+        if data['amount'] < 0:
+            raise exceptions.BadDataProvided({'message': 'amount < 0'})
+        if data['resolution'] not in ['days', 'years', 'weeks', 'months']:
+            raise exceptions.BadDataProvided(
+                {'message': "resolution should have following values: 'days', 'years', 'weeks', 'months'"})
+
+        instance = "%s %s" % (int(data['amount']), data['resolution'])
+
+        # self.id = client_data.get('id', None)
+        # self.company_id = client_data.get('company_id', None)
+        # self.member_company_portal_id = client_data.get('member_company_portal_id', None)
+        return True
 
 
 # this event is called whenever an attribute
@@ -95,6 +113,7 @@ class Search(Base):
     ORDER_POSITION = 2
     ORDER_MD_TM = 3
 
+    # TODO: OZ by OZ: remove this function after replacement
     def search(self, *args: dict, **kwargs):
         """ *args: dictionary with following values -
                              -class = sqlalchemy table class object,
@@ -175,15 +194,16 @@ class Search(Base):
         join_search = []
         for arg in args:
             join_params = arg.get('join') or arg['class']
-            join_search.append(db(subquery_search).join(join_params,
-                                                        arg['class'].id == subquery_search.c.index).subquery())
+            join_search.append(utils.db.query_filter(subquery_search).join(join_params,
+                                                                           arg[
+                                                                               'class'].id == subquery_search.c.index).subquery())
         objects = collections.OrderedDict()
         to_order = {}
         _order_by = kwargs.get('order_by') or Search.ORDER_MD_TM
         ord_by = 'text' if type(_order_by) in (str, list, tuple) \
             else self.__order_by_to_str[_order_by]
         for search in join_search:
-            for cls in db(search).all():
+            for cls in utils.db.query_filter(search).all():
                 objects[cls.index] = {'id': cls.index, 'table_name': cls.table_name,
                                       'order': getattr(cls, ord_by), 'md_tm': cls.md_tm}
                 to_order[cls.index] = (getattr(cls, ord_by), getattr(cls, 'md_tm'))
@@ -210,18 +230,18 @@ class Search(Base):
 
     def __get_subquery(self, *args, ord_by=None):
         def add_joined_search(field_name):
-            joined = db(Search.index, func.min(Search.text).label('text'),
-                        func.min(Search.table_name).label('table_name'),
-                        index=subquery_search.subquery().c.index).filter(
+            joined = utils.db.query_filter(Search.index, func.min(Search.text).label('text'),
+                                           func.min(Search.table_name).label('table_name'),
+                                           index=subquery_search.subquery().c.index).filter(
                 Search.kind.in_(tuple(field_name))).group_by(Search.index)
             return joined
 
-        subquery_search = db(Search.index.label('index'),
-                             func.sum(Search.relevance).label('relevance'),
-                             func.min(Search.table_name).label('table_name'),
-                             func.min(Search.md_tm).label('md_tm'),
-                             func.max(Search.position).label('position'),
-                             func.max(Search.text).label('text')).filter(
+        subquery_search = utils.db.query_filter(Search.index.label('index'),
+                                                func.sum(Search.relevance).label('relevance'),
+                                                func.min(Search.table_name).label('table_name'),
+                                                func.min(Search.md_tm).label('md_tm'),
+                                                func.max(Search.position).label('position'),
+                                                func.max(Search.text).label('text')).filter(
             or_(*self.__get_search_params(*args))).group_by('index')
         if type(ord_by) in (str, list, tuple):
             order = self.__get_order('text', 'text')
@@ -265,7 +285,7 @@ class Search(Base):
             tags = cls.get('tags')
             assert type(fields) is str, \
                 'Arg parameter return_fields must be string but %s given' % fields
-            for a in db(cls['class']).filter(cls['class'].id.in_(
+            for a in utils.db.query_filter(cls['class']).filter(cls['class'].id.in_(
                     list(map(lambda x: x[0], ordered_objects_list)))).all():
                 if fields != 'default_dict' and not tags:
                     items[a.id] = a.get_client_side_dict(fields=fields)
@@ -287,9 +307,10 @@ class Search(Base):
             assert type(fields) is list or tuple, \
                 'Arg parameter fields should be list or tuple but %s given' % type(fields)
             if filter_params is None:
-                filter_array = [Search.index == db(arg['class'].id).subquery().c.id]
+                filter_array = [Search.index == utils.db.query_filter(arg['class'].id).subquery().c.id]
             else:
-                filter_array = [Search.index == db(arg['class'].id).filter(filter_params).subquery().c.id]
+                filter_array = [
+                    Search.index == utils.db.query_filter(arg['class'].id).filter(filter_params).subquery().c.id]
             filter_array.append(Search.table_name == arg['class'].__tablename__)
             filter_array.append(Search.kind.in_(fields))
             search_text = self.__search_text
@@ -326,30 +347,7 @@ class Search(Base):
             filename_, line_, func_, text_ = tb_info[-1]
             message = 'An error occurred on File "{file}" line {line}\n {assert_message}'.format(
                 line=line_, assert_message=e.args, file=filename_)
-            raise errors.BadDataProvided({'message': message})
-
-
-class MLStripper(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        # TODO OZ BY VK : WHY WE ARE USING reset() method?
-        # self.reset()
-        self.strict = False
-        self.convert_charrefs = True
-        self.fed = []
-
-    def handle_data(self, d):
-        self.fed.append(d)
-
-    def get_data(self):
-        return ''.join(self.fed)
-
-    def strip_tags(self, html):
-        self.feed(html)
-        data = self.get_data()
-        if data is '':
-            data = html
-        return data
+            raise exceptions.BadDataProvided({'message': message})
 
 
 class Grid:
@@ -386,15 +384,16 @@ class Grid:
                     sort['field'].desc())
         return query
 
-    @staticmethod
-    def grid_tuple_to_dict(tuple):
-        list = []
-        for t in tuple:
-            list.extend([t[0]] + t[1])
-        return list
+        # @staticmethod
+        # def grid_tuple_to_dict(tuple):
+        #     list = []
+        #     for t in tuple:
+        #         list.extend([t[0]] + t[1])
+        #     return list
 
 
 class PRBase:
+    # TODO: OZ by OZ: for what is this property?
     omit_validation = False
 
     # search_fields = {}
@@ -402,7 +401,19 @@ class PRBase:
     def __init__(self):
         self.query = g.db.query_property()
 
-    # TODO: YG by OZ: move this (to next comment) static methods to utils (just like `putInRange` moved)
+    # TODO: YG by OZ: move this (to next comment) static methods to tools (just like `putInRange` moved)
+
+    @classmethod
+    def get_page(cls, select_from=None, order_by=None, filter=None, page=1, per_page=10):
+        page = 1 if page is None else page
+        per_page = 10 if per_page is None else per_page
+        sel_from = cls if select_from is None else select_from
+        ord = desc(sel_from.id) if order_by is None else order_by
+        sql = g.db.query(sel_from)
+        if filter is not None:
+            sql = sql.filter(filter)
+        ret = sql.order_by(ord).limit(per_page + 1).offset((page - 1) * per_page).all()
+        return ret[0:per_page], page + 1 if len(ret) > per_page else -1,
 
     @staticmethod
     def get_ordered_dict(list_of_dicts, **kwargs):
@@ -410,6 +421,11 @@ class PRBase:
         for item in list_of_dicts:
             ret[item['id']] = item
         return ret
+
+    @classmethod
+    def get_all_active_ordered_by_position(classname, **kwargs):
+        return [e.get_client_side_dict(**kwargs) for e in
+                utils.db.query_filter(classname).filter_by(active=True).order_by(classname.position).all()]
 
     @staticmethod
     def str2float(str, onfail=None):
@@ -443,7 +459,7 @@ class PRBase:
     def del_attr_by_keys(dict, keys):
         return {key: dict[key] for key in dict if key not in keys}
 
-    # TODO: YG by OZ: move this static methods to utils
+    # TODO: YG by OZ: move this static methods to tools
 
 
     def position_unique_filter(self):
@@ -455,7 +471,7 @@ class PRBase:
     # if else - insert after given id
     def insert_after(self, insert_after_id, filter=None):
 
-        tochange = db(self.__class__)
+        tochange = utils.db.query_filter(self.__class__)
 
         if filter is not None:
             tochange = tochange.filter(filter)
@@ -494,36 +510,31 @@ class PRBase:
 
         return self
 
-    def get_image_cropped_file(self, parameters={}, croped_image_file_id=None):
-        ret = {
-            'upload': parameters.get('upload'),
-            'browse': parameters.get('browse'),
-            'none': parameters.get('none'),
-            'cropper': {'aspect_ratio': parameters.get('aspect_ratio')} if parameters.get('crop') else False,
-            'min_size': parameters.get('min_size'),
-            'preset_urls': parameters.get('preset_urls'),
-            'no_selection_url': parameters.get('no_selection_url'),
-            'selected_by_user': {'type': 'none'}
-        }
-        if croped_image_file_id:
-            ret['selected_by_user'] = {'type': 'browse', 'image_file_id': croped_image_file_id.original_image_id}
-            if ret['cropper']:
-                ret['selected_by_user']['crop_coordinates'] = croped_image_file_id.get_coordinates()
-
-        return ret
-
     @staticmethod
     def DEFAULT_VALIDATION_ANSWER():
         return {'errors': {}, 'warnings': {}, 'notices': {}}
 
-    def validate(self, is_new=False):
-        return self.DEFAULT_VALIDATION_ANSWER()
+    def validate(self, is_new=False, regexps={}):
+        ret = self.DEFAULT_VALIDATION_ANSWER()
+
+        for (atr, regexp) in regexps.items():
+            if not re.match(regexp, getattr(self, atr)):
+                ret['errors'][atr] = "%s should match regexp %s" % (atr, regexp)
+        return ret
+
+    @staticmethod
+    def validation_append_by_ids(validation_result, collection, *dict_indicies):
+        for item in collection:
+            append = item.validate()
+            for k in ['errors', 'warnings', 'notices']:
+                if k in append and append[k]:
+                    utils.dict_deep_replace(append[k], validation_result, *((k,) + dict_indicies + (item.id,)))
 
     def delete(self):
         g.db.delete(self)
         g.db.commit()
 
-    def refreshSession(self):
+    def refresh(self):
         g.db.refresh(self)
         return self
 
@@ -532,10 +543,15 @@ class PRBase:
         g.db.flush()
         return self
 
-    def attr(self, dictionary):
+    def attr(self, dictionary={}, **kwargs):
         for k in dictionary:
             setattr(self, k, dictionary[k])
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
         return self
+
+    def attr_filter(self, dictionary, *filters):
+        self.attr(utils.filter_json(dictionary, *filters))
 
     def detach(self):
         if self in g.db:
@@ -545,23 +561,35 @@ class PRBase:
         self.id = None
         return self
 
-    def expunge(self):
-        g.db.expunge(self)
-        return self
+    # def expunge(self):
+    #     g.db.expunge(self)
+    #     return self
 
     def get_client_side_dict(self, fields='id',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
     @classmethod
-    def get(cls, id):
-        return g.db().query(cls).filter(cls.id == id).one()
+    def get_attr(cls, id, attr='id', ifNone=None):
+        return getattr(g.db().query(cls).filter(cls.id == id).first(), attr, ifNone)
+
+    @classmethod
+    def get(cls, id, returnNoneIfNotExists=False):
+        return g.db().query(cls).filter(cls.id == id).first() if returnNoneIfNotExists else g.db().query(cls).filter(
+            cls.id == id).one()
+
+    @classmethod
+    def all(cls):
+        return g.db().query(cls).all()
 
     def to_dict_object_property(self, object_name):
         object_property = getattr(self, object_name)
         if isinstance(object_property, datetime.datetime):
             return object_property.replace(object_property.year, object_property.month, object_property.day,
                                            object_property.hour, object_property.minute, object_property.second, 0)
+            # return object_property.replace(object_property.year, object_property.month, object_property.day,
+            #                            object_property.hour, object_property.minute, object_property.second,
+            #                            0).strftime("%a, %d %b %Y %H:%M:%S")
         elif isinstance(object_property, datetime.date):
             return object_property.strftime('%Y-%m-%d')
         elif isinstance(object_property, dict):
@@ -572,6 +600,8 @@ class PRBase:
             # TODO: OZ by OZ:**kwargs should accept lambdafunction for fields formattings
 
     def to_dict(self, *args, prefix=''):
+        # TODO: OZ by OZ: this function is wrong. we need walk through requested fields and return appropriate attribute.
+        # Now we walk through attribute (yes?)
         ret = {}
         __debug = True
 
@@ -618,6 +648,14 @@ class PRBase:
         if '*' in req_columns and __debug:
             del req_columns['*']
 
+        del_req_columns_in_attrs = []
+        for colname in req_columns:
+            if hasattr(self, colname) and colname not in relations:
+                del_req_columns_in_attrs.append(colname)
+                ret[colname] = getattr(self, colname)
+        for colname in del_req_columns_in_attrs:
+            del req_columns[colname]
+
         if len(req_columns) > 0:
             columns_not_in_relations = list(set(req_columns.keys()) - set(relations.keys()))
             if len(columns_not_in_relations) > 0:
@@ -660,6 +698,17 @@ class PRBase:
         if '*' in req_relationships:
             del req_relationships['*']
 
+        del_req_columns_in_attrs = []
+        for relname, nextlevelargs in req_relationships.items():
+            if hasattr(self, relname):
+                del_req_columns_in_attrs.append(relname)
+                add = utils.filter_json(getattr(self, relname), *nextlevelargs) if nextlevelargs else getattr(
+                    self, relname)
+                ret[relname] = utils.dict_merge_recursive(ret[relname] if relname in ret else {}, add)
+
+        for colname in del_req_columns_in_attrs:
+            del req_relationships[colname]
+
         if len(req_relationships) > 0:
             relations_not_in_columns = list(set(
                 req_relationships.keys()) - set(columns))
@@ -675,22 +724,22 @@ class PRBase:
 
         return ret
 
-    def search_filter_default(self, division_id):
-        """ :param division_id: 'string with id from table portal_division'
-            :return: dict with prepared filter parameters for search method """
-        pass
+    # def search_filter_default(self, division_id):
+    #     """ :param division_id: 'string with id from table portal_division'
+    #         :return: dict with prepared filter parameters for search method """
+    #     pass
 
     @staticmethod
     def validate_before_update(mapper, connection, target):
         ret = target.validate(False)
         if len(ret['errors'].keys()):
-            raise errors.ValidationException(ret)
+            raise exceptions.Validation(ret)
 
     @staticmethod
     def validate_before_insert(mapper, connection, target):
         ret = target.validate(True)
         if len(ret['errors'].keys()):
-            raise errors.ValidationException(ret)
+            raise exceptions.Validation(ret)
 
     # @staticmethod
     # def validate_before_delete(mapper, connection, target):
@@ -700,7 +749,7 @@ class PRBase:
 
     @staticmethod
     def strip_tags(text):
-        return MLStripper().strip_tags(text)
+        return utils.strip_tags(text)
 
     @staticmethod
     def add_to_search(mapper=None, connection=None, target=None):
@@ -709,7 +758,7 @@ class PRBase:
             target_fields = ','.join(target.search_fields.keys())
             target_dict = target.get_client_side_dict(fields=target_fields + ',id')
             options = {'relevance': lambda field_name: getattr(RELEVANCE, field_name),
-                       'processing': lambda text: MLStripper().strip_tags(text),
+                       'processing': lambda text: utils.strip_tags(text),
                        'index': lambda target_id: target_id}
             default_time = datetime.datetime.now()
             time = default_time
@@ -742,26 +791,51 @@ class PRBase:
 
     @staticmethod
     def delete_from_search(mapper, connection, target):
-        if hasattr(target, 'search_fields') and db(Search, index=target.id).count():
-            db(Search, index=target.id).delete()
+        if hasattr(target, 'search_fields') and utils.db.query_filter(Search, index=target.id).count():
+            utils.db.query_filter(Search, index=target.id).delete()
             return True
         return False
 
-    @classmethod
-    def __declare_last__(cls):
-        event.listen(cls, 'before_update', cls.validate_before_update)
-        event.listen(cls, 'before_insert', cls.validate_before_insert)
-        # event.listen(cls, 'before_delete', cls.validate_before_delete)
-        event.listen(cls, 'after_insert', cls.add_to_search)
-        event.listen(cls, 'after_update', cls.update_search_table)
-        event.listen(cls, 'after_delete', cls.delete_from_search)
+        # def elastic_insert(self):
+        #     pass
+        #
+        # def elastic_update(self):
+        #     pass
+        #
+        # def elastic_delete(self):
+        #     pass
+        #
+        # @staticmethod
+        # def after_insert(mapper=None, connection=None, target=None):
+        #     target.elastic_insert()
+        #
+        # @staticmethod
+        # def after_update(mapper=None, connection=None, target=None):
+        #     target.elastic_update()
+        #
+        # @staticmethod
+        # def after_delete(mapper=None, connection=None, target=None):
+        #     target.elastic_delete()
 
-    @staticmethod
-    def datetime_from_utc_to_local(utc_datetime, format):
-        now_timestamp = time.time()
-        offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
-        utc_datetime = utc_datetime + offset
-        return datetime.datetime.strftime(utc_datetime, format)
+        # @classmethod
+        # def __declare_last__(cls):
+        #     event.listen(cls, 'before_update', cls.validate_before_update)
+        #     event.listen(cls, 'before_insert', cls.validate_before_insert)
+        #     # event.listen(cls, 'before_delete', cls.validate_before_delete)
+        # event.listen(cls, 'after_insert', cls.add_to_search)
+        # event.listen(cls, 'after_update', cls.update_search_table)
+        # event.listen(cls, 'after_delete', cls.delete_from_search)
+
+        # event.listen(cls, 'after_insert', cls.after_insert)
+        # event.listen(cls, 'after_update', cls.after_update)
+        # event.listen(cls, 'after_delete', cls.after_delete)
+
+        # @staticmethod
+        # def datetime_from_utc_to_local(utc_datetime, format):
+        #     now_timestamp = time.time()
+        #     offset = datetime.datetime.fromtimestamp(now_timestamp) - datetime.datetime.utcfromtimestamp(now_timestamp)
+        #     utc_datetime = utc_datetime + offset
+        #     return datetime.datetime.strftime(utc_datetime, format)
 
 #
 #

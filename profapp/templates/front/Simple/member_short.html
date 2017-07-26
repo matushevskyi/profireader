@@ -1,0 +1,27 @@
+{% import '_common/macros.html' as frontmacros %}
+<div class="membership {% if membership['company']['logo']['selected_by_user']['type'] != 'none' %}membership-with-logo{% endif %}">
+    <div class="tags-at-right nw">
+        {% for tag in membership.tags %}
+            {{ frontmacros.tag(tag, tags if tags else {'all': [], 'selected_names': [], 'url_toggle_tag': url_catalog_tag}) }}
+        {% endfor %}
+    </div>
+    <h3>
+        <a href="{{ url_for('front.company_page', member_company_id = membership['company']['id'], member_company_name = membership['company']['name']) }}">{{ membership['company']|highlighted('name') }}</a>
+    </h3>
+    <table class="t200logo">
+        <tr>
+            <td>{% if membership['company']['logo']['selected_by_user']['type'] != 'none' %}
+                <img class="company-logo" {{ prImageUrl(membership['company']['logo']['url']) }} />{% endif %}
+            </td>
+            <td>
+                <div class="short-text">{{ membership['company']|highlighted('short_description') }}</div>
+                {% if membership['company']['country'] != '' %}
+                    <div>{{ __('Country') }}: {{ membership['company']['country']|safe }}</div>
+                {% endif %}
+                {% if membership['company']['city'] != '' %}
+                    <div>{{ __('City') }}: {{ membership['company']['city']|safe }}</div>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+</div>

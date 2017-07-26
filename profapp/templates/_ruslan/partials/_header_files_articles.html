@@ -1,7 +1,10 @@
 <!---article---->
-<script src="//static.profireader.com/static/tinymce.pr/tinymce.jquery.pr.js"></script>
-<script src="//static.profireader.com/static/new/angular-ui-tinymce/tinymce.js"></script>
-<script src="//static.profireader.com/static/new/angular-ui-slider/slider.js"></script>
+<link rel="stylesheet" href="{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/image_gallery.css') }}">
+
+<script src="{{ static_address('tinymce.pr/tinymce.jquery.pr.js') }}"></script>
+<script src="{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/plugin.js') }}"></script>
+<script src="{{ static_address('new/angular-ui-tinymce/tinymce.js') }}"></script>
+<script src="{{ static_address('new/angular-ui-slider/slider.js') }}"></script>
 <script>
     pr_angular_modules.push('ui.tinymce');
 </script>

@@ -4,7 +4,9 @@ rand=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
 
 PWD=$(pwd)
 
-if [[ $(dpkg -l dialog | grep Version) == '' ]]; then
+dialog_installed=$(dpkg-query -W --showformat='${Status}\n' dialog|grep "install ok installed")
+
+if [[ "$dialog_installed" == "" ]]; then
     sudo apt-get install dialog
 fi
 
@@ -54,6 +56,11 @@ function conf {
             ;;
     esac
     fi
+}
+
+function get_main_domain {
+    echo "from main_domain import MAIN_DOMAIN
+print(MAIN_DOMAIN)" | python
 }
 
 function down {
@@ -132,18 +139,43 @@ function error_if_exists {
     fi
     }
 
-function get_profidb {
-    echo `cat secret_data.py | grep 'DB_NAME\s*=' | sed -e 's/^\s*DB_NAME\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+function get_profi_secret_value {
+    echo `cat scrt/secret_data.py | grep "$1\s*=" | sed -e "s/^\s*$1\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g" `
+    }
+
+
+function runsql_remote_dump {
+    conf_comm "cat '$1' | PGPASSWORD='$5' psql -w --host='$3' --username='$4' '$2'" "$6"
+    }
+
+function run_remote {
+    command=${2//'\'/'\\'}
+    command=${command//'"'/'\"'}
+    echo $command
+    conf_comm "ssh $1 \"$command\"" sudo "$3"
+    }
+
+function run_remote_sql {
+    rstrt='systemctl restart postgresql.service'
+    command="$rstrt; su postgres -c \"echo \\\"$2\\\" | psql\"; $rstrt"
+    echo $command
+    run_remote $1 "$command" $3
     }
 
 function runsql {
-    conf_comm "su postgres -c \"echo \\\"$1\\\" | psql\"" sudo "$2"
+    conf_comm "systemctl restart postgresql.service
+su postgres -c \"echo \\\"$1\\\" | psql\"" sudo "$2"
+    }
+
+function run_sql_via_net {
+    conf_comm "echo '$1' | PGPASSWORD='$(get_profi_secret_value 'DB_PASSWORD')' psql --host='$(get_profi_secret_value 'DB_HOST')' --username='$(get_profi_secret_value 'DB_USER')' '$(get_profi_secret_value 'DB_NAME')'"
     }
 
 function runsql_dump {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     filenam=$(rr "$1" "$2")
-    conf_comm "su postgres -c 'cat $filenam | psql $profidb'" sudo "$3"
+    conf_comm "systemctl restart postgresql.service
+su postgres -c 'cat $filenam | psql $profidb'" sudo "$3"
     }
 
 function menu_origin {
@@ -162,15 +194,15 @@ apt-get install postgresql-9.4" sudo elastic
 
 function menu_elastic {
     elastic_version=$(rr 'elasticsearch version' 2.3.3)
-    conf_comm "apt-get install openjdk-8-jre 
+    conf_comm "apt-get install openjdk-7-jre 
 wget https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/deb/elasticsearch/"$elastic_version"/elasticsearch-"$elastic_version".deb
-apt  install ./elasticsearch-"$elastic_version".deb
-rm ./elasticsearch-"$elastic_version".deb" sudo deb
+dpkg -i ./elasticsearch-"$elastic_version".deb
+rm ./elasticsearch-"$elastic_version".deb" sudo fluent
 }
 
 function menu_deb {
     conf_comm "apt-get update
-apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached" sudo npm
+apt-get install libpq-dev python-dev libapache2-mod-wsgi-py3 libjpeg-dev memcached build-essential libssl-dev libffi-dev openjdk-7-jre haproxy" sudo npm
     }
 
 function menu_npm {
@@ -183,10 +215,11 @@ npm install -g gulp" sudo bower
 
 function menu_bower {
     conf_comm "cd ./profapp/static
-bower install" nosudo menu_bower_dev
+bower install" nosudo bower_components_dev
     }
 
-function menu_bower_dev {
+
+function menu_bower_components_dev {
     conf_comm "cd ./profapp/static/bower_components_dev
 mkdir ./angular-db-filemanager
 cd ./angular-db-filemanager
@@ -201,54 +234,122 @@ git clone git@github.com:kakabomba/ng-crop.git .
 function menu_gulp {
      conf_comm "cd ./profapp/static
 npm install gulp del gulp-less-sourcemap gulp-watch run-sequence gulp-task-listing
-gulp" nosudo hosts
+gulp" nosudo gulp_install_all
+     }
+
+function menu_gulp_install_all {
+     conf_comm "cd ./profapp/static
+gulp all" nosudo hosts
      }
 
 function menu_hosts {
     conf_comm "sed -i '/\(db\|web\|mail\|memcached\|elastic\).profi/d' /etc/hosts
-sed -i '/profireader.com/d' /etc/hosts
+sed -i '/\\.profi/d' /etc/hosts
 echo '' >> /etc/hosts
-echo '127.0.0.1 db.profi web.profi mail.profi memcached.profi elastic.profi' >> /etc/hosts
-echo '127.0.0.1 file001.profireader.com' >> /etc/hosts
-echo '127.0.0.1 static.profireader.com' >> /etc/hosts
-echo '127.0.0.1 profireader.com rodynni.firmy oles.profireader.com rodynnifirmy.profireader.com derevoobrobka.profireader.com viktor.profireader.com md.profireader.com oleh.profireader.com fsm.profireader.com' >> /etc/hosts
-echo '127.0.0.1 test.profireader.com test1.profireader.com test2.profireader.com test3.profireader.com test4.profireader.com test5.profireader.com test6.profireader.com test7.profireader.com test8.profireader.com test9.profireader.com' >> /etc/hosts
-cat /etc/hosts" sudo haproxy_compile
+echo '127.0.0.1 mail.profi' >> /etc/hosts
+echo '127.0.0.1 memcached.profi' >> /etc/hosts
+echo '127.0.0.1 elastic.profi' >> /etc/hosts
+echo '127.0.0.1 socket.profi' >> /etc/hosts
+echo '127.0.0.1 postgres.profi' >> /etc/hosts
+echo '127.0.0.1 elk.profi' >> /etc/hosts
+echo '#127.0.0.1 web.profi static.web.profi file001.web.profi socket.web.profi portal.web.profi' >> /etc/hosts
+cat /etc/hosts" sudo cron_files
     }
 
-function menu_haproxy_compile {
-    conf_comm "apt-get purge haproxy
-sed -i '/haproxy-1.5/d' /etc/apt/sources.list
-echo '' >> /etc/apt/sources.list
-echo 'deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
-echo 'deb-src http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu trusty main' >> /etc/apt/sources.list
-apt-get update
-apt-get install haproxy" sudo haproxy_config
+function menu_cron_files {
+    files=$(/bin/ls ./conf/cron | tr '\n' ' ')
+    conf_comm "mkdir -p /run/profi
+rm /etc/cron.d/profi_*
+for file in $files
+do
+  cat conf/cron/\$file | sed 's#----directory----#$PWD#g' > /etc/cron.d/profi_\$file
+done
+systemctl restart cron.service" sudo haproxy_compile
     }
+
+
+ function menu_haproxy_compile {
+     conf_comm "apt-get purge haproxy
+ sed -i '/haproxy-1.7/d' /etc/apt/sources.list
+ echo '' >> /etc/apt/sources.list
+ echo 'deb http://ppa.launchpad.net/vbernat/haproxy-1.7/ubuntu trusty main' >> /etc/apt/sources.list
+ echo 'deb-src http://ppa.launchpad.net/vbernat/haproxy-1.7/ubuntu trusty main' >> /etc/apt/sources.list
+ apt-get update
+ apt-get install haproxy" sudo haproxy_config
+     }
+#   "cat ./conf/haproxy.cfg | sed -e 's#----maindomain----#$maindomain#g' > /etc/haproxy/haproxy.conf
+
+function conf_comm_copy_conf_file {
+    echo "cat $1 | sed -e 's#$3#$4#g' > $2"
+}
 
 function menu_haproxy_config {
-    conf_comm "cp ./haproxy.cfg /etc/haproxy/
-cp ./profireader_haproxy.key.pem /etc/haproxy/
-service haproxy restart" sudo apache2_config
+    maindomain=$(rr 'Enter main domain' `get_main_domain`)
+haproxy=$(conf_comm_copy_conf_file './conf/haproxy.cfg' '/etc/haproxy/haproxy.cfg' '----maindomain----' $maindomain)
+conf_comm "$haproxy
+systemctl restart haproxy.service" sudo letsencrypt
     }
 
+function menu_letsencrypt {
+    conf_comm "echo 'deb http://ftp.debian.org/debian jessie-backports main' > /etc/apt/sources.list.d/jessie-backports.list
+apt-get update
+apt-get install certbot -t jessie-backports" sudo apache2_config
+    }
+
+
 function menu_apache2_config {
-    conf_comm "cat profi-wsgi-apache2.conf | sed -e 's#----directory----#$PWD#g' > /etc/apache2/sites-enabled/profi-wsgi-apache2.conf
-rm /etc/apache2/sites-available/000-default.conf
+    wwwdir=$(rr 'Enter http dir' $PWD)
+    maindomain=$(rr 'Enter main domain' `get_main_domain`)
+    conf_comm "
+cat ./conf/apache2/directory-access.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/directory-access.conf
+cat ./conf/apache2/profi-wsgi-apache2.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/profi-wsgi-apache2.conf
+cp ./conf/apache2/ports.conf /etc/apache2/
+rm /etc/apache2/sites-enabled/000-default.conf
 mkdir /var/log/profi
-service apache2 restart" sudo secret_data
+a2enmod wsgi
+a2enmod ssl
+systemctl restart postgresql.service
+systemctl restart apache2.service" sudo apache2_profi_vh_ssl
+    }
+
+function menu_apache2_profi_vh_ssl {
+    wwwdir=$(rr 'Enter http dir' $PWD)
+    maindomain=$(rr 'Enter main domain' `get_main_domain`)
+    conf_comm "cat ./conf/apache2/main-domain.conf | sed -e 's#----directory----#$wwwdir#g'  | sed -e 's#----maindomain----#$maindomain#g' > /etc/apache2/conf-enabled/main-domain.conf
+cd `pwd`/tools
+./get_ssl_for_domain.sh `pwd`/letsencryptrequests $maindomain www.$maindomain static.$maindomain file001.$maindomain 
+systemctl restart apache2.service" sudo apache2_fronts_vh_ssl
+    }
+
+
+function menu_apache2_fronts_vh_ssl {
+    venvdir=$(rr 'venv directory' .venv)
+    conf_comm "cd `pwd`
+source $venvdir/bin/activate
+cd tools
+python check_ssl.py
+systemctl restart apache2.service" sudo secret_data
+    }
+
+function menu_apache2_check_ssls {
+    venvdir=$(rr 'venv directory' .venv)
+    conf_comm "cd `pwd`
+source $venvdir/bin/activate
+cd tools
+python check_ssl.py
+systemctl restart apache2.service" sudo secret_data
     }
 
 function menu_secret_data {
-    down secret_data.txt secret_data.py secret_data.`$gitv`_`$datev`.bak secret_client
+    down secret_data.txt scrt/secret_data.py scrt/secret_data.`$gitv`_`$datev`.bak secret_client
     }
 
 function menu_secret_client {
-    down client_secret.json client_secret.json client_secret.json.`$gitv`_`$datev`.bak download_key_pem
+    down client_secret.json scrt/client_secret.json scrt/client_secret.json.`$gitv`_`$datev`.bak download_key_pem
     }
 
 function menu_download_key_pem {
-    down profireader_haproxy.key.pem profireader_haproxy.key.pem profireader_haproxy.key.pem profireader_haproxy.key.pem.`$gitv`_`$datev`.bak python_3
+    down profireader_haproxy.key.pem scrt/profireader_haproxy.key.pem profireader_haproxy.key.pem scrt/profireader_haproxy.key.pem.`$gitv`_`$datev`.bak python_3
     }
 
 
@@ -270,7 +371,7 @@ cd 'Python-$pversion'
 make
 make install
 cd /tmp
-rm -rf 'Python-$pversion'" sudo venv
+rm -rf 'Python-$pversion'" nosudo venv
     fi
     }
 
@@ -281,7 +382,9 @@ function menu_venv {
 	echo "error: $destdir exists"
     else
 	conf_comm "$pythondir/bin/pyvenv $destdir
-cp ./activate_this.py $destdir/bin" nosudo modules
+cp ./activate_this.py $destdir/bin
+source $destdir/bin/activate
+pip install --upgrade pip==9.0.1" nosudo modules
     fi
     }
 
@@ -299,109 +402,155 @@ function menu_port {
     conf_comm "iptables -t nat -A OUTPUT  -d 127.0.0.1  -p tcp --dport 80 -j REDIRECT --to-port $toport" sudo db_user_bass
     }
 
+
+function menu_fluent {
+    echo "After instalation visit http://localhost:9090 (user/pass=admin/changeme)"
+    conf_comm "sed -i '/^.*\(soft\|hard\)[[:blank:]]\+nofile.*$/d' /etc/security/limits.conf
+echo 'root soft nofile 65536' >> /etc/security/limits.conf
+echo 'root hard nofile 65536' >> /etc/security/limits.conf
+echo '* soft nofile 65536' >> /etc/security/limits.conf
+echo '* hard nofile 65536' >> /etc/security/limits.conf
+sed -i '/^#\?[[:blank:]]\+\(net\.ipv4\.tcp_tw_recycle\|net\.ipv4\.tcp_tw_reuse\|net\.ipv4\.ip_local_port_range\)[[:blank:]]\+=[[:blank:]]\+.*$/d' /etc/sysctl.conf
+echo 'net.ipv4.tcp_tw_recycle = 1' >> /etc/sysctl.conf
+echo 'net.ipv4.tcp_tw_reuse = 1' >> /etc/sysctl.conf
+echo 'net.ipv4.ip_local_port_range = 10240    65535' >> /etc/sysctl.conf
+#curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-xenial-td-agent2.sh | sh
+curl -L https://toolbelt.treasuredata.com/sh/install-debian-jessie-td-agent2.sh | sh
+cp ./conf/td-agent-ui.service /etc/systemd/system/
+systemctl enable td-agent-ui.service" sudo deb
+    }
+
 function menu_db_user_pass {
     echo "Going to create user/pass from secret data and create such user/pass using postgres user"
     echo "If user exists, only password will be changed"
     
-    profiuser=`cat secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+    profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
     psqluser=$(rr 'Enter postgresql user' $profiuser)
     
-    profipass=`cat secret_data.py | grep 'DB_PASSWORD' | sed -e 's/^\s*DB_PASSWORD\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+    profipass=`cat scrt/secret_data.py | grep 'DB_PASSWORD' | sed -e 's/^\s*DB_PASSWORD\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
     psqlpass=$(rr 'Enter postgresql password' $profipass)
     runsql "CREATE USER $psqluser;
 ALTER USER $psqluser WITH PASSWORD '$psqlpass';" compare_local_makarony
     }
 
-makaronyaddress='m.ntaxa.com/profireader/54322'
-localaddress='localhost/profireader/5432'
-artekaddress='a.ntaxa.com/profireader/54321'
+profidbname=`cat scrt/secret_data.py | grep 'DB_NAME' | sed -e 's/^\s*DB_NAME\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+profipass=`cat scrt/secret_data.py | grep 'DB_PASSWORD' | sed -e 's/^\s*DB_PASSWORD\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+makaronyaddress="m.ntaxa.com/$profidbname/54322/$profiuser/$profipass"
+localaddress="postgres.profi/$profidbname/5432/$profiuser/$profipass"
+kupytyaddress="a.ntaxa.com/$profidbname/54143/$profiuser/$profipass"
+productionaddress="88.99.238.11/$profidbname/5412/$profiuser/$profipass"
 
-function menu_bower_components_dev {
-    conf_comm "cd profapp/static/bower_components_dev
-git clone git@github.com:kakabomba/angular-filemanager.git
-cd angular-filemanager
-git checkout ids" nosudo db_user_pass
-    }
+
 
 function menu_compare_local_makarony {
-    conf_comm "./postgres.dump_and_compare_structure.sh $makaronyaddress $localaddress" nosudo compare_local_artek
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $makaronyaddress $localaddress" nosudo compare_local_kupyty
     }
 
-function menu_compare_local_artek {
-    conf_comm "./postgres.dump_and_compare_structure.sh $localaddress $artekaddress" nosudo compare_makarony_artek
+function menu_compare_local_kupyty {
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $localaddress $kupytyaddress" nosudo compare_makarony_production
     }
 
-function menu_compare_makarony_artek {
-    conf_comm "./postgres.dump_and_compare_structure.sh $makaronyaddress $artekaddress" nosudo db_rename
+function menu_compare_local_production {
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $localaddress $productionaddress" nosudo compare_makarony_production
+    }
+
+function menu_compare_makarony_production {
+    conf_comm "cd ./db
+./postgres.dump_and_compare_structure.sh $makaronyaddress $artekaddress" nosudo db_rename
     }
 
 function menu_db_rename {
-    profidb=$(get_profidb)
-    runsql "ALTER DATABASE $profidb RENAME TO bak_$profidb""_"`$gitv`"_"`$datev` 'db_create'
+    profidb=$(get_profi_secret_value 'DB_NAME')
+    echo $datev
+    run_remote_sql $(get_profi_secret_value 'DB_HOST') "ALTER DATABASE $profidb RENAME TO bak_$profidb""_"`$gitv`"_"`$datev` 'db_create'
     }
 
 function menu_db_create {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     psqldb=$(rr 'Enter postgresql database name' $profidb)
 
-    profiuser=`cat secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
-    runsql "CREATE DATABASE $psqldb WITH ENCODING 'UTF8' LC_COLLATE='C.UTF-8' LC_CTYPE='C.UTF-8'  OWNER = $profiuser TEMPLATE=template0" db_download_minimal
+    profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+    run_remote_sql $(get_profi_secret_value 'DB_HOST') "CREATE DATABASE $psqldb WITH ENCODING 'UTF8' LC_COLLATE='C.UTF-8' LC_CTYPE='C.UTF-8'  OWNER = $profiuser TEMPLATE=template0" db_download_minimal
     }
 
 
 function menu_db_download_minimal {
-    down database.structure database.structure database.structure.`$gitv`_`$datev`.bak db_load_minimal
+    down database.structure db/database.structure db/database.structure.`$gitv`_`$datev`.bak db_load_minimal
     }
 
 function menu_db_load_minimal {
-    runsql_dump 'Enter sql structure filename' database.structure db_save_minimal
+    runsql_dump 'Enter sql structure filename' db/database.structure db_save_minimal
     }
+
 function menu_db_save_minimal {
-    profidb=$(get_profidb)
-    conf_comm "
-su postgres -c 'pg_dump -s $profidb' > database.structure
+    profidb=$(get_profi_secret_value 'DB_NAME')
+    conf_comm "su postgres -c 'pg_dump -s $profidb' > db/database.structure
 tables=\$(su postgres -c \"echo 'SELECT RelName FROM pg_Description JOIN pg_Class ON pg_Description.ObjOID = pg_Class.OID WHERE ObjSubID = 0 AND Description LIKE '\\\"'\\\"%persistent%\\\"'\\\" | psql -t $profidb\" | sed '/^\\s*\$/d' | sed -e 's/^/-t /g' | tr \"\\n\" \" \" )
-su postgres -c \"pg_dump --inserts -a \$tables $profidb\" >> database.structure
-git diff database.structure" sudo 'db_download_full'
+su postgres -c \"pg_dump --inserts -a \$tables $profidb\" >> db/database.initial
+git diff db/database.structure
+git diff db/database.initial" sudo 'db_download_full'
     }
 
 function menu_db_download_full {
-    down database_full.sql database_full.sql database_full.sql.`$gitv`_`$datev`.bak db_load_full
+    down database_full.sql db/database_full.sql db/database_full.sql.`$gitv`_`$datev`.bak db_load_full
     }
 
 function menu_db_load_full {
-    runsql_dump 'Enter sql full dump filename' database_full.sql db_reindex_search
-    }
-
-function menu_db_reindex_search {
-    destdir=$(rr 'venv directory' .venv)
-    conf_comm "
-source $destdir/bin/activate
-cd ./utils
-python ./update_search_table.py
-" nosudo 'db_reassign_ownership'
+    runsql_remote_dump \
+       $(rr 'Enter sql full dump filename' 'db/database_full.sql') \
+       $(rr 'Enter database name' $(get_profi_secret_value 'DB_NAME')) \
+       $(rr 'Enter database host' $(get_profi_secret_value 'DB_HOST')) \
+       $(rr 'Enter database user' $(get_profi_secret_value 'DB_USER')) \
+       $(rr 'Enter database password' $(get_profi_secret_value 'DB_PASSWORD')) \
+       menu_db_reassign_ownership
     }
 
 function menu_db_reassign_ownership {
 
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
 
-    profiuser=`cat secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
+    profiuser=`cat scrt/secret_data.py | grep 'DB_USER' | sed -e 's/^\s*DB_USER\s*=\s*['"'"'"]\([^'"'"'"]*\).*$/\1/g' `
 
     conf_comm "
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT tablename      FROM pg_tables                     WHERE schemaname      = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT sequence_name  FROM information_schema.sequences  WHERE sequence_schema = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
 su postgres -c \"for tbl in \\\$(psql -qAt -c 'SELECT table_name     FROM information_schema.views      WHERE table_schema    = '\\\"'\\\"public\\\"'\\\"';' $profidb); do echo \\\$tbl; psql -c 'ALTER table \\\"'\\\$tbl'\\\" owner to $profiuser' $profidb ; done\"
-" sudo 'db_save_full'
+" sudo 'db_localize'
+    }
+
+function menu_db_localize {
+
+    profidb=$(get_profi_secret_value 'DB_NAME')
+
+    maindomain=$(rr 'Enter main domain' `get_main_domain`)
+    conf_comm "
+su postgres -c \"psql -c 'SELECT __localize_emails()' $profidb;\"
+su postgres -c \"psql -c 'SELECT __localize_hosts('\\\"'\\\"'$maindomain'\\\"'\\\"')' $profidb;\"
+" sudo 'elastic_reindex_all'
     }
 
 function menu_db_save_full {
-    profidb=$(get_profidb)
+    profidb=$(get_profi_secret_value 'DB_NAME')
     conf_comm "
-mv database_full.sql database_full.sql."`$gitv`"_"`$datev`".bak
-su postgres -c 'pg_dump $profidb' > database_full.sql
-ls -l1sh database_full.*
+mv db/database_full.sql db/database_full.sql."`$gitv`"_"`$datev`".bak
+su postgres -c 'pg_dump $profidb' > db/database_full.sql
+ls -l1sh db/database_full.*
 " sudo 'exit'
+    }
+
+
+function menu_elastic_reindex_all {
+    destdir=$(rr 'venv directory' .venv)
+    conf_comm "
+source $destdir/bin/activate
+cd ./tools
+python ./update_elastic_search.py delete_elastic_indexes
+python ./update_elastic_search.py recreate_all_elastic_documents
+" nosudo 'exit'
     }
 
 
@@ -411,51 +560,64 @@ next='_'
 #/bin/ls"
 
 
-#eval $a
+	#eval $a
 
 #exit
-
-while :
-do
-#next='exit'
-dialog --title "profireader" --nocancel --default-item $next --menu "Choose an option" 22 78 17 \
-"origin" "change git origin and add new remote repo" \
-"postgres_9_4" "install postgres 9.4" \
-"elastic" "install elastic search" \
-"deb" "install deb packages" \
-"npm" "install nodejs, npm, bower and gulp globally" \
-"bower" "download bower components in ./profapp/static/bower_components" \
-"bower_dev" "download bower development components in ./profapp/static/bower_components_dev" \
-"gulp" "install gulp in ./profapp/static" \
-"hosts" "create virtual domain zone in /etc/hosts" \
-"haproxy_compile" "compile and install haproxy" \
-"haproxy_config" "copy haproxy config to /etc/haproxy" \
-"apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
-"secret_data" "download secret data" \
-"secret_client" "download secret client data" \
-"download_key_pem" "download https key and pem file" \
-"python_3" "install python 3" \
-"venv" "create virtual environment" \
-"modules" "install required python modules (via pip)" \
-"bower_components_dev" "get bower components (development version)" \
-"db_user_pass" "create postgres user/password" \
-"db_rename" "rename database (create backup)" \
-"db_create" "create empty database" \
-"db_save_minimal" "save initial database to file" \
-"db_download_minimal" "get minimal database from x.m.ntaxa.com" \
-"db_load_minimal" "load minimal database from file" \
-"db_save_full" "save full database to file" \
-"db_download_full" "get full database from x.m.ntaxa.com" \
-"db_load_full" "load full database from file" \
-"db_reindex_search" "reindex search table" \
-"db_reassign_ownership" "reassign ownership" \
-"compare_local_makarony" "compare local database and dev version" \
-"compare_local_artek" "compare local database and production version" \
-"compare_makarony_artek" "compare dev database and production version" \
-"exit" "Exit" 2> /tmp/"$rand"selected_menu_
-reset
 datev="date +%y_%m_%d___%H_%M_%S"
 gitv='git rev-parse --short HEAD'
-menu_`cat /tmp/"$rand"selected_menu_`
+if [[ "$1" == "" ]]; then
+  while :
+  do
+#next='exit'
+#"haproxy_compile" "compile and install haproxy" \
+#
+    dialog --title "profireader" --nocancel --default-item $next --menu "Choose an option" 22 78 17 \
+      "origin" "change git origin and add new remote repo" \
+      "postgres_9_4" "install postgres 9.4" \
+      "elastic" "install elastic search" \
+      "fluent" "install fluent" \
+      "deb" "install deb packages" \
+      "cron_files" "update cron files" \
+      "haproxy_compile" "compile haproxy 1.7" \
+      "haproxy_config" "copy haproxy config to /etc/haproxy" \
+      "npm" "install nodejs, npm, bower and gulp globally" \
+      "bower" "download bower components in ./profapp/static/bower_components" \
+      "bower_components_dev" "download bower development components in ./profapp/static/bower_components_dev" \
+      "gulp" "install gulp in ./profapp/static" \
+      "gulp_install_all" "install gulp modules from ./profapp/static/bower/ to project working directories" \
+      "hosts" "create virtual domain zone in /etc/hosts" \
+      "letsencrypt" "install letsencrypt" \
+      "apache2_config" "copy apache config to /etc/apache2 and allow currend dir" \
+      "apache2_profi_vh_ssl" "create vh conf file and create/update ssl for main domain (with www., static. and file001. aliases)" \
+      "apache2_fronts_vh_ssl" "create vh conf file for fronts and create/update ssl via letsencrypt" \
+      "secret_data" "download secret data" \
+      "secret_client" "download secret client data" \
+      "download_key_pem" "download https key and pem file" \
+      "python_3" "install python 3" \
+      "venv" "create virtual environment" \
+      "modules" "install required python modules (via pip)" \
+      "fluent" "install fluentd and frontend" \
+      "db_user_pass" "create postgres user/password" \
+      "db_rename" "rename database (create backup)" \
+      "db_create" "create empty database" \
+      "db_save_minimal" "save initial database to file" \
+      "db_download_minimal" "get minimal database from x.m.ntaxa.com" \
+      "db_load_minimal" "load minimal database from file" \
+      "db_save_full" "save full database to file" \
+      "db_download_full" "get full database from x.m.ntaxa.com" \
+      "db_load_full" "load full database from file" \
+      "db_reassign_ownership" "reassign ownership" \
+      "db_localize" "localize project (change emails and portal hosts)" \
+      "elastic_reindex_all" "recreate all documents in elasticsearch" \
+      "compare_local_makarony" "compare local database and dev version" \
+      "compare_local_kupyty" "compare local database and testing version" \
+      "compare_local_production" "compare local database and production version" \
+      "compare_makarony_artek" "compare dev database and production version" \
+      "exit" "Exit" 2> /tmp/"$rand"selected_menu_
+  reset
+  menu_`cat /tmp/"$rand"selected_menu_`
+  done
+else
+  menu_$1
+fi
 
-done

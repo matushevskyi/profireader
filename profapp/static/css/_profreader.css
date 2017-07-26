@@ -1,8 +1,4 @@
 
-.nav-bg {
-    background-color: #212121;
-    padding-bottom: 10px;
-}
 
 .ui-grid-filter-container .form-control{
     height: 5px;
@@ -10,16 +6,7 @@
 .join-company .input-group .dropdown-menu{
     display: none;
 }
-.nav-bg li {
-    list-style: none;
-    display: inline;
-    color: #18bc9c;
-    padding-right: 15px;
-}
 
-.nav-bg ul {
-    margin-top: 20px;
-}
 
 .container .navbar-header .navbar-brand {
     padding: 10px 0px;
@@ -204,12 +191,7 @@
     padding-bottom: 15px;
 }
 
-.company-portal .selected {
-    color: #fff;
-    text-decoration: none;
-    background-color: #00ceb1;
-    padding: 15px;
-}
+
 .join-company {
     margin-top: 15px;
 }
@@ -263,7 +245,6 @@
 
 .join-new-company button, .join-new-company button:hover {
     width: 100%;
-    margin-top: 30px;
     background-color: #18BCAB;
     border-color: #18BCAB;
     border-radius: 0;
@@ -274,36 +255,20 @@
     border-color: #119C8D;
 }
 
-.company-list {
+.employment_company-list {
     margin-top: 30px;
 }
 
-.company-list h2 {
+.employment_company-list h2 {
     color: #383838;
     margin-bottom: 15px;
 }
 
-.company-list h4 {
+.employment_company-list h4 {
     text-align: center;
     color: #CA2027;
 }
 
-.company-thumbnail {
-    border-radius: 0;
-}
-
-.company-thumbnail button {
-    padding: 5px;
-    background-color: #18BCAB;
-    border-color: #18BCAB;
-    border-radius: 0;
-    width: 100%;
-}
-
-.company-thumbnail button:focus, .company-thumbnail button:active, .company-thumbnail button:hover {
-    background-color: #119C8D;
-    border-color: #119C8D;
-}
 
 /* ----- LOGINATION & AUTHORITHATION ------------------ */
 
@@ -367,19 +332,19 @@
 }
 
 .login-by-google {
-    background-image: url("//static.profireader.com/static/images/social/g.png");
+    background-image: url("../images/social/g.png");
 }
 
 .login-by-facebook {
-    background-image: url("//static.profireader.com/static/images/social/f.png");
+    background-image: url("../images/social/f.png");
 }
 
 .login-by-linkedin {
-    background-image: url("//static.profireader.com/static/images/social/l.png");
+    background-image: url("../images/social/l.png");
 }
 
 .login-by-microsoft {
-    background-image: url("//static.profireader.com/static/images/social/m.png");
+    background-image: url("../images/social/m.png");
 }
 
 .by-socials-block {
@@ -430,10 +395,6 @@
 /*color: #fff;*/
 /*}*/
 
-.highlight a {
-    color: white !important;
-    background: red;
-}
 
 .search-highlight {
     color: red;

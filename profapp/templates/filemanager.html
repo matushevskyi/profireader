@@ -19,20 +19,20 @@
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-cookies.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-translate/2.4.2/angular-translate.js"></script>
 
-    <script src="//static.profireader.com/static/new/filemanager/app.js"></script>
-    <script src="//static.profireader.com/static/new/filemanager/config.js"></script>
-    <script src="//static.profireader.com/static/new/filemanager/chmod.js"></script>
-    <script src="//static.profireader.com/static/new/filemanager/item.js"></script>
-    <script src="//static.profireader.com/static/new/filemanager/filenavigator.js"></script>
-    <script src="//static.profireader.com/static/new/filemanager/fileuploader.js"></script>
-    <script src="//static.profireader.com/static/new/filemanager/translations.js"></script>
-    <script src="//static.profireader.com/static/new/filemanager/controller.js"></script>
-    <script src="//static.profireader.com/static/new/filemanager/selector-controller.js"></script>
-    <script src="//static.profireader.com/static/new/filemanager/angular-filemanager.min.js"></script>
+    <script src="{{ static_address('new/filemanager/app.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/config.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/chmod.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/item.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/filenavigator.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/fileuploader.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/translations.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/controller.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/selector-controller.js') }}"></script>
+    <script src="{{ static_address('new/filemanager/angular-filemanager.min.js') }}"></script>
 
-    <link rel="stylesheet" href="//static.profireader.com/static/new/filemanager/angular-filemanager.css">
-    <script src="//static.profireader.com/static/file_uploader/dist/ng-file-upload.js"></script>
-    <!--<script src="//static.profireader.com/static/fileuploader/ng-file-upload.min.js"></script>-->
+    <link rel="stylesheet" href="{{ static_address('new/filemanager/angular-filemanager.css') }}">
+    <script src="{{ static_address('file_uploader/dist/ng-file-upload.js') }}"></script>
+    <!--<script src="{{ static_address('fileuploader/ng-file-upload.min.js') }}"></script>-->
 
 
 {%- endblock head %}
@@ -50,3 +50,4 @@
         {% endblock portal_content %}
     </div>
 {% endblock content %}
+

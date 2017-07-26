@@ -1,44 +1,37 @@
 import hashlib
 import re
-import json
-
 from flask import Flask, g, request, current_app, session
-from beaker.middleware import SessionMiddleware
 from authomatic import Authomatic
-# from profapp.utils.redirect_url import url_page
-from flask import url_for
 from flask.ext.bootstrap import Bootstrap
-# from flask.ext.moment import Moment
-from flask.ext.login import LoginManager, \
-    current_user
+from flask.ext.login import LoginManager, current_user, AnonymousUserMixin
 from flask.ext.mail import Mail
-from flask.ext.login import AnonymousUserMixin
-from flask import globals
-from flask.ext.babel import Babel
-import jinja2
-from jinja2 import Markup, escape
 
-from profapp.controllers.errors import csrf
 from .constants.SOCIAL_NETWORKS import INFO_ITEMS_NONE, SOC_NET_FIELDS
 from .constants.USER_REGISTERED import REGISTERED_WITH
 from .models.users import User
-from .models.config import Config
-from config import Config as Configure
-from profapp.controllers.errors import BadDataProvided
-from .models.translate import TranslateTemplate
-from .models.tools import HtmlHelper
-from .models.pr_base import MLStripper
+from config import Config
+from .models.config import Config as ModelConfig
+from profapp.models import exceptions
 import os.path
-import datetime
 from profapp import utils
-
 from flask.sessions import SessionInterface
 from beaker.middleware import SessionMiddleware
+from .utils.jinja import *
+from .utils.db import *
+from .utils.email import *
+from .utils.session import *
+# from .utils.redirect_url import *
+import json
+from functools import wraps
+from sqlalchemy import event
+from werkzeug.routing import BaseConverter
+from transliterate import translit, get_available_language_codes
+from urllib.parse import quote_plus, unquote_plus
 
 
 def req(name, allowed=None, default=None, exception=True):
     ret = request.args.get(name)
-    if allowed and (ret in allowed):
+    if allowed is None or (ret in allowed):
         return ret
     elif default is not None:
         return default
@@ -48,107 +41,140 @@ def req(name, allowed=None, default=None, exception=True):
         return None
 
 
-def filter_json(json, *args, NoneTo='', ExceptionOnNotPresent=False, prefix=''):
-    ret = {}
-    req_columns = {}
-    req_relationships = {}
-
-    for arguments in args:
-        for argument in re.compile('\s*,\s*').split(arguments):
-            columnsdevided = argument.split('.')
-            column_names = columnsdevided.pop(0)
-            for column_name in column_names.split('|'):
-                if len(columnsdevided) == 0:
-                    req_columns[column_name] = NoneTo if (column_name not in json or json[column_name] is None) else \
-                        json[column_name]
-                else:
-                    if column_name not in req_relationships:
-                        req_relationships[column_name] = []
-                    req_relationships[column_name].append(
-                        '.'.join(columnsdevided))
-
-    for col in json:
-        if col in req_columns or '*' in req_columns:
-            ret[col] = NoneTo if (col not in json or json[col] is None) else json[col]
-            if col in req_columns:
-                del req_columns[col]
-    if '*' in req_columns:
-        del req_columns['*']
-
-    if len(req_columns) > 0:
-        columns_not_in_relations = list(set(req_columns.keys()) - set(json.keys()))
-        if len(columns_not_in_relations) > 0:
-            if ExceptionOnNotPresent:
-                raise ValueError(
-                    "you requested not existing json value(s) `%s%s`" % (
-                        prefix, '`, `'.join(columns_not_in_relations),))
-            else:
-                for notpresent in columns_not_in_relations:
-                    ret[notpresent] = NoneTo
-
-        else:
-            raise ValueError("you requested for attribute(s) but "
-                             "relationships found `%s%s`" % (
-                                 prefix, '`, `'.join(set(json.keys()).
-                                     intersection(
-                                     req_columns.keys())),))
-
-    for relationname, relation in json.items():
-        if relationname in req_relationships or '*' in req_relationships:
-            if relationname in req_relationships:
-                nextlevelargs = req_relationships[relationname]
-                del req_relationships[relationname]
-            else:
-                nextlevelargs = req_relationships['*']
-            if type(relation) is list:
-                ret[relationname] = [
-                    filter_json(child, *nextlevelargs,
-                                prefix=prefix + relationname + '.'
-                                ) for child in
-                    relation]
-            else:
-                ret[relationname] = None if relation is None else filter_json(relation, *nextlevelargs,
-                                                                              prefix=prefix + relationname + '.')
-
-    if '*' in req_relationships:
-        del req_relationships['*']
-
-    if len(req_relationships) > 0:
-        relations_not_in_columns = list(set(
-            req_relationships.keys()) - set(json))
-        if len(relations_not_in_columns) > 0:
-            raise ValueError(
-                "you requested not existing json(s) `%s%s`" % (
-                    prefix, '`, `'.join(relations_not_in_columns),))
-        else:
-            raise ValueError("you requested for json deeper than json is(s) but "
-                             "column(s) found `%s%s`" % (
-                                 prefix, '`, `'.join(set(json).intersection(
-                                     req_relationships)),))
-
-    return ret
+registry = {}
 
 
-def db_session_func(db_config):
+def on_value_changed(an_attribute):
+    def wrapped(func):
+        if an_attribute.class_ not in registry:
+            registry[an_attribute.class_] = {}
+        if an_attribute not in registry[an_attribute.class_]:
+            registry[an_attribute.class_][an_attribute] = []
+        registry[an_attribute.class_][an_attribute].append(func)
+
+        @wraps(func)
+        def decorated(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return decorated
+
+    return wrapped
+
+
+def on_after_flush(session, flush_context):
+    def get_old_value(attribute_state):
+        history = attribute_state.history
+        return history.deleted[0] if history.deleted else None
+
+    def trigger_attribute_change_events(object_, action):
+        from sqlalchemy import inspect
+        from sqlalchemy.orm import object_mapper, ColumnProperty
+
+        if object_mapper(object_).class_ not in registry:
+            return False
+
+        for mapper_property in object_mapper(object_).iterate_properties:
+            if isinstance(mapper_property, ColumnProperty) and \
+                            mapper_property.class_attribute in registry[object_mapper(object_).class_]:
+
+                an_index = (object_mapper(object_).class_, mapper_property.class_attribute)
+
+                key = mapper_property.key
+                attribute_state = inspect(object_).attrs.get(key)
+                new_value = attribute_state.value
+                old_value = get_old_value(attribute_state)
+                if action == 'INSERT':
+                    old_value = None
+                if action == 'DELETE':
+                    new_value = None
+                if action == 'UPDATE':
+                    if not attribute_state.history.has_changes():
+                        new_value = ''
+                        old_value = ''
+
+                g.functions_to_call_after_commit[an_index] = []
+                if new_value != old_value:
+                    for f in registry[object_mapper(object_).class_][mapper_property.class_attribute]:
+                        add = f(object_, new_value, old_value, action)
+                        if add:
+                            g.functions_to_call_after_commit[an_index].append(add)
+
+    for o in session.new:
+        trigger_attribute_change_events(o, 'insert')
+    for o in session.dirty:
+        trigger_attribute_change_events(o, 'update')
+    for o in session.deleted:
+        trigger_attribute_change_events(o, 'deleted')
+
+
+def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import scoped_session, sessionmaker
 
-    engine = create_engine(db_config, echo=False)
+    engine = create_engine(db_config, echo=echo)
+    g.sql_engine = engine
     g.sql_connection = engine.connect()
-    db_session = scoped_session(sessionmaker(autocommit=False,
-                                             autoflush=False,
-                                             bind=engine))
+
+    db_session = scoped_session(sessionmaker(autocommit=autocommit, autoflush=autoflush, bind=engine))
+    # from sqlalchemy.orm import Session
+    # strong_reference_session(Session())
     return db_session
 
 
-def load_database(db_config):
-    def load_db():
-        db_session = db_session_func(db_config)
-        g.db = db_session
+#
+# def setup_logger(apptype, host='fluid.profi', port=24224):
+
+
+def prepare_connections(app, echo=False):
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import scoped_session, sessionmaker
+    from sqlalchemy import event
+
+    engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'], echo=False)
+    app.sql_engine = engine
+    app.sql_connection = engine.connect()
+    db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+    app.db = db_session
+    event.listen(db_session, 'after_flush', on_after_flush)
+    app.call_after_commit = []
+
+    from profapp.models.portal import Portal
+    portal = app.db.query(Portal).filter_by(host=request.host).first()
+    # g.portal = portal if portal else None
+    # g.portal_id = portal.id if portal else None
+    # g.portal_layout_path = portal.layout.path if portal else ''
+    # g.lang = g.portal.lang if g.portal else g.user_dict['lang'] if portal else 'en'
+
+
+    @event.listens_for(app.db, 'after_commit')
+    def after_commit(s):
+
+        [f() for f in app.call_after_commit]
+        app.call_after_commit = []
+
+        # TODO: OZ by OZ: change SQLAchemy => Flask-SQLAchemy, and use http://flask-sqlalchemy.pocoo.org/dev/signals/#models_committed
+        for ind, functions in g.functions_to_call_after_commit.items():
+            for f in functions:
+                if f:
+                    f()
+        g.functions_to_call_after_commit = {}
+
+
+    # ['SQLALCHEMY_DATABASE_URI']
+    def load_db(autocommit=False, autoflush=False, echo=echo):
+        # from sqlalchemy import event
+        # db_session = db_session_func(app.config['SQLALCHEMY_DATABASE_URI'], autocommit, autoflush, echo)
+        g.db = app.db
         g.req = req
-        g.filter_json = filter_json
         g.get_url_adapter = get_url_adapter
         g.fileUrl = utils.fileUrl
+        # g.after_commit_models = []
+
+        g.functions_to_call_after_commit = {}
+
+
+
+
 
     return load_db
 
@@ -179,19 +205,41 @@ def setup_authomatic(app):
 
 def load_user(apptype):
     g.user = current_user if current_user.is_authenticated() else None
+    g.user_id = g.user.id if g.user else None
+    if current_user and current_user.is_authenticated():
+        current_user.ping()
 
-    lang = session['language'] if 'language' in session else 'uk'
-    g.lang = g.user.lang if g.user else lang
-    g.languages = Configure.LANGUAGES
+    # lang = session['language'] if 'language' in session else 'uk'
+    g.languages = Config.LANGUAGES
+
+    g.lang = 'en'
+    if 'HTTP_ACCEPT_LANGUAGE' in request.headers.environ:
+        agent_languages = list(map(lambda l: re.compile("\s*;\s*q=").split(l),
+                                   re.compile("\s*,\s*").split(request.headers.environ['HTTP_ACCEPT_LANGUAGE'])))
+        agent_languages.sort(key=lambda x: float(x[1]) if len(x) > 1 else 1, reverse=True)
+        for lng in agent_languages:
+            if lng[0][0:2] in [l['name'] for l in Config.LANGUAGES]:
+                g.lang = lng[0][0:2]
+                break
+    if g.user:
+        g.lang = g.user.lang
+    if 'language' in session:
+        g.lang = session['language']
+
+    if g.lang not in [l['name'] for l in Config.LANGUAGES]:
+        g.lang = 'en'
+    # = g.user.lang if g.user else lang
+
 
     g.portal = None
     g.portal_id = None
     g.portal_layout_path = ''
+    g.protocol = Config.PROTOCOL
 
     g.debug = current_app.debug
     g.testing = current_app.testing
 
-    for variable in g.db.query(Config).filter_by(server_side=1).all():
+    for variable in g.db.query(ModelConfig).filter_by(server_side=1).all():
         var_id = variable.id
         if variable.type == 'int':
             current_app.config[var_id] = int(variable.value)
@@ -201,173 +249,7 @@ def load_user(apptype):
             current_app.config[var_id] = '%s' % (variable.value,)
 
 
-def prImageUrl(url):
-    return Markup(
-        ' src="//static.profireader.com/static/images/0.gif" style="background-position: center; background-size: contain; background-repeat: no-repeat; background-image: url(\'%s\')" ' % (
-            url,))
-
-
-def prImage(id=None, if_no_image=None):
-    noimage_url = if_no_image if if_no_image else "//static.profireader.com/static/images/no_image.png"
-    return prImageUrl((utils.fileUrl(id, False, noimage_url)) if id else noimage_url)
-
-
-def translates(template):
-    phrases = g.db.query(TranslateTemplate).filter_by(template=template).all()
-    ret = {}
-    for ph in phrases:
-        tim = ph.ac_tm.timestamp() if ph.ac_tm else ''
-        html_or_text = getattr(ph, g.lang)
-        html_or_text = MLStripper().strip_tags(html_or_text) if ph.allow_html == '' else html_or_text
-        ret[ph.name] = {'lang': html_or_text, 'time': tim, 'allow_html': ph.allow_html}
-    return json.dumps(ret)
-
-
-def translate_phrase_or_html(context, phrase, dictionary=None, allow_html=''):
-    template = context.name
-    translated = TranslateTemplate.getTranslate(template, phrase, None, allow_html)
-    r = re.compile("%\\(([^)]*)\\)s")
-
-    def getFromContext(context, indexes, default):
-        d = context
-        for i in indexes:
-            if i in d:
-                d = d[i]
-            else:
-                return default
-        return d
-
-    def replaceinphrase(match):
-        indexes = match.group(1).split('.')
-        return str(getFromContext(context if dictionary is None else dictionary, indexes, match.group(1)))
-
-    return r.sub(replaceinphrase, translated)
-
-
-@jinja2.contextfunction
-def translate_phrase(context, phrase, dictionary=None):
-    return MLStripper().strip_tags(translate_phrase_or_html(context, phrase, dictionary, ''))
-
-
-@jinja2.contextfunction
-def translate_html(context, phrase, dictionary=None):
-    return Markup(translate_phrase_or_html(context, phrase, dictionary, '*'))
-
-
-@jinja2.contextfunction
-def pr_help_tooltip(context, phrase, placement='bottom', trigger='mouseenter',
-                    classes='glyphicon glyphicon-question-sign'):
-    return Markup(
-        '<span popover-placement="' + placement + '" popover-trigger="' + trigger + '" class="' + classes +
-        '" uib-popover-html="\'' + HtmlHelper.quoteattr(
-            translate_phrase_or_html(context, 'help tooltip ' + phrase, None, '*')) + '\'"></span>')
-
-
-def moment(value, out_format=None):
-    if isinstance(value, datetime.datetime):
-        print(out_format)
-        value = value.isoformat(' ') + ' GMT'
-        return Markup(
-            "<script> document.write(moment(new Date('{}')).format('{}')) </script><noscript>{}</noscript>".format(
-                value, out_format if out_format else 'dddd, LL (HH:mm)', value))
-    elif isinstance(value, datetime.date):
-        print(2)
-        value = value.strftime('%Y-%m-%d')
-        return Markup(
-            "<script> document.write(moment('{}').format('{}')) </script><noscript>{}</noscript>".format(
-                value, out_format if out_format else 'dddd, LL', value))
-    else:
-        print(3)
-        return Markup(
-            "<script> document.write(moment(new Date('{}')).format('{}')) </script><noscript>{}</noscript>".format(
-                value, out_format if out_format else 'dddd, LL (HH:mm)', value))
-
-
-@jinja2.contextfunction
-def nl2br(value):
-    _paragraph_re = re.compile(r'(?:\r\n|\r|\n){2,}')
-    result = u'\n\n'.join(u'<p>%s</p>' % p.replace('\n', Markup('<br>\n'))
-                          for p in _paragraph_re.split(escape(value)))
-    result = Markup(result)
-    return result
-
-
-def config_variables():
-    variables = g.db.query(Config).filter_by(client_side=1).all()
-    ret = {}
-
-    for variable in variables:
-        var_id = variable.id
-        if variable.type == 'int':
-            ret[var_id] = '%s' % (int(variable.value))
-        elif variable.type == 'bool':
-            ret[var_id] = 'false' if int(variable.value) == 0 else 'true'
-        elif variable.type == 'float':
-            ret[var_id] = '%s' % (float(variable.value))
-        elif variable.type == 'timestamp':
-            ret[var_id] = 'new Date(%s)' % (int(variable.value))
-        else:
-            ret[var_id] = '\'' + variable.value + '\''
-    return "<script>\nConfig = {};\n" + ''.join(
-        [("Config['%s']=%s;\n" % (var_id, ret[var_id])) for var_id in ret]) + '</script>'
-
-
-def config_variables():
-    variables = g.db.query(Config).filter_by(server_side=1).all()
-    ret = {}
-    for variable in variables:
-        var_id = variable.id
-        if variable.type == 'int':
-            ret[var_id] = '%s' % (int(variable.value),)
-        elif variable.type == 'bool':
-            ret[var_id] = 'false' if int(variable.value) == 0 else 'true'
-        elif variable.type == 'float':
-            ret[var_id] = '%s' % (float(variable.value))
-        elif variable.type == 'timestamp':
-            ret[var_id] = 'new Date(%s)' % (int(variable.value))
-        else:
-            ret[var_id] = '\'' + variable.value.replace('\\', '\\\\').replace('\n', '\\n').replace('\'', '\\\'') + '\''
-
-    return "<script>\n_LANG = '" + g.lang + "'; \nConfig = {};\n" + ''.join(
-        [("Config['%s']=%s;\n" % (var_id, ret[var_id])) for var_id in ret]) + '</script>'
-
-
-def get_url_adapter():
-    appctx = globals._app_ctx_stack.top
-    reqctx = globals._request_ctx_stack.top
-    if reqctx is not None:
-        url_adapter = reqctx.url_adapter
-    else:
-        url_adapter = appctx.url_adapter
-    return url_adapter
-
-
-# TODO: OZ by OZ: add kwargs just like in url_for
-def raw_url_for(endpoint):
-    url_adapter = get_url_adapter()
-
-    rules = url_adapter.map._rules_by_endpoint.get(endpoint, ())
-
-    if len(rules) < 1:
-        raise Exception('You requsted url for endpoint `%s` but no endpoint found' % (endpoint,))
-
-    rules_simplified = [re.compile('<[^:]*:').sub('<', rule.rule) for rule in rules]
-
-    return "function (dict) { return find_and_build_url_for_endpoint(dict, %s); }" % (json.dumps(rules_simplified))
-    # \
-    #        " { var ret = '" + ret + "'; " \
-    #                                                " for (prop in dict) ret = ret.replace('<'+prop+'>',dict[prop]); return ret; }"
-
-
-def pre(value):
-    res = []
-    for k in dir(value):
-        res.append('%r %r\n' % (k, getattr(value, k)))
-    return '<pre>' + '\n'.join(res) + '</pre>'
-
-
 mail = Mail()
-# moment = Moment()
 bootstrap = Bootstrap()
 
 login_manager = LoginManager()
@@ -380,16 +262,9 @@ login_manager.login_view = 'auth.login_signup_endpoint'
 class AnonymousUser(AnonymousUserMixin):
     id = 0
 
-    # def gravatar(self, size=100, default='identicon', rating='g'):
-    # if request.is_secure:
-    #    url = 'https://secure.gravatar.com/avatar'
-    # else:
-    #    url = 'http://www.gravatar.com/avatar'
-    # hash = hashlib.md5(
-    #    'guest@profireader.com'.encode('utf-8')).hexdigest()
-    # return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
-    #    url=url, hash=hash, size=size, default=default, rating=rating)
-    # return '//static.profireader.com/static/no_avatar.png'
+    avatar = {
+        'url': ''
+    }
 
     @staticmethod
     def check_rights(permissions):
@@ -397,10 +272,6 @@ class AnonymousUser(AnonymousUserMixin):
 
     @staticmethod
     def is_administrator():
-        return False
-
-    @staticmethod
-    def is_banned():
         return False
 
     def get_id(self):
@@ -411,47 +282,113 @@ class AnonymousUser(AnonymousUserMixin):
     def user_name():
         return 'Guest'
 
-    def avatar(self, size=100):
+    def get_avatar(self, size=100):
         avatar = self.gravatar(size=size)
         return avatar
 
     def gravatar(self, size=100, default='identicon', rating='g'):
-        if request.is_secure:
-            url = 'https://secure.gravatar.com/avatar'
-        else:
-            url = 'http://www.gravatar.com/avatar'
-
-        email = getattr(self, 'profireader_email', 'guest@profireader.com')
-
-        # email = 'guest@profireader.com'
-        # if self.profireader_email:
-        #     email = self.profireader_email
-
-        hash = hashlib.md5(
-            email.encode('utf-8')).hexdigest()
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
-            url=url, hash=hash, size=size, default=default, rating=rating)
+            url='https://secure.gravatar.com/avatar' if request.is_secure else 'http://www.gravatar.com/avatar',
+            hash=hashlib.md5(getattr(self, 'address_email', 'guest@' + Config.MAIN_DOMAIN).encode('utf-8')).hexdigest(),
+            size=size, default=default, rating=rating)
 
     def __repr__(self):
         return "<User(id = %r)>" % self.id
 
 
 login_manager.anonymous_user = AnonymousUser
+from functools import partial
+
+
+class logger:
+    _l = None
+
+    critical = None
+    error = None
+    warning = None
+    notice = None
+    debug = None
+
+    @staticmethod
+    def extra(**kwargs):
+        return {'extra': {'zzz_pr_more_info': kwargs}}
+
+    def __init__(self, apptype, debug, testing):
+        import logging
+        import logstash
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG if debug else logging.INFO)
+        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type = apptype))
+        self._l = logger
+
+        def pp(t, message, *args, **kwargs):
+            import pprint
+            ppr = pprint.PrettyPrinter(indent=2, compact=True, width = 120)
+            extra = kwargs.get('extra', None)
+            if extra:
+                extra = extra.get('zzz_pr_more_info', None)
+            print('{}: {}'.format(t, message))
+            if extra:
+                ppr.pprint(extra)
+            return True
+
+        if debug:
+            self.exception = lambda m, *args, **kwargs: pp('!!! Exception', m, *args, **kwargs) and \
+                                                        self._l.exception(m, *args, stack_info=True, **kwargs)
+            self.critical = lambda m, *args, **kwargs: pp('!!! Critical', m, *args, **kwargs) and \
+                                                       self._l.critical(m, *args, stack_info=True, **kwargs)
+            self.error = lambda m, *args, **kwargs: pp('!! Error', m, *args, **kwargs) and \
+                                                    self._l.error(m, *args, stack_info=True, **kwargs)
+            self.warning = lambda m, *args, **kwargs: pp('! Warning', m, *args, **kwargs) and \
+                                                      self._l.warning(m, *args, stack_info=True, **kwargs)
+            self.info = lambda m, *args, **kwargs: pp('Info', m, *args, **kwargs) and \
+                                                   self._l.info(m, *args, stack_info=True, **kwargs)
+            self.debug = lambda m, *args, **kwargs: pp('Debug', m, *args, **kwargs) and \
+                                                    self._l.debug(m, *args, stack_info=True, **kwargs)
+        else:
+            self.exception = partial(self._l.exception, stack_info=True)
+            self.critical = partial(self._l.critical, stack_info=True)
+            self.error = partial(self._l.error, stack_info=True)
+            self.warning = partial(self._l.warning, stack_info=True if testing else False)
+            self.info = partial(self._l.info, stack_info=True if testing else False)
+            self.debug = partial(self._l.debug, stack_info=True)
+
+
+class TransliterationConverter(BaseConverter):
+
+    def to_python(self, value):
+        value = unquote_plus(value)
+        if g.portal and g.portal.lang in get_available_language_codes():
+            value = translit(value, g.portal.lang)
+        return value
+
+    def to_url(self, value):
+        if g.portal and g.portal.lang in get_available_language_codes():
+            value = translit(value, g.portal.lang, reversed=True)
+        return quote_plus(value)
 
 
 def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import scoped_session, sessionmaker
+
     app = Flask(__name__, static_folder='./static')
 
     app.config.from_object(config)
-    # babel = Babel(app)
 
     app.teardown_request(close_database)
 
     app.debug = app.config['DEBUG'] if 'DEBUG' in app.config else False
     app.testing = app.config['TESTING'] if 'TESTING' in app.config else False
 
-    app.before_request(load_database(app.config['SQLALCHEMY_DATABASE_URI']))
+    app.apptype = apptype
+    app.log = logger(apptype, app.debug, app.testing)
+
+    app.url_map.converters['transliterate'] = TransliterationConverter
+
+    app.before_request(prepare_connections(app))
     app.before_request(lambda: load_user(apptype))
+    # app.before_request(lambda: setup_logger(apptype, host='fluid.profi', port=24224))
     app.before_request(setup_authomatic(app))
 
     def add_map_headers_to_less_files(response):
@@ -464,6 +401,32 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.after_request(add_map_headers_to_less_files)
 
+    @login_manager.user_loader
+    def load_user_manager(user_id):
+        return g.db.query(User).get(user_id)
+
+    # if apptype in ['file', 'profi', 'static', 'front']:
+
+    session_opts = {
+        'session.type': 'ext:memcached',
+        'session.cookie_domain': '.' + Config.MAIN_DOMAIN,
+        'session.url': 'memcached.profi:11211'
+    }
+
+    class BeakerSessionInterface(SessionInterface):
+        def open_session(self, app, request):
+            return request.environ.get('beaker.session')
+
+        def save_session(self, app, session, response):
+            session.save()
+
+    app.wsgi_app = SessionMiddleware(app.wsgi_app, session_opts)
+    app.session_interface = BeakerSessionInterface()
+
+    app.type = apptype
+    login_manager.init_app(app)
+    login_manager.session_protection = 'basic'
+
     if apptype == 'front':
 
         # relative paths
@@ -473,22 +436,17 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
         app.jinja_env.join_path = join_path
 
         def load_portal():
-            # class RelEnvironment(jinja2.Environment):
-            #     """Override join_path() to enable relative template paths."""
-            #     def join_path(self, template, parent):
-            #         return os.path.join(os.path.dirname(parent), template)
-
-            from profapp.models.portal import Portal
-            portal = g.db.query(Portal).filter_by(host=request.host).first()
-            # portal = g.db.query(Portal).filter_by(host=request.host).one()
-            g.portal = portal if portal else None
-            g.portal_id = portal.id if portal else None
-            g.portal_layout_path = portal.layout.path if portal else ''
-            g.lang = g.portal.lang if g.portal else g.user_dict['lang'] if portal else 'en'
+            pass
 
         app.before_request(load_portal)
         from profapp.controllers.blueprints_register import register_front as register_blueprints_front
         register_blueprints_front(app)
+        update_jinja_engine(app)
+
+        @app.errorhandler(404)
+        def page_not_found(e):
+            from profapp.controllers.views_front import error_404
+            return error_404()
 
     elif apptype == 'static':
         from profapp.controllers.blueprints_register import register_static as register_blueprints_static
@@ -496,78 +454,17 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     elif apptype == 'file':
         from profapp.controllers.blueprints_register import register_file as register_blueprints_file
         register_blueprints_file(app)
+    elif apptype == 'profi':
+        from profapp.controllers.blueprints_register import register_profi as register_blueprints_profi
+        register_blueprints_profi(app)
+        update_jinja_engine(app)
     else:
         from profapp.controllers.blueprints_register import register_profi as register_blueprints_profi
         register_blueprints_profi(app)
+        update_jinja_engine(app)
 
-    bootstrap.init_app(app)
-    mail.init_app(app)
-    # moment.init_app(app)
-    login_manager.init_app(app)
-    login_manager.session_protection = 'basic'
-
-    @login_manager.user_loader
-    def load_user_manager(user_id):
-        return g.db.query(User).get(user_id)
-
-    # csrf.init_app(app)
-
-    # read this: http://stackoverflow.com/questions/6036082/call-a-python-function-from-jinja2
-    # app.jinja_env.globals.update(flask_endpoint_to_angular=flask_endpoint_to_angular)
-
-    def raise_helper(msg):
-        raise Exception(msg)
-
-    app.jinja_env.globals.update(raw_url_for=raw_url_for)
-    app.jinja_env.globals.update(pre=pre)
-    app.jinja_env.globals.update(utils=utils)
-    app.jinja_env.globals.update(translates=translates)
-    app.jinja_env.globals.update(fileUrl=utils.fileUrl)
-    app.jinja_env.globals.update(prImage=prImage)
-    app.jinja_env.globals.update(prImageUrl=prImageUrl)
-    # app.jinja_env.globals.update(url_page=url_page)
-    app.jinja_env.globals.update(config_variables=config_variables)
-    app.jinja_env.globals.update(_=translate_phrase)
-    app.jinja_env.globals.update(moment=moment)
-    app.jinja_env.globals.update(__=translate_html)
-    app.jinja_env.globals['raise'] = raise_helper
-    app.jinja_env.globals.update(tinymce_format_groups=HtmlHelper.tinymce_format_groups)
-    app.jinja_env.globals.update(pr_help_tooltip=pr_help_tooltip)
-    # url_regenerate
-
-    app.jinja_env.filters['nl2br'] = nl2br
-    # app.jinja_env.filters['localtime'] = localtime
-
-    # see: http://flask.pocoo.org/docs/0.10/patterns/sqlalchemy/
-    # Flask will automatically remove database sessions at the end of the
-    # request or when the application shuts down:
-    # from db_init import db_session
-
-    # @app.teardown_appcontext
-    # def shutdown_session(exception=None):
-    #     try:
-    #         db_session.commit()
-    #     except Exception:
-    #         session.rollback()
-    #         raise
-    #     finally:
-    #         session.close()  # optional, depends on use case
-    #     # db_session.remove()
-
-    session_opts = {
-        'session.type': 'ext:memcached',
-        'session.url': 'memcached.profi:11211'
-    }
-
-    class BeakerSessionInterface(SessionInterface):
-        def open_session(self, app, request):
-            _session = request.environ['beaker.session']
-            return _session
-
-        def save_session(self, app, session, response):
-            session.save()
-
-    app.wsgi_app = SessionMiddleware(app.wsgi_app, session_opts)
-    app.session_interface = BeakerSessionInterface()
+    if apptype in ['profi', 'front']:
+        bootstrap.init_app(app)
+        mail.init_app(app)
 
     return app

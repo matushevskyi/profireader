@@ -1,0 +1,8 @@
+<section class="navmenu navmenu-inverse navmenu-fixed-left offcanvas tag-menu">
+    <ul class="nav navmenu-nav">
+        {% if tags %}{% import 'macros.html' as frontmacros %}
+            {% for tag in tags.all %}
+                <li>{{ frontmacros.tag(tag, tags) }}</li>
+            {% endfor %}{% endif %}
+    </ul>
+</section>

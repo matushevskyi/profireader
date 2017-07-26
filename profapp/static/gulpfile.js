@@ -40,19 +40,24 @@ gulp.task('install_angular', function () {
         .pipe(gulp.dest(dst + 'angular/'));
 });
 
-gulp.task('install_angular_translate', function () {
-    return gulp.src(src + 'angular-translate/angular-translate.min.js')
-        .pipe(gulp.dest(dst + 'angular/'));
-});
+// gulp.task('install_angular_translate', function () {
+//     return gulp.src(src + 'angular-translate/angular-translate.min.js')
+//         .pipe(gulp.dest(dst + 'angular/'));
+// });
 
-gulp.task('install_angular_cookies', function () {
-    return gulp.src(src + 'angular-cookies/angular-cookies.min.js')
-        .pipe(gulp.dest(dst + 'angular/'));
-});
+// gulp.task('install_angular_cookies', function () {
+//     return gulp.src(src + 'angular-cookies/angular-cookies.min.js')
+//         .pipe(gulp.dest(dst + 'angular/'));
+// });
 
 gulp.task('install_angular_animate', function () {
     return gulp.src(src + 'angular-animate/angular-animate.min.js')
         .pipe(gulp.dest(dst + 'angular-animate/'));
+});
+
+gulp.task('install_angular_route', function () {
+    return gulp.src(src + 'angular-route/angular-route.js')
+        .pipe(gulp.dest(dst + 'angular-route/'));
 });
 
 gulp.task('install_angular_bootstrap', function () {
@@ -79,6 +84,16 @@ gulp.task('install_tinymce', function () {
 gulp.task('install_datepicker', function () {
     return gulp.src([src + 'angular-ui-slider/src/slider.js'])
         .pipe(gulp.dest(dst + 'angular-ui-slider/'));
+});
+
+gulp.task('install_angular-infinite-scroll', function () {
+    return gulp.src([src + 'ngInfiniteScroll/build/ng-infinite-scroll.min.js'])
+        .pipe(gulp.dest(dst + 'angular-ng-infinite-scroll/'));
+});
+
+gulp.task('install_angular-sortable', function () {
+    return gulp.src([src + 'angular-ui-sortable/sortable.min.js'])
+        .pipe(gulp.dest(dst + 'angular-ui-sortable/'));
 });
 
 gulp.task('install_angular_crop', function () {
@@ -155,15 +170,20 @@ gulp.task('install_slider', function () {
         .pipe(gulp.dest(dst + 'angular-ui-slider/'));
 });
 
+gulp.task('install_socket.io-client', function () {
+    return gulp.src([src + 'socket.io-client/socket.io.js'])
+        .pipe(gulp.dest(dst + 'socket.io.js'));
+});
+
 gulp.task('install_bootstrap', function () {
     return gulp.src([src + 'bootstrap/dist/**/*'])
         .pipe(gulp.dest(dst + 'bootstrap/'));
 });
 
 gulp.task('less', function () {
-    var layouts = ['spring', 'bird', 'forester'];
+    var layouts = ['clover', 'simple'];
 
-    var dirs = ['./css/*.less',];
+    var dirs = ['./css/*.less','./tinymce.pr/plugins/tinymce-gallery-plugin/*.less',];
     for (var i = 0; i < layouts.length; i++) {
         dirs.push('./front/' + layouts[i] + '/css/*.less');
     }
@@ -180,7 +200,7 @@ gulp.task('less', function () {
     }
 
     gulp.watch(dirs).on('change', function (file) {
-        gutil.log(gutil.colors.yellow('JS changed' + ' (' + file.path.replace(/.less$/, '.css,.map') + ' created)'));
+        gutil.log(gutil.colors.yellow('changed' + ' (' + file.path.replace(/.less$/, '.css,.map') + ' created)'));
         gulp.src(file.path)
             .pipe(less({
                 sourceMap: {
@@ -214,12 +234,16 @@ gulp.task('default', taskListing);
 gulp.task('all', [
     'install_fileuploader',
     'install_angular',
-    'install_angular_translate',
-    'install_angular_cookies',
+    'install_angular_route',
+    // 'install_angular_translate',
+    // 'install_angular_cookies',
     'install_angular_ui_select',
     'install_angular_crop',
+    'install_angular-infinite-scroll',
+    'install_angular-sortable',
     'install_angular_crop_from_dev',
     'install_angular-db-filemanager',
+    'install_socket.io-client',
     'install_angular-db-filemanager_from_dev',
     'install_angular_ui_tinymce', 'install_tinymce',
     'install_angular_bootstrap', 'install_angular_animate', 'install_cropper',

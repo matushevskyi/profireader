@@ -1,0 +1,80 @@
+{% extends 'layout_company_page.html' %}
+
+{% block company_content %}
+    {% for employment in member_company.employments if employment['status'] == 'EMPLOYMENT_ACTIVE' %}
+        <div class="company-contact-item">
+            <table class="tablelist company_employees">
+                <tr>
+                    <td><img class="user-avatar" {{ prImageUrl(employment.user['avatar']['url']) }} /></td>
+                    <td>
+                        <div>{{ employment.user['full_name'] }}</div>
+                        <div>{% if employment['position'] %}{{ employment['position'] }}{% endif %}</div>
+                        <div>
+                            <a onclick="openMessageDialog('{{ employment.user['id'] }}', '{{ employment.user['full_name'] }}')"
+                               data-user-id="{{ employment.user['id'] }}" href="#"><span
+                                    class="fa fa-envelope mr05em"></span>{{ _('send message') }}</a></div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    {% endfor %}
+
+
+    <div class="modal fade" id="messageModal" role="dialog" data-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">{{ _('send message to ') }}<span></span></h4>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="user_id"/>
+                    <textarea></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" onclick="sendMessage()"></button>
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">{{ _('Cancel') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+
+        function openMessageDialog(user_id, user_name) {
+            $('#messageModal button.btn-success').html('{{ _('Send') }}');
+            $('#messageModal .modal-title span').html(user_name);
+            $('#messageModal input[name=user_id]').val(user_id);
+            $('#messageModal textarea').val('');
+            $('#messageModal button').prop('disabled', false);
+            $('#messageModal textarea').prop('disabled', false);
+            $('#messageModal').modal({
+                backdrop: 'static',
+                keyboard: true
+            }).modal('show');
+            return false;
+        }
+
+        function sendMessage() {
+            $('#messageModal button').prop('disabled', true);
+            $('#messageModal textarea').prop('disabled', true);
+            $('#messageModal button.btn-success').html('{{ _('Sending...') }}');
+
+            $ok('{{ url_for('front.send_message', member_company_id = member_company['id']) }}',
+                    {
+                        message: $("#messageModal textarea").val(),
+                        user_id: $('#messageModal input[name=user_id]').val()
+                    }, function (resp) {
+                        $('#messageModal').modal('hide');
+                        add_message('{{ _('Message sent') }}', 'success');
+                    }, function (resp) {
+                        $('#messageModal').modal('hide');
+                        add_message('{{ _('Error sending message') }}', 'danger');
+                    });
+        }
+
+
+    </script>
+{% endblock %}
+

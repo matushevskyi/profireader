@@ -10,13 +10,13 @@
 
 
     <script type="text/ng-template" id="translation_tinymce.html">
-            <div class="modal-header"><h3 class="modal-title">{{ _('Edit translate with HTML tag!') }}</h3></div>
-            <div class="modal-body"><textarea class='modal-content' ui-tinymce="tinymceImageOptions"
-                                              ng-model='EdittextWithHtml'></textarea></div>
-            <div class="modal-footer">
-                <button id='buttonDelete' class='btn btn-warning' ng-click='save()'>{{ _('Save') }}</button>
-                <button class="btn btn-warning" ng-click="cancel()">{{ _('Cancel') }}</button>
-            </div>
+        <div class="modal-header"><h3 class="modal-title">{{ _('Edit translate with HTML tag!') }}</h3></div>
+        <div class="modal-body"><textarea class='modal-content' ui-tinymce="tinymceTranslationOptions"
+                                          ng-model='EdittextWithHtml'></textarea></div>
+        <div class="modal-footer">
+            <button id='buttonDelete' class='btn btn-warning' ng-click='save()'>{{ _('Save') }}</button>
+            <button class="btn btn-warning" ng-click="cancel()">{{ _('Cancel') }}</button>
+        </div>
     </script>
     <script type="text/ng-template" id="delete_translation.html">
         <div class='modal-header'><h4>{{ _('Do you want delete this rows?') }}</h4></div>
@@ -26,150 +26,173 @@
         </div>
     </script>
 
+    <style>
+    .pr-translation-tinymce-dialog .modal-dialog{
+    width:800px; height: 400px;
+  position: absolute;
+  top:0; bottom: 0; left: 0; right: 0;
+  margin: auto
+}
+    </style>
+
     <script>
 
         module.controller('translation_tinymce_controller', function ($scope, $uibModalInstance, EdittextWithHtml) {
-              $scope.EdittextWithHtml = EdittextWithHtml;
-              $scope.save = function () {
+            $scope.EdittextWithHtml = EdittextWithHtml;
+            $scope.save = function () {
                 $uibModalInstance.close($scope.EdittextWithHtml);
-              };
-              $scope.cancel = function () {
+            };
+            $scope.cancel = function () {
                 $uibModalInstance.dismiss('cancel');
-              };
+            };
+
+            $scope.tinymceTranslationOptions = {
+                inline: false,
+                menu: [],
+                width: 750,
+                forced_root_block : "",
+                plugins: 'advlist autolink link charmap paste code',
+                skin: 'lightgray',
+                theme: 'modern',
+                'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link image table | code",
+                'valid_elements': "iframe[*],img[*],table[*],tbody[*],td[*],th[*],tr[*],p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*]",
+            }
+
         });
 
         module.controller('delete_translation_controller', function ($scope, $uibModalInstance, list) {
-              $scope.list = list;
-              $scope.deleteItems = function () {
+            $scope.list = list;
+            $scope.deleteItems = function () {
                 $uibModalInstance.close($scope.list);
-              };
-              $scope.cancel = function () {
+            };
+            $scope.cancel = function () {
                 $uibModalInstance.dismiss('cancel');
-              };
+            };
         });
 
 
-        module.controller('translation_list', ['$scope', '$uibModal', '$ok',function ($scope, $uibModal, $ok) {
+        module.controller('translation_list', ['$scope', '$uibModal', '$ok', function ($scope, $uibModal, $ok) {
 
-                    $scope.url_search_translations = {{ raw_url_for('admin.translations_load')|safe }};
-                    $scope.url_save_translations = {{ raw_url_for('admin.translations_save')|safe }};
-                    $scope.url_delete_translations = {{ raw_url_for('admin.delete_translates')|safe }}
+            $scope.url_search_translations = {{ raw_url_for('admin.translations_load')|safe }};
+            $scope.url_save_translations = {{ raw_url_for('admin.translations_save')|safe }};
+            $scope.url_delete_translations = {{ raw_url_for('admin.delete_translates')|safe }}
                     $scope.$$translate = {{ translates('translation_list')|safe }};
-                            {% raw %}
-                    $scope.noData = 'No translations';
-                    $scope.error = '';
+            {% raw %}
+            $scope.noData = 'No translations';
+            $scope.error = '';
 
-                    $scope.showModalForEditNew = function (row, col, text) {
-                        var modalInstance = $uibModal.open({
-                            templateUrl: 'translation_tinymce.html',
-                            controller: 'translation_tinymce_controller',
-                            resolve: {
-                                'EdittextWithHtml': function () {
-                                    return text
-                                }
-                            }
-                        });
-                        modalInstance.result.then(function (returnedtext) {
-                            $scope.saveTranslWithHtml(returnedtext, row, col);
-                        });
-                    };
+            $scope.showModalForEditNew = function (row, col, text) {
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'translation_tinymce.html',
+                    windowClass: 'pr-translation-tinymce-dialog',
+                    controller: 'translation_tinymce_controller',
+                    resolve: {
+                        'EdittextWithHtml': function () {
+                            return text
+                        }
+                    }
+                });
+                modalInstance.result.then(function (returnedtext) {
+                    $scope.saveTranslWithHtml(returnedtext, row, col);
+                });
+            };
 
-                    $scope.showModalDelete = function () {
-                        var list = $scope.list_select;
-                        var modalInstance = $uibModal.open({
-                            templateUrl: 'delete_translation.html',
-                            controller: 'delete_translation_controller',
-                            resolve: {
-                                'list': function () {
-                                    return list
-                                }
-                            }
-                        });
-                        modalInstance.result.then(function (list) {
-                            $scope.deleteItems(list);
-                        });
-                    };
+            $scope.showModalDelete = function () {
+                var list = $scope.list_select;
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'delete_translation.html',
+                    controller: 'delete_translation_controller',
+                    resolve: {
+                        'list': function () {
+                            return list
+                        }
+                    }
+                });
+                modalInstance.result.then(function (list) {
+                    $scope.deleteItems(list);
+                });
+            };
 
-                    $scope.deleteItems = function (list) {
-                        $ok($scope.url_delete_translations(), {objects: list}, function (resp) {
-                            if (resp == 'True') {
-                                $scope.gridApi.grid.setGridData();
-                            } else {
-                                $scope.error = 'error delete'
-                            }
-                        });
-                    };
+            $scope.deleteItems = function (list) {
+                $ok($scope.url_delete_translations(), {objects: list}, function (resp) {
+                    if (resp == 'True') {
+                        $scope.gridApi.grid.setGridData();
+                    } else {
+                        $scope.error = 'error delete'
+                    }
+                });
+            };
 
-                    $scope.saveTranslWithHtml = function (text, row, col) {
-                        var grid_data = $scope.gridApi.grid.all_grid_data;
-                        grid_data['editItem'] = {
-                            'name': row.entity.name,
-                            'newValue': text,
-                            'template': row.entity.template,
-                            'col': col.field
-                        };
-                        $scope.sendData(grid_data);
-                    };
+            $scope.saveTranslWithHtml = function (text, row, col) {
+                var grid_data = $scope.gridApi.grid.all_grid_data;
+                grid_data['editItem'] = {
+                    'name': row.entity.name,
+                    'newValue': text,
+                    'template': row.entity.template,
+                    'col': col.field
+                };
+                $scope.sendData(grid_data);
+            };
 
-                    $scope.sendData = function (grid_data, setdatafuctions) {
-                        $scope.loading = true;
-                        $scope.isSelectedRows = false;
-                        $scope.error = '';
-                        $ok($scope.url_search_translations({}), grid_data, setdatafuctions).finally(function () {
-                            $scope.loading = false;
-                            $scope.load_contr = true;
-                        });
-                    };
+            $scope.sendData = function (grid_data, setdatafuctions) {
+                $scope.loading = true;
+                $scope.isSelectedRows = false;
+                $scope.error = '';
+                $ok($scope.url_search_translations({}), grid_data, setdatafuctions).finally(function () {
+                    $scope.loading = false;
+                    $scope.load_contr = true;
+                });
+            };
 
-                    $scope.rule = function(allow_html){
-                        return allow_html === '*'
-                    };
+            $scope.rule = function (allow_html) {
+                return allow_html === '*'
+            };
 
-                    $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
-                        loadGridData: $scope.sendData,
-                        columnDefs: [
-                            {
-                                name: 'cr_tm', enableCellEdit: false, enableFiltering: false, enableSorting: true,
-                                displayName: 'Creation time'
-                            }, {
-                                name: 'ac_tm', enableSorting: true, enableCellEdit: false
-                            }, {
-                                name: 'template', enableCellEdit: false, enableColumnMenu: false,
-                                displayName: 'Template',
-                                filter: {type:'select'}
-                            }, {
-                                name: 'url', enableCellEdit: false, enableColumnMenu: false,
-                                displayName: 'Url',
-                                filter: {type:'select'}
-                            }, {
-                                name: 'name', enableCellEdit: false, enableColumnMenu: false, displayName: 'Phrase',
-                                filter: {type:'input'}
-                            }, {
-                                name: 'uk', enableCellEdit: true, enableColumnMenu: false,
-                                type: 'editable',
-                                modal: "grid.appScope.showModalForEditNew(row, col, row.entity[col.field])",
-                                multiple: true,
-                                rule:'rule(row.entity.allow_html)',
-                                filter: {type:'input'}
-                            }, {
-                                name: 'en', enableCellEdit: true, enableColumnMenu: false,
-                                type: 'editable',
-                                modal: "grid.appScope.showModalForEditNew(row, col, row.entity[col.field])",
-                                multiple: true,
-                                rule:'rule(row.entity.allow_html)',
-                                filter: {type:'input'}
-                            }, {
-                                name: 'allow_html', enableCellEdit: false, enableColumnMenu: false,
-                                displayName: 'Allow HTML',
-                                filter: {type:'input'}
-                            }, {
-                                name: 'portal.name', enableCellEdit: false, enableColumnMenu: false,
-                                displayName: 'Portal Name',
-                                filter: {type:'input'}
-                            }
-                        ]
-                    });
-                }]);
+            $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
+                loadGridData: $scope.sendData,
+                columnDefs: [
+                    {
+                        name: 'cr_tm', enableCellEdit: false, enableFiltering: false, enableSorting: true,
+                        displayName: 'Creation time'
+                    }, {
+                        name: 'ac_tm', enableSorting: true, enableCellEdit: false
+                    }, {
+                        name: 'template', enableCellEdit: false, enableColumnMenu: false,
+                        displayName: 'Template',
+                        filter: {type: 'select'}
+                    }, {
+                        name: 'url', enableCellEdit: false, enableColumnMenu: false,
+                        displayName: 'Url',
+                        filter: {type: 'select'}
+                    }, {
+                        name: 'name', enableCellEdit: false, enableColumnMenu: false, displayName: 'Phrase',
+                        filter: {type: 'input'}
+                    }, {
+                        name: 'uk', enableCellEdit: true, enableColumnMenu: false,
+                        type: 'editable',
+                        modal: "grid.appScope.showModalForEditNew(row, col, row.entity[col.field])",
+                        multiple: true,
+                        rule: 'rule(row.entity.allow_html)',
+                        filter: {type: 'input'}
+                    }, {
+                        name: 'en', enableCellEdit: true, enableColumnMenu: false,
+                        type: 'editable',
+                        modal: "grid.appScope.showModalForEditNew(row, col, row.entity[col.field])",
+                        multiple: true,
+                        rule: 'rule(row.entity.allow_html)',
+                        filter: {type: 'input'}
+                    }, {
+                        name: 'allow_html', enableCellEdit: false, enableColumnMenu: false,
+                        displayName: 'Allow HTML',
+                        filter: {type: 'input'}
+                    }, {
+                        name: 'portal.name', enableCellEdit: false, enableColumnMenu: false,
+                        displayName: 'Portal Name',
+                        filter: {type: 'input'}
+                    }
+                ]
+            });
+        }]);
 
         {% endraw %}
     </script>
@@ -180,7 +203,8 @@
         }
     </style>
     <div ng-controller="translation_list">
-        <div ng-cloak class="grid" id="grid1" ui-grid-pagination ui-grid-selection ui-grid-edit ui-grid="gridOptions1"></div>
+        <div ng-cloak class="grid" id="grid1" ui-grid-pagination ui-grid-selection ui-grid-edit
+             ui-grid="gridOptions1"></div>
         <a ng-show="load_contr" class="btn btn-danger"
            ng-class="{'disabled': ( isSelectedRows === false )}" style="text-align: center"
            ng-click="showModalDelete()">{{ _('Delete selected rows') }}</a>

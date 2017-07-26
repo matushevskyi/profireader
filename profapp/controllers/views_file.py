@@ -1,20 +1,20 @@
-from .blueprints_declaration import file_bp
-from flask import request, g, abort
-from ..models.files import File, FileContent
-from io import BytesIO
-from .request_wrapers import check_right
-import re
-from sqlalchemy import or_
-from utils.db_utils import db
-from flask import current_app
-from werkzeug.datastructures import Headers
 import mimetypes
 import os
-from time import time
-from zlib import adler32
-from flask._compat import string_types, text_type
+import re
 import urllib.parse
-from ..models.rights import UserIsActive, AllowAll
+from io import BytesIO
+from time import time
+
+from flask import current_app
+from flask import request, g, abort
+from flask._compat import string_types
+from sqlalchemy import or_
+from werkzeug.datastructures import Headers
+
+from profapp import utils
+from .blueprints_declaration import file_bp
+from ..models.files import File, FileContent
+from profapp.models.permissions import AvailableForAll
 
 try:
     from werkzeug.wsgi import wrap_file
@@ -26,23 +26,9 @@ def file_query(table, file_id):
     query = g.db.query(table).filter_by(id=file_id).first()
     return query
 
-#@file_bp.route('<string:file_id>')
-#def download(file_id):
-#    file = file_query(File, file_id)
-#    file_c = file_query(FileContent, file_id)
-#    if not file or not file_c:
-#        abort(404)
-#    else:
-#        content = file_c.content
-#        response = make_response(content)
-#        response.headers['Content-Type'] = "application/octet-stream"
-#        response.headers['Content-Disposition'] = 'attachment; filename=%s' % urllib.parse.quote(file.name)
-#        return response
 
-
-@file_bp.route('<string:file_id>/')
-@file_bp.route('<string:file_id>')
-@check_right(AllowAll)
+@file_bp.route('<string:file_id>/', permissions=AvailableForAll())
+@file_bp.route('<string:file_id>', permissions=AvailableForAll())
 def get(file_id):
     image_query = file_query(File, file_id)
 
@@ -57,6 +43,7 @@ def get(file_id):
     if allowed_referrers(allowedreferrer):
         image_query_content = g.db.query(FileContent).filter_by(id=file_id).first()
         return send_file(BytesIO(image_query_content.content),
+                         etag=file_id,
                          mimetype=image_query.mime, as_attachment=(request.args.get('d') is not None),
                          attachment_filename=urllib.parse.quote(
                              image_query.name,
@@ -68,11 +55,8 @@ def get(file_id):
 
 
 def send_file(filename_or_fp, mimetype=None, as_attachment=False,
-              attachment_filename=None, add_etags=True,
+              attachment_filename=None, etag=False,
               cache_timeout=None, conditional=False, headers={}):
-
-
-
     """Sends the contents of a file to the client.  This will use the
     most efficient method available and configured.  By default it will
     try to use the WSGI server's file_wrapper support.  Alternatively
@@ -132,7 +116,7 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
     """
 
     # sleep(5)
-    
+
     mtime = None
 
     if isinstance(filename_or_fp, string_types):
@@ -146,18 +130,11 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
         # XXX: this behavior is now deprecated because it was unreliable.
         # removed in Flask 1.0
         if not attachment_filename and not mimetype \
-           and isinstance(filename, string_types):
+                and isinstance(filename, string_types):
             warn(DeprecationWarning('The filename support for file objects '
-                'passed to send_file is now deprecated.  Pass an '
-                'attach_filename if you want mimetypes to be guessed.'),
-                stacklevel=2)
-        if add_etags:
-            warn(DeprecationWarning('In future flask releases etags will no '
-                'longer be generated for file objects passed to the send_file '
-                'function because this behavior was unreliable.  Pass '
-                'filenames instead if possible, otherwise attach an etag '
-                'yourself based on another value'), stacklevel=2)
-
+                                    'passed to send_file is now deprecated.  Pass an '
+                                    'attach_filename if you want mimetypes to be guessed.'),
+                 stacklevel=2)
     if filename is not None:
         if not os.path.isabs(filename):
             filename = os.path.join(current_app.root_path, filename)
@@ -174,7 +151,7 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
                                 'sending as attachment')
             attachment_filename = os.path.basename(filename)
         default_headers.add('Content-Disposition', 'attachment',
-                    filename=attachment_filename)
+                            filename=attachment_filename)
 
     if current_app.use_x_sendfile and filename:
         if file is not None:
@@ -207,15 +184,8 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
         rv.cache_control.max_age = cache_timeout
         rv.expires = int(time() + cache_timeout)
 
-    if add_etags and filename is not None:
-        rv.set_etag('flask-%s-%s-%s' % (
-            os.path.getmtime(filename),
-            os.path.getsize(filename),
-            adler32(
-                filename.encode('utf-8') if isinstance(filename, text_type)
-                else filename
-            ) & 0xffffffff
-        ))
+    if etag:
+        rv.set_etag('pr-file-%s' % (etag,))
         if conditional:
             rv = rv.make_conditional(request)
             # make sure we don't send x-sendfile for servers that
@@ -226,16 +196,14 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
 
 
 def allowed_referrers(domain):
-    return True if domain == 'https://profireader.com' or domain == 'https://profireader.com' or \
-                   'http://rodynnifirmy.profireader.com' else False
+    # TODO: OZ by OZ: this function is empty!
+    return True
 
 
 def crop_image(image_id, coordinates, zoom, params):
     from ..models.company import Company
-    image_query = db(File, id=image_id).one()  # get file object
-    company_owner = db(Company).filter(or_(
-                Company.system_folder_file_id == image_query.root_folder_id,
-                Company.journalist_folder_file_id == image_query.root_folder_id)).one()  # get company file owner
+    image_query = utils.db.query_filter(File, id=image_id).one()  # get file object
+    company_owner = utils.db.query_filter(Company).filter(or_(
+        Company.system_folder_file_id == image_query.root_folder_id,
+        Company.journalist_folder_file_id == image_query.root_folder_id)).one()  # get company file owner
     return File.crop(image_query, coordinates, zoom, company_owner, params)
-
-

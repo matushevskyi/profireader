@@ -1,0 +1,21 @@
+{% extends 'layout.html' %}
+
+{% block center_content %}
+    {% import '_common/macros.html' as frontmacros %}
+    {% set wide_banners = {2:'1',6:'2'} %}
+    {% for article_id, article in articles.items() %}
+        {% include 'article_short.html' %}
+        {% if loop.index in wide_banners and portal.advs['wide_banner_' + wide_banners[loop.index]] %}
+            <a href="#"
+                    class="wide-banner">{{ portal.advs['wide_banner_' + wide_banners[loop.index]]|safe }}</a>
+        {% endif %}
+    {% else %}
+        {% if tags.selected_names or search_text %}
+            <h3 class="tac">{{ _('There are no articles with current search criteria') }}</h3>
+        {% else %}
+            <h3 class="tac">{{ _('There are no articles in this division') }}</h3>
+        {% endif %}
+    {% endfor %}
+
+    {% include '_common/block_pager.html' %}
+{% endblock %}

@@ -1,14 +1,15 @@
-from config import Config
+from urllib import request as req
+
 import httplib2
 from flask import session
 from oauth2client import client
 from oauth2client.client import Credentials
-from urllib import request as req
-from ..constants.TABLE_TYPES import TABLE_TYPES
 from sqlalchemy import Column
+
+from config import Config
+from profapp import utils
 from .pr_base import Base, PRBase
-from utils.db_utils import db
-from ..controllers.errors import TooManyCredentialsInDb
+from ..constants.TABLE_TYPES import TABLE_TYPES
 
 
 class GoogleToken(Base, PRBase):
@@ -26,15 +27,11 @@ class GoogleToken(Base, PRBase):
          kind should be update, playlist
          If None you should to redirect admin to google auth page.
          If >1 some think is wrong . Raise exception"""
-        try:
-            credentials = db(GoogleToken).count()
-            if credentials < 2:
-                return credentials
-            else:
-                raise TooManyCredentialsInDb({'message': 'credentials >1'})
-        except TooManyCredentialsInDb as e:
-            e = e.args[0]
-            print(e['message'])
+        credentials = utils.db.query_filter(GoogleToken).count()
+        if credentials < 2:
+            return credentials
+        else:
+            print('credentials>1')
 
     def save_credentials(self):
         """ This method save and return your credentials to/from db in json format.
@@ -53,7 +50,7 @@ class GoogleToken(Base, PRBase):
          then return object correct credentials which has been made from json.
           Set httplib2.debuglevel = 4 to debug http"""
         # httplib2.debuglevel = 4
-        json = db(GoogleToken).one().credentials
+        json = utils.db.query_filter(GoogleToken).one().credentials
         cred = Credentials()
         credentials = cred.new_from_json(json)
         http = httplib2.Http()
@@ -66,12 +63,13 @@ class GoogleToken(Base, PRBase):
     def get_authorize_http():
         """ Method which is helpful to get authorize http from your credentials.
          Can be used for make some service from google api """
-        json = db(GoogleToken).first().credentials
+        json = utils.db.query_filter(GoogleToken).first().credentials
         cred = Credentials()
         credentials = cred.new_from_json(json)
         http = httplib2.Http()
         http = credentials.authorize(http)
         return http
+
 
 class GoogleAuthorize(object):
     """ This class can apply api_service name and api_version to build service which you want.
@@ -90,7 +88,6 @@ class GoogleAuthorize(object):
         self.redirect_uri = redirect_uri
 
     def get_auth_code(self, ret_flow=False):
-
         """ This method return link for google auth service if ret_flow parameter is not produced,
         else - return flow object. Helpful when you need to have code to make credentials """
         flow = client.flow_from_clientsecrets(self.__project_secret, self.scope,
@@ -107,4 +104,3 @@ class GoogleAuthorize(object):
         """ This method check if current user is profireader admin. Return True or False.
          If you will change dg, you should to change id admins in db """
         return True if session.get('user_id') in Config.PROFIREADER_ADMINS else False
-

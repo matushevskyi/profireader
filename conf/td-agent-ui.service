@@ -1,0 +1,11 @@
+[Unit]
+Description = Starting fluentd http frontend
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c "/usr/sbin/td-agent-ui start"
+ExecStop=/bin/sh -c "killall -9 td-agent-ui"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

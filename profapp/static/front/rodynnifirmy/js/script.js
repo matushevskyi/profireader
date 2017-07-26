@@ -1,0 +1,1 @@
+../../Simple/js/script.js

@@ -31,7 +31,7 @@
     };
 
     var compileTemplate = function ($scope, $compile, element) {
-        element.html('<div class="ng-crop-container">' +
+        element.append('<div class="ng-crop-container">' +
             '<div class="ng-crop-loading"></div>' +
             '<div class="ng-crop-canvas">' +
             // '<canvas class="ng-crop-canvas"></canvas>' +
@@ -709,7 +709,7 @@
 
                 var err = function (e) {
                     reStoreState();
-                    $scope.onError(typeof e === 'string' ? e : 'image loading error');
+                    $scope.onError(typeof e === 'string' ? e : e.message?e.message:'image loading error');
                     $timeout(function () {
                     })
                 };
@@ -728,6 +728,7 @@
                     storeState();
                     $scope.loading = true;
                     if ($scope.loading_image) delete $scope.loading_image;
+                    // debugger;
                     $scope.loading_image = new Image()
                     $scope.loading_image.crossOrigin = "anonymous";
                     $scope.loading_image.onerror = err;
@@ -1012,13 +1013,13 @@
 
             var mm = function (e) {
                 if ($scope.ngCropDisabled || $scope.loading) {
-                    return false;
+                    return true;
                 }
                 if (!$scope.mouse_clicked) {
-                    var canvas_point = $scope.mouseRelativeToCanvas(event);
+                    var canvas_point = $scope.mouseRelativeToCanvas(e);
                     // canvas_point = [canvas_point[0] + $scope.state.x , canvas_point[1] + $scope.state.y];
                     // console.log('mouse position', canvas_point, $scope.logic.canvas2imgPoint(canvas_point, $scope.state));
-                    return false;
+                    return true;
                 }
                 var act = $scope.mouse_clicked;
                 var current = act[3];

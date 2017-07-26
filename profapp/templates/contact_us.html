@@ -1,0 +1,48 @@
+{% extends "index_lazy_layout.html" %}
+{% block title %}Profireader - {{ _('Contact us') }}{% endblock title %}
+
+
+{% block portal_content %}
+    <script>
+
+        module.controller('contact_us', function ($scope, $ok) {
+            angularControllerFunction('user_controller', 'set_selected_user_menu')('contact_us');
+            $scope.$$translate = {{ translates('contact_us')|safe }};
+            $scope.sending = false;
+            $scope.data = {{ data|tojson }};
+
+            $scope.sendMessage = function () {
+                $scope.sending = true;
+                $ok('', $scope.data, function (resp) {
+                    if (resp['error']) {
+                        add_message(resp['error'], 'danger')
+                    } else {
+                        add_message('Your message has been sent', 'success')
+                    }
+                    $scope.sending = false;
+                })
+            }
+        });
+    </script>
+    {% raw %}
+
+    <div class="helpmessage row block-resp" ng-controller="contact_us">
+        <form ng-cloak name="formHelp" class="help-page">
+            <h3>{{ __('Contact Us') }}<br>
+                <small>{{ __('Site Administrator will contact you') }}</small>
+            </h3>
+            <div class="form-for-message col-lg-6 col-lg-offset-3 col-md-6 col-md-offset-3">
+                <input pr-test="EmailInput" type="email" class="form-control" placeholder="Email"
+                       ng-model="data.email" name="address_email" ng-disabled="sending">
+
+                <textarea pr-test="TextInput" class="form-control" rows="4" ng-disabled="sending"
+                          ng-model='data.message' placeholder="{{ _('Questions and wishes...') }}"></textarea>
+                <button pr-test="SendMessage" class="pull-right" ng-click="sendMessage()" ng-disabled="sending"
+                        type="submit">{{ _('Send') }}
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endraw %}
+
+{% endblock portal_content %}

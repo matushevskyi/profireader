@@ -15,7 +15,7 @@
             $scope.edit_data = function (data) {
                 console.log(data);
             };
-            $scope.reader_edit_url = {{ raw_url_for('reader.edit_profile_submit')|safe }};
+            $scope.reader_edit_url = {{ raw_url_for('index.edit_profile_submit')|safe }};
             $scope.edit = function () {
                 console.log($scope.data);
                 $http({

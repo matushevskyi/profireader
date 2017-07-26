@@ -42,7 +42,7 @@ We have something similar in bootstrap? Can correct this class to look nicer?
   height: 500px;
 }
 
-.link{
+.link {
     cursor:pointer;
     padding-left: 10px;
     margin-bottom: 1px;
@@ -66,14 +66,6 @@ a.disabled {
    cursor: default;
 }
 
-.highlight {
-    color: #ca2027;
-    -moz-transition: color 0.5s;
-    -webkit-transition: color 0.5s;
-    -o-transition: color 0.5s;
-    transition: color 0.5s;
-
-}
 
 .red-label {
     background: #ca2027;
@@ -224,7 +216,7 @@ h1.nice-title span{
     display: block;
     width: 10px;
     height: 10px;
-    background: transparent url("//static.profireader.com/static/front/img/corner.png") no-repeat;
+    background: transparent url("../front/img/corner.png") no-repeat;
 }
 
 
@@ -1724,7 +1716,7 @@ form {
     height: 50px;
     padding: 0;
     margin: 0;
-    /*background: url("/profapp//static.profireader.com/static/front/img/ico/articles.png") center center no-repeat;*/
+    /*background: url("/profapp../front/img/ico/articles.png") center center no-repeat;*/
     background: transparent center center no-repeat;
     color: #fff;
     font-size: 16px;
@@ -1748,19 +1740,19 @@ form {
 }
 
 .top-menu li a.messages_btn {
-    background-image: url("//static.profireader.com/static/front/img/ico/messenger.png");
+    background-image: url("../front/img/ico/messenger.png");
 }
 
 .top-menu li a.company_btn {
-    background-image: url("//static.profireader.com/static/front/img/ico/companies.png");
+    background-image: url("../front/img/ico/companies.png");
 }
 
 .top-menu li a.article_btn {
-    background-image: url("//static.profireader.com/static/front/img/ico/articles.png");
+    background-image: url("../front/img/ico/articles.png");
 }
 
 .top-menu li a.filemanager_btn {
-    background-image: url("//static.profireader.com/static/front/img/ico/files.png");
+    background-image: url("../front/img/ico/files.png");
 }
 
 .person-small-cover {
@@ -1951,7 +1943,7 @@ input[type=radio   ]:not(old) + label {
     display: inline-block;
     margin-left: -28px;
     padding-left: 28px;
-    background: url('//static.profireader.com/static/images/checks.png') no-repeat 0 0;
+    background: url('../images/checks.png') no-repeat 0 0;
     line-height: 24px;
 }
 
@@ -2039,19 +2031,19 @@ a.title-btn {
 }
 
 .login-by-google {
-    background-image: url("//static.profireader.com/static/images/social/g.png");
+    background-image: url("../images/social/g.png");
 }
 
 .login-by-facebook {
-    background-image: url("//static.profireader.com/static/images/social/f.png");
+    background-image: url("../images/social/f.png");
 }
 
 .login-by-linkedin {
-    background-image: url("//static.profireader.com/static/images/social/l.png");
+    background-image: url("../images/social/l.png");
 }
 
 .login-by-microsoft {
-    background-image: url("//static.profireader.com/static/images/social/m.png");
+    background-image: url("../images/social/m.png");
 }
 
 .by-socials-block {
@@ -2182,4 +2174,5 @@ td{
     padding-right: 30px;
     width: inherit;
 }
+
 

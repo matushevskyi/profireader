@@ -89,7 +89,7 @@ item-toolbar.html
     <button class="btn btn-sm btn-default" ng-show="config.allowedActions.preview && item.isImage()" ng-click="item.preview()" title="{{ _('view_item') }}">
         <i class="glyphicon glyphicon-picture"></i>
     </button>
-    <button ng-disabled="item.model.actions.remove !== true" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#remove" ng-show="config.allowedActions.remove" ng-click="touch(item)" title="{{ item.model.actions.remove !== true?_(item.model.actions.remove):'remove' }}">
+    <button ng-disabled="item.model.actions.remove !== true" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#remove" ng-show="config.allowedActions.remove" ng-click="touch(item)" title="{{ item.model.actions.remove !== true?_(item.model.actions.remove):_('remove') }}">
         <i class="glyphicon glyphicon-trash"></i>
     </button>
 </div>

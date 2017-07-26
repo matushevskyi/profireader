@@ -1,0 +1,129 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block title %}Profireader - {{ _('Partners') }}{% endblock title %}
+
+{% block head %}
+    {{ super() }}
+    {% include '_ruslan/partials/_header_files_grid.html' %}
+    {% include '_ruslan/partials/_header_files_membership_plan.html' %}
+{% endblock head %}
+
+{% block portal_content %}
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+
+    <script>
+
+        module.controller('company_partners', function ($scope, $ok, $membership_plan, $rights, $selectStatus, $timeout) {
+
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('companies_members');
+            $scope.$$translate = {{translates('company_partners') | safe}};
+            $scope.url_load = '{{ url_for('portal.companies_members_load', portal_id=portal.id)}}';
+            $scope.url_change_status = {{ raw_url_for('portal.membership_change_status')|safe }};
+            $scope.url_set_rights = {{ raw_url_for('portal.membership_set_rights')|safe }};
+            $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
+
+            $scope.employment = {{ employment|tojson|safe }};
+            {% raw %}
+
+            $scope.company_link = function (company_id) {
+                return $scope.url_company_profile({'company_id': company_id});
+// {#                console.log('company_id', company_id);#}
+            };
+
+            $scope.set_new_status = function (id, row, column_name) {
+                if (!row.status_changes) return false;
+                $selectStatus({
+                    title: $scope._('change status of membership by portal dialog title', null, 'change status of membership'),
+                    question: $scope._('You are going to change status of membership for company `%(company.name)s` at portal `%(portal.name)s`', row['membership']),
+                    old_status: row.membership.status,
+                    status_changes: row.status_changes
+                }, $scope).then(function (new_status) {
+                    $ok($scope.url_change_status({
+                        membership_id: row['membership'].id,
+                        new_status: new_status
+                    }), {}, $scope.gridApi.grid.grid_change_row);
+                });
+            };
+
+
+            $scope.grid_rights = function (id, right_name, row, column_name) {
+                if (!$scope.employment.rights['PORTAL_MANAGE_MEMBERS_COMPANIES']) {
+                    return;
+                }
+                $rights({
+                    'rights': row['membership']['rights'],
+                    'set_url': $scope.url_set_rights({'membership_id': row['membership']['id']}),
+                    'subject_type': 'company',
+                    'subject_name': row['membership']['company']['name'],
+                    'object_type': 'portal',
+                    'object_name': '{% endraw %}{{ portal.name }}{% raw %}'
+                }).result.then(function (updated_row) {
+                    $scope.gridApi.grid.grid_change_row(updated_row);
+                });
+            };
+
+            $scope.set_membership_plan = function (id, row, column_name) {
+                $membership_plan({
+                    membership_id: row['id'],
+                    bycompany_or_byportal: 'byportal'
+                }).result.then(function (resp) {
+                    $scope.gridApi.grid.grid_change_row(resp);
+                });
+            };
+
+            $scope.gridOptions1 = $.extend({}, $scope.gridOptions, {
+                urlLoadGridData: $scope.url_load,
+                columnDefs: [
+                    {
+                        name: 'membership.company.name',
+                        type: 'link',
+                        img_url: 'membership.company.logo.url',
+                        href: 'company_link(row.entity.membership.company_id)'
+                    },
+                    {
+                        name: 'membership_plan',
+                        onclick: 'set_membership_plan',
+                        render: function (row, value) {
+                            return row['membership']['current_membership_plan_issued']['name'] +
+                                    (row['membership']['requested_membership_plan_issued'] ? ('/<em>' + row['membership']['requested_membership_plan_issued']['name'] + '</em>') : '');
+                        }
+                    },
+
+                    publication_column(),
+                    {
+                        name: 'membership.rights', width: '55',
+                        type: 'icons', afilter: {type: 'input'},
+                        onclick: 'grid_rights',
+                        classes: function (id, entity, field) {
+                            return $scope.employment.rights['PORTAL_MANAGE_MEMBERS_COMPANIES'] ? '' : 'inactive';
+                        }
+                    },
+                    {
+                        width: '300',
+                        name: 'membership.status',
+                        onclick: 'set_new_status',
+                        classes: function (id, entity, field) {
+                            return entity.status_changes ? '' : 'inactive';
+                        }
+                    }
+                ]
+            });
+            {% endraw %}
+        })
+    </script>
+
+    {% raw %}
+
+    <div id="company_partners_controller" ng-controller="company_partners" ng-cloak>
+        <div class="grid" id="grid1" ui-grid-pagination ui-grid="gridOptions1">
+            <div class="well grid-loading" ng-show="loading">
+                <i class="fa fa-spinner fa-spin"></i>
+                <div>{{ ::_('Data Loading...') }}</div>
+            </div>
+        </div>
+    </div>
+    {% endraw %}
+{% endblock portal_content %}
