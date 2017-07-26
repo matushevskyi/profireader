@@ -15,8 +15,6 @@ from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
     PortalDivisionSettingsCompanySubportal
 from ..models.permissions import AvailableForAll
 from ..models.users import User
-from werkzeug.routing import BaseConverter
-
 
 
 def all_tags(portal):
@@ -339,17 +337,17 @@ def company_page(portal, member_company_id, member_company_name, member_company_
 @front_bp.route('<int:page>/', methods=['GET'], permissions=AvailableForAll())
 @front_bp.route('tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
 @front_bp.route('<int:page>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<transliterate:division_name>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<transliterate:division_name>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<transliterate:division_name>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<transliterate:division_name>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<transliterate:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route(subportal_prefix + '_d/<transliterate:division_name>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route(subportal_prefix + '_d/<transliterate:division_name>/<int:page>/', methods=['GET'],
+@front_bp.route('<string:division_name>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<string:division_name>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<string:division_name>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<string:division_name>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route(subportal_prefix + '_d/<string:division_name>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/', methods=['GET'],
                 permissions=AvailableForAll())
-@front_bp.route(subportal_prefix + '_d/<transliterate:division_name>/tags/<string:tags>/', methods=['GET'],
+@front_bp.route(subportal_prefix + '_d/<string:division_name>/tags/<string:tags>/', methods=['GET'],
                 permissions=AvailableForAll())
-@front_bp.route(subportal_prefix + '_d/<transliterate:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'],
+@front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'],
                 permissions=AvailableForAll())
 @get_portal
 def division(portal, division_name=None, page=1, tags=None, member_company_id=None, member_company_name=None):
@@ -433,7 +431,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                )
 
 
-@front_bp.route('_a/<string:publication_id>/<transliterate:publication_title>', permissions=AvailableForAll())
+@front_bp.route('_a/<string:publication_id>/<path:publication_title>', permissions=AvailableForAll())
 @get_portal
 def article_details(portal, publication_id, publication_title):
     # TODO: OZ by OZ: redirect if title is wrong

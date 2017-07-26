@@ -24,9 +24,6 @@ from .utils.session import *
 import json
 from functools import wraps
 from sqlalchemy import event
-from werkzeug.routing import BaseConverter
-from transliterate import translit, get_available_language_codes
-from urllib.parse import quote_plus, unquote_plus
 
 
 def req(name, allowed=None, default=None, exception=True):
@@ -126,55 +123,32 @@ def db_session_func(db_config, autocommit=False, autoflush=False, echo=False):
 
 
 def prepare_connections(app, echo=False):
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import scoped_session, sessionmaker
-    from sqlalchemy import event
-
-    engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'], echo=False)
-    app.sql_engine = engine
-    app.sql_connection = engine.connect()
-    db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
-    app.db = db_session
-    event.listen(db_session, 'after_flush', on_after_flush)
-    app.call_after_commit = []
-
-    from profapp.models.portal import Portal
-    portal = app.db.query(Portal).filter_by(host=request.host).first()
-    # g.portal = portal if portal else None
-    # g.portal_id = portal.id if portal else None
-    # g.portal_layout_path = portal.layout.path if portal else ''
-    # g.lang = g.portal.lang if g.portal else g.user_dict['lang'] if portal else 'en'
-
-
-    @event.listens_for(app.db, 'after_commit')
-    def after_commit(s):
-
-        [f() for f in app.call_after_commit]
-        app.call_after_commit = []
-
-        # TODO: OZ by OZ: change SQLAchemy => Flask-SQLAchemy, and use http://flask-sqlalchemy.pocoo.org/dev/signals/#models_committed
-        for ind, functions in g.functions_to_call_after_commit.items():
-            for f in functions:
-                if f:
-                    f()
-        g.functions_to_call_after_commit = {}
-
-
     # ['SQLALCHEMY_DATABASE_URI']
     def load_db(autocommit=False, autoflush=False, echo=echo):
-        # from sqlalchemy import event
-        # db_session = db_session_func(app.config['SQLALCHEMY_DATABASE_URI'], autocommit, autoflush, echo)
-        g.db = app.db
+        from sqlalchemy import event
+        db_session = db_session_func(app.config['SQLALCHEMY_DATABASE_URI'], autocommit, autoflush, echo)
+        g.db = db_session
         g.req = req
         g.get_url_adapter = get_url_adapter
         g.fileUrl = utils.fileUrl
         # g.after_commit_models = []
-
+        g.call_after_commit = []
         g.functions_to_call_after_commit = {}
 
+        event.listen(db_session, 'after_flush', on_after_flush)
 
+        @event.listens_for(g.db, 'after_commit')
+        def after_commit(s):
 
+            [f() for f in g.call_after_commit]
+            g.call_after_commit = []
 
+            # TODO: OZ by OZ: change SQLAchemy => Flask-SQLAchemy, and use http://flask-sqlalchemy.pocoo.org/dev/signals/#models_committed
+            for ind, functions in g.functions_to_call_after_commit.items():
+                for f in functions:
+                    if f:
+                        f()
+            g.functions_to_call_after_commit = {}
 
     return load_db
 
@@ -354,24 +328,7 @@ class logger:
             self.debug = partial(self._l.debug, stack_info=True)
 
 
-class TransliterationConverter(BaseConverter):
-
-    def to_python(self, value):
-        value = unquote_plus(value)
-        if g.portal and g.portal.lang in get_available_language_codes():
-            value = translit(value, g.portal.lang)
-        return value
-
-    def to_url(self, value):
-        if g.portal and g.portal.lang in get_available_language_codes():
-            value = translit(value, g.portal.lang, reversed=True)
-        return quote_plus(value)
-
-
 def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import scoped_session, sessionmaker
-
     app = Flask(__name__, static_folder='./static')
 
     app.config.from_object(config)
@@ -383,8 +340,6 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.apptype = apptype
     app.log = logger(apptype, app.debug, app.testing)
-
-    app.url_map.converters['transliterate'] = TransliterationConverter
 
     app.before_request(prepare_connections(app))
     app.before_request(lambda: load_user(apptype))
@@ -436,7 +391,12 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
         app.jinja_env.join_path = join_path
 
         def load_portal():
-            pass
+            from profapp.models.portal import Portal
+            portal = g.db.query(Portal).filter_by(host=request.host).first()
+            g.portal = portal if portal else None
+            g.portal_id = portal.id if portal else None
+            g.portal_layout_path = portal.layout.path if portal else ''
+            g.lang = g.portal.lang if g.portal else g.user_dict['lang'] if portal else 'en'
 
         app.before_request(load_portal)
         from profapp.controllers.blueprints_register import register_front as register_blueprints_front

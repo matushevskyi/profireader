@@ -1,4 +1,4 @@
-from flask import g, url_for, current_app
+from flask import g, url_for
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy import event
 from sqlalchemy.orm import relationship
@@ -12,7 +12,6 @@ from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..models.users import User
 from ..constants.APPLICATION_PORTS import APPLICATION_PORTS
 from ..models import exceptions
-
 
 
 class Socket:
@@ -85,7 +84,7 @@ class Socket:
                  for u in list(set(to_users) - set(except_to_user))] if phrases else []
 
         for d in datas:
-            current_app.call_after_commit.append(lambda d=d: Socket.notification(d))
+            g.call_after_commit.append(lambda d=d: Socket.notification(d))
 
         return utils.do_nothing()
 
