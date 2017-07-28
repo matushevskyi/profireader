@@ -135,19 +135,6 @@ class Portal(Base, PRBase):
         if not self.portal_layout_id:
             self.portal_layout_id = utils.db.query_filter(PortalLayout).first().id
 
-    def transliterate(self, value, reversed=True, stripnonwords = True, replacespaced = True):
-        from transliterate import translit, get_available_language_codes
-
-        if self.lang in get_available_language_codes() and reversed:
-            value = translit(value, self.lang, reversed=reversed)
-
-        if stripnonwords:
-            value = re.sub(r'[^\s\w\d-]', '', value)
-
-        if replacespaced:
-            value = re.sub(r'\s+','-',value)
-
-        return value
 
     def is_active(self):
         return True

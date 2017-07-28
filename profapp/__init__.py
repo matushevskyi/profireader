@@ -28,11 +28,47 @@ from urllib.parse import quote_plus, unquote_plus
 
 
 class TransliterationConverter(BaseConverter):
+
+    regex = '([^/].*)?'
+
+    @staticmethod
+    def transliterate(lang, value, reversed=True, stripnonwords = True, replacespaced = True):
+        from transliterate import translit, get_available_language_codes
+
+        if lang in get_available_language_codes() and reversed:
+            value = translit(value, lang, reversed=reversed)
+
+        if stripnonwords:
+            value = re.sub(r'[^\s\w\d-]', '', value)
+
+        if replacespaced:
+            value = re.sub(r'\s+','-',value)
+
+        return value.lower()
+
     def to_python(self, value):
         return unquote_plus(value)
 
     def to_url(self, value):
-        return quote_plus(g.portal.transliterate(value) if g.portal else value)
+        return quote_plus(TransliterationConverter.transliterate(g.portal.lang, value) if g.portal else value)
+
+    @staticmethod
+    def to_url_javascript():
+        return "function (v) {return '';}"
+
+class ShortUIDConverter(BaseConverter):
+
+    regex = r'[\w\d]{8,8}'
+
+    def to_python(self, value):
+        return value
+
+    def to_url(self, value):
+        return value[:8]
+
+    @staticmethod
+    def to_url_javascript():
+        return "function (v) {return v.substring(0, 8)}"
 
 
 # class PublicationConverter(BaseConverter):
@@ -360,6 +396,8 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.log = logger(apptype, app.debug, app.testing)
 
     app.url_map.converters['translit'] = TransliterationConverter
+    app.url_map.converters['short_uid'] = ShortUIDConverter
+    # app.url_map.converters['uid'] = UIDConverter
 
     app.before_request(prepare_connections(app))
     app.before_request(lambda: load_user(apptype))

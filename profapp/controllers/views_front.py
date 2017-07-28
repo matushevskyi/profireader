@@ -318,7 +318,6 @@ def company_page(portal, member_company_id, member_company_name, member_company_
     membership, member_company, dvsn = \
         get_company_member_and_division(portal, member_company_id, member_company_name)
 
-
     return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
                            portal=portal_and_settings(portal),
                            division=dvsn.get_client_side_dict(),
@@ -394,7 +393,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                    tags=all_tags(portal),
                                    seo=membership.seo_dict(),
                                    analytics=portal.get_analytics(page_type=dvsn.portal_division_type_id,
-                                                             company_id=member_company.id),
+                                                                  company_id=member_company.id),
                                    membership=utils.db.query_filter(MemberCompanyPortal, company_id=member_company.id,
                                                                     portal_id=portal.id).one(),
                                    url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
@@ -422,7 +421,7 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                division=dvsn.get_client_side_dict(),
                                seo=membership.seo_dict(),
                                analytics=portal.get_analytics(page_type=dvsn.portal_division_type_id,
-                                                         company_id=member_company.id),
+                                                              company_id=member_company.id),
                                member_company=member_company.get_client_side_dict(),
                                membership=membership.get_client_side_dict(fields="id|company|tags"),
                                url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
@@ -431,15 +430,20 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
                                )
 
 
-@front_bp.route('_a/<string:publication_id>/<translit:publication_title>', permissions=AvailableForAll())
-# @front_bp.route('_a/<publication:publication>', permissions=AvailableForAll())
+@front_bp.route('_a/<uuid:publication_full_id>/<path:publication_title_not_transliterated>', permissions=AvailableForAll())
+@front_bp.route('_a/<short_uid:publication_id>/<translit:publication_title>', permissions=AvailableForAll())
+# @front_bp.route('_a//<translit:transliterated_title>', permissions=AvailableForAll())
 @get_portal
-def article_details(portal, publication):
-    publication = Publication.get(publication_id)
+def article_details(portal, publication_full_id=None, publication_title_not_transliterated=None,
+                    publication_id=None, publication_title=None):
 
-    if publication_title != portal.transliterate(publication.material.title):
+    from profapp import TransliterationConverter
+    publication = Publication.get(publication_id if publication_id else publication_full_id)
+
+    if publication_id is None or \
+                    publication_title != TransliterationConverter.transliterate(portal.lang, publication.material.title):
         return redirect(url_for('front.article_details', publication_id=publication.id,
-                                                        publication_title=publication.material.title))
+                                publication_title=publication.material.title))
 
 
     article_visibility = publication.article_visibility_details()
@@ -460,9 +464,9 @@ def article_details(portal, publication):
                            division=division.get_client_side_dict(),
                            seo=publication.seo_dict(),
                            analytics=portal.get_analytics(page_type='publication',
-                                                     company_id=publication.material.company_id,
-                                                     publication_visibility=publication.visibility,
-                                                     publication_reached='True' if article_visibility is True else 'False'),
+                                                          company_id=publication.material.company_id,
+                                                          publication_visibility=publication.visibility,
+                                                          publication_reached='True' if article_visibility is True else 'False'),
                            article=publication.create_article(),
                            article_visibility=article_visibility,
                            articles_related=publication.get_related_articles(),
@@ -543,5 +547,3 @@ def error_404(portal):
                            analytics=portal.get_analytics(page_type='other'),
                            tags=all_tags(g.portal),
                            portal=portal_and_settings(g.portal))
-
-

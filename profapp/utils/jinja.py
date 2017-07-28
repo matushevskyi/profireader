@@ -61,16 +61,38 @@ def get_rules_simplified(endpoint, **kwargs):
     url_adapter = get_url_adapter()
 
     rules = url_adapter.map._rules_by_endpoint.get(endpoint, ())
+    converters = url_adapter.map.converters
 
     if len(rules) < 1:
-        raise Exception('You requsted url for endpoint `%s` but no endpoint found' % (endpoint,))
+        raise Exception('You requested url for endpoint `%s` but no endpoint found' % (endpoint,))
+
+    rege = r'<((?P<converter>[^:<>]+):)?(?P<name>[^<>]+)>'
 
     rules_simplified = []
     for rule in rules:
-        r = re.compile('<[^:]*:').sub('<', rule.rule)
-        for (k, v) in kwargs.items():
-            r = re.compile('<' + k + '>').sub(v, r)
-        rules_simplified.append(r)
+        prevmatch = False
+        jsrules = []
+        for match in re.finditer(rege, rule.rule):
+
+            jsrules.append(rule.rule[prevmatch.end() if prevmatch else 0:match.start()])
+            prevmatch = match
+            conv = match.group('converter')
+            name = match.group('name')
+
+            if name in kwargs:
+                app = kwargs[name]
+                if conv and conv in converters:
+                    app = converters[conv].to_url(app)
+            else:
+                app = {'name': name}
+                if conv and conv in converters and hasattr(converters[conv], 'to_url_javascript'):
+                    app['to_url_javascript'] = converters[conv].to_url_javascript()
+
+            jsrules.append(app)
+
+        jsrules.append(rule.rule[prevmatch.end():] if prevmatch else rule.rule)
+
+        rules_simplified.append(jsrules)
 
     return rules_simplified
 
