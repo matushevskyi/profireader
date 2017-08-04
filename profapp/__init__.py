@@ -28,11 +28,10 @@ from urllib.parse import quote_plus, unquote_plus
 
 
 class TransliterationConverter(BaseConverter):
-
     regex = '([^/].*)?'
 
     @staticmethod
-    def transliterate(lang, value, reversed=True, stripnonwords = True, replacespaced = True):
+    def transliterate(lang, value, reversed=True, stripnonwords=True, replacespaced=True):
         from transliterate import translit, get_available_language_codes
 
         if lang in get_available_language_codes() and reversed:
@@ -42,7 +41,7 @@ class TransliterationConverter(BaseConverter):
             value = re.sub(r'[^\s\w\d-]', '', value)
 
         if replacespaced:
-            value = re.sub(r'\s+','-',value)
+            value = re.sub(r'\s+', '-', value)
 
         return value.lower()
 
@@ -56,19 +55,19 @@ class TransliterationConverter(BaseConverter):
     def to_url_javascript():
         return "function (v) {return '';}"
 
-class ShortUIDConverter(BaseConverter):
 
-    regex = r'[\w\d]{8,8}'
+class ShortUIDConverter(BaseConverter):
+    regex = r'[\w\d]{12,12}'
 
     def to_python(self, value):
         return value
 
     def to_url(self, value):
-        return value[:8]
+        return value[-12:]
 
     @staticmethod
     def to_url_javascript():
-        return "function (v) {return v.substring(0, 8)}"
+        return "function (v) {return v.substr(v.length - 12)}"
 
 
 # class PublicationConverter(BaseConverter):

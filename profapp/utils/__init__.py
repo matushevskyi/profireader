@@ -263,3 +263,10 @@ def json2kwargs(f):
 
 def set_default(val, default=None):
     return default if val is None else val
+
+def is_uuid(val):
+    return True if re.match(r'[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}', val) else False
+
+def is_short_uuid(val):
+    return True if re.match(r'[A-Fa-f0-9]{12}', val) else False
+
