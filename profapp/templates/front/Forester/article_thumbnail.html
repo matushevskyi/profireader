@@ -13,7 +13,7 @@
         </div>
         <div class="col-xs-12 col-md-8 text">
             <!--Article division link-->
-            {% if show_division_name %}<a href="{{ url_for('front.division', division_name=article['portal_division']['name']) }}"><h3
+            {% if show_division_name %}<a href="{{ url_for('front.division', division_name=article['portal_division']['url']) }}"><h3
                     class="div-link">{{ article['portal_division']['name']|safe }}</h3></a>{% endif %}
             <!--Article headling-->
             <header class="clearfix">

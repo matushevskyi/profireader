@@ -246,7 +246,7 @@ class Publication(Base, PRBase, PRElasticDocument):
             'division_id': PRElasticField(analyzed=False, setter=lambda: self.portal_division.id),
             'division_type': PRElasticField(analyzed=False,
                                             setter=lambda: self.portal_division.portal_division_type.id),
-            'division_name': PRElasticField(setter=lambda: self.portal_division.name),
+            'division_name': PRElasticField(setter=lambda: self.portal_division.get_url()),
 
             'date': PRElasticField(ftype='date', setter=lambda: int(self.publishing_tm.timestamp() * 1000)),
 
@@ -281,13 +281,15 @@ class Publication(Base, PRBase, PRElasticDocument):
         return True
 
     def create_article(self):
-        return utils.dict_merge(
+        ret = utils.dict_merge(
             self.get_client_side_dict(
                 more_fields='portal_division.portal_division_type_id,portal_division.portal.logo.url'),
             Material.get(self.material_id).get_client_side_dict(
                 fields='long|short|title|subtitle|keywords|illustration|author'),
             {'social_activity': self.social_activity_dict()},
             remove={'material': True})
+        ret['portal_division']['url'] = PortalDivision.get(self.portal_division_id).get_url()
+        return ret
 
     # def like_dislike_user_article(self, liked):
     #     article = db(ReaderPublication, publication_id=self.id,

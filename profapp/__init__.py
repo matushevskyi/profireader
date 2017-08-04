@@ -23,7 +23,60 @@ from .utils.session import *
 # from .utils.redirect_url import *
 import json
 from functools import wraps
-from sqlalchemy import event
+from werkzeug.routing import BaseConverter
+from urllib.parse import quote_plus, unquote_plus
+
+
+class TransliterationConverter(BaseConverter):
+    regex = '([^/].*)?'
+
+    @staticmethod
+    def transliterate(lang, value, reversed=True, stripnonwords=True, replacespaced=True):
+        from transliterate import translit, get_available_language_codes
+
+        if lang in get_available_language_codes() and reversed:
+            value = translit(value, lang, reversed=reversed)
+
+        if stripnonwords:
+            value = re.sub(r'[^\s\w\d-]', '', value)
+
+        if replacespaced:
+            value = re.sub(r'\s+', '-', value)
+
+        return value.lower()
+
+    def to_python(self, value):
+        return unquote_plus(value)
+
+    def to_url(self, value):
+        return quote_plus(TransliterationConverter.transliterate(g.portal.lang, value) if g.portal else value)
+
+    @staticmethod
+    def to_url_javascript():
+        return "function (v) {return '';}"
+
+
+class ShortUIDConverter(BaseConverter):
+    regex = r'[\w\d]{12,12}'
+
+    def to_python(self, value):
+        return value
+
+    def to_url(self, value):
+        return value[-12:]
+
+    @staticmethod
+    def to_url_javascript():
+        return "function (v) {return v.substr(v.length - 12)}"
+
+
+# class PublicationConverter(BaseConverter):
+#     def to_python(self, value):
+#         return unquote_plus(value)
+#
+#     def to_url(self, publication_id):
+#         from profapp.models.materials import
+#         return quote_plus(g.portal.transliterate(value) if g.portal else value)
 
 
 def req(name, allowed=None, default=None, exception=True):
@@ -292,12 +345,12 @@ class logger:
         import logstash
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
-        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type = apptype))
+        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type=apptype))
         self._l = logger
 
         def pp(t, message, *args, **kwargs):
             import pprint
-            ppr = pprint.PrettyPrinter(indent=2, compact=True, width = 120)
+            ppr = pprint.PrettyPrinter(indent=2, compact=True, width=120)
             extra = kwargs.get('extra', None)
             if extra:
                 extra = extra.get('zzz_pr_more_info', None)
@@ -340,6 +393,10 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.apptype = apptype
     app.log = logger(apptype, app.debug, app.testing)
+
+    app.url_map.converters['translit'] = TransliterationConverter
+    app.url_map.converters['short_uid'] = ShortUIDConverter
+    # app.url_map.converters['uid'] = UIDConverter
 
     app.before_request(prepare_connections(app))
     app.before_request(lambda: load_user(apptype))

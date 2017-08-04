@@ -575,8 +575,10 @@ class PRBase:
 
     @classmethod
     def get(cls, id, returnNoneIfNotExists=False):
-        return g.db().query(cls).filter(cls.id == id).first() if returnNoneIfNotExists else g.db().query(cls).filter(
-            cls.id == id).one()
+
+        cond = cls.id.like('%' + id) if len(id) == 12 else cls.id == id
+        q = g.db().query(cls).filter(cond)
+        return q.first() if returnNoneIfNotExists else q.one()
 
     @classmethod
     def all(cls):
