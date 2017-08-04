@@ -1,11 +1,38 @@
 <footer class="footer">
     <div class="container footer-content">
-       <!-- <div class="pull-left social">
-            <a class="social-btn" href="#"><i class="fa fa-facebook-square" aria-hidden="true"></i></a>
-            <a class="social-btn" href="#"><i class="fa fa-google-plus-square" aria-hidden="true"></i></a>
-            <a class="social-btn" href="#"><i class="fa fa-linkedin-square" aria-hidden="true"></i></a>
-        </div>-->
-        {{ portal.advs['body_end']|safe }}
-        <div class="pr pull-right">Powered by <a class="pr-link" target="_blank" href="https://profireader.com/"><b>Profireader</b></a></div>
+
+        <div class="pull-left">
+            {{ portal.advs['body_end']|safe }}
+        </div>
+
+        <span class="pr pull-left">Powered by
+            <a class="pr-link" target="_blank" href="https://profireader.com/"><b>Profireader</b></a>
+        </span>
+
+        <div class="pull-right social">
+           {% if portal.url_facebook %}
+                <a class="social-btn" href="{{ portal.url_facebook }}" target="_blank">
+                    <i class="fa fa-facebook-square" aria-hidden="true"></i>
+                </a>
+           {% endif %}
+
+           {% if portal.url_twitter %}
+                <a class="social-btn" href="{{ portal.url_twitter }}" target="_blank">
+                    <i class="fa fa-twitter-square" aria-hidden="true"></i>
+                </a>
+           {% endif %}
+
+           {% if portal.url_google %}
+                <a class="social-btn" href="{{ portal.url_google }}" target="_blank">
+                    <i class="fa fa-google-plus-square" aria-hidden="true"></i>
+                </a>
+           {% endif %}
+
+           {% if portal.url_linkedin %}
+                <a class="social-btn" href="{{ portal.url_linkedin }}" target="_blank">
+                    <i class="fa fa-linkedin-square" aria-hidden="true"></i>
+                </a>
+           {% endif %}
+        </div>
     </div>
 </footer>
