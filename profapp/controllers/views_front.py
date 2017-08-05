@@ -318,7 +318,7 @@ def get_articles_tags_pages_search(portal, dvsn, page, tags, search_text, compan
                 search={'text': search_text, 'url': url_for('front.search')})
 
 
-subportal_prefix_old = '_c/<uuid:member_company_full_id>/<string:member_company_name>/'
+subportal_prefix_old = '_c/<full_uid:member_company_full_id>/<string:member_company_name>/'
 subportal_prefix = '_c/<short_uid:member_company_id>/<translit:member_company_name>/'
 
 
@@ -488,7 +488,7 @@ def division(portal, division_name=None, page=None, tags=None, member_company_id
                                )
 
 
-@front_bp.route('_a/<uuid:publication_full_id>/<path:publication_title>', permissions=AvailableForAll())
+@front_bp.route('_a/<full_uid:publication_full_id>/<path:publication_title>', permissions=AvailableForAll())
 @front_bp.route('_a/<short_uid:publication_id>/<translit:publication_title>', permissions=AvailableForAll())
 @get_portal
 def article_details(portal, publication_full_id=None, publication_id=None, publication_title=None):
