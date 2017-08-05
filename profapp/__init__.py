@@ -70,6 +70,13 @@ class ShortUIDConverter(BaseConverter):
         return "function (v) {return v.substr(v.length - 12)}"
 
 
+class FullUIDConverter(BaseConverter):
+    regex = r'[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-' \
+            r'[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}'
+
+
+
+
 # class PublicationConverter(BaseConverter):
 #     def to_python(self, value):
 #         return unquote_plus(value)
@@ -396,6 +403,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.url_map.converters['translit'] = TransliterationConverter
     app.url_map.converters['short_uid'] = ShortUIDConverter
+    app.url_map.converters['full_uid'] = FullUIDConverter
     # app.url_map.converters['uid'] = UIDConverter
 
     app.before_request(prepare_connections(app))
