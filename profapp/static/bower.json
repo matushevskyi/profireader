@@ -22,6 +22,6 @@
     "angular-db-filemanager": "git@github.com:kakabomba/angular-server-driven-filemanager.git#master",
     "angular-crop": "git@github.com:kakabomba/ng-crop.git#master",
     "angular-ui-sortable": "~0.14.3",
-    "google-analytics": "GoogleWebComponents/google-analytics#1.2.3",
+    "google-analytics": "GoogleWebComponents/google-analytics#1.2.3"
   }
 }

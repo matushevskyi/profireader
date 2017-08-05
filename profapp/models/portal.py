@@ -135,11 +135,13 @@ class Portal(Base, PRBase):
         if not self.portal_layout_id:
             self.portal_layout_id = utils.db.query_filter(PortalLayout).first().id
 
+
     def is_active(self):
         return True
 
     def setup_ssl(self):
-        bashCommand = "ssh -i ./scrt/id_rsa_haproxy root@haproxy.profi /bin/bash /usr/local/bin/certbot_front.sh {}".format(self.host)
+        bashCommand = "ssh -i ./scrt/id_rsa_haproxy root@haproxy.profi /bin/bash /usr/local/bin/certbot_front.sh {}".format(
+            self.host)
         import subprocess
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
@@ -304,6 +306,12 @@ class Portal(Base, PRBase):
                             errors, 'divisions', div.id, 'type')
 
         for inddiv, div in enumerate(self.divisions):
+            if len([x for x in self.divisions if x.name == div.name]) > 1:
+                utils.dict_deep_replace('pls use unique names for divisions', warnings, 'divisions', div.id, 'name')
+
+            if len([x for x in self.divisions if x.get_url() == div.get_url()]) > 1:
+                utils.dict_deep_replace('pls use unique urls', errors, 'divisions', div.id, 'url')
+
             if div.portal_division_type.id == PortalDivision.TYPES['company_subportal']:
                 if grouped_by_company_member.get(div.settings['company_id'], 0) > 1:
                     utils.dict_deep_replace('you have more that one subportal for this company',
@@ -1220,6 +1228,7 @@ class PortalDivision(Base, PRBase):
     html_description = Column(TABLE_TYPES['string_10000'], default='')
     html_title = Column(TABLE_TYPES['string_1000'], default='')
     html_keywords = Column(TABLE_TYPES['string_1000'], default='')
+    url = Column(TABLE_TYPES['string_1000'], default='')
 
     position = Column(TABLE_TYPES['int'])
 
@@ -1245,6 +1254,10 @@ class PortalDivision(Base, PRBase):
             'keywords': self.html_keywords if self.html_keywords else ','.join(t.text for t in self.tags),
             'description': self.html_description
         }
+
+    def get_url(self):
+        from profapp import TransliterationConverter
+        return self.url if self.url else TransliterationConverter.transliterate(self.portal.lang, self.name)
 
     def is_active(self):
         return True

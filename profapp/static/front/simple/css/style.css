@@ -148,6 +148,10 @@ table.tablelist tr td {
     height: 240px;
 }
 
+.article-details-long-text {
+  margin-bottom: 20px;
+}
+
 .company-logo {
     width: 300px;
     height: 200px;

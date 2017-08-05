@@ -11,14 +11,13 @@
                 <main class="clearfix" role="main">
                     <article class="article-full">
                         <!--Main article image-->
-                        <figure class="article-main-img">
-                            <img class="img-responsive" src="{{ article['illustration']['url'] }}" alt="">
+                        <figure>
+                            <img class="article-main-img" src="{{ article['illustration']['url'] }}" alt="Article illustration">
                             {# <figcaption class="">Підпис до фото</figcaption>#}
                         </figure>
-
                         <!--Article header-->
                         <header class="article-header">
-                            <a class="div-link" href="{{ url_for('front.division', division_name=article['portal_division']['name']) }}">{{ article['portal_division']['name']|safe }}</a>
+                            <a class="div-link" href="{{ url_for('front.division', division_name=article['portal_division']['url']) }}">{{ article['portal_division']['name']|safe }}</a>
                             <h1 class="article-headling">{{ article['title']|safe }}</h1>
                             {% if article['subtitle'] %}
                                 <h4 class="article-headling">{{ article['subtitle']|safe }}</h4>{% endif %}

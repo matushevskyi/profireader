@@ -1160,22 +1160,54 @@ function buildAllowedTagsAndAttributes() {
 }
 
 function find_and_build_url_for_endpoint(dict, rules, host) {
+
     var found = false;
     var dict1 = {};
 
+    // $.each(rules, function (ind, rule) {
+    //     var ret = rule;
+    //     var prop = null;
+    //     var dict1 = $.extend({}, dict);
+    //     for (prop in dict1) {
+    //         ret = ret.replace('<' + prop + '>', dict[prop]);
+    //         delete dict1[prop];
+    //     }
+    //     if (!ret.match('<[^<]*>')) {
+    //         found = ret;
+    //         return false;
+    //     }
+    // });
+
+
     $.each(rules, function (ind, rule) {
-        var ret = rule;
-        var prop = null;
+        var ret = '';
         var dict1 = $.extend({}, dict);
-        for (prop in dict1) {
-            ret = ret.replace('<' + prop + '>', dict[prop]);
-            delete dict1[prop];
-        }
-        if (!ret.match('<[^<]*>')) {
+        $.each(rule, function (ind1, match) {
+            if (typeof match == 'string') {
+                ret = ret + match;
+            }
+            else {
+                if (match['name'] in dict1) {
+                    var r = dict1[match['name']];
+                    if ('to_url_javascript' in match) {
+                        r = eval('(' + match['to_url_javascript'] + ')("' + r + '")');
+                    }
+                    ret += r;
+                    delete dict1[match['name']];
+                }
+                else {
+                    ret = false;
+                    return false;
+                }
+            }
+        });
+
+        if (ret !== false) {
             found = ret;
             return false;
         }
     });
+
 
     if (found === false) {
         console.error('Can`t found flask endpoint for passed dictionary', dict, rules);

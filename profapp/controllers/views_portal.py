@@ -55,7 +55,7 @@ def profile_load(json, company_id=None, portal_id=None):
         },
         'portal': portal.get_client_side_dict(
             fields='name,host, logo, favicon, lang, url_facebook, url_google, url_twitter, url_linkedin,'
-                   'portal_layout_id,divisions,divisions.html_description|html_keywords|html_title|cr_tm|name,own_company,company_memberships.company',
+                   'portal_layout_id,divisions,divisions.html_description|html_keywords|url|html_title|cr_tm|name,own_company,company_memberships.company',
             get_own_or_profi_host=True, get_publications_count=True)
     }
 
@@ -89,7 +89,7 @@ def profile_load(json, company_id=None, portal_id=None):
             else:
                 ndi.portal = portal
                 ndi.position = division_position
-                ndi.attr_filter(jd, 'name', 'html_title', 'html_keywords', 'html_description')
+                ndi.attr_filter(jd, 'name', 'html_title', 'html_keywords', 'html_description', 'url')
 
                 if ndi in portal.divisions:
                     if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
