@@ -858,8 +858,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             formatYear: 'yy',
             startingDay: 1
         },
-
-
         tinymceDefaultOptions: {
             inline: false,
             menu: [],
