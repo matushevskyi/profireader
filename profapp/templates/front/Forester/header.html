@@ -26,7 +26,8 @@
                         </li>
                     {% elif division and di.portal_division_type_id in ['company_subportal'] %}
                         <li {% if di.id == division.id %}class="active"{% endif %}>
-                            <a href=" {{ url_for('front.company_page', member_company_id = di['subportal_company'].id, member_company_name = di['subportal_company'].name) }}">{{ di.name }}</a>
+                            <a href=" {{ url_for('front.company_page', member_company_id = di['subportal_company'].id,
+                            member_company_name = di['url']) }}">{{ di.name }}</a>
                         </li>
                     {% endif %}
                 {% endfor %}

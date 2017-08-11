@@ -10,7 +10,9 @@
     <div class="article article-details {% if article['illustration']['selected_by_user']['type'] != 'none' %}article-with-illustration{% endif %}">
         <div class="article-division-and-tags pr">
             <div class="article-division nw">
-                <a href="{{ url_for('front.division', division_name=article['portal_division']['url']) }}">{{ article['portal_division']['name']|safe }}</a>
+                <a href="{{ url_for('front.division',
+                division_id=article['portal_division']['id'],
+                division_name=article['portal_division']['url']) }}">{{ article['portal_division']['name']|safe }}</a>
             </div>
             <div class="tags-at-right nw">
                 {% for tag in article.tags %}

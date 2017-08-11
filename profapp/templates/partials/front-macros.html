@@ -8,10 +8,9 @@
     </span>&nbsp;
 {% endmacro %}
 
-
 {% macro link_to_company(portal, company) %}
     {% if company['id'] in portal['subportals_by_companies_id'] %}
-        {{ url_for('front.division', division_name = portal['subportals_by_companies_id'][company['id']]['url']) }}
+        {{ url_for('front.division', division_id = portal['subportals_by_companies_id'][company['id']]['id'], division_name = portal['subportals_by_companies_id'][company['id']]['url']) }}
     {% else %}
         {{ url_for('front.company_member', member_company_id = company['id'], member_company_name = company['name']) }}
     {% endif %}

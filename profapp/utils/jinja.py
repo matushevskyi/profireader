@@ -82,7 +82,7 @@ def get_rules_simplified(endpoint, **kwargs):
             if name in kwargs:
                 app = kwargs[name]
                 if conv and conv in converters:
-                    app = converters[conv].to_url(app)
+                    app = converters[conv](url_adapter.map).to_url(app)
             else:
                 app = {'name': name}
                 if conv and conv in converters and hasattr(converters[conv], 'to_url_javascript'):

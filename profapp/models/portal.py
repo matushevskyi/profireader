@@ -1257,6 +1257,8 @@ class PortalDivision(Base, PRBase):
 
     def get_url(self):
         from profapp import TransliterationConverter
+        if self.portal_division_type_id == 'index':
+            return None
         return self.url if self.url else TransliterationConverter.transliterate(self.portal.lang, self.name)
 
     def is_active(self):
