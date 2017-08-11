@@ -575,7 +575,8 @@ class PRBase:
 
     @classmethod
     def get(cls, id, returnNoneIfNotExists=False):
-
+        if not id:
+            return None
         cond = cls.id.like('%' + id) if len(id) == 12 else cls.id == id
         q = g.db().query(cls).filter(cond)
         return q.first() if returnNoneIfNotExists else q.one()

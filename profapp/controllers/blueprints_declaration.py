@@ -2,7 +2,7 @@ from flask import Blueprint
 from profapp.models.permissions import Permissions
 
 
-#class PrOldBlueprint(Blueprint):
+# class PrOldBlueprint(Blueprint):
 #    declared_endpoints = {}
 #
 #    def you_have_no_permission(self):
@@ -40,7 +40,6 @@ from profapp.models.permissions import Permissions
 
 
 class PrBlueprint(Blueprint):
-
     def __init__(self, *args, **kwargs):
         self.registered_functions = {}
         super(PrBlueprint, self).__init__(*args, **kwargs)
@@ -79,13 +78,13 @@ class PrBlueprint(Blueprint):
                     # print(request.url_rule.rule, wrapped_function._permissions)
                     if ps is None:
                         raise exceptions.RouteWithoutPermissions("view function without permissions: " +
-                            self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
+                                                                 self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
 
                     ps = ps.get(request.url_rule.rule, None)
 
                     if ps is None:
                         raise exceptions.RouteWithoutPermissions("cant find permissions for rule: " +
-                            self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
+                                                                 self.name + '.' + f.__name__ + ': ' + request.url_rule.rule)
 
                     if method == 'OK':
                         json = request.json
@@ -97,7 +96,8 @@ class PrBlueprint(Blueprint):
                             try:
                                 ret = f(json, *args, **kwargs)
                             except Exception as e:
-                                ret = {'data': {}, 'ok': False, 'error_code': e.__class__.__name__, 'message': e.__str__()}
+                                ret = {'data': {}, 'ok': False, 'error_code': e.__class__.__name__,
+                                       'message': e.__str__()}
 
                     else:
                         if not ps['permissions'].check(*args, **kwargs):
@@ -105,21 +105,23 @@ class PrBlueprint(Blueprint):
                         ret = f(*args, **kwargs)
 
                 except Exception as e:
-                    if method == 'GET' or method == 'POST':
-                        if getattr(e, 'redirect_to', None):
-                            if method == 'GET':
-                                session['back_to'] = request.url
-                            return redirect(e.redirect_to)
+                    if not g.debug:
+                        if method == 'GET' or method == 'POST':
+                            if getattr(e, 'redirect_to', None):
+                                if method == 'GET':
+                                    session['back_to'] = request.url
+                                return redirect(e.redirect_to)
+                            raise e
+                        elif method == 'OK':
+                            return jsonify(
+                                {'data': {}, 'ok': False, 'error_code': e.__class__.__name__, 'message': e.__str__()})
+                    else:
                         raise e
-                    elif method == 'OK':
-                        return jsonify(
-                            {'data': {}, 'ok': False, 'error_code': e.__class__.__name__, 'message': e.__str__()})
 
                 if method == 'GET' or method == 'POST':
                     return ret
                 elif method == 'OK':
                     return jsonify({'data': ret, 'ok': True, 'error_code': None})
-
 
             if f.__name__ not in self.registered_functions:
                 self.registered_functions[f.__name__] = {'func': wrapped_function, 'perm': {}, 'app': current_app}
