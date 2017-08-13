@@ -63,6 +63,12 @@ td, th {
     page-break-before: always
 }
 
+@media print {
+    .mce-pagebreak {
+        border: 0
+    }
+}
+
 .mce-item-anchor {
     cursor: default;
     display: inline-block;
