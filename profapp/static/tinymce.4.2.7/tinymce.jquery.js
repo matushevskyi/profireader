@@ -26695,7 +26695,9 @@
                     // Needs to be the setBaseAndExtend or it will fail to select floated images
                     if (/^(IMG|HR)$/.test(target.nodeName)) {
                         e.preventDefault();
-                        selection.getSel().setBaseAndExtent(target, 0, target, 1);
+                        // selection.getSel().setBaseAndExtent(target, 0, target, 1);
+                        // workaround foe bug Uncaught DOMException: Failed to execute 'setBaseAndExtent' on 'Selection': There is no child at offset 1
+                        try {selection.getSel().setBaseAndExtent(target, 0, target, 1)}catch(exc){selection.getSel().setBaseAndExtent(target, 0, target, 0)}
                         editor.nodeChanged();
                     }
 
