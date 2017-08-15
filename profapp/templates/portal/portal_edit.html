@@ -47,13 +47,12 @@
             </div>
 
             <div class="modal-body">
-                <textarea class="w100 h50em form-control" ng-model="custom_html" placeholder=""></textarea>
+                <textarea class="w100 h50em" ng-model="custom_html" placeholder=""></textarea>
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-primary" type="button" ng-click="set()">{{ _('Set') }}
-                </button>
-                <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>
+                <button class="btn btn-primary" type="button" ng-click="set()">{{ ::_('Set') }}</button>
+                <button class="btn btn-warning" type="button" ng-click="cancel()">{{ ::_('Cancel') }}</button>
             </div>
         </div>
     </script>
