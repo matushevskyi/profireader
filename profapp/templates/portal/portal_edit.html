@@ -318,7 +318,7 @@
                                 <span style="cursor: row-resize"
                                       class="fa fa-arrows-v form-control w2em border-none di"></span>
                                 <input class="form-control w10em di"
-                                       ng-disabled="division['remove_this_existing_division'] || division['portal_division_type_id'] == 'index' || division['portal_division_type_id'] == 'company_subportal'"
+                                       ng-disabled="division['remove_this_existing_division'] || division['portal_division_type_id'] == 'index'"
                                        pr-validation-answer="data_validation:divisions[division.id].name"
                                        placeholder="{{ _('Division name placeholder') }}"
                                        ng-model="division.name">
@@ -326,7 +326,7 @@
 
                             <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
                                 <input class="form-control w10em di"
-                                       ng-disabled="division['remove_this_existing_division'] || division['portal_division_type_id'] == 'index' || division['portal_division_type_id'] == 'company_subportal'"
+                                       ng-disabled="division['remove_this_existing_division'] || division['portal_division_type_id'] == 'index'"
                                        pr-validation-answer="data_validation:divisions[division.id].url"
                                        placeholder="{{ _('blank to use transliteration name') }}"
                                        ng-model="division.url">

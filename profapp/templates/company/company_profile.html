@@ -106,7 +106,7 @@
                             <li ng-show="data.phone">{{ _('Phone:') }} {{ data.phone }}</li>
                             <li ng-show="data.phone2">{{ _('Fax:') }} {{ data.phone2 }}</li>
                             <li ng-show="data.email">{{ _('Email:') }} {{ data.email }}</li>
-                            <li ng-show="">Long??</li>
+                            <li ng-show="data.web">{{ _('Web:') }} {{ data.web }}</li>
                             <li ng-show="data.own_portal.host">{{ _('Portal:') }} {{ data.own_portal.host }}</li>
                         </ul>
                         <div class="edit-block" ng-if="editing">
@@ -202,6 +202,13 @@
                                         email not validate!') }}
                                     </div>
 
+                                </div>
+                                <div class="col-lg-2">{{ _('Web:') }}</div>
+                                <div class="col-lg-10 edit-data">
+                                    <input pr-validation-answer="data_validation:web" oles_type="text"
+                                           class="form-control border-radius"
+                                           placeholder="http(s)://company.example.com/home/"
+                                           aria-describedby="basic-addon3" ng-model="data.web">
                                 </div>
                                 <div class="col-lg-3">{{ _('Lang and Long:') }}</div>
                                 <div class="col-lg-4 edit-data">

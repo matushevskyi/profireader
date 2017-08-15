@@ -1,4 +1,14 @@
-/* font sizes */
+body.article-content td, body.article-content th {
+    font-family:inherit;
+    font-size: inherit;
+}
+
+
+@media print {
+    .mce-pagebreak {
+        border: inherit;
+    }
+}
 
 .article-content span.profireader_article_text_size_tiny {
     font-size: 6px;
@@ -35,7 +45,7 @@
 body.article-content {
     width: 698px;
     background-color: white;
-  }
+}
 
 .mce-item-table {
     min-width: 2em;

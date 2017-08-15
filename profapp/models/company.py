@@ -49,6 +49,7 @@ class Company(Base, PRBase, PRElasticDocument):
     phone = Column(TABLE_TYPES['phone'], nullable=False, default='')
     phone2 = Column(TABLE_TYPES['phone'], nullable=False, default='')
     email = Column(TABLE_TYPES['email'], nullable=False, default='')
+    web = Column(TABLE_TYPES['string_100'], nullable=True, default='')
     short_description = Column(TABLE_TYPES['text'], nullable=False, default='')
     about = Column(TABLE_TYPES['text'], nullable=False, default='')
 
@@ -124,6 +125,7 @@ class Company(Base, PRBase, PRElasticDocument):
         return query
 
     def validate(self, is_new):
+        from profapp.constants import REGEXP
         ret = super().validate(is_new)
         if not re.match(r'[^\s]{3}', str(self.country)):
             ret['errors']['country'] = 'Your Country name must be at least 3 characters long.'
@@ -135,8 +137,13 @@ class Company(Base, PRBase, PRElasticDocument):
             ret['errors']['postcode'] = 'Your Postcode must be at least 4 digits or characters long.'
         if not re.match(r'[^\s]{3}', str(self.address)):
             ret['errors']['address'] = 'Your Address must be at least 3 characters long.'
-        if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", str(self.email)):
+        if not re.match(REGEXP.EMAIL, str(self.email)):
             ret['errors']['email'] = 'Invalid email address'
+
+        self.web = self.web.strip()
+        print(self.web)
+        if self.web and not re.match(REGEXP.WEB, str(self.web)):
+            ret['errors']['web'] = 'Invalid web address'
         if not re.match('[^\s]{3,}', self.name):
             ret['errors']['name'] = 'Your Company name must be at least 3 characters long.'
         self.phone = re.sub(r'[ ]*', '', self.phone)
@@ -206,7 +213,7 @@ class Company(Base, PRBase, PRElasticDocument):
             filter(~Company.id.in_(ignore_ids)).order_by(Company.name)
 
     def get_client_side_dict(self,
-                             fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
+                             fields='id,name,author_user_id,country,region,address,phone,phone2,email,web,postcode,city,'
                                     'short_description,journalist_folder_file_id,logo,about,lat,lon,'
                                     'own_portal.id|host',
                              more_fields=None):

@@ -858,8 +858,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             formatYear: 'yy',
             startingDay: 1
         },
-
-
         tinymceDefaultOptions: {
             inline: false,
             menu: [],
@@ -867,9 +865,8 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             plugins: 'advlist autolink link image charmap print paste table media',
             skin: 'lightgray',
             theme: 'modern',
-            'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link image table",
-            //'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | link image table"[*],
-            'valid_elements': "iframe[*],img[*],table[*],tbody[*],td[*],th[*],tr[*],p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*],object[*]",
+            toolbar1: "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link image table",
+            valid_elements: "iframe[*],img[*],table[*],tbody[*],td[*],th[*],tr[*],p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*],object[*]",
             //init_instance_callback1: function () {
             //    console.log('init_instance_callback', arguments);
             //},
@@ -893,78 +890,13 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 ;
 
             },
-            //valid_elements: Config['article_html_valid_elements'],
-            //valid_elements: 'a[class],img[class|width|height],p[class],table[class|width|height],th[class|width|height],tr[class],td[class|width|height],span[class],div[class],ul[class],ol[class],li[class]',
             //TODO: OZ by OZ: select css for current theme. also look for another place with same todo
             content_css: [static_address('front/css/bootstrap.css'), static_address('css/article.css')],
 
-            //paste_auto_cleanup_on_paste : true,
-            //paste_remove_styles: true,
-            //paste_remove_styles_if_webkit: true,
-            //paste_strip_class_attributes: "all'),
-
-            //style_formats: [
-            //    {title: 'Bold text', inline: 'b'},
-            //    {title: 'Red text', inline: 'span', styles: {color: '#ff0000'}},
-            //    {title: 'Red header', block: 'h1', styles: {color: '#ff0000'}},
-            //
-            //    {
-            //        title: 'Image Left',
-            //        selector: 'img',
-            //        styles: {
-            //            'float': 'left',
-            //            'margin': '0 10px 0 10px'
-            //        }
-            //    },
-            //    {
-            //        title: 'Image Right',
-            //        selector: 'img',
-            //        styles: {
-            //            'float': 'right',
-            //            'margin': '0 0 10px 10px'
-            //        }
-            //    }
-            //]
 
         }
     })
 });
-
-
-// function cleanup_html(html) {
-//     normaltags = '^(span|a|br|div|table)$';
-//     common_attributes = {
-//         whattr: {'^(width|height)$': '^([\d]+(.[\d]*)?)(em|px|%)$'}
-//     };
-//
-//     allowed_tags = {
-//         '^table$': {allow: '^(tr)$', attributes: {whattr: true}},
-//         '^tr$': {allow: '^(td|th)$', attributes: {}},
-//         '^td$': {allow: normaltags, attributes: {whattr: true}},
-//         '^a$': {allow: '^(span)$', attrсibutes: {'^href$': '.*'}},
-//         '^img$': {allow: false, attributes: {'^src$': '.*'}},
-//         '^br$': {allow: false, attributes: {}},
-//         '^div$': {allow: normaltags, attributes: {}}
-//     };
-//
-//     $.each(allowed_tags, function (tag, properties) {
-//         var attributes = properties.attributes ? properties.attributes : {}
-//         $.each(attributes, function (attrname, allowedvalus) {
-//             if (allowedvalus === true) {
-//                 allowed_tags[tag].attributes[attrname] = common_attributes[attrname] ? common_attributes[attrname] : '.*';
-//             }
-//         });
-//     });
-//
-//     var tags = html.split(/<[^>]*>/);
-//
-//     $.each(tags, function (tagindex, tag) {
-//         console.log(tagindex, tag);
-//     });
-//
-//     return html;
-// }
-
 
 None = null;
 False = false;
