@@ -10,8 +10,7 @@ from .. import utils
 from ..models.company import Company
 from ..models.elastic import elasticsearch
 from ..models.materials import Publication
-from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
-    PortalDivisionSettingsCompanySubportal
+from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, PortalDivisionSettings
 from ..models.permissions import AvailableForAll
 from ..models.users import User
 from profapp import TransliterationConverter
@@ -51,12 +50,15 @@ def portal_and_settings(portal):
     newd = OrderedDict()
     subportals_by_companies_id = OrderedDict()
     for di in ret['divisions']:
-        if di['portal_division_type_id'] == PortalDivision.TYPES['company_subportal']:
-            pdset = g.db().query(PortalDivisionSettingsCompanySubportal). \
-                filter_by(portal_division_id=di['id']).first()
+
+        pdset = g.db().query(PortalDivisionSettings).filter_by(portal_division_id=di['id']).first()
+        if pdset and di['portal_division_type_id'] == PortalDivision.TYPES['company_subportal']:
             com_port = g.db().query(MemberCompanyPortal).get(pdset.member_company_portal_id)
             di['subportal_company'] = Company.get(com_port.company_id)
             subportals_by_companies_id[com_port.company_id] = di
+        elif pdset and di['portal_division_type_id'] == PortalDivision.TYPES['custom_html']:
+            di['custom_html'] = pdset.custom_html
+
         di['url'] = PortalDivision.get(di['id']).get_url()
         newd[di['id']] = di
     ret['divisions'] = newd
@@ -79,11 +81,11 @@ def get_company_member_and_division(portal: Portal, company_id):
                                                 portal_division_type_id=PortalDivision.TYPES['catalog']).first()
     for d_id, d in portal_dict['divisions'].items():
         if 'subportal_company' in d and d['subportal_company'].id == member_company.id:
-            di = g.db().query(PortalDivisionSettingsCompanySubportal). \
+            di = g.db().query(PortalDivisionSettings). \
                 join(MemberCompanyPortal,
-                     MemberCompanyPortal.id == PortalDivisionSettingsCompanySubportal.member_company_portal_id). \
+                     MemberCompanyPortal.id == PortalDivisionSettings.member_company_portal_id). \
                 join(PortalDivision,
-                     PortalDivision.id == PortalDivisionSettingsCompanySubportal.portal_division_id). \
+                     PortalDivision.id == PortalDivisionSettings.portal_division_id). \
                 filter(MemberCompanyPortal.company_id == member_company.id). \
                 filter(PortalDivision.portal_id == portal.id).one().portal_division
 
@@ -334,9 +336,11 @@ def company_page(portal, member_company_id=None, member_company_name=None, membe
         return redirect(url_for('front.404', search=member_company_name))
 
     if dvsn_catalog_or_subportal.portal_division_type_id == 'company_subportal' \
-            and TransliterationConverter.transliterate(portal.lang, dvsn_catalog_or_subportal.get_url()) != member_company_name:
+            and TransliterationConverter.transliterate(portal.lang,
+                                                       dvsn_catalog_or_subportal.get_url()) != member_company_name:
         return redirect(url_for('front.company_page', member_company_id=member_company.id,
-                                member_company_name=dvsn_catalog_or_subportal.get_url(), member_company_page=member_company_page))
+                                member_company_name=dvsn_catalog_or_subportal.get_url(),
+                                member_company_page=member_company_page))
 
     elif dvsn_catalog_or_subportal.portal_division_type_id != 'company_subportal' \
             and TransliterationConverter.transliterate(portal.lang, member_company.name) != member_company_name:
@@ -481,6 +485,14 @@ def division(portal,
                                    seo=dvsn.seo_dict(),
                                    analytics=portal.get_analytics(page_type=dvsn.portal_division_type_id),
                                    **membership_data)
+
+        elif dvsn.portal_division_type_id == 'custom_html':
+            return render_template('front/' + g.portal_layout_path + 'division_custom_html.html',
+                                   division=dvsn.get_client_side_dict(),
+                                   portal=portal_and_settings(portal),
+                                   seo=dvsn.seo_dict(),
+                                   analytics=portal.get_analytics(page_type=dvsn.portal_division_type_id))
+
         else:
             raise exc.BadDataProvided('unknown division.portal_division_type_id = %s' % (dvsn.portal_division_type_id,))
 

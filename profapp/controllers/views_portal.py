@@ -405,7 +405,7 @@ def analytics_report(json, portal_id):
     def sort_dimension(rows, name):
 
         if name == 'page_type':
-            by_page_type = ['index', 'news', 'events', 'catalog', 'publication', 'company_subportal']
+            by_page_type = ['index', 'news', 'events', 'catalog', 'publication', 'company_subportal', 'custom_html']
             return sorted(rows, key=lambda x: by_page_type.index(x[0]) if x[0] in by_page_type else 100000)
         if name == 'company_id':
             return sorted(rows, key=lambda x: 'z' if x[0] == '__NA__' else Company.get_attr(x[0], ifNone='zzz'))

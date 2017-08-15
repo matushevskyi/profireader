@@ -135,7 +135,6 @@ class Portal(Base, PRBase):
         if not self.portal_layout_id:
             self.portal_layout_id = utils.db.query_filter(PortalLayout).first().id
 
-
     def is_active(self):
         return True
 
@@ -1193,21 +1192,33 @@ class PortalDivisionSettingsDescriptor(object):
         pass
 
     def __get__(self, instance, owner):
-        return {
-            'id': instance.portal_division_settings_company_subportal.id,
-            'company_id': instance.portal_division_settings_company_subportal.member_company_portal.company_id
-        } if instance.portal_division_type.id == PortalDivision.TYPES['company_subportal'] else {}
+        if instance.portal_division_type.id == PortalDivision.TYPES['custom_html']:
+            return {
+                'id': instance.portal_division_settings.id,
+                'custom_html': instance.portal_division_settings.custom_html
+            }
+        elif instance.portal_division_type.id == PortalDivision.TYPES['company_subportal']:
+            return {
+                'id': instance.portal_division_settings.id,
+                'company_id': instance.portal_division_settings.member_company_portal.company_id
+            }
+        else:
+            return {}
 
     # def proxy_setter(self, file_image_crop: FileImageCrop, client_data):
     def __set__(self, instance, data):
         if instance.portal_division_type.id == PortalDivision.TYPES['company_subportal']:
             membership = next(
                 cm for cm in instance.portal.company_memberships if cm.company.id == data['company_id'])
-            if not instance.portal_division_settings_company_subportal:
-                instance.portal_division_settings_company_subportal = \
-                    PortalDivisionSettingsCompanySubportal(portal_division=instance,
-                                                           member_company_portal=membership)
-            instance.portal_division_settings_company_subportal.member_company_portal.company_id = membership.company.id
+            if not instance.portal_division_settings:
+                instance.portal_division_settings = \
+                    PortalDivisionSettings(portal_division=instance, member_company_portal=membership)
+            instance.portal_division_settings.member_company_portal.company_id = membership.company.id
+        elif instance.portal_division_type.id == PortalDivision.TYPES['custom_html']:
+            if not instance.portal_division_settings:
+                instance.portal_division_settings = \
+                    PortalDivisionSettings(portal_division=instance, custom_html=data['custom_html'])
+            instance.portal_division_settings.custom_html = data['custom_html']
 
         # self.id = client_data.get('id', None)
         # self.company_id = client_data.get('company_id', None)
@@ -1236,7 +1247,7 @@ class PortalDivision(Base, PRBase):
 
     portal_division_type = relationship('PortalDivisionType', uselist=False)
 
-    portal_division_settings_company_subportal = relationship('PortalDivisionSettingsCompanySubportal',
+    portal_division_settings = relationship('PortalDivisionSettings',
                                                               uselist=False,
                                                               cascade="all, merge, delete-orphan")
     settings = PortalDivisionSettingsDescriptor()
@@ -1245,7 +1256,8 @@ class PortalDivision(Base, PRBase):
 
     publications = relationship('Publication', cascade="all, delete-orphan")
 
-    TYPES = {'company_subportal': 'company_subportal', 'index': 'index', 'news': 'news', 'events': 'events',
+    TYPES = {'company_subportal': 'company_subportal', 'custom_html': 'custom_html', 'index': 'index', 'news': 'news',
+             'events': 'events',
              'catalog': 'catalog'}
 
     def seo_dict(self):
@@ -1270,19 +1282,20 @@ class PortalDivision(Base, PRBase):
         return self.to_dict(fields, more_fields)
 
 
-class PortalDivisionSettingsCompanySubportal(Base, PRBase):
-    __tablename__ = 'portal_division_settings_company_subportal'
+class PortalDivisionSettings(Base, PRBase):
+    __tablename__ = 'portal_division_settings'
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
 
     portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('portal_division.id'))
-    member_company_portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal.id'))
+    portal_division = relationship(PortalDivision, cascade="all, merge, delete")
 
     member_company_portal = relationship(MemberCompanyPortal)
+    member_company_portal_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('member_company_portal.id'))
 
-    portal_division = relationship(PortalDivision, cascade="all, merge, delete")
+    custom_html = Column(TABLE_TYPES['text'])
 
 
 class PortalDivisionType(Base, PRBase):

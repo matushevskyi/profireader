@@ -39,18 +39,40 @@
             </div>
         </div>
     </script>
+
+    <script type="text/ng-template" id="portal_division_custom_html.html">
+        <div>
+            <div class="modal-header">
+                <h3 class="modal-title">{{ _('edit html') }}</h3>
+            </div>
+
+            <div class="modal-body">
+                <textarea class="w100 h50em form-control" ng-model="custom_html" placeholder=""></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" type="button" ng-click="set()">{{ _('Set') }}
+                </button>
+                <button class="btn btn-warning" type="button" ng-click="cancel()">{{ _('Cancel') }}</button>
+            </div>
+        </div>
+    </script>
     {% endraw %}
 
     <script>
         module.controller('PortalDivisionController', function ($scope) {
 
             $scope.$watch('division.portal_division_type_id', function (newv, oldv) {
-                if (newv !== oldv && newv == 'company_subportal' && (!$scope.division.settings || !$scope.division.company_id)) {
-                    $scope.division.settings = {'company_id': $scope.data.portal.company_memberships[0]['company']['id']}
+                if (newv !== oldv) {
+                    if (newv == 'company_subportal' && (!$scope.division.settings || !$scope.division.company_id)) {
+                        $scope.division.settings = {'company_id': $scope.data.portal.company_memberships[0]['company']['id']}
+                    }
+                    if (newv == 'custom_html' && (!$scope.division.settings)) {
+                        $scope.division.settings = {'custom_html': '<h1>Hello!</h1>'}
+                    }
                 }
                 if ((newv === 'news' || newv === 'events') && !$scope.division['publication_count']) {
-                    console.log('fix me');
-                    $scope.division['publication_count'] = 0;
+                    $scope.division['publication_count'] = false;
                 }
             });
         });
@@ -71,6 +93,19 @@
             {% endraw %}
         });
 
+        module.controller('PortalDivisionCustomHtmlEditHtmlController', function ($scope, $uibModalInstance, custom_html) {
+
+            $scope.$$translate = {{ translates('PortalDivisionCustomHtmlEditHtmlController')|safe }};
+
+            {% raw %}
+            $scope.custom_html = custom_html;
+            $scope.set = function () {
+                $uibModalInstance.close($scope.custom_html);
+            };
+            $scope.cancel = $uibModalInstance.dismiss;
+            {% endraw %}
+        });
+
         module.controller('portal_edit', ['$scope', '$uibModal', function ($scope, $uibModal) {
             $scope.$$translate = {{ translates('portal_edit')|safe }};
 
@@ -84,6 +119,20 @@
 
             $scope.publications_counts_by_status_and_visibility_cell = publications_counts_by_status_and_visibility_cell;
             $scope.publications_counts_by_status_and_visibility_tooltip = publications_counts_by_status_and_visibility_tooltip;
+
+            $scope.setCustomHtml  = function (d) {
+                var modalInstance = $uibModal.open({
+                    templateUrl: 'portal_division_custom_html.html',
+                    controller: 'PortalDivisionCustomHtmlEditHtmlController',
+                    resolve: resolveDictForAngularController({
+                        custom_html: d.settings.custom_html
+                    })
+                });
+                modalInstance.result.then(function (new_html) {
+                    console.log(new_html);
+                    d.settings.custom_html = new_html;
+                });
+            };
 
             $scope.changeDescription = function (d) {
                 var modalInstance = $uibModal.open({
@@ -118,7 +167,7 @@
             $scope.amidLoad = function (resp) {
                 if (!$scope.portal_id) {
                     resp['portal']['divisions'] =
-                        _.map(['index', 'news', 'events', 'catalog', 'company_subportal'], function (t) {
+                        _.map(['index', 'news', 'events', 'catalog', 'company_subportal', 'custom_html'], function (t) {
                             return {
                                 'id': randomHash(), 'portal_division_type_id': t,
                                 'html_description': '',
@@ -366,6 +415,13 @@
                                             ng-model="division.settings.company_id"
                                             ng-options="membership.company.id as membership.company.name for membership in data.portal.company_memberships">
                                     </select>
+                                    <button
+                                            ng-disabled="division['remove_this_existing_division']"
+                                            popover-trigger="none"
+                                            pr-validation-answer="data_validation:divisions[division.id].settings"
+                                            class="form-control"
+                                            ng-click="setCustomHtml(division)"
+                                            ng-if="division.portal_division_type_id == 'custom_html'">{{ ::_('set html') }}</button>
                                 </div>
                             </div>
                             <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1 p025em">
