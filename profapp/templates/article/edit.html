@@ -2,7 +2,7 @@
 
 {% block head %}
     {{ super() }}
-    {% include '_ruslan/partials/_header_files_articles.html' %}
+    {% include '_ruslan/partials/_header_files_tinymce.html' %}
     {% include '_ruslan/partials/_header_files_crop.html' %}
 {% endblock head %}
 
@@ -73,6 +73,20 @@
                 return resp;
             };
             $scope.tinyArticleOptions = $.extend(true, $scope.tinymceDefaultOptions);
+            $scope.tinyArticleOptionsShortDescription = {
+                inline: false,
+                menu: [],
+                width: 750,
+                plugins: '',
+                skin: 'lightgray',
+                theme: 'modern',
+                'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent ",
+                //'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | link image table"[*],
+                'valid_elements': "p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*]",
+                //init_instance_callback1: function () {
+                //    console.log('init_instance_callback', arguments);
+                //},
+            };
 
             {% if publication_id %}
                 var custom_formats = {{ tinymce_format_groups('birdy')|tojson }};
@@ -97,7 +111,7 @@
                 },
                 'gallery_set_data': function (gallery_id, data) {
                     var index = find_index_by_id($scope.data['material']['image_galleries'], gallery_id);
-                    if (index>-1) {
+                    if (index > -1) {
                         $scope.data['material']['image_galleries'][index] = data;
                     }
                     else {
@@ -108,8 +122,8 @@
             });
 
             tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'plugins', ' ');
-{#            tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'toolbar1', ' ');#}
-            tinymceExtendSettings($scope.tinyArticleOptions, ['{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/plugin.css') }}'], 'content_css');
+            {#            tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'toolbar1', ' ');#}
+            tinymceExtendSettings($scope.tinyArticleOptions, ['{{ static_address('tinymce/plugins/tinymce-gallery-plugin/plugin.css') }}'], 'content_css');
             $scope.tinyArticleOptions['toolbar1'] = "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link gallery table";
         }]);
     </script>
@@ -123,7 +137,8 @@
             <div af af-amid-load="amidLoad" af-amid-save="amidSave"
                  af-before-save="getData"
                  af-before-validate="getDataForValidation"
-                 af-watch="[data.material.short, data.material.title, data.material.subtitle, data.material.keywords, data.material.keywords]" ng-model="data">
+                 af-watch="[data.material.short, data.material.title, data.material.subtitle, data.material.keywords, data.material.keywords]"
+                 ng-model="data">
 
                 <div style="padding-bottom: 50px">
                     <div>
@@ -177,12 +192,11 @@
                     {% raw %}
 
                     {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
-                    <textarea class="form-control article-edit-input" style="width: 710px" placeholder="{{_('short')}}"
+                    <textarea ui-tinymce="tinyArticleOptionsShortDescription" class="form-control article-edit-input"
                               ng-model="data.material.short"></textarea>
 
                     {{ _('Full text') }}
-                    <textarea ui-tinymce="tinyArticleOptions" id="article_editor"
-                              ng-model="data.material.long"></textarea>
+                    <textarea ui-tinymce="tinyArticleOptions" ng-model="data.material.long"></textarea>
                 </div>
 
 

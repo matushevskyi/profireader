@@ -91,7 +91,7 @@ def profile_load_validate_save(json, company_id=None):
         return company_dict
     else:
         company.attr(
-            utils.filter_json(json, 'about', 'address', 'country', 'email', 'name', 'phone', 'city', 'postcode',
+            utils.filter_json(json, 'about', 'address', 'country', 'email', 'web', 'name', 'phone', 'city', 'postcode',
                               'phone2', 'region', 'short_description', 'lon', 'lat'))
         if action == 'validate':
             if company_id is not None:

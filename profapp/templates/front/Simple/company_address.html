@@ -63,10 +63,10 @@
                 <td>{{ _('Company fax') }}</td>
                 <td>{{ member_company['fax'] }}</td>
             </tr>{% endif %}
-        {% if member_company['email'] %}
+        {% if member_company['web'] %}
             <tr>
-                <td>{{ _('Company email') }}</td>
-                <td>{{ member_company['email'] }}</td>
+                <td>{{ _('Company web') }}</td>
+                <td>{{ member_company['web'] }}</td>
             </tr>{% endif %}
         {% if member_company['own_portal']['host'] %}
             <tr>

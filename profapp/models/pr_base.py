@@ -36,10 +36,10 @@ class DateIntervalDescriptor(object):
     # def proxy_setter(self, file_image_crop: FileImageCrop, client_data):
     def __set__(self, instance, data):
         if data['amount'] < 0:
-            raise exceptions.BadDataProvided({'message': 'amount < 0'})
+            raise exceptions.BadDataProvided('amount < 0')
         if data['resolution'] not in ['days', 'years', 'weeks', 'months']:
             raise exceptions.BadDataProvided(
-                {'message': "resolution should have following values: 'days', 'years', 'weeks', 'months'"})
+                "resolution should have following values: 'days', 'years', 'weeks', 'months'")
 
         instance = "%s %s" % (int(data['amount']), data['resolution'])
 
@@ -347,7 +347,7 @@ class Search(Base):
             filename_, line_, func_, text_ = tb_info[-1]
             message = 'An error occurred on File "{file}" line {line}\n {assert_message}'.format(
                 line=line_, assert_message=e.args, file=filename_)
-            raise exceptions.BadDataProvided({'message': message})
+            raise exceptions.BadDataProvided(message)
 
 
 class Grid:
@@ -575,7 +575,8 @@ class PRBase:
 
     @classmethod
     def get(cls, id, returnNoneIfNotExists=False):
-
+        if not id:
+            return None
         cond = cls.id.like('%' + id) if len(id) == 12 else cls.id == id
         q = g.db().query(cls).filter(cond)
         return q.first() if returnNoneIfNotExists else q.one()

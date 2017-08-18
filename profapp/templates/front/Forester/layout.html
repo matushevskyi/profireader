@@ -47,8 +47,8 @@
     <script src="{{ static_address('front/' + portal.layout.name + '/js/jquery.dotdotdot.min.js') }}"></script>
     <script src="{{ static_address('front/' + portal.layout.name + '/js/custom.js') }}"></script>
 
-    <link href="{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/image_gallery.css') }}" rel="stylesheet">
-    <script src="{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/image_gallery.js') }}" data-gallery-load-url="{{ url_for('article.gallery_load') }}"></script>
+    <link href="{{ static_address('tinymce/plugins/tinymce-gallery-plugin/image_gallery.css') }}" rel="stylesheet">
+    <script src="{{ static_address('tinymce/plugins/tinymce-gallery-plugin/image_gallery.js') }}" data-gallery-load-url="{{ url_for('article.gallery_load') }}"></script>
 
     <script>
         window.addEventListener("message", function (messageevent) {
