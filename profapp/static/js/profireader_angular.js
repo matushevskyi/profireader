@@ -1331,9 +1331,11 @@ publications_counts_by_status_and_visibility_cell = function (value) {
     var ret = [];
     $.each(all_visibilities,
         function (ind, visibility) {
-            ret.push(publication_counts_span('PUBLISHED', visibility, value['by_status_visibility']['PUBLISHED'][visibility]));
+            if (value['by_status_visibility']) {
+                ret.push(publication_counts_span('PUBLISHED', visibility, value['by_status_visibility']['PUBLISHED'][visibility]));
+            }
         });
-    return publication_counts_span('PUBLISHED', '', value['by_status']['PUBLISHED'], 'bold') + '</span> = ' + ret.join('+');
+    return (value['by_status']?(publication_counts_span('PUBLISHED', '', value['by_status']['PUBLISHED'], 'bold') + ' = '):'') + ret.join('+');
 };
 
 publications_counts_by_status_and_visibility_tooltip = function (value) {
