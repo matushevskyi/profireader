@@ -127,56 +127,6 @@ class Material(Base, PRBase, PRElasticDocument):
         for p in self.publications:
             p.elastic_delete()
 
-    def check_galleries(self, galleries_cli: list, html:str):
-        from ..models.gallery import MaterialImageGallery, MaterialImageGalleryItem
-
-        def placeholder(id=None):
-            return r'(<img[^>]*data-mce-image-gallery-placeholder=")({})("[^>]*>)'.format(id if id else '[^"]*')
-
-        # galleries that was removed from html will be removed from db
-        galleries_cli = list(filter(
-            lambda x: re.search(placeholder(x['id']), html),
-            galleries_cli))
-
-
-        # remove from db galleries and items removed at client side
-        for gallery in self.image_galleries:
-            g_cli = next(filter(lambda x: x['id'] == gallery.id, galleries_cli), None)
-            if not g_cli:
-                gallery.delete()
-            else:
-                for item in gallery.items:
-                    if not next(filter(lambda x: x['id'] == item.id, g_cli['items']), None):
-                        item.delete()
-
-        for g_cli in galleries_cli:
-            gallery = next(filter(lambda x: x.id == g_cli['id'], self.image_galleries), None)
-
-            # create gallery that is new
-            if not gallery:
-                gallery = MaterialImageGallery()
-                self.image_galleries.append(gallery)
-                gallery.save()
-                html = re.sub(placeholder(g_cli['id']), r'\g<1>{}\g<3>'.format(gallery.id), html)
-
-            position = 0
-            for item_cli in g_cli['items']:
-                position += 1
-                item = next(filter(lambda x: x.id == item_cli['id'], gallery.items), None)
-
-                # create item that is new
-                if not item:
-                    item = MaterialImageGalleryItem(binary_data=re.sub(r'[\'"]?\)$', '', re.sub(r'^url\([\'"]?', '', item_cli['background_image'])),
-                                                    material_image_gallery=gallery,
-                                                    name=item_cli['title'])
-                    gallery.items.append(item)
-
-                item.position = position
-                item.title = item_cli['title']
-                item.file.copyright_author_name = item_cli['copyright']
-
-        return html
-
 
 class ReaderPublication(Base, PRBase):
     __tablename__ = 'reader_publication'

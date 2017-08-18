@@ -876,6 +876,7 @@ class MemberCompanyPortal(Base, PRBase, PRElasticDocument, NotifyMembershipChang
             'division_id': PRElasticField(analyzed=False,
                                           setter=lambda: utils.db.query_filter(PortalDivision, portal_id=self.portal.id,
                                                                                portal_division_type_id='catalog').one().id),
+
             'division_type': PRElasticField(analyzed=False, setter=lambda: 'catalog'),
             'division_name': PRElasticField(setter=lambda: self.portal.name),
 
@@ -1207,6 +1208,7 @@ class PortalDivisionSettingsDescriptor(object):
 
     # def proxy_setter(self, file_image_crop: FileImageCrop, client_data):
     def __set__(self, instance, data):
+        from .gallery import MaterialImageGallery
         if instance.portal_division_type.id == PortalDivision.TYPES['company_subportal']:
             membership = next(
                 cm for cm in instance.portal.company_memberships if cm.company.id == data['company_id'])
@@ -1217,8 +1219,11 @@ class PortalDivisionSettingsDescriptor(object):
         elif instance.portal_division_type.id == PortalDivision.TYPES['custom_html']:
             if not instance.portal_division_settings:
                 instance.portal_division_settings = \
-                    PortalDivisionSettings(portal_division=instance, custom_html=data['custom_html'])
-            instance.portal_division_settings.custom_html = data['custom_html']
+                    PortalDivisionSettings(portal_division=instance, custom_html=data.get('custom_html', ''))
+
+            # (instance.portal_division_settings.custom_html, instance.image_galleries) = \
+            #     MaterialImageGallery.check_html(data.get('custom_html', ''), data.get('image_galleries', []),
+            #                                     instance.image_galleries)
 
         # self.id = client_data.get('id', None)
         # self.company_id = client_data.get('company_id', None)
@@ -1248,13 +1253,16 @@ class PortalDivision(Base, PRBase):
     portal_division_type = relationship('PortalDivisionType', uselist=False)
 
     portal_division_settings = relationship('PortalDivisionSettings',
-                                                              uselist=False,
-                                                              cascade="all, merge, delete-orphan")
+                                            uselist=False,
+                                            cascade="all, merge, delete-orphan")
+
     settings = PortalDivisionSettingsDescriptor()
 
     tags = relationship(Tag, secondary='tag_portal_division', uselist=True)
 
     publications = relationship('Publication', cascade="all, delete-orphan")
+
+    # image_galleries = relationship('MaterialImageGallery', cascade="all")
 
     TYPES = {'company_subportal': 'company_subportal', 'custom_html': 'custom_html', 'index': 'index', 'news': 'news',
              'events': 'events',

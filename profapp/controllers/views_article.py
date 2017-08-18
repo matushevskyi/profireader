@@ -49,7 +49,8 @@ def edit_material_load(json_data, company_id=None, material_id=None):
             material.detach()
             return material.validate(material.id is not None)
         else:
-            material.long = material.check_galleries(json_data['material']['image_galleries'], material.long)
+            (material.long, material.image_galleries) = MaterialImageGallery.check_html(
+                material.long, json_data['material']['image_galleries'], material.image_galleries)
             material.illustration = json_data['material']['illustration']
             material.save()
 

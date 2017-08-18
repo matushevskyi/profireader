@@ -47,8 +47,8 @@ def profile_load(json, company_id=None, portal_id=None):
         layouts = layouts.filter(or_(PortalLayout.hidden == False, PortalLayout.id == portal.portal_layout_id))
     division_types = PortalDivisionType.get_division_types()
 
-    client_side = lambda: {
-        'select': {
+    def client_side():
+        ret = {'select': {
             'languages': Config.LANGUAGES,
             'layouts': utils.get_client_side_list(layouts.all(), more_fields='hidden'),
             'division_types': utils.get_client_side_dict(division_types)
@@ -57,7 +57,9 @@ def profile_load(json, company_id=None, portal_id=None):
             fields='name,host, logo, favicon, lang, url_facebook, url_google, url_twitter, url_linkedin,'
                    'portal_layout_id,divisions,divisions.html_description|html_keywords|url|html_title|cr_tm|name,own_company,company_memberships.company',
             get_own_or_profi_host=True, get_publications_count=True)
-    }
+        }
+        return ret
+
 
     if action == 'load':
         return client_side()
