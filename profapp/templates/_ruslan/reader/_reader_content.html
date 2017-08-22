@@ -79,7 +79,7 @@
                            ng-href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal_division.portal.host) }}">{{
                             article.title}}</a>
                     </h3>
-                    <div>{{ article.short}}</div>
+                    <div ng-bind-html="article.short"></div>
                     <div ng-visible="article.author" class="fr">{{ article.author }}</div>
                 </div>
                 <br/>
