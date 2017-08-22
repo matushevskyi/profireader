@@ -1,5 +1,5 @@
 profapp/static linguist-vendored
 profapp/static/* linguist-vendored
 profapp/static/** linguist-vendored
-profapp/templates/** linguist-vendored
+profapp/templates/* linguist-vendored
 
