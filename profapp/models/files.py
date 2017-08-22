@@ -719,7 +719,7 @@ class ImagesDescriptor(object):
 
 
 class FileImgDescriptor(object):
-    browse = True
+    browse = False
     upload = True
     crop = True
     image_size = [600, 600]
