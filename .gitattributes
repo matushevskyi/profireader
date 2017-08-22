@@ -1,3 +1,4 @@
-profapp/static linguist-vendored=false
-profapp/static/* linguist-vendored=false
-profapp/static/** linguist-vendored=false
+profapp/static linguist-vendored
+profapp/static/* linguist-vendored
+profapp/static/** linguist-vendored
+
