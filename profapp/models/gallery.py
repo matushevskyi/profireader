@@ -13,7 +13,7 @@ class MaterialImageGallery(Base, PRBase):
 
     id = Column(TABLE_TYPES['id_profireader'], nullable=False, primary_key=True)
     material_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(Material.id))
-    portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(PortalDivision.id))
+    # portal_division_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(PortalDivision.id))
     available_sizes = Column(TABLE_TYPES['json'], nullable=False,
                              default=(
                                  [[2048, 2048], [1024, 1024], [512, 512], [256, 256], [128, 128], [64, 64], [32, 32]]))
