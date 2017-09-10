@@ -68,6 +68,7 @@ class PrBlueprint(Blueprint):
         def decorator(f):
             @wraps(f)
             def wrapped_function(*args, **kwargs):
+                print(request.base_url, request.method, f.__name__)
                 method = request.method
                 if method == 'POST' and ok_method:
                     method = 'OK'
@@ -121,7 +122,8 @@ class PrBlueprint(Blueprint):
                 if method == 'GET' or method == 'POST':
                     return ret
                 elif method == 'OK':
-                    return jsonify({'data': ret, 'ok': True, 'error_code': None})
+                    response = jsonify({'data': ret, 'ok': True, 'error_code': None})
+                    return response
 
             if f.__name__ not in self.registered_functions:
                 self.registered_functions[f.__name__] = {'func': wrapped_function, 'perm': {}, 'app': current_app}

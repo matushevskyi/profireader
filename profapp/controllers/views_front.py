@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from flask import render_template, request, url_for, redirect, g
+from flask import render_template, request, url_for, redirect, g, send_from_directory, abort
 from sqlalchemy.sql import expression
 
 from config import Config
@@ -519,6 +519,14 @@ def division(portal,
                                **articles_data)
 
 
+@front_bp.route('_a/<short_uid:publication_id>/<translit:publication_title>', permissions=AvailableForAll())
+@get_portal
+def old_article_details_redirect(portal, publication_id=None, publication_title=None):
+    publication = Publication.get(publication_id)
+    return redirect(url_for('front.article_details', publication_id=publication.id,
+                            publication_title=publication.material.title))
+
+
 @front_bp.route('_a/<full_uid:publication_full_id>/<path:publication_title>', permissions=AvailableForAll())
 @front_bp.route('a/<short_uid:publication_id>/<translit:publication_title>', permissions=AvailableForAll())
 @get_portal
@@ -598,6 +606,46 @@ def robots_txt():
     return "User-agent: *\n"
 
 
+@front_bp.route('favicon.ico', methods=['GET'], strict_slashes=True, permissions=AvailableForAll())
+@get_portal
+def favicon(portal:Portal):
+    from ..models.files import File, FileContent
+    from ..controllers.views_file import send_file, file_query
+    from io import BytesIO
+    import os
+    import re
+    import urllib.parse
+
+    file_id = portal.favicon_file_img.proceeded_image_file_id
+    image_query = file_query(File, file_id)
+
+    if not image_query:
+        root_dir = os.path.dirname(os.path.realpath(__file__))
+        return send_from_directory(root_dir + '/../static', 'favicon.ico')
+
+    if 'HTTP_REFERER' in request.headers.environ:
+        allowedreferrer = re.sub(r'^(https?://[^/]+).*$', r'\1', request.headers.environ['HTTP_REFERER'])
+    else:
+        allowedreferrer = ''
+
+    if True:
+        image_query_content = g.db.query(FileContent).filter_by(id=file_id).first()
+        return send_file(BytesIO(image_query_content.content),
+                         etag=file_id,
+                         mimetype=image_query.mime, as_attachment=(request.args.get('d') is not None),
+                         attachment_filename=urllib.parse.quote(
+                             image_query.name,
+                             safe='!"#$%&\'()*+,-.0123456789:;<=>?@[\]^_`{|}~ ¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸'
+                                  '¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ')
+                         )
+    else:
+        return abort(403)
+
+
+
+
+
+
 @front_bp.route('sitemap.xml', methods=['GET'], strict_slashes=True, permissions=AvailableForAll())
 @get_portal
 def sitemap(portal):
@@ -634,3 +682,5 @@ def error_404(portal):
                            analytics=portal.get_analytics(page_type='other'),
                            tags=all_tags(g.portal),
                            portal=portal_and_settings(g.portal))
+
+
