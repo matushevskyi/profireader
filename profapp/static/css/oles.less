@@ -1,0 +1,505 @@
+@import (inline) "https://raw.githubusercontent.com/kakabomba/nicescripts/master/some.less";
+
+.item:hover {
+    /*background: rgba(255, 200, 200, 0.3);*/
+}
+
+.item > span.input_label {
+    text-align: right;
+    margin-right: 0.5em;
+    display: inline-block;
+    width: 170px;
+    color: #777;
+}
+
+.item > span.error {
+    color: #f00;
+}
+
+.item > span.warning {
+    color: #F7C223;
+}
+
+.item select, .item button {
+    margin: 3px;
+    padding: 1px 3px;
+    width: 300px;
+    height: 2em;
+}
+
+.item select option {
+    height: 2em;
+    line-height: 27px;
+}
+
+.item button, .item input[type=button], .item input[type=submit] {
+    margin: 3px;
+    padding: 1px 3px;
+    width: 150px;
+    height: 2em;
+}
+
+.item input[type=submit] {
+    font-weight: bold;
+}
+
+.item input[disabled], .item select[disabled], .item button[disabled] {
+    color: #ccc;
+}
+
+/* class for tiny mce in profireader (editing article) */
+.profi-tiny-mce-birdy {
+    width: 697.5px;
+}
+
+.notitledialog .ui-dialog-titlebar {
+    display: none
+}
+
+.notitledialog .ui-dialog-content {
+    overflow: hidden;
+}
+
+#send-message-form textarea {
+    width: 100%;
+}
+
+/*div[aria-label="Insert/edit video"] > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) {*/
+/*display: none*/
+/*}*/
+
+/*div[aria-label="Insert/edit video"] > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(3) {*/
+/*display: none*/
+/*}*/
+
+/*div[aria-label="Insert/edit video"] > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(4) {*/
+/*display: none*/
+/*}*/
+
+.glyphicon.glyphicon-question-sign {
+    color: blue;
+}
+
+.material-details-article-preview {
+    width: 727px;
+    padding: 15px;
+    height: 1000px;
+    overflow: scroll;
+}
+
+/*TODO: RI by OZ: this class is for gray backdrop when dialog is opened (pls try open dialog 'publish' in  materials details page with and without this class. maybe obsolete with neww bootstrap) */
+/*.modal-backdrop {*/
+/*position: fixed;*/
+/*height: 100%;*/
+/*}*/
+
+
+/*TODO: RI by OZ: this class for grid icons (see employees icons) */
+.pr-grid-cell-field-type-icons-icon {
+    display: inline-block;
+    font: normal normal normal 14px/1 FontAwesome;
+    font-size: inherit;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    width: 1.4em;
+
+}
+
+.pr-grid-cell-field-type-icons-icon:before {
+    content: "\f00c";
+    color: gray;
+}
+
+/*employment icons*/
+
+.pr-grid-cell-field-type-icons-icon-COMPANY_EDIT_PROFILE:before {
+    content: "\f022";
+    color: green;
+    /*color: #790B79;*/
+}
+
+.pr-grid-cell-field-type-icons-icon-COMPANY_MANAGE_PARTICIPATION:before {
+    content: "\f03a";
+    color: green;
+}
+
+.pr-grid-cell-field-type-icons-icon-COMPANY_REQUIRE_MEMBEREE_AT_PORTALS:before {
+    content: "\f196";
+    color: green;
+}
+
+.pr-grid-cell-field-type-icons-icon-ARTICLES_SUBMIT_OR_PUBLISH:before {
+    content: "\f06e";
+    color: dodgerblue;
+}
+
+.pr-grid-cell-field-type-icons-icon-ARTICLES_UNPUBLISH:before {
+    content: "\f070";
+    color: dodgerblue;
+}
+
+.pr-grid-cell-field-type-icons-icon-ARTICLES_EDIT_OTHERS:before {
+    content: "\f044";
+    color: dodgerblue;
+}
+
+.pr-grid-cell-field-type-icons-icon-ARTICLES_DELETE:before {
+    content: "\f1f8";
+    color: dodgerblue;
+}
+
+.pr-grid-cell-field-type-icons-icon-FILES_BROWSE:before {
+    content: "\f115";
+    color: blueviolet;
+}
+
+.pr-grid-cell-field-type-icons-icon-FILES_UPLOAD:before {
+    content: "\f093";
+    color: blueviolet;
+}
+
+.pr-grid-cell-field-type-icons-icon-FILES_DELETE_OTHERS:before {
+    content: "\f1f8";
+    color: blueviolet;
+}
+
+.pr-grid-cell-field-type-icons-icon-EMPLOYEE_ENLIST_OR_FIRE:before {
+    content: "\f0c0";
+    color: #FF4103;
+}
+
+.pr-grid-cell-field-type-icons-icon-EMPLOYEE_ALLOW_RIGHTS:before {
+    content: "\f029";
+    color: #FF4103;
+}
+
+.pr-grid-cell-field-type-icons-icon-PORTAL_EDIT_PROFILE:before {
+    content: "\f022";
+    color: #550000;
+}
+
+.pr-grid-cell-field-type-icons-icon-PORTAL_MANAGE_READERS:before {
+    content: "\f1ea";
+    color: #550000;
+}
+
+.pr-grid-cell-field-type-icons-icon-PORTAL_MANAGE_COMMENTS:before {
+    content: "\f086";
+    color: #550000;
+}
+
+.pr-grid-cell-field-type-icons-icon-PORTAL_MANAGE_MEMBERS_COMPANIES:before {
+    content: "\f03a";
+    color: #550000;
+}
+
+/*employment icons*/
+
+/*membership icons*/
+.pr-grid-cell-field-type-icons-icon-PUBLICATION_UNPUBLISH:before {
+    content: "\f070";
+    color: dodgerblue;
+}
+
+.pr-grid-cell-field-type-icons-icon-PUBLICATION_PUBLISH:before {
+    content: "\f06e";
+    color: dodgerblue;
+}
+
+/*membership icons*/
+
+.pr-grid-cell-field-type-actions {
+    padding: 2px;
+    padding: 0px 2px;
+    margin: 0px 2px;
+    /*overflow: hidden;*/
+    letter-spacing: -1px;
+}
+
+.pr-grid-cell-field-type-change_status {
+    padding: 2px;
+    padding: 0px 2px;
+    margin: 0px 2px;
+    /*overflow: hidden;*/
+    letter-spacing: -1px;
+}
+
+.pr-grid-cell-field-type-actions button, .pr-grid-cell-field-type-change_status button {
+    width: 8em;
+    overflow: hidden;
+}
+
+.pr-grid-cell-field-type-change_status {
+    padding: 2px;
+    padding: 0px 2px;
+    margin: 0px 2px;
+    /*overflow: hidden;*/
+    letter-spacing: -1px;
+}
+
+.modal-filemanager-fullscreen {
+    width: 95%;
+    height: 95%;
+}
+
+.modal-filemanager-halfscreen {
+    margin-top: 10%;
+    width: 80%;
+    height: 80%;
+}
+
+.modal-filemanager-fullscreen .modal-content {
+    width: 100%;
+    height: 100%;
+}
+
+.modal-filemanager-halfscreen .modal-content {
+    width: 100%;
+    height: 100%;
+}
+
+.company-logo {
+    width: 16%;
+}
+
+.subscribe-portal-logo {
+    width: 200px;
+    height: 150px;
+}
+
+.pr-grid-cell-img-prefix {
+    height: 100%;
+    width: 50px;
+    margin-right: 0.5em;
+}
+
+.p4px {
+    padding: 4px;
+}
+
+.highlightedText {
+    background: yellow;
+}
+
+.loading {
+    background-repeat: no-repeat;
+    background-position: center;
+    background-image: url("../images/loading.gif");
+    background-color: transparent;
+}
+
+.img_300 {
+    width: 300px;
+    height: 300px;
+}
+
+.link {
+    cursor: pointer;
+}
+
+.disabled.link {
+    cursor: default;
+}
+
+.inactive.link {
+    cursor: default;
+}
+
+.disabled .link {
+    cursor: default;
+}
+
+.inactive .link {
+    cursor: default;
+}
+
+.link:hover span {
+    text-decoration: underline;
+}
+
+.disabled .link:hover span {
+    text-decoration: inherit;
+}
+
+.inactive .link:hover span {
+    text-decoration: inherit;
+}
+
+.inactive.link:hover span {
+    text-decoration: inherit;
+}
+
+.button {
+    cursor: pointer;
+}
+
+.form-control.pr-datetimepicker, .form-control.pr-datepicker {
+    background-position: 4px center;
+    padding-left: 24px;
+    background-repeat: no-repeat;
+    background-image: url(data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20fill%3D%22%23010202%22%20d%3D%22M0%206h3v3H0V6zm4%203h3V6H4v3zm4%200h3V6H8v3zm4%200h3V6h-3v3zm0-7v3h3V2h-3zM8%205h3V2H8v3zM4%205h3V2H4v3zm-4%208h3v-3H0v3zm4%200h3v-3H4v3zm4%200h3v-3H8v3z%22%2F%3E%3C%2Fsvg%3E);
+}
+
+div.pr-table {
+    display: table;
+}
+
+div.pr-row {
+    display: table-row;
+}
+
+div.pr-column-group {
+    display: table-column-group;
+}
+
+div.pr-cell {
+    display: table-cell;
+    padding: 0.2em 1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: top;
+
+    border-style: none;
+    border-color: #0a0a0a;
+    border-width: 1px;
+    border-left-style: solid;
+    border-top-style: solid;
+}
+
+div.pr-cell:last-child {
+    border-right-style: solid;
+
+}
+
+div.pr-row:last-child div.pr-cell {
+    border-bottom-style: solid;
+}
+
+
+.img-icon-in-text-2-1 {
+    width: 2em;
+    height: 1em;
+}
+
+.img-icon-in-text-4-2 {
+    width: 4em;
+    height: 2em;
+}
+
+.img-icon-in-text-3-1_5 {
+    width: 3em;
+    height: 1.5em;
+}
+
+.company-profile-logo-img {
+    width: 400px;
+    height: 300px;
+    position: relative
+}
+
+.front-user-avatar-img {
+    border-radius: 50%;
+    border: 3px #999 solid;
+    width: 36px;
+    height: 36px;
+    margin: 0px 1em;
+}
+
+#profireader_link img {
+    width: 35px;
+    height: 35px;
+}
+
+.search-community-row {
+    min-height: 120px;
+    margin: 10px 0px 5px 0px;
+    background-color: #eee;
+    padding: 5px;
+
+}
+
+.search-community-row button {
+    margin-top: 5px;
+}
+
+.search-community-row div:first-child {
+    padding-left: 125px
+}
+
+.search-community-row img.messenger-avatar {
+    width: 120px;
+    height: 120px;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    border-radius: 50%;
+}
+
+.search-community-row img.common-portal-logo {
+    width: 3em;
+    height: 1em;
+    margin-right: 5px;
+}
+
+.search-community-row img.common-employer-logo {
+    width: 3em;
+    height: 1em;
+    margin-right: 5px;
+}
+
+.search-community-row .no-common {
+    text-align: center;
+    font-style: italic;
+}
+
+.ui-select-highlight {
+    color: red;
+}
+
+.fa-gravatar:before {
+    content: "\f1a0";
+}
+
+.fa-gravatar {
+    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+    -webkit-transform: rotate(270deg);
+    -ms-transform: rotate(270deg);
+    transform: rotate(270deg);
+}
+
+.black {
+    color: #000 !important;
+}
+
+.tooltip.pr-grid-tooltip-class .tooltip-inner {
+    background-color: #ccc;
+}
+
+.tooltip.pr-grid-tooltip-class .tooltip-arrow {
+    border-top-color: #ccc;
+}
+
+.pr-grid-tooltip-class.tooltip.in {
+    opacity: 1;
+    filter: alpha(opacity=100);
+}
+
+.pr-grid-tooltip-class .tooltip-inner {
+    max-width: 500px;
+}
+
+span.pr-grid-publications-vs {
+    min-width: 2.5em;
+    height: 100%;
+    padding: 4px 2px;
+    margin: 1px;
+    display: inline-block;
+}
+
+#message-controller {
+    z-index: 65537;
+    position: fixed;
+}
+
