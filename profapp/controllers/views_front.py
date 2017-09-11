@@ -370,6 +370,7 @@ def company_page(portal, member_company_id=None, member_company_name=None, membe
 @front_bp.route('<string:division_name>/tags/<string:tags>/', **get_for_all)
 @front_bp.route('<string:division_name>/<int:page>/', **get_for_all)
 @front_bp.route('<string:division_name>/<int:page>/tags/<string:tags>/', **get_for_all)
+@get_portal
 def old_division(portal, division_name=None, page=None, tags=None):
     search_text, dvsn = old_get_search_text_and_division(portal, division_name=division_name)
     if dvsn:
