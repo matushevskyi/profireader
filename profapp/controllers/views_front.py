@@ -333,7 +333,7 @@ def company_page(portal, member_company_id=None, member_company_name=None, membe
     membership, member_company, dvsn_catalog_or_subportal = get_company_member_and_division(portal, member_company_id)
 
     if not dvsn_catalog_or_subportal or not member_company or not membership:
-        return redirect(url_for('front.404', search=member_company_name))
+        abort(404)
 
     if dvsn_catalog_or_subportal.portal_division_type_id == 'company_subportal' \
             and TransliterationConverter.transliterate(portal.lang,
@@ -376,7 +376,7 @@ def old_division(portal, division_name=None, page=None, tags=None):
         return redirect(url_for('front.division',
                                 division_name=dvsn.name, division_id=dvsn.id, tags=tags, page=page))
     else:
-        return redirect(url_for('front.404', search=division_name))
+        abort(404)
 
 
 # TODO: OZ remove this old url
@@ -403,7 +403,8 @@ def old_subportal_division(portal,
                                 member_company_id=member_company_full_id, member_company_name=member_company_name,
                                 tags=tags, page=page))
     else:
-        return redirect(url_for('front.404', search=division_name))
+        abort(404)
+        # return redirect(url_for('front.404', search=division_name))
 
 
 division_prefix = 'd/<short_uid:division_id>/<string:division_name>/'
@@ -436,12 +437,14 @@ def division(portal,
         membership, member_company, dvsn_catalog_or_subportal = get_company_member_and_division(portal,
                                                                                                 member_company_id)
         if not membership:
-            return redirect(url_for('front.404'))
+            abort(404)
+            # return redirect(url_for('front.404'))
 
     search_text, dvsn = get_search_text_and_division(portal, division_id=division_id)
 
     if not dvsn:
-        return redirect(url_for('front.404'))
+        abort(404)
+        # return redirect(url_for('front.404'))
 
     if (dvsn and (dvsn.get_url() != division_name)) or \
             (member_company and TransliterationConverter.transliterate(portal.lang,
