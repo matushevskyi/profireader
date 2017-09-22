@@ -34,11 +34,12 @@ def edit_material(company_id, material_id=None):
 @article_bp.route('/<string:company_id>/material_create/', methods=['OK'], permissions=UserIsActive())
 def edit_material_load(json_data, company_id=None, material_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
+    company = Company.get(company_id)
 
     if material_id:
         material = Material.get(material_id)
     else:
-        material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user)
+        material = Material(company=company, company_id=company_id, editor=g.user)
 
     if action == 'load':
         return {'material': material.get_client_side_dict(more_fields='long|company|illustration,image_galleries.items,image_galleries.id')}
@@ -50,7 +51,7 @@ def edit_material_load(json_data, company_id=None, material_id=None):
             return material.validate(material.id is not None)
         else:
             (material.long, material.image_galleries) = MaterialImageGallery.check_html(
-                material.long, json_data['material']['image_galleries'], material.image_galleries)
+                material.long, json_data['material']['image_galleries'], material.image_galleries, company)
             material.illustration = json_data['material']['illustration']
             material.save()
 
