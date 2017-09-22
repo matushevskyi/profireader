@@ -444,9 +444,12 @@ class PRBase:
     @staticmethod
     def parse_timestamp(str):
         try:
-            return datetime.datetime.strptime(str, "%a, %d %b %Y %H:%M:%S %Z")
-        except:
-            return None
+            return datetime.datetime.strptime(str, "%a, %d %b %Y %H:%M:%S %z")
+        except Exception as e:
+            try:
+                return datetime.datetime.strptime(str, "%a, %d %b %Y %H:%M:%S %Z")
+            except Exception as e:
+                return None
 
     @staticmethod
     def parse_date(str):

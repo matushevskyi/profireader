@@ -68,6 +68,10 @@ class Material(Base, PRBase, PRElasticDocument):
 
     image_galleries = relationship('MaterialImageGallery', cascade="all, delete-orphan")
 
+    source = Column(TABLE_TYPES['string_100'])
+
+    external_url = Column(TABLE_TYPES['string_1000'])
+
     # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
     #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
     #                  'long': {'relevance': lambda field='long': RELEVANCE.long},

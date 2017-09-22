@@ -769,7 +769,13 @@ class FileImgDescriptor(object):
                                  'provenance_file_id': file_image_crop.provenance_image_file_id
                                  } if file_image_crop else {'type': 'none'},
 
-            'cropper': {
+            'cropper': self.croper_data()
+        }
+
+        return self.after_get(instance, file_image_crop, ret) if self.after_get else ret
+
+    def croper_data(self):
+        return {
                 'browse': self.browse,
                 'upload': self.upload,
                 'crop': self.crop,
@@ -777,9 +783,8 @@ class FileImgDescriptor(object):
                 'min_size': self.min_size,
                 'aspect_ratio': self.aspect_ratio,
                 'no_selection_url': self.no_selection_url
-            }}
+            }
 
-        return self.after_get(instance, file_image_crop, ret) if self.after_get else ret
 
     def get_correct_coordinates_and_provenance_image(self, coords_by_client, img):
 

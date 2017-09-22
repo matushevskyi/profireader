@@ -19,7 +19,6 @@ from .files import FileImageCrop, FileImgDescriptor
 from .pr_base import PRBase, Base
 from .. import utils
 from ..constants import RECORD_IDS
-from ..constants import REGEXP
 from ..constants.TABLE_TYPES import TABLE_TYPES
 from ..models import exceptions
 
@@ -176,7 +175,7 @@ class User(Base, UserMixin, PRBase, NotifyUser):
         if not re.match(r'[^\s]{2}', self.last_name):
             ret['errors']['last_name'] = 'Your Last name must be at least 2 characters long.'
 
-        if not re.match(REGEXP.EMAIL, self.address_email):
+        if not utils.is_email(self.address_email):
             ret['errors']['email'] = 'Please enter correct email'
         elif is_new and utils.db.query_filter(User, address_email=self.address_email).first():
             ret['errors']['email'] = 'Sorry. this email is taken'

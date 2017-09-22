@@ -38,7 +38,7 @@ def edit_material_load(json_data, company_id=None, material_id=None):
     if material_id:
         material = Material.get(material_id)
     else:
-        material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user)
+        material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user, source = '', external_url = '')
 
     if action == 'load':
         return {'material': material.get_client_side_dict(more_fields='long|company|illustration,image_galleries.items,image_galleries.id')}

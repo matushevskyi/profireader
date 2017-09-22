@@ -221,10 +221,9 @@ def contact_us():
 
 @index_bp.route('contact_us/', methods=["OK"], permissions=AvailableForAll())
 def contact_us_load(json_data):
-    from ..constants import REGEXP
     if not re.match(r'([^\s]{3}[\s]*.*){10}', json_data.get('message', '')):
         return {'error': 'Please write message. at least ten words'}
-    elif not re.match(REGEXP.EMAIL, json_data.get('email', '')):
+    elif not utils.is_email(json_data.get('email', '')):
         return {'error': 'Please enter correct email'}
     else:
         utils.email.send_email(subject='Send help message', send_to=["profireader.service@gmail.com"],

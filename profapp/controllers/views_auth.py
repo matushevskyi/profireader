@@ -123,10 +123,9 @@ def email_confirmation(token=None):
 
 @auth_bp.route('request_new_email_confirmation_token/', methods=["OK"], permissions = AvailableForAll())
 def request_new_email_confirmation_token(json_data):
-    from ..constants import REGEXP
     email = json_data.get('email', '')
 
-    if not re.match(REGEXP.EMAIL, email):
+    if not utils.is_email(email):
         return {'error': 'Please enter correct email'}
     else:
         user = utils.db.query_filter(User, address_email=email).first()
@@ -220,10 +219,9 @@ def request_new_reset_password_token():
 
 @auth_bp.route('/request_new_password/', methods=["OK"], permissions = AvailableForAll())
 def request_new_reset_password_token_load(json_data):
-    from ..constants import REGEXP
     email = json_data.get('email', '')
 
-    if not re.match(REGEXP.EMAIL, email):
+    if not utils.is_email(email):
         return {'error': 'Please enter correct email'}
     else:
         user = utils.db.query_filter(User, address_email=email).first()
