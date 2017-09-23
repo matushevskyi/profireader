@@ -443,13 +443,14 @@ class PRBase:
 
     @staticmethod
     def parse_timestamp(str):
-        try:
-            return datetime.datetime.strptime(str, "%a, %d %b %Y %H:%M:%S %z")
-        except Exception as e:
+        formats = ["%a, %d %b %Y %H:%M:%S %z", "%a, %d %b %Y %H:%M:%S %Z"]
+        for fmt in formats:
             try:
-                return datetime.datetime.strptime(str, "%a, %d %b %Y %H:%M:%S %Z")
+                return datetime.datetime.strptime(str, fmt).replace(tzinfo=None)
             except Exception as e:
-                return None
+                pass
+        return None
+
 
     @staticmethod
     def parse_date(str):

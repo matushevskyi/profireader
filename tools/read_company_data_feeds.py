@@ -9,7 +9,6 @@ from profapp.models.users import User
 from flask import g, url_for
 
 from sqlalchemy.sql import text, and_, or_
-from sqlalchemy import func
 
 from profapp import create_app, prepare_connections, utils
 import argparse
@@ -20,74 +19,103 @@ from bs4 import BeautifulSoup
 from profapp.constants.RECORD_IDS import SYSTEM_USERS
 
 
-app = create_app(apptype='read_company_data_feeds', config='config.CommandLineConfig')
+app = create_app(apptype='read_company_data_feeds', config='config.CommandLineConfig', debug = True)
 import pprint
 ppr = pprint.PrettyPrinter(indent=2, compact=True, width=120)
+pp = ppr.pprint
 
-def grab_illustration_from_item(item, material):
+def grab_datetime_from_item(item):
+    return PRBase.parse_timestamp(item.get('published', None)) \
+           or None
 
-    ppr.pprint(item)
 
-    # images = re.match(r'<img[^>]+src="([^"]+)"[^>]*>', item['description'])
+def try_to_grab_illustration(material, *urls):
+    for url in [u for u in urls if u]:
+        try:
+            material.illustration = {'selected_by_user':
+                             {'type': "url",
+                              'url': url
+                              }
+                         }
+            return True
+        except Exception as e:
+            app.log.warning("error getting thumbnails for material from url `%s`: `%s`" % (url, e))
 
-    # if images:
-    #     illustration_data = {cropper: material.illustration.cropper_data(),
-    #                          selected_by_user: {
-    #                              {'type': "upload",
-    #                               'file': {
-    #                                   'mime': "image/jpeg",
-    #                                   'name': "nice-pictures-005.jpg",
-    #                                     'content': ''}, }
-    #                          }}
-    # cropper
-    # :
-    # {aspect_ratio: [1.25, 1.25], upload: true, browse: false,…}
-    # selected_by_user
-    # :
-    # {type: "upload", file: {mime: "image/jpeg", name: "nice-pictures-005.jpg",…}, …}
-    # crop
-    # :
-    # {origin_zoom: 0.203125, origin_left: 0, origin_top: 0, crop_left: 210, crop_top: 0,
-    #  crop_width: 1500,…}
-    # crop_height
-    # :
-    # 1200
-    # crop_left
-    # :
-    # 210
-    # crop_top
-    # :
-    # 0
-    # crop_width
-    # :
-    # 1500
-    # origin_left
-    # :
-    # 0
-    # origin_top
-    # :
-    # 0
-    # origin_zoom
-    # :
-    # 0.203125
-    # file
-    # :
-    # {mime: "image/jpeg", name: "nice-pictures-005.jpg",…}
-    # content
-    # :
-    # "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD//gA7Q1JFQVRPUjogZ2QtanBlZyB2MS4wICh1c2luZyBJSkcgSlBFRyB2NjIpLCBxdWFsaXR5ID0gOTUK/9sAQwACAQEBAQECAQEBAgICAgIEAwICAgIFBAQDBAYFBgYGBQYGBgcJCAYHCQcGBggLCAkKCgoKCgYICwwLCgwJCgoK/9sAQwECAgICAgIFAwMFCgcGBwoKCgoNb3dn5xEdxFKhR0cA/MME/TNV28AWt1ptpa3nijVprnTr77XpepzzRPcWknktB8pMexh5TyKd6sT5jEkt8wxhj8XGm4KpJRbu1d2b72vv5nVLAYOVRVJUouSVk7K6XZPe3kcRFc/BfRbmDU7b4UaxchXsknjeZHW2uLm8kslt3SW4wzrcRsj/eQdQxHNeueCvGFh430L+3LO0uLcLf3dnNDc7d6TW1xJbyj5SQRvibBB5GDxnFYCfCrwV/ZsemrDciJHsHO+5Znd7O7N3G7O2Wd2mZmdmJLljk5JNb3hXw9pHhPT5NL0cSLFNqF3ev5j7j5tzcSXEnPpvlbA7DA7VpiMfi8W069SU2tuZt2+8eEwOCwUWsPTjC+/Kkr/AHH/2Q=="
-    # mime
-    # :
-    # "image/jpeg"
-    # name
-    # :
-    # "nice-pictures-005.jpg"
-    # type
-    # :
-    # "upload"
-    #
-    # material.illustration = json_data['material']['illustration']
-    pass
+    return False
+
+
+
+def try_to_guess_more_properties(item):
+
+    import urllib.request as req
+
+    r = req.Request(url=item['link'])
+    response = req.urlopen(r)
+
+    body = BeautifulSoup(response.read(), "html.parser")
+
+    keywords = body.find("meta", {'name': "keywords"})
+    if keywords:
+        keywords = keywords.get('content', None)
+    if not keywords:
+        keywords = item.get('category', '')
+
+    author = item.get('author', '')
+
+    item['__downloaded_page'] = body
+
+    return {
+        'author': author,
+        'keywords': keywords,
+    }
+
+def convert_item_to_material(item, feed:NewsFeedCompany):
+
+    # item_date_datetime = grab_datetime_from_item(item)
+
+    existing_material = g.db.query(Material).filter(and_(
+        Material.company_id == news_feed.company_id,
+        Material.external_url == item['link'],
+        Material.source_type == 'rss',
+        Material.source == feed.id
+    )).first()
+
+    if existing_material:
+        app.log.info(
+            'for company_news_feed={} material already exists (material={})'.
+                format(news_feed.id, existing_material.id))
+        return None
+
+    more_properties = try_to_guess_more_properties(item)
+
+    material = Material(company_id=news_feed.company_id,
+                        company=news_feed.company,
+                        title=item['title'],
+                        short=BeautifulSoup(item['description'], "html.parser").text,
+                        external_url=item['link'],
+                        source_type='rss',
+                        source=feed.id,
+                        editor=User.get(SYSTEM_USERS.profireader()),
+                        **more_properties
+                        )
+
+    try:
+        downloaded_page = item.get('__downloaded_page', None)
+        downloaded_page = downloaded_page.find("meta", {'property': "og:image"}) if downloaded_page else None
+        image_in_description = re.match(r'<img[^>]+src="([^"]+)"[^>]*>', item['description'])
+        try_to_grab_illustration(material, *[
+            downloaded_page.get('content', None) if downloaded_page else None,
+            item.get('image', None),
+            image_in_description.group(1) if image_in_description else None,
+            ])
+    except Exception as e:
+        app.log.warning("error while converting rss item to material: `%s`" % (e, ))
+
+
+    return material
+
+
+
 
 try:
     if __name__ == '__main__':
@@ -97,65 +125,43 @@ try:
 
         with app.app_context():
 
-            prepare_connections(app, echo=True)()
+            prepare_connections(app, echo=False)()
 
             news_feeds = g.db.query(NewsFeedCompany) \
                 .filter(text("seconds_ago(last_pull_tm) > update_interval_seconds")).all()
 
+            app.log.info("expired data feeds found: `%s`" % (len(news_feeds),))
 
-            if len(news_feeds):
-                app.log.info("%s expired data feeds found" % (len(news_feeds),))
-                for news_feed in news_feeds:
-
+            for news_feed in news_feeds:
+                try:
+                    materials_added = 0
                     app.log.info(
-                        'getting news from news_feed (id={}, source={}, company={})'.format(
-                            news_feed.id, news_feed.source, news_feed.company_id))
+                        'getting news from news_feed (id=`{}`, name=`{}`, source=`{}`, company=`{}`)'.format(
+                        news_feed.id, news_feed.name, news_feed.source, news_feed.company_id))
 
                     items = feedparser.parse(news_feed.source)['items']
 
-
                     for item in items:
+                        app.log.info("converting item `%s` to material" % (item['link']))
                         try:
-                            # ppr.pprint(item)
-                            item_date_datetime = PRBase.parse_timestamp(item['published'])
-                            ppr.pprint(item['published'])
-
-
-                            if item_date_datetime and \
-                                    (news_feed.last_news_tm is None or item_date_datetime > news_feed.last_news_tm):
-
-                                existing_material = g.db.query(Material).filter(and_(
-                                    Material.company_id == item['link'],
-                                    Material.external_url == news_feed.company_id,
-                                    Material.source == 'RSS')).one()
-
-                                if existing_material:
-                                    raise Exception('for company_news_feed={} material already exists (material={})'.format(news_feed.id, existing_material.id))
-
-                                material = Material(company_id = news_feed.company_id,
-                                                    title=item['title'],
-                                                    short = BeautifulSoup(item['description'], "html.parser").text,
-                                                    external_url=item['link'],
-                                                    author = item.get('author',''),
-                                                    keywords=item.get('category',''),
-                                                    source = 'RSS',
-                                                    editor = User.get(SYSTEM_USERS.profireader()))
-
-                                grab_illustration_from_item(item, material)
-
-                            # material.save()
-                            news_feed.last_news_tm = max([item_date_datetime, news_feed.last_news_tm])
+                            material = convert_item_to_material(item, news_feed)
+                            if material:
+                                material.save()
+                                materials_added += 1
 
                         except Exception as e:
-                            ppr.pprint(e)
-                            # app.log.warning("error %s converting rss item %s to material" % (e, item))
+                            app.log.warning("error `%s` converting rss item `%s` to material" % (e, item['link']))
 
-                news_feed.last_pull_tm = datetime.datetime.utcnow()
+                    news_feed.last_pull_tm = datetime.datetime.utcnow()
+                    g.db.commit()
 
-                g.db.commit()
+                    app.log.info(
+                        'total material added in feed id=`{}`: `{}`'.format(news_feed.id, materials_added))
 
-            else:
-                app.log.info("no news_feeds with expired news found")
+                except Exception as e:
+                    app.log.warning("error `%s` in rss feed `%s` processing" % (e, news_feed.id))
+
+
 
 except Exception as e:
     app.log.critical(e)

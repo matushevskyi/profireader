@@ -576,8 +576,6 @@ class NewsFeedCompany(Base, PRBase):
     update_interval_seconds = Column(TABLE_TYPES['timestamp'], default=3600)
 
     last_pull_tm = Column(TABLE_TYPES['timestamp'])
-    last_news_tm = Column(TABLE_TYPES['timestamp'])
-
 
 
     @staticmethod

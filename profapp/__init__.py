@@ -351,7 +351,7 @@ class logger:
         import logging
         import logstash
         logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG if debug else logging.INFO)
+        logger.setLevel(logging.DEBUG if debug else (logging.INFO if testing else logging.WARNING))
         logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type=apptype))
         self._l = logger
 
@@ -388,7 +388,7 @@ class logger:
             self.debug = partial(self._l.debug, stack_info=True)
 
 
-def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
+def create_app(config='config.ProductionDevelopmentConfig', apptype='profi', debug = None, testing = None):
     app = Flask(__name__, static_folder='./static')
 
     app.config.from_object(config)
@@ -397,6 +397,12 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
 
     app.debug = app.config['DEBUG'] if 'DEBUG' in app.config else False
     app.testing = app.config['TESTING'] if 'TESTING' in app.config else False
+
+    if debug is not None:
+        app.debug = True if debug else False
+
+    if testing is not None:
+        app.testing = True if testing else False
 
     app.apptype = apptype
     app.log = logger(apptype, app.debug, app.testing)

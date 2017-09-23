@@ -17,6 +17,7 @@ from ..models.company import Company, UserCompany
 from ..models.portal import PortalDivision, Portal, MemberCompanyPortal
 from ..models.tag import Tag, TagPublication
 from ..models.users import User
+from sqlalchemy.orm import validates
 
 
 class Material(Base, PRBase, PRElasticDocument):
@@ -37,7 +38,7 @@ class Material(Base, PRBase, PRElasticDocument):
                                          parent_id=m.company.system_folder_file_id,
                                          root_folder_id=m.company.system_folder_file_id),
                                      image_size=[600, 480],
-                                     min_size=[600 / 6, 480 / 6],
+                                     min_size=[600 / 8, 480 / 8],
                                      aspect_ratio=[600 / 480., 600 / 480.],
                                      no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_article_image()))
 
@@ -69,6 +70,7 @@ class Material(Base, PRBase, PRElasticDocument):
     image_galleries = relationship('MaterialImageGallery', cascade="all, delete-orphan")
 
     source = Column(TABLE_TYPES['string_100'])
+    source_type = Column(TABLE_TYPES['string_30'])
 
     external_url = Column(TABLE_TYPES['string_1000'])
 
@@ -76,6 +78,13 @@ class Material(Base, PRBase, PRElasticDocument):
     #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
     #                  'long': {'relevance': lambda field='long': RELEVANCE.long},
     #                  'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
+
+    @validates('title', 'subtitle', 'keywords', 'author', 'source', 'external_url')
+    def validate_code(self, key, value):
+        max_len = getattr(self.__class__, key).prop.columns[0].type.length
+        if value and len(value) > max_len:
+            return value[:max_len]
+        return value
 
 
     def is_active(self):

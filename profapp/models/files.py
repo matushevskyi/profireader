@@ -852,6 +852,12 @@ class FileImgDescriptor(object):
         elif sel_by_user_type == 'upload':
             user_img = Image.open(
                 BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', sel_by_user['file']['content']))))
+        elif sel_by_user_type == 'url':
+            import urllib.request as req
+            import base64
+            r = req.Request(url=sel_by_user['url'])
+            response = req.urlopen(r)
+            user_img = Image.open(BytesIO(response.read()))
         else:
             raise Exception('Unknown selected by user image source type `%s`', sel_by_user_type)
 
