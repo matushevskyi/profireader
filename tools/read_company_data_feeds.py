@@ -20,9 +20,6 @@ from profapp.constants.RECORD_IDS import SYSTEM_USERS
 
 
 app = create_app(apptype='read_company_data_feeds', config='config.CommandLineConfig', debug = True)
-import pprint
-ppr = pprint.PrettyPrinter(indent=2, compact=True, width=120)
-pp = ppr.pprint
 
 def grab_datetime_from_item(item):
     return PRBase.parse_timestamp(item.get('published', None)) \
@@ -77,7 +74,7 @@ def convert_item_to_material(item, feed:NewsFeedCompany):
         Material.company_id == news_feed.company_id,
         Material.external_url == item['link'],
         Material.source_type == 'rss',
-        Material.source == feed.id
+        Material.source_id == feed.id
     )).first()
 
     if existing_material:
@@ -94,7 +91,7 @@ def convert_item_to_material(item, feed:NewsFeedCompany):
                         short=BeautifulSoup(item['description'], "html.parser").text,
                         external_url=item['link'],
                         source_type='rss',
-                        source=feed.id,
+                        source_id=feed.id,
                         editor=User.get(SYSTEM_USERS.profireader()),
                         **more_properties
                         )

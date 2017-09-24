@@ -393,9 +393,6 @@ class Grid:
 
 
 class PRBase:
-    # TODO: OZ by OZ: for what is this property?
-    omit_validation = False
-
     # search_fields = {}
 
     def __init__(self):
@@ -523,7 +520,7 @@ class PRBase:
 
         for (atr, regexp) in regexps.items():
             if not re.match(regexp, getattr(self, atr)):
-                ret['errors'][atr] = "%s should match regexp %s" % (atr, regexp)
+                ret['errors'][atr] = "please select correct %s (%s)" % (atr, regexp)
         return ret
 
     @staticmethod

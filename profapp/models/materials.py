@@ -69,8 +69,8 @@ class Material(Base, PRBase, PRElasticDocument):
 
     image_galleries = relationship('MaterialImageGallery', cascade="all, delete-orphan")
 
-    source = Column(TABLE_TYPES['string_100'])
     source_type = Column(TABLE_TYPES['string_30'])
+    source_id = Column(TABLE_TYPES['string_100'])
 
     external_url = Column(TABLE_TYPES['string_1000'])
 
@@ -91,14 +91,19 @@ class Material(Base, PRBase, PRElasticDocument):
         return True
 
     def get_client_side_dict(self,
-                             fields='id,cr_tm,md_tm,company_id,illustration.url,title,subtitle,author,short,long,keywords,company.id|name',
+                             fields='id,cr_tm,md_tm,external_url,company_id,illustration.url,title,subtitle,author,short,long,keywords,company.id|name',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
     def validate(self, is_new):
-        ret = super().validate(is_new)
-        if (self.omit_validation):
-            return ret
+        from .. import constants
+        ret = super().validate(is_new, regexps={
+            'title': r'.*[^\s]{3,}.*',
+            'external_url': r'(^$)|(' +constants.REGEXP.URL + r')'
+        })
+
+        if not ret['errors'].get('external_url', None) and self.external_url != '':
+            ret['warnings']['external_url'] = 'full text will be ignored if external url is provided'
 
         if ret['errors']:
             ret['errors']['_'] = 'You have some error'
@@ -113,9 +118,16 @@ class Material(Base, PRBase, PRElasticDocument):
         return sub_query
 
     def material_grid_row(self):
-        ret = self.get_client_side_dict(fields='title,md_tm,editor.full_name,id,illustration.url')
+        ret = self.get_client_side_dict(fields='title,md_tm,editor.full_name,source_id,source_type,id,external_url,illustration.url')
 
         from sqlalchemy.sql import functions
+        from ..models.company import NewsFeedCompany
+
+        if ret['source_type'] == 'rss':
+            rss_feed = NewsFeedCompany.get(ret['source_id'], True)
+            ret['source_full_name'] = ('rss: ' + rss_feed.name) if rss_feed else 'rss'
+        else:
+            ret['source_full_name'] = ('user: ' + ret['editor']['full_name'])
 
         cnt = g.db.query(Publication.status, Publication.visibility,
                          functions.count(Publication.id).label('cnt')). \
@@ -377,8 +389,6 @@ class Publication(Base, PRBase, PRElasticDocument):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
-        if (self.omit_validation):
-            return ret
 
         if not self.publishing_tm:
             ret['errors']['publishing_tm'] = 'Please select publication date'

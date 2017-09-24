@@ -347,12 +347,12 @@ class logger:
     def extra(**kwargs):
         return {'extra': {'zzz_pr_more_info': kwargs}}
 
-    def __init__(self, apptype, debug, testing):
+    def __init__(self, app, print_to_stdout = False):
         import logging
         import logstash
         logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG if debug else (logging.INFO if testing else logging.WARNING))
-        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type=apptype))
+        logger.setLevel(logging.DEBUG if app.debug else (logging.INFO if app.testing else logging.WARNING))
+        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type=app.apptype))
         self._l = logger
 
         def pp(t, message, *args, **kwargs):
@@ -366,7 +366,7 @@ class logger:
                 ppr.pprint(extra)
             return True
 
-        if debug:
+        if print_to_stdout:
             self.exception = lambda m, *args, **kwargs: pp('!!! Exception', m, *args, **kwargs) and \
                                                         self._l.exception(m, *args, stack_info=True, **kwargs)
             self.critical = lambda m, *args, **kwargs: pp('!!! Critical', m, *args, **kwargs) and \
@@ -383,8 +383,8 @@ class logger:
             self.exception = partial(self._l.exception, stack_info=True)
             self.critical = partial(self._l.critical, stack_info=True)
             self.error = partial(self._l.error, stack_info=True)
-            self.warning = partial(self._l.warning, stack_info=True if testing else False)
-            self.info = partial(self._l.info, stack_info=True if testing else False)
+            self.warning = partial(self._l.warning, stack_info=True if app.testing else False)
+            self.info = partial(self._l.info, stack_info=True if app.testing else False)
             self.debug = partial(self._l.debug, stack_info=True)
 
 
@@ -405,7 +405,7 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi', deb
         app.testing = True if testing else False
 
     app.apptype = apptype
-    app.log = logger(apptype, app.debug, app.testing)
+    app.log = logger(app, apptype not in ['profi', 'front', 'static', 'socket', 'file'])
 
     app.url_map.converters['translit'] = TransliterationConverter
     app.url_map.converters['short_uid'] = ShortUIDConverter

@@ -26,7 +26,7 @@ def material_can_be_edited():
                   permissions=material_can_be_edited())
 def edit_material(company_id, material_id=None):
     company = Company.get(company_id)
-    return render_template('article/edit.html', material_id=material_id, company_id=company_id, company=company)
+    return render_template('article/material_edit.html', material_id=material_id, company_id=company_id, company=company)
 
 
 @article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['OK'],
@@ -43,7 +43,7 @@ def edit_material_load(json_data, company_id=None, material_id=None):
     if action == 'load':
         return {'material': material.get_client_side_dict(more_fields='long|company|illustration,image_galleries.items,image_galleries.id')}
     else:
-        parameters = utils.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
+        parameters = utils.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author|external_url')
         material.attr(parameters['material'])
         if action == 'validate':
             material.detach()

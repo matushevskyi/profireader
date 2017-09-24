@@ -256,6 +256,7 @@ import cProfile
 def do_nothing(*args, **kwargs):
     pass
 
+from .. import constants
 
 def json2kwargs(f):
     return lambda json: f(**json)
@@ -264,22 +265,17 @@ def json2kwargs(f):
 def set_default(val, default=None):
     return default if val is None else val
 
+
 def is_uuid(val):
-    return True if re.match(r'[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}', val) else False
+    return True if re.match(constants.REGEXP.UUID, val) else False
 
 def is_short_uuid(val):
-    return True if re.match(r'[A-Fa-f0-9]{12}', val) else False
+    return True if re.match(constants.REGEXP.UUID_SHORT, val) else False
 
 def is_url(val):
-    return True if re.match(r'^https?://'  # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-        r'localhost|'  # localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
-        r'(?::\d+)?'  # optional port
-        r'(?:/?|[/?]\S+)$', val, re.IGNORECASE) else False
+    return True if re.match(constants.REGEXP.URL, val, re.IGNORECASE) else False
 
 def is_email(val):
-    return True if re.match(r'^https?://'  # http:// or https://
-        r'[^@]+@[^@]+\.[^@]+', val, re.IGNORECASE) else False
+    return True if re.match(constants.REGEXP.EMAIL, val, re.IGNORECASE) else False
 
 
