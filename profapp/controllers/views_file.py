@@ -33,7 +33,7 @@ def get(file_id):
     image_query = file_query(File, file_id)
 
     if not image_query:
-        return abort(404)
+        abort(404)
 
     if 'HTTP_REFERER' in request.headers.environ:
         allowedreferrer = re.sub(r'^(https?://[^/]+).*$', r'\1', request.headers.environ['HTTP_REFERER'])

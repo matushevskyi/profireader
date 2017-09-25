@@ -30,14 +30,11 @@
 
             $scope.grid_action = function (id, action, row, column_name) {
                 if(row.actions[action] == true){
-                        console.log(row)
                     location.href = $scope.url_publication_update({company_id:$scope.company.id, publication_id: row.id})
                 }else{
                     add_message(row.actions[action], 'danger', 3000)
                 }
             };
-
-            $scope.url_publication_details = {{ raw_url_for('front.article_details')|safe }};
 
             {% raw %}
 
@@ -49,11 +46,10 @@
                     {
                         name: 'title', width: '30%',
                         type: 'link',
-//                        cellStyle:"getBackground(row)",
                         img_url: 'illustration.url',
                         href: "url_material_details({company_id:grid.appScope.company.id,material_id:row.entity.id})"
                     },{
-                        name: 'editor.full_name', acategory:"searching"
+                        name: 'source_full_name', acategory:"searching",
                     },{
                         name: 'md_tm',
                         afilter: {type: 'date_range'}

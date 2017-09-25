@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from .pr_base import PRBase, Base
 from .files import File, FileContent
 from .materials import Material
-from .portal import PortalDivision
+from .company import Company
 import re
 
 
@@ -31,7 +31,7 @@ class MaterialImageGallery(Base, PRBase):
 
 
     @staticmethod
-    def check_html(html:str, galleries_cli: list, galleries:list):
+    def check_html(html:str, galleries_cli: list, galleries:list, company_owner: Company):
 
         def placeholder(id=None):
             return r'(<img[^>]*data-mce-image-gallery-placeholder=")({})("[^>]*>)'.format(id if id else '[^"]*')
@@ -71,7 +71,9 @@ class MaterialImageGallery(Base, PRBase):
                 if not item:
                     item = MaterialImageGalleryItem(
                         binary_data=re.sub(r'[\'"]?\)$', '', re.sub(r'^url\([\'"]?', '', item_cli['background_image'])),
-                        material_image_gallery=gallery, name=item_cli['title'])
+                        material_image_gallery=gallery, name=item_cli['title'],
+                        company_owner = company_owner
+                    )
                     gallery.items.append(item)
 
                 item.position = position
@@ -95,7 +97,7 @@ class MaterialImageGalleryItem(Base, PRBase):
     file = relationship(File)
     material_image_gallery = relationship(MaterialImageGallery)
 
-    def __init__(self, binary_data, name, material_image_gallery: MaterialImageGallery):
+    def __init__(self, binary_data, name, material_image_gallery: MaterialImageGallery, company_owner = None):
         self.material_image_gallery = material_image_gallery
         self.title = name
         from io import BytesIO
@@ -118,7 +120,7 @@ class MaterialImageGalleryItem(Base, PRBase):
 
         pillow_image.save(bytes_file, format)
 
-        company_owner = material_image_gallery.material.company  if material_image_gallery.material else material_image_gallery.portal_division.portal.own_company
+        company_owner = company_owner if company_owner else material_image_gallery.material.company
 
         self.file = File(size=sys.getsizeof(bytes_file.getvalue()),
                          mime='image/' + format.lower(), name=name,

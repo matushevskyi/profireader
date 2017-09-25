@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from flask import render_template, request, url_for, redirect, g
+from flask import render_template, request, url_for, redirect, g, send_from_directory, abort
 from sqlalchemy.sql import expression
 
 from config import Config
@@ -333,7 +333,7 @@ def company_page(portal, member_company_id=None, member_company_name=None, membe
     membership, member_company, dvsn_catalog_or_subportal = get_company_member_and_division(portal, member_company_id)
 
     if not dvsn_catalog_or_subportal or not member_company or not membership:
-        return redirect(url_for('front.404', search=member_company_name))
+        abort(404)
 
     if dvsn_catalog_or_subportal.portal_division_type_id == 'company_subportal' \
             and TransliterationConverter.transliterate(portal.lang,
@@ -370,13 +370,14 @@ def company_page(portal, member_company_id=None, member_company_name=None, membe
 @front_bp.route('<string:division_name>/tags/<string:tags>/', **get_for_all)
 @front_bp.route('<string:division_name>/<int:page>/', **get_for_all)
 @front_bp.route('<string:division_name>/<int:page>/tags/<string:tags>/', **get_for_all)
+@get_portal
 def old_division(portal, division_name=None, page=None, tags=None):
     search_text, dvsn = old_get_search_text_and_division(portal, division_name=division_name)
     if dvsn:
         return redirect(url_for('front.division',
                                 division_name=dvsn.name, division_id=dvsn.id, tags=tags, page=page))
     else:
-        return redirect(url_for('front.404', search=division_name))
+        abort(404)
 
 
 # TODO: OZ remove this old url
@@ -403,7 +404,8 @@ def old_subportal_division(portal,
                                 member_company_id=member_company_full_id, member_company_name=member_company_name,
                                 tags=tags, page=page))
     else:
-        return redirect(url_for('front.404', search=division_name))
+        abort(404)
+        # return redirect(url_for('front.404', search=division_name))
 
 
 division_prefix = 'd/<short_uid:division_id>/<string:division_name>/'
@@ -436,12 +438,14 @@ def division(portal,
         membership, member_company, dvsn_catalog_or_subportal = get_company_member_and_division(portal,
                                                                                                 member_company_id)
         if not membership:
-            return redirect(url_for('front.404'))
+            abort(404)
+            # return redirect(url_for('front.404'))
 
     search_text, dvsn = get_search_text_and_division(portal, division_id=division_id)
 
     if not dvsn:
-        return redirect(url_for('front.404'))
+        abort(404)
+        # return redirect(url_for('front.404'))
 
     if (dvsn and (dvsn.get_url() != division_name)) or \
             (member_company and TransliterationConverter.transliterate(portal.lang,
@@ -519,6 +523,14 @@ def division(portal,
                                **articles_data)
 
 
+@front_bp.route('_a/<short_uid:publication_id>/<translit:publication_title>', permissions=AvailableForAll())
+@get_portal
+def old_article_details_redirect(portal, publication_id=None, publication_title=None):
+    publication = Publication.get(publication_id)
+    return redirect(url_for('front.article_details', publication_id=publication.id,
+                            publication_title=publication.material.title))
+
+
 @front_bp.route('_a/<full_uid:publication_full_id>/<path:publication_title>', permissions=AvailableForAll())
 @front_bp.route('a/<short_uid:publication_id>/<translit:publication_title>', permissions=AvailableForAll())
 @get_portal
@@ -531,17 +543,26 @@ def article_details(portal, publication_full_id=None, publication_id=None, publi
         return redirect(url_for('front.article_details', publication_id=publication.id,
                                 publication_title=publication.material.title))
 
+    article = publication.create_article()
+
+    if article['external_url']:
+        return redirect(article['external_url'])
+
     article_visibility = publication.article_visibility_details()
 
-    division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()
     if article_visibility is True:
         publication.add_to_read()
     else:
         utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id,
                                   publication_title=publication_title)
 
+
+
+    division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.get_url(), division_id=division.id)
+
+
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
@@ -552,7 +573,7 @@ def article_details(portal, publication_full_id=None, publication_id=None, publi
                                                           company_id=publication.material.company_id,
                                                           publication_visibility=publication.visibility,
                                                           publication_reached='True' if article_visibility is True else 'False'),
-                           article=publication.create_article(),
+                           article=article,
                            article_visibility=article_visibility,
                            articles_related=publication.get_related_articles(),
                            )
@@ -598,15 +619,56 @@ def robots_txt():
     return "User-agent: *\n"
 
 
+@front_bp.route('favicon.ico', methods=['GET'], strict_slashes=True, permissions=AvailableForAll())
+@get_portal
+def favicon(portal:Portal):
+    from ..models.files import File, FileContent
+    from ..controllers.views_file import send_file, file_query
+    from io import BytesIO
+    import os
+    import re
+    import urllib.parse
+
+    file_id = portal.favicon_file_img.proceeded_image_file_id
+    image_query = file_query(File, file_id)
+
+    if not image_query:
+        root_dir = os.path.dirname(os.path.realpath(__file__))
+        return send_from_directory(root_dir + '/../static', 'favicon.ico')
+
+    if 'HTTP_REFERER' in request.headers.environ:
+        allowedreferrer = re.sub(r'^(https?://[^/]+).*$', r'\1', request.headers.environ['HTTP_REFERER'])
+    else:
+        allowedreferrer = ''
+
+    if True:
+        image_query_content = g.db.query(FileContent).filter_by(id=file_id).first()
+        return send_file(BytesIO(image_query_content.content),
+                         etag=file_id,
+                         mimetype=image_query.mime, as_attachment=(request.args.get('d') is not None),
+                         attachment_filename=urllib.parse.quote(
+                             image_query.name,
+                             safe='!"#$%&\'()*+,-.0123456789:;<=>?@[\]^_`{|}~ ¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸'
+                                  '¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ')
+                         )
+    else:
+        return abort(403)
+
+
+
+
+
+
 @front_bp.route('sitemap.xml', methods=['GET'], strict_slashes=True, permissions=AvailableForAll())
 @get_portal
 def sitemap(portal):
+    print(portal)
     from sqlalchemy import desc
 
     return render_template('front/sitemap.xml', portal=portal,
                            divisions=[{
                                           'loc': portal.host + url_for('front.division',
-                                                                       division_id=d.id(),
+                                                                       division_id=d.id,
                                                                        division_name=d.get_url()),
                                           'lastmod': max(d.md_tm, (g.db().query(Publication).filter_by(
                                               portal_division_id=d.id).order_by(
@@ -623,7 +685,7 @@ def sitemap(portal):
                                                         publication_title=p.material.title),
                                          'lastmod': p.md_tm
                                      } for p in portal.publications if
-                                     p.status == Publication.STATUSES['PUBLISHED']]
+                                     p.status == Publication.STATUSES['PUBLISHED'] and not p.material.external_url]
                            )
 
 
@@ -634,3 +696,5 @@ def error_404(portal):
                            analytics=portal.get_analytics(page_type='other'),
                            tags=all_tags(g.portal),
                            portal=portal_and_settings(g.portal))
+
+

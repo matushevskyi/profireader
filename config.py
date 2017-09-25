@@ -152,7 +152,8 @@ class ProductionDevelopmentConfig(Config):
     #                                   Config.CONSUMER_SECRET_FB)
 
 
-    DEBUG = True
+    DEBUG = False
+    TESTING = False
     # if 'PRODUCTION_SERVER_DB_HOST' not in os.environ.keys():
     #     Statement for enabling the development environment
         # DEBUG = True

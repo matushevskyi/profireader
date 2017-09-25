@@ -13,14 +13,15 @@
     {% endblock company_base %}
 
     <script>
-        module.controller('article_edit', ['$scope', '$ok', '$http', function ($scope, $ok, $http) {
+        module.controller('article_edit', ['$scope', function ($scope) {
 
             angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
 
             $scope.$$translate = {{ translates('article_edit')|safe }};
             $scope.data = {};
 
-            $scope.title = '{{ 'Update material' if material_id else 'Create new material' }}';
+            $scope.material_id = {{ ("'" + material_id + "'" if material_id else 'null')|safe }};
+
 
             $scope.amidSave = function (resp) {
                 if (!$scope.data.material.id && resp.material.id) {
@@ -129,87 +130,87 @@
     </script>
 
     {% raw %}
-    <div ng-init="init()" ng-controller="article_edit" ng-cloak class="create-material">
-        <div class="row link-page create-new-material"><h5>{{ _(title) }}</h5></div>
-        <form name="newMaterial">
-            <!-- <h1 class="nice-title">{{ _(title) }}<span></span></h1> -->
-
-            <div af af-amid-load="amidLoad" af-amid-save="amidSave"
-                 af-before-save="getData"
-                 af-before-validate="getDataForValidation"
-                 af-watch="[data.material.short, data.material.title, data.material.subtitle, data.material.keywords, data.material.keywords]"
+    <div class="article_edit" ng-controller="article_edit" ng-cloak>
+        <form class="mb2em">
+            <div class="container pr" af af-amid-load="amidLoad" af-amid-save="amidSave"
+                 af-before-save="getData" af-before-validate="getDataForValidation"
+                 af-watch="[data.material.short, data.material.title, data.material.subtitle, data.material.keywords, data.material.keywords, data.material.external_url]"
                  ng-model="data">
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed"></div>
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed-message">
+                    <p><i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _(data_state + ' material data...') }}
+                    </p>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <h2>{{ ::_(material_id?'Updating material':'Creating material') }}
+                            <button class="btn btn-primary border-radius w20em par" type="button"
+                                ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">{{
+                            ::_(material_id?'Save material':'Create material') }}
+                                &nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;
+                        </button></h2>
+                        <hr/>
+                    </div>
+                </div>
 
-                <div style="padding-bottom: 50px">
-                    <div>
-                        <div style="width: 400px; height: 300px; position: relative"
+
+                <div class="row">
+                    <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                        <label>{{ _('Article title') }}</label>
+                        <input class="form-control article-edit-input mb1em"
+                               pr-validation-answer="data_validation:title"
+                               ng-model="data.material.title"/>
+
+                        <label>{{ _('Article subtitle') }}</label>
+                        <input class="form-control article-edit-input mb1em" ng-model="data.material.subtitle"/>
+
+                        <label>{{ _('Keywords') }}</label>
+                        <input class="form-control article-edit-input mb1em" ng-model="data.material.keywords"/>
+
+                        <label>{{ _('Author') }}</label>
+                        <input class="form-control article-edit-input mb1em" ng-model="data.material.author"/>
+
+                        <label>{{ _('External url') }}</label>&nbsp;&nbsp;<a ng-href="{{ data.material.external_url }}" ng-if="!data_validation.errors.external_url" href="">Visit <i class="fa fa-external-link"></i></a>
+                        <input class="form-control article-edit-input mb1em"
+                               pr-validation-answer="data_validation:external_url"
+                               ng-model="data.material.external_url"/>
+                    </div>
+                    <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12" style="height: 350px">
+                        <div class="par ml1em" style="width: 400px; height: 350px;">
+                        <label class="pal">{{ ::_('Cover image') }}</label>
+                        <div class="par" style="width: 400px; height: 300px;"
                              pr-crop="data.material.illustration"></div>
+                            </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+
+                        <!-- TODO: OZ by OZ move this code to one file -->
+                        {% endraw %}
+                        <link href="{{ static_address('css/article.css') }}" rel="stylesheet">
+                        <!-- TODO: OZ by OZ: select css for current theme. also look for another place with same todo-->
+                        {% raw %}
+
+                        <label class="mt1em" pr-validation-answer="data_validation:short">{{ _('Short Description') }}</label>
+                        <textarea ui-tinymce="tinyArticleOptionsShortDescription"
+                                  class="form-control article-edit-input" ng-model="data.material.short"></textarea>
+
+                        <label class="mt1em" pr-validation-answer="data_validation:long">{{ _('Full text') }}</label>
+                        <textarea class="form-control article-edit-input mb1em"
+                                ui-tinymce="tinyArticleOptions" ng-model="data.material.long"></textarea>
+
                     </div>
                 </div>
 
-                <div class="update_col1">
-                    <!-- TODO: OK by OZ:   this block form should share same classes with layout to look MAXIMUM like in portal
-                                            maybe layout selector is apporpriate here-->
-                    {{ _('Article title') }}
-                    <pr_help_tooltip>article_title</pr_help_tooltip>
-                    <input class="form-control article-edit-input" type="text" ng-model="data.material.title"
-                           pr-validation-answer="data_validation:title"
-                           name="article_title" jng-pattern="/[\wа-яёі']{3}/i">
-                    <div ng-show="newMaterial.article_title.$error.pattern" class="error-input">
-                        {{ _('The title name should be longer!') }}
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <button class="btn btn-primary border-radius w20em par" type="button"
+                                ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">{{
+                            ::_(material_id?'Save material':'Create material') }}
+                                &nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;
+                        </button>
                     </div>
-
-                    {{ _('Article subtitle') }}
-                    <pr_help_tooltip>article_subtitle</pr_help_tooltip>
-                    <span
-                            af-validation-answer="data_validation:subtitle"></span>
-                    <input class="form-control article-edit-input" type="text" ng-model="data.material.subtitle">
-
-                    {{ _('Keywords') }}
-                    <input class="form-control article-edit-input" ng-model="data.material.keywords"
-                           pr-validation-answer="data_validation:keywords"
-                           name="article_keywords" jng-pattern="/[\wа-яёі']{2}/i">
-                    <div ng-show="newMaterial.article_keywords.$error.pattern" class="error-input">
-                        {{ _('The keywords should be longer!') }}
-                    </div>
-
-                    {{ _('Author') }}
-                    <pr_help_tooltip>article_author</pr_help_tooltip>
-                    <input class="form-control article-edit-input" ng-model="data.material.author"
-                           pr-validation-answer="data_validation:author"
-                           name="article_author" jng-pattern="/[\wа-яёі']{2}/i">
-                    <div ng-show="newMaterial.article_author.$error.pattern" class="error-input">
-                        {{ _('The author should be longer!') }}
-                    </div>
-                </div>
-
-
-                <div class="update_col1">
-                    <!-- TODO: OZ by OZ move this code to one file -->
-                    {% endraw %}
-                    <link href="{{ static_address('css/article.css') }}" rel="stylesheet">
-                    <!-- TODO: OZ by OZ: select css for current theme. also look for another place with same todo-->
-                    {% raw %}
-
-                    {{ _('Short Description') }} <span af-validation-answer="data_validation:short"></span>
-                    <textarea ui-tinymce="tinyArticleOptionsShortDescription" class="form-control article-edit-input"
-                              ng-model="data.material.short"></textarea>
-
-                    {{ _('Full text') }}
-                    <textarea ui-tinymce="tinyArticleOptions" ng-model="data.material.long"></textarea>
-                </div>
-
-
-                <div class="update_col1">
-                    *{{ _('All fields are required') }}
-
-                    <button class="pr-button" ng-disabled="!$af.isActionAllowed(data, 'save')"
-                            ng-click="$af.save(data)">&nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;{{
-                        data.material.id ? _('save') : _('create') }}
-                    </button>
-                    <button class="pr-button" ng-click="goToArticle(data.article)" ng-if="article_type"><span class="fa
-                    fa-external-link">{{ _(article_type +
-                        ' preview') }}</span></button>
                 </div>
             </div>
         </form>

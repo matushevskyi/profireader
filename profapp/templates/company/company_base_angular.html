@@ -10,6 +10,7 @@
 
         $scope.url_company_profile = {{ raw_url_for('company.profile')|safe }};
         $scope.url_company_materials = {{ raw_url_for('company.materials')|safe }};
+        $scope.url_company_news_feeds = {{ raw_url_for('company.news_feeds')|safe }};
         $scope.url_company_employees = {{ raw_url_for('company.employees')|safe }};
         $scope.url_company_portal_memberees = {{ raw_url_for('company.portal_memberees')|safe }};
 
@@ -33,6 +34,8 @@
                        href="{{ url_company_portal_memberees({company_id: company.id}) }}">{{ _('Membership') }}</a>
                     <a ng-class="{'selected': selected_company_menu == 'companies_employees'}"
                        href="{{ url_company_employees({company_id: company.id}) }}">{{ _('Employees') }}</a>
+                    <a ng-class="{'selected': selected_company_menu == 'news_feeds'}"
+                       href="{{ url_company_news_feeds({company_id: company.id}) }}">{{ _('News feed') }}</a>
                     <a class="pull-right" ng-class="{'selected': selected_company_menu == 'home'}"
                        href="{{ url_company_profile({company_id: company.id}) }}">{{ company.name }}</a>
                     <img pr-image-url="{{ company.logo.url }}" class="menu-company-logo pull-right"/>
