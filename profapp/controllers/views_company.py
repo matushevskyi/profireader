@@ -5,7 +5,7 @@ from sqlalchemy.sql import expression
 from .blueprints_declaration import company_bp
 from .pagination import pagination, load_for_infinite_scroll
 from .. import utils
-from ..models.company import Company, UserCompany
+from ..models.company import Company, UserCompany, NewsFeedCompany
 from ..models.materials import Material, Publication
 from ..models.pr_base import Grid
 from ..models.translate import TranslateTemplate
@@ -14,6 +14,7 @@ from ..models.portal import MemberCompanyPortal, MembershipPlan
 from ..models.permissions import UserIsActive, CompanyIsActive, EmployeeHasRightAF, \
     EmployeeHasRightAtMembershipCompany, EmployeeHasRightAtCompany, RIGHT_AT_COMPANY, CheckFunction
 from ..models.exceptions import UnauthorizedUser
+from ..models import exceptions
 
 
 @company_bp.route('/', methods=['GET'], permissions=UserIsActive())
@@ -264,3 +265,90 @@ def materials_load(json, company_id):
             'grid_filters': {},
             'total': count
             }
+
+
+@company_bp.route('/<string:company_id>/news_feeds/', methods=['GET'], permissions=EmployeeHasRightAtCompany())
+def news_feeds(company_id):
+    return render_template('company/news_feeds.html', company=utils.db.query_filter(Company, id=company_id).one())
+
+
+
+
+def del_news_feeds_load(json, company_id):
+
+
+    subquery = NewsFeedCompany.subquery_company_news_feed(company_id, json.get('filter'), json.get('sort')).order_by(
+        expression.desc(NewsFeedCompany.cr_tm))
+    news_feeds, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
+
+    return {'news_feeds': [news_feeds.material_grid_row() for news_feed in news_feeds], 'total': count}
+
+
+@company_bp.route('/<string:company_id>/news_feeds/', methods=['OK'],
+                  permissions=EmployeeHasRightAtCompany(RIGHT_AT_COMPANY._ANY))
+def news_feeds_load(json, company_id):
+    action = g.req('action', allowed=['load', 'save', 'validate'])
+
+
+
+    company = Company.get(company_id)
+
+    def client_side():
+        client_dict = {
+            'news_feeds': utils.get_client_side_list(company.news_feeds),
+            'select': {
+                'news_feed_types': ['rss']
+            }
+        }
+        # for news_feed in client_dict['plans']:
+        #     plan['duration'], plan['duration_unit'] = plan['duration'].split(' ')
+
+        return client_dict
+
+    if action != 'load':
+        if set(company.news_feeds) - set(utils.find_by_id(company.news_feeds, d['id']) for d in json['news_feeds']) != set():
+            raise exceptions.BadDataProvided('Information for some existing news_feeds is not provided by client')
+
+        # plan_position = 0
+        validation = PRBase.DEFAULT_VALIDATION_ANSWER()
+        default_plan = 0
+
+        for nf in json['news_feeds']:
+            news_feed = utils.find_by_id(company.news_feeds, nf['id']) or NewsFeedCompany(company=company, id=nf['id'])
+
+            if nf.get('status', '') == 'DELETED':
+                company.news_feeds.remove(news_feed)
+            else:
+                news_feed.company = company
+                # plan.position = plan_position
+                news_feed.attr_filter(nf, 'name', 'source')
+                news_feed.type = 'RSS'
+                # plan.duration = "%s %s" % (nf['duration'], nf['duration_unit'])
+
+                if news_feed not in company.news_feeds:
+                    company.news_feeds.append(news_feed)
+
+                # if nf['id'] == json['select']['portal'].get('default_membership_plan_id', None) and plan.status == \
+                #         MembershipPlan.STATUSES['MEMBERSHIP_PLAN_ACTIVE']:
+                #     default_plan += 1
+                #     portal.default_membership_plan = plan
+                #
+                # plan_position += 1
+
+        company.validation_append_by_ids(validation, company.news_feeds, 'news_feeds')
+        # if default_plan != 1:
+        #     validation['errors']['one_default_active_plan'] = 'You need one and only one default plan'
+
+        if action == 'validate':
+            g.db.expunge_all()
+            return validation
+        else:
+            for news_feed in company.news_feeds:
+                if not news_feed.cr_tm:
+                    news_feed.id = None
+
+            if not len(validation['errors']):
+                company.save()
+                g.db.commit()
+
+    return client_side()

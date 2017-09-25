@@ -100,7 +100,6 @@
 
             $scope.settings = {
                 'custom_html': custom_html ? custom_html : '',
-{#                'image_galleries': image_galleries ? image_galleries : []#}
             };
 
             $scope.tinymceSimpleOptions = {
@@ -110,21 +109,7 @@
                 skin: 'lightgray',
                 theme: 'modern',
                 'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link table | code",
-                //'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | link image table"[*],
                 'valid_elements': "iframe[*],img[*],table[*],tbody[*],td[*],th[*],tr[*],p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*],object[*]",
-{#                'content_css': ['{{ static_address('tinymce/plugins/tinymce-gallery-plugin/plugin.css') }}'],#}
-{#                'gallery_get_data': function (gallery_id) {#}
-{#                    return find_by_id($scope.settings.image_galleries, gallery_id);#}
-{#                },#}
-{#                'gallery_set_data': function (gallery_id, data) {#}
-{#                    var index = find_index_by_id($scope.settings.image_galleries, gallery_id);#}
-{#                    if (index > -1) {#}
-{#                        $scope.settings.image_galleries[index] = data;#}
-{#                    }#}
-{#                    else {#}
-{#                        $scope.settings.image_galleries.push(data);#}
-{#                    }#}
-{#                },#}
             };
 
             $scope.set = function () {
@@ -264,7 +249,7 @@
     {% raw %}
 
     <div class="controller-portal-edit" ng-controller="portal_edit" ng-cloak>
-        <form name="formPortal">
+        <form class="mb2m">
             <div class="container pr" af af-after-save="afterSave" af-amid-load="amidLoad" af-watch="data.portal"
                  ng-model="data">
                 <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed"></div>
@@ -274,7 +259,12 @@
                 </div>
                 <div class="row">
                     <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                        <h2>{{ ::_(portal_id?'Updating portal':'Creating portal') }}</h2>
+                        <h2>{{ ::_(portal_id?'Updating portal':'Creating portal') }}
+                        <button class="btn btn-primary border-radius w20em par" type="button"
+                                ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">{{
+                            ::_(portal_id?'Save preferences':'Create portal') }}
+                        </button>
+                            </h2>
                         <hr/>
                     </div>
                 </div>
@@ -298,9 +288,9 @@
                         <div class="narrow-wide">
                             <div>
                                 <label>{{ ::_('Name') }}</label>
-                                <input type="text" class="form-control border-radius"
+                                <input class="form-control border-radius"
                                        pr-validation-answer="data_validation:name"
-                                       ng-model="data.portal.name" name="portal_name">
+                                       ng-model="data.portal.name">
 
                             </div>
                             <div>

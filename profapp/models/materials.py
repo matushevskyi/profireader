@@ -17,6 +17,7 @@ from ..models.company import Company, UserCompany
 from ..models.portal import PortalDivision, Portal, MemberCompanyPortal
 from ..models.tag import Tag, TagPublication
 from ..models.users import User
+from sqlalchemy.orm import validates
 
 
 class Material(Base, PRBase, PRElasticDocument):
@@ -37,7 +38,7 @@ class Material(Base, PRBase, PRElasticDocument):
                                          parent_id=m.company.system_folder_file_id,
                                          root_folder_id=m.company.system_folder_file_id),
                                      image_size=[600, 480],
-                                     min_size=[600 / 6, 480 / 6],
+                                     min_size=[600 / 8, 480 / 8],
                                      aspect_ratio=[600 / 480., 600 / 480.],
                                      no_selection_url=utils.fileUrl(FOLDER_AND_FILE.no_article_image()))
 
@@ -68,24 +69,41 @@ class Material(Base, PRBase, PRElasticDocument):
 
     image_galleries = relationship('MaterialImageGallery', cascade="all, delete-orphan")
 
+    source_type = Column(TABLE_TYPES['string_30'])
+    source_id = Column(TABLE_TYPES['string_100'])
+
+    external_url = Column(TABLE_TYPES['string_1000'])
+
     # search_fields = {'title': {'relevance': lambda field='title': RELEVANCE.title},
     #                  'short': {'relevance': lambda field='short': RELEVANCE.short},
     #                  'long': {'relevance': lambda field='long': RELEVANCE.long},
     #                  'keywords': {'relevance': lambda field='keywords': RELEVANCE.keywords}}
+
+    @validates('title', 'subtitle', 'keywords', 'author', 'source', 'external_url')
+    def validate_code(self, key, value):
+        max_len = getattr(self.__class__, key).prop.columns[0].type.length
+        if value and len(value) > max_len:
+            return value[:max_len]
+        return value
 
 
     def is_active(self):
         return True
 
     def get_client_side_dict(self,
-                             fields='id,cr_tm,md_tm,company_id,illustration.url,title,subtitle,author,short,long,keywords,company.id|name',
+                             fields='id,cr_tm,md_tm,external_url,company_id,illustration.url,title,subtitle,author,short,long,keywords,company.id|name',
                              more_fields=None):
         return self.to_dict(fields, more_fields)
 
     def validate(self, is_new):
-        ret = super().validate(is_new)
-        if (self.omit_validation):
-            return ret
+        from .. import constants
+        ret = super().validate(is_new, regexps={
+            'title': r'.*[^\s]{3,}.*',
+            'external_url': r'(^$)|(' +constants.REGEXP.URL + r')'
+        })
+
+        if not ret['errors'].get('external_url', None) and self.external_url != '':
+            ret['warnings']['external_url'] = 'full text will be ignored if external url is provided'
 
         if ret['errors']:
             ret['errors']['_'] = 'You have some error'
@@ -100,9 +118,16 @@ class Material(Base, PRBase, PRElasticDocument):
         return sub_query
 
     def material_grid_row(self):
-        ret = self.get_client_side_dict(fields='title,md_tm,editor.full_name,id,illustration.url')
+        ret = self.get_client_side_dict(fields='title,md_tm,editor.full_name,source_id,source_type,id,external_url,illustration.url')
 
         from sqlalchemy.sql import functions
+        from ..models.company import NewsFeedCompany
+
+        if ret['source_type'] == 'rss':
+            rss_feed = NewsFeedCompany.get(ret['source_id'], True)
+            ret['source_full_name'] = ('rss: ' + rss_feed.name) if rss_feed else 'rss'
+        else:
+            ret['source_full_name'] = ('user: ' + ret['editor']['full_name'])
 
         cnt = g.db.query(Publication.status, Publication.visibility,
                          functions.count(Publication.id).label('cnt')). \
@@ -235,7 +260,7 @@ class Publication(Base, PRBase, PRElasticDocument):
             self.get_client_side_dict(
                 more_fields='portal_division.portal_division_type_id,portal_division.portal.logo.url'),
             Material.get(self.material_id).get_client_side_dict(
-                fields='long|short|title|subtitle|keywords|illustration|author'),
+                fields='long|short|title|subtitle|keywords|illustration|author|external_url'),
             {'social_activity': self.social_activity_dict()},
             remove={'material': True})
         ret['portal_division']['url'] = PortalDivision.get(self.portal_division_id).get_url()
@@ -298,7 +323,7 @@ class Publication(Base, PRBase, PRElasticDocument):
         return {
             'id': self.id,
             'publication': self.get_client_side_dict(
-                'id,status,visibility,publishing_tm,tags,portal_division.id|name,portal_division.portal.id|name|host,material.id|title'),
+                'id,status,visibility,publishing_tm,tags,portal_division.id|name,portal_division.portal.id|name|host,material.id|title|external_url'),
             'publisher_membership': self.get_publisher_membership().get_client_side_dict(
                 fields='id,company.id|name|logo,portal.id|host|name|logo'),
             'actions': ActionsForPublicationAtMembership.actions(membership=actor_membership, publication=self)}
@@ -364,8 +389,6 @@ class Publication(Base, PRBase, PRElasticDocument):
 
     def validate(self, is_new):
         ret = super().validate(is_new)
-        if (self.omit_validation):
-            return ret
 
         if not self.publishing_tm:
             ret['errors']['publishing_tm'] = 'Please select publication date'

@@ -543,17 +543,26 @@ def article_details(portal, publication_full_id=None, publication_id=None, publi
         return redirect(url_for('front.article_details', publication_id=publication.id,
                                 publication_title=publication.material.title))
 
+    article = publication.create_article()
+
+    if article['external_url']:
+        return redirect(article['external_url'])
+
     article_visibility = publication.article_visibility_details()
 
-    division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()
     if article_visibility is True:
         publication.add_to_read()
     else:
         utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id,
                                   publication_title=publication_title)
 
+
+
+    division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.get_url(), division_id=division.id)
+
+
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
@@ -564,7 +573,7 @@ def article_details(portal, publication_full_id=None, publication_id=None, publi
                                                           company_id=publication.material.company_id,
                                                           publication_visibility=publication.visibility,
                                                           publication_reached='True' if article_visibility is True else 'False'),
-                           article=publication.create_article(),
+                           article=article,
                            article_visibility=article_visibility,
                            articles_related=publication.get_related_articles(),
                            )
@@ -653,12 +662,13 @@ def favicon(portal:Portal):
 @front_bp.route('sitemap.xml', methods=['GET'], strict_slashes=True, permissions=AvailableForAll())
 @get_portal
 def sitemap(portal):
+    print(portal)
     from sqlalchemy import desc
 
     return render_template('front/sitemap.xml', portal=portal,
                            divisions=[{
                                           'loc': portal.host + url_for('front.division',
-                                                                       division_id=d.id(),
+                                                                       division_id=d.id,
                                                                        division_name=d.get_url()),
                                           'lastmod': max(d.md_tm, (g.db().query(Publication).filter_by(
                                               portal_division_id=d.id).order_by(
@@ -675,7 +685,7 @@ def sitemap(portal):
                                                         publication_title=p.material.title),
                                          'lastmod': p.md_tm
                                      } for p in portal.publications if
-                                     p.status == Publication.STATUSES['PUBLISHED']]
+                                     p.status == Publication.STATUSES['PUBLISHED'] and not p.material.external_url]
                            )
 
 

@@ -254,18 +254,18 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             );
         }
     }])
-    .directive('prHelpTooltip', ['$compile', '$templateCache', '$controller', function ($compile, $templateCache, $controller) {
-        return {
-            restrict: 'E',
-            link: function (scope, element, attrs) {
-                element.html('<span uib-popover-html="\'' + quoteattr(scope.__('help tooltip ' + element.html())) + '\'" ' +
-                    'popover-placement="' + (attrs['placement'] ? attrs['placement'] : 'bottom') + '" ' +
-                    'popover-trigger="' + (attrs['trigger'] ? attrs['trigger'] : 'mouseenter') + '" ' +
-                    'class="' + (attrs['classes'] ? attrs['classes'] : 'glyphicon glyphicon-question-sign') + '"></span>');
-                $compile(element.contents())(scope);
-            }
-        }
-    }])
+    // .directive('prHelpTooltip', ['$compile', '$templateCache', '$controller', function ($compile, $templateCache, $controller) {
+    //     return {
+    //         restrict: 'E',
+    //         link: function (scope, element, attrs) {
+    //             element.html('<span uib-popover-html="\'' + quoteattr(scope.__('help tooltip ' + element.html())) + '\'" ' +
+    //                 'popover-placement="' + (attrs['placement'] ? attrs['placement'] : 'bottom') + '" ' +
+    //                 'popover-trigger="' + (attrs['trigger'] ? attrs['trigger'] : 'mouseenter') + '" ' +
+    //                 'class="' + (attrs['classes'] ? attrs['classes'] : 'glyphicon glyphicon-question-sign') + '"></span>');
+    //             $compile(element.contents())(scope);
+    //         }
+    //     }
+    // }])
 
 
     .directive('dateTimestampFormat', function () {

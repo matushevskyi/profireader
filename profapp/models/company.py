@@ -90,7 +90,7 @@ class Company(Base, PRBase, PRElasticDocument):
                                           secondary='member_company_portal',
                                           secondaryjoin="and_(MemberCompanyPortal.portal_id == Portal.id, Portal.status == 'PORTAL_ACTIVE')")
 
-
+    news_feeds = relationship('NewsFeedCompany', cascade="all, merge, delete-orphan")
 
     @staticmethod
     def get_portals_for_company(company_id):
@@ -125,7 +125,6 @@ class Company(Base, PRBase, PRElasticDocument):
         return query
 
     def validate(self, is_new):
-        from profapp.constants import REGEXP
         ret = super().validate(is_new)
         if not re.match(r'[^\s]{3}', str(self.country)):
             ret['errors']['country'] = 'Your Country name must be at least 3 characters long.'
@@ -137,12 +136,12 @@ class Company(Base, PRBase, PRElasticDocument):
             ret['errors']['postcode'] = 'Your Postcode must be at least 4 digits or characters long.'
         if not re.match(r'[^\s]{3}', str(self.address)):
             ret['errors']['address'] = 'Your Address must be at least 3 characters long.'
-        if not re.match(REGEXP.EMAIL, str(self.email)):
+        if not utils.is_email(str(self.email)):
             ret['errors']['email'] = 'Invalid email address'
 
         self.web = self.web.strip()
         print(self.web)
-        if self.web and not re.match(REGEXP.WEB, str(self.web)):
+        if self.web and not utils.is_url(self.web):
             ret['errors']['web'] = 'Invalid web address'
         if not re.match('[^\s]{3,}', self.name):
             ret['errors']['name'] = 'Your Company name must be at least 3 characters long.'
@@ -557,3 +556,52 @@ class UserCompany(Base, PRBase, NotifyEmploymentChange):
         return lambda: utils.do_nothing()
 
 
+class NewsFeedCompany(Base, PRBase):
+    __tablename__ = 'company_news_feed'
+
+    id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
+
+    company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), nullable=False)
+    company = relationship('Company', foreign_keys=[company_id])
+
+    cr_tm = Column(TABLE_TYPES['timestamp'])
+    md_tm = Column(TABLE_TYPES['timestamp'])
+
+
+    type = Column(TABLE_TYPES['string_10'])
+    name = Column(TABLE_TYPES['string_100'])
+
+    source = Column(TABLE_TYPES['string_1000'])
+
+    update_interval_seconds = Column(TABLE_TYPES['timestamp'], default=3600)
+
+    last_pull_tm = Column(TABLE_TYPES['timestamp'])
+
+
+    @staticmethod
+    def subquery_company_news_feed(company_id=None, filters=None, sorts=None):
+        sub_query = utils.db.query_filter(NewsFeedCompany, company_id=company_id)
+        return sub_query
+
+    def validate(self, is_new=False):
+        ret = super().validate(is_new=is_new, regexps={'name': '[^\s]{3,}'})
+        print(self.source)
+        if not utils.is_url(self.source):
+            ret['errors']['source'] = 'Invalid url'
+        return ret
+
+    def get_client_side_dict(self, fields='id,company_id,name,source,type,cr_tm', more_fields=None):
+        return self.to_dict(fields, more_fields)
+
+    # def news_feed_grid_row(self):
+    #     ret = self.get_client_side_dict(fields='name,md_tm,id,source,type')
+    #
+    #     from sqlalchemy.sql import functions
+    #
+    #     cnt = g.db.query(Publication.status, Publication.visibility,
+        #                  functions.count(NewsFeedCompany.id).label('cnt')). \
+        #     join(Material, and_(Publication.material_id == Material.id, Material.id == self.id)). \
+        #     group_by(Publication.status, Publication.visibility).all()
+        #
+        # ret['publications'] = Publication.group_by_status_and_visibility(cnt)
+        # return ret

@@ -51,3 +51,7 @@ body.article-content {
     min-width: 2em;
     min-height: 2em;
 }
+
+.fa-external-link {
+    margin-left: 0.5em;
+}
