@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 cd $(dirname $0)
-basen=$(basename "$1" | cut -d. -f1)
+basen=$(basename "$2" | cut -d. -f1)
 source ../.venv/bin/activate
 while true
 do
