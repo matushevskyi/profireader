@@ -27,10 +27,8 @@
 
                 var url = $scope[(what == 'liked') ? 'add_delete_liked' : 'add_delete_favorite']({publication_id: article['id']});
                 $ok(url, {'on': article['social_activity'][what] ? false : true}, function (resp) {
-                    console.log(article['social_activity'], resp['on'])
                     article['social_activity'][what] = resp['on'];
                     article['social_activity'][what + '_count'] = resp[what + '_count'];
-                    console.log(article['social_activity'])
                 })
             };
 
@@ -68,7 +66,7 @@
 
                 </div>
                 <a target="_blank" type="link"
-                   ng-href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal_division.portal.host) }}">
+                   ng-href="{{ article.external_url?article.external_url:url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal_division.portal.host) }}">
                     <img class="list-reader-image" pr-image-url="{{ article.illustration.url }}"
                          alt="img">
                 </a>
@@ -76,8 +74,8 @@
                 <div class="item-short-content">
                     <h3 class="item-title">
                         <a target="_blank"
-                           ng-href="{{ url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal_division.portal.host) }}">{{
-                            article.title}}</a>
+                           ng-href="{{ article.external_url?article.external_url:url_publication_details({'publication_id': article.id, 'publication_title': article.title}, article.portal_division.portal.host) }}">{{
+                            article.title}}<i ng-if="article.external_url" class="fa fa-external-link ml05em"></i></a>
                     </h3>
                     <div ng-bind-html="article.short"></div>
                     <div ng-visible="article.author" class="fr">{{ article.author }}</div>

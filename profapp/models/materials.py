@@ -260,7 +260,7 @@ class Publication(Base, PRBase, PRElasticDocument):
             self.get_client_side_dict(
                 more_fields='portal_division.portal_division_type_id,portal_division.portal.logo.url'),
             Material.get(self.material_id).get_client_side_dict(
-                fields='long|short|title|subtitle|keywords|illustration|author'),
+                fields='long|short|title|subtitle|keywords|illustration|author|external_url'),
             {'social_activity': self.social_activity_dict()},
             remove={'material': True})
         ret['portal_division']['url'] = PortalDivision.get(self.portal_division_id).get_url()
@@ -323,7 +323,7 @@ class Publication(Base, PRBase, PRElasticDocument):
         return {
             'id': self.id,
             'publication': self.get_client_side_dict(
-                'id,status,visibility,publishing_tm,tags,portal_division.id|name,portal_division.portal.id|name|host,material.id|title'),
+                'id,status,visibility,publishing_tm,tags,portal_division.id|name,portal_division.portal.id|name|host,material.id|title|external_url'),
             'publisher_membership': self.get_publisher_membership().get_client_side_dict(
                 fields='id,company.id|name|logo,portal.id|host|name|logo'),
             'actions': ActionsForPublicationAtMembership.actions(membership=actor_membership, publication=self)}

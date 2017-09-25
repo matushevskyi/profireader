@@ -32,6 +32,9 @@
             };
 
             $scope.url_front = function (row) {
+                if (row['publication']['material']['external_url']) {
+                    return row['publication']['material']['external_url'];
+                }
                 return '//' + $scope.portal.host +
                     $scope.url_front_publication_details({
                         publication_id: row['publication']['id'],

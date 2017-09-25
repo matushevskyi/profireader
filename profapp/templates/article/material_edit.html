@@ -170,7 +170,7 @@
                         <label>{{ _('Author') }}</label>
                         <input class="form-control article-edit-input mb1em" ng-model="data.material.author"/>
 
-                        <label>{{ _('External url') }}</label>
+                        <label>{{ _('External url') }}</label>&nbsp;&nbsp;<a ng-href="{{ data.material.external_url }}" ng-if="!data_validation.errors.external_url" href="">Visit <i class="fa fa-external-link"></i></a>
                         <input class="form-control article-edit-input mb1em"
                                pr-validation-answer="data_validation:external_url"
                                ng-model="data.material.external_url"/>

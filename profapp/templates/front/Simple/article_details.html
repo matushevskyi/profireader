@@ -21,7 +21,7 @@
             </div>
         </div>
         <h3>
-            <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article['title']|safe }}</a>
+            <a href="{{ article['external_url'] if article['external_url'] else url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article['title']|safe }}</a>
         </h3>
         <h4>{{ article.subtitle }}</h4>
         <div class="article-author">{{ article.author }}</div>

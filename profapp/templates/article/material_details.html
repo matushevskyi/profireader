@@ -35,6 +35,9 @@
             $scope.url_front = function (row) {
                 var publication = row['publication'];
                 if (publication) {
+                    if ($scope.data['material']['external_url']) {
+                        return $scope.data['material']['external_url'];
+                    }
                     return '//' + row['portal']['host'] +
                         $scope.url_front_publication_details({
                             publication_id: publication['id'],

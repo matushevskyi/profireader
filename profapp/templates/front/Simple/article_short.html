@@ -12,7 +12,8 @@
         </div>
     </div>
     <h3>
-        <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article|highlighted('title') }}</a>
+        <a href="{{ article['external_url'] if article['external_url'] else url_for('front.article_details', publication_id=article['id'], publication_title=article['title'], force_url=article['external_url']) }}">{{ article|highlighted('title') }}{% if article['external_url'] %}<i class="fa fa-external-link"></i>{% endif %}</a>
+
     </h3>
     <h4>{{ article.subtitle|safe }}</h4>
     <div class="short-text-and-illustration pr">

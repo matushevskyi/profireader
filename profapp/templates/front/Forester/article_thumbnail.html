@@ -3,7 +3,7 @@
         <!--Article image thumbnail-->
         <div class="col-xs-12 col-md-4 img">
             <div class="pull-left article-thumbnail-img">
-                <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">
+                <a href="{{ article['external_url'] if article['external_url'] else url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">
                     {% if article['illustration']['selected_by_user']['type'] != 'none' %}
                         <img class="img-responsive" src="{{ article['illustration']['url'] }}"/>{% else %}
                         <img class="img-responsive" src="assets/img/no-image.jpg">
@@ -17,9 +17,11 @@
                     class="div-link">{{ article['portal_division']['name']|safe }}</h3></a>{% endif %}
             <!--Article headling-->
             <header class="clearfix">
-                <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">
-                    <h2 class="article-thumbnail-header">{{ article|highlighted('title') }}</h2>
+                <a href="{{ article['external_url'] if article['external_url'] else url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">
+                    <h2 class="article-thumbnail-header">{{ article|highlighted('title') }}{% if article['external_url'] %}<i class="fa fa-external-link"></i>{% endif %}
+                    </h2>
                 </a>
+
                 {% if article.subtitle %}
                     <h3 class="article-thumbnail-subtitle">{{ article.subtitle|safe }}</h3>{% endif %}
             </header>

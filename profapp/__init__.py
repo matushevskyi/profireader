@@ -427,6 +427,8 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi', deb
 
     app.after_request(add_map_headers_to_less_files)
 
+
+
     @login_manager.user_loader
     def load_user_manager(user_id):
         return g.db.query(User).get(user_id)
