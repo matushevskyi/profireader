@@ -39,9 +39,11 @@ def edit_material_load(json_data, company_id=None, material_id=None):
     if material_id:
         material = Material.get(material_id)
     else:
-        material = Material(company=Company, company_id=company_id, editor=g.user, source = '', external_url = '')
+        material = Material(company=company, company_id=company_id, editor=g.user, source_type ='profireader', source_id = '')
 
     if action == 'load':
+#        return {'material': material.get_client_side_dict(fields='id,cr_tm,md_tm,external_url,company_id,illustration.url,title,subtitle,author,short,long,keywords')}
+#        return {'material': material.get_client_side_dict(fields='id,cr_tm,md_tm,external_url,company_id,illustration.url,title,subtitle,author,short,long,keywords,company.id|name')}
         return {'material': material.get_client_side_dict(more_fields='long|company|illustration,image_galleries.items,image_galleries.id')}
     else:
         parameters = utils.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author|external_url')
