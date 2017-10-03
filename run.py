@@ -17,7 +17,7 @@ if __name__ == '__main__':
     try:
         app.log.info("starting " + args.apptype)
         app.run(port=port, host='0.0.0.0',
-                debug=False)  # app.run(debug=True)
+                debug=port in [APPLICATION_PORTS['profi'], APPLICATION_PORTS['front']])  # app.run(debug=True)
     except Exception as e:
         app.log.critical(e)
         raise e
