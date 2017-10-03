@@ -11,10 +11,12 @@
                 <main class="clearfix" role="main">
                     <article class="article-full">
                         <!--Main article image-->
+                        {% if article['illustration']['selected_by_user']['type'] != 'none' %}
                         <figure>
                             <img class="article-main-img" src="{{ article['illustration']['url'] }}" alt="Article illustration">
                             {# <figcaption class="">Підпис до фото</figcaption>#}
                         </figure>
+                        {% endif %}
                         <!--Article header-->
                         <header class="article-header">
                             <a class="div-link" href="{{ url_for('front.division', division_name=article['portal_division']['url']) }}">{{ article['portal_division']['name']|safe }}</a>
