@@ -545,24 +545,21 @@ def article_details(portal, publication_full_id=None, publication_id=None, publi
 
     article = publication.create_article()
 
+    article_visibility = publication.article_visibility_details()
+
+    if article_visibility is True or article['external_url']:
+        publication.add_to_read()
+
     if article['external_url']:
         return redirect(article['external_url'])
 
-    article_visibility = publication.article_visibility_details()
-
-    if article_visibility is True:
-        publication.add_to_read()
-    else:
+    if article_visibility is not True:
         utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id,
                                   publication_title=publication_title)
-
-
 
     division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()
     def url_search_tag(tag):
         return url_for('front.division', tags=tag, division_name=division.get_url(), division_id=division.id)
-
-
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
