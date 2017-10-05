@@ -1,6 +1,7 @@
 from flask import Blueprint
 from profapp.models.permissions import Permissions
-
+import sys
+import traceback
 
 # class PrOldBlueprint(Blueprint):
 #    declared_endpoints = {}
@@ -91,15 +92,7 @@ class PrBlueprint(Blueprint):
                         json = request.json
                         if not ps['permissions'].check(json, *args, **kwargs):
                             raise exceptions.UnauthorizedUser()
-                        if g.debug:
-                            ret = f(json, *args, **kwargs)
-                        else:
-                            try:
-                                ret = f(json, *args, **kwargs)
-                            except Exception as e:
-                                ret = {'data': {}, 'ok': False, 'error_code': e.__class__.__name__,
-                                       'message': e.__str__()}
-
+                        ret = f(json, *args, **kwargs)
                     else:
                         if not ps['permissions'].check(*args, **kwargs):
                             raise exceptions.UnauthorizedUser()
@@ -107,6 +100,9 @@ class PrBlueprint(Blueprint):
 
                 except Exception as e:
                     if not g.debug:
+                        type_, value_, traceback_ = sys.exc_info()
+                        print('\n'.join(traceback.format_tb(traceback_)))
+                        print(type_, value_)
                         if method == 'GET' or method == 'POST':
                             if getattr(e, 'redirect_to', None):
                                 if method == 'GET':

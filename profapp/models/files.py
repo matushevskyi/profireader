@@ -845,6 +845,8 @@ class FileImgDescriptor(object):
                 file_image_crop.delete()
             return False
 
+        import urllib.request as req
+        import base64
         if sel_by_user_type == 'provenance':
             user_img = Image.open(BytesIO(file_image_crop.provenance_image_file.file_content.content))
         elif sel_by_user_type == 'browse':
@@ -853,8 +855,6 @@ class FileImgDescriptor(object):
             user_img = Image.open(
                 BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', sel_by_user['file']['content']))))
         elif sel_by_user_type == 'url':
-            import urllib.request as req
-            import base64
             r = req.Request(url=sel_by_user['url'])
             response = req.urlopen(r)
             user_img = Image.open(BytesIO(response.read()))

@@ -113,8 +113,11 @@ class Material(Base, PRBase, PRElasticDocument):
         return ret
 
     @staticmethod
-    def subquery_company_materials(company_id=None, filters=None, sorts=None):
+    def subquery_company_materials(company_id=None, filters=None, sorts=None, source_type = None):
         sub_query = utils.db.query_filter(Material, company_id=company_id)
+        if source_type is not None:
+            sub_query = sub_query.filter_by(source_type = source_type)
+
         return sub_query
 
     def material_grid_row(self):

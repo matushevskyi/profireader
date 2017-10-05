@@ -14,12 +14,19 @@
     <script>
         module.controller('materials_list', ['$scope', '$ok', '$sce', function ($scope, $ok, $sce) {
 
-            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials')
+            {% if source_type == 'rss' %}
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials_from_feeds');
+            $scope.url_search_article = {{ raw_url_for('company.materials_from_feeds_load')|safe }};
+            {% else
+            %}
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
+            $scope.url_search_article = {{ raw_url_for('company.materials_load')|safe }};
+            {% endif %}
 {#            $scope.company_id = '{{ company.id }}';#}
             $scope.company = {{ company.get_client_side_dict()|tojson|safe }};
             $scope.$$translate = {{ translates('materials_list')|safe }};
 
-            $scope.url_search_article = {{ raw_url_for('company.materials_load')|safe }};
+
 
             $scope.url_material_details = {{ raw_url_for('article.material_details')|safe }};
             $scope.url_material_create = {{ raw_url_for('article.edit_material')|safe }};

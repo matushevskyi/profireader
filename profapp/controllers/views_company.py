@@ -251,13 +251,36 @@ def request_membership_plan(json, membership_id):
                   permissions=EmployeeHasRightAtCompany())
 def materials(company_id):
     return render_template('company/materials.html', company=utils.db.query_filter(Company, id=company_id).one(),
+                           source_type='profireader',
                            actions={'CREATE_MATERIAL': EmployeeHasRightAtCompany().check(company_id=company_id)})
 
 
 @company_bp.route('/<string:company_id>/materials/', methods=['OK'],
                   permissions=EmployeeHasRightAtCompany(RIGHT_AT_COMPANY._ANY))
 def materials_load(json, company_id):
-    subquery = Material.subquery_company_materials(company_id, json.get('filter'), json.get('sort')).order_by(
+    subquery = Material.subquery_company_materials(company_id, json.get('filter'), json.get('sort'), source_type='profireader').order_by(
+        expression.desc(Material.cr_tm))
+    materials, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
+
+    return {'grid_data': [material.material_grid_row() for material in materials],
+            'grid_filters': {},
+            'total': count
+            }
+
+
+@company_bp.route('/<string:company_id>/materials_from_feeds/', methods=['GET'],
+                  permissions=EmployeeHasRightAtCompany())
+def materials_from_feeds(company_id):
+    return render_template('company/materials.html',
+                           company=utils.db.query_filter(Company, id=company_id).one(),
+                           source_type='rss',
+                           actions={})
+
+
+@company_bp.route('/<string:company_id>/materials_from_feeds/', methods=['OK'],
+                  permissions=EmployeeHasRightAtCompany(RIGHT_AT_COMPANY._ANY))
+def materials_from_feeds_load(json, company_id):
+    subquery = Material.subquery_company_materials(company_id, json.get('filter'), json.get('sort'), source_type='rss').order_by(
         expression.desc(Material.cr_tm))
     materials, pages, current_page, count = pagination(subquery, **Grid.page_options(json.get('paginationOptions')))
 

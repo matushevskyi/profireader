@@ -355,36 +355,47 @@ class logger:
         logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type=app.apptype))
         self._l = logger
 
-        def pp(t, message, *args, **kwargs):
-            import pprint
+        def pp(t, message, *args, stack_info = False, **kwargs):
+            import pprint, sys, traceback
             ppr = pprint.PrettyPrinter(indent=2, compact=True, width=120)
+
+            def ppr(obj):
+              ppr.pprint(obj)
+
+            if stack_info:
+              type_, value_, traceback_ = sys.exc_info()
+              tblist = traceback.format_tb(traceback_)
+              if len(tblist):
+                print('\n'.join())
+                print(type_, value_)
+            
             extra = kwargs.get('extra', None)
             if extra:
                 extra = extra.get('zzz_pr_more_info', None)
-            print('{}: {}'.format(t, message))
+            print('{}: {}'.format(t, message).encode('utf-8'))
             if extra:
-                ppr.pprint(extra)
+                ppr(extra)
             return True
 
         if print_to_stdout:
-            self.exception = lambda m, *args, **kwargs: pp('!!! Exception', m, *args, **kwargs) and \
+            self.exception = lambda m, *args, **kwargs: pp('!!! Exception', m, stack_info=True, *args, **kwargs) and \
                                                         self._l.exception(m, *args, stack_info=True, **kwargs)
-            self.critical = lambda m, *args, **kwargs: pp('!!! Critical', m, *args, **kwargs) and \
+            self.critical = lambda m, *args, **kwargs: pp('!!! Critical', m, *args, stack_info=True, **kwargs) and \
                                                        self._l.critical(m, *args, stack_info=True, **kwargs)
-            self.error = lambda m, *args, **kwargs: pp('!! Error', m, *args, **kwargs) and \
+            self.error = lambda m, *args, **kwargs: pp('!! Error', m, *args, stack_info=True, **kwargs) and \
                                                     self._l.error(m, *args, stack_info=True, **kwargs)
-            self.warning = lambda m, *args, **kwargs: pp('! Warning', m, *args, **kwargs) and \
-                                                      self._l.warning(m, *args, stack_info=True, **kwargs)
-            self.info = lambda m, *args, **kwargs: pp('Info', m, *args, **kwargs) and \
-                                                   self._l.info(m, *args, stack_info=True, **kwargs)
-            self.debug = lambda m, *args, **kwargs: pp('Debug', m, *args, **kwargs) and \
+            self.warning = lambda m, *args, **kwargs: pp('! Warning', m, *args, stack_info=True if app.testing or app.debug else False, **kwargs) and \
+                                                      self._l.warning(m, *args, stack_info=True if app.testing or app.debug else False, **kwargs)
+            self.info = lambda m, *args, **kwargs: pp('Info', m, *args, stack_info=True if app.debug else False, **kwargs) and \
+                                                   self._l.info(m, *args, stack_info=True if app.debug else False, **kwargs)
+            self.debug = lambda m, *args, **kwargs: pp('Debug', m, *args, stack_info=True, **kwargs) and \
                                                     self._l.debug(m, *args, stack_info=True, **kwargs)
         else:
             self.exception = partial(self._l.exception, stack_info=True)
             self.critical = partial(self._l.critical, stack_info=True)
             self.error = partial(self._l.error, stack_info=True)
-            self.warning = partial(self._l.warning, stack_info=True if app.testing else False)
-            self.info = partial(self._l.info, stack_info=True if app.testing else False)
+            self.warning = partial(self._l.warning, stack_info=True if app.testing or app.debug else False)
+            self.info = partial(self._l.info, stack_info=True if app.debug else False)
             self.debug = partial(self._l.debug, stack_info=True)
 
 
