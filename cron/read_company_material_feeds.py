@@ -17,6 +17,7 @@ import feedparser
 import re
 from bs4 import BeautifulSoup
 from profapp.constants.RECORD_IDS import SYSTEM_USERS
+from profapp.models.translate import Phrase
 
 
 app = create_app(apptype='read_company_data_feeds', config='config.CommandLineConfig', debug = True)
@@ -129,12 +130,17 @@ try:
 
             app.log.info("expired data feeds found: `%s`" % (len(news_feeds),))
 
+            phrases_by_company_id = {}
+
             for news_feed in news_feeds:
                 try:
-                    materials_added = 0
+
                     app.log.info(
                         'getting news from news_feed (id=`{}`, name=`{}`, source=`{}`, company=`{}`)'.format(
                         news_feed.id, news_feed.name, news_feed.source, news_feed.company_id))
+
+                    materials_added = 0
+
 
                     items = feedparser.parse(news_feed.source)['items']
 
@@ -145,12 +151,19 @@ try:
                             if material:
                                 material.save()
                                 materials_added += 1
+                                utils.dict_deep_replace([], phrases_by_company_id,
+                                    news_feed.company_id, add_only_if_not_exists=True).append(
+                                        Phrase("created material named `%(title)s`", dict={'title': material.title}))
 
                         except Exception as e:
                             app.log.warning("error `%s` converting rss item `%s` to material" % (e, item['link']))
 
                     news_feed.last_pull_tm = datetime.datetime.utcnow()
                     g.db.commit()
+
+                    for company_id, phrases in phrases_by_company_id.items():
+                        Company.get(company_id).\
+                            NOTIFY_MATERIALS_CREATED_FROM_EXTERNAL_SOURCES(more_phrases_to_employees=phrases)
 
                     app.log.info(
                         'total material added in feed id=`{}`: `{}`'.format(news_feed.id, materials_added))

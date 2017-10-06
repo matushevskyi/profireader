@@ -10,13 +10,13 @@ from .pr_base import PRBase, Base, Grid
 from .users import User
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..constants.NOTIFICATIONS import NotifyEmploymentChange
+from ..constants.NOTIFICATIONS import NotifyEmploymentChange, NotifyCompanyEmployees
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from profapp import utils
 from profapp.models.permissions import RIGHT_AT_COMPANY
 
 
-class Company(Base, PRBase, PRElasticDocument):
+class Company(Base, PRBase, NotifyCompanyEmployees, PRElasticDocument):
     __tablename__ = 'company'
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
@@ -320,7 +320,53 @@ class Company(Base, PRBase, PRElasticDocument):
         for m in self.portal_members:
             m.elastic_delete()
 
+    from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
+    def _send_notification_about_company_changes(self, text, dictionary={},
+                                               rights_at_company = RIGHT_AT_COMPANY._ANY,
+                                               more_phrases_to_company=[],
+                                               notification_type_to_company=NOTIFICATION_TYPES['COMPANY_ACTIVITY'],
+                                               comment=None, except_to_user=None):
+
+        from ..models.translate import Phrase
+
+        phrase_comment = (' when ' + comment) if comment else ''
+
+        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [
+            more_phrases_to_company]
+
+
+        # grid_url = lambda endpoint, **kwargs: utils.jinja.grid_url(self.id, endpoint=endpoint, **kwargs)
+
+        default_dict = {
+            'company': self,
+            'url_company_profile': url_for('company.profile', company_id=self.id),
+        }
+
+        if getattr(g, 'user', None):
+            user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at "
+            except_to_user = utils.set_default(except_to_user, [g.user])
+            default_dict['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
+        else:
+            user_who_made_changes_phrase = 'At '
+            except_to_user = utils.set_default(except_to_user, [])
+
+
+        all_dictionary_data = utils.dict_merge(default_dict, dictionary)
+
+        phrase_to_employees_at_company = Phrase(
+            user_who_made_changes_phrase + "%s of user %s at your company %s just happened following: " % \
+            (utils.jinja.link_company_profile(),) + text, dict=all_dictionary_data,
+            comment="to company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
+
+        from ..models.messenger import Socket
+
+        Socket.prepare_notifications(
+            self.company.get_user_with_rights(rights_at_company),
+            notification_type_to_company,
+            [phrase_to_employees_at_company] + more_phrases_to_company, except_to_user=except_to_user)
+
+        return lambda: utils.do_nothing()
 
 
 class UserCompany(Base, PRBase, NotifyEmploymentChange):
