@@ -355,14 +355,14 @@ class Company(Base, PRBase, NotifyCompanyEmployees, PRElasticDocument):
         all_dictionary_data = utils.dict_merge(default_dict, dictionary)
 
         phrase_to_employees_at_company = Phrase(
-            user_who_made_changes_phrase + "%s of user %s at your company %s just happened following: " % \
+            user_who_made_changes_phrase + "your company %s just happened following: " % \
             (utils.jinja.link_company_profile(),) + text, dict=all_dictionary_data,
             comment="to company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
 
         from ..models.messenger import Socket
 
         Socket.prepare_notifications(
-            self.company.get_user_with_rights(rights_at_company),
+            self.get_user_with_rights(rights_at_company),
             notification_type_to_company,
             [phrase_to_employees_at_company] + more_phrases_to_company, except_to_user=except_to_user)
 
@@ -612,7 +612,6 @@ class NewsFeedCompany(Base, PRBase):
 
     cr_tm = Column(TABLE_TYPES['timestamp'])
     md_tm = Column(TABLE_TYPES['timestamp'])
-
 
     type = Column(TABLE_TYPES['string_10'])
     name = Column(TABLE_TYPES['string_100'])

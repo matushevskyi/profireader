@@ -153,17 +153,23 @@ try:
                                 materials_added += 1
                                 utils.dict_deep_replace([], phrases_by_company_id,
                                     news_feed.company_id, add_only_if_not_exists=True).append(
-                                        Phrase("created material named `%(title)s`", dict={'title': material.title}))
+                                        Phrase("created material named `%(a_tag_for_material)s`" %
+                                               {'a_tag_for_material': utils.jinja.link('url_material_details', 'material_title')},
+                                               dict={'url_material_details': url_for('article.material_details', material_id=material.id),
+                                                     'material_title': material.title}))
 
                         except Exception as e:
                             app.log.warning("error `%s` converting rss item `%s` to material" % (e, item['link']))
 
                     news_feed.last_pull_tm = datetime.datetime.utcnow()
-                    g.db.commit()
 
                     for company_id, phrases in phrases_by_company_id.items():
                         Company.get(company_id).\
-                            NOTIFY_MATERIALS_CREATED_FROM_EXTERNAL_SOURCES(more_phrases_to_employees=phrases)
+                            NOTIFY_MATERIALS_CREATED_FROM_EXTERNAL_SOURCES(
+                            news_feed.id, news_feed.name,
+                            more_phrases_to_employees=phrases)
+
+                    g.db.commit()
 
                     app.log.info(
                         'total material added in feed id=`{}`: `{}`'.format(news_feed.id, materials_added))

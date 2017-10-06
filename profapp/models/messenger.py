@@ -200,8 +200,8 @@ class Notification(Base, PRBase):
     read_tm = Column(TABLE_TYPES['timestamp'])
 
     to_user_id = Column(TABLE_TYPES['id_profireader'], ForeignKey(User.id))
-    content = Column(TABLE_TYPES['string_1000'])
-    content_stripped = Column(TABLE_TYPES['string_1000'])
+    content = Column(TABLE_TYPES['string_65535'])
+    content_stripped = Column(TABLE_TYPES['string_65535'])
     notification_type = Column(TABLE_TYPES['string_100'])
     notification_data = Column(TABLE_TYPES['json'])
 
