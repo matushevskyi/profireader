@@ -145,7 +145,7 @@ class Portal(Base, PRBase):
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
         # print(bashCommand, output, error)
-        # current_app.log.notice("running bash command for ssl: {}, output={}, error={}".format(bashCommand, output, error))
+        # current_app.log.notice("running bash command for ssl: {}, output={}, error={}".format(bashCommand, output, error)) 
         return True
 
     def update_google_analytics_host(self, ga_man):
