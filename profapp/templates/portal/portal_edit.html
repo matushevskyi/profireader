@@ -185,14 +185,16 @@
                                 'html_description': '',
                                 'html_keywords': '',
                                 'html_title': '',
-                                'name': $scope._('new portal division ' + t)
+                                'name': $scope._(t + ' for new portal division')
                             };
                         });
 
                     resp['portal']['divisions'][1]['publication_count'] = 0;
                     resp['portal']['divisions'][2]['publication_count'] = 0;
-                    resp['portal']['divisions'][resp['portal']['divisions'].length - 1]['settings'] =
+                    resp['portal']['divisions'][resp['portal']['divisions'].length - 2]['settings'] =
                         {'company_id': resp['portal']['own_company']['id']};
+                    resp['portal']['divisions'][resp['portal']['divisions'].length - 1]['settings'] =
+                        {'custom_html': $scope._('custom html for new portal division', null, '<h1>hello</h1>Welcome to our best company')};
                 }
                 return resp;
             };

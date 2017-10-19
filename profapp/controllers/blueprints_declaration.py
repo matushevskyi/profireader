@@ -111,7 +111,7 @@ class PrBlueprint(Blueprint):
                             raise e
                         elif method == 'OK':
                             return jsonify(
-                                {'data': {}, 'ok': False, 'error_code': e.__class__.__name__, 'message': e.__str__()})
+                                {'data': {}, 'ok': False, 'error_code': 500, 'message': 'Server error'})
                     else:
                         raise e
 
