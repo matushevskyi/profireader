@@ -256,6 +256,7 @@ import cProfile
 def do_nothing(*args, **kwargs):
     pass
 
+from .. import constants
 
 def json2kwargs(f):
     return lambda json: f(**json)
@@ -263,3 +264,18 @@ def json2kwargs(f):
 
 def set_default(val, default=None):
     return default if val is None else val
+
+
+def is_uuid(val):
+    return True if re.match(constants.REGEXP.UUID, val) else False
+
+def is_short_uuid(val):
+    return True if re.match(constants.REGEXP.UUID_SHORT, val) else False
+
+def is_url(val):
+    return True if re.match(constants.REGEXP.URL, val, re.IGNORECASE) else False
+
+def is_email(val):
+    return True if re.match(constants.REGEXP.EMAIL, val, re.IGNORECASE) else False
+
+

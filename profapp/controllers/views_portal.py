@@ -1,7 +1,7 @@
 from flask import render_template, g, redirect, url_for, current_app
 from sqlalchemy import desc
 from config import Config
-from profapp.controllers.errors import BadDataProvided
+# from profapp.controllers.errors import BadDataProvided
 from .blueprints_declaration import portal_bp
 from .pagination import pagination
 from .. import utils
@@ -15,7 +15,7 @@ from ..models.portal import PortalDivisionType
 from ..models.pr_base import PRBase, Grid
 from ..models.tag import Tag
 from ..models.translate import TranslateTemplate
-from ..models.exceptions import UnauthorizedUser
+from ..models import exceptions
 from profapp.models.translate import Phrase
 from profapp.models.permissions import EmployeeHasRightAtCompany, EmployeeHasRightAtPortalOwnCompany, RIGHT_AT_COMPANY
 from sqlalchemy import or_
@@ -47,17 +47,19 @@ def profile_load(json, company_id=None, portal_id=None):
         layouts = layouts.filter(or_(PortalLayout.hidden == False, PortalLayout.id == portal.portal_layout_id))
     division_types = PortalDivisionType.get_division_types()
 
-    client_side = lambda: {
-        'select': {
+    def client_side():
+        ret = {'select': {
             'languages': Config.LANGUAGES,
             'layouts': utils.get_client_side_list(layouts.all(), more_fields='hidden'),
             'division_types': utils.get_client_side_dict(division_types)
         },
         'portal': portal.get_client_side_dict(
             fields='name,host, logo, favicon, lang, url_facebook, url_google, url_twitter, url_linkedin,'
-                   'portal_layout_id,divisions,divisions.html_description|html_keywords|html_title|cr_tm|name,own_company,company_memberships.company',
+                   'portal_layout_id,divisions,divisions.html_description|html_keywords|url|html_title|cr_tm|name,own_company,company_memberships.company',
             get_own_or_profi_host=True, get_publications_count=True)
-    }
+        }
+        return ret
+
 
     if action == 'load':
         return client_side()
@@ -71,7 +73,7 @@ def profile_load(json, company_id=None, portal_id=None):
                            *map(lambda x: 'url_' + x, ['facebook', 'google', 'twitter', 'linkedin']))
 
         if set(portal.divisions) - set(utils.find_by_id(portal.divisions, d['id']) for d in jp['divisions']) != set():
-            raise BadDataProvided('Information for some existing portal division is not provided by client')
+            raise exceptions.BadDataProvided('Information for some existing portal division is not provided by client')
 
         division_position = 0
         unpublish_warning = {}
@@ -89,7 +91,7 @@ def profile_load(json, company_id=None, portal_id=None):
             else:
                 ndi.portal = portal
                 ndi.position = division_position
-                ndi.attr_filter(jd, 'name', 'html_title', 'html_keywords', 'html_description')
+                ndi.attr_filter(jd, 'name', 'html_title', 'html_keywords', 'html_description', 'url')
 
                 if ndi in portal.divisions:
                     if len(ndi.publications) and jd['portal_division_type_id'] != ndi.portal_division_type.id:
@@ -242,7 +244,7 @@ def plans_load(json, portal_id):
 
     if action != 'load':
         if set(portal.plans) - set(utils.find_by_id(portal.plans, d['id']) for d in json['plans']) != set():
-            raise BadDataProvided('Information for some existing plans is not provided by client')
+            raise exceptions.BadDataProvided('Information for some existing plans is not provided by client')
 
         plan_position = 0
         validation = PRBase.DEFAULT_VALIDATION_ANSWER()
@@ -405,7 +407,7 @@ def analytics_report(json, portal_id):
     def sort_dimension(rows, name):
 
         if name == 'page_type':
-            by_page_type = ['index', 'news', 'events', 'catalog', 'publication', 'company_subportal']
+            by_page_type = ['index', 'news', 'events', 'catalog', 'publication', 'company_subportal', 'custom_html']
             return sorted(rows, key=lambda x: by_page_type.index(x[0]) if x[0] in by_page_type else 100000)
         if name == 'company_id':
             return sorted(rows, key=lambda x: 'z' if x[0] == '__NA__' else Company.get_attr(x[0], ifNone='zzz'))
@@ -567,7 +569,7 @@ def membership_change_status(json, membership_id, new_status):
 
         return membership.company_member_grid_row()
     else:
-        raise UnauthorizedUser()
+        raise exceptions.UnauthorizedUser()
 
 
 @portal_bp.route('/<string:portal_id>/companies_members/', methods=['GET'],

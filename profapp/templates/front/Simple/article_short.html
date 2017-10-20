@@ -1,7 +1,9 @@
 <div class="article article-short {% if article['illustration']['selected_by_user']['type'] != 'none' %}with-illustration{% endif %}">
     <div class="division-and-tags pr">
         <div class="division nw">
-            <a href="{{ url_for('front.division', division_name=article['portal_division']['name']) }}">{{ article['portal_division']['name']|safe }}</a>
+            <a href="{{ url_for('front.division',
+            division_id=article['portal_division']['id'],
+            division_name=article['portal_division']['url']) }}">{{ article['portal_division']['name']|safe }}</a>
         </div>
         <div class="tags-at-right nw">
             {% if article.tags|length %}{% set tag = article.tags[0] %}
@@ -10,7 +12,8 @@
         </div>
     </div>
     <h3>
-        <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article|highlighted('title') }}</a>
+        <a href="{{ url_for('front.article_details', publication_id=article['id'], publication_title=article['title']) }}">{{ article|highlighted('title') }}{% if article['external_url'] %}<i class="fa fa-external-link"></i>{% endif %}</a>
+
     </h3>
     <h4>{{ article.subtitle|safe }}</h4>
     <div class="short-text-and-illustration pr">

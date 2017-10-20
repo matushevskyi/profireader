@@ -220,9 +220,9 @@ module.directive('prFileChange', function () {
                 }
             };
 
-            scope.chooseImage = function (setImage) {
-                scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.original_model['browse']);
-            };
+            // scope.chooseImage = function (setImage) {
+            //     scope.$root.chooseImageinFileManager("parent." + callback_name, 'choose', '', scope.original_model['browse']);
+            // };
 
 
             scope.zoom_by = function (by, check_only) {

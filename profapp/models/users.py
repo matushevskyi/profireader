@@ -19,9 +19,9 @@ from .files import FileImageCrop, FileImgDescriptor
 from .pr_base import PRBase, Base
 from .. import utils
 from ..constants import RECORD_IDS
-from ..constants import REGEXP
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..controllers import errors
+from ..models import exceptions
+
 from profapp.constants.NOTIFICATIONS import NotifyUser, NOTIFICATION_TYPES
 
 
@@ -160,19 +160,11 @@ class User(Base, UserMixin, PRBase, NotifyUser):
 
     tos = Column(TABLE_TYPES['boolean'], default=False)
 
-    def is_active(self, check_only_banned=None, raise_exception_redirect_if_not=False):
+    def is_active(self):
         if self.status != User.STATUSES['USER_ACTIVE']:
-            if raise_exception_redirect_if_not:
-                raise errors.NoRights(redirect_to=url_for('index.banned'))
-            return "Sorry!You were baned! Please send a message to the administrator to know details!"
-        if not check_only_banned and not self.tos:
-            if raise_exception_redirect_if_not:
-                raise errors.NoRights(redirect_to=url_for('index.welcome'))
-            return "Sorry!You must confirm license first!"
+            raise exceptions.UnauthorizedUser(redirect_to=url_for('index.banned'))
         if not self.email_confirmed:
-            if raise_exception_redirect_if_not:
-                raise errors.NoRights(redirect_to=url_for('auth.email_confirmation'))
-            return "Sorry!You must be confirmed!"
+            raise exceptions.UnauthorizedUser(redirect_to=url_for('auth.email_confirmation'))
         return True
 
     def validate(self, is_new):
@@ -183,7 +175,7 @@ class User(Base, UserMixin, PRBase, NotifyUser):
         if not re.match(r'[^\s]{2}', self.last_name):
             ret['errors']['last_name'] = 'Your Last name must be at least 2 characters long.'
 
-        if not re.match(REGEXP.EMAIL, self.address_email):
+        if not utils.is_email(self.address_email):
             ret['errors']['email'] = 'Please enter correct email'
         elif is_new and utils.db.query_filter(User, address_email=self.address_email).first():
             ret['errors']['email'] = 'Sorry. this email is taken'

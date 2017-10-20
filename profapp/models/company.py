@@ -10,13 +10,13 @@ from .pr_base import PRBase, Base, Grid
 from .users import User
 from ..constants.RECORD_IDS import FOLDER_AND_FILE
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..constants.NOTIFICATIONS import NotifyEmploymentChange
+from ..constants.NOTIFICATIONS import NotifyEmploymentChange, NotifyCompanyEmployees
 from ..models.portal import Portal, MemberCompanyPortal, UserPortalReader
 from profapp import utils
 from profapp.models.permissions import RIGHT_AT_COMPANY
 
 
-class Company(Base, PRBase, PRElasticDocument):
+class Company(Base, PRBase, NotifyCompanyEmployees, PRElasticDocument):
     __tablename__ = 'company'
 
     id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
@@ -49,6 +49,7 @@ class Company(Base, PRBase, PRElasticDocument):
     phone = Column(TABLE_TYPES['phone'], nullable=False, default='')
     phone2 = Column(TABLE_TYPES['phone'], nullable=False, default='')
     email = Column(TABLE_TYPES['email'], nullable=False, default='')
+    web = Column(TABLE_TYPES['string_100'], nullable=True, default='')
     short_description = Column(TABLE_TYPES['text'], nullable=False, default='')
     about = Column(TABLE_TYPES['text'], nullable=False, default='')
 
@@ -89,7 +90,7 @@ class Company(Base, PRBase, PRElasticDocument):
                                           secondary='member_company_portal',
                                           secondaryjoin="and_(MemberCompanyPortal.portal_id == Portal.id, Portal.status == 'PORTAL_ACTIVE')")
 
-
+    news_feeds = relationship('NewsFeedCompany', cascade="all, merge, delete-orphan")
 
     @staticmethod
     def get_portals_for_company(company_id):
@@ -135,8 +136,13 @@ class Company(Base, PRBase, PRElasticDocument):
             ret['errors']['postcode'] = 'Your Postcode must be at least 4 digits or characters long.'
         if not re.match(r'[^\s]{3}', str(self.address)):
             ret['errors']['address'] = 'Your Address must be at least 3 characters long.'
-        if not re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", str(self.email)):
+        if not utils.is_email(str(self.email)):
             ret['errors']['email'] = 'Invalid email address'
+
+        self.web = self.web.strip()
+        print(self.web)
+        if self.web and not utils.is_url(self.web):
+            ret['errors']['web'] = 'Invalid web address'
         if not re.match('[^\s]{3,}', self.name):
             ret['errors']['name'] = 'Your Company name must be at least 3 characters long.'
         self.phone = re.sub(r'[ ]*', '', self.phone)
@@ -206,7 +212,7 @@ class Company(Base, PRBase, PRElasticDocument):
             filter(~Company.id.in_(ignore_ids)).order_by(Company.name)
 
     def get_client_side_dict(self,
-                             fields='id,name,author_user_id,country,region,address,phone,phone2,email,postcode,city,'
+                             fields='id,name,author_user_id,country,region,address,phone,phone2,email,web,postcode,city,'
                                     'short_description,journalist_folder_file_id,logo,about,lat,lon,'
                                     'own_portal.id|host',
                              more_fields=None):
@@ -314,7 +320,53 @@ class Company(Base, PRBase, PRElasticDocument):
         for m in self.portal_members:
             m.elastic_delete()
 
+    from profapp.constants.NOTIFICATIONS import NOTIFICATION_TYPES
 
+    def _send_notification_about_company_changes(self, text, dictionary={},
+                                               rights_at_company = RIGHT_AT_COMPANY._ANY,
+                                               more_phrases_to_company=[],
+                                               notification_type_to_company=NOTIFICATION_TYPES['COMPANY_ACTIVITY'],
+                                               comment=None, except_to_user=None):
+
+        from ..models.translate import Phrase
+
+        phrase_comment = (' when ' + comment) if comment else ''
+
+        more_phrases_to_company = more_phrases_to_company if isinstance(more_phrases_to_company, list) else [
+            more_phrases_to_company]
+
+
+        # grid_url = lambda endpoint, **kwargs: utils.jinja.grid_url(self.id, endpoint=endpoint, **kwargs)
+
+        default_dict = {
+            'company': self,
+            'url_company_profile': url_for('company.profile', company_id=self.id),
+        }
+
+        if getattr(g, 'user', None):
+            user_who_made_changes_phrase = "User " + utils.jinja.link_user_profile() + " at "
+            except_to_user = utils.set_default(except_to_user, [g.user])
+            default_dict['url_user_profile'] = url_for('user.profile', user_id=g.user.id)
+        else:
+            user_who_made_changes_phrase = 'At '
+            except_to_user = utils.set_default(except_to_user, [])
+
+
+        all_dictionary_data = utils.dict_merge(default_dict, dictionary)
+
+        phrase_to_employees_at_company = Phrase(
+            user_who_made_changes_phrase + "your company %s just happened following: " % \
+            (utils.jinja.link_company_profile(),) + text, dict=all_dictionary_data,
+            comment="to company employees with rights %s%s" % (','.join(rights_at_company), phrase_comment))
+
+        from ..models.messenger import Socket
+
+        Socket.prepare_notifications(
+            self.get_user_with_rights(rights_at_company),
+            notification_type_to_company,
+            [phrase_to_employees_at_company] + more_phrases_to_company, except_to_user=except_to_user)
+
+        return lambda: utils.do_nothing()
 
 
 class UserCompany(Base, PRBase, NotifyEmploymentChange):
@@ -550,3 +602,51 @@ class UserCompany(Base, PRBase, NotifyEmploymentChange):
         return lambda: utils.do_nothing()
 
 
+class NewsFeedCompany(Base, PRBase):
+    __tablename__ = 'company_news_feed'
+
+    id = Column(TABLE_TYPES['id_profireader'], primary_key=True)
+
+    company_id = Column(TABLE_TYPES['id_profireader'], ForeignKey('company.id'), nullable=False)
+    company = relationship('Company', foreign_keys=[company_id])
+
+    cr_tm = Column(TABLE_TYPES['timestamp'])
+    md_tm = Column(TABLE_TYPES['timestamp'])
+
+    type = Column(TABLE_TYPES['string_10'])
+    name = Column(TABLE_TYPES['string_100'])
+
+    source = Column(TABLE_TYPES['string_1000'])
+
+    update_interval_seconds = Column(TABLE_TYPES['timestamp'], default=3600)
+
+    last_pull_tm = Column(TABLE_TYPES['timestamp'])
+
+
+    @staticmethod
+    def subquery_company_news_feed(company_id=None, filters=None, sorts=None):
+        sub_query = utils.db.query_filter(NewsFeedCompany, company_id=company_id)
+        return sub_query
+
+    def validate(self, is_new=False):
+        ret = super().validate(is_new=is_new, regexps={'name': '[^\s]{3,}'})
+        print(self.source)
+        if not utils.is_url(self.source):
+            ret['errors']['source'] = 'Invalid url'
+        return ret
+
+    def get_client_side_dict(self, fields='id,company_id,name,source,type,cr_tm', more_fields=None):
+        return self.to_dict(fields, more_fields)
+
+    # def news_feed_grid_row(self):
+    #     ret = self.get_client_side_dict(fields='name,md_tm,id,source,type')
+    #
+    #     from sqlalchemy.sql import functions
+    #
+    #     cnt = g.db.query(Publication.status, Publication.visibility,
+        #                  functions.count(NewsFeedCompany.id).label('cnt')). \
+        #     join(Material, and_(Publication.material_id == Material.id, Material.id == self.id)). \
+        #     group_by(Publication.status, Publication.visibility).all()
+        #
+        # ret['publications'] = Publication.group_by_status_and_visibility(cnt)
+        # return ret

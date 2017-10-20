@@ -21,11 +21,7 @@
     <link href='https://fonts.googleapis.com/css?family=Roboto:400,900,300,500,700&subset=latin,cyrillic-ext,cyrillic'
           rel='stylesheet' type='text/css'>
     <link href="{{ static_address('css/font-awesome.min.css') }}" rel="stylesheet">
-    {% if g.debug %}
-        <link href="{{ static_address('new/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
-    {% else %}
-        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
-    {% endif %}
+    <link href="{{ static_address('new/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ static_address('css/_profreader.css') }}" rel="stylesheet">
     <link href="{{ static_address('css/style.css') }}" rel="stylesheet">
     <link href="{{ static_address('css/icons.css') }}" rel="stylesheet">
@@ -48,7 +44,7 @@
     {{ config_variables()|safe }}
 
 
-    {% if g.debug %}
+{#    {% if g.debug %}#}
         <script src="{{ static_address('new/jquery/jquery.min.js') }}"></script>
         <script src="{{ static_address('new/jquery/jquery-ui.js') }}"></script>
 
@@ -62,22 +58,22 @@
         <script src="{{ static_address('new/angular-bootstrap/ui-bootstrap.min.js') }}"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.1.0/ui-bootstrap.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.1.0/ui-bootstrap-tpls.min.js"></script>
-    {% else %}
+{#    {% else %}#}
         {#        <script src="{{ static_address('new/jquery/jquery.min.js') }}"></script>#}
-        <script src="https://code.jquery.com/jquery-2.1.4.min.js"
-                integrity="sha256-8WqyJLuWKRBVhxXIL1jBDD7SDxU936oZkCnxQbWwJVw=" crossorigin="anonymous"></script>
-        <script src="https://code.jquery.com/ui/1.10.4/jquery-ui.min.js"
-                integrity="sha256-oTyWrNiP6Qftu4vs2g0RPCKr3g1a6QTlITNgoebxRc4=" crossorigin="anonymous"></script>
-        <script src="{{ static_address('new/jquery-datetimepicker/jquery.datetimepicker.js') }}"></script>
-
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
-
-
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>
-        <script src="{{ static_address('new/angular-bootstrap/ui-bootstrap.min.js') }}"></script>
-        <script src="{{ static_address('new/angular-bootstrap/ui-bootstrap-tpls.min.js') }}"></script>
-    {% endif %}
+{#        <script src="https://code.jquery.com/jquery-2.1.4.min.js"#}
+{#                integrity="sha256-8WqyJLuWKRBVhxXIL1jBDD7SDxU936oZkCnxQbWwJVw=" crossorigin="anonymous"></script>#}
+{#        <script src="https://code.jquery.com/ui/1.10.4/jquery-ui.min.js"#}
+{#                integrity="sha256-oTyWrNiP6Qftu4vs2g0RPCKr3g1a6QTlITNgoebxRc4=" crossorigin="anonymous"></script>#}
+{#        <script src="{{ static_address('new/jquery-datetimepicker/jquery.datetimepicker.js') }}"></script>#}
+{##}
+{#        <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>#}
+{##}
+{##}
+{#        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>#}
+{#        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>#}
+{#        <script src="{{ static_address('new/angular-bootstrap/ui-bootstrap.min.js') }}"></script>#}
+{#        <script src="{{ static_address('new/angular-bootstrap/ui-bootstrap-tpls.min.js') }}"></script>#}
+{#    {% endif %}#}
 
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-sanitize.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-animate.js"></script>

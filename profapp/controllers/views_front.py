@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from flask import render_template, request, url_for, redirect, g
+from flask import render_template, request, url_for, redirect, g, send_from_directory, abort
 from sqlalchemy.sql import expression
 
 from config import Config
@@ -10,33 +10,37 @@ from .. import utils
 from ..models.company import Company
 from ..models.elastic import elasticsearch
 from ..models.materials import Publication
-from ..models.messenger import Socket, Notification
-from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, \
-    PortalDivisionSettingsCompanySubportal
+from ..models.portal import MemberCompanyPortal, PortalDivision, Portal, PortalDivisionSettings
 from ..models.permissions import AvailableForAll
 from ..models.users import User
+from profapp import TransliterationConverter
+from ..models import exceptions as exc
+
+get_for_all = {'methods': ['GET'], 'permissions': AvailableForAll()}
 
 
 def all_tags(portal):
     def url_search_tag_in_index(tag):
-        return url_for('front.division', tags=tag, division_name='')
+        return url_for('front.division', tags=tag)
 
     return {'all': portal.get_client_side_dict(fields='tags')['tags'], 'selected_names': [],
             'url_toggle_tag': url_search_tag_in_index}
 
 
-def get_search_text_and_division(portal, division_name):
+def get_search_text_and_division(portal, division_id=None):
     search_text = request.args.get('search') or ''
-    print('division_name', division_name)
+    return search_text, PortalDivision.get(division_id) if division_id else \
+        g.db().query(PortalDivision).filter_by(portal_id=portal.id, portal_division_type_id='index').first()
 
-    dvsn = g.db().query(PortalDivision).filter_by(portal_id=portal.id)
 
-    if division_name is not None:
-        dvsn = dvsn.filter_by(name=division_name)
+def old_get_search_text_and_division(portal, division_name=None):
+    search_text = request.args.get('search') or ''
+    dvsns = g.db().query(PortalDivision).filter_by(portal_id=portal.id)
+    dvsn = \
+        dvsns.filter_by(portal_division_type_id='index').first() if division_name is None else \
+            next(filter(lambda x: x.get_url == division_name, dvsns.all()), None)
 
-    # TODO: OZ by OZ: 404 if no company
-
-    return search_text, dvsn.order_by(expression.asc(PortalDivision.position)).first()
+    return search_text, dvsn
 
 
 def portal_and_settings(portal):
@@ -46,12 +50,16 @@ def portal_and_settings(portal):
     newd = OrderedDict()
     subportals_by_companies_id = OrderedDict()
     for di in ret['divisions']:
-        if di['portal_division_type_id'] == PortalDivision.TYPES['company_subportal']:
-            pdset = g.db().query(PortalDivisionSettingsCompanySubportal). \
-                filter_by(portal_division_id=di['id']).first()
+
+        pdset = g.db().query(PortalDivisionSettings).filter_by(portal_division_id=di['id']).first()
+        if pdset and di['portal_division_type_id'] == PortalDivision.TYPES['company_subportal']:
             com_port = g.db().query(MemberCompanyPortal).get(pdset.member_company_portal_id)
             di['subportal_company'] = Company.get(com_port.company_id)
             subportals_by_companies_id[com_port.company_id] = di
+        elif pdset and di['portal_division_type_id'] == PortalDivision.TYPES['custom_html']:
+            di['custom_html'] = pdset.custom_html
+
+        di['url'] = PortalDivision.get(di['id']).get_url()
         newd[di['id']] = di
     ret['divisions'] = newd
     ret['subportals_by_companies_id'] = subportals_by_companies_id
@@ -60,32 +68,27 @@ def portal_and_settings(portal):
     return ret
 
 
-def get_company_member_and_division(portal: Portal, company_id, company_name):
+def get_company_member_and_division(portal: Portal, company_id):
     # TODO: OZ by OZ: redirect if name is wrong
     portal_dict = portal_and_settings(portal)
     # TODO: OZ by OZ: heck company is member
     member_company = Company.get(company_id)
+
     membership = utils.db.query_filter(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one()
-    di = None
+
+    # TODO: YG: by OZ: change all hardcoded portal_division_types_id (like '<here some index>') to PortalDivision.TYPES[<here some index>]
+    di = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
+                                                portal_division_type_id=PortalDivision.TYPES['catalog']).first()
     for d_id, d in portal_dict['divisions'].items():
-        if 'subportal_company' in d and d['subportal_company'].id == company_id:
-            di = g.db().query(PortalDivisionSettingsCompanySubportal). \
+        if 'subportal_company' in d and d['subportal_company'].id == member_company.id:
+            di = g.db().query(PortalDivisionSettings). \
                 join(MemberCompanyPortal,
-                     MemberCompanyPortal.id == PortalDivisionSettingsCompanySubportal.member_company_portal_id). \
+                     MemberCompanyPortal.id == PortalDivisionSettings.member_company_portal_id). \
                 join(PortalDivision,
-                     PortalDivision.id == PortalDivisionSettingsCompanySubportal.portal_division_id). \
+                     PortalDivision.id == PortalDivisionSettings.portal_division_id). \
                 filter(MemberCompanyPortal.company_id == member_company.id). \
                 filter(PortalDivision.portal_id == portal.id).one().portal_division
 
-    if not di:
-        # TODO: YG: by OZ: change all hardcoded portal_division_types_id (like '<here some index>') to PortalDivision.TYPES[<here some index>]
-        di = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
-                                                    portal_division_type_id=PortalDivision.TYPES[
-                                                        'catalog']).first()
-    if not di:
-        di = g.db().query(PortalDivision).filter_by(portal_id=portal.id,
-                                                    portal_division_type_id=PortalDivision.TYPES[
-                                                        'index']).one()
     return membership, member_company, di
 
 
@@ -211,7 +214,7 @@ def get_members_tags_pages_search(portal, dvsn, page, tags, search_text, company
     items_per_page = 10
 
     def url_tags(tag_names):
-        url_args = {'division_name': dvsn.name}
+        url_args = {'division_name': dvsn.get_url()}
 
         if len(tag_names) > 0:
             url_args['tags'] = '+'.join(tag_names)
@@ -259,7 +262,8 @@ def get_articles_tags_pages_search(portal, dvsn, page, tags, search_text, compan
         url_args = {}
 
         if pdt != 'index':
-            url_args['division_name'] = dvsn.name
+            url_args['division_name'] = dvsn.get_url()
+            url_args['division_id'] = dvsn.id
         if len(tag_names) > 0:
             url_args['tags'] = '+'.join(tag_names)
 
@@ -299,29 +303,56 @@ def get_articles_tags_pages_search(portal, dvsn, page, tags, search_text, compan
                 search={'text': search_text, 'url': url_for('front.search')})
 
 
-subportal_prefix = '_c/<string:member_company_id>/<string:member_company_name>/'
-
-
 def url_catalog_toggle_tag(portal, tag_text):
     catalog_division = utils.db.query_filter(PortalDivision, portal_id=portal.id,
                                              portal_division_type_id=PortalDivision.TYPES['catalog']).one()
-    return url_for('front.division', division_name=catalog_division.name, tags=tag_text)
+    return url_for('front.division', division_name=catalog_division.get_url(), division_id=catalog_division.id,
+                   tags=tag_text)
 
 
-@front_bp.route(subportal_prefix, permissions=AvailableForAll())
-@front_bp.route(subportal_prefix + '<string:member_company_page>/', permissions=AvailableForAll())
+# TODO: OZ remove this old url
+@front_bp.route('_c/<full_uid:member_company_full_id>/<string:member_company_name>/', **get_for_all)
+@front_bp.route('_c/<full_uid:member_company_full_id>/<string:member_company_name>/<string:member_company_page>/',
+                **get_for_all)
 @get_portal
-def company_page(portal, member_company_id, member_company_name, member_company_page='about'):
+def old_company_page(portal, member_company_full_id=None, member_company_name=None, member_company_page=None):
+    membership, member_company, dvsn, wrong_name_in_url = \
+        get_company_member_and_division(portal, member_company_full_id)
+
+    return redirect(url_for('front.company_page', member_company_id=member_company.id,
+                            member_company_name=member_company.name, member_company_page=member_company_page))
+
+
+company_prefix = 'c/<short_uid:member_company_id>/<translit:member_company_name>/'
+
+
+@front_bp.route(company_prefix, **get_for_all)
+@front_bp.route(company_prefix + '<string:member_company_page>/', **get_for_all)
+@get_portal
+def company_page(portal, member_company_id=None, member_company_name=None, member_company_page=None):
+    membership, member_company, dvsn_catalog_or_subportal = get_company_member_and_division(portal, member_company_id)
+
+    if not dvsn_catalog_or_subportal or not member_company or not membership:
+        abort(404)
+
+    if dvsn_catalog_or_subportal.portal_division_type_id == 'company_subportal' \
+            and TransliterationConverter.transliterate(portal.lang,
+                                                       dvsn_catalog_or_subportal.get_url()) != member_company_name:
+        return redirect(url_for('front.company_page', member_company_id=member_company.id,
+                                member_company_name=dvsn_catalog_or_subportal.get_url(),
+                                member_company_page=member_company_page))
+
+    elif dvsn_catalog_or_subportal.portal_division_type_id != 'company_subportal' \
+            and TransliterationConverter.transliterate(portal.lang, member_company.name) != member_company_name:
+        return redirect(url_for('front.company_page', member_company_id=member_company.id,
+                                member_company_name=member_company.name, member_company_page=member_company_page))
+
     if member_company_page not in ['about', 'address', 'contacts']:
         member_company_page = 'about'
-    # TODO: OZ by OZ: redirect if company name is wrong. 404 if id is wrong
-    membership, member_company, dvsn = \
-        get_company_member_and_division(portal, member_company_id, member_company_name)
-
 
     return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
                            portal=portal_and_settings(portal),
-                           division=dvsn.get_client_side_dict(),
+                           division=dvsn_catalog_or_subportal.get_client_side_dict(),
                            seo=membership.seo_dict(),
                            analytics=portal.get_analytics(page_type='company_subportal', company_id=member_company_id),
                            tags=all_tags(portal),
@@ -333,33 +364,110 @@ def company_page(portal, member_company_id, member_company_name, member_company_
                            member_company_page=member_company_page)
 
 
-@front_bp.route('/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<int:page>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<int:page>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<string:division_name>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<string:division_name>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<string:division_name>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<string:division_name>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route(subportal_prefix + '_d/<string:division_name>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/', methods=['GET'],
-                permissions=AvailableForAll())
-@front_bp.route(subportal_prefix + '_d/<string:division_name>/tags/<string:tags>/', methods=['GET'],
-                permissions=AvailableForAll())
-@front_bp.route(subportal_prefix + '_d/<string:division_name>/<int:page>/tags/<string:tags>/', methods=['GET'],
-                permissions=AvailableForAll())
+# TODO: OZ remove this old url
+@front_bp.route('<string:division_name>/', **get_for_all)
+@front_bp.route('<string:division_name>/<int:page>/', **get_for_all)
+@front_bp.route('<string:division_name>/tags/<string:tags>/', **get_for_all)
+@front_bp.route('<string:division_name>/<int:page>/', **get_for_all)
+@front_bp.route('<string:division_name>/<int:page>/tags/<string:tags>/', **get_for_all)
 @get_portal
-def division(portal, division_name=None, page=1, tags=None, member_company_id=None, member_company_name=None):
+def old_division(portal, division_name=None, page=None, tags=None):
+    search_text, dvsn = old_get_search_text_and_division(portal, division_name=division_name)
+    if dvsn:
+        return redirect(url_for('front.division',
+                                division_name=dvsn.name, division_id=dvsn.id, tags=tags, page=page))
+    else:
+        abort(404)
+
+
+# TODO: OZ remove this old url
+@front_bp.route('_c/<full_uid:member_company_full_id>/<string:member_company_name>/_d/<string:division_name>/',
+                **get_for_all)
+@front_bp.route(
+    '_c/<full_uid:member_company_full_id>/<string:member_company_name>/_d/<string:division_name>/<int:page>/',
+    **get_for_all)
+@front_bp.route(
+    '_c/<full_uid:member_company_full_id>/<string:member_company_name>/_d/<string:division_name>/tags/<string:tags>/',
+    **get_for_all)
+@front_bp.route(
+    '_c/<full_uid:member_company_full_id>/<string:member_company_name>/_d/<string:division_name>/<int:page>/tags/<string:tags>/',
+    **get_for_all)
+@get_portal
+def old_subportal_division(portal,
+                           division_name=None, page=None, tags=None,
+                           member_company_full_id=None, member_company_name=None):
+    search_text, dvsn = old_get_search_text_and_division(portal, division_name=division_name)
+
+    if dvsn:
+        return redirect(url_for('front.division',
+                                division_name=dvsn.name, division_id=dvsn.id,
+                                member_company_id=member_company_full_id, member_company_name=member_company_name,
+                                tags=tags, page=page))
+    else:
+        abort(404)
+        # return redirect(url_for('front.404', search=division_name))
+
+
+division_prefix = 'd/<short_uid:division_id>/<string:division_name>/'
+
+
+@front_bp.route('/', **get_for_all)
+@front_bp.route('<int:page>/', **get_for_all)
+@front_bp.route('tags/<string:tags>/', **get_for_all)
+@front_bp.route('<int:page>/tags/<string:tags>/', **get_for_all)
+@front_bp.route(division_prefix, **get_for_all)
+@front_bp.route(division_prefix + '<int:page>/', **get_for_all)
+@front_bp.route(division_prefix + 'tags/<string:tags>/', **get_for_all)
+@front_bp.route(division_prefix + '<int:page>/tags/<string:tags>/', **get_for_all)
+@front_bp.route(division_prefix + company_prefix, **get_for_all)
+@front_bp.route(division_prefix + company_prefix + '<int:page>/', **get_for_all)
+@front_bp.route(division_prefix + company_prefix + 'tags/<string:tags>/', **get_for_all)
+@front_bp.route(division_prefix + company_prefix + '<int:page>/tags/<string:tags>/', **get_for_all)
+@get_portal
+def division(portal,
+             division_name=None, division_id=None,
+             member_company_id=None, member_company_name=None,
+             page=None, tags=None):
     # this function was created to work with search in division also. I just commented this feature in case we will want back it
     # functions get_members_tags_pages_search and get_articles_tags_pages_search still works (should work) with search text but we pass there None
-    if member_company_id is None:
 
-        search_text, dvsn = get_search_text_and_division(portal, division_name)
+
+    member_company = None
+
+    if member_company_id:
+        membership, member_company, dvsn_catalog_or_subportal = get_company_member_and_division(portal,
+                                                                                                member_company_id)
+        if not membership:
+            abort(404)
+            # return redirect(url_for('front.404'))
+
+    search_text, dvsn = get_search_text_and_division(portal, division_id=division_id)
+
+    if not dvsn:
+        abort(404)
+        # return redirect(url_for('front.404'))
+
+    if (dvsn and (dvsn.get_url() != division_name)) or \
+            (member_company and TransliterationConverter.transliterate(portal.lang,
+                                                                       member_company.name) != member_company_name):
+        return redirect(url_for('front.division',
+                                tags=tags, page=page,
+                                division_id=dvsn.id if dvsn else None,
+                                division_name=dvsn.get_url() if dvsn else None,
+                                member_company_id=member_company.id if member_company else None,
+                                member_company_name=member_company.name if member_company else None
+                                ))
+
+    if dvsn and dvsn.portal_division_type_id == 'company_subportal':
+        member_company = Company.get(dvsn.settings['company_id'])
+        dvsn_catalog_or_subportal = dvsn
+        membership = utils.db.query_filter(MemberCompanyPortal, company_id=member_company.id, portal_id=portal.id).one()
+
+    if member_company is None:
 
         if dvsn.portal_division_type_id in ['index', 'news', 'events']:
 
-            articles_data = get_articles_tags_pages_search(portal, dvsn, page, tags, None)
+            articles_data = get_articles_tags_pages_search(portal, dvsn, page if page else 1, tags, None)
             if 'redirect' in articles_data:
                 return articles_data['redirect']
 
@@ -373,80 +481,85 @@ def division(portal, division_name=None, page=1, tags=None, member_company_id=No
 
         elif dvsn.portal_division_type_id == 'catalog':
 
-            membership_data = get_members_tags_pages_search(portal, dvsn, page, tags, None)
+            membership_data = get_members_tags_pages_search(portal, dvsn, page if page else 1, tags, None)
 
             return render_template('front/' + g.portal_layout_path + 'division_catalog.html',
                                    division=dvsn.get_client_side_dict(),
                                    portal=portal_and_settings(portal),
                                    seo=dvsn.seo_dict(),
                                    analytics=portal.get_analytics(page_type=dvsn.portal_division_type_id),
-                                   **membership_data
-                                   )
-        elif dvsn.portal_division_type_id == 'company_subportal':
-            member_company_page = 'about'
+                                   **membership_data)
 
-            membership, member_company, dvsn = \
-                get_company_member_and_division(portal, dvsn.settings['company_id'], member_company_name)
-
-            return render_template('front/' + g.portal_layout_path + 'company_' + member_company_page + '.html',
-                                   portal=portal_and_settings(portal),
+        elif dvsn.portal_division_type_id == 'custom_html':
+            return render_template('front/' + g.portal_layout_path + 'division_custom_html.html',
                                    division=dvsn.get_client_side_dict(),
-                                   tags=all_tags(portal),
-                                   seo=membership.seo_dict(),
-                                   analytics=portal.get_analytics(page_type=dvsn.portal_division_type_id,
-                                                             company_id=member_company.id),
-                                   membership=utils.db.query_filter(MemberCompanyPortal, company_id=member_company.id,
-                                                                    portal_id=portal.id).one(),
-                                   url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
-                                   member_company=member_company.get_client_side_dict(
-                                       more_fields='employments,employments.user,employments.user.avatar.url'),
-                                   company_menu_selected_item=member_company_page,
-                                   member_company_page=member_company_page)
+                                   portal=portal_and_settings(portal),
+                                   seo=dvsn.seo_dict(),
+                                   analytics=portal.get_analytics(page_type=dvsn.portal_division_type_id))
+
         else:
-            return 'unknown division.portal_division_type_id = %s' % (dvsn.portal_division_type_id,)
+            raise exc.BadDataProvided('unknown division.portal_division_type_id = %s' % (dvsn.portal_division_type_id,))
+
 
     else:
 
-        # TODO: OZ by OZ: redirect if company name is wrong. 404 if id is wrong
-        membership, member_company, dvsn = \
-            get_company_member_and_division(portal, member_company_id, member_company_name)
-        search_text, subportal_dvsn = get_search_text_and_division(portal, division_name)
-
-        articles_data = get_articles_tags_pages_search(portal, subportal_dvsn, page, tags, None,
+        articles_data = get_articles_tags_pages_search(portal, dvsn, page if page else 1, tags, None,
                                                        company_publisher=member_company)
+
         if 'redirect' in articles_data:
             return articles_data['redirect']
 
         return render_template('front/' + g.portal_layout_path + 'division_company.html',
                                portal=portal_and_settings(portal),
-                               division=dvsn.get_client_side_dict(),
+                               division=dvsn_catalog_or_subportal.get_client_side_dict(),
                                seo=membership.seo_dict(),
-                               analytics=portal.get_analytics(page_type=dvsn.portal_division_type_id,
-                                                         company_id=member_company.id),
+                               analytics=portal.get_analytics(
+                                   page_type=dvsn_catalog_or_subportal.portal_division_type_id,
+                                   company_id=member_company.id),
                                member_company=member_company.get_client_side_dict(),
                                membership=membership.get_client_side_dict(fields="id|company|tags"),
                                url_catalog_tag=lambda tag_text: url_catalog_toggle_tag(portal, tag_text),
-                               company_menu_selected_item=subportal_dvsn.get_client_side_dict(),
-                               **articles_data
-                               )
+                               company_menu_selected_item=dvsn.get_client_side_dict(),
+                               **articles_data)
 
 
-@front_bp.route('_a/<string:publication_id>/<path:publication_title>', permissions=AvailableForAll())
+@front_bp.route('_a/<short_uid:publication_id>/<translit:publication_title>', permissions=AvailableForAll())
 @get_portal
-def article_details(portal, publication_id, publication_title):
-    # TODO: OZ by OZ: redirect if title is wrong
+def old_article_details_redirect(portal, publication_id=None, publication_title=None):
     publication = Publication.get(publication_id)
+    return redirect(url_for('front.article_details', publication_id=publication.id,
+                            publication_title=publication.material.title))
+
+
+@front_bp.route('_a/<full_uid:publication_full_id>/<path:publication_title>', permissions=AvailableForAll())
+@front_bp.route('a/<short_uid:publication_id>/<translit:publication_title>', permissions=AvailableForAll())
+@get_portal
+def article_details(portal, publication_full_id=None, publication_id=None, publication_title=None):
+    publication = Publication.get(publication_id if publication_id else publication_full_id)
+
+    if publication_id is None or \
+                    publication_title != TransliterationConverter.transliterate(portal.lang,
+                                                                                publication.material.title):
+        return redirect(url_for('front.article_details', publication_id=publication.id,
+                                publication_title=publication.material.title))
+
+    article = publication.create_article()
+
     article_visibility = publication.article_visibility_details()
 
-    division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()
-    if article_visibility is True:
+    if article_visibility is True or article['external_url']:
         publication.add_to_read()
-    else:
+
+    if article['external_url']:
+        return redirect(article['external_url'])
+
+    if article_visibility is not True:
         utils.session.back_to_url('front.article_details', host=portal.host, publication_id=publication_id,
                                   publication_title=publication_title)
 
+    division = g.db().query(PortalDivision).filter_by(id=publication.portal_division_id).one()
     def url_search_tag(tag):
-        return url_for('front.division', tags=tag, division_name=division.name)
+        return url_for('front.division', tags=tag, division_name=division.get_url(), division_id=division.id)
 
     return render_template('front/' + g.portal_layout_path + 'article_details.html',
                            portal=portal_and_settings(portal),
@@ -454,19 +567,19 @@ def article_details(portal, publication_id, publication_title):
                            division=division.get_client_side_dict(),
                            seo=publication.seo_dict(),
                            analytics=portal.get_analytics(page_type='publication',
-                                                     company_id=publication.material.company_id,
-                                                     publication_visibility=publication.visibility,
-                                                     publication_reached='True' if article_visibility is True else 'False'),
-                           article=publication.create_article(),
+                                                          company_id=publication.material.company_id,
+                                                          publication_visibility=publication.visibility,
+                                                          publication_reached='True' if article_visibility is True else 'False'),
+                           article=article,
                            article_visibility=article_visibility,
                            articles_related=publication.get_related_articles(),
                            )
 
 
-@front_bp.route('_s/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('_s/<int:page>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('_s/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
-@front_bp.route('_s/tags/<string:tags>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('s/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('s/<int:page>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('s/tags/<string:tags>/', methods=['GET'], permissions=AvailableForAll())
+@front_bp.route('s/tags/<string:tags>/<int:page>/', methods=['GET'], permissions=AvailableForAll())
 @get_portal
 def search(portal, page=1, tags=None):
     search_data = get_search_tags_pages_search(portal, page, tags, request.args.get('search') or '')
@@ -503,15 +616,57 @@ def robots_txt():
     return "User-agent: *\n"
 
 
+@front_bp.route('favicon.ico', methods=['GET'], strict_slashes=True, permissions=AvailableForAll())
+@get_portal
+def favicon(portal:Portal):
+    from ..models.files import File, FileContent
+    from ..controllers.views_file import send_file, file_query
+    from io import BytesIO
+    import os
+    import re
+    import urllib.parse
+
+    file_id = portal.favicon_file_img.proceeded_image_file_id
+    image_query = file_query(File, file_id)
+
+    if not image_query:
+        root_dir = os.path.dirname(os.path.realpath(__file__))
+        return send_from_directory(root_dir + '/../static', 'favicon.ico')
+
+    if 'HTTP_REFERER' in request.headers.environ:
+        allowedreferrer = re.sub(r'^(https?://[^/]+).*$', r'\1', request.headers.environ['HTTP_REFERER'])
+    else:
+        allowedreferrer = ''
+
+    if True:
+        image_query_content = g.db.query(FileContent).filter_by(id=file_id).first()
+        return send_file(BytesIO(image_query_content.content),
+                         etag=file_id,
+                         mimetype=image_query.mime, as_attachment=(request.args.get('d') is not None),
+                         attachment_filename=urllib.parse.quote(
+                             image_query.name,
+                             safe='!"#$%&\'()*+,-.0123456789:;<=>?@[\]^_`{|}~ ¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸'
+                                  '¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ')
+                         )
+    else:
+        return abort(403)
+
+
+
+
+
+
 @front_bp.route('sitemap.xml', methods=['GET'], strict_slashes=True, permissions=AvailableForAll())
 @get_portal
 def sitemap(portal):
+    print(portal)
     from sqlalchemy import desc
 
     return render_template('front/sitemap.xml', portal=portal,
                            divisions=[{
                                           'loc': portal.host + url_for('front.division',
-                                                                       division_name=d.name),
+                                                                       division_id=d.id,
+                                                                       division_name=d.get_url()),
                                           'lastmod': max(d.md_tm, (g.db().query(Publication).filter_by(
                                               portal_division_id=d.id).order_by(
                                               desc(Publication.md_tm)).first() or d).md_tm)
@@ -526,7 +681,8 @@ def sitemap(portal):
                                          'loc': url_for('front.article_details', publication_id=p.id,
                                                         publication_title=p.material.title),
                                          'lastmod': p.md_tm
-                                     } for p in portal.publications if p.status == Publication.STATUSES['PUBLISHED']]
+                                     } for p in portal.publications if
+                                     p.status == Publication.STATUSES['PUBLISHED'] and not p.material.external_url]
                            )
 
 

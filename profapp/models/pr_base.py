@@ -20,7 +20,7 @@ from config import Config
 from .. import utils
 from ..constants.SEARCH import RELEVANCE
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..controllers import errors
+from ..models import exceptions
 
 Base = declarative_base()
 
@@ -36,10 +36,10 @@ class DateIntervalDescriptor(object):
     # def proxy_setter(self, file_image_crop: FileImageCrop, client_data):
     def __set__(self, instance, data):
         if data['amount'] < 0:
-            raise errors.BadDataProvided({'message': 'amount < 0'})
+            raise exceptions.BadDataProvided('amount < 0')
         if data['resolution'] not in ['days', 'years', 'weeks', 'months']:
-            raise errors.BadDataProvided(
-                {'message': "resolution should have following values: 'days', 'years', 'weeks', 'months'"})
+            raise exceptions.BadDataProvided(
+                "resolution should have following values: 'days', 'years', 'weeks', 'months'")
 
         instance = "%s %s" % (int(data['amount']), data['resolution'])
 
@@ -347,7 +347,7 @@ class Search(Base):
             filename_, line_, func_, text_ = tb_info[-1]
             message = 'An error occurred on File "{file}" line {line}\n {assert_message}'.format(
                 line=line_, assert_message=e.args, file=filename_)
-            raise errors.BadDataProvided({'message': message})
+            raise exceptions.BadDataProvided(message)
 
 
 class Grid:
@@ -393,9 +393,6 @@ class Grid:
 
 
 class PRBase:
-    # TODO: OZ by OZ: for what is this property?
-    omit_validation = False
-
     # search_fields = {}
 
     def __init__(self):
@@ -443,10 +440,14 @@ class PRBase:
 
     @staticmethod
     def parse_timestamp(str):
-        try:
-            return datetime.datetime.strptime(str, "%a, %d %b %Y %H:%M:%S %Z")
-        except:
-            return None
+        formats = ["%a, %d %b %Y %H:%M:%S %z", "%a, %d %b %Y %H:%M:%S %Z"]
+        for fmt in formats:
+            try:
+                return datetime.datetime.strptime(str, fmt).replace(tzinfo=None)
+            except Exception as e:
+                pass
+        return None
+
 
     @staticmethod
     def parse_date(str):
@@ -519,7 +520,7 @@ class PRBase:
 
         for (atr, regexp) in regexps.items():
             if not re.match(regexp, getattr(self, atr)):
-                ret['errors'][atr] = "%s should match regexp %s" % (atr, regexp)
+                ret['errors'][atr] = "please select correct %s (%s)" % (atr, regexp)
         return ret
 
     @staticmethod
@@ -575,8 +576,11 @@ class PRBase:
 
     @classmethod
     def get(cls, id, returnNoneIfNotExists=False):
-        return g.db().query(cls).filter(cls.id == id).first() if returnNoneIfNotExists else g.db().query(cls).filter(
-            cls.id == id).one()
+        if not id:
+            return None
+        cond = cls.id.like('%' + id) if len(id) == 12 else cls.id == id
+        q = g.db().query(cls).filter(cond)
+        return q.first() if returnNoneIfNotExists else q.one()
 
     @classmethod
     def all(cls):
@@ -733,13 +737,13 @@ class PRBase:
     def validate_before_update(mapper, connection, target):
         ret = target.validate(False)
         if len(ret['errors'].keys()):
-            raise errors.ValidationException(ret)
+            raise exceptions.Validation(ret)
 
     @staticmethod
     def validate_before_insert(mapper, connection, target):
         ret = target.validate(True)
         if len(ret['errors'].keys()):
-            raise errors.ValidationException(ret)
+            raise exceptions.Validation(ret)
 
     # @staticmethod
     # def validate_before_delete(mapper, connection, target):

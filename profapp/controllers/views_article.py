@@ -10,7 +10,7 @@ from ..models.materials import Material, Publication
 from ..models.pr_base import PRBase, Grid
 from ..models.tag import Tag
 from ..models.permissions import UserIsActive, EmployeeHasRightAtCompany, RIGHT_AT_COMPANY, RIGHT_AT_PORTAL, \
-    CheckFunction
+    CheckFunction, AvailableForAll
 from profapp.models.permissions import ActionsForMaterialAtMembership, ActionsForPublicationAtMembership
 
 
@@ -26,7 +26,7 @@ def material_can_be_edited():
                   permissions=material_can_be_edited())
 def edit_material(company_id, material_id=None):
     company = Company.get(company_id)
-    return render_template('article/edit.html', material_id=material_id, company_id=company_id, company=company)
+    return render_template('article/material_edit.html', material_id=material_id, company_id=company_id, company=company)
 
 
 @article_bp.route('/<string:company_id>/material_update/<string:material_id>/', methods=['OK'],
@@ -34,22 +34,26 @@ def edit_material(company_id, material_id=None):
 @article_bp.route('/<string:company_id>/material_create/', methods=['OK'], permissions=UserIsActive())
 def edit_material_load(json_data, company_id=None, material_id=None):
     action = g.req('action', allowed=['load', 'validate', 'save'])
+    company = Company.get(company_id)
 
     if material_id:
         material = Material.get(material_id)
     else:
-        material = Material(company=Company.get(company_id), company_id=company_id, editor=g.user)
+        material = Material(company=company, company_id=company_id, editor=g.user, source_type ='profireader', source_id = '')
 
     if action == 'load':
+#        return {'material': material.get_client_side_dict(fields='id,cr_tm,md_tm,external_url,company_id,illustration.url,title,subtitle,author,short,long,keywords')}
+#        return {'material': material.get_client_side_dict(fields='id,cr_tm,md_tm,external_url,company_id,illustration.url,title,subtitle,author,short,long,keywords,company.id|name')}
         return {'material': material.get_client_side_dict(more_fields='long|company|illustration,image_galleries.items,image_galleries.id')}
     else:
-        parameters = utils.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author')
+        parameters = utils.filter_json(json_data, 'material.title|subtitle|short|long|keywords|author|external_url')
         material.attr(parameters['material'])
         if action == 'validate':
             material.detach()
             return material.validate(material.id is not None)
         else:
-            material.long = material.check_galleries(json_data['material']['image_galleries'], material.long)
+            (material.long, material.image_galleries) = MaterialImageGallery.check_html(
+                material.long, json_data['material']['image_galleries'], material.image_galleries, company)
             material.illustration = json_data['material']['illustration']
             material.save()
 
@@ -237,7 +241,7 @@ def publish(json, publication_id, actor_membership_id, request_from):
     # return gallery.get_client_side_dict(more_fields='items')
 
 
-@article_bp.route('/gallery_load/', methods=['OK'], permissions=UserIsActive())
+@article_bp.route('/gallery_load/', methods=['OK'], permissions=AvailableForAll())
 def gallery_load(json):
     gallery = MaterialImageGallery.get(json['gallery_id'])
     return gallery.get_client_side_dict(more_fields='items')

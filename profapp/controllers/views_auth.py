@@ -13,7 +13,7 @@ from ..models.messenger import Socket
 from ..models.portal import Portal
 from ..models.users import User
 from ..models.permissions import AvailableForAll
-
+from ..models import exceptions
 
 def set_after_logination_params():
     back_to = g.req('back_to')
@@ -123,10 +123,9 @@ def email_confirmation(token=None):
 
 @auth_bp.route('request_new_email_confirmation_token/', methods=["OK"], permissions = AvailableForAll())
 def request_new_email_confirmation_token(json_data):
-    from ..constants import REGEXP
     email = json_data.get('email', '')
 
-    if not re.match(REGEXP.EMAIL, email):
+    if not utils.is_email(email):
         return {'error': 'Please enter correct email'}
     else:
         user = utils.db.query_filter(User, address_email=email).first()
@@ -167,8 +166,7 @@ def login_signup_soc_network(soc_network_name):
             result.user.update()
             result_user = result.user
             if result_user.email is None:
-                return render_template('error.html',
-                                       error="You haven't confirm email bound to your soc-network account yet. ")
+                raise exceptions.PRException("You haven't confirm email bound to your soc-network account yet")
             # db_fields = DB_FIELDS[soc_network_names[-1]]
             # user = g.db.query(User).filter(getattr(User, db_fields['id']) == result_user.id).first()
 
@@ -199,9 +197,9 @@ def login_signup_soc_network(soc_network_name):
                 back_to = check_after_logination_params(user)
                 return redirect(back_to if back_to else url_for('index.index'))
             else:
-                return render_template('error.html', error='cant login/signup user')
+                raise exceptions.PRException('cant login/signup user')
         elif result.error:
-            return render_template('error.html', debug=result.error)
+            raise exceptions.PRException(result.error)
 
     return response
 
@@ -221,10 +219,9 @@ def request_new_reset_password_token():
 
 @auth_bp.route('/request_new_password/', methods=["OK"], permissions = AvailableForAll())
 def request_new_reset_password_token_load(json_data):
-    from ..constants import REGEXP
     email = json_data.get('email', '')
 
-    if not re.match(REGEXP.EMAIL, email):
+    if not utils.is_email(email):
         return {'error': 'Please enter correct email'}
     else:
         user = utils.db.query_filter(User, address_email=email).first()

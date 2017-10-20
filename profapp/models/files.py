@@ -21,7 +21,8 @@ from .google import GoogleAuthorize, GoogleToken
 from .pr_base import PRBase, Base
 from .. import utils
 from ..constants.TABLE_TYPES import TABLE_TYPES
-from ..controllers.errors import VideoAlreadyExistInPlaylist
+# from ..controllers.errors import VideoAlreadyExistInPlaylist
+from . import exceptions
 from profapp.models.permissions import ActionsForFileManagerAtMembership
 
 
@@ -718,7 +719,7 @@ class ImagesDescriptor(object):
 
 
 class FileImgDescriptor(object):
-    browse = True
+    browse = False
     upload = True
     crop = True
     image_size = [600, 600]
@@ -768,7 +769,13 @@ class FileImgDescriptor(object):
                                  'provenance_file_id': file_image_crop.provenance_image_file_id
                                  } if file_image_crop else {'type': 'none'},
 
-            'cropper': {
+            'cropper': self.croper_data()
+        }
+
+        return self.after_get(instance, file_image_crop, ret) if self.after_get else ret
+
+    def croper_data(self):
+        return {
                 'browse': self.browse,
                 'upload': self.upload,
                 'crop': self.crop,
@@ -776,9 +783,8 @@ class FileImgDescriptor(object):
                 'min_size': self.min_size,
                 'aspect_ratio': self.aspect_ratio,
                 'no_selection_url': self.no_selection_url
-            }}
+            }
 
-        return self.after_get(instance, file_image_crop, ret) if self.after_get else ret
 
     def get_correct_coordinates_and_provenance_image(self, coords_by_client, img):
 
@@ -839,6 +845,8 @@ class FileImgDescriptor(object):
                 file_image_crop.delete()
             return False
 
+        import urllib.request as req
+        import base64
         if sel_by_user_type == 'provenance':
             user_img = Image.open(BytesIO(file_image_crop.provenance_image_file.file_content.content))
         elif sel_by_user_type == 'browse':
@@ -846,6 +854,10 @@ class FileImgDescriptor(object):
         elif sel_by_user_type == 'upload':
             user_img = Image.open(
                 BytesIO(base64.b64decode(re.sub('^data:image/.+;base64,', '', sel_by_user['file']['content']))))
+        elif sel_by_user_type == 'url':
+            r = req.Request(url=sel_by_user['url'])
+            response = req.urlopen(r)
+            user_img = Image.open(BytesIO(response.read()))
         else:
             raise Exception('Unknown selected by user image source type `%s`', sel_by_user_type)
 
@@ -1145,7 +1157,7 @@ class YoutubeVideo(Base, PRBase):
             return fields
         except response_code as e:
             if e.reason == 'duplicate':
-                raise VideoAlreadyExistInPlaylist({'message': 'Video already exist in playlist'})
+                raise exceptions.BadDataProvided('Video already exist in playlist')
             elif e.reason == 'forbidden':
                 self.playlist.add_video_to_cloned_playlist_with_new_name(self)
 

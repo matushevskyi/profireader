@@ -254,18 +254,18 @@ angular.module('profireaderdirectives', ['ui.bootstrap', 'ui.bootstrap.tooltip',
             );
         }
     }])
-    .directive('prHelpTooltip', ['$compile', '$templateCache', '$controller', function ($compile, $templateCache, $controller) {
-        return {
-            restrict: 'E',
-            link: function (scope, element, attrs) {
-                element.html('<span uib-popover-html="\'' + quoteattr(scope.__('help tooltip ' + element.html())) + '\'" ' +
-                    'popover-placement="' + (attrs['placement'] ? attrs['placement'] : 'bottom') + '" ' +
-                    'popover-trigger="' + (attrs['trigger'] ? attrs['trigger'] : 'mouseenter') + '" ' +
-                    'class="' + (attrs['classes'] ? attrs['classes'] : 'glyphicon glyphicon-question-sign') + '"></span>');
-                $compile(element.contents())(scope);
-            }
-        }
-    }])
+    // .directive('prHelpTooltip', ['$compile', '$templateCache', '$controller', function ($compile, $templateCache, $controller) {
+    //     return {
+    //         restrict: 'E',
+    //         link: function (scope, element, attrs) {
+    //             element.html('<span uib-popover-html="\'' + quoteattr(scope.__('help tooltip ' + element.html())) + '\'" ' +
+    //                 'popover-placement="' + (attrs['placement'] ? attrs['placement'] : 'bottom') + '" ' +
+    //                 'popover-trigger="' + (attrs['trigger'] ? attrs['trigger'] : 'mouseenter') + '" ' +
+    //                 'class="' + (attrs['classes'] ? attrs['classes'] : 'glyphicon glyphicon-question-sign') + '"></span>');
+    //             $compile(element.contents())(scope);
+    //         }
+    //     }
+    // }])
 
 
     .directive('dateTimestampFormat', function () {
@@ -858,8 +858,6 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             formatYear: 'yy',
             startingDay: 1
         },
-
-
         tinymceDefaultOptions: {
             inline: false,
             menu: [],
@@ -867,9 +865,8 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
             plugins: 'advlist autolink link image charmap print paste table media',
             skin: 'lightgray',
             theme: 'modern',
-            'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link image table",
-            //'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | link image table"[*],
-            'valid_elements': "iframe[*],img[*],table[*],tbody[*],td[*],th[*],tr[*],p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*]",
+            toolbar1: "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link image table",
+            valid_elements: "iframe[*],img[*],table[*],tbody[*],td[*],th[*],tr[*],p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*],object[*]",
             //init_instance_callback1: function () {
             //    console.log('init_instance_callback', arguments);
             //},
@@ -893,78 +890,13 @@ module.run(function ($rootScope, $ok, $sce, $uibModal, $sanitize, $timeout, $tem
                 ;
 
             },
-            //valid_elements: Config['article_html_valid_elements'],
-            //valid_elements: 'a[class],img[class|width|height],p[class],table[class|width|height],th[class|width|height],tr[class],td[class|width|height],span[class],div[class],ul[class],ol[class],li[class]',
             //TODO: OZ by OZ: select css for current theme. also look for another place with same todo
             content_css: [static_address('front/css/bootstrap.css'), static_address('css/article.css')],
 
-            //paste_auto_cleanup_on_paste : true,
-            //paste_remove_styles: true,
-            //paste_remove_styles_if_webkit: true,
-            //paste_strip_class_attributes: "all'),
-
-            //style_formats: [
-            //    {title: 'Bold text', inline: 'b'},
-            //    {title: 'Red text', inline: 'span', styles: {color: '#ff0000'}},
-            //    {title: 'Red header', block: 'h1', styles: {color: '#ff0000'}},
-            //
-            //    {
-            //        title: 'Image Left',
-            //        selector: 'img',
-            //        styles: {
-            //            'float': 'left',
-            //            'margin': '0 10px 0 10px'
-            //        }
-            //    },
-            //    {
-            //        title: 'Image Right',
-            //        selector: 'img',
-            //        styles: {
-            //            'float': 'right',
-            //            'margin': '0 0 10px 10px'
-            //        }
-            //    }
-            //]
 
         }
     })
 });
-
-
-// function cleanup_html(html) {
-//     normaltags = '^(span|a|br|div|table)$';
-//     common_attributes = {
-//         whattr: {'^(width|height)$': '^([\d]+(.[\d]*)?)(em|px|%)$'}
-//     };
-//
-//     allowed_tags = {
-//         '^table$': {allow: '^(tr)$', attributes: {whattr: true}},
-//         '^tr$': {allow: '^(td|th)$', attributes: {}},
-//         '^td$': {allow: normaltags, attributes: {whattr: true}},
-//         '^a$': {allow: '^(span)$', attrсibutes: {'^href$': '.*'}},
-//         '^img$': {allow: false, attributes: {'^src$': '.*'}},
-//         '^br$': {allow: false, attributes: {}},
-//         '^div$': {allow: normaltags, attributes: {}}
-//     };
-//
-//     $.each(allowed_tags, function (tag, properties) {
-//         var attributes = properties.attributes ? properties.attributes : {}
-//         $.each(attributes, function (attrname, allowedvalus) {
-//             if (allowedvalus === true) {
-//                 allowed_tags[tag].attributes[attrname] = common_attributes[attrname] ? common_attributes[attrname] : '.*';
-//             }
-//         });
-//     });
-//
-//     var tags = html.split(/<[^>]*>/);
-//
-//     $.each(tags, function (tagindex, tag) {
-//         console.log(tagindex, tag);
-//     });
-//
-//     return html;
-// }
-
 
 None = null;
 False = false;
@@ -1160,22 +1092,54 @@ function buildAllowedTagsAndAttributes() {
 }
 
 function find_and_build_url_for_endpoint(dict, rules, host) {
+
     var found = false;
     var dict1 = {};
 
+    // $.each(rules, function (ind, rule) {
+    //     var ret = rule;
+    //     var prop = null;
+    //     var dict1 = $.extend({}, dict);
+    //     for (prop in dict1) {
+    //         ret = ret.replace('<' + prop + '>', dict[prop]);
+    //         delete dict1[prop];
+    //     }
+    //     if (!ret.match('<[^<]*>')) {
+    //         found = ret;
+    //         return false;
+    //     }
+    // });
+
+
     $.each(rules, function (ind, rule) {
-        var ret = rule;
-        var prop = null;
+        var ret = '';
         var dict1 = $.extend({}, dict);
-        for (prop in dict1) {
-            ret = ret.replace('<' + prop + '>', dict[prop]);
-            delete dict1[prop];
-        }
-        if (!ret.match('<[^<]*>')) {
+        $.each(rule, function (ind1, match) {
+            if (typeof match == 'string') {
+                ret = ret + match;
+            }
+            else {
+                if (match['name'] in dict1) {
+                    var r = dict1[match['name']];
+                    if ('to_url_javascript' in match) {
+                        r = eval('(' + match['to_url_javascript'] + ')("' + r + '")');
+                    }
+                    ret += r;
+                    delete dict1[match['name']];
+                }
+                else {
+                    ret = false;
+                    return false;
+                }
+            }
+        });
+
+        if (ret !== false) {
             found = ret;
             return false;
         }
     });
+
 
     if (found === false) {
         console.error('Can`t found flask endpoint for passed dictionary', dict, rules);
@@ -1367,9 +1331,11 @@ publications_counts_by_status_and_visibility_cell = function (value) {
     var ret = [];
     $.each(all_visibilities,
         function (ind, visibility) {
-            ret.push(publication_counts_span('PUBLISHED', visibility, value['by_status_visibility']['PUBLISHED'][visibility]));
+            if (value['by_status_visibility']) {
+                ret.push(publication_counts_span('PUBLISHED', visibility, value['by_status_visibility']['PUBLISHED'][visibility]));
+            }
         });
-    return publication_counts_span('PUBLISHED', '', value['by_status']['PUBLISHED'], 'bold') + '</span> = ' + ret.join('+');
+    return (value['by_status']?(publication_counts_span('PUBLISHED', '', value['by_status']['PUBLISHED'], 'bold') + ' = '):'') + ret.join('+');
 };
 
 publications_counts_by_status_and_visibility_tooltip = function (value) {

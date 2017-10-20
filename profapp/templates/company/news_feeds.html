@@ -1,0 +1,198 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block head %}
+    {{ super() }}
+    {% include '_ruslan/partials/_header_files_grid.html' %}
+{% endblock head %}
+
+{% block title %}{{ _('News feets at %(company_name)s', {'company_name': company.name}) }}{% endblock title %}
+
+{% block portal_content %}
+
+    {% include 'company/company_base_angular.html' %}
+
+    <script>
+
+    module.controller('PortalPlanController', function ($scope) {
+
+    });
+
+        module.controller('news_feeds', ['$scope', '$ok', '$af', function ($scope, $ok, $af) {
+
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('news_feeds')
+
+            $scope.company = {{ company.get_client_side_dict()|tojson|safe }};
+            $scope.$$translate = {{ translates('news_feeds')|safe }};
+
+            $scope.url_load = '{{ url_for('company.news_feeds_load', company_id=company.id)}}';
+
+
+{#            $scope.url_material_create = {{ raw_url_for('article.edit_material')|safe }};#}
+{#            $scope.url_material_update = {{ raw_url_for('article.edit_material')|safe }};#}
+{#            $scope.url_publication_update = {{ raw_url_for('article.edit_material')|safe }};#}
+{#            $scope.actions = {{ actions|safe }}#}
+
+
+{#            $scope.grid_action = function (id, action, row, column_name) {#}
+{#                if(row.actions[action] == true){#}
+{#                        console.log(row)#}
+{#                    location.href = $scope.url_publication_update({company_id:$scope.company.id, publication_id: row.id})#}
+{#                }else{#}
+{#                    add_message(row.actions[action], 'danger', 3000)#}
+{#                }#}
+{#            };#}
+{##}
+{#            $scope.url_publication_details = {{ raw_url_for('front.article_details')|safe }};#}
+{##}
+            {% raw %}
+
+            $scope.addNewsFeed = function () {
+                $scope.data.news_feeds.push({
+                    id: randomHash(),
+                    name: '',
+                    cr_tm: null,
+                    source: '',
+                });
+            };
+
+            $scope.news_feeds_is_not_active = function (news_feed) {
+                return news_feed && news_feed['status'] === 'DELETED';
+            };
+
+
+            $scope.removeNewsFeed = function (index) {
+                if ($scope.data.news_feeds[index]['status'] == 'DELETED') {
+                    $scope.data.news_feeds[index]['status'] = $scope.data.news_feeds[index]['old_status'];
+                    return;
+                }
+                if ($scope.data.news_feeds[index]['cr_tm']) {
+                    $scope.data.news_feeds[index]['old_status'] = $scope.data.news_feeds[index]['status'];
+                    $scope.data.news_feeds[index]['status'] = 'DELETED';
+                } else {
+                    $scope.data.news_feeds.splice(index, 1);
+
+                }
+            };
+
+            $scope.afterSave = function (resp) {
+                $scope.data = resp;
+            };
+
+
+
+        }]);
+
+        module.controller('CompanyNewsFeedController', function ($scope) {
+
+        });
+
+
+
+        {% endraw %}
+    </script>
+
+    {% raw %}
+    <div ng-controller="news_feeds" ng-cloak>
+        <form name="formCompanyNewsFeeds">
+            <div class="container pr" af af-after-save="afterSave"
+                 af-watch="[data.news_feeds]"
+                 ng-model="data">
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed"></div>
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed-message">
+                    <p><i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _(data_state + ' portal data...') }}
+                    </p>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <h2>{{ ::_('Company news feeds') }}</h2>
+                        <hr/>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('News feed name') }}</label>
+                    </div>
+
+                    <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('News feed source') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <label class="form-control border-none pull-right">{{ ::_('News feed type') }}</label>
+                    </div>
+
+                    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                        <button class="pull-right btn btn-success form-control" type="button"
+                                popover-placement="left"
+                                pr-validation-answer="data_validation:one_default_active_news_feeds"
+                                ng-click="addNewsFeed()"><i class="fa fa-plus"></i> {{ ::_('add news feed') }}
+                        </button>
+                    </div>
+
+                </div>
+                <div ng-model="data.news_feeds">
+                    <div class="row"
+                         ng-controller="CompanyNewsFeedController"
+                         ng-repeat="(news_feed_index, news_feed) in data.news_feeds">
+                        <div ng-class="{'disabled': news_feeds_is_not_active(news_feed)}">
+                            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 p025em">
+                                <input class="form-control w100 di"
+                                       pr-validation-disable="news_feeds_is_not_active(news_feeds)"
+                                       ng-disabled="news_feeds_is_not_active(news_feeds)"
+                                       pr-validation-answer="data_validation:news_feeds[news_feed.id].name"
+                                       placeholder="{{ _('News feed name placeholder') }}"
+                                       ng-model="news_feed.name"/>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-4 col-xs-4 p025em">
+                                <input class="form-control w100 di"
+                                       pr-validation-disable="news_feeds_is_not_active(news_feeds)"
+                                       ng-disabled="news_feeds_is_not_active(news_feeds)"
+                                       pr-validation-answer="data_validation:news_feeds[news_feed.id].source"
+                                       placeholder="{{ _('http(s):// - rss url') }}"
+                                       ng-model="news_feed.source"/>
+                            </div>
+
+
+
+                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                            <select class="form-control w100 di">
+                                <option>{{ ::_('RSS') }}</option>
+                            </select>
+                        </div>
+                            </div>
+
+
+                        <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 p025em">
+                            <button ng-click="removeNewsFeed($index)"
+                                    pr-validation-answer="data_validation:news_feed[news_feed.id].actions"
+                                    class="pull-right btn btn-warning form-control"><i
+                                    ng-class="{'fa-minus': news_feeds['status'] != 'DELETED','fa-undo': news_feeds['status'] == 'DELETED'}"
+                                    class="fa"></i>
+                                {{ _(news_feed['status'] == 'DELETED'?'undo remove':'remove news_feeds') }}
+                            </button>
+                        </div>
+
+
+                    </div>
+                </div>
+                <div class="row">
+                    <hr/>
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12 p025em">
+                        <button class="btn btn-primary pull-right border-radius w20em"
+                                type="button" ng-click="$af.save(data)"
+                                ng-disabled="!$af.isActionAllowed(data, 'save')">{{
+                            ::_('Save news_feedss') }}
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </form>
+    </div>
+    {% endraw %}
+
+
+{% endblock portal_content %}

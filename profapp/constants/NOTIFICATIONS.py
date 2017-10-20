@@ -155,6 +155,9 @@ class NotifyEmploymentChange(Notify):
             {'old_status': old_status, 'new_status': new_status},
             rights_at_company=RIGHT_AT_COMPANY.EMPLOYEE_ENLIST_OR_FIRE)
 
+
+
+
     #    def NOTIFY_STATUS_CHANGED_BY_USER(self, old_status, new_status):
     #        """status of employment changed from `%(old_status)s` to `%(new_status)s` by user"""
     #        return self._call_send_notification_about_employment_change(
@@ -171,6 +174,16 @@ class NotifyEmploymentChange(Notify):
         return self._send_notification_about_employment_change(
             'portal %s was created' % (jinja.link_external(),),
             {'portal': {'host': portal_host, 'name': portal_name}})
+
+
+class NotifyCompanyEmployees(Notify):
+    def NOTIFY_MATERIALS_CREATED_FROM_EXTERNAL_SOURCES(self, source_id, source_name, more_phrases_to_employees = []):
+        return self._send_notification_about_company_changes(
+            'following materials was created from external source %(external_source_link_and_name)s' %
+            {'external_source_link_and_name': utils.jinja.link('url_source_link', 'source_name')},
+            dictionary={'source_name': source_name, 'url_source_link': utils.jinja.grid_url(source_id ,'company.news_feeds', company_id = self.id)},
+            rights_at_company=RIGHT_AT_COMPANY.ARTICLES_SUBMIT_OR_PUBLISH,
+            more_phrases_to_company = more_phrases_to_employees)
 
 
 class NotifyUser(Notify):

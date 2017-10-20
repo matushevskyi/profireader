@@ -10,7 +10,9 @@
     <div class="article article-details {% if article['illustration']['selected_by_user']['type'] != 'none' %}article-with-illustration{% endif %}">
         <div class="article-division-and-tags pr">
             <div class="article-division nw">
-                <a href="{{ url_for('front.division', division_name=article['portal_division']['name']) }}">{{ article['portal_division']['name']|safe }}</a>
+                <a href="{{ url_for('front.division',
+                division_id=article['portal_division']['id'],
+                division_name=article['portal_division']['url']) }}">{{ article['portal_division']['name']|safe }}</a>
             </div>
             <div class="tags-at-right nw">
                 {% for tag in article.tags %}
@@ -30,8 +32,8 @@
             <div class="short-text"><h5>{{ article.short|safe }}</h5></div>
         </div>
         {% if article_visibility == True %}
-            <link href="{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/image_gallery.css') }}" rel="stylesheet">
-            <script src="{{ static_address('tinymce.pr/plugins/tinymce-gallery-plugin/image_gallery.js') }}" data-gallery-load-url="{{ url_for('article.gallery_load') }}"></script>
+            <link href="{{ static_address('tinymce/plugins/tinymce-gallery-plugin/image_gallery.css') }}" rel="stylesheet">
+            <script src="{{ static_address('tinymce/plugins/tinymce-gallery-plugin/image_gallery.js') }}" data-gallery-load-url="{{ url_for('article.gallery_load') }}"></script>
             <div class="article-details-long-text">{{ article['long'] |safe }}</div>
         {% else %}
             <div class="article-details-long-text error">{{ article_visibility['message'] }}</div>

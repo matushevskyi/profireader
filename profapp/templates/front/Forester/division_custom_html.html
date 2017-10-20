@@ -1,0 +1,23 @@
+{% extends 'layout.html' %}
+{% block title -%}
+    {{ _('%(division_name)s - %(portal_name)s', {'portal_name': portal.name, 'division_name': division.name}) }}
+{%- endblock %}
+{% block body %}
+    {% import 'macros.html' as frontmacros %}
+    {% include 'tags_menu.html' %}
+    {% set wide_banners = {2:'1',6:'2'} %}
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 col-md-9">
+                <div class="clearfix">
+                    <main role="main">
+                       {{ division.settings.custom_html|safe }}
+                    </main>
+                </div>
+            </div>
+            <aside class="col-xs-12 col-md-3">
+                {% include 'right_banners.html' %}
+            </aside>
+        </div>
+    </div>
+{% endblock %}

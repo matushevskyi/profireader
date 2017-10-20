@@ -1,0 +1,222 @@
+{% extends "index_lazy_layout.html" %}
+
+{% block head %}
+    {{ super() }}
+    {% include '_ruslan/partials/_header_files_tinymce.html' %}
+    {% include '_ruslan/partials/_header_files_crop.html' %}
+{% endblock head %}
+
+{% block portal_content %}
+
+    {% block company_base %}
+        {% include 'company/company_base_angular.html' %}
+    {% endblock company_base %}
+
+    <script>
+        module.controller('article_edit', ['$scope', function ($scope) {
+
+            angularControllerFunction('CompanyMenuController', 'set_selected_company_menu')('materials');
+
+            $scope.$$translate = {{ translates('article_edit')|safe }};
+            $scope.data = {};
+
+            $scope.material_id = {{ ("'" + material_id + "'" if material_id else 'null')|safe }};
+
+
+            $scope.amidSave = function (resp) {
+                if (!$scope.data.material.id && resp.material.id) {
+                    window.location.href = {{ raw_url_for('article.edit_material')|safe }}({
+                        company_id: resp.material.company_id,
+                        material_id: resp.material.id
+                    })
+                }
+                else {
+                    $scope.data['material']['illustration'] = resp['material']['illustration'];
+                    add_message($scope._('material was saved'), 'success', 3000);
+                    window.location.href = {{ raw_url_for('article.material_details')|safe}}({
+                        company_id: resp.material.company_id,
+                        material_id: resp.material.id
+                    })
+                }
+            };
+
+            $scope.goToArticle = function (material) {
+                var url = {{ raw_url_for('article.material_details')|safe }}({
+                    company_id: material.company_id,
+                    material_id: material.id
+                });
+                var win = window.open(url, '_blank');
+                win.focus();
+            };
+
+            $scope.getData = function (model, deff) {
+                return deff(model);
+            };
+
+            $scope.getDataForValidation = function (model, deff) {
+                var ret = $.extend(true, {}, model);
+                delete ret['material']['image_galleries'];
+                delete ret['material']['illustration'];
+                delete ret['material']['long'];
+                return deff(ret);
+            };
+
+            $scope.amidLoad = function (resp) {
+                if (typeof resp === 'string') {
+                    location.href = '/';
+                    add_message(resp, 'warning', 2000);
+                }
+                $.each(resp['material']['image_galleries'], function (ind, gal) {
+                    $.each(gal['items'], function (ind1, item) {
+                        item['background_image'] = 'url(' + fileUrl(item['file_id']) + ')';
+                    });
+                });
+                return resp;
+            };
+            $scope.tinyArticleOptions = $.extend(true, $scope.tinymceDefaultOptions);
+            $scope.tinyArticleOptionsShortDescription = {
+                inline: false,
+                menu: [],
+                width: 750,
+                plugins: '',
+                skin: 'lightgray',
+                theme: 'modern',
+                'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent ",
+                //'toolbar1': "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | link image table"[*],
+                'valid_elements': "p[*],h1[*],h2[*],h3[*],h4[*],h5[*],h6[*],div[*],ul[*],ol[*],li[*],strong/b[*],em/i[*],span[*],blockquote[*],sup[*],sub[*],code[*],pre[*],a[*]",
+                //init_instance_callback1: function () {
+                //    console.log('init_instance_callback', arguments);
+                //},
+            };
+
+            {% if publication_id %}
+                var custom_formats = {{ tinymce_format_groups('birdy')|tojson }};
+                tinymceExtendSettings($scope.tinyArticleOptions, 'foreground | background | font | border | margin | padding', 'toolbar2', ' | ');
+            {% else %}
+                var custom_formats = {};
+            {% endif %}
+
+            var formats =
+                _.chain($.extend({}, {{ tinymce_format_groups()|tojson }}, custom_formats)).// here we have dict in form {group_label: {format: format_properties}}
+                reduce(_.extend, {}).// flatten groups
+                map(function (format_properties, format_name) { // convert each format to tinymce in flat dictionary
+                    return [format_name, convert_python_format_to_tinymce_format(format_properties)]; // form list of [key, val] pairs
+                }).object().// convert each [key, val] pair to {key: val} element
+                value(); // get result
+
+            tinymceExtendSettings($scope.tinyArticleOptions, {
+                'height': '500px',
+                'body_class': 'article-content',
+                'gallery_get_data': function (gallery_id) {
+                    return find_by_id($scope.data['material']['image_galleries'], gallery_id);
+                },
+                'gallery_set_data': function (gallery_id, data) {
+                    var index = find_index_by_id($scope.data['material']['image_galleries'], gallery_id);
+                    if (index > -1) {
+                        $scope.data['material']['image_galleries'][index] = data;
+                    }
+                    else {
+                        $scope.data['material']['image_galleries'].push(data);
+                    }
+                }, 'formats': formats,
+                'pr_formats': _.size(custom_formats) ? get_array_for_menu_build(custom_formats) : [],
+            });
+
+            tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'plugins', ' ');
+            {#            tinymceExtendSettings($scope.tinyArticleOptions, 'gallery', 'toolbar1', ' ');#}
+            tinymceExtendSettings($scope.tinyArticleOptions, ['{{ static_address('tinymce/plugins/tinymce-gallery-plugin/plugin.css') }}'], 'content_css');
+            $scope.tinyArticleOptions['toolbar1'] = "undo redo | bold italic | alignleft aligncenter alignright alignjustify | styleselect | bullist numlist outdent indent | media link gallery table";
+        }]);
+    </script>
+
+    {% raw %}
+    <div class="article_edit" ng-controller="article_edit" ng-cloak>
+        <form class="mb2em">
+            <div class="container pr" af af-amid-load="amidLoad" af-amid-save="amidSave"
+                 af-before-save="getData" af-before-validate="getDataForValidation"
+                 af-watch="[data.material.short, data.material.title, data.material.subtitle, data.material.keywords, data.material.keywords, data.material.external_url]"
+                 ng-model="data">
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed"></div>
+                <div ng-if="data_state == 'loading' || data_state == 'saving'" class="dimmed-message">
+                    <p><i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;&nbsp;{{ _(data_state + ' material data...') }}
+                    </p>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <h2>{{ ::_(material_id?'Updating material':'Creating material') }}
+                            <button class="btn btn-primary border-radius w20em par" type="button"
+                                ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">{{
+                            ::_(material_id?'Save material':'Create material') }}
+                                &nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;
+                        </button></h2>
+                        <hr/>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                        <label>{{ _('Article title') }}</label>
+                        <input class="form-control article-edit-input mb1em"
+                               pr-validation-answer="data_validation:title"
+                               ng-model="data.material.title"/>
+
+                        <label>{{ _('Article subtitle') }}</label>
+                        <input class="form-control article-edit-input mb1em" ng-model="data.material.subtitle"/>
+
+                        <label>{{ _('Keywords') }}</label>
+                        <input class="form-control article-edit-input mb1em" ng-model="data.material.keywords"/>
+
+                        <label>{{ _('Author') }}</label>
+                        <input class="form-control article-edit-input mb1em" ng-model="data.material.author"/>
+
+                        <label>{{ _('External url') }}</label>&nbsp;&nbsp;<a ng-href="{{ data.material.external_url }}" ng-if="!data_validation.errors.external_url" href="">Visit <i class="fa fa-external-link"></i></a>
+                        <input class="form-control article-edit-input mb1em"
+                               pr-validation-answer="data_validation:external_url"
+                               ng-model="data.material.external_url"/>
+                    </div>
+                    <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12" style="height: 350px">
+                        <div class="par ml1em" style="width: 400px; height: 350px;">
+                        <label class="pal">{{ ::_('Cover image') }}</label>
+                        <div class="par" style="width: 400px; height: 300px;"
+                             pr-crop="data.material.illustration"></div>
+                            </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+
+                        <!-- TODO: OZ by OZ move this code to one file -->
+                        {% endraw %}
+                        <link href="{{ static_address('css/article.css') }}" rel="stylesheet">
+                        <!-- TODO: OZ by OZ: select css for current theme. also look for another place with same todo-->
+                        {% raw %}
+
+                        <label class="mt1em" pr-validation-answer="data_validation:short">{{ _('Short Description') }}</label>
+                        <textarea ui-tinymce="tinyArticleOptionsShortDescription"
+                                  class="form-control article-edit-input" ng-model="data.material.short"></textarea>
+
+                        <label class="mt1em" pr-validation-answer="data_validation:long">{{ _('Full text') }}</label>
+                        <textarea class="form-control article-edit-input mb1em"
+                                ui-tinymce="tinyArticleOptions" ng-model="data.material.long"></textarea>
+
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <button class="btn btn-primary border-radius w20em par" type="button"
+                                ng-click="$af.save(data)" ng-disabled="!$af.isActionAllowed(data, 'save') ">{{
+                            ::_(material_id?'Save material':'Create material') }}
+                                &nbsp;<span class="glyphicon glyphicon-save-file"></span>&nbsp;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% endraw %}
+
+{% endblock %}
+
+

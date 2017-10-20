@@ -152,9 +152,11 @@ class ProductionDevelopmentConfig(Config):
     #                                   Config.CONSUMER_SECRET_FB)
 
 
-    if 'PRODUCTION_SERVER_DB_HOST' not in os.environ.keys():
-        # Statement for enabling the development environment
-        DEBUG = True
+    DEBUG = False
+    TESTING = False
+    # if 'PRODUCTION_SERVER_DB_HOST' not in os.environ.keys():
+    #     Statement for enabling the development environment
+        # DEBUG = True
 
 
 class CommandLineConfig(ProductionDevelopmentConfig):
@@ -190,9 +192,7 @@ class FrontConfig(Config):
     #    CONSUMER_SECRET_FB = os.getenv('PRODUCTION_SERVER_CONSUMER_SECRET',
     #                                   Config.CONSUMER_SECRET_FB)
 
-    if 'PRODUCTION_SERVER_DB_HOST' not in os.environ.keys():
-        # Statement for enabling the development environment
-        DEBUG = True
+    DEBUG = True
 
 
 class TestingConfig(Config):

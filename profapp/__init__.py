@@ -11,7 +11,7 @@ from .constants.USER_REGISTERED import REGISTERED_WITH
 from .models.users import User
 from config import Config
 from .models.config import Config as ModelConfig
-from profapp.controllers.errors import BadDataProvided
+from profapp.models import exceptions
 import os.path
 from profapp import utils
 from flask.sessions import SessionInterface
@@ -20,10 +20,70 @@ from .utils.jinja import *
 from .utils.db import *
 from .utils.email import *
 from .utils.session import *
-from .utils.redirect_url import *
+# from .utils.redirect_url import *
 import json
 from functools import wraps
-from sqlalchemy import event
+from werkzeug.routing import BaseConverter
+from urllib.parse import quote_plus, unquote_plus
+
+
+class TransliterationConverter(BaseConverter):
+    regex = '([^/].*)?'
+
+    @staticmethod
+    def transliterate(lang, value, reversed=True, stripnonwords=True, replacespaced=True):
+        from transliterate import translit, get_available_language_codes
+
+        if lang in get_available_language_codes() and reversed:
+            value = translit(value, lang, reversed=reversed)
+
+        if stripnonwords:
+            value = re.sub(r'[^\s\w\d-]', '', value)
+
+        if replacespaced:
+            value = re.sub(r'\s+', '-', value)
+
+        return value.lower()
+
+    def to_python(self, value):
+        return unquote_plus(value)
+
+    def to_url(self, value):
+        return quote_plus(TransliterationConverter.transliterate(g.portal.lang, value) if g.portal else value)
+
+    @staticmethod
+    def to_url_javascript():
+        return "function (v) {return '';}"
+
+
+class ShortUIDConverter(BaseConverter):
+    regex = r'[\w\d]{12,12}'
+
+    def to_python(self, value):
+        return value
+
+    def to_url(self, value):
+        return value[-12:]
+
+    @staticmethod
+    def to_url_javascript():
+        return "function (v) {return v.substr(v.length - 12)}"
+
+
+class FullUIDConverter(BaseConverter):
+    regex = r'[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-' \
+            r'[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}'
+
+
+
+
+# class PublicationConverter(BaseConverter):
+#     def to_python(self, value):
+#         return unquote_plus(value)
+#
+#     def to_url(self, publication_id):
+#         from profapp.models.materials import
+#         return quote_plus(g.portal.transliterate(value) if g.portal else value)
 
 
 def req(name, allowed=None, default=None, exception=True):
@@ -287,48 +347,59 @@ class logger:
     def extra(**kwargs):
         return {'extra': {'zzz_pr_more_info': kwargs}}
 
-    def __init__(self, apptype, debug, testing):
+    def __init__(self, app, print_to_stdout = False):
         import logging
         import logstash
         logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG if debug else logging.INFO)
-        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type = apptype))
+        logger.setLevel(logging.DEBUG if app.debug else (logging.INFO if app.testing else logging.WARNING))
+        logger.addHandler(logstash.LogstashHandler('elk.profi', 5959, version=1, message_type=app.apptype))
         self._l = logger
 
-        def pp(t, message, *args, **kwargs):
-            import pprint
-            ppr = pprint.PrettyPrinter(indent=2, compact=True, width = 120)
+        def pp(t, message, *args, stack_info = False, **kwargs):
+            import pprint, sys, traceback
+            ppr = pprint.PrettyPrinter(indent=2, compact=True, width=120)
+
+            def ppr(obj):
+              ppr.pprint(obj)
+
+            if stack_info:
+              type_, value_, traceback_ = sys.exc_info()
+              tblist = traceback.format_tb(traceback_)
+              if len(tblist):
+                print('\n'.join())
+                print(type_, value_)
+            
             extra = kwargs.get('extra', None)
             if extra:
                 extra = extra.get('zzz_pr_more_info', None)
-            print('{}: {}'.format(t, message))
+            print('{}: {}'.format(t, message).encode('utf-8'))
             if extra:
-                ppr.pprint(extra)
+                ppr(extra)
             return True
 
-        if debug:
-            self.exception = lambda m, *args, **kwargs: pp('!!! Exception', m, *args, **kwargs) and \
+        if print_to_stdout:
+            self.exception = lambda m, *args, **kwargs: pp('!!! Exception', m, stack_info=True, *args, **kwargs) and \
                                                         self._l.exception(m, *args, stack_info=True, **kwargs)
-            self.critical = lambda m, *args, **kwargs: pp('!!! Critical', m, *args, **kwargs) and \
+            self.critical = lambda m, *args, **kwargs: pp('!!! Critical', m, *args, stack_info=True, **kwargs) and \
                                                        self._l.critical(m, *args, stack_info=True, **kwargs)
-            self.error = lambda m, *args, **kwargs: pp('!! Error', m, *args, **kwargs) and \
+            self.error = lambda m, *args, **kwargs: pp('!! Error', m, *args, stack_info=True, **kwargs) and \
                                                     self._l.error(m, *args, stack_info=True, **kwargs)
-            self.warning = lambda m, *args, **kwargs: pp('! Warning', m, *args, **kwargs) and \
-                                                      self._l.warning(m, *args, stack_info=True, **kwargs)
-            self.info = lambda m, *args, **kwargs: pp('Info', m, *args, **kwargs) and \
-                                                   self._l.info(m, *args, stack_info=True, **kwargs)
-            self.debug = lambda m, *args, **kwargs: pp('Debug', m, *args, **kwargs) and \
+            self.warning = lambda m, *args, **kwargs: pp('! Warning', m, *args, stack_info=True if app.testing or app.debug else False, **kwargs) and \
+                                                      self._l.warning(m, *args, stack_info=True if app.testing or app.debug else False, **kwargs)
+            self.info = lambda m, *args, **kwargs: pp('Info', m, *args, stack_info=True if app.debug else False, **kwargs) and \
+                                                   self._l.info(m, *args, stack_info=True if app.debug else False, **kwargs)
+            self.debug = lambda m, *args, **kwargs: pp('Debug', m, *args, stack_info=True, **kwargs) and \
                                                     self._l.debug(m, *args, stack_info=True, **kwargs)
         else:
             self.exception = partial(self._l.exception, stack_info=True)
             self.critical = partial(self._l.critical, stack_info=True)
             self.error = partial(self._l.error, stack_info=True)
-            self.warning = partial(self._l.warning, stack_info=True if testing else False)
-            self.info = partial(self._l.info, stack_info=True if testing else False)
+            self.warning = partial(self._l.warning, stack_info=True if app.testing or app.debug else False)
+            self.info = partial(self._l.info, stack_info=True if app.debug else False)
             self.debug = partial(self._l.debug, stack_info=True)
 
 
-def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
+def create_app(config='config.ProductionDevelopmentConfig', apptype='profi', debug = None, testing = None):
     app = Flask(__name__, static_folder='./static')
 
     app.config.from_object(config)
@@ -338,8 +409,19 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
     app.debug = app.config['DEBUG'] if 'DEBUG' in app.config else False
     app.testing = app.config['TESTING'] if 'TESTING' in app.config else False
 
+    if debug is not None:
+        app.debug = True if debug else False
+
+    if testing is not None:
+        app.testing = True if testing else False
+
     app.apptype = apptype
-    app.log = logger(apptype, app.debug, app.testing)
+    app.log = logger(app, apptype not in ['profi', 'front', 'static', 'socket', 'file'])
+
+    app.url_map.converters['translit'] = TransliterationConverter
+    app.url_map.converters['short_uid'] = ShortUIDConverter
+    app.url_map.converters['full_uid'] = FullUIDConverter
+    # app.url_map.converters['uid'] = UIDConverter
 
     app.before_request(prepare_connections(app))
     app.before_request(lambda: load_user(apptype))
@@ -355,6 +437,8 @@ def create_app(config='config.ProductionDevelopmentConfig', apptype='profi'):
         return response
 
     app.after_request(add_map_headers_to_less_files)
+
+
 
     @login_manager.user_loader
     def load_user_manager(user_id):

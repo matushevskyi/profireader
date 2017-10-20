@@ -5,28 +5,27 @@ from functools import wraps
 from flask import jsonify, request, g, abort, redirect
 
 from profapp import utils
-from ..controllers import errors
+from ..models import exceptions
 
-
-def ok(func):
-    @wraps(func)
-    def function_json(*args, **kwargs):
-        try:
-            if 'json' in kwargs:
-                del kwargs['json']
-            a = request.json
-            ret = func(a, *args, **kwargs)
-            ret = {'data': ret, 'ok': True, 'error_code': 'ERROR_NO_ERROR'}
-            # template = g.req('__translate', default='')
-            # if template != '':
-            #     ret['__translate'] = db(TranslateTemplate, template=template)
-            return jsonify(ret)
-        # except Exception as e:
-        except errors.ValidationException as e:
-            db = getattr(g, 'db', None)
-            db.rollback()
-            return jsonify({'ok': False, 'error_code': -1, 'result': e.result})
-    return function_json
+#def ok(func):
+#    @wraps(func)
+#    def function_json(*args, **kwargs):
+#        try:
+#            if 'json' in kwargs:
+#                del kwargs['json']
+#            a = request.json
+#            ret = func(a, *args, **kwargs)
+#            ret = {'data': ret, 'ok': True, 'error_code': 'ERROR_NO_ERROR'}
+#            # template = g.req('__translate', default='')
+#            # if template != '':
+#            #     ret['__translate'] = db(TranslateTemplate, template=template)
+#            return jsonify(ret)
+#        # except Exception as e:
+#        except exceptions.Validation as e:
+#            db = getattr(g, 'db', None)
+#            db.rollback()
+#            return jsonify({'ok': False, 'error_code': e.__name__, 'result': e.result})
+#    return function_json
 
 
 def function_profiler(func):
@@ -98,7 +97,7 @@ def check_right(classCheck, params=None, action=None):
             allow = True
             try:
                 if not params:
-                    allow = classCheck().is_allowed(raise_exception_redirect_if_not = True)
+                    allow = classCheck().is_allowed()
                 else:
                     set_attrs = [params] if isinstance(params, str) else params
                     instance = classCheck()
@@ -115,11 +114,11 @@ def check_right(classCheck, params=None, action=None):
                             else:
                                 allow = instance.action_is_allowed(action)
                         else:
-                            allow = instance.is_allowed(raise_exception_redirect_if_not = True)
+                            allow = instance.is_allowed()
                 if allow != True:
                     abort(403)
-            except errors.NoRights as e:
-                return redirect(e.url)
+            except exceptions.UnauthorizedUser as e:
+                return redirect(e.redirect_to)
             return func(*args, **kwargs)
         decorated_view.__check_rights__ = True
         return decorated_view

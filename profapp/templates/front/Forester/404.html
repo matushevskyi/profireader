@@ -1,0 +1,20 @@
+{% extends 'layout.html' %}
+{% block title -%}
+    {{ _('search - %(portal_name)s', {'portal_name': portal.name}) }}
+{%- endblock %}
+{% block body %}
+    {% import 'macros.html' as frontmacros %}
+    {% include 'tags_menu.html' %}
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 col-md-9">
+    <form class="search-form nw tac" action="{{ url_for('front.search') }}">
+        {{ _('You requested unexisted page') }}<br/><br/><br/>
+        <input class="form-control" style="width: 25em; display: inline" name="search"
+               placeholder="{{ _('Search text placeholder') }}" value="">
+        <button class="btn btn-success" type="submit"><i class="fa fa-search"> {{ _('Search') }}</i></button>
+    </form>
+            </div>
+            </div>
+    </div>
+{% endblock %}
